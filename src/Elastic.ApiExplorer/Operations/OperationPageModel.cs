@@ -141,6 +141,7 @@ public partial record OperationPageModel
 			{
 				Parameters = apiOperation.Parameters,
 				Servers = servers,
+				HostVariable = GeneratedCodeSamples.HostVariableFor(context.Product?.Id),
 				Body = body,
 				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
 				ConsolePrefix = consolePrefix

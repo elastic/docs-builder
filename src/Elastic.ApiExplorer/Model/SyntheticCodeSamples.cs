@@ -15,6 +15,9 @@ public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenA
 
 	public IList<OpenApiServer>? Servers { get; init; }
 
+	/// <summary>The host the curl calls when the spec names no server, e.g. <c>$ELASTICSEARCH_URL</c>.</summary>
+	public string HostVariable { get; init; } = "$API_URL";
+
 	/// <summary>An example request body; the samples carry it instead of leaving it in a block of its own.</summary>
 	public string? Body { get; init; }
 
@@ -55,7 +58,13 @@ public static class SyntheticCodeSamples
 		}
 
 		var curlPath = authQuery.Count == 0 ? path : $"{path}{(path.Contains('?') ? '&' : '?')}{string.Join('&', authQuery)}";
-		var curl = BuildCurl(methodLabel, BuildRequestUrl(curlPath, input.Servers), operation, (headers, authFlags), body);
+		var curl = BuildCurl(
+			methodLabel,
+			BuildRequestUrl(curlPath, input.Servers, input.HostVariable),
+			operation,
+			(headers, authFlags),
+			body
+		);
 		samples.Add(CodeSample.Generate("curl", curl));
 		return samples;
 	}
@@ -77,7 +86,7 @@ public static class SyntheticCodeSamples
 			.SelectMany(QueryPairs)
 			.ToArray();
 
-		return query.Length == 0 ? path : $"{path}?{string.Join('&', query)}";
+		return query.Length == 0 ? path : $"{path}{(path.Contains('?') ? '&' : '?')}{string.Join('&', query)}";
 	}
 
 	/// <summary>One flag per continuation line, the layout <see cref="CurlSourceFormatter"/> gives spec samples.</summary>
@@ -90,7 +99,9 @@ public static class SyntheticCodeSamples
 	)
 	{
 		var (headers, authFlags) = flags;
-		var parts = new List<string> { $"curl -X {methodLabel} \"{url}\"" };
+		// curl reads braces as a glob and would send a placeholder's bare name as its value, so a URL that still holds one turns globbing off.
+		var globbing = url.Contains('{') ? " --globoff" : "";
+		var parts = new List<string> { $"curl{globbing} -X {methodLabel} \"{url}\"" };
 		parts.AddRange(headers.Select(static h => $"-H \"{DoubleQuoted(h.Name ?? "")}: {DoubleQuoted(HeaderExampleValue(h))}\""));
 		parts.AddRange(authFlags);
 
@@ -118,13 +129,11 @@ public static class SyntheticCodeSamples
 			.Replace('\r', ' ')
 			.Replace('\n', ' ');
 
-	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers)
+	/// <summary>The first server's URL before the path; a spec that names no server gets the product's host variable, so the curl has a host at all.</summary>
+	private static string BuildRequestUrl(string pathWithQuery, IList<OpenApiServer>? servers, string hostVariable)
 	{
 		var serverUrl = servers?.FirstOrDefault()?.Url?.Trim().TrimEnd('/');
-		if (string.IsNullOrEmpty(serverUrl))
-			return pathWithQuery;
-
-		return serverUrl + pathWithQuery;
+		return (string.IsNullOrEmpty(serverUrl) ? hostVariable : serverUrl) + pathWithQuery;
 	}
 
 	private static IEnumerable<IOpenApiParameter> RequiredHeaders(IReadOnlyList<IOpenApiParameter> parameters) =>
@@ -144,11 +153,13 @@ public static class SyntheticCodeSamples
 		return "string";
 	}
 
-	/// <summary>The example the spec gives a parameter: its own, then its schema's.</summary>
+	/// <summary>The value the spec gives a parameter: its example, then its schema's example, default or first enum member.</summary>
 	private static JsonNode? ExampleNode(IOpenApiParameter parameter) =>
-		parameter.Example
-			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(static v => v is not null)
-			?? SchemaHelpers.FirstExample(parameter.Schema);
+		(SchemaHelpers.IsValue(parameter.Example) ? parameter.Example : null)
+			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(SchemaHelpers.IsValue)
+			?? SchemaHelpers.FirstExample(parameter.Schema)
+			?? (SchemaHelpers.IsValue(parameter.Schema?.Default) ? parameter.Schema!.Default : null)
+			?? parameter.Schema?.Enum?.FirstOrDefault(SchemaHelpers.IsValue);
 
 	/// <summary>One part per array item, one part for a scalar. Null when the spec gives no example, and for an object (see <see cref="ExampleEntries"/>).</summary>
 	private static string[]? ExampleParts(IOpenApiParameter parameter)
@@ -256,6 +267,10 @@ public static class SyntheticCodeSamples
 
 	private static (string Header, string Flag)? AuthFlag(IOpenApiSecurityScheme scheme) => scheme.Type switch
 	{
+		// An API key in the Authorization header travels behind the ApiKey scheme word, as every Elastic API expects it.
+		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header
+			&& string.Equals(scheme.Name, "Authorization", StringComparison.OrdinalIgnoreCase) =>
+			("Authorization", $"-H \"Authorization: ApiKey {ApiKeyVariable}\""),
 		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
 			(scheme.Name, $"-H \"{DoubleQuoted(scheme.Name)}: {ApiKeyVariable}\""),
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>

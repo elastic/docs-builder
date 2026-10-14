@@ -89,6 +89,79 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_WithAHeaderThatOnlyHasADefault_SendsTheDefault()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "elastic-api-version",
+					In = ParameterLocation.Header,
+					Required = true,
+					Schema = new OpenApiSchema { Default = JsonValue.Create("2023-10-31"), Enum = [JsonValue.Create("2023-10-31")] }
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/apm/agent_keys", operation));
+
+		samples[1].Source.Should().Contain("-H \"elastic-api-version: 2023-10-31\"");
+	}
+
+	[Test]
+	public void Create_WithAParameterWhoseExampleIsNull_KeepsThePlaceholder()
+	{
+		// The reader stores a literal `example: null` as a sentinel string, which must not reach the URL.
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter { Name = "id", In = ParameterLocation.Path, Required = true, Example = JsonNullSentinel.JsonNull }
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/things/{id}", operation));
+
+		samples[0].Source.Should().Be("GET /things/{id}");
+	}
+
+	[Test]
+	public void Create_WithoutAServer_UsesTheHostVariable()
+	{
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/_search", new OpenApiOperation())
+		{
+			HostVariable = "$ELASTICSEARCH_URL"
+		});
+
+		samples[1].Source.Should().StartWith("curl -X GET \"$ELASTICSEARCH_URL/_search\"");
+	}
+
+	[Test]
+	public void Create_WithAQueryAlreadyInTheRoute_AppendsWithAnAmpersand()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters = [new OpenApiParameter { Name = "size", In = ParameterLocation.Query, Required = true }]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/_search?pretty", operation));
+
+		samples[0].Source.Should().Be("GET /_search?pretty&size={size}");
+	}
+
+	[Test]
+	[Arguments("elasticsearch", "$ELASTICSEARCH_URL")]
+	[Arguments("serverless-elasticsearch", "$ELASTICSEARCH_URL")]
+	[Arguments("kibana", "$KIBANA_URL")]
+	[Arguments("logstash", "$LOGSTASH_URL")]
+	[Arguments("cloud-enterprise", "$API_URL")]
+	[Arguments(null, "$API_URL")]
+	public void HostVariableFor_NamesTheProductsHost(string? productId, string expected) =>
+		GeneratedCodeSamples.HostVariableFor(productId).Should().Be(expected);
+
+	[Test]
 	public void Create_WithTheExampleOfAnOpenApi30Schema_FillsItIn()
 	{
 		// The reader keeps the `example` of an OpenAPI 3.0 schema in Example, not Examples.
@@ -275,7 +348,7 @@ public class SyntheticCodeSamplesTests
 			.Source
 			.Should()
 			.Be(
-				"curl -X POST \"https://{kibana_url}/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
+				"curl --globoff -X POST \"https://{kibana_url}/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
 					"  -H \"Content-Type: application/json\" \\\n" + "  -d '" + body + "'"
 			);
 	}
@@ -340,8 +413,47 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("-H \"Authorization: $API_KEY\"");
+		samples[1].Source.Should().Contain("-H \"Authorization: ApiKey $API_KEY\"");
 		samples[0].Source.Should().Be("GET /api/x");
+	}
+
+	[Test]
+	public void Create_WithAnApiKeySchemeInAnotherHeader_SendsTheKeyAlone()
+	{
+		var scheme = new OpenApiSecurityScheme { Type = SecuritySchemeType.ApiKey, Name = "X-Api-Key", In = ParameterLocation.Header };
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", new OpenApiOperation())
+		{
+			Security = [scheme]
+		});
+
+		samples[1].Source.Should().Contain("-H \"X-Api-Key: $API_KEY\"").And.NotContain("ApiKey $API_KEY");
+	}
+
+	[Test]
+	public void Create_WithAPlaceholderLeftInTheUrl_TurnsCurlGlobbingOff()
+	{
+		var samples = SyntheticCodeSamples.Create(
+			new SyntheticSampleInput(HttpMethod.Delete, "/api/dashboards/{id}", new OpenApiOperation())
+		);
+
+		samples[1].Source.Should().StartWith("curl --globoff -X DELETE \"$API_URL/api/dashboards/{id}\"");
+	}
+
+	[Test]
+	public void Create_WithEveryPlaceholderFilled_LeavesCurlGlobbingOn()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter { Name = "id", In = ParameterLocation.Path, Required = true, Example = JsonValue.Create("d1") }
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Delete, "/api/dashboards/{id}", operation));
+
+		samples[1].Source.Should().StartWith("curl -X DELETE \"$API_URL/api/dashboards/d1\"");
 	}
 
 	[Test]
@@ -354,7 +466,7 @@ public class SyntheticCodeSamplesTests
 			Security = [scheme]
 		});
 
-		samples[1].Source.Should().Contain("\"/api/x?key=$API_KEY\"");
+		samples[1].Source.Should().Contain("\"$API_URL/api/x?key=$API_KEY\"");
 		samples[0].Source.Should().Be("GET /api/x");
 	}
 
