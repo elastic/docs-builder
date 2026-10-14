@@ -61,7 +61,7 @@ public static class RequestBodyExample
 
 		var effective = analyzer.Flatten(resolved);
 		if (effective.Properties.Count > 0 || effective.MapValue is not null || type.HasFlag(JsonSchemaType.Object))
-			return Object(analyzer, effective, depth);
+			return Object(analyzer, resolved, effective, depth);
 
 		// A property written as `allOf: [{ $ref }]` plus a description has no type of its own; the member it wraps does.
 		if (resolved.Type is null && resolved.AllOf is { Count: > 0 } wrapped)
@@ -79,15 +79,21 @@ public static class RequestBodyExample
 	};
 
 	/// <summary>
-	/// The required properties, without the ones the server sets (<c>readOnly</c>). A property with nothing to show is left
-	/// out rather than written as <c>null</c>, which a schema such as <c>not: {}</c> would reject.
+	/// The required properties, without the ones the server sets (<c>readOnly</c>). When the schema requires one of several
+	/// field sets through a <c>oneOf</c>/<c>anyOf</c> of <c>required</c> lists, the first set counts as required too, so the body
+	/// satisfies the schema. A property with nothing to show is left out rather than written as <c>null</c>, which a schema
+	/// such as <c>not: {}</c> would reject.
 	/// </summary>
-	private static JsonObject Object(SchemaAnalyzer analyzer, EffectiveSchema effective, int depth)
+	private static JsonObject Object(SchemaAnalyzer analyzer, IOpenApiSchema schema, EffectiveSchema effective, int depth)
 	{
+		var required = effective.Required;
+		if (UnionSchemas.TryGetRequiredAlternatives(schema, out _, out var alternatives))
+			required = new HashSet<string>(required.Concat(alternatives[0]), StringComparer.Ordinal);
+
 		var body = new JsonObject();
 		foreach (var (name, property) in effective.Properties)
 		{
-			if (!effective.Required.Contains(name) || analyzer.ResolveSchema(property)?.ReadOnly == true)
+			if (!required.Contains(name) || analyzer.ResolveSchema(property)?.ReadOnly == true)
 				continue;
 			if (Value(analyzer, property, depth + 1) is { } value)
 				body[name] = value;

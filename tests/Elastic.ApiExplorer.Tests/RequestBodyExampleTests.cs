@@ -223,6 +223,21 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_IncludesTheFirstRequiredAlternative()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["name"],
+			  "properties": { "name": { "type": "string" }, "correlation_id": { "type": "string" }, "externalId": { "type": "string" } },
+			  "oneOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ] }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"name":"string","correlation_id":"string"}""");
+	}
+
+	[Test]
 	public async Task Build_ParsesANumericConst()
 	{
 		var body = await BuildFrom(
