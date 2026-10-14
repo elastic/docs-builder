@@ -204,6 +204,22 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_UnwrapsAnAllOfAroundAScalarOrAnArray()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["name", "ids"],
+			  "properties": {
+			    "name": { "description": "The name.", "allOf": [ { "type": "string" } ] },
+			    "ids": { "description": "The ids.", "allOf": [ { "type": "array", "items": { "type": "integer" } } ] } } }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"name":"string","ids":[0]}""");
+	}
+
+	[Test]
 	public async Task Build_UnwrapsAnAllOfAroundAReference()
 	{
 		var body = await BuildFrom(

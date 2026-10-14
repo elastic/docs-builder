@@ -374,6 +374,17 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_KeepsQuotesInsideAnExampleValue()
+	{
+		// JsonValue.ToString() already returns the decoded text, so a value's own quotes are data, not JSON syntax.
+		var operation = WithQueryExample(new JsonObject { ["q"] = "\"error message\"" }, ParameterStyle.Form, explode: true);
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/search", operation));
+
+		samples[0].Source.Should().Be("GET /search?q=%22error%20message%22");
+	}
+
+	[Test]
 	public void Create_WithAnObjectExampleOnAPathParameter_UsesTheSimpleStyle()
 	{
 		var operation = new OpenApiOperation
