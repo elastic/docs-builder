@@ -1,8 +1,11 @@
 import { initApiDocs } from './api-docs'
+import { initSmoothScroll } from './smooth-scroll'
 
 /** One of each collapsible on an operation page, nested the way the property tree nests them. */
 function markup(): string {
     return `
+        <article id="markdown-content">
+        <ul id="paths"><li><a id="path-jump" href="#deep">{rule}</a></li></ul>
         <section id="elastic-api-v3">
             <a id="jump" href="#deep">deep</a>
             <div class="api-param-section collapsed" data-param-section id="section">
@@ -35,7 +38,8 @@ function markup(): string {
                     </div>
                 </div>
             </div>
-        </section>`
+        </section>
+        </article>`
 }
 
 const byId = (id: string) => document.getElementById(id)!
@@ -118,6 +122,19 @@ describe('disclosure clicks on API pages', () => {
         expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth' })
         expect(pushState).toHaveBeenCalledWith(null, '', '#deep')
         pushState.mockRestore()
+    })
+
+    it('opens the collapsibles for a path placeholder link, even when its hash is already set', () => {
+        initSmoothScroll()
+        const scroll = jest.fn()
+        byId('deep').scrollIntoView = scroll
+        history.replaceState(null, '', '#deep')
+
+        byId('path-jump').click()
+
+        for (const id of ['variant', 'prop', 'section'])
+            expect(isExpanded(id)).toBe(true)
+        expect(scroll).toHaveBeenCalledWith({ behavior: 'smooth' })
     })
 
     it('opens every collapsible around a find-in-page match', () => {

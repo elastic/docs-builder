@@ -3348,6 +3348,25 @@ html:has(.api-page-shell) {
 	cursor: help;
 }
 
+/* A placeholder reads as path text with a faint dotted cue; it turns into a link only on hover or focus. */
+#markdown-content a.api-url-param {
+	/* Markdown links set their own font; the placeholder must match the monospace path around it. */
+	font: inherit;
+	color: inherit;
+	text-decoration: underline dotted var(--color-grey-40, #98a2b3);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	border-radius: 2px;
+}
+
+#markdown-content a.api-url-param:hover,
+#markdown-content a.api-url-param:focus-visible {
+	color: var(--color-blue-elastic, #0b64dd);
+	background: var(--color-grey-10);
+	text-decoration-style: solid;
+	text-decoration-color: currentColor;
+}
+
 .api-url-optional:hover {
 	color: #1d2a3e;
 }

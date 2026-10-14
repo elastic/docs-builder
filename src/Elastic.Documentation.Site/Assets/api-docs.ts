@@ -280,9 +280,9 @@ function initGlobalClickHandlers(): void {
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Only handle clicks within API doc sections
+        // Only handle clicks within API doc sections; the path list sits in the header, outside them
         const apiSection = target.closest(
-            '#elastic-api-v3, #schema-definition'
+            '#elastic-api-v3, #schema-definition, #paths'
         ) as HTMLElement
         if (!apiSection) return
 
