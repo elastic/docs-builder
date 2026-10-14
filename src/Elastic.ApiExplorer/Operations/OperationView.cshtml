@@ -4,10 +4,19 @@
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
 
-	// The examples sit in the right rail, under Copy page.
+	// The Base URL and examples sit in the right rail, under Copy page.
+	// Below 1024px the rail drops under the whole article, so the Base URL also sits in the header (hidden on wide screens).
 	protected override async Task ExecuteSectionAsync(string name)
 	{
-		if (name == ApiPageSections.Rail && Model.ExamplesPanel is { } examplesPanel)
+		if (name != ApiPageSections.Rail)
+			return;
+		if (Model.Servers.Count > 0)
+		{
+			<dl class="api-rail-facts api-rail-facts--rail">
+				@await RenderPartialAsync(_BaseUrlFact.Create(Model.Servers))
+			</dl>
+		}
+		if (Model.ExamplesPanel is { } examplesPanel)
 		{
 			@await RenderPartialAsync(_OperationExamplesPanel.Create(examplesPanel))
 		}
@@ -40,15 +49,11 @@
 			}
 		</div>
 	}
-	@if (pageModel.Servers is { Count: > 0 })
+	@if (Model.Servers.Count > 0)
 	{
-		<div class="server-info">
-			<span class="server-label">Base URL@(pageModel.Servers.Count > 1 ? "s" : ""):</span>
-			@foreach (var server in pageModel.Servers.Where(s => !string.IsNullOrEmpty(s.Url)))
-			{
-				@await RenderPartialAsync(_ServerUrlField.Create(new ApiServerDisplay(server.Url!, server.Description)))
-			}
-		</div>
+		<dl class="api-rail-facts api-rail-facts--inline">
+			@await RenderPartialAsync(_BaseUrlFact.Create(Model.Servers))
+		</dl>
 	}
 
 	@{
