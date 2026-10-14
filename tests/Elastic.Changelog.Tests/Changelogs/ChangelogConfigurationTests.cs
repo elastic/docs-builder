@@ -52,6 +52,56 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_BundleProfileExcludeAndKeepLabels_AcceptAStringAndAList()
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		var docsDir = FileSystem.Path.Join(configDir, "docs");
+		FileSystem.Directory.CreateDirectory(docsDir);
+		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: ">feature"
+			    bug-fix: ">bug"
+			    breaking-change: ">breaking"
+			bundle:
+			  profiles:
+			    serverless-release:
+			      product: cloud-serverless
+			      exclude_labels: stateful
+			      keep_labels:
+			        - serverless
+			        - both
+			    plain:
+			      product: elasticsearch
+			""";
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		var originalDir = FileSystem.Directory.GetCurrentDirectory();
+		try
+		{
+			FileSystem.Directory.SetCurrentDirectory(configDir);
+
+			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+
+			config.Should().NotBeNull();
+			Collector.Errors.Should().Be(0);
+			var profiles = config.Bundle!.Profiles!;
+			profiles["serverless-release"].ExcludeLabels.Should().Equal("stateful");
+			profiles["serverless-release"].KeepLabels.Should().Equal("serverless", "both");
+			profiles["plain"].ExcludeLabels.Should().BeNull();
+			profiles["plain"].KeepLabels.Should().BeNull();
+		}
+		finally
+		{
+			FileSystem.Directory.SetCurrentDirectory(originalDir);
+		}
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotTypes_UsesConfiguredTypes()
 	{
 		// Arrange

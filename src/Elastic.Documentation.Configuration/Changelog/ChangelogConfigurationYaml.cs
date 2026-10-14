@@ -400,6 +400,16 @@ internal sealed record BundleProfileYaml
 	public YamlLenientList? HideFeatures { get; set; }
 
 	/// <summary>
+	/// Labels that leave a pull request out of a commit-range bundle (string or list).
+	/// </summary>
+	public YamlLenientList? ExcludeLabels { get; set; }
+
+	/// <summary>
+	/// Labels that protect a pull request from <c>exclude_labels</c> (string or list).
+	/// </summary>
+	public YamlLenientList? KeepLabels { get; set; }
+
+	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; set; }

@@ -157,6 +157,16 @@ public record BundleChangelogsArguments
 	public string? BaseRef { get; init; }
 
 	/// <summary>
+	/// With a git ref range, pull requests that carry one of these labels are left out and appear in the run report
+	/// as excluded, unless they also carry a <see cref="KeepLabels"/> label. Taken from the profile's
+	/// <c>exclude_labels</c>; not a <c>changelog bundle</c> option.
+	/// </summary>
+	public IReadOnlyList<string>? ExcludeLabels { get; init; }
+
+	/// <summary>A pull request that carries any of these labels is never excluded by <see cref="ExcludeLabels"/>. Taken from the profile's <c>keep_labels</c>.</summary>
+	public IReadOnlyList<string>? KeepLabels { get; init; }
+
+	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
@@ -664,6 +674,8 @@ public partial class ChangelogBundlingService(
 		string? owner = null;
 		string? branch = null;
 		string[]? mergedHideFeatures = null;
+		IReadOnlyList<string>? excludeLabels = null;
+		IReadOnlyList<string>? keepLabels = null;
 		string? profileDescription = null;
 		var profileSuppressReleaseDate = false;
 
@@ -738,6 +750,8 @@ public partial class ChangelogBundlingService(
 #pragma warning restore CS0618
 			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
+			excludeLabels = profile.ExcludeLabels?.Count > 0 ? [.. profile.ExcludeLabels] : null;
+			keepLabels = profile.KeepLabels?.Count > 0 ? [.. profile.KeepLabels] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
 			// Handle profile-specific description with placeholder substitution.
@@ -813,6 +827,8 @@ public partial class ChangelogBundlingService(
 			Owner = owner ?? input.Owner,
 			Branch = branch ?? input.Branch,
 			HideFeatures = mergedHideFeatures,
+			ExcludeLabels = excludeLabels ?? input.ExcludeLabels,
+			KeepLabels = keepLabels ?? input.KeepLabels,
 			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
@@ -979,7 +995,9 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				BaseRef = input.BaseRef
+				BaseRef = input.BaseRef,
+				ExcludeLabels = input.ExcludeLabels,
+				KeepLabels = input.KeepLabels
 			},
 			ctx
 		);

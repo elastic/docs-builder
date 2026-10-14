@@ -304,6 +304,10 @@ bundle:
     #   hide_features:
     #     - feature-flag-1
     #     - feature-flag-2
+    #   # Labels that leave a PR out of a commit-range bundle, such as release serverless (accepts string or list)
+    #   exclude_labels: stateful
+    #   # A PR with any of these labels is never excluded by exclude_labels
+    #   keep_labels: serverless
 
     # Example: Multi-product profile (Mode 3 rule context = first product alphabetically, e.g. kibana).
     # For security-only rules, add a separate profile with output_products listing only security.

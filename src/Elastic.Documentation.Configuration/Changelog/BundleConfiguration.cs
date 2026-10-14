@@ -164,6 +164,19 @@ public record BundleProfile
 	public IReadOnlyList<string>? HideFeatures { get; init; }
 
 	/// <summary>
+	/// Labels that leave a pull request out of a commit-range bundle (<c>release serverless</c>, <c>release unified</c>).
+	/// A pull request that carries one of these labels is reported as excluded, unless it also carries a
+	/// <see cref="KeepLabels"/> label. Ignored by bundles that are not built from a commit range.
+	/// </summary>
+	public IReadOnlyList<string>? ExcludeLabels { get; init; }
+
+	/// <summary>
+	/// Labels that protect a pull request from <see cref="ExcludeLabels"/>. A pull request that carries both an
+	/// exclude label and a keep label stays in the bundle.
+	/// </summary>
+	public IReadOnlyList<string>? KeepLabels { get; init; }
+
+	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; init; }

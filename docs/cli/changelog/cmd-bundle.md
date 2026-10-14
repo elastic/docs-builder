@@ -128,7 +128,7 @@ Commit-range mode requires a `GITHUB_TOKEN` environment variable: the GraphQL AP
 
 ### Dry run
 
-Pass `--dry-run` to resolve the range and print the run report — the resolved PR list with each PR's entry source (`pool`, `inferred (PR body)`, `inferred (title)`, `excluded (rules)`, or `missing`) plus any commits without an associated PR — as Markdown, without writing a bundle. The report is suitable for a release PR body or a CI job summary.
+Pass `--dry-run` to resolve the range and print the run report — the resolved PR list with each PR's entry source (`pool`, `inferred (PR body)`, `inferred (title)`, `excluded (rules)`, `excluded (base branch)`, `excluded (label)`, or `missing`) plus any commits without an associated PR — as Markdown, without writing a bundle. The report is suitable for a release PR body or a CI job summary.
 
 ```sh
 docs-builder changelog bundle serverless-release 2026-08-13 \

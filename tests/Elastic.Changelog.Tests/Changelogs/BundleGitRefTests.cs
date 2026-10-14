@@ -87,7 +87,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "")
+	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "", string profileExtra = "")
 	{
 		// language=yaml
 		var configContent = """
@@ -104,10 +104,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			  profiles:
 			    promotion:
 			      output_products: "cloud-hosted {version}"
-			""".Replace(
-			"PLACEHOLDER",
-			outputDir
-		).Replace("PIVOT_PRODUCTS", pivotProducts);
+			      PROFILE_EXTRA
+			"""
+			.Replace("PLACEHOLDER", outputDir)
+			.Replace("PIVOT_PRODUCTS", pivotProducts)
+			.Replace("PROFILE_EXTRA", profileExtra);
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -296,6 +297,96 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		);
 		bundle.Should().Contain("Faster hosted search");
 		bundle.Should().Contain("Heads up for the August release");
+	}
+
+	[Test]
+	public async Task ProfileMode_ExcludeAndKeepLabels_ReachTheRangeService()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, profileExtra: "exclude_labels: stateful\n      keep_labels: [serverless]");
+
+		CommitRangeArguments? seen = null;
+		var rangeService = A.Fake<IGitHubCommitRangeService>();
+		_ = A
+			.CallTo(() => rangeService.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._))
+			.Invokes((IDiagnosticsCollector _, CommitRangeArguments args, Cancel _) => seen = args)
+			.Returns(new CommitRangeResolution
+			{
+				TotalCommits = 1,
+				PullRequests = [RangePr(100)],
+				CommitsWithoutPullRequest = [],
+				ExcludedPullRequests =
+				[
+					new CommitRangeExcludedPullRequest
+					{
+						Number = 700,
+						Url = "https://github.com/elastic/widget/pull/700",
+						BaseRef = "main",
+						Reason = CommitRangeExclusionReason.Label,
+						Label = "stateful"
+					}
+				]
+			});
+		var service = Service(PoolHandler(), rangeService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef,
+			DryRun = true
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		seen.Should().NotBeNull();
+		seen.ExcludeLabels.Should().Equal("stateful");
+		seen.KeepLabels.Should().Equal("serverless");
+	}
+
+	[Test]
+	public async Task Resolver_ReportsLabelExclusionsApartFromBaseBranchExclusions()
+	{
+		var resolver = new GitRangeEntryResolver(A.Fake<IGitHubPrService>(), LoggerFactory.CreateLogger("GitRangeEntryResolver"));
+		var resolution = new CommitRangeResolution
+		{
+			TotalCommits = 2,
+			PullRequests = [],
+			CommitsWithoutPullRequest = [],
+			ExcludedPullRequests =
+			[
+				new CommitRangeExcludedPullRequest
+				{
+					Number = 11,
+					Url = "https://github.com/elastic/widget/pull/11",
+					BaseRef = "feature/x"
+				},
+				new CommitRangeExcludedPullRequest
+				{
+					Number = 12,
+					Url = "https://github.com/elastic/widget/pull/12",
+					BaseRef = "main",
+					Reason = CommitRangeExclusionReason.Label,
+					Label = "stateful"
+				}
+			]
+		};
+
+		var result = await resolver.ResolveAsync(
+			Collector,
+			resolution,
+			[],
+			null,
+			new GitRangeEntryResolutionOptions { Owner = "elastic", Repo = "widget", StartRef = StartRef, EndRef = EndRef },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var markdown = result.Report.ToMarkdown();
+		markdown.Should().Contain("| [#11](https://github.com/elastic/widget/pull/11) | excluded (base branch) | — |");
+		markdown.Should().Contain("| [#12](https://github.com/elastic/widget/pull/12) | excluded (label) | — |");
 	}
 
 	[Test]

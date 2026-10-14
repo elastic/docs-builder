@@ -64,6 +64,9 @@ public enum GitRangePrSourceKind
 	/// <summary>Merged into a branch other than the requested base branch (for example a feature branch).</summary>
 	ExcludedBaseBranch,
 
+	/// <summary>Carries a label the profile excludes (<c>exclude_labels</c>) and no label that keeps it (<c>keep_labels</c>).</summary>
+	ExcludedLabel,
+
 	/// <summary>The PR's metadata could not be fetched; no entry could be produced.</summary>
 	Missing
 }
@@ -112,6 +115,7 @@ public record GitRangeBundleReport
 				GitRangePrSourceKind.InferredTitle => "inferred (title)",
 				GitRangePrSourceKind.Excluded => "excluded (rules)",
 				GitRangePrSourceKind.ExcludedBaseBranch => "excluded (base branch)",
+				GitRangePrSourceKind.ExcludedLabel => "excluded (label)",
 				_ => "missing"
 			};
 			var entry = row.EntryFileNames.Count > 0 ? string.Join(", ", row.EntryFileNames.Select(f => $"`{f}`")) : "—";
@@ -215,7 +219,9 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			{
 				Number = excluded.Number,
 				Url = excluded.Url,
-				Source = GitRangePrSourceKind.ExcludedBaseBranch
+				Source = excluded.Reason == CommitRangeExclusionReason.Label
+					? GitRangePrSourceKind.ExcludedLabel
+					: GitRangePrSourceKind.ExcludedBaseBranch
 			});
 		}
 

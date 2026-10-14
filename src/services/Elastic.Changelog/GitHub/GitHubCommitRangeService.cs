@@ -27,6 +27,9 @@ public sealed partial class GitHubCommitRangeService(
 	private const int GraphQlBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
 
+	/// <summary>Labels read per pull request when label exclusion is configured. A pull request with more is not expected.</summary>
+	private const int MaxLabelsPerPullRequest = 50;
+
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
@@ -205,7 +208,7 @@ public sealed partial class GitHubCommitRangeService(
 		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
-		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
+		var excluded = new Dictionary<int, CommitRangeExcludedPullRequest>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
 		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
@@ -225,14 +228,16 @@ public sealed partial class GitHubCommitRangeService(
 					commitNode,
 					repoFullName,
 					args.BaseRef,
-					excludedByBase,
-					out var onlyExcludedByBase
+					args.ExcludeLabels,
+					args.KeepLabels,
+					excluded,
+					out var onlyExcluded
 				);
 				if (selected == null)
 				{
-					// A commit whose merged PRs were all excluded by base branch is already reported as
-					// excluded; only a commit with no merged PR at all is "without an associated PR".
-					if (!onlyExcludedByBase)
+					// A commit whose merged PRs were all excluded (by base branch or label) is already
+					// reported as excluded; only a commit with no merged PR at all is "without an associated PR".
+					if (!onlyExcluded)
 						commitsWithoutPr.Add(sha);
 					continue;
 				}
@@ -267,7 +272,7 @@ public sealed partial class GitHubCommitRangeService(
 			TotalCommits = commits.Count,
 			PullRequests = pullRequests,
 			CommitsWithoutPullRequest = commitsWithoutPr,
-			ExcludedPullRequests = [.. excludedByBase.Values.OrderBy(pr => pr.Number)]
+			ExcludedPullRequests = [.. excluded.Values.OrderBy(pr => pr.Number)]
 		};
 	}
 
@@ -283,11 +288,13 @@ public sealed partial class GitHubCommitRangeService(
 		GraphQlCommit? commitNode,
 		string repoFullName,
 		string? baseRef,
-		Dictionary<int, CommitRangeExcludedPullRequest> excludedByBase,
-		out bool onlyExcludedByBase
+		IReadOnlyList<string>? excludeLabels,
+		IReadOnlyList<string>? keepLabels,
+		Dictionary<int, CommitRangeExcludedPullRequest> excluded,
+		out bool onlyExcluded
 	)
 	{
-		onlyExcludedByBase = false;
+		onlyExcluded = false;
 		var merged = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
 			.Where(pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
 			.ToList()
@@ -302,9 +309,9 @@ public sealed partial class GitHubCommitRangeService(
 			candidates = [.. merged.Where(pr => string.Equals(pr.BaseRefName, baseRef, StringComparison.Ordinal))];
 			foreach (var pr in merged.Except(candidates))
 			{
-				if (!excludedByBase.ContainsKey(pr.Number))
+				if (!excluded.ContainsKey(pr.Number))
 				{
-					excludedByBase[pr.Number] = new CommitRangeExcludedPullRequest
+					excluded[pr.Number] = new CommitRangeExcludedPullRequest
 					{
 						Number = pr.Number,
 						Url = pr.Url ?? $"https://github.com/{repoFullName}/pull/{pr.Number}",
@@ -314,9 +321,36 @@ public sealed partial class GitHubCommitRangeService(
 			}
 		}
 
+		// A pull request with an exclude label stays out unless it also has a keep label.
+		if (excludeLabels is { Count: > 0 })
+		{
+			var kept = new List<GraphQlPullRequest>();
+			foreach (var pr in candidates)
+			{
+				var matched = FindExcludingLabel(pr, excludeLabels, keepLabels);
+				if (matched == null)
+				{
+					kept.Add(pr);
+					continue;
+				}
+				if (!excluded.ContainsKey(pr.Number))
+				{
+					excluded[pr.Number] = new CommitRangeExcludedPullRequest
+					{
+						Number = pr.Number,
+						Url = pr.Url ?? $"https://github.com/{repoFullName}/pull/{pr.Number}",
+						BaseRef = pr.BaseRefName ?? string.Empty,
+						Reason = CommitRangeExclusionReason.Label,
+						Label = matched
+					};
+				}
+			}
+			candidates = kept;
+		}
+
 		if (candidates.Count == 0)
 		{
-			onlyExcludedByBase = merged.Count > 0;
+			onlyExcluded = merged.Count > 0;
 			return null;
 		}
 
@@ -343,6 +377,18 @@ public sealed partial class GitHubCommitRangeService(
 		return candidates[0];
 	}
 
+	/// <summary>
+	/// The first of <paramref name="excludeLabels"/> that the pull request carries, or <c>null</c> when it carries none
+	/// or carries any of <paramref name="keepLabels"/>. Labels compare case-insensitively, as GitHub treats them.
+	/// </summary>
+	private static string? FindExcludingLabel(GraphQlPullRequest pr, IReadOnlyList<string> excludeLabels, IReadOnlyList<string>? keepLabels)
+	{
+		var names = pr.Labels?.Nodes?.Select(label => label?.Name).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+		if (keepLabels != null && keepLabels.Any(names.Contains))
+			return null;
+		return excludeLabels.FirstOrDefault(names.Contains);
+	}
+
 	private async Task<Dictionary<string, GraphQlCommit?>?> FetchAssociatedPullRequestsBatchAsync(
 		IDiagnosticsCollector collector,
 		CommitRangeArguments args,
@@ -350,7 +396,7 @@ public sealed partial class GitHubCommitRangeService(
 		Cancel ctx
 	)
 	{
-		var query = BuildBatchQuery(args.Owner, args.Repo, shas);
+		var query = BuildBatchQuery(args.Owner, args.Repo, shas, includeLabels: args.ExcludeLabels is { Count: > 0 });
 		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
 		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
@@ -389,7 +435,7 @@ public sealed partial class GitHubCommitRangeService(
 	/// Builds one aliased GraphQL query resolving <c>associatedPullRequests</c> for every sha in
 	/// the batch. Shas are validated hex and owner/repo validated identifiers before interpolation.
 	/// </summary>
-	private static string BuildBatchQuery(string owner, string repo, IReadOnlyList<string> shas)
+	private static string BuildBatchQuery(string owner, string repo, IReadOnlyList<string> shas, bool includeLabels = false)
 	{
 		var sb = new StringBuilder();
 		_ = sb.Append("query { repository(owner: \"").Append(owner).Append("\", name: \"").Append(repo).Append("\") {");
@@ -404,8 +450,10 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }")
-				.Append(" } } } }");
+				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }");
+			if (includeLabels)
+				_ = sb.Append(" labels(first: ").Append(MaxLabelsPerPullRequest).Append(") { nodes { name } }");
+			_ = sb.Append(" } } } }");
 		}
 
 		_ = sb.Append(" } }");
@@ -491,6 +539,21 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("baseRepository")]
 		public GraphQlRepositoryRef? BaseRepository { get; set; }
+
+		[JsonPropertyName("labels")]
+		public GraphQlLabelConnection? Labels { get; set; }
+	}
+
+	private sealed class GraphQlLabelConnection
+	{
+		[JsonPropertyName("nodes")]
+		public List<GraphQlLabel?>? Nodes { get; set; }
+	}
+
+	private sealed class GraphQlLabel
+	{
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
 	}
 
 	private sealed class GraphQlCommitRef

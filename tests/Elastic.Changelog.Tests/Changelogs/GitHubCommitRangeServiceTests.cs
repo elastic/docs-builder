@@ -38,13 +38,14 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		bool merged = true,
 		string? mergeCommitSha = null,
 		string repoFullName = Owner + "/" + Repo,
-		string baseRefName = "main"
+		string baseRefName = "main",
+		string[]? labels = null
 	) =>
 		$$"""
 		{ "number": {{number}}, "url": "https://github.com/{{repoFullName}}/pull/{{number}}", "merged": {{(merged ? "true" : "false")}},
 		  "baseRefName": "{{baseRefName}}",
 		  "mergeCommit": {{(mergeCommitSha != null ? $$"""{ "oid": "{{mergeCommitSha}}" }""" : "null")}},
-		  "baseRepository": { "nameWithOwner": "{{repoFullName}}" } }
+		  "baseRepository": { "nameWithOwner": "{{repoFullName}}" }{{(labels != null ? $$""", "labels": { "nodes": [{{string.Join(",", labels.Select(l => $$"""{ "name": "{{l}}" }"""))}}] }""" : "")}} }
 		""";
 
 	private static string GraphQlJson(IReadOnlyList<(string Sha, string[] PrNodes)> commits)
@@ -201,6 +202,131 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.ExcludedPullRequests[0].BaseRef.Should().Be("feature/highlight");
 		// Excluded by base branch is not the same as "no associated PR": report it once.
 		result.CommitsWithoutPullRequest.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_LeavesOutPullRequestsWithTheLabel()
+	{
+		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
+		var handler = Handler(
+			_ => CompareJson(3, [sha1, sha2, sha3]),
+			_ => GraphQlJson([
+				(sha1, [PrNode(11, mergeCommitSha: sha1, labels: [">bug", "stateful"])]),
+				(sha2, [PrNode(12, mergeCommitSha: sha2, labels: [">bug"])]),
+				(sha3, [PrNode(13, mergeCommitSha: sha3, labels: [">bug", "serverless"])])
+			])
+		);
+		var args = Args with { ExcludeLabels = ["stateful"], KeepLabels = ["serverless"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(12, 13);
+		result.ExcludedPullRequests.Should().ContainSingle();
+		result.ExcludedPullRequests[0].Number.Should().Be(11);
+		result.ExcludedPullRequests[0].Reason.Should().Be(CommitRangeExclusionReason.Label);
+		result.ExcludedPullRequests[0].Label.Should().Be("stateful");
+		// Excluded by label is not "no associated PR": report it once.
+		result.CommitsWithoutPullRequest.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_PullRequestWithBothLabelsStaysIn()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(14, mergeCommitSha: sha1, labels: ["stateful", "serverless"])])])
+		);
+		var args = Args with { ExcludeLabels = ["stateful"], KeepLabels = ["serverless"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(14);
+		result.ExcludedPullRequests.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_WithoutKeepLabelsExcludesEvenWithOtherLabels()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(15, mergeCommitSha: sha1, labels: ["stateful", "serverless"])])])
+		);
+		var args = Args with { ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Should().BeEmpty();
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(15);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_CompareCaseInsensitively()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(16, mergeCommitSha: sha1, labels: ["Stateful"])])])
+		);
+		var args = Args with { ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(16);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_ReportsBothReasonsWhenBaseBranchAndLabelExclude()
+	{
+		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
+		var handler = Handler(
+			_ => CompareJson(3, [sha1, sha2, sha3]),
+			_ => GraphQlJson([
+				(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight", labels: [])]),
+				(sha2, [PrNode(12, mergeCommitSha: sha2, labels: ["stateful"])]),
+				(sha3, [PrNode(13, mergeCommitSha: sha3, labels: [])])
+			])
+		);
+		var args = Args with { BaseRef = "main", ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(13);
+		result
+			.ExcludedPullRequests
+			.Select(pr => (pr.Number, pr.Reason))
+			.Should()
+			.Equal((11, CommitRangeExclusionReason.BaseBranch), (12, CommitRangeExclusionReason.Label));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_FetchesLabelsOnlyWhenConfigured()
+	{
+		var queries = new List<string>();
+		var sha1 = Sha(1);
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			queries.Add(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
+			return GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]);
+		});
+		var service = Service(handler);
+
+		_ = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+		_ = await service.ResolvePullRequestsAsync(
+			Collector,
+			Args with { ExcludeLabels = ["stateful"] },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		queries.Should().HaveCount(2);
+		queries[0].Should().NotContain("labels(");
+		queries[1].Should().Contain("labels(");
 	}
 
 	[Test]

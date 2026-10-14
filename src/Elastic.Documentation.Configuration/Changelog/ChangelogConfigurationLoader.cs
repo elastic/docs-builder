@@ -660,6 +660,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					Owner = profileYaml.Owner,
 					Branch = profileYaml.Branch,
 					HideFeatures = profileYaml.HideFeatures?.Values,
+					ExcludeLabels = profileYaml.ExcludeLabels?.Values,
+					KeepLabels = profileYaml.KeepLabels?.Values,
 					ReleaseDates = profileYaml.ReleaseDates,
 					Source = profileYaml.Source
 				};

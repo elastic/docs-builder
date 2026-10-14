@@ -127,6 +127,14 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   Feature IDs to mark as hidden in the bundle.
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
+`exclude_labels`
+:   Labels that leave a pull request out of a bundle built from a commit range, such as the bundles that `release serverless` and `release unified` build. A pull request that carries one of these labels is not bundled and shows as `excluded (label)` in the run report.
+:   Accepts a comma-separated string or a list. Label names compare case-insensitively. Bundles that are not built from a commit range ignore this setting.
+
+`keep_labels`
+:   Labels that protect a pull request from `exclude_labels`. A pull request that carries both an exclude label and a keep label stays in the bundle.
+:   For example, with `exclude_labels: stateful` and `keep_labels: serverless`, a pull request labelled `stateful` is left out, and a pull request labelled `stateful` and `serverless` stays in.
+
 `output`
 :   Removed. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (the first product in `output_products`, or `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on any profile is a hard error at bundle time; remove the field.
 :   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: the profile's [`output_directory`](#bundle-profiles) (if set), then `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
