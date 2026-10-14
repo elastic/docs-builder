@@ -3789,8 +3789,14 @@ html:has(.api-page-shell) {
    It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
    selection and the copy button leave it out, like the line numbers. */
 #api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+	/* Pinned to the bottom-right of the visible code, not to the code: it neither rides along a wide line's horizontal
+	   scroll nor disappears below a long body. Sticky keeps it in flow, so the strip height still counts it. */
+	position: sticky;
+	bottom: 0;
+	left: 0;
 	margin: 0;
 	padding: 2px 14px 10px;
+	background: var(--api-code-bg);
 	color: var(--api-code-muted);
 	font-size: 11.5px;
 	line-height: 1.45;
