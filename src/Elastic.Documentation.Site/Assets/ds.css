@@ -25,7 +25,7 @@
 @import '../Components/Primitives/Link/link.css' layer(ds.components);
 @import '../Components/Primitives/Badge/badge.css' layer(ds.components);
 @import '../Components/Primitives/Method/method.css' layer(ds.components);
-@import '../Components/Markdown/AppliesBadge/applies-badge.css'
+@import '../Components/Primitives/AppliesBadge/applies-badge.css'
 	layer(ds.components);
 @import '../Components/Primitives/Kbd/kbd.css' layer(ds.components);
 @import '../Components/Forms/TextField/text-field.css' layer(ds.components);
@@ -71,7 +71,7 @@
 @import './ds/patterns/codex.css' layer(ds.pages);
 @import './ds/patterns/elastic-nav.css';
 @import '../Components/Markdown/Prose/prose.css' layer(ds.components);
-@import '../Components/Markdown/AppliesPopover/applies-popover.css'
+@import '../Components/Primitives/AppliesPopover/applies-popover.css'
 	layer(ds.components);
 @import '../Components/Chrome/Feedback/feedback.css' layer(ds.components);
 @import '../Components/Overlays/SearchDialog/search-dialog.css'

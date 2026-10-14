@@ -9,6 +9,8 @@ describe('property anchor copy', () => {
             value: { writeText },
             configurable: true,
         })
+        // The link still scrolls to the property, which jsdom cannot do
+        Element.prototype.scrollIntoView = jest.fn()
     })
 
     beforeEach(() => {
@@ -16,10 +18,10 @@ describe('property anchor copy', () => {
         document.body.innerHTML = `
             <section id="elastic-api-v3">
                 <dt id="query-pretty">
-                    <a class="property-anchor" href="#query-pretty">
+                    <a class="property-anchor" href="#query-pretty" aria-label="Link to pretty">
                         <span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
-                        <code>pretty</code>
                     </a>
+                    <code>pretty</code>
                 </dt>
             </section>
         `
@@ -55,7 +57,7 @@ describe('property anchor copy', () => {
     })
 
     it('does not copy when the property name is clicked', () => {
-        document.querySelector<HTMLElement>('.property-anchor code')!.click()
+        document.querySelector<HTMLElement>('dt > code')!.click()
 
         expect(writeText).not.toHaveBeenCalled()
     })

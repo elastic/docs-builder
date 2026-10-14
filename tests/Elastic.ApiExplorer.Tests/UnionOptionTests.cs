@@ -61,7 +61,7 @@ public class UnionOptionTests
 	{
 		var nodes = await PropertyAsync("nodes");
 
-		Badges(nodes).Should().Equal("NodeId[]", "NodeId");
+		Badges(nodes).Should().Equal("string[]", "string");
 	}
 
 	[Test]
@@ -69,16 +69,16 @@ public class UnionOptionTests
 	{
 		var sort = await PropertyAsync("sort");
 
-		Badges(sort).Should().Equal("AlertsSortCombinations[]", "AlertsSortCombinations");
+		Badges(sort).Should().Equal("(string | object)[]", "string | object");
 	}
 
 	[Test]
-	public async Task BuildPropertyList_InlineUnionWithAlias_NamesTheAliasInItsType()
+	public async Task BuildPropertyList_InlineUnionWithAlias_ReadsTheAliasAsItsPrimitive()
 	{
 		var property = await PropertyAsync("node_or_count");
 
-		property.Type.Text.Should().Be("union NodeId | integer");
-		property.Union.Should().BeNull("the type already reads NodeId | integer, so an options row would only repeat it");
+		property.Type.Text.Should().Be("union string | integer");
+		property.Union.Should().BeNull("the type already reads string | integer, so an options row would only repeat it");
 	}
 
 	[Test]

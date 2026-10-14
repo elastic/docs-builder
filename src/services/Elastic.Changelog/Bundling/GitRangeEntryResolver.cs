@@ -315,7 +315,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		var title = prInfo.Title;
 		if (config?.Extract.StripTitlePrefix == true)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
 		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)

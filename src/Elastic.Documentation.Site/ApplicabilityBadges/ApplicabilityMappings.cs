@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Configuration.Versions;
 
-namespace Elastic.Markdown.Myst.Components;
+namespace Elastic.Documentation.Site.ApplicabilityBadges;
 
 public static class ApplicabilityMappings
 {

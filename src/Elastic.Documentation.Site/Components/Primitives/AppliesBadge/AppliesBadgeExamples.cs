@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Site.Components;
 
-namespace Elastic.Markdown.Components.AppliesBadge;
+namespace Elastic.Documentation.Site.Components.Primitives.AppliesBadge;
 
 public static class AppliesBadgeExamples
 {

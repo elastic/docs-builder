@@ -304,4 +304,293 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	private const string BreakingYaml =
+		"type: breaking-change\ntitle: Test\nimpact: Users break.\naction: Upgrade now.\nproducts:\n  - product: elasticsearch\n";
+
+	private static IGitHubCommentService CreateCommentFake()
+	{
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)).Returns(true);
+		return commentSvc;
+	}
+
+	[Test]
+	public async Task PostComment_MissingImpactAction_RendersMissingSectionsBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "missing-impact-action") with
+		{
+			Gate = ValidationGate.File,
+			MissingSections = "impact,action"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Contains("## Impact"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_SuccessBreakingChange_KeepsCommentWithCapturedImpactAndAction()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("<details>") && b.Contains("Users break.") && b.Contains("Upgrade now.")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task PostComment_CommittedBreakingChange_AppendsCapturedBlock()
+	{
+		await WriteMetadata(BaseMetadata() with { CommitOutcome = CommitOutcome.Committed, CommittedFile = "docs/changelog/42.yaml" });
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Matches(b => b.Contains("docs/changelog/42.yaml") && b.Contains("<details>") && b.Contains("Users break.")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_SuccessNonBreakingStagedEntry_StillDeletesComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
+		WriteYaml("42.yaml", "type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch\n");
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_GateOnlyBreakingChange_EchoesMetadataWithoutStagedYaml()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "breaking-change",
+			Impact = "Users break.",
+			Action = "Upgrade now."
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(
+					b => b.Contains("Users break.") && b.Contains("Upgrade now.") && b.Contains("found in the PR description") &&
+						!b.Contains("generated") && !b.Contains("could not be read")
+				),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ConflictingImpactAction_RendersConflictBody()
+	{
+		await WriteMetadata(BaseMetadata(status: "conflicting-impact-action") with
+		{
+			Gate = ValidationGate.File,
+			ChangelogDir = "docs/changelog",
+			ChangelogFilename = "42.yaml",
+			ConflictingSections = "impact"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("docs/changelog/42.yaml") && b.Contains("## Impact") && !b.Contains("## Action")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_BreakingChangeWithNothingScraped_DoesNotEcho()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "breaking-change"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("<details>"),
+				A<CancellationToken>._
+			)
+		).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task PostComment_StagedBreakingEntry_WinsOverMetadataValues()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "breaking-change",
+			Impact = "Scraped impact.",
+			Action = "Scraped action."
+		});
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("Users break.") && b.Contains("Upgrade now.") && !b.Contains("Scraped")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ForkCommentOnlyBreakingEntry_KeepsYamlPreviewAndAppendsEcho()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false, isFork: true) with
+		{
+			ChangelogDir = "docs/changelog",
+			ResolvedType = "breaking-change",
+			Impact = "Scraped impact.",
+			Action = "Scraped action."
+		});
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(
+					b => b.Contains("Generated changelog entry") && b.Contains("<details>") && b.Contains("Users break.")
+				),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ManuallyEdited_DeletesStaleComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "manually-edited") with { Gate = ValidationGate.File });
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_GateOnlySuccess_DeletesCommentInsteadOfClaimingAnEntryWasGenerated()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "feature"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task WriteMetadata_ConfigFileInsideTheCheckout_IsStoredRepoRelative()
+	{
+		await WriteMetadata(BaseMetadata() with { ConfigFile = Path.Join(Root, "docs", "changelog.yml") });
+
+		var written = await new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem).ReadAsync(
+			MetadataPath,
+			CancellationToken.None
+		);
+
+		written!.ConfigFile.Should().Be("docs/changelog.yml");
+	}
+
+	[Test]
+	public async Task PostComment_StagedBreakingEntry_StillSaysTheEntryWasGenerated()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true));
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Contains("Changelog entry generated for this breaking change"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
 }

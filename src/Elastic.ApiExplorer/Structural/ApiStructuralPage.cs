@@ -155,8 +155,10 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		return displays;
 	}
 
-	internal static IReadOnlyList<ApiServerDisplay> ReadServers(OpenApiDocument document) =>
-		(document.Servers ?? [])
+	internal static IReadOnlyList<ApiServerDisplay> ReadServers(OpenApiDocument document) => ToDisplays(document.Servers);
+
+	internal static IReadOnlyList<ApiServerDisplay> ToDisplays(IEnumerable<OpenApiServer>? servers) =>
+		(servers ?? [])
 			.Where(server => !string.IsNullOrEmpty(server.Url))
 			.Select(server => new ApiServerDisplay(server.Url!, server.Description))
 			.ToArray();

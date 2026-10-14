@@ -4,9 +4,9 @@
 
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
-using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Directives.Admonition;
 using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Image;

@@ -75,8 +75,9 @@
 	fill: currentColor;
 }
 
-/* Path chip — mirrors inline code (markdown/code.css) so routes read as code */
-.api-url-row > .api-url {
+/* Path chip — mirrors inline code (markdown/code.css) so routes read as code. Base URL fields share it. */
+.api-url-row > .api-url,
+.api-server-field {
 	@apply bg-grey-10 border-grey-20 border-1 font-mono;
 	display: flex;
 	align-items: center;
@@ -506,8 +507,8 @@
 	line-height: 28px;
 }
 
-/* Quiet outlined link: the spec downloads in the rail. */
-.api-page-rail a.api-chip-link {
+/* Quiet outlined link: the spec downloads in the landing facts (rail and under the intro). */
+.api-rail-facts a.api-chip-link {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
@@ -525,13 +526,13 @@
 	height: 14px;
 }
 
-.api-page-rail a.api-chip-link:hover,
-.api-page-rail a.api-chip-link:focus-visible {
+.api-rail-facts a.api-chip-link:hover,
+.api-rail-facts a.api-chip-link:focus-visible {
 	border-color: var(--color-grey-80);
 	color: var(--color-blue-elastic, #0b64dd);
 }
 
-.api-page-rail a.api-chip-link:focus-visible {
+.api-rail-facts a.api-chip-link:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
 }
@@ -1142,7 +1143,7 @@ button.response-status-toggle:focus {
 	overflow: visible;
 }
 
-.responses-list .property-list dt .property-anchor-icon {
+.responses-list .property-list dt > a.property-anchor {
 	z-index: 4;
 }
 
@@ -1270,21 +1271,16 @@ button.response-status-toggle:focus {
 		margin: 0;
 		line-height: 24px;
 
+		/* Icon-only link, pulled out of flow so the name stays plain, selectable text. */
 		> a.property-anchor {
-			display: inline-flex;
-			flex: 0 0 auto;
-			align-items: center;
-			width: fit-content;
-			max-width: 100%;
-			overflow: visible;
-			text-decoration: none;
-		}
-
-		.property-anchor-icon {
 			position: absolute;
 			right: 100%;
 			top: 16px;
 			z-index: 2;
+		}
+
+		.property-anchor-icon {
+			display: block;
 			box-sizing: content-box;
 			width: 24px;
 			height: 24px;
@@ -1319,7 +1315,6 @@ button.response-status-toggle:focus {
 			outline-offset: 2px;
 		}
 
-		> a.property-anchor > code,
 		> code {
 			color: var(--color-ink-navy, #111c2c);
 			font-family:
@@ -1339,9 +1334,7 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	.property-item:hover > dt > .property-anchor .property-anchor-icon,
-	.query-param:hover > dt > .property-anchor .property-anchor-icon,
-	.path-param:hover > dt > .property-anchor .property-anchor-icon {
+	.property-item:hover > dt > .property-anchor .property-anchor-icon {
 		opacity: 1;
 	}
 
@@ -1526,8 +1519,9 @@ button.response-status-toggle:focus {
 	}
 }
 
-.query-param,
-.path-param,
+#path-params-list > .property-list > .property-item,
+#query-params-list > .property-list > .property-item,
+#header-params-list > .property-list > .property-item,
 .prerequisite-item {
 	border-bottom: 1px solid #e3e8f2;
 	padding-bottom: 16px;
@@ -1839,6 +1833,9 @@ a.type-linked:hover {
 	white-space: nowrap;
 	vertical-align: middle;
 	mix-blend-mode: normal;
+	/* A long type breaks between its parts rather than running past the edge of a narrow screen. */
+	flex-wrap: wrap;
+	max-width: 100%;
 }
 
 .property-list code.schema-type a,
@@ -1850,8 +1847,16 @@ a.type-linked:hover {
 	white-space: pre;
 }
 
+/* A constraint and the separator before it wrap as one, so no line starts with a lone separator. */
+.schema-type-group {
+	display: inline-flex;
+	min-width: 0;
+	max-width: 100%;
+}
+
 .schema-type .type-constraint {
-	max-width: 40ch;
+	max-width: min(40ch, 100%);
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
@@ -1871,25 +1876,24 @@ a.type-linked:hover {
 	@apply mr-2 inline;
 }
 
+/* x-state availability, rendered with the same applies_to badge as Markdown pages */
+.api-title-badges .applies {
+	@apply mr-2;
+}
+
 /* Deprecated badge - red warning style */
 .deprecated-badge {
 	@apply text-red-70 bg-red-10 rounded px-1 py-0.5 text-xs font-medium;
 }
 
 /* Deprecated property/parameter styling - strikethrough */
-.property-item.deprecated > dt > a > code:first-child,
-.query-param.deprecated > dt > a > code:first-child,
-.path-param.deprecated > dt > a > code:first-child {
+.property-item.deprecated > dt > a > code:first-child {
 	@apply line-through opacity-70;
 }
 
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
-}
-
-.api-title-badges .api-state-badge {
-	@apply text-grey-100 mr-2 inline text-sm font-medium;
 }
 
 /* Beta badge - orange/amber warning */
@@ -2097,27 +2101,6 @@ a.docs-reference-btn::after {
 
 .header-item {
 	@apply mb-2;
-}
-
-/* Server info display */
-.server-info {
-	@apply flex flex-wrap items-center gap-2 text-sm;
-}
-
-.server-label {
-	@apply text-grey-60 font-medium;
-}
-
-.server-url {
-	@apply flex items-center gap-1;
-
-	code {
-		@apply text-grey-80 bg-grey-10 rounded px-1.5 py-0.5 font-mono text-xs;
-	}
-}
-
-.server-description {
-	@apply text-grey-50 text-xs;
 }
 
 /* Union type option - styled like regular types, not enum values */
@@ -2335,15 +2318,6 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 mt-1 text-sm;
 }
 
-/* Schema ID display */
-.schema-id {
-	@apply text-grey-60 mb-4 text-sm;
-
-	code {
-		@apply bg-grey-10 rounded px-2 py-1;
-	}
-}
-
 /* Schema type info for container types */
 .schema-type-info {
 	@apply mb-4 flex items-center gap-2;
@@ -2472,7 +2446,7 @@ a.docs-reference-btn::after {
 
 /* Prose typography (size, colour, links, headings) is inherited from .markdown-content */
 .api-operation-description {
-	margin: 0 0 0.5rem;
+	margin: 16px 0 0.5rem;
 
 	> :first-child {
 		margin-top: 0;
@@ -2809,37 +2783,69 @@ button.example-response-tab:focus-visible {
 	gap: 8px;
 }
 
-.api-rail-server {
+.api-server {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: 4px;
 	min-width: 0;
 	max-width: 100%;
 }
 
-.api-rail-server-url {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	min-width: 0;
+.api-server-field {
+	justify-content: space-between;
+	padding: 4px 8px 4px 10px;
 }
 
-.api-rail-server-url code {
+.api-server-field code {
 	min-width: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font-size: inherit;
 	overflow-wrap: anywhere;
 }
 
-/* Hover-only elsewhere (the endpoint rows); in the rail it always shows, so touch screens can use it. */
-.api-rail-server .api-url-copy.copybtn {
+/* Hover-only on endpoint rows; here it always shows so touch screens can use it. */
+.api-server-field .api-url-copy.copybtn {
 	opacity: 1;
 	pointer-events: auto;
 }
 
-.api-rail-server-description {
+.api-server-description {
 	color: var(--color-subdued, #516381);
+	font-size: 14px;
+}
+
+/* The facts render twice: the rail copy is the right column on wide screens; below 1024px the rail
+   falls under the whole catalog, so the copy under the intro takes over. */
+.api-rail-facts--inline {
+	margin: 24px 0;
+}
+
+.api-rail-facts--inline .api-rail-fact {
+	align-self: stretch;
+}
+
+/* Inside the article, markdown's dt spacing would otherwise open a gap above every fact. */
+.api-rail-facts--inline .api-rail-fact dt {
+	margin: 0;
+}
+
+.api-rail-facts--inline .api-server {
+	width: 100%;
+}
+
+@media (max-width: 1023px) {
+	.api-rail-facts--rail {
+		display: none;
+	}
 }
 
 @media (min-width: 1024px) {
+	.api-rail-facts--inline {
+		display: none;
+	}
+
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
 	}
@@ -3327,6 +3333,25 @@ html:has(.api-page-shell) {
 	cursor: help;
 }
 
+/* A placeholder reads as path text with a faint dotted cue; it turns into a link only on hover or focus. */
+#markdown-content a.api-url-param {
+	/* Markdown links set their own font; the placeholder must match the monospace path around it. */
+	font: inherit;
+	color: inherit;
+	text-decoration: underline dotted var(--color-grey-40, #98a2b3);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	border-radius: 2px;
+}
+
+#markdown-content a.api-url-param:hover,
+#markdown-content a.api-url-param:focus-visible {
+	color: var(--color-blue-elastic, #0b64dd);
+	background: var(--color-grey-10);
+	text-decoration-style: solid;
+	text-decoration-color: currentColor;
+}
+
 .api-url-optional:hover {
 	color: #1d2a3e;
 }
@@ -3684,6 +3709,11 @@ html:has(.api-page-shell) {
 		transform-origin 0.25s;
 }
 
+/* The only language has no neighbour to peek beside it, so its card takes the whole rail. */
+#api-examples-panel .api-code-carousel-card:only-child {
+	flex-basis: 100%;
+}
+
 /* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
    deliberately stops where the strip runs out, with the previous card showing beside it. */
 #api-examples-panel .api-code-carousel-card:has(~ .is-active) {
@@ -3740,6 +3770,40 @@ html:has(.api-page-shell) {
 	font-size: 11.5px;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+/* A sample docs-builder built says so at the end of its own code block, so the note is about this sample and no other.
+   It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
+   selection and the copy button leave it out, like the line numbers. */
+#api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+	/* Pinned to the bottom-right of the visible code, not to the code: it neither rides along a wide line's horizontal
+	   scroll nor disappears below a long body. Sticky keeps it in flow, so the strip height still counts it. */
+	position: sticky;
+	bottom: 0;
+	left: 0;
+	margin: 0;
+	padding: 2px 14px 10px;
+	background: var(--api-code-bg);
+	color: var(--api-code-muted);
+	font-size: 11.5px;
+	line-height: 1.45;
+	/* Right-aligned, it reads as an attribution under the code rather than as one more line of it. */
+	text-align: right;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* The short line carries the full explanation in a tooltip; the dotted underline says there is one. */
+.api-code-carousel-card-note > span {
+	cursor: help;
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+
+.api-code-carousel-card-note > span:focus-visible {
+	outline: 2px solid var(--color-blue-elastic-50, #85b7ff);
+	outline-offset: 2px;
+	border-radius: 2px;
 }
 
 /* The client label links to the client's docs page; a light blue reads as a link on the dark card. */

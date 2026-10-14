@@ -4,7 +4,7 @@
 
 using Microsoft.AspNetCore.Html;
 
-namespace Elastic.Markdown.Components.AppliesPopover;
+namespace Elastic.Documentation.Site.Components.Primitives.AppliesPopover;
 
 public sealed record AvailabilityItem(string Text, string? LifecycleDescription = null);
 

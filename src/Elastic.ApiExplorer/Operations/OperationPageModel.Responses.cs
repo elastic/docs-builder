@@ -115,7 +115,7 @@ public partial record OperationPageModel
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}" };
+		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}", IsResponse = true };
 		var body = ApiBodyContent.Build(responseSchema, scope, analyzer, builder);
 		var arrayItemProperties = body is { Properties: null, UnionVariants: null }
 			? BuildArrayItemProperties(responseSchema, scope, analyzer, builder)

@@ -63,6 +63,10 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 	/// <summary>Position in the carousel: Console, then languages by how many developers use them. Unranked languages sort last.</summary>
 	public int Rank => ByName.TryGetValue(Language, out var known) ? known.Rank : int.MaxValue;
 
+	/// <summary>A sample docs-builder built itself, flagged so the rail says so.</summary>
+	public static CodeSample Generate(string language, string source) =>
+		new(language, source, GetHighlightClass(language)) { Generated = true };
+
 	public static string GetHighlightClass(string language) =>
 		ByName.TryGetValue(language, out var known) && known.Highlight is { } highlight
 			? highlight

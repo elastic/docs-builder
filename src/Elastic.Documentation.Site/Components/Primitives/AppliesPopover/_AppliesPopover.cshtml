@@ -1,4 +1,4 @@
-@inherits RazorSlice<Elastic.Markdown.Components.AppliesPopover.AppliesPopoverModel>
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Primitives.AppliesPopover.AppliesPopoverModel>
 @if (Model.Interactive && Model.Popover is { } inlineContent && !Model.Block)
 {
 	@* Inside a paragraph, so only phrasing content: a details, div, p or ul start tag would close the paragraph and split the sentence. *@

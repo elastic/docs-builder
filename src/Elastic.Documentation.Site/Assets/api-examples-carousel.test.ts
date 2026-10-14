@@ -101,6 +101,40 @@ describe('API examples carousel', () => {
         ).toBe('Console')
     })
 
+    describe('when the page has no Console card', () => {
+        beforeEach(() => {
+            document.body.innerHTML = `
+                <div data-api-examples>
+                    <div class="api-examples-scenario-panel" data-scenario="term">${carousel(['curl', 'Python'])}</div>
+                </div>`
+        })
+
+        it('opens on the first card', () => {
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+        })
+
+        it('keeps a saved Console preference for the pages that have it', () => {
+            window.localStorage.setItem(apiLanguageStorageKey, 'Console')
+
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+            expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe(
+                'Console'
+            )
+        })
+
+        it('opens on the first card when a link asks for Console', () => {
+            window.history.replaceState(null, '', '#lang=Console')
+
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+        })
+    })
+
     it('never hides language cards, so find-in-page reaches them', () => {
         initApiExamples()
 
@@ -215,6 +249,16 @@ describe('API examples carousel', () => {
                 ?.hasAttribute('hidden')
         ).toBe(false)
         expect(activeLang('slicing')).toBe('curl')
+    })
+
+    it('keeps the htmx history state when writing the link', () => {
+        window.history.replaceState({ htmx: true }, '')
+        initApiExamples()
+
+        click('[data-scenario="term"] [data-carousel-dot="Java"]')
+
+        expect(window.location.hash).toBe('#example=term&lang=java')
+        expect(window.history.state).toEqual({ htmx: true })
     })
 
     it('writes the link in lowercase and reads it in any case', () => {

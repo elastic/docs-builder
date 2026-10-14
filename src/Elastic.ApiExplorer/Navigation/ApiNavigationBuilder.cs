@@ -356,7 +356,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 					page => new SchemaNavigationItem(
 						context.UrlPathPrefix,
 						apiUrlSuffix,
-						new ApiSchema(page.SchemaId, page.DisplayName, category.Key.Slug, schemas[page.SchemaId]),
+						new ApiSchema(page.SchemaId, page.Title, category.Key.Slug, schemas[page.SchemaId]),
 						rootNavigation,
 						categoryNav
 					)

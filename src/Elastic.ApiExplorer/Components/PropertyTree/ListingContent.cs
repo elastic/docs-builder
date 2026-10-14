@@ -77,7 +77,7 @@ internal static class ListingContent
 				.Append('|')
 				.Append(property.ShowDeprecatedBadge)
 				.Append('|')
-				.Append(property.Availability)
+				.Append(property.Availability?.AppliesTo)
 				.Append('|')
 				.Append(property.ExternalDocs?.Url)
 				.Append('|')

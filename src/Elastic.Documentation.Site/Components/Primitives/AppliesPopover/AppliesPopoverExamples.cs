@@ -5,7 +5,7 @@
 using Elastic.Documentation.Site.Components;
 using Microsoft.AspNetCore.Html;
 
-namespace Elastic.Markdown.Components.AppliesPopover;
+namespace Elastic.Documentation.Site.Components.Primitives.AppliesPopover;
 
 public static class AppliesPopoverExamples
 {

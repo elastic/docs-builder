@@ -13,7 +13,8 @@ _Layout.cshtml           Razor conventions — stay at the project root.
 _ViewImports.cshtml
 
 Model/                   The semantic layer over Microsoft.OpenAPI. Spec loading (OpenApiReader),
-                         Elastic x-* extension parsing (OpenApiExtensionReader), schema
+                         Elastic x-* extension parsing (OpenApiExtensionReader; x-state → applies_to in
+                         XStateApplicability, shared by pages and the search export), schema
                          interpretation ($ref resolution, allOf flattening, type classification:
                          SchemaAnalyzer, TypeInfo, SchemaHelpers). No HTML, no URLs, no views.
 Infrastructure/          Shared rendering plumbing every page needs: ApiRenderContext, ApiViewModel
@@ -32,7 +33,7 @@ Structural/              Slice: Bump.sh-compatible /authentication and /servers 
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).
 Types/                   Slice: schema type pages under /api/{product}/types/.
 
-_Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBlock, _AppliesToBadge;
+_Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBlock;
                          Layout/_ApiToc. View-only — partial models live in Infrastructure/.
 
 Export/                  OpenApiDocumentExporter: search-index export, independent of page rendering.

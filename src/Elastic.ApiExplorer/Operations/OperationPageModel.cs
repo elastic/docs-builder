@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -15,19 +16,50 @@ namespace Elastic.ApiExplorer.Operations;
 /// </summary>
 public partial record OperationPageModel
 {
-	public required AvailabilityBadgeData? Availability { get; init; }
-	public required string? State { get; init; }
+	public required ApplicableToViewModel? Availability { get; init; }
 	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	/// <summary>Every route and method of the operation, merged into display rows.</summary>
 	public required OperationEndpoint Endpoint { get; init; }
-	public required IReadOnlyList<ApiPathParameter> PathParameters { get; init; }
-	public required IReadOnlyList<ApiQueryParameter> QueryParameters { get; init; }
+	public required ApiPropertyList PathParameters { get; init; }
+	public required ApiPropertyList QueryParameters { get; init; }
+	public required ApiPropertyList HeaderParameters { get; init; }
 
-	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Select(static p => p.Name));
+	public IReadOnlyList<string> PathParameterNames => NamesOf(PathParameters.Items.Select(static p => p.Name));
 
-	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Select(static q => q.Parameter.Name));
+	public IReadOnlyList<string> QueryParameterNames => NamesOf(QueryParameters.Items.Select(static q => q.Name));
+
+	public IReadOnlyList<string> HeaderParameterNames => NamesOf(HeaderParameters.Items.Select(static h => h.Name));
+
+	/// <summary>The parameter sections the page lists, in page order; a location with no parameters has none.</summary>
+	public IReadOnlyList<ParameterListSection> ParameterSections =>
+		[
+			.. new[]
+			{
+				new ParameterListSection(
+					ParameterLocation.Path,
+					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames),
+					"path-params-list",
+					PathParameters,
+					"Path parameters"
+				),
+				new ParameterListSection(
+					ParameterLocation.Query,
+					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames),
+					"query-params-list",
+					QueryParameters,
+					"Query string parameters"
+				),
+				new ParameterListSection(
+					ParameterLocation.Header,
+					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames),
+					"header-params-list",
+					HeaderParameters,
+					"Header parameters"
+				)
+			}.Where(static s => s.Parameters.Items.Count > 0)
+		];
 
 	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
 	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
@@ -97,11 +129,25 @@ public partial record OperationPageModel
 		);
 		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
+		var parameters = apiOperation.Parameters;
+		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
+		var requestSchema = requestContentEntry?.Value?.Schema;
+		var target = GeneratedCodeSamples.SampleTargetFor(context.Product?.Id);
 		if (codeSamples.Count == 0)
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
 			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
-			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers, body);
+			// Without an example the body comes from the schema, so the sample of an operation that takes one is not a bare request.
+			body ??= RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
+			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+			{
+				Parameters = parameters,
+				Servers = servers,
+				HostVariable = target.HostVariable,
+				Body = body,
+				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
+				ConsolePrefix = target.ConsolePrefix
+			});
 		}
 
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
@@ -110,16 +156,14 @@ public partial record OperationPageModel
 				GeneratedCodeSamples.Fill(
 					EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
 					codeSamples,
-					endpoint
+					endpoint,
+					target.ConsolePrefix
 				),
 				apiOperation.OperationType.ToString().ToLowerInvariant(),
 				apiOperation.Route
 			),
 			context.Product?.Id
 		);
-		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
-		var requestSchema = requestContentEntry?.Value?.Schema;
-
 		ExternalDocLink? externalDocs = null;
 		if (operation.ExternalDocs?.Url is not null)
 		{
@@ -127,6 +171,11 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
+		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
+		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
+		var pathParameters = BuildParameters(parameters, ParameterLocation.Path, parameterSource);
+		var queryParameters = BuildParameters(parameters, ParameterLocation.Query, parameterSource);
+		var headerParameters = BuildParameters(parameters, ParameterLocation.Header, parameterSource);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",
@@ -139,20 +188,14 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadgeHelper.FromOperation(operation, context.BuildContext.VersionsConfiguration),
-			State = OpenApiExtensionReader.GetState(operation),
+			Availability = AvailabilityBadge.From(operation.Extensions, context.BuildContext.VersionsConfiguration),
 			IsBeta = OpenApiExtensionReader.IsBeta(operation),
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
-			PathParameters = (operation.Parameters ?? [])
-				.Where(p => p.In == ParameterLocation.Path)
-				.Select(p => BuildPathParameter(p, analyzer, builder, context, supplemental, endpoint))
-				.ToArray(),
-			QueryParameters = (operation.Parameters ?? [])
-				.Where(p => p.In == ParameterLocation.Query)
-				.Select(p => BuildQueryParameter(p, analyzer, builder, context, supplemental))
-				.ToArray(),
+			PathParameters = pathParameters,
+			QueryParameters = queryParameters,
+			HeaderParameters = headerParameters,
 			RequestContentType = requestContentEntry?.Key ?? "application/json",
 			RequestProperties = request.Properties,
 			RequestUnionVariants = request.UnionVariants,

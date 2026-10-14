@@ -37,18 +37,13 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	[Test]
 	public void SchemaLayout_UsesDisplayNameInTitleAndExcerptedDescription()
 	{
-		var item = fixture
-			.Walk()
-			.OfType<SchemaNavigationItem>()
-			.Should()
-			.ContainSingle(n => n.Model.DisplayName == "QueryContainer")
-			.Subject;
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
 		var context = RenderContext(item);
 		var viewModel = new SchemaViewModel(context) { Schema = item.Model, Page = SchemaPageModel.Create(item.Model, context) };
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("QueryContainer | Fixture API");
+		layout.Title.Should().Be("Query | Fixture API");
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
 

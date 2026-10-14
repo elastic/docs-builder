@@ -4,8 +4,6 @@
 
 using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.Components.Admonition;
-using Elastic.Markdown.Components.AppliesBadge;
-using Elastic.Markdown.Components.AppliesPopover;
 using Elastic.Markdown.Components.ButtonGroup;
 using Elastic.Markdown.Components.CodeBlock;
 using Elastic.Markdown.Components.Disclosure;
@@ -23,8 +21,7 @@ namespace Elastic.Markdown.StyleGuide;
 public static class MarkdownComponentSections
 {
 	/// <summary>Adds the sections to the style guide's component pages. Safe to call more than once.</summary>
-	public static void Register()
-	{
+	public static void Register() =>
 		StyleGuideCatalog.Add(
 			"content",
 			AdmonitionExamples.Admonitions,
@@ -39,6 +36,4 @@ public static class MarkdownComponentSections
 			ImageExamples.Images,
 			ListingExamples.Listings
 		);
-		StyleGuideCatalog.Add("badges", AppliesBadgeExamples.Badges, AppliesPopoverExamples.Popovers);
-	}
 }

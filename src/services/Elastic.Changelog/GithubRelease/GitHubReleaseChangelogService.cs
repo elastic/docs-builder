@@ -465,7 +465,7 @@ public class GitHubReleaseChangelogService(
 
 		var title = prInfo?.Title ?? $"PR #{pr.Number}";
 		if (context.StripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
 		string? description = null;
 		if (config.Extract.ReleaseNotes)

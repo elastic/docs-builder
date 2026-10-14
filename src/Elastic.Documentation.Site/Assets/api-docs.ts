@@ -66,6 +66,13 @@ interface Disclosure {
     noun?: string
 }
 
+const RESPONSE_DISCLOSURE: Disclosure = {
+    container: '.response-panel',
+    toggle: ':scope > .response-summary .response-status-toggle',
+    body: ':scope > .response-panel-body',
+    trigger: '.response-summary',
+}
+
 // Order matters where a row can match more than one entry: variants before properties.
 const DISCLOSURES: Disclosure[] = [
     {
@@ -89,12 +96,7 @@ const DISCLOSURES: Disclosure[] = [
         trigger:
             '.api-param-section-header > .headerlink, .api-param-section-toggle',
     },
-    {
-        container: '.response-panel',
-        toggle: ':scope > .response-summary .response-status-toggle',
-        body: ':scope > .response-panel-body',
-        trigger: '.response-summary',
-    },
+    RESPONSE_DISCLOSURE,
 ]
 
 function disclosureFor(el: Element): Disclosure | undefined {
@@ -110,6 +112,38 @@ function setDisclosureExpanded(
     container.classList.toggle('collapsed', !expanded)
     setDisclosureToggle(container.querySelector(d.toggle), expanded, d.noun)
     setUntilFoundHidden(container.querySelector<HTMLElement>(d.body), !expanded)
+    if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
+}
+
+/** Responses behave as an accordion and keep the examples rail on the same status code. */
+function onResponseOpened(panel: HTMLElement): void {
+    panel
+        .closest('[data-api-responses]')
+        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
+        .forEach((other) => {
+            if (other !== panel)
+                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
+        })
+    const status = panel.dataset.status
+    if (!status) return
+    document
+        .querySelectorAll<HTMLElement>('[data-api-response-samples]')
+        .forEach((widget) => {
+            // applyApiResponseStatus falls back to the first tab, so skip rails without this status
+            if (
+                widget.querySelector(
+                    `.example-response-tab[data-status="${status}"]`
+                )
+            )
+                applyApiResponseStatus(widget, status)
+        })
+}
+
+function openMainResponse(status: string): void {
+    const panel = document.querySelector<HTMLElement>(
+        `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
+    )
+    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
 }
 
 /**
@@ -246,9 +280,9 @@ function initGlobalClickHandlers(): void {
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Only handle clicks within API doc sections
+        // Only handle clicks within API doc sections; the path list sits in the header, outside them
         const apiSection = target.closest(
-            '#elastic-api-v3, #schema-definition'
+            '#elastic-api-v3, #schema-definition, #paths'
         ) as HTMLElement
         if (!apiSection) return
 
@@ -288,7 +322,28 @@ function initGlobalClickHandlers(): void {
                 history.pushState(null, '', trigger.hash)
             return
         }
+
+        const link = target.closest<HTMLAnchorElement>('a[href^="#"]')
+        if (link) scrollToLinkTarget(e, link)
     })
+}
+
+/**
+ * Opens the rows around an in-page link's target, then scrolls to it smoothly. The browser's own
+ * jump would skip the smooth scroll, and pushState fires no hashchange to open the rows.
+ */
+function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+        return
+    const href = link.getAttribute('href')!
+    const target = document.getElementById(href.slice(1))
+    if (!target) return
+
+    e.preventDefault()
+    revealCollapsedAncestors(target)
+    revealHiddenAncestors(target)
+    target.scrollIntoView({ behavior: 'smooth' })
+    if (window.location.hash !== href) history.pushState(null, '', href)
 }
 
 /**
@@ -357,7 +412,9 @@ function initApiResponseStatusTabs(): void {
         )
         if (!(tab instanceof HTMLElement) || !tab.dataset.status) return
         const widget = tab.closest<HTMLElement>('[data-api-response-samples]')
-        if (widget) applyApiResponseStatus(widget, tab.dataset.status)
+        if (!widget) return
+        applyApiResponseStatus(widget, tab.dataset.status)
+        openMainResponse(tab.dataset.status)
     })
 }
 

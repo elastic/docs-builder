@@ -93,7 +93,7 @@ public class SharedListingTests
 		var first = variants[0].Properties!.Items.Single(p => p.Name == "actions");
 		first.Children.Properties!.Items.Should().HaveCount(12);
 		var repeat = variants[1].Properties!.Items.Single(p => p.Name == "actions");
-		repeat.Repeats.Should().Be(new RepeatedShape("actions", first.AnchorId, IsUnion: false, Owner: "EqlRule"));
+		repeat.Repeats.Should().Be(new RepeatedShape("actions", first.AnchorId, IsUnion: false, Owner: "{ query }"));
 		repeat.IsCollapsible.Should().BeFalse("a repeat lists nothing, so it has nothing to show or hide");
 		repeat.NestedCount.Should().Be(0);
 	}
@@ -251,7 +251,7 @@ public class SharedListingTests
 		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Results"], new PropertyTreeScope { Prefix = "" })!;
 
 		var created = list.Items.Single(p => p.Name == "created");
-		created.Children.Variants!.Variants[1].Properties!.Items.Single(p => p.Name == "actions").Repeats!.Owner.Should().Be("EqlRule");
+		created.Children.Variants!.Variants[1].Properties!.Items.Single(p => p.Name == "actions").Repeats!.Owner.Should().Be("{ query }");
 		list.Items.Single(p => p.Name == "updated").Repeats.Should().Be(new RepeatedShape("created", "created", IsUnion: true));
 	}
 }

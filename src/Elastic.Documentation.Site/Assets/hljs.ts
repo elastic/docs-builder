@@ -205,6 +205,10 @@ hljs.registerLanguage('console', function () {
 
 // cURL samples: command, flags, HTTP methods, strings, line continuations
 hljs.registerLanguage('curl', function () {
+    const variable = {
+        className: 'variable',
+        begin: /\$(?:\{[^}\s"']*\}|[A-Za-z_]\w*)/,
+    }
     return {
         name: 'curl',
         contains: [
@@ -228,7 +232,16 @@ hljs.registerLanguage('curl', function () {
                 className: 'string',
                 begin: /"/,
                 end: /"/,
-                contains: [{ begin: /\\./ }],
+                contains: [{ begin: /\\./ }, variable],
+                relevance: 0,
+            },
+            {
+                // JSON request body, highlighted as JSON between the quotes
+                begin: /'(?=\s*[{[])/,
+                end: /'/,
+                subLanguage: 'json',
+                excludeBegin: true,
+                excludeEnd: true,
                 relevance: 0,
             },
             {
@@ -238,10 +251,7 @@ hljs.registerLanguage('curl', function () {
                 contains: [{ begin: /\\./ }],
                 relevance: 0,
             },
-            {
-                className: 'variable',
-                begin: /\$[A-Za-z_][\w]*/,
-            },
+            variable,
         ],
     }
 })

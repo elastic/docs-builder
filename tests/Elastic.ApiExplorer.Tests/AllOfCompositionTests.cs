@@ -93,7 +93,7 @@ public class AllOfCompositionTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var variants = pet.Children.Variants!.Variants;
-		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id", "lives");
 		variants[1].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
 	}
@@ -140,7 +140,7 @@ public class AllOfCompositionTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var variants = pet.Children.Variants!.Variants;
-		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 		variants[1].Properties!.Items.Select(p => p.Name).Should().Equal("id", "barks");
 
@@ -149,7 +149,7 @@ public class AllOfCompositionTests
 	}
 
 	[Test]
-	public async Task BuildPropertyList_AllOfWithSeveralRefs_ListsTheOtherSchemasAsAlsoIncludes()
+	public async Task BuildPropertyList_AllOfWithSeveralRefsWithoutPages_ListsNoAlsoIncludes()
 	{
 		var json =
 			"""
@@ -192,8 +192,9 @@ public class AllOfCompositionTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var merged = list!.Items.Single(p => p.Name == "merged");
-		merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
-		list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+		merged.AlsoIncludes.Should().BeEmpty("Timestamps has only a code name, and its fields are listed already");
+		merged.Children.Properties!.Items.Select(p => p.Name).Should().Contain("created");
+		list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Should().BeEmpty();
 		list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
 	}
 
@@ -237,7 +238,7 @@ public class AllOfCompositionTests
 
 		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var variants = pet.Children.Variants!.Variants;
-		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
 		variants[0].Properties!.Items.Where(p => p.IsRequired).Select(p => p.Name).Should().Equal("id");
 
@@ -247,7 +248,7 @@ public class AllOfCompositionTests
 			new SchemaAnalyzer(document),
 			builder
 		);
-		body!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		body!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 	}
 
 	[Test]
@@ -326,7 +327,7 @@ public class AllOfCompositionTests
 			new PropertyTreeScope { Prefix = "" }
 		)!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
 
-		variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		var cat = variants[0].Properties!.Items;
 		cat.Select(p => p.Name).Should().Equal("id", "lives", "<string>");
 		cat.Single(p => p.Name == "<string>").Children.Properties!.Items.Select(p => p.Name).Should().Equal("enabled");
@@ -363,7 +364,7 @@ public class AllOfCompositionTests
 		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
 		pet.Children.Kind.Should().Be(ChildKind.UnionVariants);
 		var cat = pet.Children.Variants!.Variants[0];
-		cat.DisplayName.Should().Be("Cat");
+		cat.DisplayName.Should().Be("{ lives }");
 		cat.Properties!.Items.Select(p => p.Name).Should().Equal("lives", "<string>");
 
 		var (properties, variants, _) = ApiBodyContent.Build(
@@ -373,7 +374,7 @@ public class AllOfCompositionTests
 			builder
 		);
 		properties.Should().BeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 	}
 
 	[Test]

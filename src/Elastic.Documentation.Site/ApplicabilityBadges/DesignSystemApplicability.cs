@@ -2,10 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Components.AppliesPopover;
+using Elastic.Documentation.Site.Components.Primitives.AppliesPopover;
 using Microsoft.AspNetCore.Html;
 
-namespace Elastic.Markdown.Myst.Components;
+namespace Elastic.Documentation.Site.ApplicabilityBadges;
 
 /// <summary>Maps the applicability data the legacy element receives as JSON onto the design-system badge.</summary>
 internal static class DesignSystemApplicability

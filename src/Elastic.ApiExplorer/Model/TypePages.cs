@@ -15,12 +15,12 @@ public sealed record TypePageCategory(string Slug, string Title, string Descript
 /// there instead of listing it again.
 /// </summary>
 /// <param name="SchemaId">The <c>components/schemas</c> key; rows link by <c>$ref</c> id, never by display name.</param>
-/// <param name="MapOf">For a type the API sends as a map of itself (<c>aggs</c>), the map's spelling on the page.</param>
-public sealed record TypePage(string SchemaId, TypePageCategory Category, string? MapOf = null)
-{
-	/// <summary>The page's title: the last segment of the schema id, <c>QueryContainer</c>.</summary>
-	public string DisplayName => SchemaHelpers.FormatSchemaName(SchemaId);
-}
+/// <param name="Title">
+/// What readers see for the type, on its page and on every row that links there. The spec's own name
+/// (<c>QueryContainer</c>) is a code name, so it never shows.
+/// </param>
+/// <param name="IsMap">Whether the API sends the type as a map of itself (<c>aggs</c>), which the page says.</param>
+public sealed record TypePage(string SchemaId, string Title, TypePageCategory Category, bool IsMap = false);
 
 /// <summary>The types that get a page of their own. The one place that decides which ones, and where they go.</summary>
 public static class TypePages
@@ -31,10 +31,10 @@ public static class TypePages
 
 	public static readonly IReadOnlyList<TypePage> All =
 	[
-		new("_types.query_dsl.QueryContainer", QueryDsl),
-		new("_types.aggregations.AggregationContainer", Aggregations, MapOf: "Dictionary<string, AggregationContainer>"),
-		new("_types.aggregations.Aggregate", Aggregations, MapOf: "Dictionary<string, Aggregate>"),
-		new("ingest._types.ProcessorContainer", Ingest)
+		new("_types.query_dsl.QueryContainer", "Query", QueryDsl),
+		new("_types.aggregations.AggregationContainer", "Aggregation", Aggregations, IsMap: true),
+		new("_types.aggregations.Aggregate", "Aggregation result", Aggregations, IsMap: true),
+		new("ingest._types.ProcessorContainer", "Processor", Ingest)
 	];
 
 	private static readonly Dictionary<string, TypePage> BySchemaId = All.ToDictionary(static p => p.SchemaId, StringComparer.Ordinal);

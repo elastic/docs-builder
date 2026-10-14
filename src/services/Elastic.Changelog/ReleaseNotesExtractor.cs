@@ -46,6 +46,17 @@ public static partial class ReleaseNotesExtractor
 		| RegexOptions.Singleline)]
 	private static partial Regex ReleaseNoteRegex();
 
+	// A line that starts a section: a markdown heading ("## Impact") or a bare label ("Impact: ...").
+	// Group 1 = heading hashes (empty for a label), group 2 = colon (if any), group 3 = inline text after the name.
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ImpactStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ActionStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
+	private static partial Regex HeadingRegex();
+
 	/// <summary>
 	/// Strips HTML comments from markdown text.
 	/// This handles both single-line and multi-line comments.
@@ -77,6 +88,129 @@ public static partial class ReleaseNotesExtractor
 	/// <param name="markdown">The PR description body</param>
 	/// <returns>The extracted release note content, or null if not found</returns>
 	public static string? FindReleaseNote(string? markdown) => ExtractReleaseNote(markdown).Content;
+
+	/// <summary>
+	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
+	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// after their content or at the next heading. HTML comments are stripped first.
+	/// </summary>
+	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
+
+	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
+	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
+
+	/// <summary>
+	/// Marks the fence lines and every line between them, so section boundaries are never read from code samples.
+	/// Follows CommonMark: a closing fence uses the same character as the opening one, is at least as long, and has nothing after it.
+	/// </summary>
+	private static bool[] MarkCodeLines(string[] lines)
+	{
+		var inCode = new bool[lines.Length];
+		var openChar = '\0';
+		var openLength = 0;
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var trimmed = lines[i].TrimStart();
+			var fenceChar = trimmed.Length > 0 && trimmed[0] is '`' or '~' ? trimmed[0] : '\0';
+			var runLength = 0;
+			if (fenceChar != '\0')
+			{
+				while (runLength < trimmed.Length && trimmed[runLength] == fenceChar)
+					runLength++;
+			}
+
+			if (openChar == '\0')
+			{
+				if (runLength < 3)
+					continue;
+				openChar = fenceChar;
+				openLength = runLength;
+				inCode[i] = true;
+			}
+			else
+			{
+				inCode[i] = true;
+				var closes = fenceChar == openChar && runLength >= openLength && string.IsNullOrWhiteSpace(trimmed[runLength..]);
+				if (closes)
+					openChar = '\0';
+			}
+		}
+
+		return inCode;
+	}
+
+	/// <summary>A match is a section start when it is a bare heading (<c>## Impact</c>) or a label with a colon (<c>Impact: ...</c>).</summary>
+	private static bool IsSectionStart(Match start, out int hashes, out string inline)
+	{
+		hashes = 0;
+		inline = string.Empty;
+		if (!start.Success)
+			return false;
+
+		hashes = start.Groups[1].Value.Length;
+		inline = start.Groups[3].Value.Trim();
+		var hasColon = start.Groups[2].Value.Length > 0;
+		return (hashes > 0 && inline.Length == 0) || hasColon;
+	}
+
+	private static string? FindSection(string? markdown, Regex startRegex)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var lines = StripHtmlComments(markdown).Replace("\r\n", "\n").Split('\n');
+		var inCode = MarkCodeLines(lines);
+		for (var i = 0; i < lines.Length; i++)
+		{
+			// A heading or label inside a fenced code block is content, not a section.
+			if (inCode[i])
+				continue;
+
+			var start = startRegex.Match(lines[i]);
+			if (!start.Success)
+				continue;
+
+			// Prose such as "Impact of this change..." or "Actions taken in CI" must not match.
+			if (!IsSectionStart(start, out var hashes, out var inline))
+				continue;
+
+			var isHeading = hashes > 0 && inline.Length == 0;
+
+			var content = new List<string>();
+			if (inline.Length > 0)
+				content.Add(inline);
+
+			for (var j = i + 1; j < lines.Length; j++)
+			{
+				var line = lines[j];
+				if (inCode[j])
+				{
+					content.Add(line);
+					continue;
+				}
+
+				// One section never swallows the next: stop at the start of either Impact or Action.
+				if (
+					IsSectionStart(ImpactStartRegex().Match(line), out _, out _)
+					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
+				)
+					break;
+				var heading = HeadingRegex().Match(line);
+				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+					break;
+				// Label sections stop at the first blank line once they have content.
+				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)
+					break;
+				content.Add(line);
+			}
+
+			var text = string.Join('\n', content).Trim();
+			if (text.Length > 0)
+				return text;
+		}
+
+		return null;
+	}
 
 	/// <summary>
 	/// Extracts release note content and reports when later PR body content was not included.

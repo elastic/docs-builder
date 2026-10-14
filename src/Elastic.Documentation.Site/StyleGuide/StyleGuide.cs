@@ -37,6 +37,8 @@ using Elastic.Documentation.Site.Components.Overlays.Flyout;
 using Elastic.Documentation.Site.Components.Overlays.SearchDialog;
 using Elastic.Documentation.Site.Components.Overlays.Toast;
 using Elastic.Documentation.Site.Components.Pages.SearchPage;
+using Elastic.Documentation.Site.Components.Primitives.AppliesBadge;
+using Elastic.Documentation.Site.Components.Primitives.AppliesPopover;
 using Elastic.Documentation.Site.Components.Primitives.Badge;
 using Elastic.Documentation.Site.Components.Primitives.Button;
 using Elastic.Documentation.Site.Components.Primitives.Kbd;
@@ -213,7 +215,14 @@ public static class StyleGuideCatalog
 		],
 		["cards"] = [CardExamples.Cards, LinkTileExamples.Tiles, ReleaseCardExamples.Releases],
 		["navigation"] = [BreadcrumbExamples.Trails, PagerExamples.Pagers],
-		["badges"] = [BadgeExamples.Badges, MethodBadgeExamples.Methods, KbdExamples.Keys]
+		["badges"] =
+		[
+			BadgeExamples.Badges,
+			MethodBadgeExamples.Methods,
+			AppliesBadgeExamples.Badges,
+			AppliesPopoverExamples.Popovers,
+			KbdExamples.Keys
+		]
 	};
 
 	private static readonly Lock SectionsGate = new();

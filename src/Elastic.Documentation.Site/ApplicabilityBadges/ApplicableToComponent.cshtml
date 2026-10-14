@@ -1,12 +1,12 @@
 @using System.Text.Json
-@using Elastic.Markdown.Page
-@inherits RazorSlice<Elastic.Markdown.Myst.Components.ApplicableToViewModel>
+@using Elastic.Documentation.Site.ApplicabilityBadges
+@inherits RazorSlice<Elastic.Documentation.Site.ApplicabilityBadges.ApplicableToViewModel>
 
 @if (Model.DesignSystem)
 {
 	foreach (var item in Model.GetApplicabilityItems())
 	{
-		@await RenderPartialAsync(Elastic.Markdown.Components.AppliesPopover._AppliesPopover.Create(Elastic.Markdown.Myst.Components.DesignSystemApplicability.ToModel(item, Model)))
+		@await RenderPartialAsync(Elastic.Documentation.Site.Components.Primitives.AppliesPopover._AppliesPopover.Create(DesignSystemApplicability.ToModel(item, Model)))
 	}
 	return;
 }
@@ -21,7 +21,7 @@
 		show-lifecycle-name="@item.RenderData.ShowLifecycleName.ToString().ToLowerInvariant()"
 		show-version="@item.RenderData.ShowVersion.ToString().ToLowerInvariant()"
 		has-multiple-lifecycles="@item.RenderData.HasMultipleLifecycles.ToString().ToLowerInvariant()"
-		popover-data='@(Model.ShowTooltip && item.RenderData.PopoverData is not null ? new HtmlString(JsonSerializer.Serialize(item.RenderData.PopoverData, ViewModelSerializerContext.Default.PopoverData)) : new HtmlString(""))'
+		popover-data='@(Model.ShowTooltip && item.RenderData.PopoverData is not null ? new HtmlString(JsonSerializer.Serialize(item.RenderData.PopoverData, ApplicabilitySerializerContext.Default.PopoverData)) : new HtmlString(""))'
 		show-popover="@Model.ShowTooltip.ToString().ToLowerInvariant()"
 		is-inline="@Model.Inline.ToString().ToLowerInvariant()"
 	></applies-to-popover>

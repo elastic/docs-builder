@@ -281,6 +281,8 @@ public class DocsSyncTests
 	}
 
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
+
 	public async Task TestApply()
 	{
 		// Arrange
@@ -381,5 +383,70 @@ public class DocsSyncTests
 		tagObjects.Should().Contain(
 			t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6
 		);
+	}
+
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
+	public async Task Apply_SetsContentTypeOnSpecUploads()
+	{
+		// Arrange
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var moxTransferUtility = A.Fake<ITransferUtility>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/api/doc/es.yaml", new MockFileData("openapi: 3.1.0") },
+				{ "docs/api/doc/es.json", new MockFileData("{}") },
+				{ "docs/index.md", new MockFileData("# Index") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem)
+		);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 0,
+			TotalSourceFiles = 3,
+			TotalSyncRequests = 3,
+			AddRequests =
+			[
+				new AddRequest { LocalPath = "docs/api/doc/es.yaml", DestinationPath = "docs/api/doc/es.yaml" },
+				new AddRequest { LocalPath = "docs/api/doc/es.json", DestinationPath = "docs/api/doc/es.json" },
+				new AddRequest { LocalPath = "docs/index.md", DestinationPath = "docs/index.md" }
+			],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = []
+		};
+		// The SDK shares one Headers collection across the per-file requests of a directory upload,
+		// so a typed file must never share a directory upload with files of another type.
+		var uploads = new List<(string? ContentType, string[] Files)>();
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes(
+			(TransferUtilityUploadDirectoryRequest request, Cancel _) => uploads.Add(
+				(request.ContentType, fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption))
+			)
+		);
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), A.Fake<IAmazonS3>(), moxTransferUtility, "fake", context, collector);
+
+		// Act
+		await applier.Apply(plan, Cancel.None);
+
+		// Assert
+		uploads.Should().HaveCount(3);
+		var byType = uploads.ToDictionary(u => u.ContentType ?? "", u => u.Files.Select(f => Path.GetFileName(f)).ToArray());
+		byType["text/plain; charset=utf-8"].Should().BeEquivalentTo(["es.yaml"]);
+		byType["application/json"].Should().BeEquivalentTo(["es.json"]);
+		byType[""].Should().BeEquivalentTo(["index.md"]);
 	}
 }
