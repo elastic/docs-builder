@@ -134,6 +134,69 @@ public class SyntheticCodeSamplesTests
 		samples[0].Source.Should().Be("GET /search?q=a%20b");
 	}
 
+	private static OpenApiOperation WithQueryExample(JsonNode example, ParameterStyle? style = null, bool? explode = null) =>
+		new()
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "ids",
+					In = ParameterLocation.Query,
+					Required = true,
+					Style = style,
+					Explode = explode ?? false,
+					Example = example
+				}
+			]
+		};
+
+	[Test]
+	public void Create_WithAnArrayExampleOnAFormParameter_RepeatsTheName()
+	{
+		var operation = WithQueryExample(new JsonArray("a", "b"), ParameterStyle.Form, explode: true);
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
+
+		samples[0].Source.Should().Be("GET /items?ids=a&ids=b");
+	}
+
+	[Test]
+	public void Create_WithAnArrayExampleAndNoStyleOrExplode_FollowsTheQueryDefault()
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter { Name = "ids", In = ParameterLocation.Query, Required = true, Example = new JsonArray("a", "b") }
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
+
+		samples[0].Source.Should().Be("GET /items?ids=a&ids=b");
+	}
+
+	[Test]
+	public void Create_WithAnArrayExampleAndNoExplode_SendsOneCommaSeparatedValue()
+	{
+		var operation = WithQueryExample(new JsonArray("a", "b"), ParameterStyle.Form, explode: false);
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
+
+		samples[0].Source.Should().Be("GET /items?ids=a,b");
+	}
+
+	[Test]
+	public void Create_WithAnObjectExample_KeepsThePlaceholder()
+	{
+		var operation = WithQueryExample(new JsonObject { ["a"] = 1 });
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/items", operation));
+
+		samples[0].Source.Should().Be("GET /items?ids={ids}");
+	}
+
 	private static OpenApiOperation JsonPost() =>
 		new()
 		{

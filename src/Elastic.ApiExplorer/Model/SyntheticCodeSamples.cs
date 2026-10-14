@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -60,14 +61,14 @@ public static class SyntheticCodeSamples
 
 		foreach (var parameter in parameters.Where(static p => p.In == ParameterLocation.Path && !string.IsNullOrEmpty(p.Name)))
 		{
-			if (ExampleOf(parameter) is { } value)
-				path = path.Replace($"{{{parameter.Name}}}", Uri.EscapeDataString(value), StringComparison.Ordinal);
+			if (UrlExample(parameter) is { } value)
+				path = path.Replace($"{{{parameter.Name}}}", value, StringComparison.Ordinal);
 		}
 
 		var query = parameters
 			.Where(static p => p.In == ParameterLocation.Query && p.Required && !string.IsNullOrEmpty(p.Name))
 			.DistinctBy(static p => p.Name, StringComparer.Ordinal)
-			.Select(static p => $"{p.Name}={(ExampleOf(p) is { } value ? Uri.EscapeDataString(value) : $"{{{p.Name}}}")}")
+			.SelectMany(QueryPairs)
 			.ToArray();
 
 		return query.Length == 0 ? path : $"{path}?{string.Join('&', query)}";
@@ -118,8 +119,8 @@ public static class SyntheticCodeSamples
 
 	private static string HeaderExampleValue(IOpenApiParameter header)
 	{
-		if (ExampleOf(header) is { } example)
-			return example;
+		if (ExampleParts(header) is { } example)
+			return string.Join(',', example);
 
 		if (string.Equals(header.Name, "kbn-xsrf", StringComparison.OrdinalIgnoreCase))
 			return "true";
@@ -127,14 +128,53 @@ public static class SyntheticCodeSamples
 		return "string";
 	}
 
-	/// <summary>The example the spec gives a parameter: its own, then its schema's. Null when it gives none.</summary>
-	private static string? ExampleOf(IOpenApiParameter parameter)
+	/// <summary>
+	/// The example the spec gives a parameter: its own, then its schema's. One part per array item, one part for a
+	/// scalar. Null when it gives none, and for an object, which has no single value to show.
+	/// </summary>
+	private static string[]? ExampleParts(IOpenApiParameter parameter)
 	{
 		var node = parameter.Example
 			?? parameter.Examples?.Values.Select(static e => e.Value).FirstOrDefault(static v => v is not null)
 			?? parameter.Schema?.Examples?.FirstOrDefault(static v => v is not null);
-		var text = node?.ToString().Trim('"');
-		return string.IsNullOrEmpty(text) ? null : text;
+		if (node is JsonArray items)
+		{
+			var parts = items.Select(static i => i is JsonValue ? i.ToString().Trim('"') : null).ToArray();
+			return parts.Length > 0 && parts.All(static p => !string.IsNullOrEmpty(p)) ? [.. parts.OfType<string>()] : null;
+		}
+
+		if (node is null or JsonObject)
+			return null;
+
+		var text = node.ToString().Trim('"');
+		return string.IsNullOrEmpty(text) ? null : [text];
+	}
+
+	/// <summary>The example as it goes into a URL: each item escaped, joined with the delimiter the parameter's style names.</summary>
+	private static string? UrlExample(IOpenApiParameter parameter) =>
+		ExampleParts(parameter) is { } parts
+			? string.Join(
+				parameter.Style switch
+				{
+					ParameterStyle.SpaceDelimited => "%20",
+					ParameterStyle.PipeDelimited => "%7C",
+					_ => ","
+				},
+				parts.Select(Uri.EscapeDataString)
+			)
+			: null;
+
+	/// <summary>The default form style repeats the name for each array item (<c>ids=a&amp;ids=b</c>); other styles send one delimited value.</summary>
+	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter)
+	{
+		if (
+			parameter.Explode
+			&& (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form
+			&& ExampleParts(parameter) is { Length: > 1 } parts
+		)
+			return parts.Select(part => $"{parameter.Name}={Uri.EscapeDataString(part)}");
+
+		return [$"{parameter.Name}={UrlExample(parameter) ?? $"{{{parameter.Name}}}"}"];
 	}
 
 	/// <summary>What the operation's security schemes add to the curl: flags, and query parameters for schemes that travel in the URL.</summary>
