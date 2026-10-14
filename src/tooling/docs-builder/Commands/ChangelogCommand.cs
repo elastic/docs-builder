@@ -1889,6 +1889,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
 	/// <param name="bodyChanged">Whether the PR body changed (for edited events)</param>
 	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
+	/// <param name="requireChangelogFile">Fail when no changelog entry file exists for the PR</param>
+	/// <param name="requireImpactAction">Fail when a breaking-change PR description lacks an Impact and/or Action section</param>
 	/// <param name="botName">Bot login name for loop detection</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -1906,6 +1908,7 @@ internal sealed partial class ChangelogCommands(
 		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
 		bool requireChangelogFile = false,
+		bool requireImpactAction = false,
 		string botName = "github-actions[bot]",
 		bool isFork = false,
 		bool canCommit = false,
@@ -1949,6 +1952,7 @@ internal sealed partial class ChangelogCommands(
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
 			RequireChangelogFile = requireChangelogFile,
+			RequireImpactAction = requireImpactAction,
 			BotName = botName,
 			IsFork = isFork,
 			CanCommit = canCommit,

@@ -146,6 +146,8 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
 | `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
+| `CHANGELOG_IMPACT` | `--impact` | `steps.evaluate.outputs.impact` |
+| `CHANGELOG_ACTION` | `--action` | `steps.evaluate.outputs.action` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
@@ -158,6 +160,8 @@ Explicit CLI arguments always take priority over environment variables.
 - If `--description` is provided on the command line, it always wins.
 - If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored.
 - Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
+
+`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

@@ -103,6 +103,15 @@ public class ChangelogPrEvaluationService(
 			}
 		}
 
+		// Impact/Action are always parsed when the gate is on, regardless of the release-note extraction toggle.
+		string? impact = null;
+		string? action = null;
+		if ((config.Extract.ReleaseNotes || input.RequireImpactAction) && !string.IsNullOrWhiteSpace(input.PrBody))
+		{
+			impact = ReleaseNotesExtractor.FindImpact(input.PrBody);
+			action = ReleaseNotesExtractor.FindAction(input.PrBody);
+		}
+
 		var title = prTitle;
 
 		if (string.IsNullOrWhiteSpace(title))
@@ -229,6 +238,45 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
+		// Impact/Action gate: breaking changes must describe who is affected and what to do about it.
+		if (input.RequireImpactAction && resolvedType == ChangelogEntryType.BreakingChange.ToStringFast(true))
+		{
+			var missing = new List<string>();
+			if (string.IsNullOrWhiteSpace(impact))
+				missing.Add("impact");
+			if (string.IsNullOrWhiteSpace(action))
+				missing.Add("action");
+
+			if (missing.Count > 0)
+			{
+				var missingSections = string.Join(",", missing);
+				var missingHeadings = string.Join(" and ", missing.Select(m => $"`## {(m == "impact" ? "Impact" : "Action")}`"));
+				_logger.LogInformation("Breaking-change PR #{PrNumber} is missing sections: {Sections}", input.PrNumber, missingSections);
+				collector.EmitError(
+					string.Empty,
+					$"Breaking-change PR #{input.PrNumber} is missing {missingHeadings} in the PR description. " +
+						"Add the section(s) so the release notes can tell users who is affected and what to do."
+				);
+				_ = await SetOutputs(
+					PrEvaluationResult.MissingImpactAction,
+					title,
+					resolvedType,
+					resolvedDescription: description,
+					resolvedProducts: resolvedProducts,
+					resolvedImpact: impact,
+					resolvedAction: action
+				);
+				await WriteDecisionMetadataAsync(
+					input,
+					"missing-impact-action",
+					missingSections: missingSections,
+					defaultBranch: defaultBranch,
+					ctx: ctx
+				);
+				return false;
+			}
+		}
+
 		// Entry-required gate: fail when the flag is set and no file exists for this PR
 		if (input.RequireChangelogFile && existingFilename == null)
 		{
@@ -278,7 +326,9 @@ public class ChangelogPrEvaluationService(
 			resolvedProducts: resolvedProducts,
 			productLabelTable: productLabelTable,
 			changelogDir: changelogDir,
-			existingFilename: existingFilename
+			existingFilename: existingFilename,
+			resolvedImpact: impact,
+			resolvedAction: action
 		);
 	}
 
@@ -301,7 +351,8 @@ public class ChangelogPrEvaluationService(
 		string? changelogFilename = null,
 		string? ambiguousTypeLabels = null,
 		string? defaultBranch = null,
-		string? resolvedProducts = null
+		string? resolvedProducts = null,
+		string? missingSections = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -325,7 +376,8 @@ public class ChangelogPrEvaluationService(
 			ChangelogFilename = changelogFilename,
 			AmbiguousTypeLabels = ambiguousTypeLabels,
 			DefaultBranch = defaultBranch,
-			ResolvedProducts = resolvedProducts
+			ResolvedProducts = resolvedProducts,
+			MissingSections = missingSections
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}
@@ -351,7 +403,9 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null,
 		string? changelogDir = null,
 		string? existingFilename = null,
-		string? skipLabels = null
+		string? skipLabels = null,
+		string? resolvedImpact = null,
+		string? resolvedAction = null
 	)
 	{
 		var statusString = status == PrEvaluationResult.Success ? ProceedStatus : status.ToStringFast(true);
@@ -370,6 +424,16 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync(
 				"description",
 				OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (resolvedImpact != null)
+			await coreService.SetOutputAsync(
+				"impact",
+				OutputSanitizer.SanitizeForOutput(resolvedImpact, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (resolvedAction != null)
+			await coreService.SetOutputAsync(
+				"action",
+				OutputSanitizer.SanitizeForOutput(resolvedAction, OutputSanitizer.DescriptionMaxLength)
 			);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));

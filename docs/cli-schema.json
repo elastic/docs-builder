@@ -3724,6 +3724,15 @@
               "name": "require-changelog-file",
               "type": "boolean",
               "required": false,
+              "summary": "Fail when no changelog entry file exists for the PR",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
+              "name": "require-impact-action",
+              "type": "boolean",
+              "required": false,
+              "summary": "Fail when a breaking-change PR description lacks an Impact and/or Action section",
               "defaultValue": "false"
             },
             {

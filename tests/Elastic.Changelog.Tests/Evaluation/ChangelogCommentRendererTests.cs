@@ -380,4 +380,56 @@ public class ChangelogCommentRendererTests
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("normal-repo");
 		body.Should().Contain("```yaml");
 	}
+
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+	// RenderMissingImpactAction / RenderBreakingChangeCaptured
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+
+	[Test]
+	public void RenderMissingImpactAction_BothMissing_ShowsBothHeadingsInTemplate()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("impact,action", 42);
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body.Should().Contain("PR #42");
+		body.Should().Contain("## Impact");
+		body.Should().Contain("## Action");
+	}
+
+	[Test]
+	public void RenderMissingImpactAction_OnlyActionMissing_TemplateHasOnlyAction()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("action", 42);
+
+		body.Should().Contain("## Action");
+		body.Should().NotContain("## Impact");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_RendersDetailsWithFencedValues()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("Users break.", "Upgrade.");
+
+		body.Should().StartWith("<details><summary>");
+		body.Should().Contain("Users break.");
+		body.Should().Contain("Upgrade.");
+		body.Should().EndWith("</details>");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_MissingValue_ShowsNotProvided()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("Users break.", null);
+
+		body.Should().Contain("_Not provided_");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_HostileContent_StaysInsideFence()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("```\n</details>\n```", "ok");
+
+		// The fence around the value must be longer than the embedded backtick run.
+		body.Should().Contain("````text\n```\n</details>\n```\n````");
+	}
 }

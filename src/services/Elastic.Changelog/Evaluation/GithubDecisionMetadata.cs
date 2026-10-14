@@ -46,6 +46,8 @@ public record GithubDecisionMetadata
 	public List<EntryFinding>? EntryFindings { get; init; }
 	/// <summary>Comma-separated product IDs resolved for this PR (from labels or products.yml repo lookup). Used to pre-populate the missing-entry comment snippet.</summary>
 	public string? ResolvedProducts { get; init; }
+	/// <summary>Comma-separated sections (<c>impact</c>, <c>action</c>) missing from a breaking-change PR description when the <c>missing-impact-action</c> gate failed.</summary>
+	public string? MissingSections { get; init; }
 }
 
 /// <summary>A single finding from the changelog entry file validation gate.</summary>

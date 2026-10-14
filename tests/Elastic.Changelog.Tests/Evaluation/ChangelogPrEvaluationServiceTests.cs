@@ -1007,4 +1007,89 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "proceed");
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
 	}
+
+	private const string ImpactActionBody =
+		"""
+		## Release note
+		Removes a parameter.
+
+		## Impact
+		Callers that pass it get a 400.
+
+		## Action
+		Stop sending it.
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithoutSections_FailsWithMissingImpactAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().Be(1);
+		VerifyOutputSet("status", "missing-impact-action");
+		VerifyOutputSet("should-generate", "false");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_OnlyImpactPresent_ErrorNamesAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## Impact\nUsers are affected.") with { RequireImpactAction = true };
+
+		_ = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		Collector.Errors.Should().Be(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("`## Action`") && !d.Message.Contains("`## Impact`"));
+		VerifyOutputSet("status", "missing-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithSections_ProceedsAndSetsOutputs()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("impact", "Callers that pass it get a 400.");
+		VerifyOutputSet("action", "Stop sending it.");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_NonBreakingWithoutSections_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"], prBody: "Just a feature.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingWithoutSections_GateOff_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
 }

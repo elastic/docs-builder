@@ -3,9 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using YamlDotNet.Core;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -20,6 +23,8 @@ namespace Elastic.Changelog.Evaluation;
 ///   <item><term>Status success and <c>!CanCommit</c></term><description>Comment-only body (fork / comment-only strategy).</description></item>
 ///   <item><term>Status no-label</term><description>Labels-needed body with label tables.</description></item>
 ///   <item><term>Status skipped</term><description>Skipped body (hidden as 'resolved') to clear stale failure comment.</description></item>
+///   <item><term>Status missing-impact-action</term><description>Missing-sections body with a copy-pasteable Impact/Action template.</description></item>
+///   <item><term>Status success, breaking-change entry</term><description>Keeps the sticky comment and echoes the captured Impact and Action in a collapsible block.</description></item>
 ///   <item><term>Status success, no staged file</term><description>Deletes the sticky comment — no need to litter once labels are validated.</description></item>
 /// </list>
 /// </summary>
@@ -76,6 +81,52 @@ public class ChangelogGithubCommentService(
 
 	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
 	{
+		var body = SelectBaseBody(metadata, metadataDir, owner, repo);
+
+		// Breaking changes keep their comment on success and echo what was captured, so there are no surprises at bundling time.
+		var generated = metadata.Gate is not ValidationGate.Entries && (IsSuccess(metadata.Status) || metadata.CommitOutcome is not null);
+		if (!generated)
+			return body;
+
+		var entry = TryReadStagedEntry(metadataDir);
+		if (entry is not { Type: ChangelogEntryType.BreakingChange })
+			return body;
+
+		_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+		return body is null
+			? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action)
+			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
+	}
+
+	private ChangelogEntry? TryReadStagedEntry(string metadataDir)
+	{
+		var (yaml, _) = ReadStagedYaml(metadataDir);
+		if (string.IsNullOrWhiteSpace(yaml))
+			return null;
+
+		try
+		{
+			return ReleaseNotesSerialization.DeserializeEntry(yaml);
+		}
+		catch (YamlException ex)
+		{
+			_logger.LogWarning(ex, "Could not parse staged changelog YAML from {Dir}", metadataDir);
+			return null;
+		}
+	}
+
+	private string? SelectBaseBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
+	{
+		// Gate failure: breaking-change PR lacks Impact and/or Action sections.
+		if (
+			metadata.Gate == ValidationGate.File
+			&& string.Equals(metadata.Status, "missing-impact-action", StringComparison.OrdinalIgnoreCase)
+		)
+		{
+			_logger.LogInformation("Rendering missing-impact-action body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingImpactAction(metadata.MissingSections, metadata.PrNumber);
+		}
+
 		// Committed: entry-committed body with blob + edit links.
 		if (metadata.CommitOutcome == CommitOutcome.Committed && !string.IsNullOrWhiteSpace(metadata.CommittedFile))
 		{

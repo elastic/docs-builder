@@ -636,6 +636,8 @@ public class ChangelogCreationService(
 			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description)
 				? derived.Description
 				: input.Description,
+			Impact = derived.Impact != null && string.IsNullOrWhiteSpace(input.Impact) ? derived.Impact : input.Impact,
+			Action = derived.Action != null && string.IsNullOrWhiteSpace(input.Action) ? derived.Action : input.Action,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
@@ -656,6 +658,8 @@ public class ChangelogCreationService(
 		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
 		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
 		var ciDescription = env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION");
+		var ciImpact = env.GetEnvironmentVariable("CHANGELOG_IMPACT");
+		var ciAction = env.GetEnvironmentVariable("CHANGELOG_ACTION");
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
@@ -680,6 +684,8 @@ public class ChangelogCreationService(
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
 			Description = enrichedDescription,
+			Impact = !string.IsNullOrWhiteSpace(input.Impact) ? input.Impact : input.ExtractionDisabled ? null : ciImpact,
+			Action = !string.IsNullOrWhiteSpace(input.Action) ? input.Action : input.ExtractionDisabled ? null : ciAction,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,

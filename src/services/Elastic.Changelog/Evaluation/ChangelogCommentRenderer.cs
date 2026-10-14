@@ -40,6 +40,81 @@ internal static class ChangelogCommentRenderer
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 
 	/// <summary>
+	/// Renders the collapsible block echoing the Impact and Action captured for a breaking change,
+	/// so authors and reviewers can see what bundling will pick up. Values are fenced so author text
+	/// cannot close the <c>&lt;details&gt;</c> block or alter the comment layout.
+	/// </summary>
+	internal static string RenderBreakingChangeCaptured(string? impact, string? action) =>
+		string.Join(
+			"\n",
+			"<details><summary>Breaking change: captured Impact and Action</summary>",
+			"",
+			"**Impact**",
+			"",
+			string.IsNullOrWhiteSpace(impact) ? "_Not provided_" : WrapCodeFence(impact.Trim(), "text"),
+			"",
+			"**Action**",
+			"",
+			string.IsNullOrWhiteSpace(action) ? "_Not provided_" : WrapCodeFence(action.Trim(), "text"),
+			"",
+			"To change these, edit the `## Impact` and `## Action` sections in the PR description.",
+			"",
+			"</details>"
+		);
+
+	/// <summary>Appends the captured Impact/Action block to an already-rendered comment body.</summary>
+	internal static string AppendBreakingChangeCaptured(string body, string? impact, string? action) =>
+		Truncate(body + "\n\n" + RenderBreakingChangeCaptured(impact, action));
+
+	/// <summary>
+	/// Renders the body shown on success for a breaking change that has nothing else to say
+	/// (the entry is committed by the pipeline): a short confirmation plus the captured Impact and Action.
+	/// </summary>
+	internal static string RenderBreakingChangeResolved(string? impact, string? action) =>
+		Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				"✅ **Changelog entry generated for this breaking change.**",
+				"",
+				RenderBreakingChangeCaptured(impact, action)
+			)
+		);
+
+	/// <summary>
+	/// Renders the missing-impact-action body: tells the author which sections their breaking-change PR
+	/// description lacks and shows a copy-pasteable template.
+	/// </summary>
+	internal static string RenderMissingImpactAction(string? missingSections, int prNumber)
+	{
+		var missing = (missingSections ?? "impact,action")
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")
+			.ToList();
+		var headings = string.Join(" and ", missing.Select(m => $"`## {m}`"));
+
+		var template = new List<string>();
+		if (missing.Contains("Impact"))
+			template.AddRange(["## Impact", "Who and what is affected by this change.", ""]);
+		if (missing.Contains("Action"))
+			template.AddRange(["## Action", "The steps or workarounds users need to adapt.", ""]);
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"❌ PR #{prNumber} is a breaking change but its description is missing {headings}.",
+				"",
+				"The release notes publish these sections so users know who is affected and what to do. Add the following to the PR description:",
+				"",
+				WrapCodeFence(string.Join("\n", template).TrimEnd(), "markdown")
+			)
+		);
+	}
+
+	/// <summary>
 	/// Renders the "entry committed" body: blob and edit links for the committed changelog file.
 	/// </summary>
 	internal static string RenderEntryCommitted(string owner, string repo, string headRef, string committedFile)

@@ -35,6 +35,10 @@ public enum PrEvaluationResult
 	[Display(Name = "missing-entry")]
 	MissingEntry,
 
+	/// <summary>The <c>require-impact-action</c> gate is on, the PR is a breaking change, and its description lacks an Impact and/or Action section.</summary>
+	[Display(Name = "missing-impact-action")]
+	MissingImpactAction,
+
 	/// <summary>An error occurred during artifact preparation (e.g., generate step failed or YAML missing).</summary>
 	[Display(Name = "error")]
 	Error

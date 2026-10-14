@@ -12,10 +12,12 @@ When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is 
 
 | Output | Description |
 |--------|-------------|
-| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, `missing-entry`, or `proceed` |
+| `status` | Evaluation result: `skipped`, `manually-edited`, `no-title`, `no-label`, `missing-entry`, `missing-impact-action`, or `proceed` |
 | `should-generate` | `true` if `changelog add` should run |
 | `title` | Resolved PR title |
 | `description` | Release note extracted from the PR body (when `extract.release_notes` is enabled and a release note is found). Long or multi-line release notes (over 120 characters) are placed here. Passed downstream as `CHANGELOG_DESCRIPTION` for `changelog add`. |
+| `impact` | Content of the `## Impact` section (or `Impact:` label) in the PR body. Passed downstream as `CHANGELOG_IMPACT` for `changelog add`. |
+| `action` | Content of the `## Action` section (or `Action:` label) in the PR body. Passed downstream as `CHANGELOG_ACTION` for `changelog add`. |
 | `type` | Resolved changelog type |
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings |
 | `label-table` | Markdown table of configured label-to-type mappings |
@@ -48,3 +50,9 @@ docs-builder changelog evaluate-pr \
 ```
 
 Pass `--require-changelog-file` to fail the PR (`missing-entry`) when no changelog entry file exists for the PR number. The entry file is looked up in `bundle.directory` (default `docs/changelog`). This flag is designed to be passed as a workflow input rather than hardcoded in `changelog.yml`.
+
+### Require Impact and Action for breaking changes [require-impact-action]
+
+Pass `--require-impact-action` to fail the PR (`missing-impact-action`) when its resolved type is `breaking-change` and the PR description lacks an `Impact` and/or `Action` section. Recognized forms are a markdown heading of any level (`## Impact`, `### Action`) or a label (`Impact: ...`). Sections that contain only HTML comments, such as an unfilled PR template, count as missing. Like `--require-changelog-file`, this flag is designed to be passed as a workflow input.
+
+The sticky PR comment lists the missing sections with a template to paste into the description. Once the sections are present, `evaluate-pr` sets the `impact` and `action` outputs. For breaking changes the comment stays on the PR and echoes the captured Impact and Action in a collapsible block, so you can check them before bundling.

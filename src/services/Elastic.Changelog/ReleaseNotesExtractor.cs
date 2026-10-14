@@ -46,6 +46,17 @@ public static partial class ReleaseNotesExtractor
 		| RegexOptions.Singleline)]
 	private static partial Regex ReleaseNoteRegex();
 
+	// A line that starts a section: a markdown heading ("## Impact") or a bare label ("Impact: ...").
+	// Group 1 = heading hashes (empty for a label), group 2 = colon (if any), group 3 = inline text after the name.
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ImpactStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ActionStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
+	private static partial Regex HeadingRegex();
+
 	/// <summary>
 	/// Strips HTML comments from markdown text.
 	/// This handles both single-line and multi-line comments.
@@ -77,6 +88,60 @@ public static partial class ReleaseNotesExtractor
 	/// <param name="markdown">The PR description body</param>
 	/// <returns>The extracted release note content, or null if not found</returns>
 	public static string? FindReleaseNote(string? markdown) => ExtractReleaseNote(markdown).Content;
+
+	/// <summary>
+	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
+	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// after their content or at the next heading. HTML comments are stripped first.
+	/// </summary>
+	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
+
+	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
+	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
+
+	private static string? FindSection(string? markdown, Regex startRegex)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var lines = StripHtmlComments(markdown).Replace("\r\n", "\n").Split('\n');
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var start = startRegex.Match(lines[i]);
+			if (!start.Success)
+				continue;
+
+			var hashes = start.Groups[1].Value.Length;
+			var hasColon = start.Groups[2].Value.Length > 0;
+			var inline = start.Groups[3].Value.Trim();
+			var isHeading = hashes > 0 && inline.Length == 0;
+			// Prose such as "Impact of this change..." or "Actions taken in CI" must not match.
+			if (!isHeading && !hasColon)
+				continue;
+
+			var content = new List<string>();
+			if (inline.Length > 0)
+				content.Add(inline);
+
+			for (var j = i + 1; j < lines.Length; j++)
+			{
+				var line = lines[j];
+				var heading = HeadingRegex().Match(line);
+				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+					break;
+				// Label sections stop at the first blank line once they have content.
+				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)
+					break;
+				content.Add(line);
+			}
+
+			var text = string.Join('\n', content).Trim();
+			if (text.Length > 0)
+				return text;
+		}
+
+		return null;
+	}
 
 	/// <summary>
 	/// Extracts release note content and reports when later PR body content was not included.

@@ -256,4 +256,112 @@ public class ReleaseNotesExtractorTests
 		// Assert
 		result.Should().Be(expected);
 	}
+
+	[Test]
+	public void FindImpactAndAction_FromHeadings_ExtractsSections()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Release note
+			Removes the `simulate` parameter.
+
+			## Impact
+			API users that pass `simulate` get a 400.
+
+			- second line
+
+			## Action
+			Stop sending `simulate`.
+
+			## Checklist
+			- [ ] tests
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("API users that pass `simulate` get a 400.\n\n- second line");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Stop sending `simulate`.");
+	}
+
+	[Test]
+	public void FindImpactAndAction_FromLabels_ExtractsInlineText()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			Impact: Clients break.
+			Action: Upgrade the client.
+
+			Unrelated paragraph.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.\nAction: Upgrade the client.");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
+	public void FindAction_PluralHeading_ExtractsSection()
+	{
+		// language=markdown
+		var prBody = """
+			### Actions
+			Run the migration.
+			""";
+
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Run the migration.");
+	}
+
+	[Test]
+	public void FindImpactAndAction_OnlyHtmlComments_ReturnNull()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			<!-- describe the impact -->
+
+			## Action
+			<!-- describe the action -->
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpactAndAction_ProseMentions_DoNotMatch()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			Impact of this change is small.
+			Actions taken in CI are unchanged.
+
+			## Impact on tests
+			None.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpactAndAction_KibanaBreakingPrBodyWithoutSections_ReturnNull()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			**Do not merge. This is a throwaway PR.**
+
+			## What
+
+			Two intentional breaking changes.
+
+			## Why
+
+			To see the PR comment the API contracts check posts.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
 }
