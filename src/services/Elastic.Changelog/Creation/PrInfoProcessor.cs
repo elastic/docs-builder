@@ -106,6 +106,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				derived.Description = releaseNote;
 				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
+
+			var impact = ReleaseNotesExtractor.FindImpact(prInfo.Body);
+			if (impact != null && string.IsNullOrWhiteSpace(input.Impact))
+				derived.Impact = impact;
+
+			var action = ReleaseNotesExtractor.FindAction(prInfo.Body);
+			if (action != null && string.IsNullOrWhiteSpace(input.Action))
+				derived.Action = action;
 		}
 
 		// Use PR title if title was not explicitly provided
@@ -524,6 +532,8 @@ public record DerivedPrFields
 	public string? Title { get; set; }
 	public string? Type { get; set; }
 	public string? Description { get; set; }
+	public string? Impact { get; set; }
+	public string? Action { get; set; }
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }
