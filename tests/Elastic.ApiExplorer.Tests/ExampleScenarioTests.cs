@@ -489,7 +489,7 @@ public class ExampleScenarioTests
 
 		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
 
-		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/ID\"");
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/${ID}\"");
 	}
 
 	[Test]

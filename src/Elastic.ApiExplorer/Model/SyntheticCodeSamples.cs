@@ -49,7 +49,7 @@ public static partial class SyntheticCodeSamples
 		var requiredHeaders = RequiredHeaders(input.Parameters).ToArray();
 		var (authFlags, authQuery, authHeaders) = AuthParts(input.Security, requiredHeaders);
 		var headers = requiredHeaders.Where(h => h.Name is null || !authHeaders.Contains(h.Name)).ToArray();
-		var path = BuildPath(input.Route, input.Parameters);
+		var path = BuildPath(input.Route, input.Parameters, forShell: false);
 
 		var samples = new List<CodeSample>();
 		if (input.ConsolePrefix is { } prefix)
@@ -58,7 +58,10 @@ public static partial class SyntheticCodeSamples
 			samples.Add(CodeSample.Generate("Console", body is null ? requestLine : $"{requestLine}\n{body}"));
 		}
 
-		var curlPath = authQuery.Count == 0 ? path : $"{path}{(path.Contains('?') ? '&' : '?')}{string.Join('&', authQuery)}";
+		var shellPath = BuildPath(input.Route, input.Parameters, forShell: true);
+		var curlPath = authQuery.Count == 0
+			? shellPath
+			: $"{shellPath}{(shellPath.Contains('?') ? '&' : '?')}{string.Join('&', authQuery)}";
 		var curl = BuildCurl(
 			methodLabel,
 			BuildRequestUrl(curlPath, input.Servers, input.HostVariable),
@@ -70,8 +73,11 @@ public static partial class SyntheticCodeSamples
 		return samples;
 	}
 
-	/// <summary>The path with each parameter that has an example filled in, then the required query parameters. A parameter without an example shows its name as a placeholder (see <see cref="Placeholder"/>).</summary>
-	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters)
+	/// <summary>
+	/// The path with each parameter that has an example filled in, then the required query parameters. A parameter without an
+	/// example shows its name as a placeholder (see <see cref="Placeholder"/>), as a shell variable in the curl.
+	/// </summary>
+	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters, bool forShell)
 	{
 		var path = string.IsNullOrEmpty(route) ? "/" : route.StartsWith('/') ? route : "/" + route;
 
@@ -81,12 +87,12 @@ public static partial class SyntheticCodeSamples
 				path = path.Replace($"{{{parameter.Name}}}", value, StringComparison.Ordinal);
 		}
 
-		path = NamePlaceholders(path);
+		path = NamePlaceholders(path, forShell);
 
 		var query = parameters
 			.Where(static p => p.In == ParameterLocation.Query && p.Required && !string.IsNullOrEmpty(p.Name))
 			.DistinctBy(static p => p.Name, StringComparer.Ordinal)
-			.SelectMany(QueryPairs)
+			.SelectMany(p => QueryPairs(p, forShell))
 			.ToArray();
 
 		return query.Length == 0 ? path : $"{path}{(path.Contains('?') ? '&' : '?')}{string.Join('&', query)}";
@@ -148,16 +154,19 @@ public static partial class SyntheticCodeSamples
 
 	/// <summary>
 	/// A value the reader must supply, named after its parameter the way GitHub's API docs do: <c>{agentPolicyId}</c> is
-	/// <c>AGENT_POLICY_ID</c>. Braces are left out because curl reads them as a glob and would silently send the bare name.
+	/// <c>AGENT_POLICY_ID</c>, and in a curl the shell variable <c>${AGENT_POLICY_ID}</c>, like the host and credential beside
+	/// it. Bare braces are never kept, because curl reads them as a glob and would silently send the bare name.
 	/// </summary>
-	internal static string Placeholder(string name)
+	internal static string Placeholder(string name, bool forShell = false)
 	{
 		var snake = CamelBoundary().Replace(name.Trim('{', '}'), "$1_$2");
-		return NotWord().Replace(snake, "_").Trim('_').ToUpperInvariant();
+		var upper = NotWord().Replace(snake, "_").Trim('_').ToUpperInvariant();
+		return forShell ? $"${{{upper}}}" : upper;
 	}
 
 	/// <summary>Every <c>{name}</c> still in a path becomes its placeholder.</summary>
-	internal static string NamePlaceholders(string path) => Template().Replace(path, static m => Placeholder(m.Groups[1].Value));
+	internal static string NamePlaceholders(string path, bool forShell) =>
+		Template().Replace(path, m => Placeholder(m.Groups[1].Value, forShell));
 
 	[GeneratedRegex(@"\{([^{}]+)\}", RegexOptions.CultureInvariant)]
 	private static partial Regex Template();
@@ -247,7 +256,7 @@ public static partial class SyntheticCodeSamples
 	/// The default form style repeats the name for each array item (<c>ids=a&amp;ids=b</c>) and sends an object as one pair
 	/// per property (<c>a=1&amp;b=2</c>); <c>deepObject</c> names each property (<c>filter[a]=1</c>); other styles send one delimited value.
 	/// </summary>
-	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter)
+	private static IEnumerable<string> QueryPairs(IOpenApiParameter parameter, bool forShell)
 	{
 		var isForm = (parameter.Style ?? ParameterStyle.Form) == ParameterStyle.Form;
 		var name = Uri.EscapeDataString(parameter.Name ?? "");
@@ -263,7 +272,7 @@ public static partial class SyntheticCodeSamples
 		if (parameter.Explode && isForm && ExampleParts(parameter) is { Length: > 1 } parts)
 			return parts.Select(part => $"{name}={Uri.EscapeDataString(part)}");
 
-		return [$"{name}={UrlExample(parameter) ?? Placeholder(parameter.Name ?? "")}"];
+		return [$"{name}={UrlExample(parameter) ?? Placeholder(parameter.Name ?? "", forShell)}"];
 	}
 
 	/// <summary>

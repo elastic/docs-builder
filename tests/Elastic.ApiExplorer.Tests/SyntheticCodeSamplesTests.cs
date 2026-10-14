@@ -23,7 +23,7 @@ public class SyntheticCodeSamplesTests
 		samples[0].Source.Should().Be("DELETE /api/dashboards/ID");
 		samples[1].Language.Should().Be("curl");
 		samples[1].Source.Should().Contain("DELETE");
-		samples[1].Source.Should().Contain("/api/dashboards/ID");
+		samples[1].Source.Should().Contain("/api/dashboards/${ID}");
 	}
 
 	[Test]
@@ -58,7 +58,7 @@ public class SyntheticCodeSamplesTests
 		});
 
 		samples[0].Source.Should().Be("DELETE /api/cases?ids=IDS");
-		samples[1].Source.Should().Contain("$KIBANA_URL/api/cases?ids=IDS");
+		samples[1].Source.Should().Contain("$KIBANA_URL/api/cases?ids=${IDS}");
 		samples[1].Source.Should().Contain("kbn-xsrf: true");
 		samples[1].Source.Should().NotContain("optional");
 	}
@@ -431,15 +431,16 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
-	[Arguments("/api/fleet/agent_policies/{agentPolicyId}/status", "GET /api/fleet/agent_policies/AGENT_POLICY_ID/status")]
-	[Arguments("/organizations/{organization_id}/subscription", "GET /organizations/ORGANIZATION_ID/subscription")]
-	[Arguments("/deployments/{deployment-id}/{ref_id}", "GET /deployments/DEPLOYMENT_ID/REF_ID")]
-	public void Create_WithoutAnExample_NamesThePlaceholderAfterTheParameter(string route, string expected)
+	[Arguments("/api/fleet/agent_policies/{agentPolicyId}/status", "AGENT_POLICY_ID", "${AGENT_POLICY_ID}")]
+	[Arguments("/organizations/{organization_id}/subscription", "ORGANIZATION_ID", "${ORGANIZATION_ID}")]
+	[Arguments("/deployments/{deployment-id}/{ref_id}", "DEPLOYMENT_ID/REF_ID", "${DEPLOYMENT_ID}/${REF_ID}")]
+	public void Create_WithoutAnExample_NamesThePlaceholderAfterTheParameter(string route, string console, string shell)
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, route, new OpenApiOperation()));
 
-		samples[0].Source.Should().Be(expected);
-		samples[1].Source.Should().NotContain("{").And.NotContain("--globoff");
+		// Console shows the bare name; the curl makes it a shell variable like the host and credential beside it.
+		samples[0].Source.Should().Contain(console).And.NotContain("{");
+		samples[1].Source.Should().Contain(shell).And.NotContain("--globoff");
 	}
 
 	[Test]

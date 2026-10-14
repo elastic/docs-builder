@@ -54,12 +54,21 @@ public static partial class GeneratedCodeSamples
 
 				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
 				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
-				path = SyntheticCodeSamples.NamePlaceholders(path);
 				var samples = new List<CodeSample>();
 				if (prefix is not null)
-					samples.Add(CodeSample.Generate("Console", $"{method} {prefix}{path}\n{scenario.RequestJson.Trim()}"));
+				{
+					var consolePath = SyntheticCodeSamples.NamePlaceholders(path, forShell: false);
+					samples.Add(CodeSample.Generate("Console", $"{method} {prefix}{consolePath}\n{scenario.RequestJson.Trim()}"));
+				}
 
-				if (Curl(curl?.Source, method, path, scenario.RequestJson) is { } curlSource)
+				if (
+					Curl(
+						curl?.Source,
+						method,
+						SyntheticCodeSamples.NamePlaceholders(path, forShell: true),
+						scenario.RequestJson
+					) is { } curlSource
+				)
 					samples.Add(CodeSample.Generate("curl", curlSource));
 
 				// Nothing runnable to show, so the request stays in the rail's own block.
