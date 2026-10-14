@@ -3034,6 +3034,12 @@ button.example-response-tab:focus-visible {
 	max-width: none;
 }
 
+/* The rail beside an API page carries its request and response examples, which need more room than a table of contents does. */
+.api-page-shell.layout--three {
+	--layout-rail-min: 20rem;
+	--layout-rail-max: 30rem;
+}
+
 @media (min-width: 761px) {
 	/* The column gap and the right padding match (32px each, the shell adds 16px more on
 	   the right), so the content has the same space beside the nav as beside the window

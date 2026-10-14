@@ -27,7 +27,7 @@
 		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
 	}
 	<div id="main-container">
-		<div class="layout layout--two layout--nav-flush api-page-shell">
+		<div class="layout layout--three layout--nav-flush api-page-shell">
 			<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
 			<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
 			<aside class="layout__nav" id="pages-nav">
@@ -47,7 +47,7 @@
 					</article>
 					@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Model))
 				</main>
-				<aside class="api-page-rail">
+				<aside class="layout__rail api-page-rail">
 					@await RenderSectionAsync(ApiPageSections.Rail)
 				</aside>
 			</div>
