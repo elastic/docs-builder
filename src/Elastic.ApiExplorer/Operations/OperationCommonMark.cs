@@ -65,7 +65,7 @@ internal static class OperationCommonMark
 
 		foreach (var server in page.Servers)
 		{
-			var line = $"`{server.Url}`";
+			var line = ApiCommonMark.CodeSpan(server.Url);
 			if (!string.IsNullOrEmpty(server.Description))
 				line += $" ({server.Description})";
 			_ = markdown.AppendLine($"- Server: {line}");
@@ -88,8 +88,8 @@ internal static class OperationCommonMark
 	{
 		var also = row.AlsoMethods.Count == 0
 			? ""
-			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => $"`{m.ToUpperInvariant()}`"))})";
-		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
+			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => ApiCommonMark.CodeSpan(m.ToUpperInvariant())))})";
+		return $"{ApiCommonMark.CodeSpan(row.Method.ToUpperInvariant())}{also} {ApiCommonMark.CodeSpan(row.Route)}";
 	}
 
 	// Path parameters sit right under the paths, before the description, one level deeper than the other parameter sections.
@@ -121,7 +121,7 @@ internal static class OperationCommonMark
 			ApiCommonMark.Heading(markdown, 2, "Required authorization");
 			foreach (var row in page.RequiredPrivileges)
 			{
-				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(static v => $"`{v}`"));
+				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
 				_ = markdown.AppendLine(
 					values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}"
 				);
@@ -149,7 +149,7 @@ internal static class OperationCommonMark
 			_ = markdown.AppendLine($"- {requirement.Label} (send all of these)");
 		foreach (var scheme in requirement.Schemes)
 		{
-			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
+			var credential = scheme.CredentialExample is null ? "" : $": {ApiCommonMark.CodeSpan(scheme.CredentialExample)}";
 			_ = markdown.AppendLine($"{indent}- {scheme.Label}{credential}");
 			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
@@ -177,7 +177,7 @@ internal static class OperationCommonMark
 
 		ApiCommonMark.Heading(markdown, 2, "Request body");
 		if (!string.IsNullOrEmpty(page.RequestContentType))
-			ApiCommonMark.Paragraph(markdown, $"`{page.RequestContentType}`");
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.RequestContentType));
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
 		if (page.RequestRequires is { } requestRequires)
 			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requestRequires));
@@ -201,13 +201,13 @@ internal static class OperationCommonMark
 		foreach (var response in page.Responses)
 		{
 			if (!single)
-				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`");
+				ApiCommonMark.Heading(markdown, 4, ApiCommonMark.CodeSpan(response.StatusCode));
 
 			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
 			foreach (var content in response.Contents)
 			{
-				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
 				if (content.Requires is { } requires)
 					ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
 				if (content.HasBody)
@@ -240,7 +240,7 @@ internal static class OperationCommonMark
 			var flags = header.Header?.Required == true ? " — required" : "";
 			if (header.Header?.Deprecated == true)
 				flags += " — deprecated";
-			_ = markdown.AppendLine($"- `{header.Name}`{type}{flags}");
+			_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(header.Name)}{type}{flags}");
 			var description = ApiMarkdown.Prepare(header.Header?.Description, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");

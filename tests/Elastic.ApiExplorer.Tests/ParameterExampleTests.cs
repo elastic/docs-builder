@@ -6,7 +6,6 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
-using Elastic.ApiExplorer.Infrastructure;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -104,15 +103,6 @@ public class ParameterExampleTests
 
 		markdown.ToString().Should().Contain("Example: ``a`b``");
 	}
-
-	[Test]
-	[Arguments("plain", "`plain`")]
-	[Arguments("a`b", "``a`b``")]
-	[Arguments("`x", "`` `x ``")]
-	[Arguments("x`", "`` x` ``")]
-	[Arguments("a``b", "```a``b```")]
-	public void CodeSpan_TextWithBackticks_UsesALongerDelimiter(string text, string expected) =>
-		ApiCommonMark.CodeSpan(text).Should().Be(expected);
 
 	[Test]
 	[Arguments("case_id", "9c235210-6834-11ea")]

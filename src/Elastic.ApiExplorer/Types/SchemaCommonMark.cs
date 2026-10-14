@@ -20,8 +20,11 @@ internal static class SchemaCommonMark
 
 		if (!string.IsNullOrEmpty(page.DictionaryTypeName))
 		{
-			ApiCommonMark.Paragraph(markdown, $"`{page.DictionaryTypeName}`");
-			ApiCommonMark.Paragraph(markdown, $"This type represents a dictionary mapping string keys to `{schema.DisplayName}` values.");
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.DictionaryTypeName));
+			ApiCommonMark.Paragraph(
+				markdown,
+				$"This type represents a dictionary mapping string keys to {ApiCommonMark.CodeSpan(schema.DisplayName)} values."
+			);
 		}
 
 		if (!string.IsNullOrEmpty(openApiSchema.Description))
@@ -37,7 +40,7 @@ internal static class SchemaCommonMark
 		{
 			ApiCommonMark.Heading(markdown, 2, "Enum values");
 			foreach (var enumValue in page.EnumValues)
-				_ = markdown.AppendLine($"- `{enumValue}`");
+				_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(enumValue)}");
 			_ = markdown.AppendLine();
 		}
 
