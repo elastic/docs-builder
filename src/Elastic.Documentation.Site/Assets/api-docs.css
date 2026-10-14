@@ -3722,6 +3722,11 @@ html:has(.api-page-shell) {
 		transform-origin 0.25s;
 }
 
+/* The only language has no neighbour to peek beside it, so its card takes the whole rail. */
+#api-examples-panel .api-code-carousel-card:only-child {
+	flex-basis: 100%;
+}
+
 /* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
    deliberately stops where the strip runs out, with the previous card showing beside it. */
 #api-examples-panel .api-code-carousel-card:has(~ .is-active) {

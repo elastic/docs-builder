@@ -108,9 +108,10 @@ public static class SyntheticCodeSamples
 		if (body is not null && !headers.Any(static h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase)))
 			parts.Add($"-H \"Content-Type: {DoubleQuoted(operation.RequestBody?.Content?.Keys.FirstOrDefault() ?? "application/json")}\"");
 
-		// A single quote ends the quoted argument, so it becomes '\'' as the shell expects.
+		// A single quote ends the quoted argument, so it becomes '\'' as the shell expects. The body's other lines are
+		// indented under the flag, the layout CurlSourceFormatter gives spec samples.
 		if (body is not null)
-			parts.Add($"-d '{body.Replace("'", "'\\''", StringComparison.Ordinal)}'");
+			parts.Add($"-d '{body.Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal)}'");
 
 		return string.Join(" \\\n  ", parts);
 	}

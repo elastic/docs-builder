@@ -98,7 +98,8 @@ public static partial class GeneratedCodeSamples
 		if (string.IsNullOrWhiteSpace(curlSource) || !CurlBody().IsMatch(curlSource) || !CurlHostPath().IsMatch(curlSource))
 			return null;
 
-		var escapedBody = body.Trim().Replace("'", "'\\''", StringComparison.Ordinal);
+		// Other lines of the body sit under the -d flag, as CurlSourceFormatter lays out spec samples.
+		var escapedBody = body.Trim().Replace("'", "'\\''", StringComparison.Ordinal).Replace("\n", "\n  ", StringComparison.Ordinal);
 		var withBody = CurlBody().Replace(curlSource, _ => $"-d '{escapedBody}'", 1);
 		var withMethod = CurlMethod().Replace(withBody, $"-X {method}", 1);
 		var route = path.StartsWith('/') ? path : "/" + path;

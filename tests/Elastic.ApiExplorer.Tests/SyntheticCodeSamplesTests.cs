@@ -349,7 +349,7 @@ public class SyntheticCodeSamplesTests
 			.Should()
 			.Be(
 				"curl --globoff -X POST \"https://{kibana_url}/api/apm/fleet/apm_server_schema\" \\\n" + "  -H \"kbn-xsrf: true\" \\\n" +
-					"  -H \"Content-Type: application/json\" \\\n" + "  -d '" + body + "'"
+					"  -H \"Content-Type: application/json\" \\\n" + "  -d '" + body.Replace("\n", "\n  ") + "'"
 			);
 	}
 
