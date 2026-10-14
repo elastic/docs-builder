@@ -101,7 +101,7 @@
 	@if (operation.RequestBody is not null)
 	{
 		<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request body", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
 		<div @ParamSectionHeader.BodyAttributes("request-body-list")>
 		@if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{

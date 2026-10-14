@@ -55,7 +55,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request", "request-body"));
+			tocItems.Add(new ApiTocItem("Request body", "request-body"));
 
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
