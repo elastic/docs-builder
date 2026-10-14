@@ -93,7 +93,21 @@ public static partial class GeneratedCodeSamples
 		var withBody = CurlBody().Replace(curlSource, _ => $"-d '{escapedBody}'", 1);
 		var withMethod = CurlMethod().Replace(withBody, $"-X {method}", 1);
 		var route = path.StartsWith('/') ? path : "/" + path;
-		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + route, 1);
+		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
+	}
+
+	/// <summary>A query parameter of the copied URL whose value is a shell variable (<c>?key=$API_KEY</c>) is a credential, so it follows the sample to the new route.</summary>
+	private static string WithCredentials(string route, string originalUrl)
+	{
+		var at = originalUrl.IndexOf('?', StringComparison.Ordinal);
+		if (at < 0)
+			return route;
+
+		var credentials = originalUrl[(at + 1)..]
+			.Split('&', StringSplitOptions.RemoveEmptyEntries)
+			.Where(pair => pair.Contains("=$", StringComparison.Ordinal) && !route.Contains(pair, StringComparison.Ordinal))
+			.ToArray();
+		return credentials.Length == 0 ? route : $"{route}{(route.Contains('?') ? '&' : '?')}{string.Join('&', credentials)}";
 	}
 
 	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
