@@ -35,7 +35,8 @@ public class ApiCommonMarkTests
 
 		ApiCommonMark.Fence(markdown, "http", source);
 
-		markdown.ToString().Should().StartWith($"{fence}http\n").And.Contain($"\n{fence}\n");
+		// AppendLine writes \r\n on Windows.
+		markdown.ToString().ReplaceLineEndings("\n").Should().StartWith($"{fence}http\n").And.Contain($"\n{fence}\n");
 	}
 
 	[Test]
