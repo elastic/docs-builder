@@ -304,11 +304,13 @@ public static partial class SyntheticCodeSamples
 			(scheme.Name, $"-H \"{DoubleQuoted(scheme.Name)}: {ApiKeyVariable}\""),
 		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
 			("Authorization", "-u \"${USERNAME}:${PASSWORD}\""),
-		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme)
-			&& !string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
-			("Authorization", $"-H \"Authorization: {scheme.Scheme} ${{TOKEN}}\""),
-		SecuritySchemeType.Http or SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect =>
+		// Digest is a challenge and response, which curl runs itself; a token header could not stand in for it.
+		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "digest", StringComparison.OrdinalIgnoreCase) =>
+			("Authorization", "--digest -u \"${USERNAME}:${PASSWORD}\""),
+		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
 			("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
+		SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect => ("Authorization", "-H \"Authorization: Bearer ${TOKEN}\""),
+		// Any other HTTP scheme (negotiate, hoba, ...) has no form curl can send from a sample.
 		_ => null
 	};
 

@@ -146,12 +146,13 @@ public class AuthSchemeTests
 	[Arguments("""{ "cookieAuth": [] }, { "bearerAuth": [] }""", "bearer")]
 	[Arguments("""{ "cookieAuth": [], "bearerAuth": [] }, { "basicAuth": [] }""", "basic")]
 	[Arguments("""{ "apiKeyAuth": [], "bearerAuth": [] }""", "Authorization+bearer")]
+	[Arguments("""{ "negotiateAuth": [] }, { "basicAuth": [] }""", "basic")]
 	public async Task CurlSchemes_PicksTheFirstAlternativeCurlCanSend(string security, string expected)
 	{
 		var (op, doc) = await Load(
 			EsShapedSpec(
 				operationSecurity: security,
-				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, """
+				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, "negotiateAuth": { "type": "http", "scheme": "negotiate" }, """
 			)
 		);
 
@@ -166,7 +167,7 @@ public class AuthSchemeTests
 		var (op, doc) = await Load(
 			EsShapedSpec(
 				operationSecurity: """{ "cookieAuth": [] }""",
-				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, """
+				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, "negotiateAuth": { "type": "http", "scheme": "negotiate" }, """
 			)
 		);
 

@@ -527,6 +527,32 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	public void Create_WithDigestScheme_LetsCurlRunTheChallenge()
+	{
+		var scheme = new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "digest" };
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", new OpenApiOperation())
+		{
+			Security = [scheme]
+		});
+
+		samples[1].Source.Should().Contain("--digest -u \"${USERNAME}:${PASSWORD}\"").And.NotContain("TOKEN");
+	}
+
+	[Test]
+	public void Create_WithAnHttpSchemeCurlCannotSend_SendsNothing()
+	{
+		var scheme = new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "negotiate" };
+
+		SyntheticCodeSamples.Sends(scheme).Should().BeFalse();
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/api/x", new OpenApiOperation())
+		{
+			Security = [scheme]
+		});
+		samples[1].Source.Should().NotContain("Authorization").And.NotContain("-u ");
+	}
+
+	[Test]
 	[Arguments(SecuritySchemeType.Http, "bearer")]
 	[Arguments(SecuritySchemeType.OAuth2, null)]
 	[Arguments(SecuritySchemeType.OpenIdConnect, null)]
