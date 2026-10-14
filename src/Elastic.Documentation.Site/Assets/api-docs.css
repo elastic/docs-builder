@@ -3794,6 +3794,8 @@ html:has(.api-page-shell) {
 	color: var(--api-code-muted);
 	font-size: 11.5px;
 	line-height: 1.45;
+	/* Right-aligned, it reads as an attribution under the code rather than as one more line of it. */
+	text-align: right;
 	user-select: none;
 	-webkit-user-select: none;
 }
