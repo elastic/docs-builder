@@ -309,16 +309,15 @@ internal static class DesignSystemDirectives
 		if (code.ApiSegments.Count == 0)
 			return code.RenderBlock();
 
-		var html = new System.Text.StringBuilder();
+		// The elements sit inside a pre, so a newline between them is what puts each request and each body on its own line.
+		var parts = new List<string>();
 		foreach (var segment in code.ApiSegments)
 		{
-			_ = html.Append($"<code class=\"language-apiheader\">{code.RenderLineWithCallouts(segment.Header, segment.LineNumber)}</code>");
+			parts.Add($"<code class=\"language-apiheader\">{code.RenderLineWithCallouts(segment.Header, segment.LineNumber)}</code>");
 			if (segment.ContentLinesWithNumbers.Count > 0)
-				_ = html.Append(
-					$"<code class=\"language-json\">{code.RenderContentLinesWithCallouts(segment.ContentLinesWithNumbers)}</code>"
-				);
+				parts.Add($"<code class=\"language-json\">{code.RenderContentLinesWithCallouts(segment.ContentLinesWithNumbers)}</code>");
 		}
-		return new HtmlString(html.ToString());
+		return new HtmlString(string.Join('\n', parts));
 	}
 
 	private static void WriteStep(HtmlRenderer renderer, StepBlock step)

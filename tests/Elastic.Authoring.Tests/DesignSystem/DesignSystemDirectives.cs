@@ -301,6 +301,28 @@ public class PageShellComponents : DesignSystemDirectiveTest
 	public async Task NoLegacyHeader() => await Docs.DoesNotConvertToContainingHtml("<elastic-docs-header");
 }
 
+public class ConsoleCodeBlockSegments : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		```console
+		GET /_search
+		{ "size": 1 }
+
+		POST /docs/_doc
+		{ "title": "one" }
+		```
+		""";
+
+	[Test, DisplayName("starts each request and each body on its own line")]
+	public async Task SegmentsAreSeparatedByANewline()
+	{
+		await Docs.ConvertsToContainingRawHtml("</code>\n<code class=\"language-json\">");
+		await Docs.ConvertsToContainingRawHtml("</code>\n<code class=\"language-apiheader\">");
+		await Docs.DoesNotConvertToContainingHtml("</code><code");
+	}
+}
+
 public class AppliesToComponent : DesignSystemDirectiveTest
 {
 	protected override string Markdown =>
