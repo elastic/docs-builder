@@ -2105,19 +2105,6 @@ a.docs-reference-btn::after {
 	@apply mb-2;
 }
 
-/* Server info display */
-.server-info {
-	@apply flex flex-wrap items-center gap-2 text-sm;
-}
-
-.server-label {
-	@apply text-grey-60 font-medium;
-}
-
-.server-description {
-	@apply text-grey-50 text-xs;
-}
-
 /* Union type option - styled like regular types, not enum values */
 .union-type-option {
 	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;

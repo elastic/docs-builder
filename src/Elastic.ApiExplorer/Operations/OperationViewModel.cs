@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Structural;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -55,6 +56,8 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 
 		return tocItems;
 	}
+
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ToDisplays(Page.Servers);
 
 	public OperationExamplesPanelModel? ExamplesPanel =>
 		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };

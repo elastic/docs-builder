@@ -2,15 +2,7 @@
 <dl class="api-rail-facts api-rail-facts--@Model.Placement">
 	@if (Model.Page.Servers.Count > 0)
 	{
-		<div class="api-rail-fact">
-			<dt>Base URL@(Model.Page.Servers.Count > 1 ? "s" : "")</dt>
-			<dd class="api-rail-fact-list">
-				@foreach (var server in Model.Page.Servers)
-				{
-					@await RenderPartialAsync(_ServerUrlField.Create(server))
-				}
-			</dd>
-		</div>
+		@await RenderPartialAsync(_BaseUrlFact.Create(Model.Page.Servers))
 	}
 	@if (Model.Page.License is { Length: > 0 } license)
 	{
