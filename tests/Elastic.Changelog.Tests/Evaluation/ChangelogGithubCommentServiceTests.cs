@@ -449,16 +449,12 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task PostComment_ManuallyEditedBreakingEntry_EchoesCapturedValues()
+	public async Task PostComment_BreakingChangeWithNothingScraped_DoesNotEcho()
 	{
-		await WriteMetadata(BaseMetadata(status: "manually-edited", canCommit: false) with
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
 		{
 			Gate = ValidationGate.File,
-			ChangelogDir = "docs/changelog",
-			ChangelogFilename = "42.yaml",
-			ResolvedType = "breaking-change",
-			Impact = "Users break.",
-			Action = "Upgrade now."
+			ResolvedType = "breaking-change"
 		});
 		var commentSvc = CreateCommentFake();
 
@@ -466,14 +462,12 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 
 		A.CallTo(
 			() => commentSvc.UpsertStickyCommentAsync(
-				"elastic",
-				"test-repo",
-				42,
-				A<string>.That.Matches(
-					b => b.Contains("docs/changelog/42.yaml") && b.Contains("Users break.") && b.Contains("Upgrade now.")
-				),
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("<details>"),
 				A<CancellationToken>._
 			)
-		).MustHaveHappenedOnceExactly();
+		).MustNotHaveHappened();
 	}
 }

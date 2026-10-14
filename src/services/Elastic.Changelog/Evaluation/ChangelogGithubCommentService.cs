@@ -83,24 +83,22 @@ public class ChangelogGithubCommentService(
 	{
 		var body = SelectBaseBody(metadata, metadataDir, owner, repo);
 
-		// Breaking changes keep their comment on success and echo what was captured, so there are no surprises at bundling time.
-		var generated = metadata.Gate is not ValidationGate.Entries
-			&& (IsSuccess(metadata.Status) || IsManuallyEdited(metadata.Status) || metadata.CommitOutcome is not null);
+		// Breaking changes keep their comment on success and echo what was scraped from the PR description, so there are no surprises at bundling time.
+		var generated = metadata.Gate is not ValidationGate.Entries && (IsSuccess(metadata.Status) || metadata.CommitOutcome is not null);
 		if (!generated)
 			return body;
 
-		// evaluate-pr records the captured sections in the metadata. Runs that stage an entry file (changelog add) are read from the YAML.
+		// evaluate-pr records the sections it scraped from the PR description. Runs that stage an entry file (changelog add) are read from the YAML.
 		var breakingTypeName = ChangelogEntryType.BreakingChange.ToStringFast(true);
-		if (string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase))
+		if (
+			string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase)
+			&& (metadata.Impact is not null || metadata.Action is not null)
+		)
 		{
 			_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
 			// A gate-only run stages no entry file, so the generic comment-only body would warn that the entry could not be read.
 			return body is null || metadata.CommitOutcome is null
-				? ChangelogCommentRenderer.RenderBreakingChangeResolved(
-					metadata.Impact,
-					metadata.Action,
-					IsManuallyEdited(metadata.Status) ? EntryPath(metadata) : null
-				)
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
 				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
 		}
 
@@ -277,8 +275,6 @@ public class ChangelogGithubCommentService(
 		string.Equals(status, "success", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(status, "proceed", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase);
-
-	private static bool IsManuallyEdited(string status) => string.Equals(status, "manually-edited", StringComparison.OrdinalIgnoreCase);
 
 	private static string? EntryPath(GithubDecisionMetadata metadata) =>
 		string.IsNullOrWhiteSpace(metadata.ChangelogFilename)

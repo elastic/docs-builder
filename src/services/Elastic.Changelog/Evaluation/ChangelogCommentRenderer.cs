@@ -70,15 +70,13 @@ internal static class ChangelogCommentRenderer
 	/// Renders the body shown on success for a breaking change that has nothing else to say
 	/// (the entry is committed by the pipeline): a short confirmation plus the captured Impact and Action.
 	/// </summary>
-	internal static string RenderBreakingChangeResolved(string? impact, string? action, string? entryPath = null) =>
+	internal static string RenderBreakingChangeResolved(string? impact, string? action) =>
 		Truncate(
 			string.Join(
 				"\n",
 				Title,
 				"",
-				string.IsNullOrWhiteSpace(entryPath)
-					? "✅ **Changelog entry generated for this breaking change.**"
-					: $"✅ **Changelog entry for this breaking change:** {WrapInlineCode(entryPath)}",
+				"✅ **Changelog entry generated for this breaking change.**",
 				"",
 				RenderBreakingChangeCaptured(impact, action)
 			)
@@ -86,7 +84,7 @@ internal static class ChangelogCommentRenderer
 
 	/// <summary>
 	/// Renders the conflicting-impact-action body: the PR has a changelog entry file, which is the source of Impact and Action,
-	/// and its description also has those sections. The author keeps one of them.
+	/// and its description has sections that differ from it.
 	/// </summary>
 	internal static string RenderConflictingImpactAction(string? entryPath, string? conflictingSections, int prNumber)
 	{
@@ -95,17 +93,17 @@ internal static class ChangelogCommentRenderer
 			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")
 			.ToList();
 		var headings = string.Join(" and ", sections.Select(s => $"`## {s}`"));
-		var file = string.IsNullOrWhiteSpace(entryPath) ? "a changelog entry file" : $"the changelog entry {WrapInlineCode(entryPath)}";
+		var file = string.IsNullOrWhiteSpace(entryPath) ? "the changelog entry file" : $"the changelog entry {WrapInlineCode(entryPath)}";
 
 		return Truncate(
 			string.Join(
 				"\n",
 				Title,
 				"",
-				$"❌ PR #{prNumber} is a breaking change with {file} and also has {headings} in its description.",
+				$"❌ PR #{prNumber} is a breaking change with {headings} in its description that differ from {file}.",
 				"",
-				"A changelog entry file on the PR is the source of Impact and Action, so the description cannot repeat them. " +
-					"Remove the section(s) from the PR description, or delete the entry file to take Impact and Action from the description."
+				"A changelog entry file on the PR is the source of Impact and Action. " +
+					"Make the description match the entry file exactly, or remove the section(s) from the description."
 			)
 		);
 	}

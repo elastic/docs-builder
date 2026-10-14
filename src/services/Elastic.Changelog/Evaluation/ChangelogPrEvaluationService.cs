@@ -64,6 +64,25 @@ public class ChangelogPrEvaluationService(
 		var existingFilename = FindExistingChangelog(changelogDir, input.PrNumber);
 		var changelogFilePath = existingFilename != null ? $"{changelogDir}/{existingFilename}" : null;
 
+		// An entry file on the PR outranks the description for Impact and Action. Any author's file is checked the same way.
+		var breakingEntry = changelogFilePath != null && TryReadEntry(changelogFilePath) is { Type: ChangelogEntryType.BreakingChange } e
+			? e
+			: null;
+		if (
+			breakingEntry != null
+			&& await EvaluateEntryImpactAction(
+				collector,
+				input,
+				breakingEntry,
+				changelogFilePath!,
+				changelogDir,
+				existingFilename!,
+				defaultBranch,
+				ctx
+			)
+		)
+			return false;
+
 		// Manual edit detection (only if a file exists)
 		if (changelogFilePath != null)
 		{
@@ -77,19 +96,6 @@ public class ChangelogPrEvaluationService(
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
-				// A human-authored entry file is the source of Impact/Action for a breaking change, so it is checked even though generation is skipped.
-				if (
-					await EvaluateAuthoredEntryImpactAction(
-						collector,
-						input,
-						changelogFilePath,
-						changelogDir,
-						existingFilename!,
-						defaultBranch,
-						ctx
-					)
-				)
-					return false;
 				return await SetOutputs(PrEvaluationResult.ManuallyEdited);
 			}
 		}
@@ -254,7 +260,8 @@ public class ChangelogPrEvaluationService(
 		}
 
 		// Impact/Action gate: breaking changes must describe who is affected and what to do about it.
-		if (input.RequireImpactAction && resolvedType == ChangelogEntryType.BreakingChange.ToStringFast(true))
+		// An entry file already covered Impact and Action above, so the description is only checked when there is none.
+		if (input.RequireImpactAction && breakingEntry == null && resolvedType == ChangelogEntryType.BreakingChange.ToStringFast(true))
 		{
 			var missing = new List<string>();
 			if (string.IsNullOrWhiteSpace(impact))
@@ -351,14 +358,15 @@ public class ChangelogPrEvaluationService(
 	}
 
 	/// <summary>
-	/// Applies the Impact/Action rules to a human-authored breaking-change entry file. The file is the only source:
-	/// sections in the PR description as well are an error, and <see cref="EvaluatePrArguments.RequireImpactAction"/>
-	/// enforces that the file provides both. Returns <c>true</c> when the evaluation failed and outputs are already set.
-	/// On success it records the captured values so the PR comment can echo them.
+	/// Applies the Impact/Action rules when the PR has a breaking-change changelog entry file. The file outranks the description:
+	/// a section in the description must match the file's field exactly, otherwise the PR has two sources and fails.
+	/// <see cref="EvaluatePrArguments.RequireImpactAction"/> then enforces that the file sets both fields.
+	/// Returns <c>true</c> when the evaluation failed and outputs are already set.
 	/// </summary>
-	private async Task<bool> EvaluateAuthoredEntryImpactAction(
+	private async Task<bool> EvaluateEntryImpactAction(
 		IDiagnosticsCollector collector,
 		EvaluatePrArguments input,
+		ChangelogEntry entry,
 		string entryPath,
 		string changelogDir,
 		string entryFilename,
@@ -366,33 +374,30 @@ public class ChangelogPrEvaluationService(
 		Cancel ctx
 	)
 	{
-		var entry = TryReadEntry(entryPath);
-		if (entry is not { Type: ChangelogEntryType.BreakingChange })
-			return false;
-
 		var breaking = ChangelogEntryType.BreakingChange.ToStringFast(true);
 		var bodyImpact = ReleaseNotesExtractor.FindImpact(input.PrBody);
 		var bodyAction = ReleaseNotesExtractor.FindAction(input.PrBody);
 
 		var conflicting = new List<string>();
-		if (bodyImpact != null)
+		if (bodyImpact != null && !SameText(bodyImpact, entry.Impact))
 			conflicting.Add("impact");
-		if (bodyAction != null)
+		if (bodyAction != null && !SameText(bodyAction, entry.Action))
 			conflicting.Add("action");
 
 		if (conflicting.Count > 0)
 		{
 			var conflictingSections = string.Join(",", conflicting);
 			_logger.LogInformation(
-				"PR #{PrNumber} has entry file {File} and PR description sections: {Sections}",
+				"PR #{PrNumber}: {Sections} in the description differ from entry file {File}",
 				input.PrNumber,
-				entryFilename,
-				conflictingSections
+				conflictingSections,
+				entryFilename
 			);
+			var headings = string.Join(" and ", conflicting.Select(c => $"`## {(c == "impact" ? "Impact" : "Action")}`"));
 			collector.EmitError(
 				string.Empty,
-				$"Breaking-change PR #{input.PrNumber} has a changelog entry file ({entryPath}) and also {string.Join(" and ", conflicting.Select(c => $"`## {(c == "impact" ? "Impact" : "Action")}`"))} in the PR description. " +
-					"Keep Impact and Action in one place: remove the section(s) from the description and set them in the entry file."
+				$"Breaking-change PR #{input.PrNumber} has {headings} in the PR description that differ from the changelog entry file ({entryPath}). " +
+					"Keep Impact and Action in one place, or make the description match the entry file exactly."
 			);
 			_ = await SetOutputs(
 				PrEvaluationResult.ConflictingImpactAction,
@@ -418,46 +423,37 @@ public class ChangelogPrEvaluationService(
 		if (string.IsNullOrWhiteSpace(entry.Action))
 			missing.Add("action");
 
-		if (input.RequireImpactAction && missing.Count > 0)
-		{
-			var missingSections = string.Join(",", missing);
-			_logger.LogInformation("Entry file {File} is missing sections: {Sections}", entryFilename, missingSections);
-			collector.EmitError(
-				string.Empty,
-				$"Breaking-change changelog entry file {entryPath} is missing {string.Join(" and ", missing.Select(m => $"`{m}:`"))}. " +
-					"Add the field(s) so the release notes can tell users who is affected and what to do."
-			);
-			_ = await SetOutputs(
-				PrEvaluationResult.MissingImpactAction,
-				resolvedType: breaking,
-				changelogDir: changelogDir,
-				existingFilename: entryFilename
-			);
-			await WriteDecisionMetadataAsync(
-				input,
-				"missing-impact-action",
-				changelogDir: changelogDir,
-				changelogFilename: entryFilename,
-				defaultBranch: defaultBranch,
-				missingSections: missingSections,
-				ctx: ctx
-			);
-			return true;
-		}
+		if (!input.RequireImpactAction || missing.Count == 0)
+			return false;
 
+		var missingSections = string.Join(",", missing);
+		_logger.LogInformation("Entry file {File} is missing sections: {Sections}", entryFilename, missingSections);
+		collector.EmitError(
+			string.Empty,
+			$"Breaking-change changelog entry file {entryPath} is missing {string.Join(" and ", missing.Select(m => $"`{m}:`"))}. " +
+				"Add the field(s) so the release notes can tell users who is affected and what to do."
+		);
+		_ = await SetOutputs(
+			PrEvaluationResult.MissingImpactAction,
+			resolvedType: breaking,
+			changelogDir: changelogDir,
+			existingFilename: entryFilename
+		);
 		await WriteDecisionMetadataAsync(
 			input,
-			PrEvaluationResult.ManuallyEdited.ToStringFast(true),
+			"missing-impact-action",
 			changelogDir: changelogDir,
 			changelogFilename: entryFilename,
 			defaultBranch: defaultBranch,
-			resolvedType: breaking,
-			impact: entry.Impact,
-			action: entry.Action,
+			missingSections: missingSections,
 			ctx: ctx
 		);
-		return false;
+		return true;
 	}
+
+	private static bool SameText(string? a, string? b) => string.Equals(Normalize(a), Normalize(b), StringComparison.Ordinal);
+
+	private static string Normalize(string? value) => (value ?? string.Empty).Replace("\r\n", "\n").Trim();
 
 	private ChangelogEntry? TryReadEntry(string entryPath)
 	{

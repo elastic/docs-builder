@@ -1093,7 +1093,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "proceed");
 	}
 
-	private async Task WriteHumanEntry(string type, string? impact = null, string? action = null)
+	private async Task WriteHumanEntry(string type, string? impact = null, string? action = null, bool humanAuthor = true)
 	{
 		var yaml = $"type: {type}\ntitle: Remove simulate\nprs:\n  - \"42\"\nproducts:\n  - product: elasticsearch\n";
 		if (impact != null)
@@ -1107,6 +1107,9 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			yaml,
 			TestContext.Current!.Execution.CancellationToken
 		);
+		if (!humanAuthor)
+			return;
+
 		A.CallTo(
 			() => _mockGitHub.FetchLastFileCommitAuthorAsync(
 				"elastic",
@@ -1116,6 +1119,61 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 				A<CancellationToken>._
 			)
 		).Returns("human-user");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodyMatchesFileExactly_NoConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodySectionMissingFromFile_FailsWithConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_MatchingBody_Proceeds()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_DifferentBody_FailsWithConflict()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Old impact.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
 	}
 
 	[Test]
