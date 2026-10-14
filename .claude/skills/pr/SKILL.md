@@ -68,6 +68,21 @@ Required structure:
  If there is no clear local verification step, omit this section entirely.
  Do not list CI checks, YAML linting, or bash scripts an agent would run
  to prove their own work — those are not reviewer steps.>
+
+## Check on the preview
+<Only when the change shows on a built page. One bullet per page on this PR's preview,
+ `https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<PR number>/<path>`:
+ the link, a dash, then the one thing to look at there. Pick pages that each show a
+ different behaviour of the change, and one control page the change must leave alone.
+ Open every link before adding it; a link that does not answer is worse than none.
+ Added after the preview has built (see step 8). Omit when nothing renders differently.>
+```
+
+A **Check on the preview** entry reads like this:
+
+```
+- [Cloud Connect: Get subscription](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/cloud-connect/operation/operation-getsubscription) — path filled from the spec example, `Authorization: ApiKey ${API_KEY}`, no Console card.
+- [Elasticsearch: Delete async search](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/elasticsearch/operation/operation-async-search-delete) — control page: spec-written samples, unchanged.
 ```
 
 Conditional add-ons — each is one or two sentences with a bold lead-in, no heading:
@@ -142,7 +157,7 @@ gh pr edit --add-label "<new-label>" --remove-label "<old-label>"
 
 ### 8. Create the PR
 
-One call — title, label, and body together. No follow-up `gh pr edit`:
+One call — title, label, and body together. The only follow-up `gh pr edit` is the **Check on the preview** section: it needs the PR number and a built preview, so add it once the preview workflow has finished, after opening every link.
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'
