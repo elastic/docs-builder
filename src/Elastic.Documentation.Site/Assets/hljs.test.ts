@@ -247,4 +247,21 @@ GET /b</code></pre></div>`
             '$ELASTICSEARCH_URL'
         )
     })
+
+    it('highlights braced ${VAR} variables in curl strings', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-curl">curl -X GET "\${LOGSTASH_URL}/_node/pipelines" \\
+  -u "\${USERNAME}:\${PASSWORD}"</code></pre></div>`
+
+        await initHighlight()
+
+        const variables = Array.from(
+            document.querySelectorAll('code .hljs-variable')
+        ).map((e) => e.textContent)
+        expect(variables).toEqual([
+            '${LOGSTASH_URL}',
+            '${USERNAME}',
+            '${PASSWORD}',
+        ])
+    })
 })

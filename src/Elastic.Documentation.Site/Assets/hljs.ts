@@ -207,7 +207,7 @@ hljs.registerLanguage('console', function () {
 hljs.registerLanguage('curl', function () {
     const variable = {
         className: 'variable',
-        begin: /\$[A-Za-z_][\w]*/,
+        begin: /\$(?:\{[^}\s"']*\}|[A-Za-z_]\w*)/,
     }
     return {
         name: 'curl',
