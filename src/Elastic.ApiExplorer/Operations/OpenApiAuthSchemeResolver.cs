@@ -37,24 +37,27 @@ public static class OpenApiAuthSchemeResolver
 		return alternatives;
 	}
 
-	/// <summary>The schemes a sample authenticates with: those of the first alternative that names a scheme we can send.</summary>
+	/// <summary>The schemes a sample authenticates with: those of the first alternative whose schemes a curl can all send.</summary>
 	internal static IReadOnlyList<IOpenApiSecurityScheme> CurlSchemes(OpenApiOperation operation, OpenApiDocument document)
 	{
 		foreach (var requirement in operation.Security ?? document.Security ?? [])
 		{
-			var schemes = requirement
-				.Keys
-				.OfType<OpenApiSecuritySchemeReference>()
-				.Select(key => Target(key, document))
-				.OfType<IOpenApiSecurityScheme>()
-				.Where(static s => LabelFor(s) is not null)
-				.ToArray();
-			if (schemes.Length > 0)
-				return schemes;
+			var schemes = requirement.Keys.OfType<OpenApiSecuritySchemeReference>().Select(key => Target(key, document)).ToArray();
+			// The schemes of one requirement are sent together, so one a curl can't send rules the whole alternative out.
+			if (schemes.Length > 0 && schemes.All(static s => s is not null && CanSendInCurl(s)))
+				return [.. schemes.OfType<IOpenApiSecurityScheme>()];
 		}
 
 		return [];
 	}
+
+	/// <summary>Header and query API keys, HTTP schemes and tokens. A cookie key, mutual TLS and the like have no curl flag here.</summary>
+	internal static bool CanSendInCurl(IOpenApiSecurityScheme scheme) => scheme.Type switch
+	{
+		SecuritySchemeType.ApiKey => scheme.In is ParameterLocation.Header or ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name),
+		SecuritySchemeType.Http or SecuritySchemeType.OAuth2 or SecuritySchemeType.OpenIdConnect => true,
+		_ => false
+	};
 
 	private static List<AuthScheme> SchemesOf(OpenApiSecurityRequirement requirement, OpenApiDocument document)
 	{
