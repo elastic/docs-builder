@@ -48,6 +48,23 @@ internal static class ApiCommonMark
 		_ = markdown.AppendLine();
 	}
 
+	/// <summary>Text as an inline code span. The delimiter is longer than any backtick run inside it, so the text survives as written.</summary>
+	public static string CodeSpan(string text)
+	{
+		var longest = 0;
+		var run = 0;
+		foreach (var character in text)
+		{
+			run = character == '`' ? run + 1 : 0;
+			longest = Math.Max(longest, run);
+		}
+
+		var delimiter = new string('`', longest + 1);
+		// A backtick at either end would merge with the delimiter, so CommonMark strips one space of padding on each side.
+		var padding = text.StartsWith('`') || text.EndsWith('`') ? " " : "";
+		return $"{delimiter}{padding}{text}{padding}{delimiter}";
+	}
+
 	public static string Link(string text, string? url)
 	{
 		if (string.IsNullOrEmpty(url))

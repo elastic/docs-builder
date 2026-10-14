@@ -77,6 +77,13 @@
 		</dd>
 	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
+	@if (Model.Example is { } example)
+	{
+		<dd class="example-value">
+			<span class="values-label">Example:</span>
+			<code>@example</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)

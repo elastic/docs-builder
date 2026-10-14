@@ -123,6 +123,8 @@ internal static class ApiPropertyMarkdown
 	private static void WriteEnumOrUnion(StringBuilder markdown, ApiProperty property, int depth)
 	{
 		WriteValues(markdown, property.EnumValues, depth);
+		if (property.Example is { } example)
+			WriteNestedLine(markdown, depth, $"Example: {ApiCommonMark.CodeSpan(example)}");
 
 		if (property.Union is null || property.Repeats is not null)
 			return;
