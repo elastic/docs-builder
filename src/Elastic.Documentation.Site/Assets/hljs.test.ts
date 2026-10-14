@@ -226,4 +226,42 @@ GET /b</code></pre></div>`
         )
         expect(methods).toEqual(['PUT', 'GET'])
     })
+
+    it('highlights a curl -d JSON body as JSON', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-curl">curl -X GET "$ELASTICSEARCH_URL/_search" \\
+  -d '{
+  "query": {
+    "term": { "user.id": "kimchy" }
+  }
+}'</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const keys = Array.from(code.querySelectorAll('.hljs-attr')).map(
+            (e) => e.textContent
+        )
+        expect(keys).toEqual(['"query"', '"term"', '"user.id"'])
+        expect(code.querySelector('.hljs-variable')?.textContent).toBe(
+            '$ELASTICSEARCH_URL'
+        )
+    })
+
+    it('highlights braced ${VAR} variables in curl strings', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-curl">curl -X GET "\${LOGSTASH_URL}/_node/pipelines" \\
+  -u "\${USERNAME}:\${PASSWORD}"</code></pre></div>`
+
+        await initHighlight()
+
+        const variables = Array.from(
+            document.querySelectorAll('code .hljs-variable')
+        ).map((e) => e.textContent)
+        expect(variables).toEqual([
+            '${LOGSTASH_URL}',
+            '${USERNAME}',
+            '${PASSWORD}',
+        ])
+    })
 })

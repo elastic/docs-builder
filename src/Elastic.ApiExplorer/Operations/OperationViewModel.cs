@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Structural;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -54,13 +55,15 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request", "request-body"));
+			tocItems.Add(new ApiTocItem("Request body", "request-body"));
 
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
 		return tocItems;
 	}
+
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ToDisplays(Page.Servers);
 
 	public OperationExamplesPanelModel? ExamplesPanel =>
 		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };

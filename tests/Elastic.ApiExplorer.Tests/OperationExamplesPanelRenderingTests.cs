@@ -145,13 +145,47 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_GeneratedSample_IsMarkedInTheMarkupButNotInTheCard()
+	public async Task Render_GeneratedSample_SaysSoInsideItsOwnCard()
 	{
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
-		html.Should().NotContain("Built from this example");
-		html.Should().NotContain("<footer");
+		// One note per generated card, inside the card after its code, so it is about this sample and no other.
+		var cards = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(
+				html,
+				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
+				System.Text.RegularExpressions.RegexOptions.Singleline,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
+			);
+		cards.Should().HaveCount(2);
+		foreach (var card in cards.Select(static c => c.Value))
+		{
+			card.Should().Contain("<p class=\"api-code-carousel-card-note\">");
+			card.Should().Contain(">Generated from the API spec</span>");
+			card.Should().Contain("data-tippy-content=\"This sample was generated from the API spec, not written by hand.");
+			// Inside the code area, so the strip height measured from the body includes it.
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeLessThan(card.LastIndexOf("</div>", StringComparison.Ordinal));
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeGreaterThan(card.IndexOf("api-code-carousel-card-body", StringComparison.Ordinal));
+		}
+	}
+
+	[Test]
+	public async Task Render_SpecSample_HasNoNote()
+	{
+		var html = await RenderScenario(Slicing with { CodeSamples = [Sample("Console"), Sample("curl")] });
+
+		html.Should().NotContain("data-generated");
+		html.Should().NotContain("api-code-carousel-card-note");
 	}
 
 	[Test]

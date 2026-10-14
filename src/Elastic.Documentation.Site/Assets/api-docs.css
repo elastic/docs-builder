@@ -2103,19 +2103,6 @@ a.docs-reference-btn::after {
 	@apply mb-2;
 }
 
-/* Server info display */
-.server-info {
-	@apply flex flex-wrap items-center gap-2 text-sm;
-}
-
-.server-label {
-	@apply text-grey-60 font-medium;
-}
-
-.server-description {
-	@apply text-grey-50 text-xs;
-}
-
 /* Union type option - styled like regular types, not enum values */
 .union-type-option {
 	@apply text-blue-elastic bg-blue-elastic-10 rounded px-1.5 py-0.5 text-xs;
@@ -3722,6 +3709,11 @@ html:has(.api-page-shell) {
 		transform-origin 0.25s;
 }
 
+/* The only language has no neighbour to peek beside it, so its card takes the whole rail. */
+#api-examples-panel .api-code-carousel-card:only-child {
+	flex-basis: 100%;
+}
+
 /* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
    deliberately stops where the strip runs out, with the previous card showing beside it. */
 #api-examples-panel .api-code-carousel-card:has(~ .is-active) {
@@ -3778,6 +3770,40 @@ html:has(.api-page-shell) {
 	font-size: 11.5px;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+/* A sample docs-builder built says so at the end of its own code block, so the note is about this sample and no other.
+   It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
+   selection and the copy button leave it out, like the line numbers. */
+#api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+	/* Pinned to the bottom-right of the visible code, not to the code: it neither rides along a wide line's horizontal
+	   scroll nor disappears below a long body. Sticky keeps it in flow, so the strip height still counts it. */
+	position: sticky;
+	bottom: 0;
+	left: 0;
+	margin: 0;
+	padding: 2px 14px 10px;
+	background: var(--api-code-bg);
+	color: var(--api-code-muted);
+	font-size: 11.5px;
+	line-height: 1.45;
+	/* Right-aligned, it reads as an attribution under the code rather than as one more line of it. */
+	text-align: right;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+/* The short line carries the full explanation in a tooltip; the dotted underline says there is one. */
+.api-code-carousel-card-note > span {
+	cursor: help;
+	text-decoration: underline dotted;
+	text-underline-offset: 2px;
+}
+
+.api-code-carousel-card-note > span:focus-visible {
+	outline: 2px solid var(--color-blue-elastic-50, #85b7ff);
+	outline-offset: 2px;
+	border-radius: 2px;
 }
 
 /* The client label links to the client's docs page; a light blue reads as a link on the dark card. */

@@ -129,11 +129,25 @@ public partial record OperationPageModel
 		);
 		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
+		var parameters = apiOperation.Parameters;
+		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
+		var requestSchema = requestContentEntry?.Value?.Schema;
+		var target = GeneratedCodeSamples.SampleTargetFor(context.Product?.Id);
 		if (codeSamples.Count == 0)
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
 			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
-			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers, body);
+			// Without an example the body comes from the schema, so the sample of an operation that takes one is not a bare request.
+			body ??= RequestBodyExample.Build(analyzer, requestContentEntry?.Key, requestSchema);
+			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+			{
+				Parameters = parameters,
+				Servers = servers,
+				HostVariable = target.HostVariable,
+				Body = body,
+				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
+				ConsolePrefix = target.ConsolePrefix
+			});
 		}
 
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
@@ -142,16 +156,14 @@ public partial record OperationPageModel
 				GeneratedCodeSamples.Fill(
 					EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
 					codeSamples,
-					endpoint
+					endpoint,
+					target.ConsolePrefix
 				),
 				apiOperation.OperationType.ToString().ToLowerInvariant(),
 				apiOperation.Route
 			),
 			context.Product?.Id
 		);
-		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
-		var requestSchema = requestContentEntry?.Value?.Schema;
-
 		ExternalDocLink? externalDocs = null;
 		if (operation.ExternalDocs?.Url is not null)
 		{
@@ -161,9 +173,9 @@ public partial record OperationPageModel
 
 		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
 		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
-		var pathParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Path, parameterSource);
-		var queryParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Query, parameterSource);
-		var headerParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Header, parameterSource);
+		var pathParameters = BuildParameters(parameters, ParameterLocation.Path, parameterSource);
+		var queryParameters = BuildParameters(parameters, ParameterLocation.Query, parameterSource);
+		var headerParameters = BuildParameters(parameters, ParameterLocation.Header, parameterSource);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",

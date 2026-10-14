@@ -452,4 +452,20 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("action: ");
 		body.Should().NotContain("## Action");
 	}
+
+	[Test]
+	public void RenderLabelsNeeded_AbsoluteConfigPath_LinksToTheDefaultRepoPath()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"| Label | Type |",
+			null,
+			null,
+			"/home/runner/work/repo/repo/docs/changelog.yml",
+			owner: "elastic",
+			repo: "repo"
+		);
+
+		body.Should().Contain("https://github.com/elastic/repo/blob/main/docs/changelog.yml");
+		body.Should().NotContain("/home/runner");
+	}
 }

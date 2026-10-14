@@ -97,7 +97,7 @@ public class ChangelogGithubCommentService(
 
 			_logger.LogInformation("Echoing staged Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
 			return body is null
-				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action)
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action, entryGenerated: true)
 				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
 		}
 
@@ -113,7 +113,7 @@ public class ChangelogGithubCommentService(
 		// After a commit attempt the body already carries the commit result, so append. Otherwise the generic comment-only body
 		// would only warn that the entry could not be read, so replace it.
 		return body is null || metadata.CommitOutcome is null
-			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
+			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action, entryGenerated: false)
 			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
 	}
 
@@ -190,8 +190,9 @@ public class ChangelogGithubCommentService(
 		var isNoLabel = IsNoLabel(metadata.Status);
 
 		// Success but cannot commit (fork or comment-only strategy): comment-only informational body.
-		// The Entries gate never stages a YAML file, so CanCommit is irrelevant there.
-		if (isSuccess && !metadata.CanCommit && metadata.Gate is not ValidationGate.Entries)
+		// The Entries and File gates only validate. They never generate or stage an entry, so there is no entry to describe
+		// and CanCommit is irrelevant there.
+		if (isSuccess && !metadata.CanCommit && metadata.Gate is not (ValidationGate.Entries or ValidationGate.File))
 		{
 			_logger.LogInformation("Rendering comment-only/no-commit body for PR #{PrNumber}", metadata.PrNumber);
 			var (yamlContent, yamlFilename) = ReadStagedYaml(metadataDir);
