@@ -37,6 +37,9 @@ internal class GithubDecisionMetadataWriter(ILoggerFactory logFactory, IRunnerTe
 	/// </summary>
 	internal async Task WriteAsync(GithubDecisionMetadata metadata, Cancel ctx)
 	{
+		// The comment job builds a link from this path, so it must not carry the runner's checkout location.
+		metadata = metadata with { ConfigFile = RepoRelative(metadata.ConfigFile) };
+
 		var dir = fileSystem.Path.GetFullPath(ArtifactDir);
 		_ = fileSystem.Directory.CreateDirectory(dir);
 
@@ -44,6 +47,18 @@ internal class GithubDecisionMetadataWriter(ILoggerFactory logFactory, IRunnerTe
 		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await fileSystem.File.WriteAllTextAsync(path, json, ctx);
 		_logger.LogInformation("Wrote decision metadata to {Path}", path);
+	}
+
+	/// <summary>Returns <paramref name="path"/> relative to the working directory when it lies inside it, otherwise unchanged.</summary>
+	private string? RepoRelative(string? path)
+	{
+		if (string.IsNullOrWhiteSpace(path) || !fileSystem.Path.IsPathRooted(path))
+			return path;
+
+		var relative = fileSystem.Path.GetRelativePath(fileSystem.Path.GetFullPath("."), path);
+		return relative.StartsWith("..", StringComparison.Ordinal) || fileSystem.Path.IsPathRooted(relative)
+			? path
+			: relative.Replace('\\', '/');
 	}
 
 	/// <summary>

@@ -537,4 +537,37 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	[Test]
+	public async Task PostComment_GateOnlySuccess_DeletesCommentInsteadOfClaimingAnEntryWasGenerated()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "feature"
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task WriteMetadata_ConfigFileInsideTheCheckout_IsStoredRepoRelative()
+	{
+		await WriteMetadata(BaseMetadata() with { ConfigFile = Path.Join(Root, "docs", "changelog.yml") });
+
+		var written = await new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem).ReadAsync(
+			MetadataPath,
+			CancellationToken.None
+		);
+
+		written!.ConfigFile.Should().Be("docs/changelog.yml");
+	}
 }
