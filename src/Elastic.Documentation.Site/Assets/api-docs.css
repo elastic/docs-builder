@@ -2064,6 +2064,7 @@ a.docs-reference-btn::after {
 
 /* Enum values and union options display */
 .enum-values,
+.example-value,
 .union-options {
 	@apply mt-1 flex flex-wrap items-center gap-1;
 	padding-left: calc(var(--spacing) * 2);

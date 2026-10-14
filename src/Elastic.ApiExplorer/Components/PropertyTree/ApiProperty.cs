@@ -186,6 +186,9 @@ public record ApiProperty
 	public ExternalDocLink? ExternalDocs { get; init; }
 	public IReadOnlyList<ConstraintDisplay> Constraints { get; init; } = [];
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
+
+	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
+	public string? Example { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>
