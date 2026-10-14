@@ -70,7 +70,7 @@ public static partial class SyntheticCodeSamples
 
 		foreach (var parameter in parameters.Where(static p => p.In == ParameterLocation.Path && !string.IsNullOrEmpty(p.Name)))
 		{
-			if (UrlExample(parameter, ParameterExample.Of(parameter)) is { } value)
+			if (PathValue(parameter, ParameterExample.Of(parameter)) is { } value)
 				path = path.Replace($"{{{parameter.Name}}}", value, StringComparison.Ordinal);
 		}
 
@@ -240,7 +240,33 @@ public static partial class SyntheticCodeSamples
 		}
 	}
 
-	/// <summary>The example as it goes into a URL, escaped and joined with the delimiter the parameter's style names. An object is its keys and values in turn, or <c>key=value</c> pairs when exploded.</summary>
+	/// <summary>
+	/// A path parameter's example in its style: <c>simple</c> joins with commas (<c>a,b</c>); <c>label</c> leads with a dot
+	/// (<c>.a.b</c> exploded, <c>.a,b</c> not); <c>matrix</c> leads with the name (<c>;id=a;id=b</c> exploded, <c>;id=a,b</c> not).
+	/// An object is its keys and values in turn, or <c>key=value</c> pairs when exploded.
+	/// </summary>
+	private static string? PathValue(IOpenApiParameter parameter, ParameterExample example)
+	{
+		var items = example.Entries is { } entries
+			? parameter.Explode
+				? entries.Select(static e => $"{Uri.EscapeDataString(e.Key)}={Uri.EscapeDataString(e.Value)}").ToArray()
+				: entries.SelectMany(static e => new[] { Uri.EscapeDataString(e.Key), Uri.EscapeDataString(e.Value) }).ToArray()
+			: example.Scalars?.Select(Uri.EscapeDataString).ToArray();
+		if (items is null)
+			return null;
+
+		var name = Uri.EscapeDataString(parameter.Name ?? "");
+		return parameter.Style switch
+		{
+			ParameterStyle.Label => "." + string.Join(parameter.Explode ? "." : ",", items),
+			ParameterStyle.Matrix when parameter.Explode && example.Entries is not null => ";" + string.Join(";", items),
+			ParameterStyle.Matrix when parameter.Explode => ";" + string.Join(";", items.Select(i => $"{name}={i}")),
+			ParameterStyle.Matrix => $";{name}={string.Join(',', items)}",
+			_ => string.Join(',', items)
+		};
+	}
+
+	/// <summary>A query example as it goes into the URL, escaped and joined with the delimiter the parameter's style names. An object is its keys and values in turn, or <c>key=value</c> pairs when exploded.</summary>
 	private static string? UrlExample(IOpenApiParameter parameter, ParameterExample example)
 	{
 		var delimiter = parameter.Style switch

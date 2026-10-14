@@ -291,6 +291,89 @@ public class SyntheticCodeSamplesTests
 	}
 
 	[Test]
+	[Arguments(ParameterStyle.Label, false, "GET /things/.123")]
+	[Arguments(ParameterStyle.Matrix, false, "GET /things/;id=123")]
+	[Arguments(ParameterStyle.Simple, false, "GET /things/123")]
+	public void Create_WithAScalarPathExample_FollowsThePathStyle(ParameterStyle style, bool explode, string expected)
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Style = style,
+					Explode = explode,
+					Example = JsonValue.Create(123)
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/things/{id}", operation));
+
+		samples[0].Source.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments(ParameterStyle.Label, true, "GET /things/.a.b")]
+	[Arguments(ParameterStyle.Label, false, "GET /things/.a,b")]
+	[Arguments(ParameterStyle.Matrix, true, "GET /things/;id=a;id=b")]
+	[Arguments(ParameterStyle.Matrix, false, "GET /things/;id=a,b")]
+	[Arguments(ParameterStyle.Simple, true, "GET /things/a,b")]
+	public void Create_WithAnArrayPathExample_FollowsThePathStyleAndExplode(ParameterStyle style, bool explode, string expected)
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Style = style,
+					Explode = explode,
+					Example = new JsonArray("a", "b")
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/things/{id}", operation));
+
+		samples[0].Source.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments(ParameterStyle.Matrix, true, "GET /things/;k=1;m=x")]
+	[Arguments(ParameterStyle.Matrix, false, "GET /things/;id=k,1,m,x")]
+	[Arguments(ParameterStyle.Label, true, "GET /things/.k=1.m=x")]
+	public void Create_WithAnObjectPathExample_FollowsThePathStyleAndExplode(ParameterStyle style, bool explode, string expected)
+	{
+		var operation = new OpenApiOperation
+		{
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Style = style,
+					Explode = explode,
+					Example = new JsonObject { ["k"] = 1, ["m"] = "x" }
+				}
+			]
+		};
+
+		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Get, "/things/{id}", operation));
+
+		samples[0].Source.Should().Be(expected);
+	}
+
+	[Test]
 	public void Create_WithAnObjectExampleOnAPathParameter_UsesTheSimpleStyle()
 	{
 		var operation = new OpenApiOperation
