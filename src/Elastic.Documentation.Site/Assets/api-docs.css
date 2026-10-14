@@ -1519,7 +1519,7 @@ button.response-status-toggle:focus {
 	}
 }
 
-#parameters-list > .property-list > .property-item,
+#path-params-list > .property-list > .property-item,
 #query-params-list > .property-list > .property-item,
 #header-params-list > .property-list > .property-item,
 .prerequisite-item {
@@ -3344,6 +3344,25 @@ html:has(.api-page-shell) {
 	border-bottom: 1.5px dashed var(--color-grey-50, #7e8a9e);
 	color: #516381;
 	cursor: help;
+}
+
+/* A placeholder reads as path text with a faint dotted cue; it turns into a link only on hover or focus. */
+#markdown-content a.api-url-param {
+	/* Markdown links set their own font; the placeholder must match the monospace path around it. */
+	font: inherit;
+	color: inherit;
+	text-decoration: underline dotted var(--color-grey-40, #98a2b3);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	border-radius: 2px;
+}
+
+#markdown-content a.api-url-param:hover,
+#markdown-content a.api-url-param:focus-visible {
+	color: var(--color-blue-elastic, #0b64dd);
+	background: var(--color-grey-10);
+	text-decoration-style: solid;
+	text-decoration-color: currentColor;
 }
 
 .api-url-optional:hover {

@@ -51,12 +51,15 @@
 		</div>
 	}
 
+	@{
+		var documentedPathParameters = pageModel.PathParameterNames.ToHashSet(StringComparer.Ordinal);
+	}
 	<ul id="paths" class="api-url-listing" aria-label="Paths">
 		@foreach (var row in endpoint.Rows)
 		{
 			<li class="api-url-list-item">
 				<span class="api-url-row">
-					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute)))
+					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute, documentedPathParameters)))
 					@(await RenderPartialAsync<_EndpointCopyButton, string>(row.Route))
 				</span>
 			</li>

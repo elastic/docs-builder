@@ -12,6 +12,7 @@ describe('smooth scroll for in-page links', () => {
             <article id="markdown-content">
                 <a id="doc-link" href="#doc-target">doc</a>
                 <h2 id="doc-target">Target</h2>
+                <ul id="paths"><li><a id="path-link" href="#api-target">{index}</a></li></ul>
                 <section id="elastic-api-v3">
                     <a id="api-link" href="#api-target">api</a>
                     <div hidden="until-found"><dt id="api-target">field</dt></div>
@@ -28,6 +29,11 @@ describe('smooth scroll for in-page links', () => {
 
     it('leaves API reference links to the API page', () => {
         expect(click('api-link').defaultPrevented).toBe(false)
+        expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+    })
+
+    it('leaves the operation path placeholder links to the API page', () => {
+        expect(click('path-link').defaultPrevented).toBe(false)
         expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
     })
 })

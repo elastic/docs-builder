@@ -39,8 +39,8 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "parameters", PathParameterNames),
-					"parameters-list",
+					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames),
+					"path-params-list",
 					PathParameters,
 					"Path parameters"
 				),

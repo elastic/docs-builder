@@ -57,7 +57,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		page.HeaderParameterNames.Should().Equal(["X-Opaque-Id"], "OpenAPI ignores an Accept header parameter");
 		page.HeaderParameters.Items[0].AnchorId.Should().Be("header-X-Opaque-Id");
 		page.QueryParameterNames.Should().NotContain("X-Opaque-Id");
-		page.ParameterSections.Select(s => s.Header.Anchor).Should().Equal("parameters", "query-params", "header-params");
+		page.ParameterSections.Select(s => s.Header.Anchor).Should().Equal("path-params", "query-params", "header-params");
 	}
 
 	[Test]
@@ -164,13 +164,13 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Render_PathParameters_KeepTheirSectionIdsAndAnchors()
+	public async Task Render_PathParameters_KeepTheirRowAnchors()
 	{
 		var html = await RenderAsync(DocsGet);
 
-		html.Should().Contain("id=\"parameters-list\"");
+		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("<dt id=\"path-index\">");
-		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain("class=\"path-param", "path parameters are property rows now");
 	}
 
@@ -198,7 +198,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		};
 
 		viewModel.Page.PathParameterNames.Should().Equal("index", "id");
-		viewModel.TocItems.Select(t => t.Slug).Should().Contain("query-params").And.NotContain("parameters");
+		viewModel.TocItems.Select(t => t.Slug).Should().Contain("query-params").And.NotContain("path-params");
 	}
 
 	[Test]
