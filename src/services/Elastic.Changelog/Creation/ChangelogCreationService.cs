@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -91,6 +92,8 @@ public class ChangelogCreationService(
 		try
 		{
 			var cliDescription = input.Description;
+			var cliImpact = input.Impact;
+			var cliAction = input.Action;
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
@@ -104,13 +107,9 @@ public class ChangelogCreationService(
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
 
-			// When extraction is disabled (by CLI or config), discard any CI-injected description
-			// that originated from evaluate-pr's release-note extraction.
-			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
-			{
-				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
-				input = input with { Description = null };
-			}
+			// When extraction is disabled (by CLI or config), discard any CI-injected description, impact, and action
+			// that originated from evaluate-pr's extraction.
+			input = DropCiExtractedFieldsWhenDisabled(input, cliDescription, cliImpact, cliAction);
 
 			// CLI-supplied products must not carry versions; fail before any GitHub fetches.
 			if (input.Products.Count > 0 && !_validator.ValidateNoVersionTarget(collector, input))
@@ -155,6 +154,8 @@ public class ChangelogCreationService(
 		try
 		{
 			var cliDescription = input.Description;
+			var cliImpact = input.Impact;
+			var cliAction = input.Action;
 			input = EnrichFromCI(input);
 
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
@@ -166,12 +167,8 @@ public class ChangelogCreationService(
 
 			input = ApplyConfigDefaults(input, config);
 
-			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
-			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
-			{
-				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
-				input = input with { Description = null };
-			}
+			// Mirror CreateChangelog: discard CI-injected description, impact, and action when extraction is disabled
+			input = DropCiExtractedFieldsWhenDisabled(input, cliDescription, cliImpact, cliAction);
 
 			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
 			if (input.Prs is { Length: > 1 })
@@ -416,8 +413,12 @@ public class ChangelogCreationService(
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Fetch PR info when any derivable field is still missing (title, type, or products)
-		var needsDerivation = string.IsNullOrWhiteSpace(input.Title) || string.IsNullOrWhiteSpace(input.Type) || input.Products.Count == 0;
+		// Fetch PR info when any derivable field is still missing (title, type, or products),
+		// or when a breaking change could still pick up Impact and Action from the PR description.
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
+			|| string.IsNullOrWhiteSpace(input.Type)
+			|| input.Products.Count == 0
+			|| NeedsImpactActionFromPr(input);
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
@@ -624,6 +625,40 @@ public class ChangelogCreationService(
 			$"Could not fetch {itemKind} '{url}' from GitHub and --strict-fetch is set. " +
 				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
 		);
+
+	private CreateChangelogArguments DropCiExtractedFieldsWhenDisabled(
+		CreateChangelogArguments input,
+		string? cliDescription,
+		string? cliImpact,
+		string? cliAction
+	)
+	{
+		if (!input.ExtractionDisabled)
+			return input;
+
+		var clearDescription = string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description);
+		var clearImpact = string.IsNullOrWhiteSpace(cliImpact) && !string.IsNullOrWhiteSpace(input.Impact);
+		var clearAction = string.IsNullOrWhiteSpace(cliAction) && !string.IsNullOrWhiteSpace(input.Action);
+		if (!clearDescription && !clearImpact && !clearAction)
+			return input;
+
+		_logger.LogInformation("Clearing CI-provided description, impact, and action because release note extraction is disabled");
+		return input with
+		{
+			Description = clearDescription ? null : input.Description,
+			Impact = clearImpact ? null : input.Impact,
+			Action = clearAction ? null : input.Action
+		};
+	}
+
+	/// <summary>
+	/// A breaking change with extraction enabled and a missing Impact or Action still needs the PR description,
+	/// even when title, type, and products were all supplied.
+	/// </summary>
+	private static bool NeedsImpactActionFromPr(CreateChangelogArguments input) =>
+		(input.ExtractReleaseNotes ?? false)
+			&& string.Equals(input.Type, ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase)
+			&& (string.IsNullOrWhiteSpace(input.Impact) || string.IsNullOrWhiteSpace(input.Action));
 
 	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
 		input with { Prs = [prUrl] };

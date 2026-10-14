@@ -470,4 +470,71 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			)
 		).MustNotHaveHappened();
 	}
+
+	[Test]
+	public async Task PostComment_StagedBreakingEntry_WinsOverMetadataValues()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: true) with
+		{
+			Gate = ValidationGate.File,
+			ResolvedType = "breaking-change",
+			Impact = "Scraped impact.",
+			Action = "Scraped action."
+		});
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => b.Contains("Users break.") && b.Contains("Upgrade now.") && !b.Contains("Scraped")),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ForkCommentOnlyBreakingEntry_KeepsYamlPreviewAndAppendsEcho()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false, isFork: true) with
+		{
+			ChangelogDir = "docs/changelog",
+			ResolvedType = "breaking-change",
+			Impact = "Scraped impact.",
+			Action = "Scraped action."
+		});
+		WriteYaml("42.yaml", BreakingYaml);
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(
+					b => b.Contains("Generated changelog entry") && b.Contains("<details>") && b.Contains("Users break.")
+				),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
+
+	[Test]
+	public async Task PostComment_ManuallyEdited_DeletesStaleComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "manually-edited") with { Gate = ValidationGate.File });
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+	}
 }

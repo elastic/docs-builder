@@ -96,6 +96,16 @@ public class ChangelogPrEvaluationService(
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
+				// The Impact/Action rules passed above. Record a terminal decision so the comment step clears any earlier failure comment.
+				if (breakingEntry != null)
+					await WriteDecisionMetadataAsync(
+						input,
+						PrEvaluationResult.ManuallyEdited.ToStringFast(true),
+						changelogDir: changelogDir,
+						changelogFilename: existingFilename,
+						defaultBranch: defaultBranch,
+						ctx: ctx
+					);
 				return await SetOutputs(PrEvaluationResult.ManuallyEdited);
 			}
 		}
@@ -339,8 +349,9 @@ public class ChangelogPrEvaluationService(
 			skipLabels: skipLabels,
 			defaultBranch: defaultBranch,
 			resolvedType: resolvedType,
-			impact: impact,
-			action: action,
+			// Only values scraped from the description are echoed. With an entry file, the file is the source.
+			impact: existingFilename == null ? impact : null,
+			action: existingFilename == null ? action : null,
 			ctx: ctx
 		);
 		return await SetOutputs(
@@ -352,8 +363,10 @@ public class ChangelogPrEvaluationService(
 			productLabelTable: productLabelTable,
 			changelogDir: changelogDir,
 			existingFilename: existingFilename,
-			resolvedImpact: impact,
-			resolvedAction: action
+			// An entry file that passed the match check is the source when the description has no section,
+			// so generation keeps the fields instead of regenerating the entry without them.
+			resolvedImpact: impact ?? breakingEntry?.Impact,
+			resolvedAction: action ?? breakingEntry?.Action
 		);
 	}
 

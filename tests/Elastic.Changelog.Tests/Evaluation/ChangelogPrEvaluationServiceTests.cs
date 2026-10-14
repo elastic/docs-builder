@@ -1255,4 +1255,21 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		VerifyOutputSet("status", "manually-edited");
 	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_BodyHasNoSections_OutputsComeFromTheFile()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "File impact.", action: "File action.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("impact", "File impact.");
+		VerifyOutputSet("action", "File action.");
+	}
 }

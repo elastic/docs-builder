@@ -161,7 +161,7 @@ Explicit CLI arguments always take priority over environment variables.
 - If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored.
 - Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
 
-`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description.
+`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description. For a `breaking-change` entry with extraction enabled, it fetches the PR for this even when the title, type, and products are already set. Disabling extraction, on the command line or with `extract.release_notes: false`, also drops the CI-provided values.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

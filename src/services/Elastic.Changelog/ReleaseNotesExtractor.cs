@@ -99,6 +99,20 @@ public static partial class ReleaseNotesExtractor
 	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
 	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
 
+	/// <summary>A match is a section start when it is a bare heading (<c>## Impact</c>) or a label with a colon (<c>Impact: ...</c>).</summary>
+	private static bool IsSectionStart(Match start, out int hashes, out string inline)
+	{
+		hashes = 0;
+		inline = string.Empty;
+		if (!start.Success)
+			return false;
+
+		hashes = start.Groups[1].Value.Length;
+		inline = start.Groups[3].Value.Trim();
+		var hasColon = start.Groups[2].Value.Length > 0;
+		return (hashes > 0 && inline.Length == 0) || hasColon;
+	}
+
 	private static string? FindSection(string? markdown, Regex startRegex)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
@@ -111,13 +125,11 @@ public static partial class ReleaseNotesExtractor
 			if (!start.Success)
 				continue;
 
-			var hashes = start.Groups[1].Value.Length;
-			var hasColon = start.Groups[2].Value.Length > 0;
-			var inline = start.Groups[3].Value.Trim();
-			var isHeading = hashes > 0 && inline.Length == 0;
 			// Prose such as "Impact of this change..." or "Actions taken in CI" must not match.
-			if (!isHeading && !hasColon)
+			if (!IsSectionStart(start, out var hashes, out var inline))
 				continue;
+
+			var isHeading = hashes > 0 && inline.Length == 0;
 
 			var content = new List<string>();
 			if (inline.Length > 0)
@@ -126,6 +138,12 @@ public static partial class ReleaseNotesExtractor
 			for (var j = i + 1; j < lines.Length; j++)
 			{
 				var line = lines[j];
+				// One section never swallows the next: stop at the start of either Impact or Action.
+				if (
+					IsSectionStart(ImpactStartRegex().Match(line), out _, out _)
+					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
+				)
+					break;
 				var heading = HeadingRegex().Match(line);
 				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
 					break;

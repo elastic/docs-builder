@@ -924,4 +924,126 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		yamlContent.Should().Contain("description: My explicit description");
 		yamlContent.Should().NotContain("CI extracted note");
 	}
+
+	[Test]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_ClearsCIImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Remove a parameter",
+			Body = "## Impact\nPRBody impact.\n\n## Action\nPRBody action.",
+			Labels = ["type:breaking"]
+		};
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Remove a parameter");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_IMPACT")).Returns("Leaked impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ACTION")).Returns("Leaked action");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("breaking-change");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null
+		};
+
+		var result = await CreateService(env).CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().NotContain("Leaked impact");
+		yamlContent.Should().NotContain("Leaked action");
+		yamlContent.Should().NotContain("PRBody");
+	}
+
+	[Test]
+	public async Task CreateChangelog_BreakingTypeSupplied_ExtractionEnabled_FetchesPrForImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Remove a parameter",
+			Body = "## Impact\nPRBody impact.\n\n## Action\nPRBody action.",
+			Labels = ["type:breaking"]
+		};
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		// Title, type and products are all supplied, so only Impact and Action are left to derive.
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Title = "Remove a parameter",
+			Type = "breaking-change",
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = true
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("PRBody impact.");
+		yamlContent.Should().Contain("PRBody action.");
+	}
 }

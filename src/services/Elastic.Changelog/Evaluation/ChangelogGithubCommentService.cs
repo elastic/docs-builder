@@ -58,7 +58,7 @@ public class ChangelogGithubCommentService(
 		var body = SelectBody(metadata, input.MetadataDir, owner, repo);
 		if (body is null)
 		{
-			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
+			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status) || IsManuallyEdited(metadata.Status))
 			{
 				_logger.LogInformation(
 					"PR #{PrNumber} is {Status} — deleting stale failure comment if present",
@@ -88,28 +88,33 @@ public class ChangelogGithubCommentService(
 		if (!generated)
 			return body;
 
-		// evaluate-pr records the sections it scraped from the PR description. Runs that stage an entry file (changelog add) are read from the YAML.
-		var breakingTypeName = ChangelogEntryType.BreakingChange.ToStringFast(true);
-		if (
-			string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase)
-			&& (metadata.Impact is not null || metadata.Action is not null)
-		)
+		// The staged entry is what bundling will use, so it wins when it is available (changelog add runs).
+		var entry = TryReadStagedEntry(metadataDir);
+		if (entry != null)
 		{
-			_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
-			// A gate-only run stages no entry file, so the generic comment-only body would warn that the entry could not be read.
-			return body is null || metadata.CommitOutcome is null
-				? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
-				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
+			if (entry is not { Type: ChangelogEntryType.BreakingChange } || (entry.Impact is null && entry.Action is null))
+				return body;
+
+			_logger.LogInformation("Echoing staged Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+			return body is null
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action)
+				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
 		}
 
-		var entry = TryReadStagedEntry(metadataDir);
-		if (entry is not { Type: ChangelogEntryType.BreakingChange })
+		// Nothing is staged (an evaluate-pr gate run): fall back to the sections it scraped from the PR description.
+		var breakingTypeName = ChangelogEntryType.BreakingChange.ToStringFast(true);
+		if (
+			!string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase)
+			|| (metadata.Impact is null && metadata.Action is null)
+		)
 			return body;
 
-		_logger.LogInformation("Echoing captured Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
-		return body is null
-			? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action)
-			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
+		_logger.LogInformation("Echoing scraped Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+		// After a commit attempt the body already carries the commit result, so append. Otherwise the generic comment-only body
+		// would only warn that the entry could not be read, so replace it.
+		return body is null || metadata.CommitOutcome is null
+			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action)
+			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
 	}
 
 	private ChangelogEntry? TryReadStagedEntry(string metadataDir)
@@ -284,6 +289,8 @@ public class ChangelogGithubCommentService(
 				: metadata.ChangelogDir + "/" + metadata.ChangelogFilename;
 
 	private static bool IsNoLabel(string status) => string.Equals(status, "no-label", StringComparison.OrdinalIgnoreCase);
+	private static bool IsManuallyEdited(string status) => string.Equals(status, "manually-edited", StringComparison.OrdinalIgnoreCase);
+
 	private static bool IsSkipped(string status) => string.Equals(status, "skipped", StringComparison.OrdinalIgnoreCase);
 }
 

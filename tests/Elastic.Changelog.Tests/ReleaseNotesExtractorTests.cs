@@ -294,7 +294,7 @@ public class ReleaseNotesExtractorTests
 			Unrelated paragraph.
 			""";
 
-		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.\nAction: Upgrade the client.");
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
 		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
 	}
 
@@ -363,5 +363,33 @@ public class ReleaseNotesExtractorTests
 
 		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
 		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpact_EmptyImpactLabelFollowedByActionLabel_ReturnsNull()
+	{
+		// language=markdown
+		var prBody = """
+			Impact:
+			Action: Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
+	public void FindImpact_ActionHeadingNestedUnderImpact_StopsAtAction()
+	{
+		// language=markdown
+		var prBody = """
+			## Impact
+			Clients break.
+			### Action
+			Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
 	}
 }
