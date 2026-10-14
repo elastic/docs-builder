@@ -291,12 +291,26 @@ public class RequestBodyExampleTests
 		var body = await BuildFrom(
 			/*lang=json,strict*/
 			"""
-			{ "type": "object", "required": ["version", "flag", "kind"],
-			  "properties": { "version": { "const": 5 }, "flag": { "const": true }, "kind": { "const": "extension" } } }
+			{ "type": "object", "required": ["version", "flag", "word", "kind", "digits"],
+			  "properties": {
+			    "version": { "const": 5 }, "flag": { "const": true }, "word": { "const": "true" }, "kind": { "const": "extension" },
+			    "digits": { "type": "string", "const": "7" } } }
 			"""
 		);
 
-		Parse(body).ToJsonString().Should().Be("""{"version":5,"flag":true,"kind":"extension"}""");
+		Parse(body).ToJsonString().Should().Be("""{"version":5,"flag":true,"word":"true","kind":"extension","digits":"7"}""");
+	}
+
+	[Test]
+	public async Task Build_ReadsAnUntypedConstOfDigitsAsANumber()
+	{
+		// The reader hands "7" and 7 over as the same text, so without a type the digits read as a number.
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""{ "type": "object", "required": ["digits"], "properties": { "digits": { "const": "7" } } }"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"digits":7}""");
 	}
 
 	[Test]

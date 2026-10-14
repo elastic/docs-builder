@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
+using System.Globalization;
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
@@ -38,26 +38,25 @@ public static class SchemaHelpers
 				?? schema.Enum?.FirstOrDefault(IsValue);
 
 	/// <summary>
-	/// The reader keeps <c>const</c> as text, so a number or boolean is parsed back unless the schema says it is a string. A
-	/// schema that names no type keeps the constant's own JSON type: <c>{ "const": 5 }</c> is the number 5.
+	/// The reader keeps <c>const</c> as text and drops its JSON type. A schema typed string keeps the text. Otherwise a
+	/// boolean is told apart by the .NET spelling the reader gives it (<c>True</c>, where the string "true" stays lowercase),
+	/// a number is parsed back, and anything else stays a string. A number and the string of its digits cannot be told
+	/// apart without a type, so <c>{ "const": "7" }</c> reads as 7; a schema that means the string should say <c>type: string</c>.
 	/// </summary>
 	private static JsonNode? Const(IOpenApiSchema schema)
 	{
-		if (string.IsNullOrEmpty(schema.Const))
+		var text = schema.Const;
+		if (string.IsNullOrEmpty(text))
 			return null;
 		if (schema.Type?.HasFlag(JsonSchemaType.String) == true)
-			return JsonValue.Create(schema.Const);
-		// A boolean constant comes back as the .NET text "True"/"False", which is not JSON.
-		var text = schema.Const.Equals("true", StringComparison.OrdinalIgnoreCase)
-			|| schema.Const.Equals("false", StringComparison.OrdinalIgnoreCase) ? schema.Const.ToLowerInvariant() : schema.Const;
-		try
-		{
-			return JsonNode.Parse(text);
-		}
-		catch (JsonException)
-		{
-			return JsonValue.Create(schema.Const);
-		}
+			return JsonValue.Create(text);
+		if (text is "True" or "False")
+			return JsonValue.Create(text == "True");
+		if (schema.Type?.HasFlag(JsonSchemaType.Boolean) == true && bool.TryParse(text, out var flag))
+			return JsonValue.Create(flag);
+		return decimal.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var number)
+			? JsonValue.Create(number)
+			: JsonValue.Create(text);
 	}
 
 	/// <summary>
