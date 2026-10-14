@@ -227,17 +227,17 @@ public partial class ChangelogBundlingService(
 	/// </summary>
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
-	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
+	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	internal static partial Regex VersionToTargetRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/issues/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubIssueUrlRegex();
 
 	/// <summary>A profile argument that is a plain version string (safe for conventional file names), not a report URL/path.</summary>
-	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$")]
+	[GeneratedRegex(@"^[A-Za-z0-9._+-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlanVersionArgumentRegex();
 
 	public async Task<bool> BundleChangelogs(IDiagnosticsCollector collector, BundleChangelogsArguments input, Cancel ctx)

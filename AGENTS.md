@@ -123,6 +123,7 @@ Beyond what `.editorconfig` can check:
 - **Complexity**: max 5–7 branches per method. Extract named helpers rather than nesting.
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
+- **Regex**: every regex must have a match timeout to prevent ReDoS, even a generous one. Use `RegexTimeouts.MatchTimeoutMilliseconds` in `[GeneratedRegex(pattern, options, RegexTimeouts.MatchTimeoutMilliseconds)]` and `RegexTimeouts.MatchTimeout` for `new Regex(...)` and static `Regex.*` calls.
 - **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
 - **Testing**: TUnit with AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.

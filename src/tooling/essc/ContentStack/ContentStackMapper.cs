@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Search.Contract;
 using Elastic.SiteSearch.Cli.Elasticsearch;
 
@@ -638,42 +639,43 @@ internal static partial class ContentStackMapper
 		return DateTimeOffset.TryParse(value, out var dto) ? dto : null;
 	}
 
-	[GeneratedRegex("<[^>]+>")]
+	[GeneratedRegex("<[^>]+>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlTagRegex();
 
-	[GeneratedRegex("&[a-zA-Z0-9#]+;")]
+	[GeneratedRegex("&[a-zA-Z0-9#]+;", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlEntityRegex();
 
-	[GeneratedRegex(@"\s+")]
+	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceRegex();
 
-	[GeneratedRegex(@"<h[1-6][^>]*>(.*?)</h[1-6]>", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+	[GeneratedRegex(@"<h[1-6][^>]*>(.*?)</h[1-6]>", RegexOptions.IgnoreCase
+		| RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingRegex();
 
-	[GeneratedRegex(@"```[\s\S]*?```")]
+	[GeneratedRegex(@"```[\s\S]*?```", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownCodeFenceRegex();
 
-	[GeneratedRegex(@"^(#{1,6})\s+(.+)$")]
+	[GeneratedRegex(@"^(#{1,6})\s+(.+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownHeadingRegex();
 
-	[GeneratedRegex(@"^>\s?")]
+	[GeneratedRegex(@"^>\s?", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownBlockquoteRegex();
 
-	[GeneratedRegex(@"^(\s*)([-*+]|\d+\.)\s+")]
+	[GeneratedRegex(@"^(\s*)([-*+]|\d+\.)\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownListBulletRegex();
 
-	[GeneratedRegex(@"!\[[^\]]*\]\([^)]*\)")]
+	[GeneratedRegex(@"!\[[^\]]*\]\([^)]*\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownImageRegex();
 
-	[GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)")]
+	[GeneratedRegex(@"\[([^\]]*)\]\([^)]*\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownLinkRegex();
 
-	[GeneratedRegex("`([^`]*)`")]
+	[GeneratedRegex("`([^`]*)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownInlineCodeRegex();
 
-	[GeneratedRegex(@"\*\*([^*]+)\*\*|__([^_]+)__")]
+	[GeneratedRegex(@"\*\*([^*]+)\*\*|__([^_]+)__", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownBoldRegex();
 
-	[GeneratedRegex(@"\*([^*]+)\*|_([^_]+)_")]
+	[GeneratedRegex(@"\*([^*]+)\*|_([^_]+)_", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownItalicRegex();
 }

@@ -5,6 +5,7 @@
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -66,7 +67,7 @@ public static partial class ApiUrlBuilder
 		return takenElsewhere ? OperationMoniker(id, primary.Route) : candidate;
 	}
 
-	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NumericSuffix();
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
@@ -110,6 +111,6 @@ public static partial class ApiUrlBuilder
 	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
-	[GeneratedRegex(@"\s*\(([^)]+)\)")]
+	[GeneratedRegex(@"\s*\(([^)]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ParentheticalSuffixPattern();
 }

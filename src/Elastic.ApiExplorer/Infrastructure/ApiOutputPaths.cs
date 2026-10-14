@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
@@ -19,7 +20,13 @@ public static class ApiOutputPaths
 
 	public static string RelativeHtmlFile(string pageUrl, string? urlPathPrefix)
 	{
-		var fileName = Regex.Replace(pageUrl.TrimEnd('/') + "/index.html", $"^{urlPathPrefix}", string.Empty);
+		var fileName = Regex.Replace(
+			pageUrl.TrimEnd('/') + "/index.html",
+			$"^{urlPathPrefix}",
+			string.Empty,
+			RegexOptions.None,
+			RegexTimeouts.MatchTimeout
+		);
 		return fileName.Trim('/');
 	}
 
@@ -37,7 +44,13 @@ public static class ApiOutputPaths
 
 	private static string RelativeSiblingFile(string pageUrl, string? urlPathPrefix, string extension)
 	{
-		var fileName = Regex.Replace(pageUrl.TrimEnd('/') + extension, $"^{urlPathPrefix}", string.Empty);
+		var fileName = Regex.Replace(
+			pageUrl.TrimEnd('/') + extension,
+			$"^{urlPathPrefix}",
+			string.Empty,
+			RegexOptions.None,
+			RegexTimeouts.MatchTimeout
+		);
 		return fileName.Trim('/');
 	}
 }

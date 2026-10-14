@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using static System.StringComparison;
@@ -58,38 +59,44 @@ public partial class Move(
 
 		var markdownLinkRegex = MarkdownLinkRegex();
 
-		var change = Regex.Replace(sourceContent, markdownLinkRegex.ToString(), match =>
-		{
-			var originalPath = match.Value.Substring(
-				match.Value.IndexOf('(') + 1,
-				match.Value.LastIndexOf(')') - match.Value.IndexOf('(') - 1
-			);
-
-			var newPath = originalPath;
-			var isAbsoluteStylePath = originalPath.StartsWith('/');
-			if (!isAbsoluteStylePath)
+		var change = Regex.Replace(
+			sourceContent,
+			markdownLinkRegex.ToString(),
+			match =>
 			{
-				var targetDirectory = Path.GetDirectoryName(targetPath)!;
-				var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
-				var fullPath = Path.GetFullPath(Path.Join(sourceDirectory, originalPath));
-				var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
+				var originalPath = match.Value.Substring(
+					match.Value.IndexOf('(') + 1,
+					match.Value.LastIndexOf(')') - match.Value.IndexOf('(') - 1
+				);
 
-				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-					relativePath = relativePath.Replace('\\', '/');
+				var newPath = originalPath;
+				var isAbsoluteStylePath = originalPath.StartsWith('/');
+				if (!isAbsoluteStylePath)
+				{
+					var targetDirectory = Path.GetDirectoryName(targetPath)!;
+					var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
+					var fullPath = Path.GetFullPath(Path.Join(sourceDirectory, originalPath));
+					var relativePath = Path.GetRelativePath(targetDirectory, fullPath);
 
-				newPath = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativePath.StartsWith("./", OrdinalIgnoreCase)
-					? "./" + relativePath
-					: relativePath;
-			}
-			var newLink = $"[{match.Groups[1].Value}]({newPath})";
-			var lineNumber = sourceContent[..match.Index].Count(c => c == '\n') + 1;
-			var columnNumber = match.Index - sourceContent.LastIndexOf('\n', match.Index);
-			if (!_linkModifications.ContainsKey(changeSet))
-				_linkModifications[changeSet] = [];
+					if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+						relativePath = relativePath.Replace('\\', '/');
 
-			_linkModifications[changeSet].Add(new LinkModification(match.Value, newLink, sourcePath, lineNumber, columnNumber));
-			return newLink;
-		});
+					newPath = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativePath.StartsWith("./", OrdinalIgnoreCase)
+						? "./" + relativePath
+						: relativePath;
+				}
+				var newLink = $"[{match.Groups[1].Value}]({newPath})";
+				var lineNumber = sourceContent[..match.Index].Count(c => c == '\n') + 1;
+				var columnNumber = match.Index - sourceContent.LastIndexOf('\n', match.Index);
+				if (!_linkModifications.ContainsKey(changeSet))
+					_linkModifications[changeSet] = [];
+
+				_linkModifications[changeSet].Add(new LinkModification(match.Value, newLink, sourcePath, lineNumber, columnNumber));
+				return newLink;
+			},
+			RegexOptions.None,
+			RegexTimeouts.MatchTimeout
+		);
 
 		_changes[changeSet] = [new Change(changeSet.From, sourceContent, change)];
 
@@ -251,7 +258,7 @@ public partial class Move(
 		var pathInfo = GetPathInfo(currentDir, source, target);
 		var linkPattern = BuildLinkPattern(pathInfo);
 
-		if (Regex.IsMatch(content, linkPattern))
+		if (Regex.IsMatch(content, linkPattern, RegexOptions.None, RegexTimeouts.MatchTimeout))
 		{
 			var newContent = ReplaceLinks(changeSet, content, linkPattern, pathInfo.absoluteStyleTarget, target, value);
 			_changes[changeSet].Add(new Change(value.SourceFile, content, newContent));
@@ -294,38 +301,44 @@ public partial class Move(
 		string target,
 		MarkdownFile value
 	) =>
-		Regex.Replace(content, linkPattern, match =>
-		{
-			var originalPath = match.Value.Substring(
-				match.Value.IndexOf('(') + 1,
-				match.Value.LastIndexOf(')') - match.Value.IndexOf('(') - 1
-			);
-			var anchor = originalPath.Contains('#') ? originalPath[originalPath.IndexOf('#')..] : "";
-
-			string newLink;
-			if (originalPath.StartsWith('/'))
-				newLink = $"[{match.Groups[1].Value}]({absoluteStyleTarget}{anchor})";
-			else
+		Regex.Replace(
+			content,
+			linkPattern,
+			match =>
 			{
-				var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
-				newLink = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativeTarget.StartsWith("./", OrdinalIgnoreCase)
-					? $"[{match.Groups[1].Value}](./{relativeTarget}{anchor})"
-					: $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
-			}
+				var originalPath = match.Value.Substring(
+					match.Value.IndexOf('(') + 1,
+					match.Value.LastIndexOf(')') - match.Value.IndexOf('(') - 1
+				);
+				var anchor = originalPath.Contains('#') ? originalPath[originalPath.IndexOf('#')..] : "";
 
-			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-				newLink = newLink.Replace('\\', '/');
+				string newLink;
+				if (originalPath.StartsWith('/'))
+					newLink = $"[{match.Groups[1].Value}]({absoluteStyleTarget}{anchor})";
+				else
+				{
+					var relativeTarget = Path.GetRelativePath(Path.GetDirectoryName(value.FilePath)!, target);
+					newLink = originalPath.StartsWith("./", OrdinalIgnoreCase) && !relativeTarget.StartsWith("./", OrdinalIgnoreCase)
+						? $"[{match.Groups[1].Value}](./{relativeTarget}{anchor})"
+						: $"[{match.Groups[1].Value}]({relativeTarget}{anchor})";
+				}
 
-			var lineNumber = content[..match.Index].Count(c => c == '\n') + 1;
-			var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
-			if (!_linkModifications.ContainsKey(changeSet))
-				_linkModifications[changeSet] = [];
-			_linkModifications[changeSet].Add(
-				new LinkModification(match.Value, newLink, value.SourceFile.FullName, lineNumber, columnNumber)
-			);
-			return newLink;
-		});
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					newLink = newLink.Replace('\\', '/');
 
-	[GeneratedRegex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled)]
+				var lineNumber = content[..match.Index].Count(c => c == '\n') + 1;
+				var columnNumber = match.Index - content.LastIndexOf('\n', match.Index);
+				if (!_linkModifications.ContainsKey(changeSet))
+					_linkModifications[changeSet] = [];
+				_linkModifications[changeSet].Add(
+					new LinkModification(match.Value, newLink, value.SourceFile.FullName, lineNumber, columnNumber)
+				);
+				return newLink;
+			},
+			RegexOptions.None,
+			RegexTimeouts.MatchTimeout
+		);
+
+	[GeneratedRegex(@"\[([^\]]*)\]\(((?:\.{0,2}\/)?[^:)]+\.md(?:#[^)]*)?)\)", RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MarkdownLinkRegex();
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.Roles.Icons;
 using Markdig;
@@ -78,18 +79,18 @@ public class HeadingBlockWithSlugParser : HeadingBlockParser
 
 public static partial class HeadingAnchorParser
 {
-	[GeneratedRegex(@"^.*(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^.*(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex MatchAnchorLine();
 
-	[GeneratedRegex(@"(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"(?:\[[^[]+\])\s*$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex MatchAnchor();
 
-	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\$\$\$[^\$]+\$\$\$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex InlineAnchors();
 }
 
 public static partial class HeadingAppliesToParser
 {
-	[GeneratedRegex(@"\{applies_to\}`[^`]*`", RegexOptions.Compiled)]
+	[GeneratedRegex(@"\{applies_to\}`[^`]*`", RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex AppliesToSyntaxRegex();
 }

@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Transport;
 using Microsoft.Extensions.Logging;
 
@@ -193,10 +194,10 @@ internal sealed partial class SearchResourceSynchronizer(DistributedTransport so
 	//   website-search.semantic-prod-latest
 	//   docs-assembler.lexical-staging-latest
 	//   site-docset.semantic-dev-latest
-	[GeneratedRegex(@"\.(?:lexical|semantic)-(?<env>[^-]+(?:-[^-]+)*?)-latest$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\.(?:lexical|semantic)-(?<env>[^-]+(?:-[^-]+)*?)-latest$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AliasEnvRegex();
 
 	// Matches the search-facing page alias: ws-content-<env>
-	[GeneratedRegex(@"^ws-content-(?<env>.+)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^ws-content-(?<env>.+)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PageAliasEnvRegex();
 }

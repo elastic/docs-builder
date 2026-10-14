@@ -63,10 +63,10 @@ public partial class DefaultSearchService<TDocument>(
 	private static readonly Regex ExcludeFromHighlightRegex = BuildExcludeFromHighlightRegex();
 
 	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is it|do i|does|will|would|could)", RegexOptions.IgnoreCase
-		| RegexOptions.Compiled)]
+		| RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildSemanticKeywordsRegex();
 
-	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is|it|do|i|does|will|would|could)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^(how|why|what|when|where|can|should|is|it|do|i|does|will|would|could)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BuildExcludeFromHighlightRegex();
 
 	private static readonly HighlightOptions FullPageHighlightOptions = new()

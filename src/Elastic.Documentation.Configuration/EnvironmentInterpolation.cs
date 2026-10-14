@@ -33,7 +33,7 @@ public static partial class EnvironmentInterpolation
 		"KIBANA_STORYBOOK_REGISTRY"
 	}.ToFrozenSet(StringComparer.Ordinal);
 
-	[GeneratedRegex(@"\$\{(?<name>[A-Za-z_][A-Za-z0-9_]*)(?::-(?<default>[^}]*))?\}", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"\$\{(?<name>[A-Za-z_][A-Za-z0-9_]*)(?::-(?<default>[^}]*))?\}", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ExpressionRegex();
 
 	/// <summary>

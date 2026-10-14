@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.Serverless;
 
@@ -81,10 +82,10 @@ public static partial class ServerlessPromotion
 		)
 	};
 
-	[GeneratedRegex(@"\bproduction-noncanary-ds-5\b")]
+	[GeneratedRegex(@"\bproduction-noncanary-ds-5\b", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FinalSliceMessageRegex();
 
-	[GeneratedRegex(@"^\s*production-noncanary-ds-5:\s*[""']?([0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^\s*production-noncanary-ds-5:\s*[""']?([0-9a-fA-F]{7,40})[""']?\s*$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FinalSliceVersionRegex();
 
 	/// <summary>Whether a gitops commit promoted the final slice. Its message names the slices,

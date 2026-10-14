@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 
@@ -21,13 +22,14 @@ public sealed record RequiredPrivileges(IReadOnlyList<PrivilegeRow> Rows, string
 /// </summary>
 public static partial class RequiredPrivilegesExtractor
 {
-	[GeneratedRegex(@"^## Required authorization[ \t]*\r?\n(?<body>.*?)(?=^#{1,6} |\z)", RegexOptions.Multiline | RegexOptions.Singleline)]
+	[GeneratedRegex(@"^## Required authorization[ \t]*\r?\n(?<body>.*?)(?=^#{1,6} |\z)", RegexOptions.Multiline
+		| RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ElasticsearchBlock();
 
-	[GeneratedRegex(@"(?:<br\s*/?>\s*)*\[Required authorization\][ \t]*Route required privileges:[ \t]*(?<list>[^\r\n]*?)\.?[ \t]*(?=\r?\n|<br|$)")]
+	[GeneratedRegex(@"(?:<br\s*/?>\s*)*\[Required authorization\][ \t]*Route required privileges:[ \t]*(?<list>[^\r\n]*?)\.?[ \t]*(?=\r?\n|<br|$)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex KibanaLine();
 
-	[GeneratedRegex(@"`(?<value>[^`]+)`")]
+	[GeneratedRegex(@"`(?<value>[^`]+)`", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BacktickValue();
 
 	public static RequiredPrivileges Extract(OpenApiOperation operation, string? description, ILogger? log, string? route)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Markdig;
 using Markdig.Extensions.DefinitionLists;
 using Markdig.Renderers;
@@ -142,16 +143,16 @@ public partial class DefinitionListAnchorRenderer : HtmlDefinitionListRenderer
 		return sb.ToString().Trim();
 	}
 
-	[GeneratedRegex(@"--\[?(?:no-)?\]?([\w-]+)")]
+	[GeneratedRegex(@"--\[?(?:no-)?\]?([\w-]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LongFlagRegex();
 
-	[GeneratedRegex(@"\[no-\]")]
+	[GeneratedRegex(@"\[no-\]", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NoFlagRegex();
 
-	[GeneratedRegex(@"<([\w-]+)>")]
+	[GeneratedRegex(@"<([\w-]+)>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PositionalRegex();
 
-	[GeneratedRegex(@"-([a-zA-Z])")]
+	[GeneratedRegex(@"-([a-zA-Z])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ShortFlagRegex();
 }
 

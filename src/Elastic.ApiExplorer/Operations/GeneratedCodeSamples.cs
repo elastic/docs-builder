@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Operations;
 
@@ -86,19 +87,21 @@ public static partial class GeneratedCodeSamples
 		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + route, 1);
 	}
 
-	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex RunRequestLine();
 
-	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ConsoleRequestLine();
 
-	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlBody();
 
-	[GeneratedRegex(@"-X\s+[A-Z]+", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"-X\s+[A-Z]+", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlMethod();
 
 	/// <summary>The host of the request URL and the path after it: <c>$ELASTICSEARCH_URL/x</c>, <c>${KIBANA_URL}/x</c>, or <c>https://localhost:9200/x</c>.</summary>
-	[GeneratedRegex(@"(\$\{?[A-Za-z0-9_]+\}?|https?://[^/""'\s]+)/[^""'\s]*", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"(\$\{?[A-Za-z0-9_]+\}?|https?://[^/""'\s]+)/[^""'\s]*", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlHostPath();
 }

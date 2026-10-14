@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation;
 using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.Inline;
@@ -90,7 +91,11 @@ public partial class FootnotesMultipleReferencesTests() : InlineTest(
 		Html.Should().Contain("href=\"#fnref:2\"");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("href=\"#fn:1\"")]
+	[System.Text.RegularExpressions.GeneratedRegex("href=\"#fn:1\"", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex MyRegex();
 }
 
@@ -242,7 +247,11 @@ public partial class FootnotesInlineCodeNotParsedTests() : InlineTest(
 		count.Should().Be(1, "Inline code should not be parsed as footnote references");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
@@ -270,7 +279,11 @@ public partial class FootnotesCodeBlockNotParsedTests() : InlineTest(
 		count.Should().Be(1, "Code block content should not be parsed as footnote references");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
@@ -315,7 +328,11 @@ public partial class FootnotesCodeBlockInDirectiveTests() : InlineTest(
 		count.Should().Be(2, $"Expected 2 back-refs (one per footnote), got {count}. Code block content may be parsed incorrectly.");
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref")]
+	[System.Text.RegularExpressions.GeneratedRegex("footnote-back-ref", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 

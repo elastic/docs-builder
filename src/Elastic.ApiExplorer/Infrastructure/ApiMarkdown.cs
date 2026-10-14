@@ -148,20 +148,20 @@ public static partial class ApiMarkdown
 	}
 
 	// Tag tokens, with quoted attribute values skipped so a ">" inside one does not end the tag.
-	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>")]
+	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlTag();
 
-	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)")]
+	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GroupLinkPattern();
 
-	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)")]
+	[GeneratedRegex(@"\]\(\.\./operation/([^)#]+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationLinkPattern();
 
-	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)")]
+	[GeneratedRegex(@"(?<prefix>\]\()(?<url>[^)\s]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkDestinationPattern();
 
 	// Regex to match mustache-style patterns like {{var}} or {{{var}}} that conflict with docs-builder substitutions
-	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}")]
+	[GeneratedRegex(@"\{\{\{?[^}]+\}?\}\}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MustachePattern();
 
 	private static readonly HtmlParser DescriptionParser = new();
@@ -226,6 +226,6 @@ public static partial class ApiMarkdown
 		}
 	}
 
-	[GeneratedRegex(@"[ \t]{2,}")]
+	[GeneratedRegex(@"[ \t]{2,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceCollapsePattern();
 }

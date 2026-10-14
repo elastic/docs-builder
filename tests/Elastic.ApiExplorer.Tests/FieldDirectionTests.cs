@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Elastic.Documentation;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -97,7 +98,10 @@ public class FieldDirectionTests
 
 		html.Should().Contain("id=\"res-200-node-children\"", "the field keeps its anchor");
 		html.Should().Contain("id=\"res-200-node--children\"", "the row's nested rows take the double-dash id");
-		var ids = Regex.Matches(html, "\\bid=\"([^\"]*)\"").Select(m => m.Groups[1].Value).ToArray();
+		var ids = Regex
+			.Matches(html, "\\bid=\"([^\"]*)\"", RegexOptions.None, RegexTimeouts.MatchTimeout)
+			.Select(m => m.Groups[1].Value)
+			.ToArray();
 		ids.Should().OnlyHaveUniqueItems();
 	}
 

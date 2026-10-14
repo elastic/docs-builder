@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Supplemental;
 
@@ -66,6 +67,7 @@ public static partial class ApiSupplementalName
 		return stem.Length > 0;
 	}
 
-	[GeneratedRegex(@"^(op|tag)-(.+?)(?:\.v(\d+))?\.md$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^(op|tag)-(.+?)(?:\.v(\d+))?\.md$", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FileNamePattern();
 }

@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -40,7 +41,7 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 			html.Should().Contain($"id=\"{target}\"");
 	}
 
-	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""")]
+	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlaceholderLink();
 
 	private async Task<string> RenderAsync(OperationNavigationItem nav)

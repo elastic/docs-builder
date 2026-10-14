@@ -287,6 +287,6 @@ public record AssemblyConfiguration
 
 internal static partial class ContentSourceRegex
 {
-	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^\d+\.\d+$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex MatchVersionBranch();
 }

@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.LegacyDocs.Migration.Asciidoc.Ast;
 
 namespace Elastic.LegacyDocs.Migration.Asciidoc;
@@ -24,7 +25,7 @@ public static partial class GuideUrlRewriter
 {
 	private const string GuidePrefix = "https://www.elastic.co/guide/";
 
-	[GeneratedRegex(@"^https://www\.elastic\.co/guide/(.+?)(?:\.html)?(?:#(.+))?$")]
+	[GeneratedRegex(@"^https://www\.elastic\.co/guide/(.+?)(?:\.html)?(?:#(.+))?$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GuideUrlRegex();
 
 	public static string? TryRewriteToInternal(string url)
@@ -217,7 +218,7 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 		EmitChildren(section.Children);
 	}
 
-	[GeneratedRegex(@"^<titleabbrev>.*</titleabbrev>\s*$", RegexOptions.Singleline)]
+	[GeneratedRegex(@"^<titleabbrev>.*</titleabbrev>\s*$", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TitleAbbrevRegex();
 
 	private void EmitParagraph(ParagraphNode paragraph)
@@ -602,10 +603,10 @@ public partial class MarkdownEmitter(MarkdownEmitterOptions options)
 			WriteLine($"[^{index}]: {content}");
 	}
 
-	[GeneratedRegex(@"\{([a-z][a-z0-9_-]*)\}")]
+	[GeneratedRegex(@"\{([a-z][a-z0-9_-]*)\}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AttrRefRegex();
 
-	[GeneratedRegex(@"<<([^,>\n]+)(?:,([^>\n]+))?>>")]
+	[GeneratedRegex(@"<<([^,>\n]+)(?:,([^>\n]+))?>>", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TitleXrefRegex();
 
 	// Replaces {name} → {{name}} for product-name subs in raw title strings (which

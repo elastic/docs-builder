@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Markdown.Diagnostics;
 using Markdig.Syntax;
 
@@ -56,7 +57,7 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 	public bool IsInGroup { get; private set; }
 
 	// Regex to match a single Markdown link, including reference-style links.
-	[GeneratedRegex(@"^\s*\[[^\]]*\](?:\([^\)]+\)|\[[^\]]+\]|\[\])\s*$", RegexOptions.Singleline)]
+	[GeneratedRegex(@"^\s*\[[^\]]*\](?:\([^\)]+\)|\[[^\]]+\]|\[\])\s*$", RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LinkPattern();
 
 	public override void FinalizeAndValidate(ParserContext context)

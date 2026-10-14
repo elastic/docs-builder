@@ -310,7 +310,7 @@ public partial class ChangelogBackfillService(
 		);
 	}
 
-	[GeneratedRegex(@"/pull/(?<number>\d+)$")]
+	[GeneratedRegex(@"/pull/(?<number>\d+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PrNumberFromUrlRegex();
 
 	private static (int NoPrEntries, int DuplicatePrRefs) CountPrStats(IReadOnlyList<MigratedRelease> releases)

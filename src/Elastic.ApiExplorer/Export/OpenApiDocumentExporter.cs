@@ -31,7 +31,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
 	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
 
-	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex OperationListIntroRegex();
 
 	/// <summary>
