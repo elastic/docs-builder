@@ -82,6 +82,8 @@ public class ChangelogTextUtilitiesTests
 	[Arguments("fix create visualization", "Fix create visualization")]
 	[Arguments("bulk delete observables", "Bulk delete observables")]
 	[Arguments("Already capitalized", "Already capitalized")]
+	[Arguments("don't return an empty response", "Don't return an empty response")]
+	[Arguments("don\u2019t return an empty response", "Don\u2019t return an empty response")]
 	[Arguments("kibana.alert.rule is renamed", "kibana.alert.rule is renamed")]
 	[Arguments("inputsForVersions is refreshed", "inputsForVersions is refreshed")]
 	[Arguments("snake_case_field is renamed", "snake_case_field is renamed")]
@@ -96,6 +98,7 @@ public class ChangelogTextUtilitiesTests
 	[Test]
 	[Arguments("[Cases] feat(cases): bulk delete observables", "Bulk delete observables")]
 	[Arguments("fix(apm): apply environment filter", "Apply environment filter")]
+	[Arguments("fix: don't return an empty response", "Don't return an empty response")]
 	[Arguments("Fix: Sanitize local tool names", "Sanitize local tool names")]
 	[Arguments("[Inference API] Add new endpoint", "Add new endpoint")]
 	public void StripTitlePrefix_CombinesAllSteps(string input, string expected)
