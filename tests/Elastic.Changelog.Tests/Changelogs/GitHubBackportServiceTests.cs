@@ -32,7 +32,9 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		public Dictionary<int, (bool Merged, string Branch, string Repo)> PullRequests { get; } = [];
 		public Dictionary<string, int[]> TrailerPullRequests { get; } = [];
 		public int GraphQlRequests { get; set; }
-		public string? ForcedError { get; set; }
+		/// <summary>An error added to the validation queries only, so tests can check that validation fails closed.</summary>
+		public string? ValidationError { get; set; }
+		public int ValidationRequests { get; set; }
 		private const int FirstPage = 50;
 
 		public string Respond(string query)
@@ -40,9 +42,6 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			GraphQlRequests++;
 			var fields = new List<string>();
 			var errors = new List<string>();
-			if (ForcedError != null)
-				errors.Add(ForcedError);
-
 			if (query.Contains("def: defaultBranchRef", StringComparison.Ordinal))
 				fields.Add("\"def\": { \"name\": \"main\" }");
 
@@ -51,6 +50,13 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 				fields.Add(
 					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value), 100)} }}"
 				);
+
+			if (query.Contains(" v", StringComparison.Ordinal) && Regex.IsMatch(query, @" v\d+: pullRequest"))
+			{
+				ValidationRequests++;
+				if (ValidationError != null)
+					errors.Add(ValidationError);
+			}
 
 			foreach (Match m in AliasRegex().Matches(query))
 			{
@@ -231,6 +237,20 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ResolveRoots_SubjectOnlyMentionsAnEarlierPullRequest_DoesNotAddIt()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Feature (#20)", null, ["Follow up on #10", "Feature (#20)"]);
+		github.PullRequests[10] = Merged();
+		github.PullRequests[20] = Merged();
+
+		var result = await ResolveAsync(github, 200);
+
+		result.Should().NotBeNull();
+		result[200]!.Roots.Should().Equal(20);
+	}
+
+	[Test]
 	public async Task ResolveRoots_OversizedNumber_IsIgnoredAndTheOtherReferenceUsed()
 	{
 		var github = new FakeGitHub();
@@ -249,7 +269,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	{
 		var github = new FakeGitHub
 		{
-			ForcedError = """{ "type": "INTERNAL", "path": ["repository", "v100"], "message": "Something went wrong" }"""
+			ValidationError = """{ "type": "INTERNAL", "path": ["repository", "v100"], "message": "Something went wrong" }"""
 		};
 		github.Backports[200] = ("Fix the thing (#100)", null, []);
 		github.PullRequests[100] = Merged();
@@ -257,6 +277,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		var result = await ResolveAsync(github, 200);
 
 		result.Should().BeNull();
+		github.ValidationRequests.Should().Be(1, "the error must come from the validation query, not an earlier one");
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Something went wrong"));
 	}
 

@@ -183,4 +183,11 @@ public class BackportReferencesTests
 	[Test]
 	public void Choose_SubjectMentionsEarlierPullRequestAlongsideTheOriginal_KeepsOnlyTheOriginal() =>
 		BackportReferences.Choose([], [10, 20], [20], [], [[10, 20]])!.Roots.Should().Equal(20);
+
+	[Test]
+	public void Extract_SubjectGroups_KeepOnlyTheNumberAtTheEndOfASubject() =>
+		Extract("Backport (#20)", null, 500, "Follow up on #10", "Feature (#20)", "Other change (#21)")
+			.SubjectGroups
+			.Should()
+			.BeEquivalentTo(new[] { new[] { 20 }, new[] { 21 } });
 }
