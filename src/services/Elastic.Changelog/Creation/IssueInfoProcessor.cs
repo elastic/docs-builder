@@ -118,7 +118,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 
 			var issueTitle = issueInfo.Title;
 			if (input.StripTitlePrefix == true)
-				issueTitle = ChangelogTextUtilities.StripSquareBracketPrefix(issueTitle);
+				issueTitle = ChangelogTextUtilities.StripTitlePrefix(issueTitle);
 			derived.Title = issueTitle;
 			logger.LogInformation("Using issue title: {Title}", derived.Title);
 		}

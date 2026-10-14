@@ -63,6 +63,48 @@ public class ChangelogTextUtilitiesTests
 	}
 
 	[Test]
+	[Arguments("fix: Sanitize local tool names", "Sanitize local tool names")]
+	[Arguments("Fix: Do not error when role is not set", "Do not error when role is not set")]
+	[Arguments("feat(cases): bulk delete observables", "bulk delete observables")]
+	[Arguments("fix(apm)!: apply environment filter", "apply environment filter")]
+	[Arguments("fix create visualization", "fix create visualization")]
+	[Arguments("Fixes the sparkline", "Fixes the sparkline")]
+	[Arguments("fix:NoSpace", "fix:NoSpace")]
+	[Arguments("fix: ", "fix: ")]
+	[Arguments("Inbound Telemetry: Count events", "Inbound Telemetry: Count events")]
+	public void StripConventionalCommitPrefix_RemovesPrefix(string input, string expected)
+	{
+		var result = ChangelogTextUtilities.StripConventionalCommitPrefix(input);
+		result.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("fix create visualization", "Fix create visualization")]
+	[Arguments("bulk delete observables", "Bulk delete observables")]
+	[Arguments("Already capitalized", "Already capitalized")]
+	[Arguments("kibana.alert.rule is renamed", "kibana.alert.rule is renamed")]
+	[Arguments("inputsForVersions is refreshed", "inputsForVersions is refreshed")]
+	[Arguments("snake_case_field is renamed", "snake_case_field is renamed")]
+	[Arguments("`code` first", "`code` first")]
+	[Arguments("", "")]
+	public void CapitalizeFirstLetter_CapitalizesPlainWords(string input, string expected)
+	{
+		var result = ChangelogTextUtilities.CapitalizeFirstLetter(input);
+		result.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("[Cases] feat(cases): bulk delete observables", "Bulk delete observables")]
+	[Arguments("fix(apm): apply environment filter", "Apply environment filter")]
+	[Arguments("Fix: Sanitize local tool names", "Sanitize local tool names")]
+	[Arguments("[Inference API] Add new endpoint", "Add new endpoint")]
+	public void StripTitlePrefix_CombinesAllSteps(string input, string expected)
+	{
+		var result = ChangelogTextUtilities.StripTitlePrefix(input);
+		result.Should().Be(expected);
+	}
+
+	[Test]
 	[Arguments(null, false)]
 	[Arguments("", false)]
 	[Arguments("  ", false)]

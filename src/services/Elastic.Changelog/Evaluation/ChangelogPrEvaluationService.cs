@@ -90,7 +90,7 @@ public class ChangelogPrEvaluationService(
 		// Resolve title from PR title only (release note text is never used as title)
 		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
-			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+			prTitle = ChangelogTextUtilities.StripTitlePrefix(prTitle);
 
 		string? description = null;
 		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))

@@ -192,7 +192,7 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
 | `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`). |
-| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles; strip a single hyphen separator or colon after the prefix when it is followed by whitespace (default: `false`). |
+| `extract.strip_title_prefix` | Remove square-bracket prefixes and conventional-commit prefixes (such as `fix:` or `feat(scope):`) from PR titles, strip a single hyphen separator or colon after a bracket prefix when it is followed by whitespace, and capitalize the first letter of the result (default: `false`). |
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
 
@@ -209,6 +209,8 @@ The extracted release note text is used in the changelog `description`.
 
 When `extract.strip_title_prefix` is `true`:
 
+- Conventional-commit prefixes (`feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, `test`, `style`, `build`, `ci`, `revert`, with an optional scope and `!`) are removed only when text follows them. For example, `fix(apm): apply filter` becomes `Apply filter`.
+- The first letter is capitalized unless the first word looks like code (it contains digits, underscores, dots, backticks, or inner capitals).
 - The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
 - Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
 - The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
