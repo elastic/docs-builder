@@ -6,6 +6,7 @@ using System.Text;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Elastic.ApiExplorer.Infrastructure;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -45,6 +46,73 @@ public class ParameterExampleTests
 		  }
 		}
 		""";
+
+	// OpenAPI 3.1 allows a list of types, so the value of an example, not the schema's type, says what it is.
+	private const string Spec31 =
+		"""
+		{
+		  "openapi": "3.1.0",
+		  "info": { "title": "t", "version": "1" },
+		  "paths": {
+		    "/items": {
+		      "get": {
+		        "parameters": [
+		          { "name": "string_or_bool", "in": "query", "example": "9c235210-6834-11ea", "schema": { "type": ["string", "boolean"] } },
+		          { "name": "string_or_int", "in": "query", "example": "latest", "schema": { "type": ["string", "integer"] } },
+		          { "name": "bool_value", "in": "query", "example": true, "schema": { "type": ["string", "boolean"] } },
+		          { "name": "int_value", "in": "query", "example": 5, "schema": { "type": ["string", "integer"] } },
+		          { "name": "stamps", "in": "query", "example": [1700000000], "schema": { "type": "array", "items": { "type": "integer", "format": "int64" } } },
+		          { "name": "numbers", "in": "query", "example": [1, 2], "schema": { "type": "array", "items": { "type": "integer" } } },
+		          { "name": "quoted", "in": "query", "example": "a`b", "schema": { "type": "string" } }
+		        ],
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    }
+		  }
+		}
+		""";
+
+	[Test]
+	[Arguments("string_or_bool", "9c235210-6834-11ea")]
+	[Arguments("string_or_int", "latest")]
+	[Arguments("stamps", "[1700000000]")]
+	[Arguments("quoted", "a`b")]
+	public async Task BuildParameterList_ValueDecidesNotSchemaType_ExampleIsShown(string name, string expected)
+	{
+		var rows = (await ListAsync(Spec31)).Items;
+
+		rows.Single(r => r.Name == name).Example.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("bool_value", "a boolean value is a guess even when the schema also allows a string")]
+	[Arguments("int_value", "a bare number is a guess even when the schema also allows a string")]
+	[Arguments("numbers", "an array of bare numbers has no format on its items")]
+	public async Task BuildParameterList_ValueIsSelfEvident_ExampleIsLeftOut(string name, string reason)
+	{
+		var rows = (await ListAsync(Spec31)).Items;
+
+		rows.Single(r => r.Name == name).Example.Should().BeNull(reason);
+	}
+
+	[Test]
+	public async Task Write_ExampleWithBacktick_KeepsItInsideTheCodeSpan()
+	{
+		var markdown = new StringBuilder();
+
+		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(Spec31), "/api/doc/fixture");
+
+		markdown.ToString().Should().Contain("Example: ``a`b``");
+	}
+
+	[Test]
+	[Arguments("plain", "`plain`")]
+	[Arguments("a`b", "``a`b``")]
+	[Arguments("`x", "`` `x ``")]
+	[Arguments("x`", "`` x` ``")]
+	[Arguments("a``b", "```a``b```")]
+	public void CodeSpan_TextWithBackticks_UsesALongerDelimiter(string text, string expected) =>
+		ApiCommonMark.CodeSpan(text).Should().Be(expected);
 
 	[Test]
 	[Arguments("case_id", "9c235210-6834-11ea")]
@@ -103,9 +171,9 @@ public class ParameterExampleTests
 
 	private static async Task<IReadOnlyList<ApiProperty>> RowsAsync() => (await ListAsync()).Items;
 
-	private static async Task<ApiPropertyList> ListAsync()
+	private static async Task<ApiPropertyList> ListAsync(string spec = Spec)
 	{
-		var document = await LoadSpecAsync(Spec);
+		var document = await LoadSpecAsync(spec);
 		var parameters = document.Paths!["/items"].Operations![HttpMethod.Get].Parameters!.Select(
 			p => new ParameterRowInput(p, p.Description)
 		).ToArray();

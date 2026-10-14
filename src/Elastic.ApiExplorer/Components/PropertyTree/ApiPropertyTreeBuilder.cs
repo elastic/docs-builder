@@ -226,7 +226,7 @@ public partial class ApiPropertyTreeBuilder(
 		return constraints;
 	}
 
-	private static string? Format(IOpenApiSchema schema)
+	internal static string? Format(IOpenApiSchema schema)
 	{
 		if (!string.IsNullOrWhiteSpace(schema.Format))
 			return schema.Format;
