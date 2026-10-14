@@ -131,7 +131,7 @@
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.AnchorId-children">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
 				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
 			</button>
@@ -140,7 +140,7 @@
 	@if (Model.Children.Kind == ChildKind.Dictionary)
 	{
 		var dict = Model.Children.Dictionary!;
-			<div class="nested-properties" id="@Model.AnchorId-children">
+			<div class="nested-properties" id="@Model.ChildrenId">
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
@@ -151,7 +151,7 @@
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.KeyAnchorId-children">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
 									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
 								</button>
@@ -159,13 +159,13 @@
 						}
 						@if (dict.UseHidden)
 						{
-							<div class="nested-properties" id="@dict.KeyAnchorId-children" hidden="until-found">
+							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
 							</div>
 						}
 						else
 						{
-							<div class="nested-properties" id="@dict.KeyAnchorId-children">
+							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
 							</div>
 						}
@@ -177,14 +177,14 @@
 	{
 		if (Model.Children.UseHidden)
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
+				<div class="nested-properties" id="@Model.ChildrenId" hidden="until-found">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 		else
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children">
+				<div class="nested-properties" id="@Model.ChildrenId">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
@@ -194,13 +194,13 @@
 	{
 		if (Model.Children.UseHidden)
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
+				<div class="nested-properties" id="@Model.ChildrenId" hidden="until-found">
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
 				</div>
 		}
 		else
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children">
+				<div class="nested-properties" id="@Model.ChildrenId">
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
 				</div>
 		}

@@ -116,13 +116,13 @@
 				}
 				if (folded)
 				{
-					<div class="nested-properties" id="@variant.AnchorId-children" hidden="until-found">
+					<div class="nested-properties" id="@variant.ChildrenId" hidden="until-found">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
 					</div>
 				}
 				else
 				{
-					<div class="nested-properties" id="@variant.AnchorId-children">
+					<div class="nested-properties" id="@variant.ChildrenId">
 						@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(variant.Properties))
 					</div>
 				}

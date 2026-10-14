@@ -67,7 +67,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 			"""
 			## Header parameters
 
-			- `X-Opaque-Id` (string)
+			- `X-Opaque-Id` (string) — optional
 			  Traces the request in logs and tasks.
 			"""
 		);
@@ -85,6 +85,23 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Write_RequiredParameter_SaysSo()
+	{
+		var page = OperationPageModel.Create(DocsGet.Model, RenderContext(DocsGet));
+		var required = page.QueryParameters with { Items = [page.QueryParameters.Items[0] with { IsRequired = true }] };
+		var markdown = new System.Text.StringBuilder();
+
+		ApiPropertyMarkdown.WriteList(markdown, required, "/api/doc/fixture");
+
+		page
+			.ParameterSections
+			.SelectMany(s => s.Parameters.Items)
+			.Should()
+			.OnlyContain(p => p.IsRequest, "parameters are part of the request");
+		markdown.ToString().Should().StartWith("- `mode` (enum) — required");
+	}
+
+	[Test]
 	public void Write_ReferencedMapParameter_ListsMapValues()
 	{
 		var context = RenderContext(DocsGet);
@@ -92,7 +109,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 
 		markdown.Should().Contain(
 			"""
-			- `tags` (map string to string · min properties: 1 · max properties: 64)
+			- `tags` (map string to string · min properties: 1 · max properties: 64) — optional
 			  Only documents with these tags and values.
 			  Map values (string · min length: 1 · max length: 128 · pattern: ^[a-z0-9][a-z0-9_-]*$)
 			"""
