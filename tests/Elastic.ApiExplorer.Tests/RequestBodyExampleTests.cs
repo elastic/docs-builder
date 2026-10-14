@@ -136,6 +136,22 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_KeepsTheSharedRequiredPropertiesBesideAUnionVariant()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["kind"], "properties": { "kind": { "type": "string", "enum": ["a", "b"] } },
+			  "oneOf": [
+			    { "type": "object", "required": ["a"], "properties": { "a": { "type": "integer" } } },
+			    { "type": "object", "required": ["b"], "properties": { "b": { "type": "integer" } } } ] }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"a":0,"kind":"a"}""");
+	}
+
+	[Test]
 	public async Task Build_WithoutRequiredProperties_IsAnEmptyObject()
 	{
 		var body = await BuildFrom(

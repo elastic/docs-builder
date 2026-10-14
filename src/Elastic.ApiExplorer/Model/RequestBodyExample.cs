@@ -53,7 +53,8 @@ public static class RequestBodyExample
 		{
 			// The first variant that is a value; `null` is listed as a variant only to allow leaving the field out.
 			var variant = members.FirstOrDefault(m => (analyzer.ResolveSchema(m) ?? m).Type != JsonSchemaType.Null);
-			return variant is null ? null : Value(analyzer, variant, depth + 1);
+			var value = variant is null ? null : Value(analyzer, variant, depth + 1);
+			return value is JsonObject variantBody ? WithSharedProperties(analyzer, resolved, variantBody, depth) : value;
 		}
 
 		if (type.HasFlag(JsonSchemaType.Array))
@@ -68,6 +69,26 @@ public static class RequestBodyExample
 			return wrapped.Select(member => Value(analyzer, member, depth + 1)).FirstOrDefault(static v => v is not null);
 
 		return Placeholder(type);
+	}
+
+	/// <summary>The required properties a union schema declares beside its variants belong in the body with the variant's own.</summary>
+	private static JsonObject WithSharedProperties(SchemaAnalyzer analyzer, IOpenApiSchema union, JsonObject variantBody, int depth)
+	{
+		var effective = analyzer.Flatten(union);
+		if (effective.Properties.Count == 0)
+			return variantBody;
+
+		var shared = Object(analyzer, union, effective, depth);
+		foreach (var name in shared.Select(static p => p.Key).ToArray())
+		{
+			if (variantBody.ContainsKey(name))
+				continue;
+			var node = shared[name];
+			_ = shared.Remove(name);
+			variantBody[name] = node;
+		}
+
+		return variantBody;
 	}
 
 	/// <summary>A copy of a stated value. A literal <c>null</c> inside it is stored as a sentinel string by the reader; the copy gets the <c>null</c> back.</summary>
