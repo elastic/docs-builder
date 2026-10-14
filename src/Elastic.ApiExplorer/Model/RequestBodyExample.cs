@@ -93,7 +93,8 @@ public static class RequestBodyExample
 		var body = new JsonObject();
 		foreach (var (name, property) in effective.Properties)
 		{
-			if (!required.Contains(name) || analyzer.ResolveSchema(property)?.ReadOnly == true)
+			// readOnly may sit on the reference itself (OpenAPI 3.1) or on the schema it points to.
+			if (!required.Contains(name) || property.ReadOnly || analyzer.ResolveSchema(property)?.ReadOnly == true)
 				continue;
 			if (Value(analyzer, property, depth + 1) is { } value)
 				body[name] = value;

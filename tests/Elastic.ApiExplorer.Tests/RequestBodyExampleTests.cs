@@ -89,6 +89,22 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_LeavesOutAReferenceMarkedReadOnlyBesideItsRef()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["id", "name"],
+			  "properties": { "id": { "$ref": "#/components/schemas/Id", "readOnly": true }, "name": { "type": "string" } } }
+			""",
+			/*lang=json,strict*/
+			""" "Id": { "type": "string" } """
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"name":"string"}""");
+	}
+
+	[Test]
 	public async Task Build_FoldsAllOfAndFollowsRefs()
 	{
 		var body = await BuildFrom(
