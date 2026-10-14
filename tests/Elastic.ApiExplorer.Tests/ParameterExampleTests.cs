@@ -165,7 +165,8 @@ public class ParameterExampleTests
 
 		ApiPropertyMarkdown.WriteList(markdown, await ListAsync(), "/api/doc/fixture");
 
-		markdown.ToString().Should().Contain("- `case_id` (string) — optional\n  Example: `9c235210-6834-11ea`");
+		// AppendLine writes \r\n on Windows.
+		markdown.ToString().ReplaceLineEndings("\n").Should().Contain("- `case_id` (string) — optional\n  Example: `9c235210-6834-11ea`");
 		markdown.ToString().Should().Contain("Example: `[\"open\",\"acknowledged\"]`");
 	}
 
