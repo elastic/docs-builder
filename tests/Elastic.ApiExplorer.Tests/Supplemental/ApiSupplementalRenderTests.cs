@@ -180,7 +180,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().MatchRegex(
-			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request</a>\s*<button"""
+			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request body</a>\s*<button"""
 		);
 		html.Should().MatchRegex("""id="responses"[^>]*>\s*<a class="headerlink responses-title" href="#responses">Response""");
 		html.Should().NotMatchRegex("""<button[^>]*api-param-section-toggle[^>]*>(?:(?!</button>)[\s\S])*<a\s""");
@@ -195,7 +195,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
-		html.Should().Contain("href=\"#request-body\">Request</a>");
+		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
 		html.Should().NotContain("content-type-badge");
 	}
