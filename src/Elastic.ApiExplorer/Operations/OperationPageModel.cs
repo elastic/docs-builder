@@ -139,6 +139,7 @@ public partial record OperationPageModel
 			body ??= RequestBodyExample.Build(analyzer, requestMedia?.Key, requestMedia?.Value?.Schema);
 			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
 			{
+				Parameters = apiOperation.Parameters,
 				Servers = servers,
 				Body = body,
 				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
@@ -172,9 +173,9 @@ public partial record OperationPageModel
 
 		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
 		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
-		var pathParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Path, parameterSource);
-		var queryParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Query, parameterSource);
-		var headerParameters = BuildParameters(operation.Parameters ?? [], ParameterLocation.Header, parameterSource);
+		var pathParameters = BuildParameters(apiOperation.Parameters, ParameterLocation.Path, parameterSource);
+		var queryParameters = BuildParameters(apiOperation.Parameters, ParameterLocation.Query, parameterSource);
+		var headerParameters = BuildParameters(apiOperation.Parameters, ParameterLocation.Header, parameterSource);
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",

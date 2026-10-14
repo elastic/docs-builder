@@ -10,6 +10,9 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>What <see cref="SyntheticCodeSamples.Create"/> builds the samples from.</summary>
 public sealed record SyntheticSampleInput(HttpMethod Method, string Route, OpenApiOperation Operation)
 {
+	/// <summary>The parameters the request takes; by default the operation's own, without those its path item declares.</summary>
+	public IReadOnlyList<IOpenApiParameter> Parameters { get; init; } = [.. Operation.Parameters ?? []];
+
 	public IList<OpenApiServer>? Servers { get; init; }
 
 	/// <summary>An example request body; the samples carry it instead of leaving it in a block of its own.</summary>
@@ -39,10 +42,10 @@ public static class SyntheticCodeSamples
 		var operation = input.Operation;
 		var methodLabel = input.Method.Method.ToUpperInvariant();
 		var body = string.IsNullOrWhiteSpace(input.Body) ? null : input.Body.Trim();
-		var requiredHeaders = RequiredHeaders(operation).ToArray();
+		var requiredHeaders = RequiredHeaders(input.Parameters).ToArray();
 		var (authFlags, authQuery, authHeaders) = AuthParts(input.Security, requiredHeaders);
 		var headers = requiredHeaders.Where(h => h.Name is null || !authHeaders.Contains(h.Name)).ToArray();
-		var path = BuildPath(input.Route, operation);
+		var path = BuildPath(input.Route, input.Parameters);
 
 		var samples = new List<CodeSample>();
 		if (input.ConsolePrefix is { } prefix)
@@ -58,10 +61,9 @@ public static class SyntheticCodeSamples
 	}
 
 	/// <summary>The path with each parameter that has an example filled in, then the required query parameters. A parameter without an example keeps its <c>{name}</c>.</summary>
-	private static string BuildPath(string route, OpenApiOperation operation)
+	private static string BuildPath(string route, IReadOnlyList<IOpenApiParameter> parameters)
 	{
 		var path = string.IsNullOrEmpty(route) ? "/" : route.StartsWith('/') ? route : "/" + route;
-		var parameters = operation.Parameters ?? [];
 
 		foreach (var parameter in parameters.Where(static p => p.In == ParameterLocation.Path && !string.IsNullOrEmpty(p.Name)))
 		{
@@ -111,8 +113,8 @@ public static class SyntheticCodeSamples
 		return serverUrl + pathWithQuery;
 	}
 
-	private static IEnumerable<IOpenApiParameter> RequiredHeaders(OpenApiOperation operation) =>
-		(operation.Parameters ?? []).Where(static p => p.In == ParameterLocation.Header && p.Required).OrderBy(
+	private static IEnumerable<IOpenApiParameter> RequiredHeaders(IReadOnlyList<IOpenApiParameter> parameters) =>
+		parameters.Where(static p => p.In == ParameterLocation.Header && p.Required).OrderBy(
 			static p => p.Name,
 			StringComparer.OrdinalIgnoreCase
 		);
