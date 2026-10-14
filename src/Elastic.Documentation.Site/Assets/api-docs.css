@@ -2074,6 +2074,19 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 mr-1 text-xs;
 }
 
+/* An example can be a long identifier with no spaces; it wraps rather than running past a narrow screen.
+   The selector repeats the inline token chip's, which sets nowrap and would otherwise outrank this rule. */
+.property-list
+	dd.example-value
+	code:not(pre > code):not(.enum-value):not(.schema-type):not(
+		.union-type-option
+	) {
+	min-width: 0;
+	max-width: 100%;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 .enum-value {
 	@apply text-purple-70 bg-purple-10 rounded px-1.5 py-0.5 text-xs;
 }
