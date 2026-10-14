@@ -32,18 +32,34 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		public Dictionary<int, (bool Merged, string Branch, string Repo)> PullRequests { get; } = [];
 		public Dictionary<string, int[]> TrailerPullRequests { get; } = [];
 		public int GraphQlRequests { get; set; }
+		public string? ForcedError { get; set; }
+		private const int FirstPage = 50;
 
 		public string Respond(string query)
 		{
 			GraphQlRequests++;
 			var fields = new List<string>();
+			var errors = new List<string>();
+			if (ForcedError != null)
+				errors.Add(ForcedError);
+
 			if (query.Contains("def: defaultBranchRef", StringComparison.Ordinal))
 				fields.Add("\"def\": { \"name\": \"main\" }");
+
+			var more = Regex.Match(query, @"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""");
+			if (more.Success)
+				fields.Add(
+					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value), 100)} }}"
+				);
 
 			foreach (Match m in AliasRegex().Matches(query))
 			{
 				var n = int.Parse(m.Groups["n"].Value);
 				var alias = m.Groups["alias"].Value;
+				if (alias[0] == 'v' && !PullRequests.ContainsKey(n))
+					errors.Add(
+						$$"""{ "type": "NOT_FOUND", "path": ["repository", "{{alias}}"], "message": "Could not resolve to a PullRequest with the number of {{n}}." }"""
+					);
 				fields.Add($"\"{alias}\": {(alias[0] == 'p' ? BackportNode(n) : PullRequestNode(n))}");
 			}
 
@@ -56,15 +72,25 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 					);
 			}
 
-			return $"{{ \"data\": {{ \"repository\": {{ {string.Join(",", fields)} }} }} }}";
+			var errorJson = errors.Count > 0 ? $", \"errors\": [{string.Join(",", errors)}]" : string.Empty;
+			return $"{{ \"data\": {{ \"repository\": {{ {string.Join(",", fields)} }} }}{errorJson} }}";
 		}
 
-		private string BackportNode(int n)
+		private string BackportNode(int n) =>
+			Backports.TryGetValue(n, out var b)
+				? $"{{ \"title\": {JsonSerializer.Serialize(b.Title)}, \"body\": {JsonSerializer.Serialize(b.Body)}, \"commits\": {CommitPage(n, 0, FirstPage)} }}"
+				: "null";
+
+		private string CommitPage(int n, int skip, int size)
 		{
-			if (!Backports.TryGetValue(n, out var b))
-				return "null";
-			var commits = string.Join(",", b.Messages.Select(m => $"{{ \"commit\": {{ \"message\": {JsonSerializer.Serialize(m)} }} }}"));
-			return $"{{ \"title\": {JsonSerializer.Serialize(b.Title)}, \"body\": {JsonSerializer.Serialize(b.Body)}, \"commits\": {{ \"nodes\": [{commits}] }} }}";
+			var messages = Backports[n].Messages;
+			var page = messages.Skip(skip).Take(size).ToList();
+			var nodes = string.Join(",", page.Select(m => $"{{ \"commit\": {{ \"message\": {JsonSerializer.Serialize(m)} }} }}"));
+			var next = skip + size;
+			var pageInfo = next < messages.Length
+				? $$"""{ "hasNextPage": true, "endCursor": "{{next}}" }"""
+				: """{ "hasNextPage": false, "endCursor": null }""";
+			return $"{{ \"pageInfo\": {pageInfo}, \"nodes\": [{nodes}] }}";
 		}
 
 		private string PullRequestNode(int n) =>
@@ -172,6 +198,66 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		result.Should().NotBeNull();
 		result[200].Should().BeNull();
 		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task ResolveRoots_BackportWithManyCommits_ReadsEveryPage()
+	{
+		var github = new FakeGitHub();
+		// 120 cherry-picked changes: the original of the last one is only on the third page.
+		var messages = Enumerable.Range(1, 120).Select(i => $"Change {i} (#{i})").ToArray();
+		github.Backports[500] = ("Backport of changes", null, messages);
+		foreach (var i in Enumerable.Range(1, 120))
+			github.PullRequests[i] = Merged();
+
+		var result = await ResolveAsync(github, 500);
+
+		result.Should().NotBeNull();
+		result[500]!.Roots.Should().HaveCount(120).And.Contain(120);
+	}
+
+	[Test]
+	public async Task ResolveRoots_TitleNamesFewerThanTheCommits_KeepsTheOtherOriginals()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Backport (#20)", null, ["First change (#20)", "Second change (#21)"]);
+		github.PullRequests[20] = Merged();
+		github.PullRequests[21] = Merged();
+
+		var result = await ResolveAsync(github, 200);
+
+		result.Should().NotBeNull();
+		result[200]!.Roots.Should().Equal(20, 21);
+	}
+
+	[Test]
+	public async Task ResolveRoots_OversizedNumber_IsIgnoredAndTheOtherReferenceUsed()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix #2147483648 (#100)", null, []);
+		github.PullRequests[100] = Merged();
+
+		var result = await ResolveAsync(github, 200);
+
+		result.Should().NotBeNull();
+		result[200]!.Roots.Should().Equal(100);
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task ResolveRoots_ValidationReturnsAnotherError_FailsInsteadOfGuessing()
+	{
+		var github = new FakeGitHub
+		{
+			ForcedError = """{ "type": "INTERNAL", "path": ["repository", "v100"], "message": "Something went wrong" }"""
+		};
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+
+		var result = await ResolveAsync(github, 200);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Something went wrong"));
 	}
 
 	[Test]

@@ -100,7 +100,8 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 				trailer,
 				[.. c.SubjectRefs.Where(valid.Contains)],
 				[.. c.TitleRefs.Where(valid.Contains)],
-				[.. c.BodyRefs.Where(valid.Contains)]
+				[.. c.BodyRefs.Where(valid.Contains)],
+				[.. c.SubjectGroups.Select(g => (IReadOnlyList<int>)[.. g.Where(valid.Contains)]).Where(g => g.Count > 0)]
 			);
 		}
 
@@ -142,7 +143,7 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 			foreach (var n in batch)
 				_ = selection.Append(
 					CultureInfo.InvariantCulture,
-					$" p{n}: pullRequest(number: {n}) {{ title body commits(first: 50) {{ nodes {{ commit {{ message }} }} }} }}"
+					$" p{n}: pullRequest(number: {n}) {{ title body commits(first: 50) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ commit {{ message }} }} }} }}"
 				);
 
 			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx).ConfigureAwait(false);
@@ -151,14 +152,53 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 
 			foreach (var n in batch)
 			{
-				if (data.GetValueOrDefault($"p{n}") is { } node)
-					found[n] = node;
-				else
+				if (data.GetValueOrDefault($"p{n}") is not { } node)
+				{
 					_logger.LogWarning("Backport #{Number} of {Owner}/{Repo} could not be read", n, owner, repo);
+					continue;
+				}
+
+				if (!await CompleteCommitsAsync(collector, owner, repo, n, node, ctx).ConfigureAwait(false))
+					return null;
+				found[n] = node;
 			}
 		}
 
 		return found;
+	}
+
+	/// <summary>
+	/// Reads the commits of a backport beyond the first page. A backport can hold many cherry-picked changes, and one
+	/// left unread would drop its original from the bundle.
+	/// </summary>
+	private async Task<bool> CompleteCommitsAsync(
+		IDiagnosticsCollector collector,
+		string owner,
+		string repo,
+		int number,
+		Node node,
+		Cancel ctx
+	)
+	{
+		var commits = node.Commits;
+		while (commits?.PageInfo is { HasNextPage: true, EndCursor: { } cursor })
+		{
+			var selection =
+				$" p: pullRequest(number: {number}) {{ commits(first: 100, after: \"{cursor}\") {{ pageInfo {{ hasNextPage endCursor }} nodes {{ commit {{ message }} }} }} }}";
+			var data = await QueryAsync(collector, owner, repo, selection, ctx).ConfigureAwait(false);
+			var next = data?.GetValueOrDefault("p")?.Commits;
+			if (next == null)
+			{
+				collector.EmitError(string.Empty, $"GitHub did not return more commits of {owner}/{repo}#{number}.");
+				return false;
+			}
+
+			commits.Nodes ??= [];
+			commits.Nodes.AddRange(next.Nodes ?? []);
+			commits.PageInfo = next.PageInfo;
+		}
+
+		return true;
 	}
 
 	/// <summary>Resolves each cherry-picked commit to the merged pull requests on the default branch that contain it.</summary>
@@ -220,9 +260,9 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 					$" v{n}: pullRequest(number: {n}) {{ number merged baseRefName baseRepository {{ nameWithOwner }} }}"
 				);
 
-			// A number that is not a pull request (an issue) makes GitHub answer with a "not found" error for that alias
-			// and still return the other aliases, so errors are tolerated here and the missing node simply does not count.
-			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx, tolerateErrors: true).ConfigureAwait(false);
+			// A number that is not a pull request (an issue) makes GitHub answer with a NOT_FOUND error for that alias
+			// and still return the other aliases. Only that error is tolerated; the missing node simply does not count.
+			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx, tolerateNotFound: true).ConfigureAwait(false);
 			if (data == null)
 				return null;
 
@@ -250,7 +290,7 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		string repo,
 		string selection,
 		Cancel ctx,
-		bool tolerateErrors = false
+		bool tolerateNotFound = false
 	)
 	{
 		var query = $"query {{ repository(owner: \"{owner}\", name: \"{repo}\") {{{selection} }} }}";
@@ -269,7 +309,7 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
 		var parsed = JsonSerializer.Deserialize(json, BackportJsonContext.Default.Response);
 
-		if (!tolerateErrors && parsed?.Errors is { Count: > 0 })
+		if (parsed?.Errors is { Count: > 0 } && !(tolerateNotFound && parsed.Errors.All(e => e.Type == "NOT_FOUND")))
 		{
 			var messages = string.Join("; ", parsed.Errors.Select(e => e.Message).Where(m => !string.IsNullOrWhiteSpace(m)));
 			collector.EmitError(string.Empty, $"GitHub GraphQL query for {owner}/{repo} returned errors: {messages}.");
@@ -307,6 +347,9 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	{
 		[JsonPropertyName("message")]
 		public string? Message { get; set; }
+
+		[JsonPropertyName("type")]
+		public string? Type { get; set; }
 	}
 
 	private sealed class ResponseData
@@ -354,8 +397,20 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 
 	private sealed class CommitConnection
 	{
+		[JsonPropertyName("pageInfo")]
+		public PageInfo? PageInfo { get; set; }
+
 		[JsonPropertyName("nodes")]
 		public List<CommitNode?>? Nodes { get; set; }
+	}
+
+	private sealed class PageInfo
+	{
+		[JsonPropertyName("hasNextPage")]
+		public bool HasNextPage { get; set; }
+
+		[JsonPropertyName("endCursor")]
+		public string? EndCursor { get; set; }
 	}
 
 	private sealed class CommitNode

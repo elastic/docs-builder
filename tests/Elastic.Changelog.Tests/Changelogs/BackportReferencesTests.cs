@@ -166,4 +166,21 @@ public class BackportReferencesTests
 
 	[Test]
 	public void Choose_NothingFound_ReturnsNull() => BackportReferences.Choose([], [], [], []).Should().BeNull();
+
+	[Test]
+	public void Extract_OversizedNumber_IsNotAReference() =>
+		Extract("Fix #2147483648 and #99999999999999999999 (#12)").TitleRefs.Should().Equal(12);
+
+	[Test]
+	public void Choose_TitleNamesOneOfTwoSubjectOriginals_KeepsBoth()
+	{
+		var roots = BackportReferences.Choose([], [20, 21], [20], [], [[20], [21]]);
+
+		roots!.Roots.Should().Equal(20, 21);
+		roots.Route.Should().Be(BackportRootRoute.CommitSubjectAndTitle);
+	}
+
+	[Test]
+	public void Choose_SubjectMentionsEarlierPullRequestAlongsideTheOriginal_KeepsOnlyTheOriginal() =>
+		BackportReferences.Choose([], [10, 20], [20], [], [[10, 20]])!.Roots.Should().Equal(20);
 }

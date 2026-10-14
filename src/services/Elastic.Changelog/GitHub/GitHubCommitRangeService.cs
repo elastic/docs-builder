@@ -241,10 +241,12 @@ public sealed partial class GitHubCommitRangeService(
 					existing.Shas.Add(sha);
 				else
 				{
+					var labels = await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
+					if (labels == null)
+						return null;
+
 					prsByNumber[selected.Number] =
-						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", selected.Title, [
-							.. selected.Labels?.Nodes?.Select(l => l?.Name).OfType<string>() ?? []
-						], [sha]);
+						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", selected.Title, labels, [sha]);
 					orderedPrNumbers.Add(selected.Number);
 				}
 			}
@@ -396,6 +398,46 @@ public sealed partial class GitHubCommitRangeService(
 	}
 
 	/// <summary>
+	/// Returns every label of the pull request. The batch query returns the first page; a pull request with more
+	/// labels is read page by page, because a missing label would hide a backport.
+	/// </summary>
+	private async Task<List<string>?> CompleteLabelsAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		GraphQlPullRequest pr,
+		Cancel ctx
+	)
+	{
+		var labels = pr.Labels?.Nodes?.Select(l => l?.Name).OfType<string>().ToList() ?? [];
+		var page = pr.Labels?.PageInfo;
+		while (page is { HasNextPage: true, EndCursor: { } cursor })
+		{
+			var query = $"query {{ repository(owner: \"{args.Owner}\", name: \"{args.Repo}\") {{ pullRequest(number: {pr.Number}) {{ "
+				+ $"labels(first: 100, after: \"{cursor}\") {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }} }} }}";
+			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
+
+			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+			var parsed = response.IsSuccessStatusCode
+				? JsonSerializer.Deserialize(
+					await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false),
+					CommitRangeJsonContext.Default.GraphQlLabelPageResponse
+				)
+				: null;
+			var next = parsed?.Errors is { Count: > 0 } ? null : parsed?.Data?.Repository?.PullRequest?.Labels;
+			if (next == null)
+			{
+				collector.EmitError(string.Empty, $"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} failed.");
+				return null;
+			}
+
+			labels.AddRange(next.Nodes?.Select(l => l?.Name).OfType<string>() ?? []);
+			page = next.PageInfo;
+		}
+
+		return labels;
+	}
+
+	/// <summary>
 	/// Builds one aliased GraphQL query resolving <c>associatedPullRequests</c> for every sha in
 	/// the batch. Shas are validated hex and owner/repo validated identifiers before interpolation.
 	/// </summary>
@@ -415,7 +457,7 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
 				.Append(
-					" number url title merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 30) { nodes { name } }"
+					" number url title merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 100) { pageInfo { hasNextPage endCursor } nodes { name } }"
 				)
 				.Append(" } } } }");
 		}
@@ -511,8 +553,41 @@ public sealed partial class GitHubCommitRangeService(
 		public GraphQlRepositoryRef? BaseRepository { get; set; }
 	}
 
+	private sealed class GraphQlPageInfo
+	{
+		[JsonPropertyName("hasNextPage")]
+		public bool HasNextPage { get; set; }
+
+		[JsonPropertyName("endCursor")]
+		public string? EndCursor { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageResponse
+	{
+		[JsonPropertyName("data")]
+		public GraphQlLabelPageData? Data { get; set; }
+
+		[JsonPropertyName("errors")]
+		public List<GraphQlError>? Errors { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageData
+	{
+		[JsonPropertyName("repository")]
+		public GraphQlLabelPageRepository? Repository { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageRepository
+	{
+		[JsonPropertyName("pullRequest")]
+		public GraphQlPullRequest? PullRequest { get; set; }
+	}
+
 	private sealed class GraphQlLabelConnection
 	{
+		[JsonPropertyName("pageInfo")]
+		public GraphQlPageInfo? PageInfo { get; set; }
+
 		[JsonPropertyName("nodes")]
 		public List<GraphQlLabel?>? Nodes { get; set; }
 	}
@@ -538,5 +613,6 @@ public sealed partial class GitHubCommitRangeService(
 	[JsonSerializable(typeof(GitHubCompareResponse))]
 	[JsonSerializable(typeof(GraphQlRequest))]
 	[JsonSerializable(typeof(GraphQlResponse))]
+	[JsonSerializable(typeof(GraphQlLabelPageResponse))]
 	private sealed partial class CommitRangeJsonContext : JsonSerializerContext;
 }

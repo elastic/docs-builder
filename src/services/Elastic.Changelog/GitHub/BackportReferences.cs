@@ -10,13 +10,15 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>The places a backport pull request can name the pull request it was backported from, before any is checked.</summary>
 /// <param name="CherryPickShas">Commits named by <c>(cherry picked from commit &lt;sha&gt;)</c> trailers.</param>
 /// <param name="SubjectRefs">Pull request numbers in the subjects of the pull request's commits.</param>
+/// <param name="SubjectGroups">The same numbers, one list per commit that names any.</param>
 /// <param name="TitleRefs">Pull request numbers in the pull request title.</param>
 /// <param name="BodyRefs">Pull request numbers in links and markers in the pull request body.</param>
 public sealed record BackportCandidates(
 	IReadOnlyList<string> CherryPickShas,
 	IReadOnlyList<int> SubjectRefs,
 	IReadOnlyList<int> TitleRefs,
-	IReadOnlyList<int> BodyRefs
+	IReadOnlyList<int> BodyRefs,
+	IReadOnlyList<IReadOnlyList<int>> SubjectGroups
 );
 
 /// <summary>How the original pull request was found.</summary>
@@ -77,7 +79,8 @@ public static partial class BackportReferences
 			shas,
 			Numbers(string.Join('\n', subjects), number),
 			Numbers(title, number),
-			BodyNumbers(owner, repo, number, body ?? string.Empty)
+			BodyNumbers(owner, repo, number, body ?? string.Empty),
+			[.. subjects.Select(subject => Numbers(subject, number)).Where(group => group.Count > 0)]
 		);
 	}
 
@@ -91,7 +94,8 @@ public static partial class BackportReferences
 		IReadOnlyCollection<int> trailer,
 		IReadOnlyCollection<int> subject,
 		IReadOnlyCollection<int> title,
-		IReadOnlyCollection<int> body
+		IReadOnlyCollection<int> body,
+		IReadOnlyList<IReadOnlyList<int>>? subjectGroups = null
 	)
 	{
 		var strong = new[] { trailer, subject, title }.Where(s => s.Count > 0).Select(s => s.Order().ToArray()).ToList();
@@ -102,7 +106,7 @@ public static partial class BackportReferences
 
 		var both = subject.Intersect(title).Order().ToArray();
 		if (both.Length > 0)
-			return new BackportRoots(both, BackportRootRoute.CommitSubjectAndTitle, disagree);
+			return new BackportRoots(CoverEveryCommit(both, subjectGroups), BackportRootRoute.CommitSubjectAndTitle, disagree);
 		if (subject.Count > 0)
 			return new BackportRoots([.. subject.Order()], BackportRootRoute.CommitSubject, disagree);
 		if (title.Count > 0)
@@ -113,10 +117,23 @@ public static partial class BackportReferences
 		return null;
 	}
 
-	private static int Number(Match match) => int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+	/// <summary>
+	/// The title can name fewer pull requests than the backport holds. Every commit whose subject names none of the
+	/// agreed originals still contributes the numbers in its own subject, so no cherry-picked change is dropped.
+	/// </summary>
+	private static int[] CoverEveryCommit(int[] agreed, IReadOnlyList<IReadOnlyList<int>>? subjectGroups) =>
+		subjectGroups == null
+			? agreed
+			: [.. agreed.Concat(subjectGroups.Where(g => !g.Intersect(agreed).Any()).SelectMany(g => g)).Distinct().Order()];
+
+	/// <summary>A digit string too long for a pull request number is not a reference, so it is skipped.</summary>
+	private static IEnumerable<int> ParsedNumbers(IEnumerable<Match> matches) =>
+		matches.Select(m => int.TryParse(m.Groups[1].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : 0).Where(
+			n => n > 0
+		);
 
 	private static IReadOnlyList<int> Numbers(string text, int own) =>
-		[.. SameRepoReferenceRegex().Matches(text).Select(m => Number(m)).Where(n => n != own).Distinct()];
+		[.. ParsedNumbers(SameRepoReferenceRegex().Matches(text)).Where(n => n != own).Distinct()];
 
 	private static IReadOnlyList<int> BodyNumbers(string owner, string repo, int own, string body)
 	{
@@ -126,8 +143,8 @@ public static partial class BackportReferences
 			@$"github\.com/{Regex.Escape(owner)}/{Regex.Escape(repo)}/pull/(\d+)",
 			RegexOptions.IgnoreCase | RegexOptions.NonBacktracking
 		);
-		found.AddRange(link.Matches(body).Select(m => Number(m)));
-		found.AddRange(BodyMarkerRegex().Matches(body).Select(m => Number(m)));
+		found.AddRange(ParsedNumbers(link.Matches(body)));
+		found.AddRange(ParsedNumbers(BodyMarkerRegex().Matches(body)));
 
 		// "Backports the following commits to 9.5: - title (#N)". List items only count when the body talks about a backport,
 		// so an ordinary bullet list that mentions issue numbers is left alone.
