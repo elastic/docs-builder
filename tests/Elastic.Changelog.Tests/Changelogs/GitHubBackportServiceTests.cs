@@ -237,6 +237,21 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ResolveRoots_ChainedBackportSubject_KeepsTheOriginalWhenTheIntermediateIsNotValid()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("First (#20)", null, ["First (#20)", "Second (#21) (#201)"]);
+		github.PullRequests[20] = Merged();
+		github.PullRequests[21] = Merged();
+		github.PullRequests[201] = Merged("9.4");
+
+		var result = await ResolveAsync(github, 200);
+
+		result.Should().NotBeNull();
+		result[200]!.Roots.Should().Equal(20, 21);
+	}
+
+	[Test]
 	public async Task ResolveRoots_SubjectOnlyMentionsAnEarlierPullRequest_DoesNotAddIt()
 	{
 		var github = new FakeGitHub();

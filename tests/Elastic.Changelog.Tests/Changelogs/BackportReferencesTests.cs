@@ -190,4 +190,15 @@ public class BackportReferencesTests
 			.SubjectGroups
 			.Should()
 			.BeEquivalentTo(new[] { new[] { 20 }, new[] { 21 } });
+
+	[Test]
+	public void Extract_ChainedBackportSubject_KeepsEveryNumberAtTheEnd() =>
+		Extract("First (#20)", null, 500, "First (#20)", "Second (#21) (#201)")
+			.SubjectGroups
+			.Should()
+			.BeEquivalentTo(new[] { new[] { 20 }, new[] { 21, 201 } });
+
+	[Test]
+	public void Choose_ChainedBackportWhoseIntermediateFailedValidation_KeepsTheOriginal() =>
+		BackportReferences.Choose([], [20, 21], [20], [], [[20], [21]])!.Roots.Should().Equal(20, 21);
 }

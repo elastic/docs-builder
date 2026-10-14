@@ -10,7 +10,7 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>The places a backport pull request can name the pull request it was backported from, before any is checked.</summary>
 /// <param name="CherryPickShas">Commits named by <c>(cherry picked from commit &lt;sha&gt;)</c> trailers.</param>
 /// <param name="SubjectRefs">Pull request numbers in the subjects of the pull request's commits.</param>
-/// <param name="SubjectGroups">For each commit whose subject ends with <c>(#N)</c>, that number.</param>
+/// <param name="SubjectGroups">For each commit whose subject ends with <c>(#N)</c>, the numbers in that ending.</param>
 /// <param name="TitleRefs">Pull request numbers in the pull request title.</param>
 /// <param name="BodyRefs">Pull request numbers in links and markers in the pull request body.</param>
 public sealed record BackportCandidates(
@@ -46,8 +46,9 @@ public static partial class BackportReferences
 	[GeneratedRegex(@"(?<![\w/\-])#(\d+)")]
 	private static partial Regex SameRepoReferenceRegex();
 
-	// The "(#N)" that GitHub appends to a squashed commit. A bare "#N" in a subject only mentions a pull request.
-	[GeneratedRegex(@"\(#(\d+)\)\s*$")]
+	// The "(#N)" that GitHub appends to a squashed commit. A cherry-picked squash can end with several, the original
+	// first and the release-branch backports after it. A bare "#N" in a subject only mentions a pull request.
+	[GeneratedRegex(@"(?:\(#\d+\)\s*)+$")]
 	private static partial Regex TrailingReferenceRegex();
 
 	[GeneratedRegex(@"cherry picked from commit ([0-9a-fA-F]{40})")]
@@ -123,7 +124,7 @@ public static partial class BackportReferences
 
 	/// <summary>
 	/// The title can name fewer pull requests than the backport holds. Every commit whose subject names none of the
-	/// agreed originals still contributes the pull request its subject ends with, so no cherry-picked change is dropped.
+	/// agreed originals still contributes the pull requests its subject ends with, so no cherry-picked change is dropped.
 	/// A subject that only mentions another pull request ("Follow up on #10") is not a change of its own.
 	/// </summary>
 	private static int[] CoverEveryCommit(int[] agreed, IReadOnlyList<IReadOnlyList<int>>? subjectGroups) =>
