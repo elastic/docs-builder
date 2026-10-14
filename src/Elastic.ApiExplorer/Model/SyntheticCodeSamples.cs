@@ -45,7 +45,7 @@ public static partial class SyntheticCodeSamples
 	public static IReadOnlyList<CodeSample> Create(SyntheticSampleInput input)
 	{
 		var methodLabel = input.Method.Method.ToUpperInvariant();
-		var body = string.IsNullOrWhiteSpace(input.Body) ? null : input.Body.Trim();
+		var body = string.IsNullOrWhiteSpace(input.Body) ? null : input.Body;
 		var auth = CurlAuth.From(input.Security, RequiredHeaders(input.Parameters));
 		// The path keeps `{name}` where the spec gives no value; each sample then names the placeholder its own way.
 		var path = BuildPath(input.Route, input.Parameters);
@@ -54,7 +54,7 @@ public static partial class SyntheticCodeSamples
 		if (input.ConsolePrefix is { } prefix)
 		{
 			var requestLine = $"{methodLabel} {prefix}{NamePlaceholders(path, forShell: false)}";
-			samples.Add(CodeSample.Generate("Console", body is null ? requestLine : $"{requestLine}\n{body}"));
+			samples.Add(CodeSample.Generate("Console", body is null ? requestLine : $"{requestLine}\n{body.Trim()}"));
 		}
 
 		var url = BuildRequestUrl(AppendQuery(NamePlaceholders(path, forShell: true), auth.Query), input.Servers, input.HostVariable);
@@ -104,14 +104,15 @@ public static partial class SyntheticCodeSamples
 
 	/// <summary>
 	/// The <c>-d</c> flag with its body in single quotes. A single quote ends the quoted argument, so it becomes <c>'\''</c> as
-	/// the shell expects. A JSON document's other lines are indented under the flag, as <see cref="CurlSourceFormatter"/> lays
-	/// out spec samples; any other body stays as written, because the added spaces reach the server and would break YAML
-	/// or newline-delimited JSON.
+	/// the shell expects. A JSON document is trimmed and its other lines indented under the flag, as
+	/// <see cref="CurlSourceFormatter"/> lays out spec samples; any other body stays exactly as written, whitespace included,
+	/// because every byte in the quotes reaches the server: the added spaces would break YAML, and a bulk request's
+	/// newline-delimited JSON must keep its final newline.
 	/// </summary>
 	internal static string SingleQuotedBody(string body)
 	{
 		var trimmed = body.Trim();
-		var laidOut = IsJsonDocument(trimmed) ? trimmed.Replace("\n", "\n  ", StringComparison.Ordinal) : trimmed;
+		var laidOut = IsJsonDocument(trimmed) ? trimmed.Replace("\n", "\n  ", StringComparison.Ordinal) : body;
 		return $"-d '{laidOut.Replace("'", "'\\''", StringComparison.Ordinal)}'";
 	}
 

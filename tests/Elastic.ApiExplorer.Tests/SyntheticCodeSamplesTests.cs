@@ -471,7 +471,8 @@ public class SyntheticCodeSamplesTests
 
 	[Test]
 	[Arguments("name: one\ncount: 1", "application/yaml")]
-	[Arguments("{\"index\":{\"_id\":1}}\n{\"field\":\"value\"}", "application/x-ndjson")]
+	[Arguments("{\"index\":{\"_id\":1}}\n{\"field\":\"value\"}\n", "application/x-ndjson")]
+	[Arguments("  leading and trailing  ", "text/plain")]
 	public void Create_WithABodyThatIsNotOneJsonDocument_SendsItAsWritten(string body, string mediaType)
 	{
 		var operation = new OpenApiOperation
