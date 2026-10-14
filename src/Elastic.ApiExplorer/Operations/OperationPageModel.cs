@@ -129,11 +129,18 @@ public partial record OperationPageModel
 		);
 		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
+		var consolePrefix = GeneratedCodeSamples.ConsolePrefixFor(context.Product?.Id);
 		if (codeSamples.Count == 0)
 		{
 			// Built around the first example's body, so the samples attach to that example and carry its request.
 			var body = requestExamples.FirstOrDefault(static e => !string.IsNullOrWhiteSpace(e.JsonValue))?.JsonValue;
-			codeSamples = SyntheticCodeSamples.Create(apiOperation.OperationType, apiOperation.Route, operation, servers, body);
+			codeSamples = SyntheticCodeSamples.Create(new SyntheticSampleInput(apiOperation.OperationType, apiOperation.Route, operation)
+			{
+				Servers = servers,
+				Body = body,
+				Security = OpenApiAuthSchemeResolver.CurlSchemes(operation, document),
+				ConsolePrefix = consolePrefix
+			});
 		}
 
 		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
@@ -142,7 +149,8 @@ public partial record OperationPageModel
 				GeneratedCodeSamples.Fill(
 					EnsureResponseTabs(BuildExampleScenarios(requestExamples, responseExamples, codeSamples), operation.Responses),
 					codeSamples,
-					endpoint
+					endpoint,
+					consolePrefix
 				),
 				apiOperation.OperationType.ToString().ToLowerInvariant(),
 				apiOperation.Route

@@ -37,6 +37,25 @@ public static class OpenApiAuthSchemeResolver
 		return alternatives;
 	}
 
+	/// <summary>The schemes a sample authenticates with: those of the first alternative that names a scheme we can send.</summary>
+	internal static IReadOnlyList<IOpenApiSecurityScheme> CurlSchemes(OpenApiOperation operation, OpenApiDocument document)
+	{
+		foreach (var requirement in operation.Security ?? document.Security ?? [])
+		{
+			var schemes = requirement
+				.Keys
+				.OfType<OpenApiSecuritySchemeReference>()
+				.Select(key => Target(key, document))
+				.OfType<IOpenApiSecurityScheme>()
+				.Where(static s => LabelFor(s) is not null)
+				.ToArray();
+			if (schemes.Length > 0)
+				return schemes;
+		}
+
+		return [];
+	}
+
 	private static List<AuthScheme> SchemesOf(OpenApiSecurityRequirement requirement, OpenApiDocument document)
 	{
 		var schemes = new List<AuthScheme>();

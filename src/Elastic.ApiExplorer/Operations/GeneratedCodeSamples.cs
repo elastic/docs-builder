@@ -13,16 +13,28 @@ namespace Elastic.ApiExplorer.Operations;
 /// </summary>
 public static partial class GeneratedCodeSamples
 {
+	/// <summary>
+	/// What Console puts before the route for a product: empty for Elasticsearch, <c>kbn:</c> for Kibana, and null where
+	/// Console can't call the API (Cloud, Logstash, ...). A spec without a product keeps Console.
+	/// </summary>
+	public static string? ConsolePrefixFor(string? productId) => productId switch
+	{
+		null or "elasticsearch" or "serverless-elasticsearch" => "",
+		"kibana" => "kbn:",
+		_ => null
+	};
+
 	/// <summary>Adds generated samples to every scenario that has a request body but no code samples.</summary>
 	public static IReadOnlyList<ExampleScenario> Fill(
 		IReadOnlyList<ExampleScenario> scenarios,
 		IReadOnlyList<CodeSample> specSamples,
-		OperationEndpoint endpoint
+		OperationEndpoint endpoint,
+		string? productConsolePrefix = ""
 	)
 	{
 		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
 		var curl = specSamples.FirstOrDefault(static s => s.IsCurl);
-		var prefix = ConsolePrefix(console?.Source);
+		var prefix = console is not null ? ConsolePrefix(console.Source) : productConsolePrefix;
 		var fallbackMethod = endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant();
 
 		return [
@@ -33,17 +45,15 @@ public static partial class GeneratedCodeSamples
 
 				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
 				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
-				var samples = new List<CodeSample>
-				{
-					new("Console", $"{method} {prefix}{path}\n{scenario.RequestJson.Trim()}", CodeSample.GetHighlightClass("Console"))
-					{
-						Generated = true
-					}
-				};
-				if (Curl(curl?.Source, method, path, scenario.RequestJson) is { } curlSource)
-					samples.Add(new CodeSample("curl", curlSource, CodeSample.GetHighlightClass("curl")) { Generated = true });
+				var samples = new List<CodeSample>();
+				if (prefix is not null)
+					samples.Add(CodeSample.Generate("Console", $"{method} {prefix}{path}\n{scenario.RequestJson.Trim()}"));
 
-				return scenario with { CodeSamples = samples, CodeSamplesIncludeRequest = true };
+				if (Curl(curl?.Source, method, path, scenario.RequestJson) is { } curlSource)
+					samples.Add(CodeSample.Generate("curl", curlSource));
+
+				// Nothing runnable to show, so the request stays in the rail's own block.
+				return samples.Count == 0 ? scenario : scenario with { CodeSamples = samples, CodeSamplesIncludeRequest = true };
 			})
 		];
 	}

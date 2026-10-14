@@ -460,6 +460,30 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRun_KeepsTheCurlOnly()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST -d '{\"a\":1}' \"https://api.example.test/things\"", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples;
+
+		samples.Should().ContainSingle().Which.IsCurl.Should().BeTrue();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRunAndNoCurl_LeavesTheRequestInItsOwnBlock()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var filled = GeneratedCodeSamples.Fill([scenario], [], endpoint, productConsolePrefix: null).Single();
+
+		filled.CodeSamples.Should().BeEmpty();
+		filled.ShowRequest.Should().BeTrue();
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_RequestLineOnAlsoMethod_FollowsTheDominantMethod()
 	{
 		var scenario = new ExampleScenario
