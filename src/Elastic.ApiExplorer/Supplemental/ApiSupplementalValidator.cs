@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 
@@ -162,7 +163,7 @@ internal static class ApiSupplementalValidator
 	private static HashSet<string> RequestBodyFieldNames(SchemaAnalyzer analyzer, OpenApiOperation operation)
 	{
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var schema = operation.RequestBody?.Content?.FirstOrDefault().Value?.Schema;
+		var schema = OperationPageModel.PrimaryRequestContent(operation.RequestBody)?.Value?.Schema;
 		CollectFieldNames(analyzer, schema, names, []);
 		return names;
 	}

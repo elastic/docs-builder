@@ -1,23 +1,28 @@
+@using Elastic.ApiExplorer.Infrastructure
 @inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>
 @{
-	// A union body reads as alternatives (A | B) and says what is folded away; fields read as an object ({ a, b }).
-	var variants = Model.NamesAreVariants;
+	// The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, a, b anything else.
+	// An object with no named fields, such as a binary upload, has nothing to brace. The names are drawn from data-name by the
+	// stylesheet, so find-in-page skips them and a search for a field opens its section instead of landing on this summary.
+	var style = Model.Style;
+	var braces = style == SummaryStyle.Fields && Model.Names.Count > 0;
+	var variants = style == SummaryStyle.Variants;
 }
-<span class="api-param-summary@(variants ? " is-variants" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
-	@if (!variants)
+<span class="api-param-summary@(style is SummaryStyle.Variants or SummaryStyle.All ? $" is-{style.ToString().ToLowerInvariant()}" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
+	@if (braces)
 	{
 		<span class="api-param-summary-brace">{ </span>
 	}
 	<span class="api-param-summary-list">
 		@foreach (var name in Model.Names)
 		{
-			<code class="api-param-summary-item">@name</code>
+			<code class="api-param-summary-item" data-name="@name"></code>
 		}
 	</span>
 	<span class="api-param-more" data-param-more hidden>
 		<span class="api-param-more-badge" data-param-more-count></span>
 	</span>
-	@if (!variants)
+	@if (braces)
 	{
 		<span class="api-param-summary-brace"> }</span>
 	}

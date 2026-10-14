@@ -75,6 +75,35 @@ public class AuthorizationSectionRenderingTests
 		html.Should().Contain("Authorization: Basic &lt;credentials&gt;").And.Contain("X-Key: &lt;value&gt;");
 	}
 
+	[Test]
+	public async Task Render_PrivilegesNeededTogether_AreSummarisedAsSeparateNamesJoinedWithPlus()
+	{
+		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["integrations-all", "fleet-agent-policies-all"], "and"));
+
+		html.Should().Contain("data-param-section");
+		html.Should().Contain("id=\"required-authorization\"");
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"integrations-all\"></code>");
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"fleet-agent-policies-all\"></code>");
+		html.Should().Contain("api-param-summary is-all");
+		html.Should().Contain("id=\"required-authorization-list\" hidden=\"until-found\"");
+		html.Should().Contain("<span class=\"api-type-badge\">integrations-all</span>", "the rows are still listed in the body");
+	}
+
+	[Test]
+	public async Task Render_PrivilegeAlternatives_AreSummarisedAsVariants()
+	{
+		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["read", "manage"], "or"));
+
+		html.Should().Contain("api-param-summary is-variants");
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"read\"></code>");
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"manage\"></code>");
+	}
+
+	private static async Task<string> RenderPrivileges(params PrivilegeRow[] rows) =>
+		await _AuthorizationSection.Create(
+			new AuthorizationSectionModel([], rows, static markdown => new HtmlString($"<p>{markdown}</p>"))
+		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
 	private static async Task<string> Render(params AuthRequirement[] requirements) =>
 		await _AuthorizationSection.Create(
 			new AuthorizationSectionModel(requirements, [], static markdown => new HtmlString($"<p>{markdown}</p>"))

@@ -24,8 +24,9 @@ const variantChips: ChipRowParts = {
 }
 
 /** A union list that shows its variants behind chips, and one of its variants (never a variant of a plain list). */
-const chipList = '.union-variant-chips'
-const chipPanel = `${chipList} > .union-variants > .union-variant-item`
+const chipList = '.union-variant-chips, .content-type-panels'
+const chipPanel =
+    '.union-variant-chips > .union-variants > .union-variant-item, .content-type-panels > .content-type-panel'
 
 let delegated = false
 
@@ -36,7 +37,7 @@ function ownRow(container: HTMLElement): HTMLElement | null {
 function ownPanels(container: HTMLElement): HTMLElement[] {
     return Array.from(
         container.querySelectorAll<HTMLElement>(
-            ':scope > .union-variants > .union-variant-item'
+            ':scope > .union-variants > .union-variant-item, :scope > .content-type-panel'
         )
     )
 }
@@ -51,6 +52,7 @@ export function showVariant(container: HTMLElement, variantId: string): void {
         else panel.setAttribute('hidden', 'until-found')
     })
     keepScrollPosition(container, scrolled)
+    syncContentType(container, variantId)
     const row = ownRow(container)
     if (!row) return
     row.querySelectorAll<HTMLElement>(variantChips.chip).forEach((chip) => {
@@ -62,15 +64,30 @@ export function showVariant(container: HTMLElement, variantId: string): void {
     fitChipRow(row, variantChips)
 }
 
+/** A body's content types are picked from a select above its panels; it and the content type tag in the header follow the panel shown. */
+function syncContentType(container: HTMLElement, variantId: string) {
+    if (!container.id) return
+    const id = CSS.escape(container.id)
+    const select = document.querySelector<HTMLSelectElement>(
+        `select[data-content-type-select="${id}"]`
+    )
+    if (select) select.value = variantId
+    const label = select?.selectedOptions[0]?.textContent
+    if (!label) return
+    document
+        .querySelectorAll<HTMLElement>(`[data-content-type-current="${id}"]`)
+        .forEach((tag) => (tag.textContent = label))
+}
+
 /**
  * Near the bottom of the page, a shorter variant shortens the page below the current scroll position; the browser then
  * clamps the scroll and the chips jump under the pointer. The variant list keeps the height that holds the position,
  * and only for as long as it does: every switch starts from the list's own height.
  */
 function keepScrollPosition(container: HTMLElement, scrolled: number) {
-    const list = container.querySelector<HTMLElement>(
-        ':scope > .union-variants'
-    )
+    const list =
+        container.querySelector<HTMLElement>(':scope > .union-variants') ??
+        (container.classList.contains('content-type-panels') ? container : null)
     if (!list) return
     list.style.minHeight = ''
     const maxScroll = document.documentElement.scrollHeight - window.innerHeight
@@ -83,7 +100,9 @@ function keepScrollPosition(container: HTMLElement, scrolled: number) {
 /** Whether a variant is the one its list shows: not hidden, and its chip the active one. */
 function isShown(panel: HTMLElement, container: HTMLElement): boolean {
     if (panel.hasAttribute('hidden')) return false
-    const chip = ownRow(container)?.querySelector<HTMLElement>(
+    const row = ownRow(container)
+    if (!row) return true
+    const chip = row.querySelector<HTMLElement>(
         `${variantChips.chip}.is-active`
     )
     return chip?.dataset.chip === panel.id
@@ -123,6 +142,16 @@ function onClick(event: MouseEvent) {
     if (!menu) return
     menu.hidePopover()
     row.querySelector<HTMLElement>(`${variantChips.chip}.is-active`)?.focus()
+}
+
+function onChange(event: Event) {
+    const select = (
+        event.target as HTMLElement | null
+    )?.closest<HTMLSelectElement>('select[data-content-type-select]')
+    const container = select
+        ? document.getElementById(select.dataset.contentTypeSelect ?? '')
+        : null
+    if (select && container) showVariant(container, select.value)
 }
 
 /** The chips a key can move to: the ones the row shows, in order. */
@@ -168,6 +197,7 @@ export function initUnionChips(root: ParentNode = document): void {
         delegated = true
         document.addEventListener('click', onClick)
         document.addEventListener('keydown', onKeydown)
+        document.addEventListener('change', onChange)
         document.addEventListener('beforematch', onBeforeMatch)
     }
     registerChipRows(variantChips)
