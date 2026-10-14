@@ -108,7 +108,11 @@ public static class RequestBodyExample
 	private static JsonObject Object(SchemaAnalyzer analyzer, IOpenApiSchema schema, EffectiveSchema effective, int depth)
 	{
 		var required = effective.Required;
-		if (UnionSchemas.TryGetRequiredAlternatives(schema, out _, out var alternatives))
+		// The first alternative is added only when the fields already required satisfy none; adding one that is already
+		// met would make the body match two alternatives, which a oneOf rejects.
+		if (
+			UnionSchemas.TryGetRequiredAlternatives(schema, out _, out var alternatives) && !alternatives.Any(a => a.All(required.Contains))
+		)
 			required = new HashSet<string>(required.Concat(alternatives[0]), StringComparer.Ordinal);
 
 		var body = new JsonObject();

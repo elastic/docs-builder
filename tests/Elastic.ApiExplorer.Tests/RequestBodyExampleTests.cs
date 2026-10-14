@@ -300,6 +300,21 @@ public class RequestBodyExampleTests
 	}
 
 	[Test]
+	public async Task Build_AddsNoAlternativeWhenTheRequiredFieldsAlreadySatisfyOne()
+	{
+		var body = await BuildFrom(
+			/*lang=json,strict*/
+			"""
+			{ "type": "object", "required": ["externalId"],
+			  "properties": { "correlation_id": { "type": "string" }, "externalId": { "type": "string" } },
+			  "oneOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ] }
+			"""
+		);
+
+		Parse(body).ToJsonString().Should().Be("""{"externalId":"string"}""");
+	}
+
+	[Test]
 	public async Task Build_ParsesANumericConst()
 	{
 		var body = await BuildFrom(
