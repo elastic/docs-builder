@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -35,6 +36,20 @@ public static class OpenApiAuthSchemeResolver
 		}
 
 		return alternatives;
+	}
+
+	/// <summary>The schemes a sample authenticates with: those of the first alternative whose schemes a curl can all send.</summary>
+	internal static IReadOnlyList<IOpenApiSecurityScheme> CurlSchemes(OpenApiOperation operation, OpenApiDocument document)
+	{
+		foreach (var requirement in operation.Security ?? document.Security ?? [])
+		{
+			var schemes = requirement.Keys.OfType<OpenApiSecuritySchemeReference>().Select(key => Target(key, document)).ToArray();
+			// The schemes of one requirement are sent together, so one a curl can't send rules the whole alternative out.
+			if (schemes.Length > 0 && schemes.All(static s => s is not null && SyntheticCodeSamples.Sends(s)))
+				return [.. schemes.OfType<IOpenApiSecurityScheme>()];
+		}
+
+		return [];
 	}
 
 	private static List<AuthScheme> SchemesOf(OpenApiSecurityRequirement requirement, OpenApiDocument document)

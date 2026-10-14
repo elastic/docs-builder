@@ -406,7 +406,7 @@ public class ExampleScenarioTests
 			new CodeSample("Console", "GET /my-index/_search\n{}", "language-console"),
 			new CodeSample(
 				"curl",
-				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"$ELASTICSEARCH_URL/my-index/_search\"",
+				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"${ELASTICSEARCH_URL}/my-index/_search\"",
 				"language-curl"
 			)
 		};
@@ -416,7 +416,7 @@ public class ExampleScenarioTests
 			"/_search"
 		);
 
-		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
+		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint, "");
 
 		var samples = filled.Single().CodeSamples;
 		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
@@ -425,7 +425,7 @@ public class ExampleScenarioTests
 		samples[1]
 			.Source
 			.Should()
-			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
+			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"${ELASTICSEARCH_URL}/_search\"");
 		filled.Single().CodeSamplesIncludeRequest.Should().BeTrue();
 	}
 
@@ -443,7 +443,7 @@ public class ExampleScenarioTests
 		};
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint).Single().CodeSamples.Single(static s => s.IsCurl);
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples.Single(static s => s.IsCurl);
 
 		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
 	}
@@ -454,9 +454,121 @@ public class ExampleScenarioTests
 		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("GET /_search\n");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsItsQueryCredential()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlNamesAPlaceholderAfterItsParameter()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/{id}") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/${ID}\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsAFilledRoute()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/1") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/1\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsAnUnbracedQueryCredential()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?key=$API_KEY\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=$API_KEY\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlLeavesItsOtherQueryVariablesBehind()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?size=$SIZE&key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
+		curl.Source.Should().NotContain("$SIZE");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRun_KeepsTheCurlOnly()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST -d '{\"a\":1}' \"https://api.example.test/things\"", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples;
+
+		samples.Should().ContainSingle().Which.IsCurl.Should().BeTrue();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRunAndNoCurl_LeavesTheRequestInItsOwnBlock()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var filled = GeneratedCodeSamples.Fill([scenario], [], endpoint, productConsolePrefix: null).Single();
+
+		filled.CodeSamples.Should().BeEmpty();
+		filled.ShowRequest.Should().BeTrue();
 	}
 
 	[Test]
@@ -478,7 +590,7 @@ public class ExampleScenarioTests
 			"/{index}/_search"
 		);
 
-		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST /my-index-000001/_search?from=40\n");
 	}
@@ -496,7 +608,7 @@ public class ExampleScenarioTests
 			"/api/agent_builder/tools/_execute"
 		);
 
-		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST kbn:/api/agent_builder/tools/_execute\n");
 	}

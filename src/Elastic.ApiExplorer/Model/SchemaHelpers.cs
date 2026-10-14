@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
@@ -12,8 +14,53 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Shared static utilities for OpenAPI schema rendering.
 /// </summary>
-public static class SchemaHelpers
+public static partial class SchemaHelpers
 {
+	/// <summary>
+	/// The example a schema states: the first of <c>examples</c> (OpenAPI 3.1), else its <c>example</c>. The reader keeps the
+	/// <c>example</c> of an OpenAPI 3.0 schema in <see cref="IOpenApiSchema.Example"/> and leaves <c>examples</c> empty.
+	/// </summary>
+#pragma warning disable CS0618
+	public static JsonNode? FirstExample(IOpenApiSchema? schema) =>
+		schema?.Examples?.FirstOrDefault(IsValue) ?? (IsValue(schema?.Example) ? schema!.Example : null);
+#pragma warning restore CS0618
+
+	/// <summary>A node that holds a value: not null, and not the sentinel string the reader stores for a literal JSON <c>null</c>.</summary>
+	public static bool IsValue(JsonNode? node) => node is not null && !JsonNullSentinel.IsJsonNullSentinel(node);
+
+	/// <summary>The first value a schema states for itself: an example, its default, its constant, or its first enum member.</summary>
+	public static JsonNode? StatedValue(IOpenApiSchema? schema) =>
+		schema is null
+			? null
+			: FirstExample(schema)
+				?? (IsValue(schema.Default) ? schema.Default : null)
+				?? Const(schema)
+				?? schema.Enum?.FirstOrDefault(IsValue);
+
+	/// <summary>
+	/// The reader keeps <c>const</c> as text and drops its JSON type. A schema typed string keeps the text. Otherwise a
+	/// boolean is told apart by the .NET spelling the reader gives it (<c>True</c>, where the string "true" stays lowercase),
+	/// a number is parsed back, and anything else stays a string. A number and the string of its digits cannot be told
+	/// apart without a type, so <c>{ "const": "7" }</c> reads as 7; a schema that means the string should say <c>type: string</c>.
+	/// </summary>
+	private static JsonNode? Const(IOpenApiSchema schema)
+	{
+		var text = schema.Const;
+		if (string.IsNullOrEmpty(text))
+			return null;
+		if (schema.Type?.HasFlag(JsonSchemaType.String) == true)
+			return JsonValue.Create(text);
+		if (text is "True" or "False")
+			return JsonValue.Create(text == "True");
+		if (schema.Type?.HasFlag(JsonSchemaType.Boolean) == true && bool.TryParse(text, out var flag))
+			return JsonValue.Create(flag);
+		// A JSON number is kept as its own token, so 1e30 or 1e-30 keep their range and precision.
+		return JsonNumber().IsMatch(text) ? JsonNode.Parse(text) : JsonValue.Create(text);
+	}
+
+	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant)]
+	private static partial Regex JsonNumber();
+
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
 	/// </summary>
