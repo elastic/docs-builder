@@ -208,14 +208,16 @@ public sealed partial class GitHubCommitRangeService(
 		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
-		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
+		var batches = commits.Chunk(GraphQlBatchSize).ToList();
+		var responses = BatchRunner.Start(batches, batch => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, ctx));
+		for (var index = 0; index < batches.Count; index++)
 		{
-			var batch = commits.Skip(offset).Take(GraphQlBatchSize).ToList();
-			var byAlias = await FetchAssociatedPullRequestsBatchAsync(collector, args, batch, ctx).ConfigureAwait(false);
+			var batch = batches[index];
+			var byAlias = await responses[index].ConfigureAwait(false);
 			if (byAlias == null)
 				return null;
 
-			for (var i = 0; i < batch.Count; i++)
+			for (var i = 0; i < batch.Length; i++)
 			{
 				var sha = batch[i];
 				_ = byAlias.TryGetValue($"c{i}", out var commitNode);

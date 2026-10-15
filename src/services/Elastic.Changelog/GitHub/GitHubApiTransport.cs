@@ -20,6 +20,8 @@ public sealed class GitHubApiTransport : IDisposable
 	private const string GraphQlEndpoint = "https://api.github.com/graphql";
 
 	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(60);
+	private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(90);
+	private const int MaxRateLimitAttempts = 4;
 
 	/// <summary>
 	/// Process-wide client shared by every transport built for the production (no injected handler)
@@ -36,12 +38,15 @@ public sealed class GitHubApiTransport : IDisposable
 	/// </summary>
 	private readonly HttpClient? _ownedHttpClient;
 	private readonly string? _githubToken;
+	private readonly Func<TimeSpan, Cancel, Task> _delay;
 
 	/// <param name="handler">Optional HTTP handler override (tests). Owned by the caller.</param>
 	/// <param name="githubToken">Optional token override; defaults to the <c>GITHUB_TOKEN</c> environment variable.</param>
-	public GitHubApiTransport(HttpMessageHandler? handler = null, string? githubToken = null)
+	/// <param name="delay">Optional wait override (tests), used between retries of a rate-limited request.</param>
+	public GitHubApiTransport(HttpMessageHandler? handler = null, string? githubToken = null, Func<TimeSpan, Cancel, Task>? delay = null)
 	{
 		_githubToken = githubToken;
+		_delay = delay ?? Task.Delay;
 		if (handler is null)
 			_httpClient = SharedHttpClient;
 		else
@@ -69,13 +74,17 @@ public sealed class GitHubApiTransport : IDisposable
 	/// Issues an authenticated (when a token resolves) GET against the GitHub REST API.
 	/// The caller owns the response and its status-code policy.
 	/// </summary>
-	public async Task<HttpResponseMessage> GetAsync(string url, Cancel ctx = default)
-	{
-		using var request = new HttpRequestMessage(HttpMethod.Get, url);
-		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-		AttachAuthorization(request);
-		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-	}
+	public async Task<HttpResponseMessage> GetAsync(string url, Cancel ctx = default) =>
+		await SendWithRateLimitRetryAsync(
+			() =>
+			{
+				var request = new HttpRequestMessage(HttpMethod.Get, url);
+				request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+				AttachAuthorization(request);
+				return request;
+			},
+			ctx
+		).ConfigureAwait(false);
 
 	/// <summary>
 	/// Issues an authenticated POST against a GitHub REST API endpoint with a JSON body.
@@ -119,12 +128,58 @@ public sealed class GitHubApiTransport : IDisposable
 	/// Posts a JSON body to the GitHub GraphQL endpoint. The GraphQL API rejects anonymous
 	/// requests, so callers should verify <see cref="ResolveToken"/> before building queries.
 	/// </summary>
-	public async Task<HttpResponseMessage> PostGraphQlAsync(string jsonBody, Cancel ctx = default)
+	public async Task<HttpResponseMessage> PostGraphQlAsync(string jsonBody, Cancel ctx = default) =>
+		await SendWithRateLimitRetryAsync(
+			() =>
+			{
+				var request = new HttpRequestMessage(HttpMethod.Post, GraphQlEndpoint)
+				{
+					Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+				};
+				AttachAuthorization(request);
+				return request;
+			},
+			ctx
+		).ConfigureAwait(false);
+
+	/// <summary>
+	/// Sends a read request and waits out a rate limit instead of failing: HTTP 429, or 403 with a <c>Retry-After</c>
+	/// header or an exhausted <c>x-ratelimit-remaining</c>. Bulk reads run several requests at once, so a secondary
+	/// limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped, because a
+	/// primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
+	/// </summary>
+	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(Func<HttpRequestMessage> create, Cancel ctx)
 	{
-		using var request = new HttpRequestMessage(HttpMethod.Post, GraphQlEndpoint);
-		request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-		AttachAuthorization(request);
-		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+		for (var attempt = 1; ; attempt++)
+		{
+			using var request = create();
+			var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+			var wait = attempt < MaxRateLimitAttempts ? RateLimitWait(response, attempt) : null;
+			if (wait is null)
+				return response;
+
+			response.Dispose();
+			await _delay(wait.Value, ctx).ConfigureAwait(false);
+		}
+	}
+
+	private static TimeSpan? RateLimitWait(HttpResponseMessage response, int attempt)
+	{
+		var status = (int)response.StatusCode;
+		var retryAfter = response.Headers.RetryAfter?.Delta;
+		var exhausted = response.Headers.TryGetValues("x-ratelimit-remaining", out var remaining) && remaining.FirstOrDefault() == "0";
+		if (status != 429 && !(status == 403 && (retryAfter is not null || exhausted)))
+			return null;
+
+		var wait = retryAfter ?? TimeSpan.FromSeconds(Math.Pow(2, attempt) * 5);
+		if (
+			retryAfter is null
+			&& response.Headers.TryGetValues("x-ratelimit-reset", out var reset)
+			&& long.TryParse(reset.FirstOrDefault(), out var resetAt)
+		)
+			wait = DateTimeOffset.FromUnixTimeSeconds(resetAt) - DateTimeOffset.UtcNow + TimeSpan.FromSeconds(1);
+
+		return wait > MaxRateLimitWait ? null : wait < TimeSpan.Zero ? TimeSpan.Zero : wait;
 	}
 
 	private void AttachAuthorization(HttpRequestMessage request)

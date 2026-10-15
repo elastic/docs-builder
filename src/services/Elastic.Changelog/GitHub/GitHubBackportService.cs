@@ -136,17 +136,12 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	)
 	{
 		var found = new Dictionary<int, Node>();
-		for (var offset = 0; offset < numbers.Count; offset += PullRequestBatchSize)
+		var batches = numbers.Chunk(PullRequestBatchSize).ToList();
+		var responses = BatchRunner.Start(batches, batch => QueryAsync(collector, owner, repo, PullRequestSelection(batch), ctx));
+		for (var index = 0; index < batches.Count; index++)
 		{
-			var batch = numbers.Skip(offset).Take(PullRequestBatchSize).ToList();
-			var selection = new StringBuilder();
-			foreach (var n in batch)
-				_ = selection.Append(
-					CultureInfo.InvariantCulture,
-					$" p{n}: pullRequest(number: {n}) {{ title body commits(first: 50) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ commit {{ message }} }} }} }}"
-				);
-
-			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx).ConfigureAwait(false);
+			var batch = batches[index];
+			var data = await responses[index].ConfigureAwait(false);
 			if (data == null)
 				return null;
 
@@ -214,21 +209,16 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	{
 		var shas = candidates.Values.SelectMany(c => c.CherryPickShas).Where(s => ShaRegex().IsMatch(s)).Distinct().ToList();
 		var roots = new Dictionary<string, List<int>>();
-		for (var offset = 0; offset < shas.Count; offset += CommitBatchSize)
+		var batches = shas.Chunk(CommitBatchSize).ToList();
+		var responses = BatchRunner.Start(batches, batch => QueryAsync(collector, owner, repo, TrailerSelection(batch), ctx));
+		for (var index = 0; index < batches.Count; index++)
 		{
-			var batch = shas.Skip(offset).Take(CommitBatchSize).ToList();
-			var selection = new StringBuilder();
-			for (var i = 0; i < batch.Count; i++)
-				_ = selection.Append(
-					CultureInfo.InvariantCulture,
-					$" c{i}: object(oid: \"{batch[i]}\") {{ ... on Commit {{ associatedPullRequests(first: 10) {{ nodes {{ number merged baseRefName baseRepository {{ nameWithOwner }} }} }} }} }}"
-				);
-
-			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx).ConfigureAwait(false);
+			var batch = batches[index];
+			var data = await responses[index].ConfigureAwait(false);
 			if (data == null)
 				return null;
 
-			for (var i = 0; i < batch.Count; i++)
+			for (var i = 0; i < batch.Length; i++)
 			{
 				var nodes = data.GetValueOrDefault($"c{i}")?.AssociatedPullRequests?.Nodes?.OfType<Node>() ?? [];
 				roots[batch[i]] = [.. nodes.Where(n => IsMergedOnDefaultBranch(n, repoName, defaultBranch)).Select(n => n.Number)];
@@ -237,6 +227,36 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 
 		return roots;
 	}
+
+	private static string PullRequestSelection(IEnumerable<int> numbers) =>
+		string.Concat(
+			numbers.Select(
+				n => string.Create(
+					CultureInfo.InvariantCulture,
+					$" p{n}: pullRequest(number: {n}) {{ title body commits(first: 50) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ commit {{ message }} }} }} }}"
+				)
+			)
+		);
+
+	private static string TrailerSelection(IReadOnlyList<string> shas) =>
+		string.Concat(
+			shas.Select(
+				(sha, i) => string.Create(
+					CultureInfo.InvariantCulture,
+					$" c{i}: object(oid: \"{sha}\") {{ ... on Commit {{ associatedPullRequests(first: 10) {{ nodes {{ number merged baseRefName baseRepository {{ nameWithOwner }} }} }} }} }}"
+				)
+			)
+		);
+
+	private static string ValidationSelection(IEnumerable<int> numbers) =>
+		string.Concat(
+			numbers.Select(
+				n => string.Create(
+					CultureInfo.InvariantCulture,
+					$" v{n}: pullRequest(number: {n}) {{ number merged baseRefName baseRepository {{ nameWithOwner }} }}"
+				)
+			)
+		);
 
 	/// <summary>Keeps the numbers that are merged pull requests on the default branch of this repository.</summary>
 	private async Task<HashSet<int>?> ValidateAsync(
@@ -250,19 +270,17 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	)
 	{
 		var valid = new HashSet<int>();
-		for (var offset = 0; offset < numbers.Count; offset += ValidationBatchSize)
+		// A number that is not a pull request (an issue) makes GitHub answer with a NOT_FOUND error for that alias
+		// and still return the other aliases. Only that error is tolerated; the missing node simply does not count.
+		var batches = numbers.Chunk(ValidationBatchSize).ToList();
+		var responses = BatchRunner.Start(
+			batches,
+			batch => QueryAsync(collector, owner, repo, ValidationSelection(batch), ctx, tolerateNotFound: true)
+		);
+		for (var index = 0; index < batches.Count; index++)
 		{
-			var batch = numbers.Skip(offset).Take(ValidationBatchSize).ToList();
-			var selection = new StringBuilder();
-			foreach (var n in batch)
-				_ = selection.Append(
-					CultureInfo.InvariantCulture,
-					$" v{n}: pullRequest(number: {n}) {{ number merged baseRefName baseRepository {{ nameWithOwner }} }}"
-				);
-
-			// A number that is not a pull request (an issue) makes GitHub answer with a NOT_FOUND error for that alias
-			// and still return the other aliases. Only that error is tolerated; the missing node simply does not count.
-			var data = await QueryAsync(collector, owner, repo, selection.ToString(), ctx, tolerateNotFound: true).ConfigureAwait(false);
+			var batch = batches[index];
+			var data = await responses[index].ConfigureAwait(false);
 			if (data == null)
 				return null;
 
