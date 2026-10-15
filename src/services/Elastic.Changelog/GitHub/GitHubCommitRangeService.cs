@@ -445,12 +445,24 @@ public sealed partial class GitHubCommitRangeService(
 			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
 			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
-			var parsed = response.IsSuccessStatusCode
-				? JsonSerializer.Deserialize(
-					await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false),
-					CommitRangeJsonContext.Default.GraphQlLabelPageResponse
-				)
-				: null;
+			GraphQlLabelPageResponse? parsed = null;
+			if (response.IsSuccessStatusCode)
+			{
+				var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+				try
+				{
+					parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlLabelPageResponse);
+				}
+				catch (JsonException ex)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+					);
+					return null;
+				}
+			}
+
 			var next = parsed?.Errors is { Count: > 0 } ? null : parsed?.Data?.Repository?.PullRequest?.Labels;
 			if (next == null)
 			{
