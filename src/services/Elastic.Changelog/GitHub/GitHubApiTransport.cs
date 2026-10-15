@@ -139,7 +139,8 @@ public sealed class GitHubApiTransport : IDisposable
 				AttachAuthorization(request);
 				return request;
 			},
-			ctx
+			ctx,
+			retryTransient: true
 		).ConfigureAwait(false);
 
 	/// <summary>
@@ -147,13 +148,30 @@ public sealed class GitHubApiTransport : IDisposable
 	/// secondary limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped,
 	/// because a primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
 	/// </summary>
-	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(Func<HttpRequestMessage> create, Cancel ctx)
+	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(
+		Func<HttpRequestMessage> create,
+		Cancel ctx,
+		bool retryTransient = false
+	)
 	{
 		for (var attempt = 1; ; attempt++)
 		{
 			using var request = create();
-			var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-			var wait = attempt < MaxRateLimitAttempts ? await RateLimitWaitAsync(response, attempt, ctx).ConfigureAwait(false) : null;
+			HttpResponseMessage response;
+			try
+			{
+				response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+			}
+			catch (HttpRequestException) when (retryTransient && attempt < MaxRateLimitAttempts)
+			{
+				// A dropped connection is as transient as a 502. The last attempt lets the exception through.
+				await _delay(TransientWait(attempt), ctx).ConfigureAwait(false);
+				continue;
+			}
+
+			var wait = attempt < MaxRateLimitAttempts
+				? await RetryWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false)
+				: null;
 			if (wait is null)
 				return response;
 
@@ -161,6 +179,38 @@ public sealed class GitHubApiTransport : IDisposable
 			await _delay(wait.Value, ctx).ConfigureAwait(false);
 		}
 	}
+
+	/// <summary>How long to wait before retrying a response, or <c>null</c> when it is final: a rate limit, then a transient failure.</summary>
+	private static async Task<TimeSpan?> RetryWaitAsync(HttpResponseMessage response, int attempt, bool retryTransient, Cancel ctx) =>
+		await RateLimitWaitAsync(response, attempt, ctx).ConfigureAwait(false)
+			?? await TransientFailureWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false);
+
+	/// <summary>
+	/// For GraphQL, a gateway error (502, 503, 504), a dropped connection, and a successful response with no body, which
+	/// GitHub sends under load, are retried. Without this a long run over thousands of commits dies on one bad response.
+	/// REST reads keep the retries of their callers, so they are not retried twice.
+	/// </summary>
+	private static async Task<TimeSpan?> TransientFailureWaitAsync(
+		HttpResponseMessage response,
+		int attempt,
+		bool retryTransient,
+		Cancel ctx
+	)
+	{
+		if (!retryTransient)
+			return null;
+
+		if ((int)response.StatusCode is 502 or 503 or 504)
+			return TransientWait(attempt);
+
+		if (!response.IsSuccessStatusCode)
+			return null;
+
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return string.IsNullOrWhiteSpace(body) ? TransientWait(attempt) : null;
+	}
+
+	private static TimeSpan TransientWait(int attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt));
 
 	/// <summary>
 	/// How long to wait before retrying a rate-limited response, or <c>null</c> when it is not one or waiting is no use.

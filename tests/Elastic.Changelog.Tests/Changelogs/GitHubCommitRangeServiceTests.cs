@@ -372,6 +372,43 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
 	}
 
+	[Test]
+	public async Task ResolvePullRequests_GraphQlBodyEmptyEveryTime_IsAnErrorNotACrash()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(_ => CompareJson(1, [sha1]), _ => string.Empty);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not valid JSON"));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GraphQlBodyEmptyOnce_IsRetriedAndSucceeds()
+	{
+		var sha1 = Sha(1);
+		var calls = 0;
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => ++calls == 1 ? string.Empty : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])])
+		);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(p => p.Number).Should().Equal(11);
+		Collector.Errors.Should().Be(0);
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 

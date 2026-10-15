@@ -340,7 +340,19 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		}
 
 		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-		var parsed = JsonSerializer.Deserialize(json, BackportJsonContext.Default.Response);
+		Response? parsed;
+		try
+		{
+			parsed = JsonSerializer.Deserialize(json, BackportJsonContext.Default.Response);
+		}
+		catch (JsonException ex)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL request for {owner}/{repo} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+			);
+			return null;
+		}
 
 		if (parsed?.Errors is { Count: > 0 } && !(tolerateNotFound && parsed.Errors.All(e => e.Type == "NOT_FOUND")))
 		{
