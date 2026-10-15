@@ -357,7 +357,7 @@ rules:
 
 With this configuration, a pull request labelled `stateful` is an entry of `elasticsearch` only, so it stays out of the `cloud-serverless` bundle. A pull request labelled `serverless` is an entry of `cloud-serverless` only. A pull request labelled with both, or with neither, carries both products and stays in. If a range leaves no entries for the bundle, the command writes no bundle and reports a warning.
 
-Checked-in entries keep the products they declare.
+A label brings the version and lifecycle of its `pivot.products` spec. A default brings its own lifecycle. Checked-in entries keep the products they declare.
 
 ## Rules
 

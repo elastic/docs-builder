@@ -561,6 +561,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		  default:
 		    - product: elasticsearch
 		    - product: cloud-serverless
+		      lifecycle: beta
 		rules:
 		  bundle:
 		    products:
@@ -654,6 +655,49 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			else
 				entryProducts.Should().NotContain($"- product: {product}\n");
 		}
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_CarryTheLifecycleOfTheDefaultsOrOfTheMatchingLabelSpec()
+	{
+		var (_, unlabelled) = await BundleSinglePr([">feature"], "elasticsearch");
+		unlabelled.Should().Contain("- product: cloud-serverless\n    lifecycle: beta\n");
+
+		// The label maps cloud-serverless with its own spec; it replaces the default's lifecycle.
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			"  products:\n    elasticsearch: stateful\n    \"cloud-serverless 2026-10 ga\": serverless",
+			topLevel: DefaultProductsAndRules
+		);
+		configPath = await RewriteProfileProduct(configPath, "elasticsearch");
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Faster entity resolution",
+			Body = "## Release Note\nEntity resolution runs faster.",
+			Labels = [">feature", "serverless", "stateful"],
+			LinkedIssues = []
+		});
+		var result = await Service(PoolHandler(), RangeService(300), prService).BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().BeTrue();
+		var file = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
+		var bundle = (await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken)).Replace("\r\n", "\n");
+		bundle.Should().Contain("- product: cloud-serverless\n    versions:\n    - 2026-10\n    lifecycle: ga\n");
+		bundle.Should().NotContain("lifecycle: beta");
 	}
 
 	[Test]

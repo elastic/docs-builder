@@ -396,8 +396,12 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	{
 		if (config?.ProductsConfiguration?.Default is { Count: > 0 } defaults)
 		{
-			var defaultProducts = defaults.Select(d => new ProductArgument { Product = d.Product }).ToList();
-			var mapped = defaultProducts.Where(entry => labelProducts.Any(label => SameProductId(label.Product, entry.Product))).ToList();
+			var defaultProducts = defaults.Select(d => new ProductArgument { Product = d.Product, Lifecycle = d.Lifecycle }).ToList();
+			// A matching label brings the version and lifecycle of its pivot.products spec, as in changelog add.
+			var mapped = defaultProducts
+				.Select(entry => labelProducts.FirstOrDefault(label => SameProductId(label.Product, entry.Product)))
+				.OfType<ProductArgument>()
+				.ToList();
 			return (mapped.Count > 0 ? mapped : defaultProducts).Select(p => p.ToProductReference()).ToList();
 		}
 
