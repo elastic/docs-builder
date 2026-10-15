@@ -12,8 +12,24 @@ public sealed record ReleaseNoteExtractionResult(string? Content, bool WasTrunca
 
 internal static class ReleaseNoteExtractionDiagnostics
 {
-	public static void EmitHint(IDiagnosticsCollector collector, string source, int prNumber, ReleaseNoteExtractionResult extraction)
+	public static void EmitHint(
+		IDiagnosticsCollector collector,
+		string source,
+		int prNumber,
+		ReleaseNoteExtractionResult extraction,
+		DecisionLog? decisions = null
+	)
 	{
+		// The release note section is optional, so a run that keeps a decision log records the PR instead of printing a hint.
+		if (decisions is not null)
+		{
+			if (extraction.Content == null)
+				decisions.Record("notes", "no release note", $"#{prNumber}");
+			else if (extraction.WasTruncated)
+				decisions.Record("notes", "first paragraph only", $"#{prNumber}");
+			return;
+		}
+
 		if (extraction.Content == null)
 		{
 			collector.EmitHint(

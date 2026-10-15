@@ -242,7 +242,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
 		IDiagnosticsCollector collector,
-		string prUrl
+		string prUrl,
+		DecisionLog? decisions = null
 	)
 	{
 		var createRules = config.Rules?.Create;
@@ -258,17 +259,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					// Product-specific rules override global rules
-					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product, decisions))
 						return true;
 				}
-				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null, decisions))
 					return true;
 			}
 			return false;
 		}
 
 		// No product-specific rules - check global
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null, decisions);
 	}
 
 	internal static bool ShouldSkipByCreateRules(
@@ -276,7 +277,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateRules rules,
 		IDiagnosticsCollector collector,
 		string prUrl,
-		string? productContext
+		string? productContext,
+		DecisionLog? decisions = null
 	)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
@@ -305,6 +307,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (matchingLabel != null)
 			{
+				if (decisions is not null)
+				{
+					decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
+					return true;
+				}
+
 				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
@@ -325,6 +333,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (!hasMatch)
 			{
 				var labelsList = string.Join(", ", rules.Labels);
+				if (decisions is not null)
+				{
+					decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
+					return true;
+				}
+
 				collector.EmitHint(
 					string.Empty,
 					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."

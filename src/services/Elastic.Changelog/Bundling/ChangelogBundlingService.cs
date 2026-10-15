@@ -213,7 +213,8 @@ public partial class ChangelogBundlingService(
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
 	IEnvironmentVariables? env = null,
-	IGitHubBackportService? backportService = null
+	IGitHubBackportService? backportService = null,
+	DecisionLog? decisions = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -223,6 +224,7 @@ public partial class ChangelogBundlingService(
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
+	private readonly DecisionLog? _decisions = decisions;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -1037,7 +1039,7 @@ public partial class ChangelogBundlingService(
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _logger);
+		var resolver = new GitRangeEntryResolver(_prService, _logger, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -1056,7 +1058,19 @@ public partial class ChangelogBundlingService(
 		);
 
 		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
-		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
+		// The full report has a row per pull request, hundreds for a patch and thousands for a minor. It is the product of a
+		// dry run. A normal run logs a summary, and the report at debug level.
+		var sources = result.Report.Rows.GroupBy(r => r.Source).ToDictionary(g => g.Key, g => g.Count());
+		_logger.LogInformation(
+			"Commit-range bundle: {Commits} commit(s), {PullRequests} pull request(s): {Pool} from the pool, {Inferred} inferred, {Excluded} excluded, {Missing} missing",
+			result.Report.TotalCommits,
+			result.Report.Rows.Count,
+			sources.GetValueOrDefault(GitRangePrSourceKind.Pool),
+			sources.GetValueOrDefault(GitRangePrSourceKind.InferredPrBody) + sources.GetValueOrDefault(GitRangePrSourceKind.InferredTitle),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Excluded) + sources.GetValueOrDefault(GitRangePrSourceKind.ExcludedBaseBranch),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Missing)
+		);
+		_logger.LogDebug("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)
 		{
@@ -1084,6 +1098,18 @@ public partial class ChangelogBundlingService(
 		}
 
 		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+	}
+
+	/// <summary>
+	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
+	/// hundreds. Other runs keep the warning.
+	/// </summary>
+	private void ExcludeFromBundle(IDiagnosticsCollector collector, MatchedChangelogFile entry, string code, string why)
+	{
+		if (_decisions is not null)
+			_decisions.Record("bundle", "exclude", entry.FileName, why);
+		else
+			collector.EmitWarning(entry.FilePath, $"{code} Excluding '{entry.FileName}' from bundle ({why}).");
 	}
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
@@ -2273,7 +2299,7 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules
@@ -2304,10 +2330,7 @@ public partial class ChangelogBundlingService(
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-					);
+					ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"global type/area filter");
 					continue;
 				}
 
@@ -2317,19 +2340,13 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter)."
-				);
+				ExcludeFromBundle(collector, entry, $"[-bundle-{productReason}]", $"global product filter");
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-				);
+				ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"global type/area filter");
 				continue;
 			}
 
@@ -2339,7 +2356,7 @@ public partial class ChangelogBundlingService(
 		return filtered;
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
@@ -2378,18 +2395,12 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared)."
-					);
+					ExcludeFromBundle(collector, entry, $"[-bundle-missing-products]", $"no products declared");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(
-						entry.FilePath,
-						$"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}')."
-					);
+					ExcludeFromBundle(collector, entry, $"[-bundle-disjoint]", $"disjoint from rule context '{ruleContextProduct}'");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
@@ -2420,20 +2431,14 @@ public partial class ChangelogBundlingService(
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter)."
-						);
+						ExcludeFromBundle(collector, entry, $"[-bundle-{productReason}]", $"per-product filter");
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter)."
-						);
+						ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"per-product type/area filter");
 						continue;
 					}
 					break;
