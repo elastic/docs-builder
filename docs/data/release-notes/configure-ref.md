@@ -404,7 +404,7 @@ You cannot specify both `exclude` and `include`.
 :::
 
 Product keys in `rules.create.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
-Product-specific rules **override** the global create rules entirely.
+Product-specific rules **override** the global create rules entirely. They apply to the product they name: a pull request that resolves to no product, for example one without a product label and without `products.default`, uses the global rules.
 
 ```yaml
 rules:

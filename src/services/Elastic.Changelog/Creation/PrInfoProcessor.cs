@@ -251,8 +251,9 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (createRules == null)
 			return false;
 
-		// Check product-specific overrides first, then fall back to global
-		if (createRules.ByProduct is { Count: > 0 })
+		// Check product-specific overrides first, then fall back to global. A per-product override only replaces the
+		// global rules for the product it names, so without a product to look up the global rules decide.
+		if (createRules.ByProduct is { Count: > 0 } && products.Count > 0)
 		{
 			foreach (var product in products)
 			{
@@ -269,7 +270,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return false;
 		}
 
-		// No product-specific rules - check global
+		// No product-specific rules, or no products to look them up for: check global
 		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions);
 	}
 

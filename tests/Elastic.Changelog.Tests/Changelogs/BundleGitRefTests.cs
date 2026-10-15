@@ -704,7 +704,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		result.Should().BeTrue();
 		bundle.Should().NotBeNull();
 		// The entry stays in the cloud-serverless bundle: the per-product rules.bundle check finds that product on it.
-		var entry = EntryProductsOf(bundle!);
+		var entry = EntryProductsOf(bundle);
 		foreach (var product in new[] { "security", "kibana", "cloud-serverless" })
 		{
 			if (expectedProducts.Contains(product))
@@ -788,6 +788,22 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		);
 
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_WildcardOutputProductsAndPerProductRules_SkipLabelStillApplies()
+	{
+		// A wildcard output product resolves to no product before the rules.create check. The global skip label
+		// must still leave the pull request out, so its missing product label is not an error.
+		_ = await BundleSinglePr(
+			["skip-me"],
+			"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			"rules:\n  create:\n    exclude: 'skip-me'\n    products:\n      elasticsearch:\n        exclude: 'other'",
+			"*"
+		);
+
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Cannot determine products", StringComparison.Ordinal));
 	}
 
 	[Test]
