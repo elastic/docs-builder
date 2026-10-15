@@ -145,7 +145,7 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
+public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decisions)
 {
 	private const int MaxParallelPrFetches = 6;
 
@@ -208,6 +208,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 					Source = GitRangePrSourceKind.Pool,
 					EntryFileNames = fileNames
 				});
+				decisions.Record("entries", "pool", $"#{pr.Number}");
 				continue;
 			}
 
@@ -343,7 +344,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		if (config != null)
 		{
 			var effectiveProducts = labelProducts.Count > 0 ? labelProducts : (options.FallbackProducts ?? []).ToList();
-			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, effectiveProducts, config, collector, pr.Url))
+			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, effectiveProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 		}
 
@@ -377,7 +378,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		{
 			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo.Body);
 			description = extraction.Content;
-			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
 		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
@@ -415,7 +416,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		};
 
 		var kind = description != null ? GitRangePrSourceKind.InferredPrBody : GitRangePrSourceKind.InferredTitle;
-		logger.LogInformation("Synthesized changelog entry for PR #{Number} from PR metadata ({Kind})", pr.Number, kind);
+		decisions.Record("entries", "inferred", $"#{pr.Number}", kind == GitRangePrSourceKind.InferredPrBody ? "PR body" : "title");
 		return (Row(pr, kind, fileName), entry, false);
 	}
 

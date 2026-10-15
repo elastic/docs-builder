@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -149,8 +150,10 @@ internal sealed class UnifiedReleaseCommands(
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
+		// A range holds hundreds of pull requests. Their decisions are logged in batches, not one line each.
+		using var decisions = new DecisionLog(_logger);
 		var productBundler = new UnifiedProductBundler(
-			new ChangelogBundlingService(logFactory, fileSystem, configurationContext),
+			new ChangelogBundlingService(logFactory, fileSystem, configurationContext, decisions: decisions),
 			http,
 			new FileSystem(),
 			_logger,
@@ -244,6 +247,7 @@ internal sealed class UnifiedReleaseCommands(
 
 				var requested = products?.Contains(range.ProductId, StringComparer.OrdinalIgnoreCase) ?? false;
 				var outcome = await productBundler.BundleAsync(range, productOutput, changelogConfigs?.FullName, strict || requested, ctx);
+				decisions.Flush();
 				if (outcome == ProductBundleOutcome.Failed)
 					return 1;
 

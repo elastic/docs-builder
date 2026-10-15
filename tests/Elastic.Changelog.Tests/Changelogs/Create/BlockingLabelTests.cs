@@ -56,15 +56,8 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog
 		Collector.Errors.Should().Be(0);
-		Collector.Hints.Should().BeGreaterThan(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(
-					"skip:releaseNotes"
-				)
-			);
+		Logged.Should().Contain(l => l.Contains("entries: exclude"));
+		Logged.Should().Contain(l => l.Contains("entries: exclude") && l.Contains("skip:releaseNotes"));
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -121,11 +114,8 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to cloud-serverless blocker
 		Collector.Errors.Should().Be(0);
-		Collector.Hints.Should().BeGreaterThan(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains("ILM"));
+		Logged.Should().Contain(l => l.Contains("entries: exclude"));
+		Logged.Should().Contain(l => l.Contains("entries: exclude") && l.Contains("ILM"));
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -182,13 +172,8 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 		// Assert
 		result.Should().BeTrue(); // Should succeed but skip creating changelog due to blocker
 		Collector.Errors.Should().Be(0);
-		Collector.Hints.Should().BeGreaterThan(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(">non-issue")
-			);
+		Logged.Should().Contain(l => l.Contains("entries: exclude"));
+		Logged.Should().Contain(l => l.Contains("entries: exclude") && l.Contains(">non-issue"));
 
 		var outputDir = input.Output ?? FileSystem.Directory.GetCurrentDirectory();
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -248,14 +233,7 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 		// Assert — product-specific rule should have blocked creation
 		result.Should().BeTrue(); // Succeed but skip
 		Collector.Errors.Should().Be(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation") && d.Message.Contains(
-					"skip:releaseNotes"
-				)
-			);
+		Logged.Should().Contain(l => l.Contains("entries: exclude") && l.Contains("skip:releaseNotes"));
 
 		var outputDir = input.Output;
 		if (!FileSystem.Directory.Exists(outputDir))
@@ -305,7 +283,7 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("returned false without emitting errors"));
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity != Severity.Error);
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Skipping changelog creation"));
+		Logged.Should().Contain(l => l.Contains("entries: exclude"));
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
