@@ -97,6 +97,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// Downloads the changelog entries for the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/>
 	/// pool from the CDN at <paramref name="baseUri"/>. Returns an empty list after emitting an error when
 	/// the registry cannot be read or when a registry-listed entry cannot be fetched within the retry budget.
+	/// A registry that answers 404 goes to <paramref name="emitRegistryNotFound"/> instead of <paramref name="emitError"/> when it is given.
 	/// Entries are returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
@@ -106,7 +107,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string branch,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx
+		Cancel ctx,
+		Action<string>? emitRegistryNotFound = null
 	)
 	{
 		var poolLabel = $"{org}/{repo}/{branch}";
@@ -129,6 +131,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		try
 		{
 			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
+		}
+		catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound && emitRegistryNotFound is not null)
+		{
+			emitRegistryNotFound(
+				$"No changelog entry registry for '{poolLabel}' exists at {registryUri}: the repository publishes no entry pool."
+			);
+			return [];
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
