@@ -143,10 +143,9 @@ public sealed class GitHubApiTransport : IDisposable
 		).ConfigureAwait(false);
 
 	/// <summary>
-	/// Sends a read request and waits out a rate limit instead of failing: HTTP 429, or 403 with a <c>Retry-After</c>
-	/// header or an exhausted <c>x-ratelimit-remaining</c>. Bulk reads run several requests at once, so a secondary
-	/// limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped, because a
-	/// primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
+	/// Sends a read request and waits out a rate limit instead of failing. Bulk reads run several requests at once, so a
+	/// secondary limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped,
+	/// because a primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
 	/// </summary>
 	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(Func<HttpRequestMessage> create, Cancel ctx)
 	{
@@ -154,7 +153,7 @@ public sealed class GitHubApiTransport : IDisposable
 		{
 			using var request = create();
 			var response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-			var wait = attempt < MaxRateLimitAttempts ? RateLimitWait(response, attempt) : null;
+			var wait = attempt < MaxRateLimitAttempts ? await RateLimitWaitAsync(response, attempt, ctx).ConfigureAwait(false) : null;
 			if (wait is null)
 				return response;
 
@@ -163,23 +162,48 @@ public sealed class GitHubApiTransport : IDisposable
 		}
 	}
 
-	private static TimeSpan? RateLimitWait(HttpResponseMessage response, int attempt)
+	/// <summary>
+	/// How long to wait before retrying a rate-limited response, or <c>null</c> when it is not one or waiting is no use.
+	/// <list type="bullet">
+	/// <item>A <c>Retry-After</c> header says how long.</item>
+	/// <item>An exhausted primary budget (<c>x-ratelimit-remaining: 0</c>) resets at <c>x-ratelimit-reset</c>.</item>
+	/// <item>A secondary limit has neither: a 429, or a 403 whose body says so. GitHub asks for at least a minute.</item>
+	/// </list>
+	/// The reset time only counts for an exhausted budget. A secondary limit can arrive with budget left and a reset an hour away.
+	/// </summary>
+	private static async Task<TimeSpan?> RateLimitWaitAsync(HttpResponseMessage response, int attempt, Cancel ctx)
 	{
 		var status = (int)response.StatusCode;
-		var retryAfter = response.Headers.RetryAfter?.Delta;
-		var exhausted = response.Headers.TryGetValues("x-ratelimit-remaining", out var remaining) && remaining.FirstOrDefault() == "0";
-		if (status != 429 && !(status == 403 && (retryAfter is not null || exhausted)))
+		if (status is not (429 or 403))
 			return null;
 
-		var wait = retryAfter ?? TimeSpan.FromSeconds(Math.Pow(2, attempt) * 5);
-		if (
-			retryAfter is null
-			&& response.Headers.TryGetValues("x-ratelimit-reset", out var reset)
-			&& long.TryParse(reset.FirstOrDefault(), out var resetAt)
-		)
-			wait = DateTimeOffset.FromUnixTimeSeconds(resetAt) - DateTimeOffset.UtcNow + TimeSpan.FromSeconds(1);
+		TimeSpan wait;
+		if (response.Headers.RetryAfter is { } retryAfter && RetryAfterWait(retryAfter) is { } told)
+			wait = told;
+		else if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remaining) && remaining.FirstOrDefault() == "0")
+			wait = ResetWait(response);
+		else if (status == 429 || await IsSecondaryLimitBodyAsync(response, ctx).ConfigureAwait(false))
+			wait = TimeSpan.FromSeconds(Math.Min(60 * attempt, MaxRateLimitWait.TotalSeconds));
+		else
+			return null;
 
 		return wait > MaxRateLimitWait ? null : wait < TimeSpan.Zero ? TimeSpan.Zero : wait;
+	}
+
+	private static TimeSpan? RetryAfterWait(System.Net.Http.Headers.RetryConditionHeaderValue retryAfter) =>
+		retryAfter.Delta ?? (retryAfter.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+
+	private static TimeSpan ResetWait(HttpResponseMessage response) =>
+		response.Headers.TryGetValues("x-ratelimit-reset", out var reset) && long.TryParse(reset.FirstOrDefault(), out var resetAt)
+			? DateTimeOffset.FromUnixTimeSeconds(resetAt) - DateTimeOffset.UtcNow + TimeSpan.FromSeconds(1)
+			: TimeSpan.FromSeconds(60);
+
+	/// <summary>A 403 for a secondary limit says so in its body, unlike a 403 for a missing permission.</summary>
+	private static async Task<bool> IsSecondaryLimitBodyAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return body.Contains("secondary rate limit", StringComparison.OrdinalIgnoreCase)
+			|| body.Contains("abuse detection", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private void AttachAuthorization(HttpRequestMessage request)

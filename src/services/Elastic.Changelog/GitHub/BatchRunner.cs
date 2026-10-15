@@ -13,29 +13,58 @@ internal static class BatchRunner
 	public const int DefaultDegree = 4;
 
 	/// <summary>
-	/// Starts every batch, with at most <paramref name="degree"/> running at once. The tasks come back in batch order,
-	/// so the caller reads the results in order and its output does not depend on which batch finishes first.
+	/// Runs every batch, with at most <paramref name="degree"/> running at once, and returns the results in batch order.
+	/// When a batch fails (<paramref name="failed"/>) or throws, the batches that have not started never start, the
+	/// running ones get a cancelled token, and the method returns only after all of them are done, so nothing keeps
+	/// spending the rate budget once the caller has moved on. A failure returns <c>null</c>; an exception is rethrown.
 	/// </summary>
-	public static IReadOnlyList<Task<TResult>> Start<TBatch, TResult>(
+	public static async Task<IReadOnlyList<TResult>?> RunAsync<TBatch, TResult>(
 		IReadOnlyList<TBatch> batches,
-		Func<TBatch, Task<TResult>> run,
+		Func<TBatch, Cancel, Task<TResult>> run,
+		Func<TResult, bool> failed,
+		Cancel ctx,
 		int degree = DefaultDegree
 	)
 	{
-		var gate = new SemaphoreSlim(degree);
-		return [
-			.. batches.Select(async batch =>
+		using var cts = CancellationTokenSource.CreateLinkedTokenSource(ctx);
+		using var gate = new SemaphoreSlim(degree);
+
+		var tasks = batches.Select(async batch =>
+		{
+			await gate.WaitAsync(cts.Token).ConfigureAwait(false);
+			try
 			{
-				await gate.WaitAsync().ConfigureAwait(false);
-				try
-				{
-					return await run(batch).ConfigureAwait(false);
-				}
-				finally
-				{
-					_ = gate.Release();
-				}
-			})
-		];
+				var result = await run(batch, cts.Token).ConfigureAwait(false);
+				if (failed(result))
+					await cts.CancelAsync().ConfigureAwait(false);
+				return result;
+			}
+			catch (Exception e) when (e is not OperationCanceledException)
+			{
+				await cts.CancelAsync().ConfigureAwait(false);
+				throw;
+			}
+			finally
+			{
+				_ = gate.Release();
+			}
+		}).ToList();
+
+		try
+		{
+			_ = await Task.WhenAll(tasks).ConfigureAwait(false);
+		}
+		catch (Exception)
+		{
+			// Every task has finished by now. What went wrong is read from the tasks below.
+		}
+
+		if (tasks.FirstOrDefault(t => t.IsFaulted) is { } faulted)
+			_ = await faulted.ConfigureAwait(false);
+
+		ctx.ThrowIfCancellationRequested();
+
+		// A batch that was cancelled because another one failed has no result, and neither has the run.
+		return tasks.All(t => t.IsCompletedSuccessfully) && !tasks.Any(t => failed(t.Result)) ? [.. tasks.Select(t => t.Result)] : null;
 	}
 }

@@ -209,13 +209,19 @@ public sealed partial class GitHubCommitRangeService(
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
 		var batches = commits.Chunk(GraphQlBatchSize).ToList();
-		var responses = BatchRunner.Start(batches, batch => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, ctx));
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, token),
+			byAlias => byAlias == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
 		for (var index = 0; index < batches.Count; index++)
 		{
 			var batch = batches[index];
-			var byAlias = await responses[index].ConfigureAwait(false);
-			if (byAlias == null)
-				return null;
+			var byAlias = responses[index]!;
 
 			for (var i = 0; i < batch.Length; i++)
 			{

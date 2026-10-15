@@ -137,13 +137,19 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	{
 		var found = new Dictionary<int, Node>();
 		var batches = numbers.Chunk(PullRequestBatchSize).ToList();
-		var responses = BatchRunner.Start(batches, batch => QueryAsync(collector, owner, repo, PullRequestSelection(batch), ctx));
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => QueryAsync(collector, owner, repo, PullRequestSelection(batch), token),
+			data => data == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
 		for (var index = 0; index < batches.Count; index++)
 		{
 			var batch = batches[index];
-			var data = await responses[index].ConfigureAwait(false);
-			if (data == null)
-				return null;
+			var data = responses[index]!;
 
 			foreach (var n in batch)
 			{
@@ -210,13 +216,19 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		var shas = candidates.Values.SelectMany(c => c.CherryPickShas).Where(s => ShaRegex().IsMatch(s)).Distinct().ToList();
 		var roots = new Dictionary<string, List<int>>();
 		var batches = shas.Chunk(CommitBatchSize).ToList();
-		var responses = BatchRunner.Start(batches, batch => QueryAsync(collector, owner, repo, TrailerSelection(batch), ctx));
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => QueryAsync(collector, owner, repo, TrailerSelection(batch), token),
+			data => data == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
 		for (var index = 0; index < batches.Count; index++)
 		{
 			var batch = batches[index];
-			var data = await responses[index].ConfigureAwait(false);
-			if (data == null)
-				return null;
+			var data = responses[index]!;
 
 			for (var i = 0; i < batch.Length; i++)
 			{
@@ -273,16 +285,19 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		// A number that is not a pull request (an issue) makes GitHub answer with a NOT_FOUND error for that alias
 		// and still return the other aliases. Only that error is tolerated; the missing node simply does not count.
 		var batches = numbers.Chunk(ValidationBatchSize).ToList();
-		var responses = BatchRunner.Start(
+		var responses = await BatchRunner.RunAsync(
 			batches,
-			batch => QueryAsync(collector, owner, repo, ValidationSelection(batch), ctx, tolerateNotFound: true)
-		);
+			(batch, token) => QueryAsync(collector, owner, repo, ValidationSelection(batch), token, tolerateNotFound: true),
+			data => data == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
 		for (var index = 0; index < batches.Count; index++)
 		{
 			var batch = batches[index];
-			var data = await responses[index].ConfigureAwait(false);
-			if (data == null)
-				return null;
+			var data = responses[index]!;
 
 			foreach (var n in batch)
 			{

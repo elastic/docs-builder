@@ -19,10 +19,11 @@ public class GitHubApiTransportRateLimitTests
 		HttpStatusCode status,
 		string? retryAfterSeconds = null,
 		string? remaining = null,
-		long? reset = null
+		long? reset = null,
+		string? body = null
 	)
 	{
-		var response = new HttpResponseMessage(status);
+		var response = new HttpResponseMessage(status) { Content = new StringContent(body ?? string.Empty) };
 		if (retryAfterSeconds != null)
 			response.Headers.TryAddWithoutValidation("Retry-After", retryAfterSeconds);
 		if (remaining != null)
@@ -104,6 +105,49 @@ public class GitHubApiTransportRateLimitTests
 
 		status.Should().Be(HttpStatusCode.Forbidden);
 		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task Get_SecondaryLimit403WithoutRetryAfter_IsRetriedAfterAMinute()
+	{
+		var (status, requests, waits) = await GetAsync(
+			() => Limited(
+				HttpStatusCode.Forbidden,
+				remaining: "4000",
+				body: """{ "message": "You have exceeded a secondary rate limit." }"""
+			),
+			() => new HttpResponseMessage(HttpStatusCode.OK)
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		requests.Should().Be(2);
+		waits.Should().Equal(TimeSpan.FromSeconds(60));
+	}
+
+	[Test]
+	public async Task Get_Forbidden_ForAMissingPermission_IsNotRetried()
+	{
+		var (status, requests, _) = await GetAsync(
+			() => Limited(HttpStatusCode.Forbidden, remaining: "4000", body: """{ "message": "Resource not accessible by integration" }""")
+		);
+
+		status.Should().Be(HttpStatusCode.Forbidden);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task Get_SecondaryLimit429WithBudgetLeftAndFarReset_BacksOffInsteadOfUsingTheReset()
+	{
+		var resetInAnHour = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds();
+
+		var (status, requests, waits) = await GetAsync(
+			() => Limited(HttpStatusCode.TooManyRequests, remaining: "4000", reset: resetInAnHour),
+			() => new HttpResponseMessage(HttpStatusCode.OK)
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		requests.Should().Be(2);
+		waits.Should().Equal(TimeSpan.FromSeconds(60));
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
