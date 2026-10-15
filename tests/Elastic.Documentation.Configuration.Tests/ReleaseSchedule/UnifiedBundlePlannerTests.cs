@@ -200,4 +200,58 @@ public class UnifiedBundlePlannerTests
 			.Should()
 			.Equal(("cloudbeat", PlanProblemKind.MissingFromPreviousManifest), ("logstash", PlanProblemKind.MissingFromManifest));
 	}
+
+	// ── fingerprint ─────────────────────────────────────────────────────
+
+	[Test]
+	public void Fingerprint_ListsEachRangeAndEachUnchangedProductSorted()
+	{
+		var plan = UnifiedBundlePlanner.Plan(
+			[CreateProduct("kibana"), CreateProduct("elasticsearch")],
+			"9.5.5",
+			Manifest("9.5.5", ("elasticsearch", ElasticsearchEnd), ("kibana", KibanaCommit)),
+			Manifest("9.5.4", ("elasticsearch", ElasticsearchStart), ("kibana", KibanaCommit))
+		);
+
+		UnifiedBundlePlanner
+			.Fingerprint("9.5.5", plan)
+			.Should()
+			.Equal($"9.5.5 elasticsearch {ElasticsearchStart}..{ElasticsearchEnd}", "9.5.5 kibana unchanged");
+	}
+
+	[Test]
+	public void Fingerprint_SameManifests_GiveTheSameFingerprintWhateverTheProductOrder()
+	{
+		IReadOnlyList<string> Fingerprint(params Product[] products) =>
+			UnifiedBundlePlanner.Fingerprint(
+				"9.5.5",
+				UnifiedBundlePlanner.Plan(
+					products,
+					"9.5.5",
+					Manifest("9.5.5", ("elasticsearch", ElasticsearchEnd), ("kibana", ElasticsearchEnd)),
+					Manifest("9.5.4", ("elasticsearch", ElasticsearchStart), ("kibana", ElasticsearchStart))
+				)
+			);
+
+		Fingerprint(CreateProduct("elasticsearch"), CreateProduct("kibana"))
+			.Should()
+			.Equal(Fingerprint(CreateProduct("kibana"), CreateProduct("elasticsearch")));
+	}
+
+	[Test]
+	public void Fingerprint_ANewCommitInTheTargetManifest_ChangesTheFingerprint()
+	{
+		IReadOnlyList<string> Fingerprint(string end) =>
+			UnifiedBundlePlanner.Fingerprint(
+				"9.5.6",
+				UnifiedBundlePlanner.Plan(
+					[CreateProduct("elasticsearch")],
+					"9.5.6",
+					Manifest("9.5.6", ("elasticsearch", end)),
+					Manifest("9.5.5", ("elasticsearch", ElasticsearchStart))
+				)
+			);
+
+		Fingerprint(ElasticsearchEnd).Should().NotEqual(Fingerprint(KibanaCommit));
+	}
 }

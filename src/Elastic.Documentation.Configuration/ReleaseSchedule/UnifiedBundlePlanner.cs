@@ -102,6 +102,19 @@ public static class UnifiedBundlePlanner
 		return new UnifiedBundlePlan(ranges, unchanged, problems);
 	}
 
+	/// <summary>
+	/// One sorted line per product of the plan. It changes when a commit range of the plan changes, so two runs with the same
+	/// fingerprint would bundle the same pull requests. A product with no changes is listed as such, because it needs no bundle.
+	/// </summary>
+	public static IReadOnlyList<string> Fingerprint(string version, UnifiedBundlePlan plan) =>
+		[
+			.. plan
+				.Ranges
+				.Select(r => $"{version} {r.ProductId} {r.StartCommit}..{r.EndCommit}")
+				.Concat(plan.Unchanged.Select(id => $"{version} {id} unchanged"))
+				.Order(StringComparer.Ordinal)
+		];
+
 	private static bool TryGetCommit(ElasticBuildManifest manifest, string artifactKey, out string commit)
 	{
 		if (manifest.Projects.TryGetValue(artifactKey, out var project) && !string.IsNullOrEmpty(project.CommitHash))

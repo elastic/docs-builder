@@ -7054,6 +7054,80 @@
                 }
               ],
               "hidden": true
+            },
+            {
+              "path": [
+                "release",
+                "unified"
+              ],
+              "name": "fingerprint",
+              "summary": "Write a fingerprint of what release unified bundle would bundle for the same arguments, without bundling anything.",
+              "notes": "The fingerprint lists, per product and target, the commit range between two build manifests. A scheduled run that finds\nthe fingerprint of its last successful run can stop at once, because the same pull requests would be bundled.",
+              "usage": "docs-builder release unified fingerprint \u003Cversion-or-keyword\u003E --output \u003Cfile\u003E [options]",
+              "examples": [],
+              "parameters": [
+                {
+                  "role": "positional",
+                  "name": "version-or-keyword",
+                  "type": "string",
+                  "required": true,
+                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
+                },
+                {
+                  "role": "flag",
+                  "name": "output",
+                  "type": "string",
+                  "required": true,
+                  "summary": "The file the fingerprint is written to, one line per product and target."
+                },
+                {
+                  "role": "flag",
+                  "name": "products",
+                  "type": "array",
+                  "required": false,
+                  "summary": "Limit the run to these products (repeatable), like release unified bundle.",
+                  "repeatable": true,
+                  "elementType": "string"
+                },
+                {
+                  "role": "flag",
+                  "name": "log-level",
+                  "shortName": "l",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Minimum log level. Default: information",
+                  "enumValues": [
+                    "trace",
+                    "debug",
+                    "information",
+                    "warning",
+                    "error",
+                    "critical",
+                    "none"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "config-source",
+                  "shortName": "c",
+                  "type": "enum",
+                  "required": false,
+                  "summary": "Override the configuration source: local, remote",
+                  "enumValues": [
+                    "local",
+                    "remote",
+                    "embedded"
+                  ]
+                },
+                {
+                  "role": "flag",
+                  "name": "skip-private-repositories",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Skip cloning private repositories"
+                }
+              ],
+              "hidden": true
             }
           ],
           "namespaces": []

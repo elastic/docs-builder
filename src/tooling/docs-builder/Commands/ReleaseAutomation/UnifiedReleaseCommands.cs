@@ -102,17 +102,8 @@ internal sealed class UnifiedReleaseCommands(
 		CancellationToken ctx = default
 	)
 	{
-		var (selected, unknown) = UnifiedBundlePlanner.FilterProducts(
-			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
-			products
-		);
-		if (unknown.Count > 0)
-		{
-			var message = $"--products names no product with 'release-notes: dra' in products.yml: {string.Join(", ", unknown)}.";
-			_logger.LogError("{Message}", message);
-			collector.EmitError(string.Empty, message);
+		if (!TrySelectProducts(products, out var selected))
 			return 1;
-		}
 
 		var prestageProducts = selected;
 
@@ -160,65 +151,14 @@ internal sealed class UnifiedReleaseCommands(
 			collector
 		);
 
-		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
-		if (targets is null)
+		var planned = await PlanAsync(http, versionOrKeyword, prestageProducts, ctx);
+		if (planned is null)
 			return 1;
 
-		if (targets.Count == 0)
+		if (planned.Count == 0)
 		{
 			_logger.LogInformation("No bundle targets resolved. Nothing to do.");
 			return 0;
-		}
-
-		var past = await FetchRequiredJsonAsync(http, PastReleasesUrl, ReleaseScheduleJsonContext.Default.PastReleasesResponse, ctx);
-		if (past is null)
-			return 1;
-
-		// Plan every target before bundling anything: a product that blocks the plan fails the run
-		// up front, not after minutes of bundling the others.
-		var planned = new List<(ReleaseTarget Target, PastRelease Previous, UnifiedBundlePlan Plan)>();
-		foreach (var target in targets)
-		{
-			_logger.LogInformation(
-				"Planning target: version={Version} source={Source} manifest={Manifest}",
-				target.Version,
-				target.Source,
-				target.ManifestUrl
-			);
-
-			var manifest = await FetchManifestAsync(http, target.ManifestUrl, ctx);
-			if (manifest is null)
-				return 1;
-
-			var previous = ReleaseTargetResolver.ResolvePreviousRelease(past, target.Version);
-			if (previous is null)
-			{
-				var message = $"No earlier GA release was found for {target.Version}, so the range of its release notes has no start.";
-				_logger.LogError("{Message}", message);
-				collector.EmitError(string.Empty, message);
-				return 1;
-			}
-
-			var previousManifest = await FetchManifestAsync(http, previous.Manifest!, ctx);
-			if (previousManifest is null)
-				return 1;
-
-			_logger.LogInformation("Release notes for {Version} start at the manifest of {Previous}", target.Version, previous.Version);
-
-			var plan = UnifiedBundlePlanner.Plan(prestageProducts, target.Version, manifest, previousManifest);
-			ReportProblems(target, previous, plan);
-			planned.Add((target, previous, plan));
-		}
-
-		var blocked = planned.SelectMany(p => p.Plan.Problems.Select(problem => $"{problem.ProductId}@{p.Target.Version}")).ToArray();
-		if (blocked.Length > 0)
-		{
-			_logger.LogError(
-				"{Count} product(s) cannot be bundled because a manifest has no commit for them, so nothing was bundled: {Products}",
-				blocked.Length,
-				string.Join(", ", blocked)
-			);
-			return 1;
 		}
 
 		var skipped = new List<string>();
@@ -268,6 +208,45 @@ internal sealed class UnifiedReleaseCommands(
 				string.Join(", ", skipped)
 			);
 
+		return 0;
+	}
+
+	/// <summary>
+	/// Write a fingerprint of what <c>release unified bundle</c> would bundle for the same arguments, without bundling anything.
+	/// </summary>
+	/// <remarks>
+	/// The fingerprint lists, per product and target, the commit range between two build manifests. A scheduled run that finds
+	/// the fingerprint of its last successful run can stop at once, because the same pull requests would be bundled.
+	/// </remarks>
+	/// <param name="versionOrKeyword">A version string (e.g. <c>9.5.5</c>), <c>"current"</c>, or <c>"preview"</c>.</param>
+	/// <param name="output">The file the fingerprint is written to, one line per product and target.</param>
+	/// <param name="products">Limit the run to these products (repeatable), like <c>release unified bundle</c>.</param>
+	[Hidden]
+	[NoOptionsInjection]
+	public async Task<int> Fingerprint(
+		[Argument] string versionOrKeyword,
+		[ExpandUserProfile] FileInfo output,
+		string[]? products = null,
+		CancellationToken ctx = default
+	)
+	{
+		if (!TrySelectProducts(products, out var selected))
+			return 1;
+
+		using var http = new HttpClient();
+		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
+
+		var planned = await PlanAsync(http, versionOrKeyword, selected, ctx);
+		if (planned is null)
+			return 1;
+
+		var lines = planned
+			.SelectMany(p => UnifiedBundlePlanner.Fingerprint(p.Target.Version, p.Plan))
+			.Order(StringComparer.Ordinal)
+			.ToArray();
+		_ = Directory.CreateDirectory(output.DirectoryName ?? ".");
+		await File.WriteAllLinesAsync(output.FullName, lines, ctx);
+		_logger.LogInformation("Wrote a fingerprint of {Count} line(s) to {File}", lines.Length, output.FullName);
 		return 0;
 	}
 
@@ -434,6 +413,97 @@ internal sealed class UnifiedReleaseCommands(
 		}
 
 		return targets;
+	}
+
+	/// <summary>The products of the run: the DRA products, limited to <paramref name="products"/> when it is given.</summary>
+	private bool TrySelectProducts(string[]? products, out IReadOnlyList<Product> selected)
+	{
+		(selected, var unknown) = UnifiedBundlePlanner.FilterProducts(
+			UnifiedBundlePlanner.SelectDraProducts(configurationContext.ProductsConfiguration.Products.Values),
+			products
+		);
+		if (unknown.Count == 0)
+			return true;
+
+		var message = $"--products names no product with 'release-notes: dra' in products.yml: {string.Join(", ", unknown)}.";
+		_logger.LogError("{Message}", message);
+		collector.EmitError(string.Empty, message);
+		return false;
+	}
+
+	private sealed record PlannedTarget(ReleaseTarget Target, PastRelease Previous, UnifiedBundlePlan Plan);
+
+	/// <summary>
+	/// Resolves the targets of the keyword and plans every one of them before anything is bundled: a product that blocks
+	/// the plan fails the run up front, not after minutes of bundling the others. Returns <c>null</c> after reporting the
+	/// problem, and an empty list when the keyword resolves no target.
+	/// </summary>
+	private async Task<List<PlannedTarget>?> PlanAsync(
+		HttpClient http,
+		string versionOrKeyword,
+		IReadOnlyList<Product> prestageProducts,
+		CancellationToken ctx
+	)
+	{
+		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
+		if (targets is null)
+			return null;
+
+		if (targets.Count == 0)
+			return [];
+
+		var past = await FetchRequiredJsonAsync(http, PastReleasesUrl, ReleaseScheduleJsonContext.Default.PastReleasesResponse, ctx);
+		if (past is null)
+			return null;
+
+		// Plan every target before bundling anything: a product that blocks the plan fails the run
+		// up front, not after minutes of bundling the others.
+		var planned = new List<PlannedTarget>();
+		foreach (var target in targets)
+		{
+			_logger.LogInformation(
+				"Planning target: version={Version} source={Source} manifest={Manifest}",
+				target.Version,
+				target.Source,
+				target.ManifestUrl
+			);
+
+			var manifest = await FetchManifestAsync(http, target.ManifestUrl, ctx);
+			if (manifest is null)
+				return null;
+
+			var previous = ReleaseTargetResolver.ResolvePreviousRelease(past, target.Version);
+			if (previous is null)
+			{
+				var message = $"No earlier GA release was found for {target.Version}, so the range of its release notes has no start.";
+				_logger.LogError("{Message}", message);
+				collector.EmitError(string.Empty, message);
+				return null;
+			}
+
+			var previousManifest = await FetchManifestAsync(http, previous.Manifest!, ctx);
+			if (previousManifest is null)
+				return null;
+
+			_logger.LogInformation("Release notes for {Version} start at the manifest of {Previous}", target.Version, previous.Version);
+
+			var plan = UnifiedBundlePlanner.Plan(prestageProducts, target.Version, manifest, previousManifest);
+			ReportProblems(target, previous, plan);
+			planned.Add(new PlannedTarget(target, previous, plan));
+		}
+
+		var blocked = planned.SelectMany(p => p.Plan.Problems.Select(problem => $"{problem.ProductId}@{p.Target.Version}")).ToArray();
+		if (blocked.Length > 0)
+		{
+			_logger.LogError(
+				"{Count} product(s) cannot be bundled because a manifest has no commit for them, so nothing was bundled: {Products}",
+				blocked.Length,
+				string.Join(", ", blocked)
+			);
+			return null;
+		}
+
+		return planned;
 	}
 
 	private async Task<ElasticBuildManifest?> FetchManifestAsync(HttpClient http, string url, CancellationToken ctx) =>
