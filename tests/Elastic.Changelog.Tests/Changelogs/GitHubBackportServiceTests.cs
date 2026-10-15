@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
 
@@ -130,7 +131,14 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		);
 
 	private async Task<IReadOnlyDictionary<int, BackportRoots?>?> ResolveAsync(FakeGitHub github, params int[] numbers) =>
-		await Service(github).ResolveRootsAsync(Collector, Owner, Repo, numbers, TestContext.Current!.Execution.CancellationToken);
+		await Service(github).ResolveRootsAsync(
+			Collector,
+			Owner,
+			Repo,
+			numbers,
+			new Dictionary<int, DateTimeOffset>(),
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 	[Test]
 	public async Task ResolveRoots_TitleNamesMergedPullRequest_ReturnsItAsRoot()
@@ -352,12 +360,150 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			Owner,
 			Repo,
 			[200],
+			new Dictionary<int, DateTimeOffset>(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeNull();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("GITHUB_TOKEN"));
 		github.GraphQlRequests.Should().Be(0);
+	}
+
+	// ── where a backport came from is kept until the backport changes ──
+
+	private static readonly DateTimeOffset UpdatedAt = new(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+	private readonly string _cacheDirectory = Path.Combine(
+		Path.GetTempPath(),
+		"docs-builder-backport-cache-tests",
+		Guid.NewGuid().ToString("N")
+	);
+
+	public override void Dispose()
+	{
+		if (Directory.Exists(_cacheDirectory))
+			Directory.Delete(_cacheDirectory, recursive: true);
+
+		base.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	private async Task<IReadOnlyDictionary<int, BackportRoots?>?> ResolveWithCacheAsync(
+		FakeGitHub github,
+		Dictionary<int, DateTimeOffset> updatedAt,
+		params int[] numbers
+	)
+	{
+		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+		var service = new GitHubBackportService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(
+				new StubHandler(req =>
+				{
+					var query =
+						JsonDocument
+							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+							.RootElement
+							.GetProperty("query")
+							.GetString()!;
+					return new HttpResponseMessage(HttpStatusCode.OK)
+					{
+						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
+					};
+				}),
+				"test-token"
+			),
+			cache
+		);
+
+		var result = await service.ResolveRootsAsync(
+			Collector,
+			Owner,
+			Repo,
+			numbers,
+			updatedAt,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		await cache.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+		return result;
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_AnUnchangedBackportIsNotLookedAtAgain()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt };
+
+		var first = await ResolveWithCacheAsync(github, updatedAt, 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		first![200]!.Roots.Should().Equal(100);
+		second![200]!.Roots.Should().Equal(100);
+		second[200]!.Route.Should().Be(BackportRootRoute.Title);
+		github.GraphQlRequests.Should().Be(requestsAfterFirst, "the second run asked GitHub nothing");
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_ABackportThatChangedIsResolvedAgain()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+		github.PullRequests[101] = Merged();
+		_ = await ResolveWithCacheAsync(github, new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt }, 200);
+
+		github.Backports[200] = ("Fix the thing (#101)", null, []);
+		var second = await ResolveWithCacheAsync(github, new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt.AddMinutes(1) }, 200);
+
+		second![200]!.Roots.Should().Equal(101);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_ABackportWithoutAnOriginalIsRememberedToo()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Bump dependency", null, []);
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt };
+
+		_ = await ResolveWithCacheAsync(github, updatedAt, 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		second![200].Should().BeNull();
+		github.GraphQlRequests.Should().Be(requestsAfterFirst);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_OnlyTheNewBackportsAreLookedAt()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix one (#100)", null, []);
+		github.Backports[201] = ("Fix two (#101)", null, []);
+		github.PullRequests[100] = Merged();
+		github.PullRequests[101] = Merged();
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt, [201] = UpdatedAt };
+		_ = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200, 201);
+
+		second![200]!.Roots.Should().Equal(100);
+		second[201]!.Roots.Should().Equal(101);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACacheButNoUpdateTime_IsResolvedEveryTime()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+
+		_ = await ResolveWithCacheAsync(github, [], 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		_ = await ResolveWithCacheAsync(github, [], 200);
+
+		github.GraphQlRequests.Should().BeGreaterThan(requestsAfterFirst);
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

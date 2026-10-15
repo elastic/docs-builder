@@ -135,6 +135,14 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
   --start-git-ref abc123 --end-git-ref def456 --dry-run
 ```
 
+### Cache
+
+A range of a minor release holds thousands of commits, and asking GitHub which pull request each one belongs to takes minutes. The command remembers the answer for every commit that has a merged pull request, because that does not change, and asks only about commits it has not seen. The cache is shared by every command that reads a commit range, whatever the product, version or profile.
+
+It lives in the application data of docs-builder, in `changelog-cache/github/{owner}/{repo}/`. Use `--cache-dir <directory>` to put it elsewhere, which is what a CI job does to keep it between runs, and `--no-cache` to neither read nor write it. Entries that nothing used for 30 days are dropped when the cache is saved. A file that cannot be read is ignored and written again, so the cache can slow nothing down and fail nothing.
+
+Titles and labels are not cached. They can change after a merge, so they are read on every run.
+
 ## Bundles are self-contained
 
 Every bundle embeds the full content of each changelog entry (`title`, `type`, `products`, and so on), plus a `file` block recording the source file name and checksum for provenance. Rendering — via the `{changelog}` directive, `changelog render`, or the CDN pipeline — never reads the original changelog files, so you can clean them up with `docs-builder changelog remove` immediately after bundling. To recreate changelog files later, use [`changelog unpack`](/cli/changelog/unpack.md). Unpack does not restore the original checksums. Public bundles produced by the upload scrubber are less likely to unpack because private PRs and issues may have been removed.

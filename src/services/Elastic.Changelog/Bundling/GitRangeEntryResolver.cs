@@ -172,7 +172,6 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var needSummary = resolution
 			.PullRequests
 			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
-			.Select(pr => pr.Number)
 			.ToList();
 		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
 		if (prSummaries is null)

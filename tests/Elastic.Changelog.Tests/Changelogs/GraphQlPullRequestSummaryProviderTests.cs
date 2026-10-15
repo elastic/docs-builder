@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
 
@@ -25,6 +26,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 	{
 		public Dictionary<int, (string Title, string? Body, string[] Labels)> PullRequests { get; } = [];
 		public List<int> BatchSizes { get; } = [];
+		public List<string> Queries { get; } = [];
 		public string? Error { get; set; }
 
 		public string Respond(string query)
@@ -33,6 +35,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 			if (more.Success)
 				return $$"""{ "data": { "repository": { "p": { "labels": {{LabelPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value))}} } } } }""";
 
+			Queries.Add(query);
 			var fields = new List<string>();
 			var errors = new List<string>();
 			var numbers = AliasRegex().Matches(query).Select(m => int.Parse(m.Groups["n"].Value)).ToList();
@@ -42,7 +45,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 				if (PullRequests.TryGetValue(n, out var pr))
 					fields.Add(
 						$$"""
-						"p{{n}}": { "number": {{n}}, "title": {{JsonSerializer.Serialize(pr.Title)}}, "body": {{JsonSerializer.Serialize(pr.Body)}}, "labels": {{LabelPage(n, 0)}} }
+						"p{{n}}": { "number": {{n}}, "title": {{JsonSerializer.Serialize(pr.Title)}}, "updatedAt": "2026-10-01T00:00:00Z", "body": {{JsonSerializer.Serialize(pr.Body)}}, "labels": {{LabelPage(n, 0)}} }
 						"""
 					);
 				else
@@ -95,8 +98,30 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 			)
 		);
 
+	private static CommitRangePullRequest FromRange(
+		int number,
+		string? title = null,
+		string[]? labels = null,
+		DateTimeOffset? updatedAt = null
+	) =>
+		new()
+		{
+			Number = number,
+			Url = $"https://github.com/elastic/widget/pull/{number}",
+			CommitShas = [],
+			Title = title,
+			Labels = labels ?? [],
+			UpdatedAt = updatedAt
+		};
+
 	private Task<IReadOnlyDictionary<int, PullRequestSummary?>?> GetAsync(FakeGitHub github, params int[] numbers) =>
-		Provider(github).GetAsync(Collector, "elastic", "widget", numbers, TestContext.Current!.Execution.CancellationToken);
+		Provider(github).GetAsync(
+			Collector,
+			"elastic",
+			"widget",
+			[.. numbers.Select(n => FromRange(n))],
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 	[Test]
 	public async Task Get_ReducesTheBodyToItsReleaseNoteAndLinkedIssues()
@@ -144,7 +169,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 		result.Should().NotBeNull();
 		result.Should().HaveCount(120);
 		result.Values.Should().OnlyContain(s => s != null);
-		github.BatchSizes.Order().Should().Equal(20, 50, 50);
+		// Their title, labels and update time are read first and their body second, 50 at a time each.
+		github.BatchSizes.Order().Should().Equal(20, 20, 50, 50, 50, 50);
 	}
 
 	[Test]
@@ -191,7 +217,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 			Collector,
 			"elastic",
 			"widget",
-			[7],
+			[FromRange(7)],
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -208,6 +234,147 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 
 		result.Should().BeEmpty();
 		github.BatchSizes.Should().BeEmpty();
+	}
+
+	// ── what is derived from the body is kept until the pull request changes ──
+
+	private static readonly DateTimeOffset UpdatedAt = new(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+	private readonly string _cacheDirectory = Path.Combine(
+		Path.GetTempPath(),
+		"docs-builder-summary-cache-tests",
+		Guid.NewGuid().ToString("N")
+	);
+
+	public override void Dispose()
+	{
+		if (Directory.Exists(_cacheDirectory))
+			Directory.Delete(_cacheDirectory, recursive: true);
+
+		base.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	private async Task<IReadOnlyDictionary<int, PullRequestSummary?>?> GetWithCacheAsync(
+		FakeGitHub github,
+		params CommitRangePullRequest[] pullRequests
+	)
+	{
+		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+		var provider = new GraphQlPullRequestSummaryProvider(
+			LoggerFactory,
+			new GitHubApiTransport(
+				new StubHandler(req =>
+				{
+					var query =
+						JsonDocument
+							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+							.RootElement
+							.GetProperty("query")
+							.GetString()!;
+					return new HttpResponseMessage(HttpStatusCode.OK)
+					{
+						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
+					};
+				}),
+				"test-token",
+				(_, _) => Task.CompletedTask
+			),
+			cache
+		);
+
+		var result = await provider.GetAsync(
+			Collector,
+			"elastic",
+			"widget",
+			pullRequests,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		await cache.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+		return result;
+	}
+
+	[Test]
+	public async Task Get_APullRequestOfARange_ReadsOnlyItsBodyAndUsesTheTitleAndLabelsItBrings()
+	{
+		var github = new FakeGitHub();
+		github.PullRequests[7] = ("Title on GitHub", "Fixes #9\n\n## Release Note\nSearch is faster.", ["label-on-github"]);
+
+		var result = await GetWithCacheAsync(github, FromRange(7, "Title of the range", ["label-of-the-range"], UpdatedAt));
+
+		var summary = result![7]!;
+		summary.Title.Should().Be("Title of the range");
+		summary.Labels.Should().Equal("label-of-the-range");
+		summary.ReleaseNote.Content.Should().Be("Search is faster.");
+		summary.LinkedIssues.Should().Equal("https://github.com/elastic/widget/issues/9");
+		github.Queries.Should().ContainSingle().Which.Should().NotContain("labels(").And.NotContain("title");
+	}
+
+	[Test]
+	public async Task Get_WithACache_TheSecondRunDoesNotReadTheBodyAgain()
+	{
+		var github = new FakeGitHub();
+		github.PullRequests[7] = ("T", "## Release Note\nSearch is faster.", []);
+
+		_ = await GetWithCacheAsync(github, FromRange(7, "T", [], UpdatedAt));
+		var requestsAfterFirst = github.Queries.Count;
+		var second = await GetWithCacheAsync(github, FromRange(7, "T", ["new-label"], UpdatedAt));
+
+		requestsAfterFirst.Should().Be(1);
+		github.Queries.Should().HaveCount(1, "the body is known for this state of the pull request");
+		second![7]!.ReleaseNote.Content.Should().Be("Search is faster.");
+		second[7]!.Labels.Should().Equal("new-label");
+	}
+
+	[Test]
+	public async Task Get_ThePullRequestChanged_ReadsTheBodyAgain()
+	{
+		var github = new FakeGitHub();
+		github.PullRequests[7] = ("T", "## Release Note\nOld note.", []);
+		_ = await GetWithCacheAsync(github, FromRange(7, "T", [], UpdatedAt));
+
+		github.PullRequests[7] = ("T", "## Release Note\nFixed note.", []);
+		var second = await GetWithCacheAsync(github, FromRange(7, "T", [], UpdatedAt.AddMinutes(5)));
+
+		github.Queries.Should().HaveCount(2);
+		second![7]!.ReleaseNote.Content.Should().Be("Fixed note.");
+	}
+
+	[Test]
+	public async Task Get_WithoutAnUpdateTime_TheBodyIsReadEveryTime()
+	{
+		var github = new FakeGitHub();
+		github.PullRequests[7] = ("T", "Body.", []);
+
+		_ = await GetWithCacheAsync(github, FromRange(7, "T", []));
+		_ = await GetWithCacheAsync(github, FromRange(7, "T", []));
+
+		github.Queries.Should().HaveCount(2, "nothing says that the body is still the one that was read");
+	}
+
+	[Test]
+	public async Task Get_OnlyTheChangedPullRequestsAreRead()
+	{
+		var github = new FakeGitHub();
+		foreach (var n in new[] { 1, 2, 3 })
+			github.PullRequests[n] = ($"PR {n}", $"## Release Note\nNote {n}.", []);
+		_ = await GetWithCacheAsync(
+			github,
+			FromRange(1, "PR 1", [], UpdatedAt),
+			FromRange(2, "PR 2", [], UpdatedAt),
+			FromRange(3, "PR 3", [], UpdatedAt)
+		);
+
+		github.PullRequests[2] = ("PR 2", "## Release Note\nNote 2 fixed.", []);
+		github.BatchSizes.Clear();
+		var second = await GetWithCacheAsync(
+			github,
+			FromRange(1, "PR 1", [], UpdatedAt),
+			FromRange(2, "PR 2", [], UpdatedAt.AddMinutes(1)),
+			FromRange(3, "PR 3", [], UpdatedAt)
+		);
+
+		github.BatchSizes.Should().Equal(1);
+		second!.Values.Select(v => v!.ReleaseNote.Content).Should().Equal("Note 1.", "Note 2 fixed.", "Note 3.");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
