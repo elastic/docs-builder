@@ -126,6 +126,36 @@ public class XStateApplicabilityTests
 		AvailabilityBadge.From(OperationWithState(xState).Extensions, StackVersions()).Should().BeNull();
 
 	[Test]
+	public void FromOperation_XBetaOnly_RendersBetaAppliesToBadge()
+	{
+		var operation = new OpenApiOperation
+		{
+			Extensions = new Dictionary<string, IOpenApiExtension> { ["x-beta"] = new JsonNodeExtension(JsonValue.Create(true)) }
+		};
+
+		var item = AvailabilityBadge.FromOperation(operation, StackVersions())!.GetApplicabilityItems().Single();
+
+		item.Key.Should().Be("Stack");
+		item.RenderData.LifecycleName.Should().Be("Beta");
+		item.RenderData.PopoverData!.AvailabilityItems.Should().NotBeEmpty();
+	}
+
+	[Test]
+	public void FromOperation_XBetaAndXState_XStateWins()
+	{
+		var operation = OperationWithState("Technical Preview");
+		operation.Extensions!["x-beta"] = new JsonNodeExtension(JsonValue.Create(true));
+
+		var item = AvailabilityBadge.FromOperation(operation, StackVersions())!.GetApplicabilityItems().Single();
+
+		item.RenderData.LifecycleName.Should().Be("Preview");
+	}
+
+	[Test]
+	public void FromOperation_NoBetaNoState_ReturnsNull() =>
+		AvailabilityBadge.FromOperation(new OpenApiOperation(), StackVersions()).Should().BeNull();
+
+	[Test]
 	public async Task BuildParameterList_ParameterState_WinsOverSchemaAndFallsBackToIt()
 	{
 		var document = await TestSpecs.LoadSpecAsync(
