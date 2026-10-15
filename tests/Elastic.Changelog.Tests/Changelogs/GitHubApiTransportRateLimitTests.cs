@@ -150,6 +150,115 @@ public class GitHubApiTransportRateLimitTests
 		waits.Should().Equal(TimeSpan.FromSeconds(60));
 	}
 
+	private static async Task<(HttpStatusCode Status, string Body, int Requests, List<TimeSpan> Waits)> PostGraphQlAsync(
+		params Func<HttpResponseMessage>[] responses
+	)
+	{
+		var requests = 0;
+		var waits = new List<TimeSpan>();
+		using var transport = new GitHubApiTransport(new StubHandler(
+			_ => responses[Math.Min(requests++, responses.Length - 1)]()
+		), "token", (wait, _) =>
+		{
+			waits.Add(wait);
+			return Task.CompletedTask;
+		});
+
+		using var response = await transport.PostGraphQlAsync("{}", TestContext.Current!.Execution.CancellationToken);
+		return (response.StatusCode, await response.Content.ReadAsStringAsync(), requests, waits);
+	}
+
+	[Test]
+	public async Task PostGraphQl_GatewayError_IsRetriedWithBackoff()
+	{
+		var (status, _, requests, waits) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.BadGateway),
+			() => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable),
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		requests.Should().Be(3);
+		waits.Should().Equal(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4));
+	}
+
+	[Test]
+	public async Task Get_GatewayError_IsLeftToTheCaller()
+	{
+		var (status, requests, _) = await GetAsync(() => new HttpResponseMessage(HttpStatusCode.BadGateway));
+
+		status.Should().Be(HttpStatusCode.BadGateway);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task Get_InternalServerError_IsNotRetried()
+	{
+		var (status, requests, _) = await GetAsync(() => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+
+		status.Should().Be(HttpStatusCode.InternalServerError);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task PostGraphQl_SuccessWithEmptyBody_IsRetried()
+	{
+		var (status, body, requests, waits) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(string.Empty) },
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		body.Should().Contain("data");
+		requests.Should().Be(2);
+		waits.Should().Equal(TimeSpan.FromSeconds(2));
+	}
+
+	[Test]
+	public async Task PostGraphQl_EmptyBodyEveryTime_ReturnsTheLastResponseAfterFourAttempts()
+	{
+		var (status, body, requests, _) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(string.Empty) }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		body.Should().BeEmpty();
+		requests.Should().Be(4);
+	}
+
+	[Test]
+	public async Task Get_EmptyBody_IsNotTreatedAsAFailure()
+	{
+		// A REST read may legitimately have no body, so only GraphQL expects one.
+		var (status, requests, _) = await GetAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(string.Empty) }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		requests.Should().Be(1);
+	}
+
+	[Test]
+	public async Task PostGraphQl_ConnectionDropped_IsRetried()
+	{
+		var calls = 0;
+		var waits = new List<TimeSpan>();
+		using var transport = new GitHubApiTransport(new StubHandler(
+			_ => ++calls == 1
+				? throw new HttpRequestException("connection reset")
+				: new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+		), "token", (wait, _) =>
+		{
+			waits.Add(wait);
+			return Task.CompletedTask;
+		});
+
+		using var response = await transport.PostGraphQlAsync("{}", TestContext.Current!.Execution.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		waits.Should().Equal(TimeSpan.FromSeconds(2));
+	}
+
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{
 		protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => responder(request);

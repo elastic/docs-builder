@@ -120,7 +120,16 @@ public sealed partial class GitHubCommitRangeService(
 			}
 
 			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-			var compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
+			GitHubCompareResponse? compare;
+			try
+			{
+				compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
+			}
+			catch (JsonException)
+			{
+				compare = null;
+			}
+
 			if (compare == null)
 			{
 				collector.EmitError(string.Empty, "Failed to deserialize GitHub compare response.");
@@ -383,7 +392,19 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-		var parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlResponse);
+		GraphQlResponse? parsed;
+		try
+		{
+			parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlResponse);
+		}
+		catch (JsonException ex)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL request for {args.Owner}/{args.Repo} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+			);
+			return null;
+		}
 
 		if (parsed?.Errors is { Count: > 0 })
 		{
@@ -424,12 +445,24 @@ public sealed partial class GitHubCommitRangeService(
 			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
 			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
-			var parsed = response.IsSuccessStatusCode
-				? JsonSerializer.Deserialize(
-					await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false),
-					CommitRangeJsonContext.Default.GraphQlLabelPageResponse
-				)
-				: null;
+			GraphQlLabelPageResponse? parsed = null;
+			if (response.IsSuccessStatusCode)
+			{
+				var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+				try
+				{
+					parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlLabelPageResponse);
+				}
+				catch (JsonException ex)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+					);
+					return null;
+				}
+			}
+
 			var next = parsed?.Errors is { Count: > 0 } ? null : parsed?.Data?.Repository?.PullRequest?.Labels;
 			if (next == null)
 			{
@@ -464,7 +497,7 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
 				.Append(
-					" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 100) { pageInfo { hasNextPage endCursor } nodes { name } }"
+					" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 30) { pageInfo { hasNextPage endCursor } nodes { name } }"
 				)
 				.Append(" } } } }");
 		}
