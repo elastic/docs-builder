@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -27,7 +28,7 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 	private readonly ILogger _logger = logFactory.CreateLogger<GraphQlPullRequestSummaryProvider>();
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeIdentifierRegex();
 
 	public async Task<IReadOnlyDictionary<int, PullRequestSummary?>?> GetAsync(

@@ -18,7 +18,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBase()
 {
-	[GeneratedRegex(@" p(?<n>\d+): pullRequest")]
+	[GeneratedRegex(@" p(?<n>\d+): pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AliasRegex();
 
 	private sealed class FakeGitHub
@@ -29,7 +29,12 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 
 		public string Respond(string query)
 		{
-			var more = Regex.Match(query, @"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""");
+			var more = Regex.Match(
+				query,
+				@"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""",
+				RegexOptions.None,
+				RegexTimeouts.MatchTimeout
+			);
 			if (more.Success)
 				return $$"""{ "data": { "repository": { "p": { "labels": {{LabelPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value))}} } } } }""";
 

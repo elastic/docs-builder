@@ -150,7 +150,12 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Text
 			.RegularExpressions
 			.Regex
-			.Matches(html, "required type-status")
+			.Matches(
+				html,
+				"required type-status",
+				System.Text.RegularExpressions.RegexOptions.None,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
+			)
 			.Should()
 			.ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();

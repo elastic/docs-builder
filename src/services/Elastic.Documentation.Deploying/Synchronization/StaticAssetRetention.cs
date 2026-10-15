@@ -40,6 +40,6 @@ public static partial class StaticAssetRetention
 
 	// Vite's naming from vite.config.ts: chunk-[name]-[hash].js|css, asset-[name]-[hash].ext, their .map siblings,
 	// and the main-[hash].js entry once it is hashed as well.
-	[GeneratedRegex(@"^(?<family>(?:.*/)?_static/(?:main|chunk-.+|asset-.+))-[A-Za-z0-9_-]{8}(?<ext>\.[a-z0-9]+(?:\.map)?)$")]
+	[GeneratedRegex(@"^(?<family>(?:.*/)?_static/(?:main|chunk-.+|asset-.+))-[A-Za-z0-9_-]{8}(?<ext>\.[a-z0-9]+(?:\.map)?)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HashedStaticAsset();
 }

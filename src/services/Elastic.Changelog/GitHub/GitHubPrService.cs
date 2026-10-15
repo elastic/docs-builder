@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
@@ -334,7 +335,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 
 		// Cross-repo: owner/repo#123 in context of PR (e.g., "Fixed by owner/repo#123")
 		var crossRepoPattern = @"(?:fixed\s+by|pr|merge[sd]?|via)\s+([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)#(\d+)";
-		foreach (Match match in Regex.Matches(body, crossRepoPattern, RegexOptions.IgnoreCase))
+		foreach (Match match in Regex.Matches(body, crossRepoPattern, RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout))
 		{
 			var repoPath = match.Groups[1].Value;
 			var prNum = match.Groups[2].Value;
@@ -344,7 +345,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 		// Same-repo: #123
 		var sameRepoPattern = @"(?:fixed\s+by|pr|merge[sd]?|via)\s+#(\d+)";
 		foreach (var prNum in Enumerable.Select(
-			Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase)),
+			Enumerable.Cast<Match>(Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout)),
 			match => match.Groups[1].Value
 		))
 		{
@@ -404,7 +405,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 
 	private const int PrExistenceBatchSize = 50;
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeGraphQlIdentifierRegex();
 
 	/// <inheritdoc />
@@ -636,6 +637,6 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 	private sealed partial class GitHubPrJsonContext : JsonSerializerContext;
 
 	[GeneratedRegex(@"https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/pull/(\d+)", RegexOptions.IgnoreCase
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MyRegex();
 }

@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -43,7 +44,7 @@ public partial class PromotionReportParser(ILoggerFactory logFactory, IChangelog
 				)
 			);
 
-	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"github\.com/([^/]+)/([^/]+)/pull/(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex GitHubPrUrlRegex();
 
 	/// <summary>

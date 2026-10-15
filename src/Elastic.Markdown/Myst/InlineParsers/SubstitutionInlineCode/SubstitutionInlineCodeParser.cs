@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
@@ -137,6 +138,6 @@ public partial class SubstitutionInlineCodeParser : RoleParser<SubstitutionInlin
 		return result.ToString();
 	}
 
-	[GeneratedRegex(@"\{\{([^}]+)\}\}", RegexOptions.Compiled)]
+	[GeneratedRegex(@"\{\{([^}]+)\}\}", RegexOptions.Compiled, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SubstitutionRegex();
 }

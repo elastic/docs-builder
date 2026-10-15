@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 
 namespace Elastic.Markdown.Extensions.CliReference;
@@ -864,6 +865,6 @@ internal static partial class CliMarkdownGenerator
 		}
 	}
 
-	[GeneratedRegex(@"\s{2,}")]
+	[GeneratedRegex(@"\s{2,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceRegex();
 }

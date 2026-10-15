@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
 
 namespace Elastic.ApiExplorer.Landing;
@@ -125,6 +126,6 @@ internal static partial class IntroHeadings
 		return slug.ToString();
 	}
 
-	[GeneratedRegex(@"^(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$")]
+	[GeneratedRegex(@"^(#{1,6})[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AtxHeading();
 }

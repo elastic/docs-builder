@@ -278,7 +278,12 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 				.Text
 				.RegularExpressions
 				.Regex
-				.Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(), "(?<=u0022)[0-9a-f]{40}")
+				.Matches(
+					req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(),
+					"(?<=u0022)[0-9a-f]{40}",
+					System.Text.RegularExpressions.RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				)
 				.Select(m => m.Value)
 				.ToList();
 			return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());

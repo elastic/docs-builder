@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Cysharp.IO;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Site;
 using Elastic.Markdown.Helpers;
@@ -325,7 +326,11 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		}
 	}
 
-	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System.Text.RegularExpressions.RegexOptions.Multiline)]
+	[System.Text.RegularExpressions.GeneratedRegex(@"\[([^\]]+)\]\(([^\)]+)\)", System
+		.Text
+		.RegularExpressions
+		.RegexOptions
+		.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial System.Text.RegularExpressions.Regex LinkPattern();
 
 	/// <summary>

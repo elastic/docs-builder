@@ -158,7 +158,8 @@ public class OperationExamplesPanelRenderingTests
 			.Matches(
 				html,
 				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
-				System.Text.RegularExpressions.RegexOptions.Singleline
+				System.Text.RegularExpressions.RegexOptions.Singleline,
+				Elastic.Documentation.RegexTimeouts.MatchTimeout
 			);
 		cards.Should().HaveCount(2);
 		foreach (var card in cards.Select(static c => c.Value))

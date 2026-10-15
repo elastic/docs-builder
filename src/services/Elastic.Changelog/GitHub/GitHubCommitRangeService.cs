@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -31,10 +32,10 @@ public sealed partial class GitHubCommitRangeService(
 	private readonly GitHubApiTransport _transport = transport
 		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GitHubCommitRangeService>());
 
-	[GeneratedRegex("^[0-9a-fA-F]{7,40}$")]
+	[GeneratedRegex("^[0-9a-fA-F]{7,40}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CommitShaRegex();
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeGraphQlIdentifierRegex();
 
 	/// <inheritdoc />

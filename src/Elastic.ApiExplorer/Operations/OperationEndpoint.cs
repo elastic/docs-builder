@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -367,11 +368,11 @@ public sealed partial record OperationEndpoint(
 	internal static bool IsPlaceholder(string segment) => segment.Length > 2 && segment[0] == '{' && segment[^1] == '}';
 
 	[GeneratedRegex("""<span class="operation-verb\s+[^"]*">([^<]*)</span>\s*(?:&nbsp;)?\s*<span class="operation-path">([^<]+)</span>""", RegexOptions.IgnoreCase
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathBadge();
 
 	[GeneratedRegex("""\*\*(?:All methods and paths|Spaces method and path) for this operation:\*\*\s*(?:<div\b[^>]*>.*?</div>\s*)+""", RegexOptions.IgnoreCase
 		| RegexOptions.Singleline
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PathListing();
 }

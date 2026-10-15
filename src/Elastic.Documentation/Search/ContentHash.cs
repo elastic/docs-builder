@@ -24,6 +24,6 @@ public static partial class ContentHash
 	/// </summary>
 	public static string CreateNormalized(string content) => Create(WhitespaceRuns().Replace(content.Trim(), " "));
 
-	[GeneratedRegex(@"\s+")]
+	[GeneratedRegex(@"\s+", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WhitespaceRuns();
 }

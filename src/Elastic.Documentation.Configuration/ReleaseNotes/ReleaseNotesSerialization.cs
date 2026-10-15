@@ -26,7 +26,7 @@ public static partial class ReleaseNotesSerialization
 	/// Regex to normalize "version:" to "target:" in changelog YAML files.
 	/// Used for backward compatibility with older changelog formats.
 	/// </summary>
-	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
+	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	public static partial Regex VersionToTargetRegex();
 
 	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog;
 
@@ -29,25 +30,25 @@ internal static class ReleaseNoteExtractionDiagnostics
 /// </summary>
 public static partial class ReleaseNotesExtractor
 {
-	[GeneratedRegex(@"<!--[\s\S]*?-->", RegexOptions.None)]
+	[GeneratedRegex(@"<!--[\s\S]*?-->", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HtmlCommentRegex();
 
-	[GeneratedRegex(@"(\r?\n){3,}", RegexOptions.None)]
+	[GeneratedRegex(@"(\r?\n){3,}", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex MultipleNewlinesRegex();
 
 	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase
-		| RegexOptions.Singleline)]
+		| RegexOptions.Singleline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ReleaseNoteRegex();
 
 	// A line that starts a section: a markdown heading ("## Impact") or a bare label ("Impact: ...").
 	// Group 1 = heading hashes (empty for a label), group 2 = colon (if any), group 3 = inline text after the name.
-	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ImpactStartRegex();
 
-	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ActionStartRegex();
 
-	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
+	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingRegex();
 
 	/// <summary>

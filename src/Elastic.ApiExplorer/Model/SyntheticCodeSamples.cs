@@ -5,6 +5,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -177,16 +178,16 @@ public static partial class SyntheticCodeSamples
 	private static readonly MatchEvaluator ShellPlaceholder = static m => Placeholder(m.Groups[1].Value, forShell: true);
 	private static readonly MatchEvaluator ConsolePlaceholder = static m => Placeholder(m.Groups[1].Value, forShell: false);
 
-	[GeneratedRegex(@"\{([^{}]+)\}", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"\{([^{}]+)\}", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex Template();
 
-	[GeneratedRegex(@"^https?://\{([^{}/]+)\}$", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^https?://\{([^{}/]+)\}$", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex WholeHostVariable();
 
-	[GeneratedRegex(@"([a-z0-9])([A-Z])", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"([a-z0-9])([A-Z])", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CamelBoundary();
 
-	[GeneratedRegex(@"[^A-Za-z0-9]+", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"[^A-Za-z0-9]+", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NotWord();
 
 	/// <summary>The required headers with the value each sends: its example, else <c>true</c> for <c>kbn-xsrf</c>, else a placeholder.</summary>

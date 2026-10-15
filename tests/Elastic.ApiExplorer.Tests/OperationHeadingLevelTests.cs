@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Site.FileProviders;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -54,6 +55,6 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 		return fs.File.ReadAllText("/out.html");
 	}
 
-	[GeneratedRegex("<(h[1-6])\\b")]
+	[GeneratedRegex("<(h[1-6])\\b", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex HeadingOpenTags();
 }

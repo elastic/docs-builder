@@ -22,7 +22,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	private const string Repo = "widget";
 	private const string TrailerSha = "abcdef0123456789abcdef0123456789abcdef01";
 
-	[GeneratedRegex(@" (?<alias>[pv]\d+): pullRequest\(number: (?<n>\d+)\)")]
+	[GeneratedRegex(@" (?<alias>[pv]\d+): pullRequest\(number: (?<n>\d+)\)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex AliasRegex();
 
 	/// <summary>What GitHub knows: backport details, and the pull requests the validation and trailer lookups find.</summary>
@@ -45,13 +45,21 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			if (query.Contains("def: defaultBranchRef", StringComparison.Ordinal))
 				fields.Add("\"def\": { \"name\": \"main\" }");
 
-			var more = Regex.Match(query, @"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""");
+			var more = Regex.Match(
+				query,
+				@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""",
+				RegexOptions.None,
+				RegexTimeouts.MatchTimeout
+			);
 			if (more.Success)
 				fields.Add(
 					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value), 100)} }}"
 				);
 
-			if (query.Contains(" v", StringComparison.Ordinal) && Regex.IsMatch(query, @" v\d+: pullRequest"))
+			if (
+				query.Contains(" v", StringComparison.Ordinal)
+				&& Regex.IsMatch(query, @" v\d+: pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeout)
+			)
 			{
 				ValidationRequests++;
 				if (ValidationError != null)
@@ -71,7 +79,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 
 			foreach (var (sha, prs) in TrailerPullRequests)
 			{
-				var index = Regex.Match(query, $"(c\\d+): object\\(oid: \"{sha}\"\\)");
+				var index = Regex.Match(query, $"(c\\d+): object\\(oid: \"{sha}\"\\)", RegexOptions.None, RegexTimeouts.MatchTimeout);
 				if (index.Success)
 					fields.Add(
 						$"\"{index.Groups[1].Value}\": {{ \"associatedPullRequests\": {{ \"nodes\": [{string.Join(",", prs.Select(PullRequestNode))}] }} }}"

@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.GitHub;
 
@@ -43,18 +44,18 @@ public sealed record BackportRoots(IReadOnlyList<int> Roots, BackportRootRoute R
 public static partial class BackportReferences
 {
 	// A pull request reference in the same repository. Not "owner/repo#N", not "word#N".
-	[GeneratedRegex(@"(?<![\w/\-])#(\d+)")]
+	[GeneratedRegex(@"(?<![\w/\-])#(\d+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SameRepoReferenceRegex();
 
 	// The "(#N)" that GitHub appends to a squashed commit. A cherry-picked squash can end with several, the original
 	// first and the release-branch backports after it. A bare "#N" in a subject only mentions a pull request.
-	[GeneratedRegex(@"(?:\(#\d+\)\s*)+$")]
+	[GeneratedRegex(@"(?:\(#\d+\)\s*)+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex TrailingReferenceRegex();
 
-	[GeneratedRegex(@"cherry picked from commit ([0-9a-fA-F]{40})")]
+	[GeneratedRegex(@"cherry picked from commit ([0-9a-fA-F]{40})", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CherryPickRegex();
 
-	[GeneratedRegex(@"(?:backport(?:s|ed)?\s+of(?:\s+pull\s+request)?|automatic\s+backport\s+of\s+pull\s+request)\s*#(\d+)", RegexOptions.IgnoreCase)]
+	[GeneratedRegex(@"(?:backport(?:s|ed)?\s+of(?:\s+pull\s+request)?|automatic\s+backport\s+of\s+pull\s+request)\s*#(\d+)", RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BodyMarkerRegex();
 
 	/// <summary>Reads every route from the text of a pull request. Nothing here is checked against GitHub.</summary>
@@ -145,7 +146,8 @@ public static partial class BackportReferences
 
 		var link = new Regex(
 			@$"github\.com/{Regex.Escape(owner)}/{Regex.Escape(repo)}/pull/(\d+)",
-			RegexOptions.IgnoreCase | RegexOptions.NonBacktracking
+			RegexOptions.IgnoreCase | RegexOptions.NonBacktracking,
+			RegexTimeouts.MatchTimeout
 		);
 		found.AddRange(ParsedNumbers(link.Matches(body)));
 		found.AddRange(ParsedNumbers(BodyMarkerRegex().Matches(body)));

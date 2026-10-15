@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -28,10 +29,10 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	private readonly GitHubApiTransport _transport = transport
 		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GitHubBackportService>());
 
-	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
+	[GeneratedRegex("^[A-Za-z0-9_.-]+$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SafeIdentifierRegex();
 
-	[GeneratedRegex("^[0-9a-f]{40}$")]
+	[GeneratedRegex("^[0-9a-f]{40}$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ShaRegex();
 
 	/// <inheritdoc />

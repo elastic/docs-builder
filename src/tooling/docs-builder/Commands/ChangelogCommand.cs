@@ -45,10 +45,10 @@ internal sealed partial class ChangelogCommands(
 	IEnvironmentVariables environmentVariables
 )
 {
-	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^( *directory:\s*).+$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BundleDirectoryRegex();
 
-	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline)]
+	[GeneratedRegex(@"^( *output_directory:\s*).+$", RegexOptions.Multiline, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex BundleOutputDirectoryRegex();
 
 	private readonly ChangelogFileSystem _fileSystem = ChangelogFileSystem.FromWorkingDirectory();

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 
 namespace Elastic.Changelog.GitHub;
 
@@ -26,7 +27,7 @@ internal static class LinkedIssueExtractor
 
 		// Pattern for cross-repo issue: owner/repo#123
 		var crossRepoPattern = $@"{keywordPattern}([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)#(\d+)";
-		foreach (Match match in Regex.Matches(body, crossRepoPattern, RegexOptions.IgnoreCase))
+		foreach (Match match in Regex.Matches(body, crossRepoPattern, RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout))
 		{
 			var repoPath = match.Groups[1].Value;
 			var issueNum = match.Groups[2].Value;
@@ -35,12 +36,12 @@ internal static class LinkedIssueExtractor
 
 		// Pattern for full GitHub issue URL
 		var urlPattern = $@"{keywordPattern}(https://github\.com/([a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+)/issues/(\d+))";
-		foreach (Match match in Regex.Matches(body, urlPattern, RegexOptions.IgnoreCase))
+		foreach (Match match in Regex.Matches(body, urlPattern, RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout))
 			_ = issues.Add(match.Groups[1].Value);
 
 		// Pattern for same-repo issue: #123
 		var sameRepoPattern = $@"{keywordPattern}#(\d+)";
-		foreach (Match match in Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase))
+		foreach (Match match in Regex.Matches(body, sameRepoPattern, RegexOptions.IgnoreCase, RegexTimeouts.MatchTimeout))
 		{
 			// Skip if this is part of a cross-repo reference (already handled above)
 			var issueNum = match.Groups[1].Value;

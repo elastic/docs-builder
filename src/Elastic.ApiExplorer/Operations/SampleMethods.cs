@@ -4,6 +4,7 @@
 
 using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
 
 namespace Elastic.ApiExplorer.Operations;
 
@@ -77,16 +78,16 @@ public static partial class SampleMethods
 		);
 
 	[GeneratedRegex(@"^(?<method>GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)(?<gap>[ \t]+)(?<path>\S+)", RegexOptions.Multiline
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex ConsoleRequest();
 
-	[GeneratedRegex(@"https?://[^\s""']+|\$\{?[A-Za-z0-9_]+\}?/[^\s""']*|(?<=[""'\s])[A-Za-z0-9.-]+:\d+/[^\s""']*", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"https?://[^\s""']+|\$\{?[A-Za-z0-9_]+\}?/[^\s""']*|(?<=[""'\s])[A-Za-z0-9.-]+:\d+/[^\s""']*", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlUrl();
 
-	[GeneratedRegex(@"(?<=\s)(?<flag>-X[ \t]*|--request(?:[ \t]+|=))(?<method>[A-Za-z]+)(?![\w-])", RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"(?<=\s)(?<flag>-X[ \t]*|--request(?:[ \t]+|=))(?<method>[A-Za-z]+)(?![\w-])", RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex CurlMethodFlag();
 
 	[GeneratedRegex(@"^(?<run>\s*Run\s+`)(?<method>GET|POST|PUT|PATCH|DELETE|HEAD)(?<gap>\s+)(?<path>[^`]+)(?=`)", RegexOptions.IgnoreCase
-		| RegexOptions.CultureInvariant)]
+		| RegexOptions.CultureInvariant, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex RunLine();
 }

@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Documentation;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
@@ -628,10 +629,10 @@ public partial class GitHubReleaseService(
 		}
 	}
 
-	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?=$|[-+])", RegexOptions.None)]
+	[GeneratedRegex(@"^(?<prefix>.*?)(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?=$|[-+])", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex SemverTagRegex();
 
-	[GeneratedRegex(@"^(?<prefix>[^\d]+)", RegexOptions.None)]
+	[GeneratedRegex(@"^(?<prefix>[^\d]+)", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex NonSemverPrefixRegex();
 
 	private async Task<GitHubReleaseInfo?> FetchReleaseFromUrl(string url, CancellationToken ctx)
@@ -853,6 +854,6 @@ public partial class GitHubReleaseService(
 		return match.Success ? match.Groups["url"].Value : null;
 	}
 
-	[GeneratedRegex(@"<(?<url>[^>]+)>;\s*rel=""last""")]
+	[GeneratedRegex(@"<(?<url>[^>]+)>;\s*rel=""last""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex LastLinkRegex();
 }

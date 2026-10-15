@@ -337,10 +337,10 @@ public partial class DocumentationGenerator
 		}
 	}
 
-	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9\s\-_\.\/\\+]*[a-z0-9_\-+]\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FilePathRegex();
 
-	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$")]
+	[GeneratedRegex(@"^[a-z0-9_][a-z0-9_\-\s\.+]*?\.([a-z]+)$", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex FileNameRegex();
 
 	public static bool IsValidFileName(string strToCheck) => strToCheck switch
