@@ -215,6 +215,38 @@ public class GitHubApiTransportRateLimitTests
 	}
 
 	[Test]
+	public async Task PostGraphQl_InternalGraphQlError_IsRetried()
+	{
+		const string failed =
+			"""{ "errors": [ { "message": "Something went wrong while executing your query on 2026-10-15T13:37:37Z. Please include `E170:35A3E3` when reporting this issue." } ] }""";
+
+		var (status, body, requests, waits) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(failed) },
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		body.Should().Contain("data");
+		requests.Should().Be(2);
+		waits.Should().Equal(TimeSpan.FromSeconds(2));
+	}
+
+	[Test]
+	public async Task PostGraphQl_OtherGraphQlError_IsNotRetried()
+	{
+		var (_, _, requests, _) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(
+					"""{ "errors": [ { "type": "NOT_FOUND", "message": "Could not resolve to a PullRequest" } ] }"""
+				)
+			}
+		);
+
+		requests.Should().Be(1);
+	}
+
+	[Test]
 	public async Task PostGraphQl_EmptyBodyEveryTime_ReturnsTheLastResponseAfterFourAttempts()
 	{
 		var (status, body, requests, _) = await PostGraphQlAsync(
@@ -257,6 +289,90 @@ public class GitHubApiTransportRateLimitTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.OK);
 		waits.Should().Equal(TimeSpan.FromSeconds(2));
+	}
+
+	private sealed class ListLogger : Microsoft.Extensions.Logging.ILogger
+	{
+		public List<string> Lines { get; } = [];
+
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			Microsoft.Extensions.Logging.LogLevel logLevel,
+			Microsoft.Extensions.Logging.EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		) => Lines.Add(formatter(state, exception));
+	}
+
+	[Test]
+	public async Task PostGraphQl_RequestTimesOut_IsRetriedAndTheWaitIsLogged()
+	{
+		var calls = 0;
+		var logger = new ListLogger();
+		using var transport = new GitHubApiTransport(
+			new StubHandler(
+				_ => ++calls == 1
+					? throw new TaskCanceledException(
+						"The request was canceled due to the configured HttpClient.Timeout of 60 seconds elapsing."
+					)
+					: new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+			),
+			"token",
+			(_, _) => Task.CompletedTask,
+			logger
+		);
+
+		using var response = await transport.PostGraphQlAsync("{}", TestContext.Current!.Execution.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.OK);
+		logger.Lines.Should().ContainSingle().Which.Should().Contain("waiting 2s before attempt 2 of 4").And.Contain("Timeout");
+	}
+
+	[Test]
+	public async Task PostGraphQl_RateLimited_LogsTheWait()
+	{
+		var logger = new ListLogger();
+		using var transport = new GitHubApiTransport(
+			new StubHandler(_ => Limited(HttpStatusCode.TooManyRequests, retryAfterSeconds: "7")),
+			"token",
+			(_, _) => Task.CompletedTask,
+			logger
+		);
+
+		using var response = await transport.PostGraphQlAsync("{}", TestContext.Current!.Execution.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+		logger.Lines.Should().HaveCount(3);
+		logger.Lines[0].Should().Contain("answered 429").And.Contain("waiting 7s");
+	}
+
+	[Test]
+	public async Task PostGraphQlOrNull_TimesOutEveryTime_ReportsAFailureInsteadOfThrowing()
+	{
+		string? failure = null;
+		using var transport = new GitHubApiTransport(
+			new StubHandler(
+				_ =>
+					throw new TaskCanceledException(
+						"The request was canceled due to the configured HttpClient.Timeout of 60 seconds elapsing."
+					)
+			),
+			"token",
+			(_, _) => Task.CompletedTask
+		);
+
+		var response = await transport.PostGraphQlOrNullAsync(
+			"{}",
+			message => failure = message,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		response.Should().BeNull();
+		failure.Should().Contain("timed out after 4 attempt(s)");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

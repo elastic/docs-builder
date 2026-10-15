@@ -82,7 +82,7 @@ public class ChangelogLabelValidationService(
 		string? productLabelTable = null;
 		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
+			var products = ProductResolution.FromLabels(input.PrLabels, config);
 			if (products.Count > 0)
 			{
 				resolvedProducts = ProductArgument.FormatProductSpecs(products);
@@ -118,7 +118,7 @@ public class ChangelogLabelValidationService(
 			return false;
 		}
 
-		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR");
 			var productLabels = config.LabelToProducts is { Count: > 0 }

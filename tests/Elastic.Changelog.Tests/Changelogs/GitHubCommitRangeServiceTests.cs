@@ -257,7 +257,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	[Test]
 	public async Task ResolvePullRequests_Pagination_FollowsAllComparePages()
 	{
-		// 150 commits: page 1 returns 100, page 2 the remaining 50. GraphQL batches per 50.
+		// 150 commits: page 1 returns 100, page 2 the remaining 50. GraphQL batches per 25, which run side by side.
 		var shas = Enumerable.Range(1, 150).Select(Sha).ToList();
 		var comparePages = new List<int>();
 		var graphQlBatches = 0;
@@ -269,12 +269,23 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			comparePages.Add(page);
 			var pageShas = shas.Skip((page - 1) * 100).Take(100);
 			return CompareJson(150, pageShas);
-		}, _ =>
+		}, req =>
 		{
-			// Batches are issued sequentially in commit order, 50 shas each; every commit
+			// The batches may arrive in any order, so the answer follows the commits the request names. Every commit
 			// resolves to its own squashed PR (number = index + 1).
-			var batchIndex = graphQlBatches++;
-			var batch = shas.Skip(batchIndex * 50).Take(50).ToList();
+			_ = Interlocked.Increment(ref graphQlBatches);
+			var batch = System
+				.Text
+				.RegularExpressions
+				.Regex
+				.Matches(
+					req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(),
+					"(?<=u0022)[0-9a-f]{40}",
+					System.Text.RegularExpressions.RegexOptions.None,
+					RegexTimeouts.MatchTimeout
+				)
+				.Select(m => m.Value)
+				.ToList();
 			return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
 		});
 
@@ -283,7 +294,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		comparePages.Should().Equal(1, 2);
-		graphQlBatches.Should().Be(3);
+		graphQlBatches.Should().Be(6);
 		result!.TotalCommits.Should().Be(150);
 		result.PullRequests.Should().HaveCount(150);
 		result.PullRequests[0].Number.Should().Be(1);
@@ -435,6 +446,28 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.Should().NotBeNull();
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
 		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GraphQlRequestsTimeOut_IsAnErrorNotACrash()
+	{
+		var sha1 = Sha(1);
+		var handler = new StubHandler(
+			req => req.RequestUri!.AbsolutePath == "/graphql"
+				? throw new TaskCanceledException(
+					"The request was canceled due to the configured HttpClient.Timeout of 60 seconds elapsing."
+				)
+				: Json(CompareJson(1, [sha1]))
+		);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("timed out"));
 	}
 
 	[Test]
