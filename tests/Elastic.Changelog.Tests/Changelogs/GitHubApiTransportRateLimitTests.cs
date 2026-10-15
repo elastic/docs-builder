@@ -215,6 +215,38 @@ public class GitHubApiTransportRateLimitTests
 	}
 
 	[Test]
+	public async Task PostGraphQl_InternalGraphQlError_IsRetried()
+	{
+		const string failed =
+			"""{ "errors": [ { "message": "Something went wrong while executing your query on 2026-10-15T13:37:37Z. Please include `E170:35A3E3` when reporting this issue." } ] }""";
+
+		var (status, body, requests, waits) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(failed) },
+			() => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{ "data": {} }""") }
+		);
+
+		status.Should().Be(HttpStatusCode.OK);
+		body.Should().Contain("data");
+		requests.Should().Be(2);
+		waits.Should().Equal(TimeSpan.FromSeconds(2));
+	}
+
+	[Test]
+	public async Task PostGraphQl_OtherGraphQlError_IsNotRetried()
+	{
+		var (_, _, requests, _) = await PostGraphQlAsync(
+			() => new HttpResponseMessage(HttpStatusCode.OK)
+			{
+				Content = new StringContent(
+					"""{ "errors": [ { "type": "NOT_FOUND", "message": "Could not resolve to a PullRequest" } ] }"""
+				)
+			}
+		);
+
+		requests.Should().Be(1);
+	}
+
+	[Test]
 	public async Task PostGraphQl_EmptyBodyEveryTime_ReturnsTheLastResponseAfterFourAttempts()
 	{
 		var (status, body, requests, _) = await PostGraphQlAsync(

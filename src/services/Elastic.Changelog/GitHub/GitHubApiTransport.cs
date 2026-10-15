@@ -186,8 +186,8 @@ public sealed class GitHubApiTransport : IDisposable
 			?? await TransientFailureWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false);
 
 	/// <summary>
-	/// For GraphQL, a gateway error (502, 503, 504), a dropped connection, and a successful response with no body, which
-	/// GitHub sends under load, are retried. Without this a long run over thousands of commits dies on one bad response.
+	/// For GraphQL, a gateway error (502, 503, 504), a dropped connection, a successful response with no body, and GitHub's
+	/// "Something went wrong while executing your query" error, which it sends under load, are retried. Without this a long run over thousands of commits dies on one bad response.
 	/// REST reads keep the retries of their callers, so they are not retried twice.
 	/// </summary>
 	private static async Task<TimeSpan?> TransientFailureWaitAsync(
@@ -207,8 +207,15 @@ public sealed class GitHubApiTransport : IDisposable
 			return null;
 
 		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-		return string.IsNullOrWhiteSpace(body) ? TransientWait(attempt) : null;
+		return string.IsNullOrWhiteSpace(body) || IsInternalGraphQlError(body) ? TransientWait(attempt) : null;
 	}
+
+	/// <summary>
+	/// GitHub answers a query that it could not run, usually because it was too heavy at that moment, with a successful
+	/// response whose only content is this error and a request id. The same query often works a moment later.
+	/// </summary>
+	private static bool IsInternalGraphQlError(string body) =>
+		body.Contains("Something went wrong while executing your query", StringComparison.Ordinal);
 
 	private static TimeSpan TransientWait(int attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt));
 

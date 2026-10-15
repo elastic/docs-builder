@@ -24,7 +24,7 @@ public sealed partial class GitHubCommitRangeService(
 ) : IGitHubCommitRangeService
 {
 	private const int ComparePageSize = 100;
-	private const int GraphQlBatchSize = 50;
+	private const int GraphQlBatchSize = 25;
 	private const int MaxAssociatedPullRequests = 10;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
