@@ -15,7 +15,7 @@ public class ChangelogEntryConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -69,7 +69,7 @@ public class ChangelogEntryInConfigurationConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(ChangelogEntryInConfigurationConstraints.All, Generated).CounterExamples(CounterExamples).Axes();

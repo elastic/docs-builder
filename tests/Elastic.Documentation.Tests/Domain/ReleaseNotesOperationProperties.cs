@@ -249,14 +249,14 @@ public class ChangelogEntryOperationProperties
 	/// Consequence if broken: a public release note links a private repository, or a second scrub changes what the first published.
 	/// </summary>
 	[Test]
-	public void WithoutPrivateLinks_Entry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	public async Task WithoutPrivateLinks_Entry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
 	{
 		var scrub = ReleaseNotesGen.ScrubLaws<ChangelogEntry>(
 			entry => entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
 			e => (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action).Select(t => t ?? "")
 		);
 
-		DomainAutoTest.For(scrub, ReleaseNotesGen.EntriesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		(await DomainAutoTest.For(scrub, ReleaseNotesGen.EntriesWithReferences).IdempotencyAsync()).Should().BeOfType<AxisResult.Passed>();
 		ReleaseNotesGen.EntriesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
 		ReleaseNotesGen.EntriesWithReferences.Check(entry =>
 		{
@@ -270,14 +270,17 @@ public class ChangelogEntryOperationProperties
 
 	/// <summary>The same law for an entry of a bundle.</summary>
 	[Test]
-	public void WithoutPrivateLinks_BundledEntry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	public async Task WithoutPrivateLinks_BundledEntry_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
 	{
 		var scrub = ReleaseNotesGen.ScrubLaws<BundledEntry>(
 			entry => entry.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
 			e => (e.Prs ?? []).Concat(e.Issues ?? []).Append(e.Description).Append(e.Impact).Append(e.Action).Select(t => t ?? "")
 		);
 
-		DomainAutoTest.For(scrub, ReleaseNotesGen.BundledEntriesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		(await DomainAutoTest.For(
+			scrub,
+			ReleaseNotesGen.BundledEntriesWithReferences
+		).IdempotencyAsync()).Should().BeOfType<AxisResult.Passed>();
 		ReleaseNotesGen.BundledEntriesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
 	}
 }
@@ -291,7 +294,7 @@ public class BundleOperationProperties
 	/// Consequence if broken: a published bundle carries a private link in a place the scrub did not look.
 	/// </summary>
 	[Test]
-	public void WithoutPrivateLinks_Bundle_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
+	public async Task WithoutPrivateLinks_Bundle_IsIdempotent_AndLeavesNothingOutsideTheAllowList()
 	{
 		var scrub = ReleaseNotesGen.ScrubLaws<Bundle>(
 			bundle => bundle.WithoutPrivateLinks(ReleaseNotesGen.Allow, "elastic", "kibana").Value!.Value,
@@ -302,7 +305,7 @@ public class BundleOperationProperties
 				.Select(t => t ?? "")
 		);
 
-		DomainAutoTest.For(scrub, ReleaseNotesGen.BundlesWithReferences).Idempotency().Should().BeOfType<AxisResult.Passed>();
+		(await DomainAutoTest.For(scrub, ReleaseNotesGen.BundlesWithReferences).IdempotencyAsync()).Should().BeOfType<AxisResult.Passed>();
 		ReleaseNotesGen.BundlesWithReferences.Check(value => scrub.Validate(value).Should().BeEmpty());
 		ReleaseNotesGen.BundlesWithReferences.Check(bundle =>
 		{
@@ -471,28 +474,24 @@ public class LoadedBundleOperationProperties
 	/// Consequence if broken: the page for a release depends on which repository's bundle the file system listed first.
 	/// </summary>
 	[Test]
-	public void MergeByTarget_IsOrderIndependent() =>
-		DomainAutoTest
-			.For(
-				Nullean
-					.Entities
-					.ConstraintSet
-					.From(
-						("merge-by-target-is-order-independent", Nullean
-							.Entities
-							.Constraints<LoadedBundles>
-							.OrderIndependent(
-								b => b.Bundles,
-								(_, items) => new LoadedBundles(items),
-								b => LoadedBundle.MergeByTarget(b.Bundles).Value!,
-								new SequenceComparer()
-							))
-					),
-				Bundles.Select(b => new LoadedBundles(b))
-			)
-			.Confluence()
-			.Should()
-			.BeOfType<AxisResult.Passed>();
+	public async Task MergeByTarget_IsOrderIndependent() =>
+		(await DomainAutoTest.For(
+			Nullean
+				.Entities
+				.ConstraintSet
+				.From(
+					("merge-by-target-is-order-independent", Nullean
+						.Entities
+						.Constraints<LoadedBundles>
+						.OrderIndependent(
+							b => b.Bundles,
+							(_, items) => new LoadedBundles(items),
+							b => LoadedBundle.MergeByTarget(b.Bundles).Value!,
+							new SequenceComparer()
+						))
+				),
+			Bundles.Select(b => new LoadedBundles(b))
+		).ConfluenceAsync()).Should().BeOfType<AxisResult.Passed>();
 
 	private sealed class SequenceComparer : IEqualityComparer<IReadOnlyList<LoadedBundle>>
 	{

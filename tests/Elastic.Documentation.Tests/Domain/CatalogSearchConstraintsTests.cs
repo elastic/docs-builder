@@ -36,7 +36,7 @@ public class ProductCatalogConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(ProductCatalogConstraints.All, DomainGen.Of<ProductCatalog>()).CounterExamples(CounterExamples).Axes();
@@ -57,7 +57,7 @@ public class ProductCatalogInVersioningSystemCatalogConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -73,7 +73,7 @@ public class LegacyUrlMappingCatalogInProductCatalogConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -105,7 +105,7 @@ public class SearchTuningConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest

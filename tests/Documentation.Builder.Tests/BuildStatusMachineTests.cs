@@ -38,22 +38,18 @@ public class BuildStatusMachineTests
 	/// Consequence if broken: the status endpoint (and the editor panel) shows a state the build cannot be in.
 	/// </summary>
 	[Test]
-	public void TheServiceFollowsItsStatusMachine() =>
-		BuildStatusMachine
-			.Machine
-			.ConformToService(
-				() => new BuildHarness(new ManualTimeProvider()),
-				h => h.Status,
-				iter: 60,
-				bindings: [
-					("Start", h => Run(h.Start)),
-					("Finish", h => Run(h.EndBuild)),
-					("Fail", h => Run(h.Fail)),
-					("Interrupt", h => Run(h.Interrupt))
-				]
-			)
-			.Should()
-			.NotBeNull();
+	public Task TheServiceFollowsItsStatusMachine() =>
+		BuildStatusMachine.Machine.ConformToServiceAsync(
+			() => new BuildHarness(new ManualTimeProvider()),
+			h => h.Status,
+			iter: 60,
+			bindings: [
+				("Start", h => Run(h.Start)),
+				("Finish", h => Run(h.EndBuild)),
+				("Fail", h => Run(h.Fail)),
+				("Interrupt", h => Run(h.Interrupt))
+			]
+		);
 
 	private static Task Run(Action action)
 	{

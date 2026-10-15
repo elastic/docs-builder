@@ -104,12 +104,11 @@ public class VersionIndexProperties
 	/// Consequence if broken: two rebuilds of one bucket publish different indexes, and the published one depends on the listing order.
 	/// </summary>
 	[Test]
-	public void Build_IsOrderIndependent() =>
-		AutoTest
-			.For(VersionIndexOrderConstraints.All, Keys.Select(keys => new KeyListing(keys)))
-			.Confluence()
-			.Should()
-			.BeOfType<AxisResult.Passed>();
+	public async Task Build_IsOrderIndependent() =>
+		(await AutoTest.For(
+			VersionIndexOrderConstraints.All,
+			Keys.Select(keys => new KeyListing(keys))
+		).ConfluenceAsync()).Should().BeOfType<AxisResult.Passed>();
 
 	/// <summary>
 	/// Law: an index written and loaded again is the index that was written, and a built index breaks no rule.

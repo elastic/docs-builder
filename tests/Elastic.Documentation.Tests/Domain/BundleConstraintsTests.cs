@@ -15,7 +15,7 @@ public class BundleConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(BundleConstraints.All, BundleExamples.Generated<Bundle>()).CounterExamples(CounterExamples).Axes();
@@ -27,7 +27,7 @@ public class BundleAmendConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -50,7 +50,7 @@ public class LoadedBundleConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(LoadedBundleConstraints.All, BundleExamples.Generated<LoadedBundle>()).CounterExamples(CounterExamples).Axes();
@@ -82,7 +82,7 @@ public class LoadedBundlesConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(LoadedBundlesConstraints.All, BundleExamples.Generated<LoadedBundles>()).CounterExamples(CounterExamples).Axes();

@@ -42,7 +42,7 @@ public class InMemoryBuildStateTests
 	/// </summary>
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void TheBroadcast_KeepsTheBuildEventSpec(AxisCase axis) => axis.Run();
+	public Task TheBroadcast_KeepsTheBuildEventSpec(AxisCase axis) => axis.RunAsync();
 
 	/// <summary>
 	/// Law: the random saves reach what the rules are about: builds start, report findings and end. Not seeded on purpose: a replayed seed is one run,
@@ -50,8 +50,8 @@ public class InMemoryBuildStateTests
 	/// Consequence if broken: the spec above passes because nothing happened.
 	/// </summary>
 	[Test]
-	public void TheSample_ReachesWhatTheRulesAreAbout() =>
-		Saves().SampleWith(
+	public Task TheSample_ReachesWhatTheRulesAreAbout() =>
+		Saves().SampleWithAsync(
 			time => new BuildHarness(time),
 			h => h.Finish(),
 			BuildEventSpec.All,
@@ -67,6 +67,6 @@ public class InMemoryBuildStateTests
 	/// Consequence if broken: the panel's totals disagree with the list under them.
 	/// </summary>
 	[Test]
-	public void AtRest_TheSnapshotKeepsTheStateConstraints() =>
-		Saves().SampleState(time => new BuildHarness(time), h => h.Snapshot(), BuildStateConstraints.All, seed: Props.Seed, iter: 100);
+	public Task AtRest_TheSnapshotKeepsTheStateConstraints() =>
+		Saves().SampleStateAsync(time => new BuildHarness(time), h => h.Snapshot(), BuildStateConstraints.All, seed: Props.Seed, iter: 100);
 }

@@ -34,7 +34,7 @@ public class NavigationInAssemblyConstraintsTests
 
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -59,7 +59,7 @@ public class DocumentationSetInCodexConstraintsTests
 	// codex.group refers to a group the codex site defines: the declared reference does it, so the groups are the generated ones
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest

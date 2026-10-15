@@ -351,7 +351,7 @@ public class DocumentationSetConstraintsTests
 	// unique, well-nested and well-named. GenAuto draws the file system and the tree independently; that coupling is not a repair of members but a model-first generator (a set of page
 	// paths, then both the files and the toc built from it).
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest
@@ -417,7 +417,7 @@ public class DocsetDiscoveryConstraintsTests
 
 	[Test]
 	[MethodDataSource(nameof(DiscoveryAxes))]
-	public void DiscoveryAxisHolds(AxisCase axis) => axis.Run();
+	public Task DiscoveryAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> DiscoveryAxes() =>
 		DomainAutoTest

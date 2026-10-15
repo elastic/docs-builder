@@ -17,7 +17,7 @@ public class LinkGraphConstraintsTests
 {
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(LinkGraphConstraints.All, Generated()).Options(o => o.UseFileSystem()).CounterExamples(CounterExamples).Axes();

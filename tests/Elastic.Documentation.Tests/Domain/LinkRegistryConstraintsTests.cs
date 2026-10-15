@@ -32,7 +32,7 @@ public class LinkRegistryConstraintsTests
 	/// </summary>
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	[Test]
 	public void The_registry_declares_exactly_the_invariant_monotonicity_and_vacancy_axes() =>

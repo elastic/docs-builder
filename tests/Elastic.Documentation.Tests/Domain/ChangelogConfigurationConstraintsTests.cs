@@ -175,7 +175,7 @@ public class ChangelogConfigurationConstraintsTests
 	// sections built around it), not a repair of generated members. (At the default depth the sections generate empty, so those rules would only ever be checked against nothing.)
 	[Test]
 	[MethodDataSource(nameof(Axes))]
-	public void EveryDeclaredAxisHolds(AxisCase axis) => axis.Run();
+	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
 
 	public static IEnumerable<Func<AxisCase>> Axes() =>
 		DomainAutoTest.For(ChangelogConfigurationConstraints.All, Gen.Const(0).Select(_ => Valid())).CounterExamples(CounterExamples).Axes();
