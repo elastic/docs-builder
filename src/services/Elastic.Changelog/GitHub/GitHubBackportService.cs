@@ -25,7 +25,8 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 	private const int ValidationBatchSize = 25;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubBackportService>();
-	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
+	private readonly GitHubApiTransport _transport = transport
+		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GitHubBackportService>());
 
 	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
 	private static partial Regex SafeIdentifierRegex();
@@ -329,7 +330,14 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		var query = $"query {{ repository(owner: \"{owner}\", name: \"{repo}\") {{{selection} }} }}";
 		var body = JsonSerializer.Serialize(new Request { Query = query }, BackportJsonContext.Default.Request);
 
-		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+		using var response = await _transport.PostGraphQlOrNullAsync(
+			body,
+			failure => collector.EmitError(string.Empty, $"GitHub GraphQL request for {owner}/{repo} failed: {failure}"),
+			ctx
+		).ConfigureAwait(false);
+		if (response is null)
+			return null;
+
 		if (!response.IsSuccessStatusCode)
 		{
 			collector.EmitError(

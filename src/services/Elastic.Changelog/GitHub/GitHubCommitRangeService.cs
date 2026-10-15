@@ -28,7 +28,8 @@ public sealed partial class GitHubCommitRangeService(
 	private const int MaxAssociatedPullRequests = 10;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
-	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
+	private readonly GitHubApiTransport _transport = transport
+		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GitHubCommitRangeService>());
 
 	[GeneratedRegex("^[0-9a-fA-F]{7,40}$")]
 	private static partial Regex CommitShaRegex();
@@ -381,7 +382,14 @@ public sealed partial class GitHubCommitRangeService(
 		var query = BuildBatchQuery(args.Owner, args.Repo, shas);
 		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
-		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+		using var response = await _transport.PostGraphQlOrNullAsync(
+			body,
+			failure => collector.EmitError(string.Empty, $"GitHub GraphQL request for {args.Owner}/{args.Repo} failed: {failure}"),
+			ctx
+		).ConfigureAwait(false);
+		if (response is null)
+			return null;
+
 		if (!response.IsSuccessStatusCode)
 		{
 			collector.EmitError(
@@ -444,7 +452,17 @@ public sealed partial class GitHubCommitRangeService(
 				+ $"labels(first: 100, after: \"{cursor}\") {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }} }} }}";
 			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
-			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+			using var response = await _transport.PostGraphQlOrNullAsync(
+				body,
+				failure => collector.EmitError(
+					string.Empty,
+					$"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} failed: {failure}"
+				),
+				ctx
+			).ConfigureAwait(false);
+			if (response is null)
+				return null;
+
 			GraphQlLabelPageResponse? parsed = null;
 			if (response.IsSuccessStatusCode)
 			{

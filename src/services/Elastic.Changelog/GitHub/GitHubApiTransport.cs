@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
 
@@ -39,14 +40,22 @@ public sealed class GitHubApiTransport : IDisposable
 	private readonly HttpClient? _ownedHttpClient;
 	private readonly string? _githubToken;
 	private readonly Func<TimeSpan, Cancel, Task> _delay;
+	private readonly ILogger? _logger;
 
 	/// <param name="handler">Optional HTTP handler override (tests). Owned by the caller.</param>
 	/// <param name="githubToken">Optional token override; defaults to the <c>GITHUB_TOKEN</c> environment variable.</param>
 	/// <param name="delay">Optional wait override (tests), used between retries of a rate-limited request.</param>
-	public GitHubApiTransport(HttpMessageHandler? handler = null, string? githubToken = null, Func<TimeSpan, Cancel, Task>? delay = null)
+	/// <param name="logger">Optional logger. Every wait before a retry is logged, so a run that waits is not mistaken for a hung one.</param>
+	public GitHubApiTransport(
+		HttpMessageHandler? handler = null,
+		string? githubToken = null,
+		Func<TimeSpan, Cancel, Task>? delay = null,
+		ILogger? logger = null
+	)
 	{
 		_githubToken = githubToken;
 		_delay = delay ?? Task.Delay;
+		_logger = logger;
 		if (handler is null)
 			_httpClient = SharedHttpClient;
 		else
@@ -144,6 +153,23 @@ public sealed class GitHubApiTransport : IDisposable
 		).ConfigureAwait(false);
 
 	/// <summary>
+	/// Like <see cref="PostGraphQlAsync"/>, but a request that still fails after its retries, because the connection dropped or
+	/// kept timing out, is reported to <paramref name="onFailure"/> and answered with <c>null</c> instead of an exception.
+	/// </summary>
+	public async Task<HttpResponseMessage?> PostGraphQlOrNullAsync(string jsonBody, Action<string> onFailure, Cancel ctx = default)
+	{
+		try
+		{
+			return await PostGraphQlAsync(jsonBody, ctx).ConfigureAwait(false);
+		}
+		catch (Exception e) when (IsTransient(e, ctx))
+		{
+			onFailure(e is TaskCanceledException ? $"timed out after {MaxRateLimitAttempts} attempt(s): {e.Message}" : e.Message);
+			return null;
+		}
+	}
+
+	/// <summary>
 	/// Sends a read request and waits out a rate limit instead of failing. Bulk reads run several requests at once, so a
 	/// secondary limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped,
 	/// because a primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
@@ -162,10 +188,18 @@ public sealed class GitHubApiTransport : IDisposable
 			{
 				response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
 			}
-			catch (HttpRequestException) when (retryTransient && attempt < MaxRateLimitAttempts)
+			catch (Exception e) when (retryTransient && attempt < MaxRateLimitAttempts && IsTransient(e, ctx))
 			{
-				// A dropped connection is as transient as a 502. The last attempt lets the exception through.
-				await _delay(TransientWait(attempt), ctx).ConfigureAwait(false);
+				// A dropped connection or a request that timed out is as transient as a 502. The last attempt lets it through.
+				var pause = TransientWait(attempt);
+				_logger?.LogWarning(
+					"GitHub request failed ({Reason}); waiting {Wait}s before attempt {Next} of {Max}",
+					e.Message,
+					pause.TotalSeconds,
+					attempt + 1,
+					MaxRateLimitAttempts
+				);
+				await _delay(pause, ctx).ConfigureAwait(false);
 				continue;
 			}
 
@@ -175,10 +209,21 @@ public sealed class GitHubApiTransport : IDisposable
 			if (wait is null)
 				return response;
 
+			_logger?.LogWarning(
+				"GitHub answered {Status}; waiting {Wait}s before attempt {Next} of {Max}",
+				(int)response.StatusCode,
+				wait.Value.TotalSeconds,
+				attempt + 1,
+				MaxRateLimitAttempts
+			);
 			response.Dispose();
 			await _delay(wait.Value, ctx).ConfigureAwait(false);
 		}
 	}
+
+	/// <summary>A dropped connection, or a request that hit the client timeout while the caller did not cancel.</summary>
+	private static bool IsTransient(Exception e, Cancel ctx) =>
+		e is HttpRequestException || (e is TaskCanceledException && !ctx.IsCancellationRequested);
 
 	/// <summary>How long to wait before retrying a response, or <c>null</c> when it is final: a rate limit, then a transient failure.</summary>
 	private static async Task<TimeSpan?> RetryWaitAsync(HttpResponseMessage response, int attempt, bool retryTransient, Cancel ctx) =>

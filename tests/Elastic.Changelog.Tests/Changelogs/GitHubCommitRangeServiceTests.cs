@@ -444,6 +444,28 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ResolvePullRequests_GraphQlRequestsTimeOut_IsAnErrorNotACrash()
+	{
+		var sha1 = Sha(1);
+		var handler = new StubHandler(
+			req => req.RequestUri!.AbsolutePath == "/graphql"
+				? throw new TaskCanceledException(
+					"The request was canceled due to the configured HttpClient.Timeout of 60 seconds elapsing."
+				)
+				: Json(CompareJson(1, [sha1]))
+		);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("timed out"));
+	}
+
+	[Test]
 	public async Task ResolvePullRequests_GraphQlBodyEmptyEveryTime_IsAnErrorNotACrash()
 	{
 		var sha1 = Sha(1);
