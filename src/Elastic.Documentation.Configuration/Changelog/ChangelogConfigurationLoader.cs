@@ -618,6 +618,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 				}
 
+				if (!string.IsNullOrWhiteSpace(profileYaml.Output))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output is deprecated. Bundle output names are derived by convention as {{repo}}-{{product}}-{{version}}.yaml. Remove this field."
+					);
+
 				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))
 					collector.EmitWarning(
 						configPath,
