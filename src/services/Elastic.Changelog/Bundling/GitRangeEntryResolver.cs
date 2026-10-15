@@ -145,8 +145,10 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
+public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decisions)
 {
+	private const int MaxParallelPrFetches = 6;
+
 	/// <summary>
 	/// Resolves entries for every PR in <paramref name="resolution"/> against the candidate pool
 	/// <paramref name="candidates"/>. Never throws for per-PR failures; the report captures them.
@@ -166,6 +168,14 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		var entries = new List<MatchedChangelogFile>();
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
+
+		// Pull requests without a pool entry need their metadata. Each is one round trip, so they are fetched in
+		// parallel up front. Everything after that runs in range order, so the report and diagnostics stay stable.
+		var prInfos = await PrefetchPrInfosAsync(
+			resolution.PullRequests.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo))),
+			options,
+			ctx
+		);
 
 		foreach (var pr in resolution.PullRequests)
 		{
@@ -198,10 +208,11 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 					Source = GitRangePrSourceKind.Pool,
 					EntryFileNames = fileNames
 				});
+				decisions.Record("entries", "pool", $"#{pr.Number}");
 				continue;
 			}
 
-			var (row, synthesized, failed) = await SynthesizeFromPrMetadata(collector, pr, config, options, ctx);
+			var (row, synthesized, failed) = SynthesizeFromPrMetadata(collector, pr, prInfos.GetValueOrDefault(pr.Url), config, options);
 			rows.Add(row);
 			if (synthesized != null)
 				entries.Add(synthesized);
@@ -278,21 +289,45 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		return candidate.Prs.Any(pr => ChangelogBundlingService.NormalizePrForComparison(pr, owner, repo) == expected);
 	}
 
+	private async Task<Dictionary<string, GitHubPrInfo?>> PrefetchPrInfosAsync(
+		IEnumerable<CommitRangePullRequest> pullRequests,
+		GitRangeEntryResolutionOptions options,
+		Cancel ctx
+	)
+	{
+		var urls = pullRequests.Select(pr => pr.Url).Distinct().ToList();
+		var infos = new GitHubPrInfo?[urls.Count];
+		using var gate = new SemaphoreSlim(MaxParallelPrFetches);
+		await Task.WhenAll(urls.Select(async (url, index) =>
+		{
+			await gate.WaitAsync(ctx).ConfigureAwait(false);
+			try
+			{
+				infos[index] = await prService.FetchPrInfoAsync(url, options.Owner, options.Repo, ctx).ConfigureAwait(false);
+			}
+			finally
+			{
+				_ = gate.Release();
+			}
+		})).ConfigureAwait(false);
+
+		return urls.Select((url, index) => (url, info: infos[index])).ToDictionary(x => x.url, x => x.info);
+	}
+
 	/// <summary>
 	/// Synthesizes an in-memory changelog entry from PR metadata — the same extraction path
 	/// <c>changelog add</c> uses: release-note text from the PR body as the description, labels
 	/// mapped to type/areas/products/feature-id/highlight via the config pivots, and
 	/// <c>rules.create</c> label rules deciding inclusion.
 	/// </summary>
-	private async Task<(GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed)> SynthesizeFromPrMetadata(
+	private (GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed) SynthesizeFromPrMetadata(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
+		GitHubPrInfo? prInfo,
 		ChangelogConfiguration? config,
-		GitRangeEntryResolutionOptions options,
-		Cancel ctx
+		GitRangeEntryResolutionOptions options
 	)
 	{
-		var prInfo = await prService.FetchPrInfoAsync(pr.Url, options.Owner, options.Repo, ctx);
 		if (prInfo == null || string.IsNullOrWhiteSpace(prInfo.Title))
 		{
 			collector.EmitWarning(
@@ -311,7 +346,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		// rules.create exclusions come first: a pull request that a skip label leaves out needs no product label.
 		if (config != null)
 		{
-			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, collector, pr.Url))
+			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 
 			// Two or more mapped products and no default: the pull request must name its product with a label,
@@ -358,7 +393,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		{
 			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo.Body);
 			description = extraction.Content;
-			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
 		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
@@ -396,7 +431,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		};
 
 		var kind = description != null ? GitRangePrSourceKind.InferredPrBody : GitRangePrSourceKind.InferredTitle;
-		logger.LogInformation("Synthesized changelog entry for PR #{Number} from PR metadata ({Kind})", pr.Number, kind);
+		decisions.Record("entries", "inferred", $"#{pr.Number}", kind == GitRangePrSourceKind.InferredPrBody ? "PR body" : "title");
 		return (Row(pr, kind, fileName), entry, false);
 	}
 

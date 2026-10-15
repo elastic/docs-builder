@@ -706,6 +706,15 @@
 		color: var(--color-ink-light);
 		margin-top: 8px;
 	}
+	/* A link in a section intro looks like the links in the cards below it. */
+	.hub-zone .hub-zone-intro a {
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+	}
+	.hub-zone .hub-zone-intro a:hover,
+	.hub-zone .hub-zone-intro a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
 	/* A section nested under another zone ({explore} with :level: 3). It sits closer to the
 	   zone above and steps its title down so the H2 stays the strongest heading. */
 	.hub-zone.hub-zone-nested {

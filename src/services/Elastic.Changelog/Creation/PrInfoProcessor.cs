@@ -15,6 +15,8 @@ namespace Elastic.Changelog.Creation;
 /// </summary>
 public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 {
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logger);
+
 	/// <summary>
 	/// Fetches PR information and derives changelog fields from it.
 	/// </summary>
@@ -43,7 +45,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 
 		// Check for label blockers using effective products (including label-derived ones)
-		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
+		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions))
 		{
 			return new PrProcessingResult { FetchFailed = false, ShouldSkip = true };
 		}
@@ -83,7 +85,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (products.Count == 0 && config.LabelToProducts != null)
 			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 
-		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
+		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions);
 		return (shouldSkip, prInfo);
 	}
 
@@ -241,8 +243,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl
+		string prUrl,
+		DecisionLog decisions
 	)
 	{
 		var createRules = config.Rules?.Create;
@@ -258,34 +260,26 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					// Product-specific rules override global rules
-					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+					if (ShouldSkipByCreateRules(prLabels, productRules, prUrl, decisions))
 						return true;
 				}
-				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+				else if (ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions))
 					return true;
 			}
 			return false;
 		}
 
 		// No product-specific rules - check global
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions);
 	}
 
-	internal static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext
-	)
+	internal static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
@@ -305,10 +299,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (matchingLabel != null)
 			{
-				collector.EmitHint(
-					string.Empty,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -324,11 +315,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitHint(
-					string.Empty,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}

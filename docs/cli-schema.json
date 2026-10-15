@@ -7009,6 +7009,14 @@
                 },
                 {
                   "role": "flag",
+                  "name": "strict",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Fail when a product is not onboarded. By default a product without a changelog.yml, a bundle profile,\nor a changelog entry pool is skipped with a warning. A product named with --products always fails.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
                   "name": "log-level",
                   "shortName": "l",
                   "type": "enum",

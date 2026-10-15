@@ -70,7 +70,7 @@ public class AuthSchemeTests
 	[Test]
 	public async Task ElasticsearchSearch_InheritsDocumentSchemes()
 	{
-		var specPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		File.Exists(specPath).Should().BeTrue($"Fixture missing: {specPath}");
 
 		var doc = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
