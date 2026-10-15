@@ -191,6 +191,52 @@ public class DecisionLogTests
 		logged.Should().OnlyHaveUniqueItems();
 	}
 
+	[Test]
+	public async Task Dispose_AnotherThreadIsStillLogging_WaitsForItToFinish()
+	{
+		using var logging = new ManualResetEventSlim();
+		using var release = new ManualResetEventSlim();
+		var logger = new BlockingLogger(logging, release);
+		var log = new DecisionLog(logger, maxItems: 1);
+
+		// The first decision fills the section, so this thread takes it and blocks inside the logger.
+		var recording = Task.Run(() => log.Record("entries", "pool", "#1"));
+		logging.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
+
+		var disposing = Task.Run(log.Dispose);
+		await Task.Delay(200);
+		disposing.IsCompleted.Should().BeFalse("the decision is taken from the section but not logged yet");
+
+		release.Set();
+		await disposing.WaitAsync(TimeSpan.FromSeconds(10));
+		await recording;
+		logger.Lines.Should().Equal("entries: pool #1");
+	}
+
+	private sealed class BlockingLogger(ManualResetEventSlim logging, ManualResetEventSlim release) : ILogger
+	{
+		private readonly System.Collections.Concurrent.ConcurrentQueue<string> _lines = new();
+
+		public IReadOnlyCollection<string> Lines => _lines;
+
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			LogLevel logLevel,
+			EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		)
+		{
+			logging.Set();
+			_ = release.Wait(TimeSpan.FromSeconds(10));
+			_lines.Enqueue(formatter(state, exception));
+		}
+	}
+
 	private sealed class ConcurrentListLogger : ILogger
 	{
 		private readonly System.Collections.Concurrent.ConcurrentQueue<string> _lines = new();

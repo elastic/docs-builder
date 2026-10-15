@@ -40,6 +40,7 @@ public sealed partial class DecisionLog(
 	private readonly TimeSpan _interval = interval ?? DefaultInterval;
 	private readonly TimeProvider _time = time ?? TimeProvider.System;
 	private readonly ConcurrentDictionary<string, Section> _sections = [];
+	private int _flushing;
 
 	private readonly record struct Decision(string Outcome, string? Reason, string Subject);
 
@@ -96,14 +97,35 @@ public sealed partial class DecisionLog(
 		}
 	}
 
-	/// <summary>Logs everything that is pending, the sections that started first coming first.</summary>
+	/// <summary>
+	/// Logs everything that is pending, the sections that started first coming first. It returns when every decision recorded
+	/// before the call is logged, including those another thread has taken from a section and is still logging.
+	/// </summary>
 	public void Flush()
 	{
 		foreach (var (name, buffer) in _sections.OrderBy(s => s.Value.FirstAt == 0 ? long.MaxValue : s.Value.FirstAt))
 			Flush(name, buffer);
+
+		var wait = new SpinWait();
+		while (Volatile.Read(ref _flushing) > 0)
+			wait.SpinOnce();
 	}
 
 	private void Flush(string section, Section buffer)
+	{
+		// Counted from before the first decision is taken until after the line is logged, so Flush can wait for it.
+		_ = Interlocked.Increment(ref _flushing);
+		try
+		{
+			FlushCore(section, buffer);
+		}
+		finally
+		{
+			_ = Interlocked.Decrement(ref _flushing);
+		}
+	}
+
+	private void FlushCore(string section, Section buffer)
 	{
 		var groups = new Dictionary<(string Outcome, string? Reason), List<string>>();
 		var drained = 0;
