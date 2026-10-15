@@ -145,10 +145,8 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decisions)
+public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, DecisionLog decisions)
 {
-	private const int MaxParallelPrFetches = 6;
-
 	/// <summary>
 	/// Resolves entries for every PR in <paramref name="resolution"/> against the candidate pool
 	/// <paramref name="candidates"/>. Never throws for per-PR failures; the report captures them.
@@ -169,13 +167,31 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
 
-		// Pull requests without a pool entry need their metadata. Each is one round trip, so they are fetched in
-		// parallel up front. Everything after that runs in range order, so the report and diagnostics stay stable.
-		var prInfos = await PrefetchPrInfosAsync(
-			resolution.PullRequests.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo))),
-			options,
-			ctx
-		);
+		// Pull requests without a pool entry need their metadata. It is read up front, in batches, and everything after
+		// that runs in range order, so the report and diagnostics stay stable.
+		var needSummary = resolution
+			.PullRequests
+			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
+			.Select(pr => pr.Number)
+			.ToList();
+		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
+		if (prSummaries is null)
+		{
+			// The provider has reported why. Listing every pull request as unreadable on top of that would only repeat it.
+			return new GitRangeEntryResolutionResult
+			{
+				Success = false,
+				Entries = [],
+				Report = new GitRangeBundleReport
+				{
+					StartRef = options.StartRef,
+					EndRef = options.EndRef,
+					TotalCommits = resolution.TotalCommits,
+					Rows = [],
+					CommitsWithoutPullRequest = resolution.CommitsWithoutPullRequest
+				}
+			};
+		}
 
 		foreach (var pr in resolution.PullRequests)
 		{
@@ -212,7 +228,13 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 				continue;
 			}
 
-			var (row, synthesized, failed) = SynthesizeFromPrMetadata(collector, pr, prInfos.GetValueOrDefault(pr.Url), config, options);
+			var (row, synthesized, failed) = SynthesizeFromPrMetadata(
+				collector,
+				pr,
+				prSummaries.GetValueOrDefault(pr.Number),
+				config,
+				options
+			);
 			rows.Add(row);
 			if (synthesized != null)
 				entries.Add(synthesized);
@@ -289,31 +311,6 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 		return candidate.Prs.Any(pr => ChangelogBundlingService.NormalizePrForComparison(pr, owner, repo) == expected);
 	}
 
-	private async Task<Dictionary<string, GitHubPrInfo?>> PrefetchPrInfosAsync(
-		IEnumerable<CommitRangePullRequest> pullRequests,
-		GitRangeEntryResolutionOptions options,
-		Cancel ctx
-	)
-	{
-		var urls = pullRequests.Select(pr => pr.Url).Distinct().ToList();
-		var infos = new GitHubPrInfo?[urls.Count];
-		using var gate = new SemaphoreSlim(MaxParallelPrFetches);
-		await Task.WhenAll(urls.Select(async (url, index) =>
-		{
-			await gate.WaitAsync(ctx).ConfigureAwait(false);
-			try
-			{
-				infos[index] = await prService.FetchPrInfoAsync(url, options.Owner, options.Repo, ctx).ConfigureAwait(false);
-			}
-			finally
-			{
-				_ = gate.Release();
-			}
-		})).ConfigureAwait(false);
-
-		return urls.Select((url, index) => (url, info: infos[index])).ToDictionary(x => x.url, x => x.info);
-	}
-
 	/// <summary>
 	/// Synthesizes an in-memory changelog entry from PR metadata — the same extraction path
 	/// <c>changelog add</c> uses: release-note text from the PR body as the description, labels
@@ -323,12 +320,12 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 	private (GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed) SynthesizeFromPrMetadata(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
-		GitHubPrInfo? prInfo,
+		PullRequestSummary? summary,
 		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options
 	)
 	{
-		if (prInfo == null || string.IsNullOrWhiteSpace(prInfo.Title))
+		if (summary == null || string.IsNullOrWhiteSpace(summary.Title))
 		{
 			collector.EmitWarning(
 				string.Empty,
@@ -338,7 +335,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 			return (Row(pr, GitRangePrSourceKind.Missing), null, false);
 		}
 
-		var labels = prInfo.Labels.ToArray();
+		var labels = summary.Labels.ToArray();
 		var labelProducts = config?.LabelToProducts != null ? PrInfoProcessor.MapLabelsToProducts(labels, config.LabelToProducts) : [];
 
 		if (config != null)
@@ -348,7 +345,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 		}
 
-		var title = prInfo.Title;
+		var title = summary.Title;
 		if (config?.Extract.StripTitlePrefix == true)
 			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
@@ -376,7 +373,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 		string? description = null;
 		if (config?.Extract.ReleaseNotes != false)
 		{
-			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo.Body);
+			var extraction = summary.ReleaseNote;
 			description = extraction.Content;
 			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
 		}
@@ -390,7 +387,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, DecisionLog decis
 		var highlight = config?.HighlightLabels is { Count: > 0 } highlightLabels
 			&& labels.Any(label => highlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase)) ? true : (bool?)null;
 
-		var issues = config?.Extract.Issues != false && prInfo.LinkedIssues.Count > 0 ? prInfo.LinkedIssues.ToList() : null;
+		var issues = config?.Extract.Issues != false && summary.LinkedIssues.Count > 0 ? summary.LinkedIssues.ToList() : null;
 
 		var entryData = new ChangelogEntry
 		{
