@@ -70,7 +70,8 @@ public partial class ApiPropertyTreeBuilder(
 		ApplicableTo? AppliesTo,
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null,
-		string? OptionalRoute = null
+		string? OptionalRoute = null,
+		string? Example = null
 	);
 
 	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
@@ -120,7 +121,8 @@ public partial class ApiPropertyTreeBuilder(
 				Description = description,
 				IsDeprecated = parameter.Deprecated,
 				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
-				OptionalRoute = routeWithout
+				OptionalRoute = routeWithout,
+				Example = ParameterExample.Pick(parameter, _analyzer.ResolveSchema(schema) ?? schema, _analyzer.GetEnumValues(schema))
 			};
 			items.Add(BuildProperty(row, scope));
 		}
@@ -224,7 +226,7 @@ public partial class ApiPropertyTreeBuilder(
 		return constraints;
 	}
 
-	private static string? Format(IOpenApiSchema schema)
+	internal static string? Format(IOpenApiSchema schema)
 	{
 		if (!string.IsNullOrWhiteSpace(schema.Format))
 			return schema.Format;
@@ -305,6 +307,7 @@ public partial class ApiPropertyTreeBuilder(
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			OptionalRoute = row.OptionalRoute,
+			Example = row.Example,
 			Requires = DescribeRequiredAlternatives(propSchema),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.

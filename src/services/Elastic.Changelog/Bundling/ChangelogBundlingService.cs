@@ -28,6 +28,12 @@ namespace Elastic.Changelog.Bundling;
 public record BundleChangelogsArguments
 {
 	/// <summary>
+	/// Called with a message when the CDN has no entry pool for the repository. When set, the bundle is skipped and
+	/// the run still succeeds; when <c>null</c> a missing pool is an error. Set for commit-range bundles only.
+	/// </summary>
+	public Action<string>? OnPoolMissing { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -206,7 +212,9 @@ public partial class ChangelogBundlingService(
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	IGitHubBackportService? backportService = null,
+	DecisionLog? decisions = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -215,6 +223,8 @@ public partial class ChangelogBundlingService(
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
+	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -986,16 +996,50 @@ public partial class ChangelogBundlingService(
 		if (resolution == null)
 			return false;
 
+		var backportReport = string.Empty;
+		if (config?.Bundle?.Backports is { Labels.Count: > 0 } backports)
+		{
+			var trace = await BackportTracer.TraceAsync(
+				collector,
+				_backportService,
+				(owner, sourcing.Repo),
+				backports.Labels,
+				resolution,
+				ctx
+			);
+			if (trace == null)
+				return false;
+
+			resolution = trace.Resolution;
+			backportReport = trace.ToMarkdown();
+		}
+
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
+		// A repository without an entry pool is not onboarded. The caller may ask to skip it instead of failing.
+		var poolMissing = false;
+		var notifyPoolMissing = input.OnPoolMissing;
+		Action<string>? onPoolMissing = null;
+		if (notifyPoolMissing is not null)
+		{
+			onPoolMissing = message =>
+			{
+				poolMissing = true;
+				notifyPoolMissing(message);
+			};
+		}
+
 		var candidates = sourcing.UseCdn
-			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
+			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, onPoolMissing, ctx)
 			: await ReadLocalEntriesAsync(collector, directory, outputPath, ctx);
+		if (poolMissing)
+			return true;
+
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _logger);
+		var resolver = new GitRangeEntryResolver(_prService, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -1013,8 +1057,20 @@ public partial class ChangelogBundlingService(
 			ctx
 		);
 
-		var report = result.Report.ToMarkdown();
-		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
+		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
+		// The full report has a row per pull request, hundreds for a patch and thousands for a minor. It is the product of a
+		// dry run. A normal run logs a summary, and the report at debug level.
+		var sources = result.Report.Rows.GroupBy(r => r.Source).ToDictionary(g => g.Key, g => g.Count());
+		_logger.LogInformation(
+			"Commit-range bundle: {Commits} commit(s), {PullRequests} pull request(s): {Pool} from the pool, {Inferred} inferred, {Excluded} excluded, {Missing} missing",
+			result.Report.TotalCommits,
+			result.Report.Rows.Count,
+			sources.GetValueOrDefault(GitRangePrSourceKind.Pool),
+			sources.GetValueOrDefault(GitRangePrSourceKind.InferredPrBody) + sources.GetValueOrDefault(GitRangePrSourceKind.InferredTitle),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Excluded) + sources.GetValueOrDefault(GitRangePrSourceKind.ExcludedBaseBranch),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Missing)
+		);
+		_logger.LogDebug("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)
 		{
@@ -1043,6 +1099,12 @@ public partial class ChangelogBundlingService(
 
 		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 	}
+
+	/// <summary>
+	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
+	/// hundreds. Other runs keep the warning.
+	/// </summary>
+	private void ExcludeFromBundle(MatchedChangelogFile entry, string why) => _decisions.Record("bundle", "exclude", entry.FileName, why);
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> ReadLocalEntriesAsync(
@@ -1501,6 +1563,7 @@ public partial class ChangelogBundlingService(
 		string? org,
 		string? repo,
 		string? branch,
+		Action<string>? onPoolMissing,
 		Cancel ctx
 	)
 	{
@@ -1542,7 +1605,8 @@ public partial class ChangelogBundlingService(
 				collector.EmitError(string.Empty, msg);
 			},
 			msg => collector.EmitWarning(string.Empty, msg),
-			ctx
+			ctx,
+			onPoolMissing
 		);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
@@ -2229,7 +2293,7 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules
@@ -2260,10 +2324,7 @@ public partial class ChangelogBundlingService(
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-					);
+					ExcludeFromBundle(entry, "global type/area filter");
 					continue;
 				}
 
@@ -2273,19 +2334,13 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter)."
-				);
+				ExcludeFromBundle(entry, $"global product filter, {productReason}");
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-				);
+				ExcludeFromBundle(entry, "global type/area filter");
 				continue;
 			}
 
@@ -2295,7 +2350,7 @@ public partial class ChangelogBundlingService(
 		return filtered;
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
@@ -2334,18 +2389,12 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared)."
-					);
+					ExcludeFromBundle(entry, "no products declared");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(
-						entry.FilePath,
-						$"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}')."
-					);
+					ExcludeFromBundle(entry, $"disjoint from rule context '{ruleContextProduct}'");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
@@ -2376,20 +2425,14 @@ public partial class ChangelogBundlingService(
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter)."
-						);
+						ExcludeFromBundle(entry, $"per-product filter, {productReason}");
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter)."
-						);
+						ExcludeFromBundle(entry, "per-product type/area filter");
 						continue;
 					}
 					break;

@@ -348,6 +348,132 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("boom"));
 	}
 
+	[Test]
+	public async Task ResolvePullRequests_PullRequestWithManyLabels_ReadsEveryLabelPage()
+	{
+		var sha1 = Sha(1);
+		const string firstPage =
+			"""
+			{ "number": 11, "url": "https://github.com/elastic/widget/pull/11", "title": "Fix (#5)", "merged": true, "baseRefName": "main",
+			  "mergeCommit": { "oid": "0000000000000000000000000000000000000001" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
+			  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } }
+			""";
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			return query.Contains("cursor-1", StringComparison.Ordinal)
+				? """{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "backport" } ] } } } } }"""
+				: GraphQlJson([(sha1, [firstPage])]);
+		});
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
+	}
+
+	private const string LabelFirstPage =
+		"""
+		{ "number": 11, "url": "https://github.com/elastic/widget/pull/11", "title": "Fix (#5)", "merged": true, "baseRefName": "main",
+		  "mergeCommit": { "oid": "0000000000000000000000000000000000000001" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
+		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } }
+		""";
+
+	private const string LabelLastPage =
+		"""{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "backport" } ] } } } } }""";
+
+	/// <summary>A range of one pull request whose first label page is truncated, and whose later page is served by <paramref name="laterPage"/>.</summary>
+	private async Task<CommitRangeResolution?> ResolveWithLabelPageAsync(Func<string> laterPage)
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			req => req.Content!.ReadAsStringAsync().GetAwaiter().GetResult().Contains("cursor-1", StringComparison.Ordinal)
+				? laterPage()
+				: GraphQlJson([(sha1, [LabelFirstPage])])
+		);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		return await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_LabelPageBodyEmptyEveryTime_IsAnErrorNotACrash()
+	{
+		var result = await ResolveWithLabelPageAsync(() => string.Empty);
+
+		result.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("labels of elastic/widget#11") && d.Message.Contains(
+					"not valid JSON"
+				)
+			);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_LabelPageBodyMalformed_IsAnErrorNotACrash()
+	{
+		var result = await ResolveWithLabelPageAsync(() => "this is not json");
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not valid JSON"));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_LabelPageBodyEmptyOnce_IsRetriedAndReadsEveryLabel()
+	{
+		var calls = 0;
+
+		var result = await ResolveWithLabelPageAsync(() => ++calls == 1 ? string.Empty : LabelLastPage);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GraphQlBodyEmptyEveryTime_IsAnErrorNotACrash()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(_ => CompareJson(1, [sha1]), _ => string.Empty);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("not valid JSON"));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GraphQlBodyEmptyOnce_IsRetriedAndSucceeds()
+	{
+		var sha1 = Sha(1);
+		var calls = 0;
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => ++calls == 1 ? string.Empty : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])])
+		);
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Select(p => p.Number).Should().Equal(11);
+		Collector.Errors.Should().Be(0);
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 

@@ -307,6 +307,8 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
+A parameter row shows an **Example** line when its `example`, its `examples` or its schema's `example` says something the type doesn't. The line is left out when the example is a boolean (including `"true"` as text), a bare number, a value the **Values** row already lists, the default, or longer than 60 characters. The picked example is the first of `example`, `examples` and the schema's `example` that passes those checks.
+
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 
 1. The variant schema's `title`.

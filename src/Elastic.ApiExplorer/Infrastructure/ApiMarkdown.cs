@@ -118,7 +118,7 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(markdown))
 			return string.Empty;
 
-		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
+		var escaped = MustachePattern().Replace(markdown, match => ApiCommonMark.CodeSpan(match.Value));
 		return RewriteIntraApiLinks(escaped, apiBaseUrl);
 	}
 

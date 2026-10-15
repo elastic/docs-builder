@@ -4,7 +4,6 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
-using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog;
 
@@ -13,22 +12,16 @@ public sealed record ReleaseNoteExtractionResult(string? Content, bool WasTrunca
 
 internal static class ReleaseNoteExtractionDiagnostics
 {
-	public static void EmitHint(IDiagnosticsCollector collector, string source, int prNumber, ReleaseNoteExtractionResult extraction)
+	/// <summary>
+	/// The release note section is optional, so a pull request without one, or with more than a paragraph, is a decision and not
+	/// a diagnostic.
+	/// </summary>
+	public static void Record(DecisionLog decisions, int prNumber, ReleaseNoteExtractionResult extraction)
 	{
 		if (extraction.Content == null)
-		{
-			collector.EmitHint(
-				source,
-				$"No release note description was found for PR #{prNumber}. Add a 'Release note' section to the PR body if the entry needs more detail than its title."
-			);
-		}
+			decisions.Record("notes", "no release note", $"#{prNumber}");
 		else if (extraction.WasTruncated)
-		{
-			collector.EmitHint(
-				source,
-				$"The release note description for PR #{prNumber} contains content after the first paragraph or heading. Only the first paragraph was used."
-			);
-		}
+			decisions.Record("notes", "first paragraph only", $"#{prNumber}");
 	}
 }
 

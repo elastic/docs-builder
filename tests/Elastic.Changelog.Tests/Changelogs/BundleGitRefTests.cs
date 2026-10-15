@@ -87,7 +87,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "")
+	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "", string bundleExtra = "")
 	{
 		// language=yaml
 		var configContent = """
@@ -101,13 +101,14 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			  output_directory: PLACEHOLDER
 			  repo: widget
 			  owner: elastic
+			  BUNDLE_EXTRA
 			  profiles:
 			    promotion:
 			      output_products: "cloud-hosted {version}"
-			""".Replace(
-			"PLACEHOLDER",
-			outputDir
-		).Replace("PIVOT_PRODUCTS", pivotProducts);
+			"""
+			.Replace("PLACEHOLDER", outputDir)
+			.Replace("PIVOT_PRODUCTS", pivotProducts)
+			.Replace("BUNDLE_EXTRA", bundleExtra.Length > 0 ? bundleExtra : "# no extra settings");
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
@@ -118,8 +119,20 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	private ChangelogBundlingService Service(
 		StubHandler handler,
 		IGitHubCommitRangeService rangeService,
-		IGitHubPrService? prService = null
-	) => new(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler), prService ?? A.Fake<IGitHubPrService>(), rangeService);
+		IGitHubPrService? prService = null,
+		IGitHubBackportService? backportService = null,
+		DecisionLog? decisions = null
+	) =>
+		new(
+			LoggerFactory,
+			FileSystem,
+			ConfigurationContext,
+			Fetcher(handler),
+			prService ?? A.Fake<IGitHubPrService>(),
+			rangeService,
+			backportService: backportService,
+			decisions: decisions
+		);
 
 	[Test]
 	public async Task ProfileMode_PoolFirstWithInferredFallback_WritesBundleWithGitRef()
@@ -179,10 +192,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
 		bundle.Should().Contain("name: 300.yaml");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Only the first paragraph was used", StringComparison.Ordinal));
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 
 		// The published endpoint ref is recorded as bundle metadata.
 		bundle.Should().Contain($"git_ref: {EndRef}");
@@ -192,6 +202,156 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("pull/400") && d.Message.Contains("could not be fetched"));
+	}
+
+	[Test]
+	public async Task ProfileMode_BackportLabelConfigured_BundlesTheOriginalInsteadOfTheBackport()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, bundleExtra: "backports:\n    labels: [backport]");
+
+		// PR 300 is a backport of PR 100, which has a pool entry. The backport itself has none, so
+		// without tracing it would be synthesized from its own metadata.
+		var range = A.Fake<IGitHubCommitRangeService>();
+		_ = A.CallTo(
+			() => range.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = 1,
+			PullRequests = [RangePr(300) with { Labels = ["backport"] }],
+			CommitsWithoutPullRequest = []
+		});
+		var backports = A.Fake<IGitHubBackportService>();
+		_ = A.CallTo(
+			() => backports.ResolveRootsAsync(A<IDiagnosticsCollector>._, "elastic", "widget", A<IReadOnlyCollection<int>>._, A<Cancel>._)
+		).Returns(
+			(IReadOnlyDictionary<int, BackportRoots?>?)new Dictionary<int, BackportRoots?>
+			{
+				[300] = new BackportRoots([100], BackportRootRoute.Title, RoutesDisagree: false)
+			}
+		);
+		var prService = A.Fake<IGitHubPrService>();
+
+		var service = Service(PoolHandler(), range, prService, backports);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+		bundle.Should().Contain("Faster hosted search");
+		bundle.Should().NotContain("300");
+		A.CallTo(prService).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task ProfileMode_NoBackportSetting_DoesNotTraceLabeledPullRequests()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var range = A.Fake<IGitHubCommitRangeService>();
+		_ = A.CallTo(
+			() => range.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = 1,
+			PullRequests = [RangePr(100) with { Labels = ["backport"] }],
+			CommitsWithoutPullRequest = []
+		});
+		var backports = A.Fake<IGitHubBackportService>();
+
+		var service = Service(PoolHandler(), range, backportService: backports);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		A.CallTo(backports).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task ProfileMode_WithADecisionLog_RecordsThePerPullRequestDecisionsInsteadOfHints()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/300", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo
+		{
+			Title = "Sharper autocomplete",
+			Body = "## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Labels = [">feature"],
+			LinkedIssues = []
+		});
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/301", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo { Title = "Quieter logs", Body = "No release note section.", Labels = [">feature"], LinkedIssues = [] });
+
+		var lines = new List<string>();
+		using var decisions = new DecisionLog(new LineLogger(lines));
+		var service = Service(PoolHandler(), RangeService(100, 200, 300, 301), prService, decisions: decisions);
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+		decisions.Flush();
+
+		result.Should().BeTrue();
+		lines.Should().Contain("entries: pool #100 #200 · inferred (PR body) #300 · inferred (title) #301");
+		lines.Should().Contain("notes: first paragraph only #300 · no release note #301");
+		Collector
+			.Diagnostics
+			.Should()
+			.NotContain(d => d.Message.Contains("No release note description") || d.Message.Contains("Only the first paragraph"));
+	}
+
+	private sealed class LineLogger(List<string> lines) : Microsoft.Extensions.Logging.ILogger
+	{
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			Microsoft.Extensions.Logging.LogLevel logLevel,
+			Microsoft.Extensions.Logging.EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		) => lines.Add(formatter(state, exception));
 	}
 
 	[Test]
@@ -438,12 +598,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Unlabeled change");
 		bundle.Should().Contain("type: other");
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
-			);
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
 	[Test]

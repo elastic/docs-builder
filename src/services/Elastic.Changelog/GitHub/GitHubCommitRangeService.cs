@@ -121,7 +121,16 @@ public sealed partial class GitHubCommitRangeService(
 			}
 
 			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-			var compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
+			GitHubCompareResponse? compare;
+			try
+			{
+				compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
+			}
+			catch (JsonException)
+			{
+				compare = null;
+			}
+
 			if (compare == null)
 			{
 				collector.EmitError(string.Empty, "Failed to deserialize GitHub compare response.");
@@ -203,20 +212,28 @@ public sealed partial class GitHubCommitRangeService(
 			return null;
 		}
 
-		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
+		var prsByNumber = new Dictionary<int, (string Url, IReadOnlyList<string> Labels, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
 		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
-		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
-		{
-			var batch = commits.Skip(offset).Take(GraphQlBatchSize).ToList();
-			var byAlias = await FetchAssociatedPullRequestsBatchAsync(collector, args, batch, ctx).ConfigureAwait(false);
-			if (byAlias == null)
-				return null;
+		var batches = commits.Chunk(GraphQlBatchSize).ToList();
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, token),
+			byAlias => byAlias == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
 
-			for (var i = 0; i < batch.Count; i++)
+		for (var index = 0; index < batches.Count; index++)
+		{
+			var batch = batches[index];
+			var byAlias = responses[index]!;
+
+			for (var i = 0; i < batch.Length; i++)
 			{
 				var sha = batch[i];
 				_ = byAlias.TryGetValue($"c{i}", out var commitNode);
@@ -242,14 +259,25 @@ public sealed partial class GitHubCommitRangeService(
 					existing.Shas.Add(sha);
 				else
 				{
-					prsByNumber[selected.Number] = (selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", [sha]);
+					var labels = await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
+					if (labels == null)
+						return null;
+
+					prsByNumber[selected.Number] =
+						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", labels, [sha]);
 					orderedPrNumbers.Add(selected.Number);
 				}
 			}
 		}
 
 		var pullRequests = orderedPrNumbers.Select(
-			number => new CommitRangePullRequest { Number = number, Url = prsByNumber[number].Url, CommitShas = prsByNumber[number].Shas }
+			number => new CommitRangePullRequest
+			{
+				Number = number,
+				Url = prsByNumber[number].Url,
+				CommitShas = prsByNumber[number].Shas,
+				Labels = prsByNumber[number].Labels
+			}
 		).ToList();
 
 		_logger.LogInformation(
@@ -365,7 +393,19 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-		var parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlResponse);
+		GraphQlResponse? parsed;
+		try
+		{
+			parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlResponse);
+		}
+		catch (JsonException ex)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL request for {args.Owner}/{args.Repo} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+			);
+			return null;
+		}
 
 		if (parsed?.Errors is { Count: > 0 })
 		{
@@ -387,6 +427,58 @@ public sealed partial class GitHubCommitRangeService(
 	}
 
 	/// <summary>
+	/// Returns every label of the pull request. The batch query returns the first page; a pull request with more
+	/// labels is read page by page, because a missing label would hide a backport.
+	/// </summary>
+	private async Task<List<string>?> CompleteLabelsAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		GraphQlPullRequest pr,
+		Cancel ctx
+	)
+	{
+		var labels = pr.Labels?.Nodes?.Select(l => l?.Name).OfType<string>().ToList() ?? [];
+		var page = pr.Labels?.PageInfo;
+		while (page is { HasNextPage: true, EndCursor: { } cursor })
+		{
+			var query = $"query {{ repository(owner: \"{args.Owner}\", name: \"{args.Repo}\") {{ pullRequest(number: {pr.Number}) {{ "
+				+ $"labels(first: 100, after: \"{cursor}\") {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }} }} }}";
+			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
+
+			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+			GraphQlLabelPageResponse? parsed = null;
+			if (response.IsSuccessStatusCode)
+			{
+				var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+				try
+				{
+					parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlLabelPageResponse);
+				}
+				catch (JsonException ex)
+				{
+					collector.EmitError(
+						string.Empty,
+						$"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+					);
+					return null;
+				}
+			}
+
+			var next = parsed?.Errors is { Count: > 0 } ? null : parsed?.Data?.Repository?.PullRequest?.Labels;
+			if (next == null)
+			{
+				collector.EmitError(string.Empty, $"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} failed.");
+				return null;
+			}
+
+			labels.AddRange(next.Nodes?.Select(l => l?.Name).OfType<string>() ?? []);
+			page = next.PageInfo;
+		}
+
+		return labels;
+	}
+
+	/// <summary>
 	/// Builds one aliased GraphQL query resolving <c>associatedPullRequests</c> for every sha in
 	/// the batch. Shas are validated hex and owner/repo validated identifiers before interpolation.
 	/// </summary>
@@ -405,7 +497,9 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }")
+				.Append(
+					" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 30) { pageInfo { hasNextPage endCursor } nodes { name } }"
+				)
 				.Append(" } } } }");
 		}
 
@@ -481,6 +575,9 @@ public sealed partial class GitHubCommitRangeService(
 		[JsonPropertyName("url")]
 		public string? Url { get; set; }
 
+		[JsonPropertyName("labels")]
+		public GraphQlLabelConnection? Labels { get; set; }
+
 		[JsonPropertyName("merged")]
 		public bool Merged { get; set; }
 
@@ -492,6 +589,51 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("baseRepository")]
 		public GraphQlRepositoryRef? BaseRepository { get; set; }
+	}
+
+	private sealed class GraphQlPageInfo
+	{
+		[JsonPropertyName("hasNextPage")]
+		public bool HasNextPage { get; set; }
+
+		[JsonPropertyName("endCursor")]
+		public string? EndCursor { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageResponse
+	{
+		[JsonPropertyName("data")]
+		public GraphQlLabelPageData? Data { get; set; }
+
+		[JsonPropertyName("errors")]
+		public List<GraphQlError>? Errors { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageData
+	{
+		[JsonPropertyName("repository")]
+		public GraphQlLabelPageRepository? Repository { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageRepository
+	{
+		[JsonPropertyName("pullRequest")]
+		public GraphQlPullRequest? PullRequest { get; set; }
+	}
+
+	private sealed class GraphQlLabelConnection
+	{
+		[JsonPropertyName("pageInfo")]
+		public GraphQlPageInfo? PageInfo { get; set; }
+
+		[JsonPropertyName("nodes")]
+		public List<GraphQlLabel?>? Nodes { get; set; }
+	}
+
+	private sealed class GraphQlLabel
+	{
+		[JsonPropertyName("name")]
+		public string? Name { get; set; }
 	}
 
 	private sealed class GraphQlCommitRef
@@ -509,5 +651,6 @@ public sealed partial class GitHubCommitRangeService(
 	[JsonSerializable(typeof(GitHubCompareResponse))]
 	[JsonSerializable(typeof(GraphQlRequest))]
 	[JsonSerializable(typeof(GraphQlResponse))]
+	[JsonSerializable(typeof(GraphQlLabelPageResponse))]
 	private sealed partial class CommitRangeJsonContext : JsonSerializerContext;
 }

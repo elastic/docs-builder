@@ -46,7 +46,7 @@ public partial class HeroBlock(DirectiveBlockParser parser, ParserContext contex
 		Icon = Prop("icon");
 		IconSvg = ProductIcons.Get(Icon);
 		Title = Prop("title");
-		Description = Prop("description");
+		Description = DirectiveLinkValidator.ResolveMarkdownLinks(Prop("description"), this, context);
 		(PrimaryActionLabel, PrimaryActionUrl) = ParseAction(Prop("primary-action"), context);
 		(SecondaryActionLabel, SecondaryActionUrl) = ParseAction(Prop("secondary-action"), context);
 		(TertiaryActionLabel, TertiaryActionUrl) = ParseAction(Prop("tertiary-action"), context);
