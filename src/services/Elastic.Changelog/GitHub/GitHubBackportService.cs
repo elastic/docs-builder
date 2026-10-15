@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +19,11 @@ namespace Elastic.Changelog.GitHub;
 /// default branch of the same repository, which drops issue numbers and references to other repositories.
 /// The reading lives in <see cref="BackportReferences"/>. Everything here is batched GraphQL.
 /// </summary>
-public sealed partial class GitHubBackportService(ILoggerFactory logFactory, GitHubApiTransport? transport = null) : IGitHubBackportService
+public sealed partial class GitHubBackportService(
+	ILoggerFactory logFactory,
+	GitHubApiTransport? transport = null,
+	ChangelogCache? cache = null
+) : IGitHubBackportService
 {
 	private const int PullRequestBatchSize = 20;
 	private const int CommitBatchSize = 30;
@@ -40,12 +45,30 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		string owner,
 		string repo,
 		IReadOnlyCollection<int> backportNumbers,
+		IReadOnlyDictionary<int, DateTimeOffset> updatedAt,
 		Cancel ctx
 	)
 	{
 		var result = backportNumbers.ToDictionary(n => n, _ => (BackportRoots?)null);
 		if (backportNumbers.Count == 0)
 			return result;
+
+		// Where a backport came from is read from its text and its commits, which do not change until the backport does.
+		var store = cache?.Backports(owner, repo);
+		var toResolve = new List<int>();
+		foreach (var number in backportNumbers)
+		{
+			if (store is not null && updatedAt.TryGetValue(number, out var at) && store.TryGet(number, at, out var known))
+				result[number] = known.Roots;
+			else
+				toResolve.Add(number);
+		}
+
+		if (toResolve.Count == 0)
+		{
+			_logger.LogInformation("Traced {Total} backport(s) in {Owner}/{Repo} from the cache", result.Count, owner, repo);
+			return result;
+		}
 
 		if (string.IsNullOrWhiteSpace(_transport.ResolveToken()))
 		{
@@ -67,7 +90,7 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 		if (defaultBranch == null)
 			return null;
 
-		var pullRequests = await FetchPullRequestsAsync(collector, owner, repo, [.. backportNumbers.Order()], ctx).ConfigureAwait(false);
+		var pullRequests = await FetchPullRequestsAsync(collector, owner, repo, [.. toResolve.Order()], ctx).ConfigureAwait(false);
 		if (pullRequests == null)
 			return null;
 
@@ -106,11 +129,22 @@ public sealed partial class GitHubBackportService(ILoggerFactory logFactory, Git
 			);
 		}
 
+		if (store is not null)
+		{
+			// A backport that could not be read has no answer to keep. One that was read and has no original does: the same text finds none again.
+			foreach (var number in candidates.Keys)
+			{
+				if (updatedAt.TryGetValue(number, out var at))
+					store.Set(number, at, new CachedBackport(result[number]));
+			}
+		}
+
 		_logger.LogInformation(
-			"Traced {Resolved} of {Total} backport(s) in {Repo} to their original pull request",
+			"Traced {Resolved} of {Total} backport(s) in {Repo} to their original pull request ({Cached} from the cache)",
 			result.Values.Count(r => r != null),
 			result.Count,
-			repoName
+			repoName,
+			result.Count - toResolve.Count
 		);
 		return result;
 	}

@@ -238,7 +238,7 @@ public partial class ChangelogBundlingService(
 			: new GraphQlPullRequestSummaryProvider(logFactory, cache: cache));
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
 		?? new GitHubCommitRangeService(logFactory, cache: cache);
-	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory, cache: cache);
 	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)

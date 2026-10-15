@@ -224,7 +224,14 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		});
 		var backports = A.Fake<IGitHubBackportService>();
 		_ = A.CallTo(
-			() => backports.ResolveRootsAsync(A<IDiagnosticsCollector>._, "elastic", "widget", A<IReadOnlyCollection<int>>._, A<Cancel>._)
+			() => backports.ResolveRootsAsync(
+				A<IDiagnosticsCollector>._,
+				"elastic",
+				"widget",
+				A<IReadOnlyCollection<int>>._,
+				A<IReadOnlyDictionary<int, DateTimeOffset>>._,
+				A<Cancel>._
+			)
 		).Returns(
 			(IReadOnlyDictionary<int, BackportRoots?>?)new Dictionary<int, BackportRoots?>
 			{
