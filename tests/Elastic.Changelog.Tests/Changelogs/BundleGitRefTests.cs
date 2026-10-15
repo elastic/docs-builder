@@ -701,6 +701,45 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task InferredEntry_Products_KeepEveryLabelSpecOfADefaultProduct()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			"  products:\n    \"elasticsearch 9.2.0 ga\": stateful-92\n    \"elasticsearch 9.3.0 ga\": stateful-93",
+			topLevel: DefaultProductsAndRules
+		);
+		configPath = await RewriteProfileProduct(configPath, "elasticsearch");
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Faster entity resolution",
+			Body = "## Release Note\nEntity resolution runs faster.",
+			Labels = [">feature", "stateful-92", "stateful-93"],
+			LinkedIssues = []
+		});
+		var result = await Service(PoolHandler(), RangeService(300), prService).BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().BeTrue();
+		var file = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
+		var bundle = (await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken)).Replace("\r\n", "\n");
+		var entry = bundle[bundle.IndexOf("  products:\n", StringComparison.Ordinal)..];
+		entry.Should().Contain("9.2.0").And.Contain("9.3.0");
+	}
+
+	[Test]
 	public async Task ProfileMode_EveryEntryDroppedByTheBundleRules_SucceedsWithoutWritingABundle()
 	{
 		var (result, bundle) = await BundleSinglePr(["stateful"], "cloud-serverless");
