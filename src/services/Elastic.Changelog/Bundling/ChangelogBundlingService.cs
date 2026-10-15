@@ -5,6 +5,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Utilities;
@@ -215,7 +216,8 @@ public partial class ChangelogBundlingService(
 	IEnvironmentVariables? env = null,
 	IGitHubBackportService? backportService = null,
 	DecisionLog? decisions = null,
-	IPullRequestSummaryProvider? summaries = null
+	IPullRequestSummaryProvider? summaries = null,
+	ChangelogCache? cache = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -227,7 +229,8 @@ public partial class ChangelogBundlingService(
 	// Otherwise the pull requests of a range are read in batches.
 	private readonly IPullRequestSummaryProvider _summaries = summaries
 		?? (prService is not null ? new RestPullRequestSummaryProvider(prService) : new GraphQlPullRequestSummaryProvider(logFactory));
-	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
+		?? new GitHubCommitRangeService(logFactory, cache: cache);
 	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
 	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null

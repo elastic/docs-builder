@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -20,11 +22,13 @@ namespace Elastic.Changelog.GitHub;
 /// </summary>
 public sealed partial class GitHubCommitRangeService(
 	ILoggerFactory logFactory,
-	GitHubApiTransport? transport = null
+	GitHubApiTransport? transport = null,
+	ChangelogCache? cache = null
 ) : IGitHubCommitRangeService
 {
 	private const int ComparePageSize = 100;
 	private const int GraphQlBatchSize = 25;
+	private const int PullRequestDetailBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
@@ -212,73 +216,64 @@ public sealed partial class GitHubCommitRangeService(
 			return null;
 		}
 
-		var prsByNumber = new Dictionary<int, (string Url, IReadOnlyList<string> Labels, List<string> Shas)>();
+		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
 		var excludedByBase = new Dictionary<int, CommitRangeExcludedPullRequest>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
-		var batches = commits.Chunk(GraphQlBatchSize).ToList();
-		var responses = await BatchRunner.RunAsync(
-			batches,
-			(batch, token) => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, token),
-			byAlias => byAlias == null,
-			ctx
-		).ConfigureAwait(false);
-		if (responses == null)
+		var nodes = await ResolveCommitNodesAsync(collector, args, commits, repoFullName, ctx).ConfigureAwait(false);
+		if (nodes is null)
 			return null;
 
-		for (var index = 0; index < batches.Count; index++)
+		foreach (var sha in commits)
 		{
-			var batch = batches[index];
-			var byAlias = responses[index]!;
-
-			for (var i = 0; i < batch.Length; i++)
+			_ = nodes.TryGetValue(sha, out var commitNode);
+			var selected = SelectPullRequest(
+				collector,
+				sha,
+				commitNode,
+				repoFullName,
+				args.BaseRef,
+				excludedByBase,
+				out var onlyExcludedByBase
+			);
+			if (selected == null)
 			{
-				var sha = batch[i];
-				_ = byAlias.TryGetValue($"c{i}", out var commitNode);
-				var selected = SelectPullRequest(
-					collector,
-					sha,
-					commitNode,
-					repoFullName,
-					args.BaseRef,
-					excludedByBase,
-					out var onlyExcludedByBase
-				);
-				if (selected == null)
-				{
-					// A commit whose merged PRs were all excluded by base branch is already reported as
-					// excluded; only a commit with no merged PR at all is "without an associated PR".
-					if (!onlyExcludedByBase)
-						commitsWithoutPr.Add(sha);
-					continue;
-				}
+				// A commit whose merged PRs were all excluded by base branch is already reported as
+				// excluded; only a commit with no merged PR at all is "without an associated PR".
+				if (!onlyExcludedByBase)
+					commitsWithoutPr.Add(sha);
+				continue;
+			}
 
-				if (prsByNumber.TryGetValue(selected.Number, out var existing))
-					existing.Shas.Add(sha);
-				else
-				{
-					var labels = await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
-					if (labels == null)
-						return null;
-
-					prsByNumber[selected.Number] =
-						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", labels, [sha]);
-					orderedPrNumbers.Add(selected.Number);
-				}
+			if (prsByNumber.TryGetValue(selected.Number, out var existing))
+				existing.Shas.Add(sha);
+			else
+			{
+				prsByNumber[selected.Number] = (selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", [sha]);
+				orderedPrNumbers.Add(selected.Number);
 			}
 		}
 
-		var pullRequests = orderedPrNumbers.Select(
-			number => new CommitRangePullRequest
+		// Titles and labels change after a merge, so they are read on every run, for the pull requests of the range only.
+		var details = await FetchPullRequestDetailsAsync(collector, args, orderedPrNumbers, ctx).ConfigureAwait(false);
+		if (details is null)
+			return null;
+
+		var pullRequests = orderedPrNumbers.Select(number =>
+		{
+			var detail = details.GetValueOrDefault(number);
+			return new CommitRangePullRequest
 			{
 				Number = number,
 				Url = prsByNumber[number].Url,
 				CommitShas = prsByNumber[number].Shas,
-				Labels = prsByNumber[number].Labels
-			}
-		).ToList();
+				Title = detail?.Title,
+				Labels = detail?.Labels ?? [],
+				UpdatedAt = detail?.UpdatedAt
+			};
+		}).ToList();
 
 		_logger.LogInformation(
 			"Resolved {PrCount} pull request(s) from {CommitCount} commit(s) in {Owner}/{Repo} {Start}...{End} ({NoPrCount} commit(s) without an associated PR)",
@@ -370,6 +365,201 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		return candidates[0];
+	}
+
+	/// <summary>
+	/// The associated pull requests of every commit. What an earlier run learned comes from the cache, and only the commits it has
+	/// not seen are asked of GitHub, which is where a long range spends its time. A commit with a merged pull request is
+	/// remembered, because that fact does not change. One with none is asked again next time: GitHub may not have linked it yet.
+	/// </summary>
+	private async Task<Dictionary<string, GraphQlCommit?>?> ResolveCommitNodesAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		IReadOnlyList<string> commits,
+		string repoFullName,
+		Cancel ctx
+	)
+	{
+		var store = cache?.Commits(args.Owner, args.Repo);
+		var nodes = new Dictionary<string, GraphQlCommit?>(StringComparer.Ordinal);
+		var uncached = new List<string>();
+		foreach (var sha in commits)
+		{
+			if (store is not null && store.TryGet(sha, out var known))
+				nodes[sha] = ToNode(sha, known);
+			else
+				uncached.Add(sha);
+		}
+
+		var batches = uncached.Chunk(GraphQlBatchSize).ToList();
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => FetchAssociatedPullRequestsBatchAsync(collector, args, batch, token),
+			byAlias => byAlias == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
+		for (var index = 0; index < batches.Count; index++)
+		{
+			for (var i = 0; i < batches[index].Length; i++)
+			{
+				var sha = batches[index][i];
+				_ = responses[index]!.TryGetValue($"c{i}", out var node);
+				nodes[sha] = node;
+				if (store is not null && ToCacheable(node) is { Count: > 0 } merged && merged.Any(a => a.BaseRepository == repoFullName))
+					store.Set(sha, merged);
+			}
+		}
+
+		if (store is not null)
+			_logger.LogInformation(
+				"{Cached} of {Total} commit(s) of {Owner}/{Repo} came from the cache, {Asked} were asked of GitHub",
+				commits.Count - uncached.Count,
+				commits.Count,
+				args.Owner,
+				args.Repo,
+				uncached.Count
+			);
+
+		return nodes;
+	}
+
+	private static GraphQlCommit ToNode(string sha, IReadOnlyList<CachedAssociation> known) =>
+		new()
+		{
+			Oid = sha,
+			AssociatedPullRequests = new GraphQlPullRequestConnection
+			{
+				Nodes =
+				[
+					.. known.Select(
+						a => new GraphQlPullRequest
+						{
+							Number = a.Number,
+							Url = a.Url,
+							Merged = a.Merged,
+							BaseRefName = a.BaseRefName,
+							MergeCommit = a.MergeCommit is null ? null : new GraphQlCommitRef { Oid = a.MergeCommit },
+							BaseRepository = new GraphQlRepositoryRef { NameWithOwner = a.BaseRepository }
+						}
+					)
+				]
+			}
+		};
+
+	/// <summary>The merged pull requests of a commit, as the cache keeps them.</summary>
+	private static List<CachedAssociation>? ToCacheable(GraphQlCommit? node) =>
+		node?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
+			.Where(pr => pr.Merged)
+			.Select(
+				pr => new CachedAssociation(
+					pr.Number,
+					pr.Url,
+					pr.Merged,
+					pr.BaseRefName,
+					pr.MergeCommit?.Oid,
+					pr.BaseRepository?.NameWithOwner
+				)
+			)
+			.ToList();
+
+	private sealed record PullRequestDetail(string? Title, IReadOnlyList<string> Labels, DateTimeOffset? UpdatedAt);
+
+	/// <summary>Reads the title, the labels and the update time of the pull requests, 50 per query.</summary>
+	private async Task<Dictionary<int, PullRequestDetail>?> FetchPullRequestDetailsAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		IReadOnlyList<int> numbers,
+		Cancel ctx
+	)
+	{
+		var batches = numbers.Chunk(PullRequestDetailBatchSize).ToList();
+		var responses = await BatchRunner.RunAsync(
+			batches,
+			(batch, token) => QueryPullRequestDetailsAsync(collector, args, batch, token),
+			data => data == null,
+			ctx
+		).ConfigureAwait(false);
+		if (responses == null)
+			return null;
+
+		var details = new Dictionary<int, PullRequestDetail>();
+		for (var index = 0; index < batches.Count; index++)
+		{
+			foreach (var number in batches[index])
+			{
+				if (responses[index]!.GetValueOrDefault($"p{number}") is not { } node)
+					continue;
+
+				node.Number = number;
+				var labels = await CompleteLabelsAsync(collector, args, node, ctx).ConfigureAwait(false);
+				if (labels == null)
+					return null;
+
+				details[number] = new PullRequestDetail(node.Title, labels, node.UpdatedAt);
+			}
+		}
+
+		return details;
+	}
+
+	private async Task<Dictionary<string, GraphQlPullRequest?>?> QueryPullRequestDetailsAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		IReadOnlyList<int> batch,
+		Cancel ctx
+	)
+	{
+		var selection = string.Concat(
+			batch.Select(
+				n => string.Create(
+					CultureInfo.InvariantCulture,
+					$" p{n}: pullRequest(number: {n}) {{ title updatedAt labels(first: 100) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }}"
+				)
+			)
+		);
+		var query = $"query {{ repository(owner: \"{args.Owner}\", name: \"{args.Repo}\") {{{selection} }} }}";
+		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
+
+		using var response = await _transport.PostGraphQlOrNullAsync(
+			body,
+			failure => collector.EmitError(string.Empty, $"GitHub GraphQL request for {args.Owner}/{args.Repo} failed: {failure}"),
+			ctx
+		).ConfigureAwait(false);
+		if (response is null)
+			return null;
+
+		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		GraphQlPullRequestsResponse? parsed = null;
+		if (response.IsSuccessStatusCode)
+		{
+			try
+			{
+				parsed = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GraphQlPullRequestsResponse);
+			}
+			catch (JsonException ex)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"GitHub GraphQL request for {args.Owner}/{args.Repo} returned a response that is not valid JSON ({(int)response.StatusCode}, {json.Length} byte(s)): {ex.Message}"
+				);
+				return null;
+			}
+		}
+
+		// A number that is not a pull request answers NOT_FOUND for its alias and the rest still comes back.
+		if (parsed?.Data?.Repository is null || (parsed.Errors is { Count: > 0 } && !parsed.Errors.All(e => e.Type == "NOT_FOUND")))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub GraphQL request for the pull requests of {args.Owner}/{args.Repo} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
+			);
+			return null;
+		}
+
+		return parsed.Data.Repository;
 	}
 
 	private async Task<Dictionary<string, GraphQlCommit?>?> FetchAssociatedPullRequestsBatchAsync(
@@ -514,9 +704,7 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(
-					" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 30) { pageInfo { hasNextPage endCursor } nodes { name } }"
-				)
+				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }")
 				.Append(" } } } }");
 		}
 
@@ -561,6 +749,24 @@ public sealed partial class GitHubCommitRangeService(
 	{
 		[JsonPropertyName("message")]
 		public string? Message { get; set; }
+
+		[JsonPropertyName("type")]
+		public string? Type { get; set; }
+	}
+
+	private sealed class GraphQlPullRequestsResponse
+	{
+		[JsonPropertyName("data")]
+		public GraphQlPullRequestsData? Data { get; set; }
+
+		[JsonPropertyName("errors")]
+		public List<GraphQlError>? Errors { get; set; }
+	}
+
+	private sealed class GraphQlPullRequestsData
+	{
+		[JsonPropertyName("repository")]
+		public Dictionary<string, GraphQlPullRequest?>? Repository { get; set; }
 	}
 
 	private sealed class GraphQlData
@@ -591,6 +797,12 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("url")]
 		public string? Url { get; set; }
+
+		[JsonPropertyName("title")]
+		public string? Title { get; set; }
+
+		[JsonPropertyName("updatedAt")]
+		public DateTimeOffset? UpdatedAt { get; set; }
 
 		[JsonPropertyName("labels")]
 		public GraphQlLabelConnection? Labels { get; set; }
@@ -669,5 +881,6 @@ public sealed partial class GitHubCommitRangeService(
 	[JsonSerializable(typeof(GraphQlRequest))]
 	[JsonSerializable(typeof(GraphQlResponse))]
 	[JsonSerializable(typeof(GraphQlLabelPageResponse))]
+	[JsonSerializable(typeof(GraphQlPullRequestsResponse))]
 	private sealed partial class CommitRangeJsonContext : JsonSerializerContext;
 }
