@@ -70,14 +70,44 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		}
 
 		var store = cache?.PullRequestTexts(owner, repo);
-		var needBody = new List<CommitRangePullRequest>();
-		var needEverything = new List<CommitRangePullRequest>();
-		var cached = 0;
+
+		// A pull request of a range knows its title, labels and update time. One that stands in for a backport does not, so its
+		// title, labels and update time are read first, which is a small query. The body is read only when no run has read it
+		// for this state of the pull request.
+		var known = new List<KnownPullRequest>();
+		var titleless = new List<int>();
 		foreach (var pr in distinct)
 		{
 			if (pr.Title is null)
-				needEverything.Add(pr);
-			else if (store is not null && pr.UpdatedAt is { } updatedAt && store.TryGet(pr.Number, updatedAt, out var text))
+				titleless.Add(pr.Number);
+			else
+				known.Add(new KnownPullRequest(pr.Number, pr.Title, pr.Labels, pr.UpdatedAt));
+		}
+
+		var details = await ReadAsync(collector, owner, repo, titleless, ReadKind.Details, ctx).ConfigureAwait(false);
+		if (details is null)
+			return null;
+
+		foreach (var number in titleless)
+		{
+			if (details.GetValueOrDefault(number) is not { } node)
+			{
+				_logger.LogWarning("Pull request #{Number} of {Owner}/{Repo} could not be read", number, owner, repo);
+				continue;
+			}
+
+			var labels = await AllLabelsAsync(collector, owner, repo, node, ctx).ConfigureAwait(false);
+			if (labels is null)
+				return null;
+
+			known.Add(new KnownPullRequest(number, node.Title ?? string.Empty, labels, node.UpdatedAt));
+		}
+
+		var needBody = new List<KnownPullRequest>();
+		var cached = 0;
+		foreach (var pr in known)
+		{
+			if (store is not null && pr.UpdatedAt is { } updatedAt && store.TryGet(pr.Number, updatedAt, out var text))
 			{
 				result[pr.Number] = Summarize(pr.Number, pr.Title, pr.Labels, text);
 				cached++;
@@ -86,23 +116,10 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 				needBody.Add(pr);
 		}
 
-		var bodies = await ReadAsync(
-			collector,
-			owner,
-			repo,
-			needBody.Select(pr => pr.Number).ToList(),
-			everything: false,
-			ctx
-		).ConfigureAwait(false);
-		var all = await ReadAsync(
-			collector,
-			owner,
-			repo,
-			needEverything.Select(pr => pr.Number).ToList(),
-			everything: true,
-			ctx
-		).ConfigureAwait(false);
-		if (bodies is null || all is null)
+		var bodies = await ReadAsync(collector, owner, repo, needBody.Select(pr => pr.Number).ToList(), ReadKind.Body, ctx).ConfigureAwait(
+			false
+		);
+		if (bodies is null)
 			return null;
 
 		foreach (var pr in needBody)
@@ -117,26 +134,7 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 			if (pr.UpdatedAt is { } updatedAt)
 				store?.Set(pr.Number, updatedAt, text);
 
-			result[pr.Number] = Summarize(pr.Number, pr.Title!, pr.Labels, text);
-		}
-
-		foreach (var pr in needEverything)
-		{
-			if (all.GetValueOrDefault(pr.Number) is not { } node)
-			{
-				_logger.LogWarning("Pull request #{Number} of {Owner}/{Repo} could not be read", pr.Number, owner, repo);
-				continue;
-			}
-
-			var labels = await AllLabelsAsync(collector, owner, repo, node, ctx).ConfigureAwait(false);
-			if (labels is null)
-				return null;
-
-			var text = TextOf(owner, repo, node);
-			if (node.UpdatedAt is { } updatedAt)
-				store?.Set(pr.Number, updatedAt, text);
-
-			result[pr.Number] = Summarize(pr.Number, node.Title ?? string.Empty, labels, text);
+			result[pr.Number] = Summarize(pr.Number, pr.Title, pr.Labels, text);
 		}
 
 		_logger.LogInformation(
@@ -145,9 +143,17 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 			owner,
 			repo,
 			cached,
-			needBody.Count + needEverything.Count
+			needBody.Count
 		);
 		return result;
+	}
+
+	private sealed record KnownPullRequest(int Number, string Title, IReadOnlyList<string> Labels, DateTimeOffset? UpdatedAt);
+
+	private enum ReadKind
+	{
+		Body,
+		Details
 	}
 
 	private static CachedPullRequestText TextOf(string owner, string repo, Node node)
@@ -160,13 +166,13 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 	private static PullRequestSummary Summarize(int number, string title, IReadOnlyList<string> labels, CachedPullRequestText text) =>
 		new(number, title, labels, new ReleaseNoteExtractionResult(text.ReleaseNote, text.ReleaseNoteTruncated), text.LinkedIssues);
 
-	/// <summary>Reads the pull requests 50 at a time: their body, and with <paramref name="everything"/> their title, labels and update time too.</summary>
+	/// <summary>Reads the pull requests 50 at a time: their body, or their title, labels and update time.</summary>
 	private async Task<Dictionary<int, Node>?> ReadAsync(
 		IDiagnosticsCollector collector,
 		string owner,
 		string repo,
 		IReadOnlyList<int> numbers,
-		bool everything,
+		ReadKind kind,
 		Cancel ctx
 	)
 	{
@@ -174,7 +180,7 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		var batches = numbers.Chunk(BatchSize).ToList();
 		var responses = await BatchRunner.RunAsync(
 			batches,
-			(batch, token) => QueryBatchAsync(collector, owner, repo, batch, everything, token),
+			(batch, token) => QueryBatchAsync(collector, owner, repo, batch, kind, token),
 			data => data is null,
 			ctx
 		).ConfigureAwait(false);
@@ -198,15 +204,15 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		string owner,
 		string repo,
 		int[] batch,
-		bool everything,
+		ReadKind kind,
 		Cancel ctx
 	)
 	{
 		var selection = new StringBuilder();
 		foreach (var number in batch)
 		{
-			var fields = everything
-				? $"number title updatedAt body labels(first: {LabelPageSize}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }}"
+			var fields = kind == ReadKind.Details
+				? $"number title updatedAt labels(first: {LabelPageSize}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }}"
 				: "number body";
 			_ = selection.Append(CultureInfo.InvariantCulture, $" p{number}: pullRequest(number: {number}) {{ {fields} }}");
 		}

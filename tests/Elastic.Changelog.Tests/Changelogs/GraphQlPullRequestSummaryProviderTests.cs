@@ -169,7 +169,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 		result.Should().NotBeNull();
 		result.Should().HaveCount(120);
 		result.Values.Should().OnlyContain(s => s != null);
-		github.BatchSizes.Order().Should().Equal(20, 50, 50);
+		// Their title, labels and update time are read first and their body second, 50 at a time each.
+		github.BatchSizes.Order().Should().Equal(20, 20, 50, 50, 50, 50);
 	}
 
 	[Test]
