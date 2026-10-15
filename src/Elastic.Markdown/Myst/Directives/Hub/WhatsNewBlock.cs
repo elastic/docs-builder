@@ -4,6 +4,7 @@
 
 using System.Collections.Concurrent;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Helpers;
 using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
@@ -51,8 +52,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 				);
 				return;
 			}
-			Data = resolved;
-			ValidateLinks(context);
+			Data = ResolveLinks(resolved, context);
 			return;
 		}
 
@@ -73,18 +73,46 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 			return;
 		}
 
-		ValidateLinks(context);
+		Data = ResolveLinks(Data, context);
 	}
 
-	private void ValidateLinks(ParserContext context)
-	{
-		foreach (var link in Data.ReleaseLinks)
-			link.Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context);
-		if (Data.UpgradeLink is { } upgrade)
-			upgrade.Url = DirectiveLinkValidator.ValidateAndResolve(upgrade.Url, this, context);
-		foreach (var item in Data.Items)
-			item.Link = DirectiveLinkValidator.ValidateAndResolve(item.Link, this, context);
-	}
+	/// <summary>
+	/// Returns a copy of the panel with its links resolved and its substitutions replaced. The
+	/// source is never changed, because a <c>:product:</c> panel is shared through
+	/// <see cref="CentralConfigCache"/> and every page must resolve its own substitutions and
+	/// relative links from the original values.
+	/// </summary>
+	private WhatsNewData ResolveLinks(WhatsNewData source, ParserContext context) =>
+		source with
+		{
+			// A release link label can carry a substitution, for example `{{version.stack}}`, so a
+			// patch release does not mean editing the panel.
+			ReleaseLinks =
+			[
+				.. source.ReleaseLinks.Select(
+					link =>
+						link with
+						{
+							Label = link.Label?.ReplaceSubstitutions(context),
+							Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context)
+						}
+				)
+			],
+			UpgradeLink = source.UpgradeLink is { } upgrade
+				? upgrade with { Url = DirectiveLinkValidator.ValidateAndResolve(upgrade.Url, this, context) }
+				: null,
+			Items =
+			[
+				.. source.Items.Select(
+					item =>
+						item with
+						{
+							Link = DirectiveLinkValidator.ValidateAndResolve(item.Link, this, context),
+							Availability = [.. item.Availability.Select(entry => entry.ReplaceSubstitutions(context))]
+						}
+				)
+			]
+		};
 
 	/// <summary>
 	/// The panel content lives in the content repository, next to the pages that use it, so a
@@ -161,6 +189,13 @@ public record WhatsNewItem
 
 	[YamlMember(Alias = "link")]
 	public string? Link { get; set; }
+
+	/// <summary>
+	/// Where the item is available, for example <c>9.5</c> and <c>Serverless</c>. The card shows the
+	/// entries in order. When the list is empty the card falls back to <see cref="Date"/>.
+	/// </summary>
+	[YamlMember(Alias = "availability")]
+	public string[] Availability { get; set; } = [];
 
 	[YamlMember(Alias = "date")]
 	public string? Date { get; set; }

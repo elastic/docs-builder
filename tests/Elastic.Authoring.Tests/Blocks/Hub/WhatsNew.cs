@@ -113,3 +113,104 @@ public class WhatsNewWithARelativeItemLink : MarkdownTest
 	[Test, DisplayName("rejects a relative path")]
 	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
 }
+
+public class WhatsNewWithAvailabilityAndSubstitutedLabel : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{whats-new}
+		title: What's new
+		release-links:
+		  - label: "{{version.stack}}"
+		    url: /index.md
+		  - label: Serverless
+		    url: /index.md
+		items:
+		  - title: Both
+		    description: Ships in both.
+		    availability:
+		      - "9.5"
+		      - Serverless
+		    date: Aug 2026
+		  - title: Dated
+		    description: Only a date.
+		    date: Aug 2026
+		:::
+		""";
+
+	[Test, DisplayName("renders the release notes label")]
+	public async Task RendersReleaseNotesLabel() =>
+		await Docs.ConvertsToContainingHtml("""<span class="hub-wn-rn-label">Go to latest release notes:</span>""");
+
+	[Test, DisplayName("resolves a substitution in a release link label")]
+	public async Task ResolvesSubstitutionInLabel() => await Docs.DoesNotConvertToContainingHtml("{{version.stack}}");
+
+	[Test, DisplayName("shows the availability list in place of the date")]
+	public async Task ShowsAvailabilityInPlaceOfDate() =>
+		await Docs.ConvertsToContainingHtml("""<span class="hub-wn-card-date">9.5 · Serverless</span>""");
+
+	[Test, DisplayName("falls back to the date when there is no availability")]
+	public async Task FallsBackToDate() => await Docs.ConvertsToContainingHtml("""<span class="hub-wn-card-date">Aug 2026</span>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+// A :product: panel is read once and shared by every page that shows it, so each page has to
+// resolve its own substitutions from the original values.
+public class WhatsNewFromCentralConfigOnTwoPages : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			new TestFile(
+				"hub-whats-new.yml",
+				"""
+				products:
+				  demo:
+				    title: What's new in Demo
+				    release-links:
+				      - label: "{{release}}"
+				        url: /index.md
+				    items:
+				      - title: Card
+				        description: A card.
+				        availability:
+				          - "{{release}}"
+				          - Serverless
+				"""
+			),
+			Index(
+				"""
+				---
+				sub:
+				  release: "1.0"
+				---
+				# First
+
+				:::{whats-new}
+				:product: demo
+				:::
+				"""
+			),
+			Page(
+				"second.md",
+				"""
+				---
+				sub:
+				  release: "2.0"
+				---
+				# Second
+
+				:::{whats-new}
+				:product: demo
+				:::
+				"""
+			)
+		];
+
+	[Test, DisplayName("resolves the substitution on the first page")]
+	public async Task FirstPage() => await Docs.Converts("index.md").ContainsRawHtml("1.0 &#xB7; Serverless");
+
+	[Test, DisplayName("resolves the substitution again on the second page")]
+	public async Task SecondPage() => await Docs.Converts("second.md").ContainsRawHtml("2.0 &#xB7; Serverless");
+}
