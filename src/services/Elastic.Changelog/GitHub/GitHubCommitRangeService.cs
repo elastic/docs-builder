@@ -206,6 +206,7 @@ public sealed partial class GitHubCommitRangeService(
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
 		var excluded = new Dictionary<int, CommitRangeExcludedPullRequest>();
+		var completedLabels = new Dictionary<int, IReadOnlyList<string>>();
 		var repoFullName = $"{args.Owner}/{args.Repo}";
 
 		for (var offset = 0; offset < commits.Count; offset += GraphQlBatchSize)
@@ -219,6 +220,23 @@ public sealed partial class GitHubCommitRangeService(
 			{
 				var sha = batch[i];
 				_ = byAlias.TryGetValue($"c{i}", out var commitNode);
+
+				// Label exclusion must see every label. The batch query returns the first page only, so a pull request
+				// with more labels is read in full before the exclusion decides, or a label on a later page would be missed.
+				if (args.ExcludeLabels is { Count: > 0 })
+				{
+					foreach (var pr in commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>() ?? [])
+					{
+						if (pr.Labels?.PageInfo is not { HasNextPage: true } || completedLabels.ContainsKey(pr.Number))
+							continue;
+
+						var allLabels = await CompleteLabelsAsync(collector, args, pr, ctx).ConfigureAwait(false);
+						if (allLabels == null)
+							return null;
+						completedLabels[pr.Number] = allLabels;
+					}
+				}
+
 				var selected = SelectPullRequest(
 					collector,
 					sha,
@@ -227,6 +245,7 @@ public sealed partial class GitHubCommitRangeService(
 					args.BaseRef,
 					args.ExcludeLabels,
 					args.KeepLabels,
+					completedLabels,
 					excluded,
 					out var onlyExcluded
 				);
@@ -243,7 +262,9 @@ public sealed partial class GitHubCommitRangeService(
 					existing.Shas.Add(sha);
 				else
 				{
-					var labels = await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
+					var labels = completedLabels.TryGetValue(selected.Number, out var done)
+						? done
+						: await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
 					if (labels == null)
 						return null;
 
@@ -298,6 +319,7 @@ public sealed partial class GitHubCommitRangeService(
 		string? baseRef,
 		IReadOnlyList<string>? excludeLabels,
 		IReadOnlyList<string>? keepLabels,
+		IReadOnlyDictionary<int, IReadOnlyList<string>> completedLabels,
 		Dictionary<int, CommitRangeExcludedPullRequest> excluded,
 		out bool onlyExcluded
 	)
@@ -335,7 +357,7 @@ public sealed partial class GitHubCommitRangeService(
 			var kept = new List<GraphQlPullRequest>();
 			foreach (var pr in candidates)
 			{
-				var matched = FindExcludingLabel(pr, excludeLabels, keepLabels);
+				var matched = FindExcludingLabel(pr, excludeLabels, keepLabels, completedLabels);
 				if (matched == null)
 				{
 					kept.Add(pr);
@@ -389,9 +411,18 @@ public sealed partial class GitHubCommitRangeService(
 	/// The first of <paramref name="excludeLabels"/> that the pull request carries, or <c>null</c> when it carries none
 	/// or carries any of <paramref name="keepLabels"/>. Labels compare case-insensitively, as GitHub treats them.
 	/// </summary>
-	private static string? FindExcludingLabel(GraphQlPullRequest pr, IReadOnlyList<string> excludeLabels, IReadOnlyList<string>? keepLabels)
+	private static string? FindExcludingLabel(
+		GraphQlPullRequest pr,
+		IReadOnlyList<string> excludeLabels,
+		IReadOnlyList<string>? keepLabels,
+		IReadOnlyDictionary<int, IReadOnlyList<string>> completedLabels
+	)
 	{
-		var names = pr.Labels?.Nodes?.Select(label => label?.Name).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
+		// The first page of labels, or every label when the pull request has more than one page.
+		var all = completedLabels.TryGetValue(pr.Number, out var complete)
+			? complete
+			: pr.Labels?.Nodes?.Select(label => label?.Name).OfType<string>().ToList() ?? [];
+		var names = all.ToHashSet(StringComparer.OrdinalIgnoreCase);
 		if (keepLabels != null && keepLabels.Any(names.Contains))
 			return null;
 		return excludeLabels.FirstOrDefault(names.Contains);

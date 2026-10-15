@@ -1064,6 +1064,20 @@ public partial class ChangelogBundlingService(
 
 		if (allEntries.Count == 0)
 		{
+			// Every pull request was routed out by its labels, so this repository has nothing to note for the range.
+			// That is not an error: write no bundle and let the other bundles of the release go ahead.
+			if (
+				resolution.PullRequests.Count == 0
+				&& resolution.ExcludedPullRequests.Any(pr => pr.Reason == CommitRangeExclusionReason.Label)
+			)
+			{
+				collector.EmitWarning(
+					string.Empty,
+					$"Every pull request in commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo} is routed out by its labels. No bundle is written."
+				);
+				return true;
+			}
+
 			collector.EmitError(
 				string.Empty,
 				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."

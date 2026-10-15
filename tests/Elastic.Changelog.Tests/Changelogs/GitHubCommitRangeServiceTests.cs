@@ -474,6 +474,57 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
 	}
 
+	private static string PrNodeWithLabelPages(int number, string sha, string firstPageLabel) =>
+		$$"""
+		{ "number": {{number}}, "url": "https://github.com/elastic/widget/pull/{{number}}", "merged": true, "baseRefName": "main",
+		  "mergeCommit": { "oid": "{{sha}}" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
+		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "{{firstPageLabel}}" } ] } }
+		""";
+
+	private static string LabelPage(string label) =>
+		$$"""{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "{{label}}" } ] } } } } }""";
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_ReadsLaterLabelPagesBeforeExcluding()
+	{
+		// `stateful` is on the first page and `serverless` on the second: reading only the first page would exclude the PR.
+		var sha1 = Sha(1);
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			return query.Contains("cursor-1", StringComparison.Ordinal)
+				? LabelPage("serverless")
+				: GraphQlJson([(sha1, [PrNodeWithLabelPages(11, sha1, "stateful")])]);
+		});
+		var args = Args with { ExcludeLabels = ["stateful"], KeepLabels = ["serverless"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.ExcludedPullRequests.Should().BeEmpty();
+		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("stateful", "serverless");
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_ExcludesOnAnExcludeLabelOnALaterPage()
+	{
+		var sha1 = Sha(1);
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			return query.Contains("cursor-1", StringComparison.Ordinal)
+				? LabelPage("stateful")
+				: GraphQlJson([(sha1, [PrNodeWithLabelPages(12, sha1, "bug")])]);
+		});
+		var args = Args with { ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Should().BeEmpty();
+		result.ExcludedPullRequests.Should().ContainSingle().Which.Number.Should().Be(12);
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 

@@ -519,6 +519,90 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ProfileMode_EveryPullRequestRoutedOutByLabel_SucceedsWithoutWritingABundle()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var rangeService = A.Fake<IGitHubCommitRangeService>();
+		_ = A.CallTo(
+			() => rangeService.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
+		).Returns(new CommitRangeResolution
+		{
+			TotalCommits = 2,
+			PullRequests = [],
+			CommitsWithoutPullRequest = [],
+			ExcludedPullRequests =
+			[
+				new CommitRangeExcludedPullRequest
+				{
+					Number = 700,
+					Url = "https://github.com/elastic/widget/pull/700",
+					BaseRef = "main",
+					Reason = CommitRangeExclusionReason.Label,
+					Label = "stateful"
+				}
+			]
+		});
+		var resolvedPaths = new List<string>();
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef,
+			OnBundlePathResolved = resolvedPaths.Add
+		};
+
+		var result = await Service(PoolHandler(), rangeService).BundleChangelogs(
+			Collector,
+			input,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("routed out by its labels", StringComparison.Ordinal));
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
+		resolvedPaths.Should().BeEmpty("no bundle was written, so no path may be reported");
+	}
+
+	[Test]
+	public async Task ProfileMode_NoEntriesAndNoLabelRouting_StillErrors()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await Service(PoolHandler(), RangeService()).BundleChangelogs(
+			Collector,
+			input,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("No changelog entries could be resolved", StringComparison.Ordinal)
+			);
+	}
+
+	[Test]
 	public async Task Resolver_ReportsLabelExclusionsApartFromBaseBranchExclusions()
 	{
 		var resolver = new GitRangeEntryResolver(A.Fake<IGitHubPrService>(), LoggerFactory.CreateLogger("GitRangeEntryResolver"));
