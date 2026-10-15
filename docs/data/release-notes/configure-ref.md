@@ -301,7 +301,7 @@ pivot:
 
 ## Products [products]
 
-Specifies the allowed product values and the default values used by the `changelog add` command.
+Specifies the allowed product values, the default products, and the products that a label-derived product implies.
 
 :::{note}
 The product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). All products in the catalog are valid for changelogs, including those that have `public-reference` disabled.
@@ -313,7 +313,8 @@ The product values must exist in [products.yml](https://github.com/elastic/docs-
 | Setting              | Description                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | `products.available` | List of allowed product IDs. Empty list or omitted means all products from `products.yml` are allowed |
-| `products.default`   | List of default products when `--products` is not specified.                                          |
+| `products.default`   | List of default products when `--products` is not specified and no label maps to a product.          |
+| `products.implies`   | Products that a label-derived product implies, keyed by product ID. Optional.                         |
 
 :::
 
@@ -326,6 +327,36 @@ products:
     - product: elasticsearch
       lifecycle: ga
 ```
+
+### Product resolution order [products-resolution]
+
+`changelog add`, the PR evaluation, and bundles built from a git range resolve the products of an entry in the same order:
+
+1. The `--products` option, when given.
+2. The products that the labels map to in `pivot.products`, plus the products that `products.implies` lists for each of them.
+3. `products.default`, with its lifecycle.
+4. For `changelog add`, the product inferred from the repository name. For a git range bundle, the profile's output products.
+
+### Implied products [products-implies]
+
+A label in `pivot.products` maps to one product. With `products.implies`, an entry that gets a product from a label also gets the products listed for it. Use it when a label names a solution rather than a deployment target, so the entry still reaches the release notes of the products it ships in.
+
+```yaml
+products:
+  default:
+    - product: kibana
+    - product: cloud-serverless
+  implies:
+    observability: [kibana, cloud-serverless]
+    security: [kibana, cloud-serverless]
+
+pivot:
+  products:
+    observability: ['Team:obs-ux-logs']
+    security: ['Team:SecuritySolution']
+```
+
+With this configuration, a pull request labelled `Team:obs-ux-logs` gets the products `observability`, `kibana`, and `cloud-serverless`. A pull request with no product label gets the defaults. An implied product carries the product ID only, and `implies` applies one level: a product that `observability` implies does not imply further products. `implies` applies to label-derived products only, not to `--products`, `products.default`, or checked-in entries.
 
 ## Rules
 

@@ -40,7 +40,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
 		var effectiveProducts = input.Products;
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 
 		// Check for label blockers using effective products (including label-derived ones)
 		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
@@ -81,7 +81,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
 		var effectiveProducts = products;
 		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 
 		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
 		return (shouldSkip, prInfo);
@@ -195,7 +195,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Map labels to products if products were not explicitly provided
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
 		{
-			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			var mappedProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 			if (mappedProducts.Count > 0)
 			{
 				derived.Products = mappedProducts;

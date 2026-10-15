@@ -186,7 +186,7 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null;
 		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
+			var products = ProductResolution.FromLabels(input.PrLabels, config);
 			if (products.Count > 0)
 			{
 				resolvedProducts = ProductArgument.FormatProductSpecs(products);

@@ -273,6 +273,60 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 	}
 
 	[Test]
+	public async Task CreateChangelog_WithLabelProductMapping_AddsTheImpliedProducts()
+	{
+		// Arrange — the team label maps to security, which implies kibana and cloud-serverless
+		var prInfo = new GitHubPrInfo { Title = "Add a new feature", Labels = ["type:feature", "Team:SecuritySolution"] };
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			products:
+			  implies:
+			    security: [kibana, cloud-serverless]
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'security':
+			      - "Team:SecuritySolution"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("- product: security");
+		yamlContent.Should().Contain("- product: kibana");
+		yamlContent.Should().Contain("- product: cloud-serverless");
+	}
+
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_ExplicitProductsOverrideLabels()
 	{
 		// Arrange — PR has label for elasticsearch but --products specifies kibana

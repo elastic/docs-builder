@@ -519,7 +519,52 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		return new ProductsConfig { Available = available, Default = defaultProducts };
+		// Parse implied products
+		var implies = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+		if (yaml.Implies != null)
+		{
+			foreach (var (productId, impliedYaml) in yaml.Implies)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
+					return null;
+				}
+
+				List<string> implied = [];
+				foreach (var impliedId in impliedYaml?.Values ?? [])
+				{
+					var normalizedImpliedId = impliedId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedImpliedId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"Product '{impliedId}' implied by '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+						);
+						return null;
+					}
+
+					// A product implies itself already; list each implied product once.
+					if (
+						string.Equals(normalizedImpliedId, normalizedProductId, StringComparison.OrdinalIgnoreCase)
+						|| implied.Contains(normalizedImpliedId, StringComparer.OrdinalIgnoreCase)
+					)
+						continue;
+					implied.Add(normalizedImpliedId);
+				}
+
+				if (implied.Count > 0)
+					implies[normalizedProductId] = implied;
+			}
+		}
+
+		return new ProductsConfig { Available = available, Default = defaultProducts, Implies = implies.Count > 0 ? implies : null };
 	}
 
 	private static BundleConfiguration? ParseBundleConfiguration(

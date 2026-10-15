@@ -1451,6 +1451,65 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_ParsesAndNormalizes()
+	{
+		var config = await LoadConfig(
+			"""
+			products:
+			  implies:
+			    security: [kibana, cloud_serverless, kibana, security]
+			    Cloud-Hosted: cloud-serverless
+			"""
+		);
+
+		Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message).Should().BeEmpty();
+		config.Should().NotBeNull();
+		var implies = config!.ProductsConfiguration!.Implies!;
+		implies["security"].Should().Equal("kibana", "cloud-serverless");
+		implies["cloud-hosted"].Should().Equal("cloud-serverless");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_UnknownProduct_ReturnsError()
+	{
+		_ = await LoadConfig("""
+			products:
+			  implies:
+			    not-a-real-product: [kibana]
+			""");
+
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"'not-a-real-product' in products_config.implies is not in the list of available products"
+				)
+			);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_UnknownImpliedProduct_ReturnsError()
+	{
+		_ = await LoadConfig("""
+			products:
+			  implies:
+			    kibana: [not-a-real-product]
+			""");
+
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"'not-a-real-product' implied by 'kibana' in products_config.implies"
+				)
+			);
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
 	{
 		// Arrange

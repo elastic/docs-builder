@@ -87,7 +87,13 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "", string bundleExtra = "")
+	private async Task<string> WriteProfileConfig(
+		string outputDir,
+		string pivotProducts = "",
+		string bundleExtra = "",
+		string topLevel = "",
+		string outputProduct = "cloud-hosted"
+	)
 	{
 		// language=yaml
 		var configContent = """
@@ -97,6 +103,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			    bug-fix: ">bug"
 			    breaking-change: ">breaking"
 			PIVOT_PRODUCTS
+			TOP_LEVEL
 			bundle:
 			  output_directory: PLACEHOLDER
 			  repo: widget
@@ -104,10 +111,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			  BUNDLE_EXTRA
 			  profiles:
 			    promotion:
-			      output_products: "cloud-hosted {version}"
+			      output_products: "OUTPUT_PRODUCT {version}"
 			"""
 			.Replace("PLACEHOLDER", outputDir)
 			.Replace("PIVOT_PRODUCTS", pivotProducts)
+			.Replace("TOP_LEVEL", topLevel.Length > 0 ? topLevel : "# no top-level settings")
+			.Replace("OUTPUT_PRODUCT", outputProduct)
 			.Replace("BUNDLE_EXTRA", bundleExtra.Length > 0 ? bundleExtra : "# no extra settings");
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -542,6 +551,149 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Contain(
 				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
 			);
+	}
+
+	private const string KibanaProducts =
+		"""
+		products:
+		  default:
+		    - product: kibana
+		    - product: cloud-serverless
+		  implies:
+		    security: [kibana, cloud-serverless]
+		rules:
+		  bundle:
+		    products:
+		      kibana:
+		        exclude_types: [docs]
+		      cloud-serverless:
+		        exclude_types: [docs]
+		      security:
+		        exclude_types: [docs]
+		""";
+
+	private const string ElasticsearchProducts =
+		"""
+		products:
+		  default:
+		    - product: elasticsearch
+		    - product: cloud-serverless
+		rules:
+		  bundle:
+		    products:
+		      elasticsearch:
+		        exclude_types: [docs]
+		      cloud-serverless:
+		        exclude_types: [docs]
+		""";
+
+	/// <summary>Bundles one synthesized pull request for <paramref name="outputProduct"/>. The bundle text is null when none was written.</summary>
+	private async Task<(bool Result, string? Bundle)> BundleSinglePr(
+		string[] labels,
+		string pivotProducts,
+		string topLevel,
+		string outputProduct
+	)
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, pivotProducts, topLevel: topLevel, outputProduct: outputProduct);
+
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Faster entity resolution",
+			Body = "## Release Note\nEntity resolution runs faster.",
+			Labels = [.. labels],
+			LinkedIssues = []
+		});
+		var service = Service(PoolHandler(), RangeService(300), prService);
+
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		if (files.Length == 0)
+			return (result, null);
+		var content = await FileSystem.File.ReadAllTextAsync(files.Single(), TestContext.Current!.Execution.CancellationToken);
+		return (result, content.Replace("\r\n", "\n"));
+	}
+
+	/// <summary>The products block of the single entry, after the bundle's own products.</summary>
+	private static string EntryProductsOf(string bundle) => bundle[bundle.IndexOf("  products:\n", StringComparison.Ordinal)..];
+
+	[Test]
+	[Arguments(new[] { ">feature", "Team:SecuritySolution" }, new[] { "security", "kibana", "cloud-serverless" })]
+	[Arguments(new[] { ">feature" }, new[] { "kibana", "cloud-serverless" })]
+	public async Task InferredEntry_Products_LabelsWinThenImpliesThenDefaults(string[] labels, string[] expectedProducts)
+	{
+		var (result, bundle) = await BundleSinglePr(
+			labels,
+			"  products:\n    security: \"Team:SecuritySolution\"",
+			KibanaProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeTrue();
+		bundle.Should().NotBeNull();
+		// The entry stays in the cloud-serverless bundle: the per-product rules.bundle check finds that product on it.
+		var entry = EntryProductsOf(bundle!);
+		foreach (var product in new[] { "security", "kibana", "cloud-serverless" })
+		{
+			if (expectedProducts.Contains(product))
+				entry.Should().Contain($"- product: {product}\n");
+			else
+				entry.Should().NotContain($"- product: {product}\n");
+		}
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_DefaultsCarryTheirLifecycleAndNoVersion()
+	{
+		var (result, bundle) = await BundleSinglePr([">feature"], string.Empty, KibanaProducts, "cloud-serverless");
+
+		result.Should().BeTrue();
+		var entry = EntryProductsOf(bundle!);
+		entry.Should().Contain("- product: kibana\n    lifecycle: ga\n");
+		entry.Should().Contain("- product: cloud-serverless\n    lifecycle: ga\n");
+		entry.Should().NotContain("versions:");
+	}
+
+	[Test]
+	[Arguments(new[] { ">feature", "stateful" }, false)]
+	[Arguments(new[] { ">feature", "serverless" }, true)]
+	[Arguments(new[] { ">feature", "stateful", "serverless" }, true)]
+	[Arguments(new[] { ">feature" }, true)]
+	public async Task InferredEntry_Products_AStackOnlyLabelKeepsThePullRequestOutOfTheServerlessBundle(string[] labels, bool inBundle)
+	{
+		var (result, bundle) = await BundleSinglePr(
+			labels,
+			"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		if (inBundle)
+		{
+			result.Should().BeTrue();
+			bundle.Should().Contain("Faster entity resolution");
+			return;
+		}
+
+		// The only entry carries elasticsearch alone, so rules.bundle drops it and the range bundle fails.
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained", StringComparison.Ordinal));
 	}
 
 	[Test]
