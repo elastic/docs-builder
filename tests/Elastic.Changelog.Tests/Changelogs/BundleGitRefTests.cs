@@ -355,6 +355,44 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ProfileMode_TwoTargetsOfOneRepository_ReadThePoolOnce()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir);
+
+		var pool = PoolHandler();
+		var service = Service(pool, RangeService(100, 200));
+
+		async Task<bool> BundleAsync(string version) =>
+			await service.BundleChangelogs(
+				Collector,
+				new BundleChangelogsArguments
+				{
+					Profile = "promotion",
+					ProfileArgument = version,
+					Config = configPath,
+					StartGitRef = StartRef,
+					EndGitRef = EndRef
+				},
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+		(await BundleAsync("2026-08-13")).Should().BeTrue();
+		var afterFirst = pool.RequestedPaths.Count(r => r.EndsWith("registry.json", StringComparison.Ordinal));
+		(await BundleAsync("2026-08-14")).Should().BeTrue();
+
+		afterFirst.Should().Be(1);
+		pool
+			.RequestedPaths
+			.Count(r => r.EndsWith("registry.json", StringComparison.Ordinal))
+			.Should()
+			.Be(1, "the second target reads the pool the first one read");
+		pool.RequestedPaths.Count(r => r.EndsWith("100.yaml", StringComparison.Ordinal)).Should().Be(1);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().HaveCount(2);
+	}
+
+	[Test]
 	public async Task ProfileMode_ConfigWithoutRepo_UsesTheRepositoryFromTheArguments()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
