@@ -43,10 +43,8 @@ features:
   primary-nav: false
 
 # Isolated fixtures. The prefix keeps these keys off the docs-content APIs.
-# Mirrors the api: block in elastic/docs-content docset.yml (without Kibana's children: file, which
-# this repo doesn't have) so the preview groups and counts the same way as production.
-# Two entries go beyond docs-content on purpose, so the preview shows the intended tags: cloud-enterprise
-# declares ece, and logstash declares ece.
+# Mirrors the api: block in elastic/docs-content docset.yml, including Kibana's children: page, so the
+# preview groups and counts the same way as production. Keep the two in sync.
 # Assembler builds omit them; this checkout is still loaded in preview (skip: true).
 # Isolated serve (no --watch) drops the prefix from URLs: /api/doc/elasticsearch/, /api/doc/kibana/, …
 api:
@@ -70,6 +68,8 @@ api:
     - spec: kibana.yaml
       product: kibana
       repository: elastic/kibana
+      children:
+        - file: kibana-api-overview.md
       catalog:
         categories:
           - self
@@ -90,9 +90,6 @@ api:
     - spec: cloud-enterprise.json
       product: cloud-enterprise
       repository: elastic/cloud
-      catalog:
-        categories:
-          - ece
   docs-builder-cloud-billing:
     - spec: cloud-billing.yaml
       product: ess
@@ -118,7 +115,6 @@ api:
       catalog:
         categories:
           - self
-          - ece
 
 cta:
   docs-builder:

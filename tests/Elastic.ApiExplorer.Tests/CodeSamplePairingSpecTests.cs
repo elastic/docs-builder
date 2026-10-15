@@ -14,8 +14,8 @@ namespace Elastic.ApiExplorer.Tests;
 
 /// <summary>
 /// The Elasticsearch spec writes each operation's multi-language samples from one of its request examples.
-/// Whenever a named example sends the body the Console sample sends, the samples must sit on that example, so a
-/// spec refresh that breaks the convention fails here rather than mislabelling samples on the site.
+/// Whenever a named example sends the body the Console sample sends, the samples must sit on that example. The
+/// fixture is a slice of the spec's sampled operations, so a fixture refresh that breaks the convention fails here.
 /// </summary>
 public class CodeSamplePairingSpecTests
 {
@@ -25,6 +25,7 @@ public class CodeSamplePairingSpecTests
 		var document = await LoadElasticsearchSpec();
 		var mismatches = new List<string>();
 		var pairedByBody = 0;
+		var checkedOperations = 0;
 
 		foreach (var (route, method, operation) in Operations(document))
 		{
@@ -33,6 +34,7 @@ public class CodeSamplePairingSpecTests
 			if (samples.Length == 0 || examples.Count == 0 || samples.FirstOrDefault(static s => s.IsConsole) is not { } console)
 				continue;
 
+			checkedOperations++;
 			var scenarios = OperationPageModel.BuildExampleScenarios(examples, [], samples);
 			var carrying = scenarios.Where(static s => s.CodeSamples.Count > 0).ToArray();
 			var consoleBody = OperationPageModel.Compact(GeneratedCodeSamples.SplitConsole(console.Source)?.Body ?? "");
@@ -48,13 +50,16 @@ public class CodeSamplePairingSpecTests
 				pairedByBody++;
 		}
 
-		pairedByBody.Should().BeGreaterThan(100, "the spec ships samples alongside request examples for most body-carrying operations");
+		pairedByBody.Should().BeGreaterThan(
+			checkedOperations / 2,
+			"the spec ships samples alongside request examples for most body-carrying operations"
+		);
 		mismatches.Should().BeEmpty(string.Join("\n", mismatches));
 	}
 
 	private static async Task<OpenApiDocument> LoadElasticsearchSpec()
 	{
-		var file = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
+		var file = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		return await OpenApiReader.Instance.ReadAsync(file) ?? throw new InvalidOperationException($"Could not read {file.FullName}");
 	}
 
