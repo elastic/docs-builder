@@ -45,6 +45,12 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 
 	private static readonly TimeSpan TouchAfter = TimeSpan.FromDays(1);
 
+	/// <summary>
+	/// How old an answer of "no merged pull request" has to be before it is believed. GitHub may not have linked a commit to its pull
+	/// request yet, so a young commit is asked about again. One that is still without one after a day will stay without.
+	/// </summary>
+	public static readonly TimeSpan NoPullRequestSettlesAfter = TimeSpan.FromDays(1);
+
 	private readonly TimeProvider _time = time ?? TimeProvider.System;
 	private readonly TimeSpan _maxAge = maxAge ?? DefaultMaxAge;
 	private readonly ConcurrentDictionary<string, Lazy<CommitStore>> _commits = [];
@@ -164,16 +170,22 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 
 		internal bool IsDirty => Volatile.Read(ref _dirty) == 1;
 
-		/// <summary>The pull requests of a commit, when an earlier run found them.</summary>
+		/// <summary>
+		/// The pull requests of a commit, when an earlier run found them. An empty list is the answer "no merged pull request", and it
+		/// counts only once it has stood for <see cref="NoPullRequestSettlesAfter"/>.
+		/// </summary>
 		public bool TryGet(string sha, out IReadOnlyList<CachedAssociation> pullRequests)
 		{
-			if (!_entries.TryGetValue(sha, out var entry))
+			var now = _time.GetUtcNow().ToUnixTimeSeconds();
+			if (
+				!_entries.TryGetValue(sha, out var entry)
+				|| (entry.PullRequests.Count == 0 && now - entry.FirstSeen < NoPullRequestSettlesAfter.TotalSeconds)
+			)
 			{
 				pullRequests = [];
 				return false;
 			}
 
-			var now = _time.GetUtcNow().ToUnixTimeSeconds();
 			if (now - Volatile.Read(ref entry.UsedAt) > TouchAfter.TotalSeconds)
 			{
 				Volatile.Write(ref entry.UsedAt, now);
@@ -184,10 +196,26 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 			return true;
 		}
 
-		/// <summary>Remembers the pull requests of a commit. Only answers that cannot change belong here.</summary>
+		/// <summary>Remembers the merged pull requests of a commit. That fact does not change.</summary>
 		public void Set(string sha, IReadOnlyList<CachedAssociation> pullRequests)
 		{
-			_entries[sha] = new CommitEntry { PullRequests = [.. pullRequests], UsedAt = _time.GetUtcNow().ToUnixTimeSeconds() };
+			var now = _time.GetUtcNow().ToUnixTimeSeconds();
+			_entries[sha] = new CommitEntry { PullRequests = [.. pullRequests], UsedAt = now, FirstSeen = now };
+			_ = Interlocked.Exchange(ref _dirty, 1);
+		}
+
+		/// <summary>
+		/// Remembers that a commit has no merged pull request. The time of the first such answer is kept, because that is what decides
+		/// when it is believed.
+		/// </summary>
+		public void SetNoPullRequest(string sha)
+		{
+			var now = _time.GetUtcNow().ToUnixTimeSeconds();
+			_ = _entries.AddOrUpdate(
+				sha,
+				_ => new CommitEntry { UsedAt = now, FirstSeen = now },
+				(_, existing) => existing.PullRequests.Count == 0 ? existing : new CommitEntry { UsedAt = now, FirstSeen = now }
+			);
 			_ = Interlocked.Exchange(ref _dirty, 1);
 		}
 
@@ -214,6 +242,10 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 		/// <summary>When a run last used the entry, in Unix seconds. Entries nobody uses for a month are dropped.</summary>
 		[JsonPropertyName("used")]
 		public long UsedAt;
+
+		/// <summary>When the entry was first written, in Unix seconds.</summary>
+		[JsonPropertyName("seen")]
+		public long FirstSeen;
 	}
 
 	internal sealed class CommitsFile

@@ -370,7 +370,8 @@ public sealed partial class GitHubCommitRangeService(
 	/// <summary>
 	/// The associated pull requests of every commit. What an earlier run learned comes from the cache, and only the commits it has
 	/// not seen are asked of GitHub, which is where a long range spends its time. A commit with a merged pull request is
-	/// remembered, because that fact does not change. One with none is asked again next time: GitHub may not have linked it yet.
+	/// remembered, because that fact does not change. One with none is remembered too, but only believed once it is a day old:
+	/// GitHub may not have linked a young commit yet.
 	/// </summary>
 	private async Task<Dictionary<string, GraphQlCommit?>?> ResolveCommitNodesAsync(
 		IDiagnosticsCollector collector,
@@ -408,8 +409,13 @@ public sealed partial class GitHubCommitRangeService(
 				var sha = batches[index][i];
 				_ = responses[index]!.TryGetValue($"c{i}", out var node);
 				nodes[sha] = node;
-				if (store is not null && ToCacheable(node) is { Count: > 0 } merged && merged.Any(a => a.BaseRepository == repoFullName))
+				if (store is null)
+					continue;
+
+				if (ToCacheable(node) is { Count: > 0 } merged && merged.Any(a => a.BaseRepository == repoFullName))
 					store.Set(sha, merged);
+				else
+					store.SetNoPullRequest(sha);
 			}
 		}
 

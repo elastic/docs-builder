@@ -10,6 +10,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -132,11 +133,12 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 	private async Task<(CommitRangeResolution? Result, int Associations, int Details)> ResolveWithCacheAsync(
 		IReadOnlyList<(string Sha, string[] PrNodes)> commits,
-		Func<string, string>? details = null
+		Func<string, string>? details = null,
+		TimeProvider? time = null
 	)
 	{
 		var (associations, detailQueries) = (0, 0);
-		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, time);
 		var handler = Handler(_ => CompareJson(commits.Count, commits.Select(c => c.Sha)), req =>
 		{
 			_ = Interlocked.Increment(ref associations);
@@ -225,6 +227,24 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		second.Associations.Should().Be(1, "GitHub may link a pull request to the other two later, so only the merged one is remembered");
 		second.Result!.CommitsWithoutPullRequest.Should().BeEquivalentTo([direct, unmerged]);
 		second.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_WithACache_ACommitWithoutAPullRequestIsBelievedOnceItIsADayOld()
+	{
+		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+		var (direct, merged) = (Sha(1), Sha(2));
+		IReadOnlyList<(string, string[])> commits = [(direct, []), (merged, [PrNode(30, mergeCommitSha: merged)])];
+
+		_ = await ResolveWithCacheAsync(commits, time: time);
+		var sameDay = await ResolveWithCacheAsync(commits, time: time);
+		time.Advance(TimeSpan.FromHours(25));
+		var nextDay = await ResolveWithCacheAsync(commits, time: time);
+
+		sameDay.Associations.Should().Be(1, "the direct commit is too young to be believed");
+		nextDay.Associations.Should().Be(0, "it has stood for a day, so nothing is asked");
+		nextDay.Result!.CommitsWithoutPullRequest.Should().Equal(direct);
+		nextDay.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
 	}
 
 	[Test]

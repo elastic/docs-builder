@@ -174,6 +174,49 @@ public class ChangelogCacheTests : IDisposable
 	}
 
 	[Test]
+	public async Task NoPullRequest_IsBelievedOnlyOnceItIsADayOld()
+	{
+		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+		var first = Cache(time);
+		first.Commits("elastic", "widget").SetNoPullRequest("direct");
+		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var young = Cache(time).Commits("elastic", "widget");
+		young.TryGet("direct", out _).Should().BeFalse("GitHub may not have linked a young commit yet");
+
+		time.Advance(TimeSpan.FromHours(25));
+		var old = Cache(time).Commits("elastic", "widget");
+		old.TryGet("direct", out var pullRequests).Should().BeTrue();
+		pullRequests.Should().BeEmpty();
+	}
+
+	[Test]
+	public void NoPullRequest_AskedAgainAndStillNone_KeepsTheTimeOfTheFirstAnswer()
+	{
+		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+		var store = Cache(time).Commits("elastic", "widget");
+		store.SetNoPullRequest("direct");
+
+		time.Advance(TimeSpan.FromHours(20));
+		store.SetNoPullRequest("direct");
+		time.Advance(TimeSpan.FromHours(5));
+
+		store.TryGet("direct", out _).Should().BeTrue("25 hours have passed since the first answer, not since the last");
+	}
+
+	[Test]
+	public void NoPullRequest_ThenAMergedOne_IsReplacedByIt()
+	{
+		var store = Cache().Commits("elastic", "widget");
+		store.SetNoPullRequest("sha1");
+
+		store.Set("sha1", [Squashed]);
+
+		store.TryGet("sha1", out var pullRequests).Should().BeTrue();
+		pullRequests.Should().Equal(Squashed);
+	}
+
+	[Test]
 	public void DefaultDirectory_IsUnderTheApplicationDataOfDocsBuilder() =>
 		ChangelogCache.DefaultDirectory().Should().EndWith(Path.Combine("docs-builder", "changelog-cache"));
 }
