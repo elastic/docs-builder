@@ -397,7 +397,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	)
 	{
 		List<CallOut> callOuts = [];
-		var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
+		var hasClassicCallout = span.IndexOf("<") >= 0 && span.LastIndexOf(">") == span.Length - 1;
 		if (hasClassicCallout)
 		{
 			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
