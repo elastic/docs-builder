@@ -87,7 +87,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		return service;
 	}
 
-	private async Task<string> WriteProfileConfig(string outputDir, string pivotProducts = "", string bundleExtra = "")
+	private async Task<string> WriteProfileConfig(
+		string outputDir,
+		string pivotProducts = "",
+		string bundleExtra = "",
+		string topLevel = ""
+	)
 	{
 		// language=yaml
 		var configContent = """
@@ -97,6 +102,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			    bug-fix: ">bug"
 			    breaking-change: ">breaking"
 			PIVOT_PRODUCTS
+			TOP_LEVEL
 			bundle:
 			  output_directory: PLACEHOLDER
 			  repo: widget
@@ -108,6 +114,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			"""
 			.Replace("PLACEHOLDER", outputDir)
 			.Replace("PIVOT_PRODUCTS", pivotProducts)
+			.Replace("TOP_LEVEL", topLevel.Length > 0 ? topLevel : "# no top-level settings")
 			.Replace("BUNDLE_EXTRA", bundleExtra.Length > 0 ? bundleExtra : "# no extra settings");
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
@@ -397,256 +404,6 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task ProfileMode_ProductLabelRouting_DerivesTheLabelsFromPivotProducts()
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir, "  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless");
-
-		CommitRangeArguments? seen = null;
-		var rangeService = A.Fake<IGitHubCommitRangeService>();
-		_ = A
-			.CallTo(() => rangeService.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._))
-			.Invokes((IDiagnosticsCollector _, CommitRangeArguments args, Cancel _) => seen = args)
-			.Returns(new CommitRangeResolution { TotalCommits = 1, PullRequests = [RangePr(100)], CommitsWithoutPullRequest = [] });
-		var service = Service(PoolHandler(), rangeService);
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "promotion",
-			ProfileArgument = "2026-08-13",
-			Config = configPath,
-			StartGitRef = StartRef,
-			EndGitRef = EndRef,
-			DryRun = true,
-			ProductLabelRouting = new ProductLabelRouting("cloud-serverless", ["cloud-serverless", "elasticsearch"])
-		};
-
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().BeTrue();
-		seen.Should().NotBeNull();
-		seen.FindRoutingLabel.Should().NotBeNull();
-		seen.FindRoutingLabel!(["stateful"]).Should().Be("stateful");
-		seen.FindRoutingLabel!(["stateful", "serverless"]).Should().BeNull();
-		seen.FindRoutingLabel!(["serverless"]).Should().BeNull();
-		seen.FindRoutingLabel!(["Team:Search"]).Should().BeNull();
-	}
-
-	[Test]
-	public async Task ProfileMode_WithoutProductLabelRouting_ExcludesNothingByLabel()
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir, "  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless");
-
-		CommitRangeArguments? seen = null;
-		var rangeService = A.Fake<IGitHubCommitRangeService>();
-		_ = A
-			.CallTo(() => rangeService.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._))
-			.Invokes((IDiagnosticsCollector _, CommitRangeArguments args, Cancel _) => seen = args)
-			.Returns(new CommitRangeResolution { TotalCommits = 1, PullRequests = [RangePr(100)], CommitsWithoutPullRequest = [] });
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "promotion",
-			ProfileArgument = "2026-08-13",
-			Config = configPath,
-			StartGitRef = StartRef,
-			EndGitRef = EndRef,
-			DryRun = true
-		};
-
-		var result = await Service(PoolHandler(), rangeService).BundleChangelogs(
-			Collector,
-			input,
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		result.Should().BeTrue();
-		seen.Should().NotBeNull();
-		seen.FindRoutingLabel.Should().BeNull();
-	}
-
-	[Test]
-	[Arguments(new[] { ">feature" }, new[] { "cloud-serverless", "elasticsearch" })]
-	[Arguments(new[] { ">feature", "stateful" }, new[] { "elasticsearch" })]
-	[Arguments(new[] { ">feature", "serverless" }, new[] { "cloud-serverless" })]
-	[Arguments(new[] { ">feature", "stateful", "serverless" }, new[] { "cloud-serverless", "elasticsearch" })]
-	[Arguments(new[] { ">feature", ">team-security" }, new[] { "cloud-serverless", "elasticsearch" })]
-	public async Task InferredEntry_EntryProducts_AreNarrowedByALabelThatMapsToOne(string[] labels, string[] expectedProducts)
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(
-			outputDir,
-			"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless\n    security: \">team-security\""
-		);
-		var prService = A.Fake<IGitHubPrService>();
-		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-		{
-			Title = "Faster entity resolution",
-			Body = "## Release Note\nEntity resolution runs faster.",
-			Labels = [.. labels],
-			LinkedIssues = []
-		});
-		var service = Service(PoolHandler(), RangeService(300), prService);
-
-		var result = await service.BundleChangelogs(
-			Collector,
-			new BundleChangelogsArguments
-			{
-				Profile = "promotion",
-				ProfileArgument = "2026-08-13",
-				Config = configPath,
-				StartGitRef = StartRef,
-				EndGitRef = EndRef,
-				EntryProducts = [new ProductArgument { Product = "cloud-serverless" }, new ProductArgument { Product = "elasticsearch" }]
-			},
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		result.Should().BeTrue();
-		var outputFile = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
-		var bundle = (await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken)).Replace(
-			"\r\n",
-			"\n"
-		);
-		var entryProducts = bundle[bundle.IndexOf("  products:\n", StringComparison.Ordinal)..];
-		foreach (var product in new[] { "cloud-serverless", "elasticsearch" })
-		{
-			if (expectedProducts.Contains(product))
-				entryProducts.Should().Contain($"- product: {product}\n");
-			else
-				entryProducts.Should().NotContain($"- product: {product}\n");
-		}
-	}
-
-	[Test]
-	public async Task ProfileMode_EveryPullRequestRoutedOutByLabel_SucceedsWithoutWritingABundle()
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir);
-
-		var rangeService = A.Fake<IGitHubCommitRangeService>();
-		_ = A.CallTo(
-			() => rangeService.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
-		).Returns(new CommitRangeResolution
-		{
-			TotalCommits = 2,
-			PullRequests = [],
-			CommitsWithoutPullRequest = [],
-			ExcludedPullRequests =
-			[
-				new CommitRangeExcludedPullRequest
-				{
-					Number = 700,
-					Url = "https://github.com/elastic/widget/pull/700",
-					BaseRef = "main",
-					Reason = CommitRangeExclusionReason.Label,
-					Label = "stateful"
-				}
-			]
-		});
-		var resolvedPaths = new List<string>();
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "promotion",
-			ProfileArgument = "2026-08-13",
-			Config = configPath,
-			StartGitRef = StartRef,
-			EndGitRef = EndRef,
-			OnBundlePathResolved = resolvedPaths.Add
-		};
-
-		var result = await Service(PoolHandler(), rangeService).BundleChangelogs(
-			Collector,
-			input,
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("routed out by its labels", StringComparison.Ordinal));
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
-		resolvedPaths.Should().BeEmpty("no bundle was written, so no path may be reported");
-	}
-
-	[Test]
-	public async Task ProfileMode_NoEntriesAndNoLabelRouting_StillErrors()
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		var configPath = await WriteProfileConfig(outputDir);
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "promotion",
-			ProfileArgument = "2026-08-13",
-			Config = configPath,
-			StartGitRef = StartRef,
-			EndGitRef = EndRef
-		};
-
-		var result = await Service(PoolHandler(), RangeService()).BundleChangelogs(
-			Collector,
-			input,
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		result.Should().BeFalse();
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("No changelog entries could be resolved", StringComparison.Ordinal)
-			);
-	}
-
-	[Test]
-	public async Task Resolver_ReportsLabelExclusionsApartFromBaseBranchExclusions()
-	{
-		var resolver = new GitRangeEntryResolver(A.Fake<IGitHubPrService>(), LoggerFactory.CreateLogger("GitRangeEntryResolver"));
-		var resolution = new CommitRangeResolution
-		{
-			TotalCommits = 2,
-			PullRequests = [],
-			CommitsWithoutPullRequest = [],
-			ExcludedPullRequests =
-			[
-				new CommitRangeExcludedPullRequest
-				{
-					Number = 11,
-					Url = "https://github.com/elastic/widget/pull/11",
-					BaseRef = "feature/x"
-				},
-				new CommitRangeExcludedPullRequest
-				{
-					Number = 12,
-					Url = "https://github.com/elastic/widget/pull/12",
-					BaseRef = "main",
-					Reason = CommitRangeExclusionReason.Label,
-					Label = "stateful"
-				}
-			]
-		};
-
-		var result = await resolver.ResolveAsync(
-			Collector,
-			resolution,
-			[],
-			null,
-			new GitRangeEntryResolutionOptions { Owner = "elastic", Repo = "widget", StartRef = StartRef, EndRef = EndRef },
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		var markdown = result.Report.ToMarkdown();
-		markdown.Should().Contain("| [#11](https://github.com/elastic/widget/pull/11) | excluded (base branch) | — |");
-		markdown.Should().Contain("| [#12](https://github.com/elastic/widget/pull/12) | excluded (label) | — |");
-	}
-
-	[Test]
 	public async Task ProfileMode_DryRun_ResolvesButWritesNothing()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -794,60 +551,123 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			);
 	}
 
-	[Test]
-	public async Task InferredEntry_EntryProducts_ReplaceLabelDerivedProducts()
+	private const string DefaultProductsAndRules =
+		"""
+		products:
+		  available:
+		    - cloud-serverless
+		    - elasticsearch
+		    - security
+		  default:
+		    - product: elasticsearch
+		    - product: cloud-serverless
+		rules:
+		  bundle:
+		    products:
+		      elasticsearch:
+		        exclude_types: [docs]
+		      cloud-serverless:
+		        exclude_types: [docs]
+		""";
+
+	private const string ServerlessLabelMapping =
+		"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless\n    security: \">team-security\"";
+
+	private async Task<(bool Result, string? Bundle)> BundleSinglePr(string[] labels, string profileProduct)
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
-		// A team label maps PR 300 to the product "security".
-		var configPath = await WriteProfileConfig(outputDir, "  products:\n    security: \">team-security\"");
+		var configPath = await WriteProfileConfig(outputDir, ServerlessLabelMapping, topLevel: DefaultProductsAndRules);
+		configPath = await RewriteProfileProduct(configPath, profileProduct);
 
 		var prService = A.Fake<IGitHubPrService>();
 		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
 		{
 			Title = "Faster entity resolution",
 			Body = "## Release Note\nEntity resolution runs faster.",
-			Labels = [">feature", ">team-security"],
+			Labels = [.. labels],
 			LinkedIssues = []
 		});
-
 		var service = Service(PoolHandler(), RangeService(300), prService);
 
-		async Task<string> Bundle(IReadOnlyList<ProductArgument>? entryProducts)
-		{
-			foreach (var file in FileSystem.Directory.GetFiles(outputDir, "*.yaml"))
-				FileSystem.File.Delete(file);
+		var result = await service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments
+			{
+				Profile = "promotion",
+				ProfileArgument = "2026-08-13",
+				Config = configPath,
+				StartGitRef = StartRef,
+				EndGitRef = EndRef
+			},
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-			var result = await service.BundleChangelogs(
-				Collector,
-				new BundleChangelogsArguments
-				{
-					Profile = "promotion",
-					ProfileArgument = "2026-08-13",
-					Config = configPath,
-					StartGitRef = StartRef,
-					EndGitRef = EndRef,
-					EntryProducts = entryProducts
-				},
-				TestContext.Current!.Execution.CancellationToken
-			);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		if (files.Length == 0)
+			return (result, null);
+		var content = await FileSystem.File.ReadAllTextAsync(files.Single(), TestContext.Current!.Execution.CancellationToken);
+		return (result, content.Replace("\r\n", "\n"));
+	}
+
+	/// <summary>The test profile bundles for <c>cloud-hosted</c>; point it at the product of the release under test.</summary>
+	private async Task<string> RewriteProfileProduct(string configPath, string product)
+	{
+		var content = await FileSystem.File.ReadAllTextAsync(configPath, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			content.Replace("output_products: \"cloud-hosted {version}\"", $"output_products: \"{product} {{version}}\""),
+			TestContext.Current!.Execution.CancellationToken
+		);
+		return configPath;
+	}
+
+	[Test]
+	[Arguments(new[] { ">feature" }, new[] { "cloud-serverless", "elasticsearch" })]
+	[Arguments(new[] { ">feature", "stateful" }, new[] { "elasticsearch" })]
+	[Arguments(new[] { ">feature", "serverless" }, new[] { "cloud-serverless" })]
+	[Arguments(new[] { ">feature", "stateful", "serverless" }, new[] { "cloud-serverless", "elasticsearch" })]
+	[Arguments(new[] { ">feature", ">team-security" }, new[] { "cloud-serverless", "elasticsearch" })]
+	public async Task InferredEntry_Products_StartFromTheDefaultsAndNarrowToTheLabelsThatMapToOne(
+		string[] labels,
+		string[] expectedProducts
+	)
+	{
+		// The profile bundles for elasticsearch, so rules.bundle drops an entry that no longer carries that product.
+		var (result, bundle) = await BundleSinglePr(labels, "elasticsearch");
+
+		if (!expectedProducts.Contains("elasticsearch"))
+		{
+			// An entry without the bundle product is dropped, and an empty range is not an error.
 			result.Should().BeTrue();
-			var outputFile = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
-			var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
-			// The YAML writer uses the platform line ending.
-			return content.Replace("\r\n", "\n");
+			bundle.Should().BeNull();
+			return;
 		}
 
-		// Without entry products the label decides.
-		var labelled = await Bundle(null);
-		labelled.Should().Contain("- product: security");
-		labelled.Should().NotContain("product: widget");
+		result.Should().BeTrue();
+		bundle.Should().NotBeNull();
+		var entryProducts = bundle![bundle.IndexOf("  products:\n", StringComparison.Ordinal)..];
+		foreach (var product in new[] { "cloud-serverless", "elasticsearch" })
+		{
+			if (expectedProducts.Contains(product))
+				entryProducts.Should().Contain($"- product: {product}\n");
+			else
+				entryProducts.Should().NotContain($"- product: {product}\n");
+		}
+	}
 
-		// With entry products the label no longer decides.
-		var forced = await Bundle([new ProductArgument { Product = "cloud-hosted" }, new ProductArgument { Product = "widget" }]);
-		forced.Should().Contain("Faster entity resolution");
-		forced.Should().Contain("  - product: cloud-hosted\n  - product: widget\n");
-		forced.Should().NotContain("product: security");
+	[Test]
+	public async Task ProfileMode_EveryEntryDroppedByTheBundleRules_SucceedsWithoutWritingABundle()
+	{
+		var (result, bundle) = await BundleSinglePr(["stateful"], "cloud-serverless");
+
+		result.Should().BeTrue();
+		bundle.Should().BeNull();
+		Collector.Errors.Should().Be(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("No bundle is written", StringComparison.Ordinal));
 	}
 
 	[Test]

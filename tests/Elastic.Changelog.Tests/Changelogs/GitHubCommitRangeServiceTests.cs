@@ -24,14 +24,6 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 	private static readonly CommitRangeArguments Args = new() { Owner = Owner, Repo = Repo, StartRef = "startsha", EndRef = "endsha" };
 
-	/// <summary>A router like the one built from <c>pivot.products</c>: an exclude label routes out unless a keep label is present.</summary>
-	private static Func<IReadOnlyCollection<string>, string?> Route(string[] exclude, string[]? keep = null) =>
-		labels =>
-		{
-			var present = labels.ToHashSet(StringComparer.OrdinalIgnoreCase);
-			return keep?.Any(present.Contains) == true ? null : exclude.FirstOrDefault(present.Contains);
-		};
-
 	private static string Sha(int i) => i.ToString(CultureInfo.InvariantCulture).PadLeft(40, '0');
 
 	private static string CompareJson(int totalCommits, IEnumerable<string> shas, string status = "ahead")
@@ -46,14 +38,13 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		bool merged = true,
 		string? mergeCommitSha = null,
 		string repoFullName = Owner + "/" + Repo,
-		string baseRefName = "main",
-		string[]? labels = null
+		string baseRefName = "main"
 	) =>
 		$$"""
 		{ "number": {{number}}, "url": "https://github.com/{{repoFullName}}/pull/{{number}}", "merged": {{(merged ? "true" : "false")}},
 		  "baseRefName": "{{baseRefName}}",
 		  "mergeCommit": {{(mergeCommitSha != null ? $$"""{ "oid": "{{mergeCommitSha}}" }""" : "null")}},
-		  "baseRepository": { "nameWithOwner": "{{repoFullName}}" }{{(labels != null ? $$""", "labels": { "nodes": [{{string.Join(",", labels.Select(l => $$"""{ "name": "{{l}}" }"""))}}] }""" : "")}} }
+		  "baseRepository": { "nameWithOwner": "{{repoFullName}}" } }
 		""";
 
 	private static string GraphQlJson(IReadOnlyList<(string Sha, string[] PrNodes)> commits)
@@ -210,107 +201,6 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.ExcludedPullRequests[0].BaseRef.Should().Be("feature/highlight");
 		// Excluded by base branch is not the same as "no associated PR": report it once.
 		result.CommitsWithoutPullRequest.Should().BeEmpty();
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_LeavesOutPullRequestsWithTheLabel()
-	{
-		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
-		var handler = Handler(
-			_ => CompareJson(3, [sha1, sha2, sha3]),
-			_ => GraphQlJson([
-				(sha1, [PrNode(11, mergeCommitSha: sha1, labels: [">bug", "stateful"])]),
-				(sha2, [PrNode(12, mergeCommitSha: sha2, labels: [">bug"])]),
-				(sha3, [PrNode(13, mergeCommitSha: sha3, labels: [">bug", "serverless"])])
-			])
-		);
-		var args = Args with { FindRoutingLabel = Route(["stateful"], ["serverless"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.PullRequests.Select(pr => pr.Number).Should().Equal(12, 13);
-		result.ExcludedPullRequests.Should().ContainSingle();
-		result.ExcludedPullRequests[0].Number.Should().Be(11);
-		result.ExcludedPullRequests[0].Reason.Should().Be(CommitRangeExclusionReason.Label);
-		result.ExcludedPullRequests[0].Label.Should().Be("stateful");
-		// Excluded by label is not "no associated PR": report it once.
-		result.CommitsWithoutPullRequest.Should().BeEmpty();
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_PullRequestWithBothLabelsStaysIn()
-	{
-		var sha1 = Sha(1);
-		var handler = Handler(
-			_ => CompareJson(1, [sha1]),
-			_ => GraphQlJson([(sha1, [PrNode(14, mergeCommitSha: sha1, labels: ["stateful", "serverless"])])])
-		);
-		var args = Args with { FindRoutingLabel = Route(["stateful"], ["serverless"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.PullRequests.Select(pr => pr.Number).Should().Equal(14);
-		result.ExcludedPullRequests.Should().BeEmpty();
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_WithoutAKeepingLabelExcludesEvenWithOtherLabels()
-	{
-		var sha1 = Sha(1);
-		var handler = Handler(
-			_ => CompareJson(1, [sha1]),
-			_ => GraphQlJson([(sha1, [PrNode(15, mergeCommitSha: sha1, labels: ["stateful", "serverless"])])])
-		);
-		var args = Args with { FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.PullRequests.Should().BeEmpty();
-		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(15);
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_CompareCaseInsensitively()
-	{
-		var sha1 = Sha(1);
-		var handler = Handler(
-			_ => CompareJson(1, [sha1]),
-			_ => GraphQlJson([(sha1, [PrNode(16, mergeCommitSha: sha1, labels: ["Stateful"])])])
-		);
-		var args = Args with { FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(16);
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_ReportsBothReasonsWhenBaseBranchAndLabelExclude()
-	{
-		var (sha1, sha2, sha3) = (Sha(1), Sha(2), Sha(3));
-		var handler = Handler(
-			_ => CompareJson(3, [sha1, sha2, sha3]),
-			_ => GraphQlJson([
-				(sha1, [PrNode(11, mergeCommitSha: sha1, baseRefName: "feature/highlight", labels: [])]),
-				(sha2, [PrNode(12, mergeCommitSha: sha2, labels: ["stateful"])]),
-				(sha3, [PrNode(13, mergeCommitSha: sha3, labels: [])])
-			])
-		);
-		var args = Args with { BaseRef = "main", FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.PullRequests.Select(pr => pr.Number).Should().Equal(13);
-		result
-			.ExcludedPullRequests
-			.Select(pr => (pr.Number, pr.Reason))
-			.Should()
-			.Equal((11, CommitRangeExclusionReason.BaseBranch), (12, CommitRangeExclusionReason.Label));
 	}
 
 	[Test]
@@ -480,120 +370,6 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().NotBeNull();
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
-	}
-
-	private static string PrNodeWithLabelPages(
-		int number,
-		string sha,
-		string firstPageLabel,
-		string repoFullName = "elastic/widget",
-		string baseRefName = "main"
-	) =>
-		$$"""
-		{ "number": {{number}}, "url": "https://github.com/{{repoFullName}}/pull/{{number}}", "merged": true, "baseRefName": "{{baseRefName}}",
-		  "mergeCommit": { "oid": "{{sha}}" }, "baseRepository": { "nameWithOwner": "{{repoFullName}}" },
-		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "{{firstPageLabel}}" } ] } }
-		""";
-
-	private static string LabelPage(string label) =>
-		$$"""{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "{{label}}" } ] } } } } }""";
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_ReadsLaterLabelPagesBeforeExcluding()
-	{
-		// `stateful` is on the first page and `serverless` on the second: reading only the first page would exclude the PR.
-		var sha1 = Sha(1);
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-			return query.Contains("cursor-1", StringComparison.Ordinal)
-				? LabelPage("serverless")
-				: GraphQlJson([(sha1, [PrNodeWithLabelPages(11, sha1, "stateful")])]);
-		});
-		var args = Args with { FindRoutingLabel = Route(["stateful"], ["serverless"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.ExcludedPullRequests.Should().BeEmpty();
-		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("stateful", "serverless");
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_ExcludesOnAnExcludeLabelOnALaterPage()
-	{
-		var sha1 = Sha(1);
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-			return query.Contains("cursor-1", StringComparison.Ordinal)
-				? LabelPage("stateful")
-				: GraphQlJson([(sha1, [PrNodeWithLabelPages(12, sha1, "bug")])]);
-		});
-		var args = Args with { FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		result.PullRequests.Should().BeEmpty();
-		result.ExcludedPullRequests.Should().ContainSingle().Which.Number.Should().Be(12);
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_DoesNotReadLabelPagesOfPullRequestsFromOtherRepositories()
-	{
-		// The foreign PR has a second page of labels. Its number means a different PR in this repository, so asking for it would be wrong.
-		var sha1 = Sha(1);
-		var labelPageRequests = 0;
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-			if (!query.Contains("cursor-1", StringComparison.Ordinal))
-				return GraphQlJson([
-					(sha1, [
-						PrNodeWithLabelPages(99, sha1, "bug", repoFullName: "someone/else"),
-						PrNode(11, mergeCommitSha: sha1, labels: ["bug"])
-					])
-				]);
-			labelPageRequests++;
-			return LabelPage("stateful");
-		});
-		var args = Args with { FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		Collector.Errors.Should().Be(0);
-		labelPageRequests.Should().Be(0);
-		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
-	}
-
-	[Test]
-	public async Task ResolvePullRequests_RoutingLabel_DoesNotReadLabelPagesOfPullRequestsOnOtherBranches()
-	{
-		var sha1 = Sha(1);
-		var labelPageRequests = 0;
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-			if (!query.Contains("cursor-1", StringComparison.Ordinal))
-				return GraphQlJson([
-					(sha1, [
-						PrNodeWithLabelPages(11, sha1, "bug", baseRefName: "feature/x"),
-						PrNode(12, mergeCommitSha: sha1, labels: ["bug"])
-					])
-				]);
-			labelPageRequests++;
-			return LabelPage("stateful");
-		});
-		var args = Args with { BaseRef = "main", FindRoutingLabel = Route(["stateful"]) };
-
-		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
-
-		result.Should().NotBeNull();
-		labelPageRequests.Should().Be(0);
-		result.PullRequests.Select(pr => pr.Number).Should().Equal(12);
-		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(11);
 	}
 
 	private static HttpResponseMessage Json(string body) =>

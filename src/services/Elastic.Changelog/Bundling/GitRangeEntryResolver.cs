@@ -38,12 +38,6 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
-
-	/// <summary>
-	/// Products applied to every entry synthesized from PR metadata, replacing label-derived and
-	/// <see cref="FallbackProducts"/> products. Label-derived products still drive label blockers.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -63,9 +57,6 @@ public enum GitRangePrSourceKind
 
 	/// <summary>Merged into a branch other than the requested base branch (for example a feature branch).</summary>
 	ExcludedBaseBranch,
-
-	/// <summary>A label routes it to another product (<c>pivot.products</c>) and no label routes it to the bundle's product.</summary>
-	ExcludedLabel,
 
 	/// <summary>The PR's metadata could not be fetched; no entry could be produced.</summary>
 	Missing
@@ -115,7 +106,6 @@ public record GitRangeBundleReport
 				GitRangePrSourceKind.InferredTitle => "inferred (title)",
 				GitRangePrSourceKind.Excluded => "excluded (rules)",
 				GitRangePrSourceKind.ExcludedBaseBranch => "excluded (base branch)",
-				GitRangePrSourceKind.ExcludedLabel => "excluded (label)",
 				_ => "missing"
 			};
 			var entry = row.EntryFileNames.Count > 0 ? string.Join(", ", row.EntryFileNames.Select(f => $"`{f}`")) : "—";
@@ -219,9 +209,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			{
 				Number = excluded.Number,
 				Url = excluded.Url,
-				Source = excluded.Reason == CommitRangeExclusionReason.Label
-					? GitRangePrSourceKind.ExcludedLabel
-					: GitRangePrSourceKind.ExcludedBaseBranch
+				Source = GitRangePrSourceKind.ExcludedBaseBranch
 			});
 		}
 
@@ -340,7 +328,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			allowMatchingMetadataAttribute: true
 		) ? parsedType : ChangelogEntryType.Other;
 
-		var products = ResolveProducts(collector, pr, labelProducts, options);
+		var products = ResolveProducts(collector, pr, labelProducts, config, options);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
@@ -392,26 +380,25 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: the explicit entry products when set, narrowed to the ones a label maps to; otherwise label-derived
-	/// products win; otherwise the concrete (non-wildcard) fallback products from the profile/CLI.
+	/// Products for a synthesized entry. With <c>products.default</c> configured, they start from those defaults and narrow to
+	/// the ones a label maps to, so a pull request labelled for one product is an entry of that product only. A label that maps
+	/// outside the defaults, such as a team label, does not decide. Without defaults, label-derived products win; otherwise the
+	/// concrete (non-wildcard) fallback products from the profile/CLI.
 	/// Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
 		IReadOnlyList<ProductArgument> labelProducts,
+		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options
 	)
 	{
-		if (options.EntryProducts is { Count: > 0 })
+		if (config?.ProductsConfiguration?.Default is { Count: > 0 } defaults)
 		{
-			// A label that maps to one of the entry products narrows them: a pull request labelled for one product
-			// is an entry of that product only. Any other label, such as a team label, does not decide.
-			var mapped = options
-				.EntryProducts
-				.Where(entry => labelProducts.Any(label => SameProductId(label.Product, entry.Product)))
-				.ToList();
-			return (mapped.Count > 0 ? mapped : options.EntryProducts).Select(p => p.ToProductReference()).ToList();
+			var defaultProducts = defaults.Select(d => new ProductArgument { Product = d.Product }).ToList();
+			var mapped = defaultProducts.Where(entry => labelProducts.Any(label => SameProductId(label.Product, entry.Product))).ToList();
+			return (mapped.Count > 0 ? mapped : defaultProducts).Select(p => p.ToProductReference()).ToList();
 		}
 
 		var source = labelProducts.Count > 0

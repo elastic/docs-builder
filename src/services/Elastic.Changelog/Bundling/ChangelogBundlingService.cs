@@ -36,11 +36,6 @@ public record BundleChangelogsArguments
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
 
-	/// <summary>
-	/// Commit-range mode only. Products set on every entry synthesized from PR metadata, replacing
-	/// label-derived and <see cref="OutputProducts"/> products. Entries from the changelog pool keep their own products.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -155,13 +150,6 @@ public record BundleChangelogsArguments
 	/// <c>release serverless</c>; not a <c>changelog bundle</c> option.
 	/// </summary>
 	public string? BaseRef { get; init; }
-
-	/// <summary>
-	/// With a git ref range, leaves out the pull requests that the labels route to another product
-	/// (see <see cref="ProductLabelRouting"/>). Set programmatically by <c>release serverless</c>; not a
-	/// <c>changelog bundle</c> option.
-	/// </summary>
-	public ProductLabelRouting? ProductLabelRouting { get; init; }
 
 	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
@@ -520,7 +508,8 @@ public partial class ChangelogBundlingService(
 		ChangelogConfiguration? config,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		string outputPath,
-		Cancel ctx
+		Cancel ctx,
+		bool allowEmpty = false
 	)
 	{
 		// Apply rules.bundle secondary filter (three modes: none, global content, per-product context).
@@ -545,6 +534,17 @@ public partial class ChangelogBundlingService(
 
 		if (filteredEntries.Count == 0)
 		{
+			// A range can hold only entries that belong to another product, for example a submodule range of stack-only
+			// pull requests in a Serverless bundle. Write no bundle and let the other bundles of the release go ahead.
+			if (allowEmpty && collector.Errors == 0)
+			{
+				collector.EmitWarning(
+					string.Empty,
+					"No changelog entries remained after applying rules.bundle filter. No bundle is written."
+				);
+				return true;
+			}
+
 			collector.EmitError(string.Empty, "No changelog entries remained after applying rules.bundle filter");
 			return false;
 		}
@@ -988,8 +988,7 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				BaseRef = input.BaseRef,
-				FindRoutingLabel = input.ProductLabelRouting?.CreateLabelRouter(config?.LabelToProducts)
+				BaseRef = input.BaseRef
 			},
 			ctx
 		);
@@ -1035,8 +1034,7 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts,
-				EntryProducts = input.EntryProducts
+				FallbackProducts = input.OutputProducts
 			},
 			ctx
 		);
@@ -1062,20 +1060,6 @@ public partial class ChangelogBundlingService(
 
 		if (allEntries.Count == 0)
 		{
-			// Every pull request was routed out by its labels, so this repository has nothing to note for the range.
-			// That is not an error: write no bundle and let the other bundles of the release go ahead.
-			if (
-				resolution.PullRequests.Count == 0
-				&& resolution.ExcludedPullRequests.Any(pr => pr.Reason == CommitRangeExclusionReason.Label)
-			)
-			{
-				collector.EmitWarning(
-					string.Empty,
-					$"Every pull request in commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo} is routed out by its labels. No bundle is written."
-				);
-				return true;
-			}
-
 			collector.EmitError(
 				string.Empty,
 				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."
@@ -1083,7 +1067,7 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx, allowEmpty: true);
 	}
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>

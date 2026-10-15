@@ -329,21 +329,35 @@ products:
 
 ### Routing a pull request between release notes [products-routing]
 
-`pivot.products` also decides which release notes a pull request appears in when a bundle is built for Serverless (`release serverless`). The labels that route are the ones that map to the service's product (for example `elasticsearch` or `kibana`) or to `cloud-serverless`. Labels that map to other products, such as team labels, do not.
+When a bundle is built from a git range (`release serverless`), each pull request without a checked-in entry gets its products from `products.default` and `pivot.products`. The entry starts with the default products. Labels that map to one of the defaults narrow it to those products. Labels that map to other products, such as team labels, do not decide.
 
-- A pull request with a label that maps to the service's product, and no label that maps to `cloud-serverless`, stays out of the Serverless bundle.
-- A pull request with a label that maps to `cloud-serverless`, with labels for both products, or with no routing label at all stays in.
+The `rules.bundle` product rules then keep the entry in a bundle only if the entry carries the bundle's product. A pull request that only affects one product therefore stays out of the other product's release notes.
 
 ```yaml
+products:
+  default:
+    - product: elasticsearch
+    - product: cloud-serverless
+
 pivot:
   products:
     'elasticsearch':
       - "stateful"
     'cloud-serverless':
       - "serverless"
+
+rules:
+  bundle:
+    products:
+      'elasticsearch':
+        exclude_types: [docs]
+      'cloud-serverless':
+        exclude_types: [docs]
 ```
 
-With this mapping, a pull request labelled `stateful` stays out of the Serverless release notes. A pull request labelled `serverless`, labelled with both, or labelled with neither stays in. The entry carries only the products that its labels map to, or both products when no label does.
+With this configuration, a pull request labelled `stateful` is an entry of `elasticsearch` only, so it stays out of the `cloud-serverless` bundle. A pull request labelled `serverless` is an entry of `cloud-serverless` only. A pull request labelled with both, or with neither, carries both products and stays in. If a range leaves no entries for the bundle, the command writes no bundle and reports a warning.
+
+Checked-in entries keep the products they declare.
 
 ## Rules
 
