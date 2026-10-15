@@ -177,7 +177,7 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 
 			using var stream = File.OpenRead(path);
 			var file = JsonSerializer.Deserialize(stream, typeInfo);
-			if (file is { Version: SchemaVersion, Entries: { } entries })
+			if (file is { Version: SchemaVersion, Entries: { } entries } && entries.Values.All(e => e?.Value is not null))
 				return new VersionedStore<TValue>(_time, entries);
 
 			logger.LogInformation("Ignoring the cache file {File}: it was written by another version", path);
@@ -200,7 +200,10 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 
 			using var stream = File.OpenRead(path);
 			var file = JsonSerializer.Deserialize(stream, ChangelogCacheJsonContext.Default.CommitsFile);
-			if (file is { Version: SchemaVersion, Entries: { } entries })
+			if (
+				file is { Version: SchemaVersion, Entries: { } entries }
+				&& entries.Values.All(e => e is { PullRequests: { } prs } && prs.All(p => p is not null))
+			)
 				return new CommitStore(_time, entries);
 
 			logger.LogInformation("Ignoring the cache file {File}: it was written by another version", path);
@@ -268,15 +271,12 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 
 		/// <summary>
 		/// The pull requests of a commit, when an earlier run found them. An empty list is the answer "no merged pull request", and it
-		/// counts only once it has stood for <see cref="NoPullRequestSettlesAfter"/>.
+		/// counts only once a later answer, given after <see cref="NoPullRequestSettlesAfter"/>, has confirmed it.
 		/// </summary>
 		public bool TryGet(string sha, out IReadOnlyList<CachedAssociation> pullRequests)
 		{
 			var now = _time.GetUtcNow().ToUnixTimeSeconds();
-			if (
-				!_entries.TryGetValue(sha, out var entry)
-				|| (entry.PullRequests.Count == 0 && now - entry.FirstSeen < NoPullRequestSettlesAfter.TotalSeconds)
-			)
+			if (!_entries.TryGetValue(sha, out var entry) || (entry.PullRequests.Count == 0 && !entry.Confirmed))
 			{
 				pullRequests = [];
 				return false;
@@ -307,11 +307,17 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 		public void SetNoPullRequest(string sha)
 		{
 			var now = _time.GetUtcNow().ToUnixTimeSeconds();
-			_ = _entries.AddOrUpdate(
-				sha,
-				_ => new CommitEntry { UsedAt = now, FirstSeen = now },
-				(_, existing) => existing.PullRequests.Count == 0 ? existing : new CommitEntry { UsedAt = now, FirstSeen = now }
-			);
+			_ = _entries.AddOrUpdate(sha, _ => new CommitEntry { UsedAt = now, FirstSeen = now }, (_, existing) =>
+			{
+				if (existing.PullRequests.Count > 0)
+					return new CommitEntry { UsedAt = now, FirstSeen = now };
+
+				// Only a fresh answer given after the settling interval confirms the earlier negative.
+				if (now - existing.FirstSeen >= NoPullRequestSettlesAfter.TotalSeconds)
+					existing.Confirmed = true;
+				existing.UsedAt = now;
+				return existing;
+			});
 			_ = Interlocked.Exchange(ref _dirty, 1);
 		}
 
@@ -430,6 +436,10 @@ public sealed partial class ChangelogCache(string directory, ILogger logger, Tim
 		/// <summary>When the entry was first written, in Unix seconds.</summary>
 		[JsonPropertyName("seen")]
 		public long FirstSeen;
+
+		/// <summary>Whether a run asked GitHub again after the settling interval and still found no pull request.</summary>
+		[JsonPropertyName("confirmed")]
+		public bool Confirmed;
 	}
 
 	internal sealed class CommitsFile

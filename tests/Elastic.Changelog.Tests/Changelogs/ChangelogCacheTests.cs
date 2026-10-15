@@ -175,24 +175,24 @@ public class ChangelogCacheTests : IDisposable
 	}
 
 	[Test]
-	public async Task NoPullRequest_IsBelievedOnlyOnceItIsADayOld()
+	public async Task NoPullRequest_IsBelievedOnlyOnceAFreshAnswerAfterADayConfirmsIt()
 	{
 		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
 		var first = Cache(time);
 		first.Commits("elastic", "widget").SetNoPullRequest("direct");
 		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var young = Cache(time).Commits("elastic", "widget");
-		young.TryGet("direct", out _).Should().BeFalse("GitHub may not have linked a young commit yet");
-
 		time.Advance(TimeSpan.FromHours(25));
 		var old = Cache(time).Commits("elastic", "widget");
+		old.TryGet("direct", out _).Should().BeFalse("the negative must be asked of GitHub again after a day");
+
+		old.SetNoPullRequest("direct");
 		old.TryGet("direct", out var pullRequests).Should().BeTrue();
 		pullRequests.Should().BeEmpty();
 	}
 
 	[Test]
-	public void NoPullRequest_AskedAgainAndStillNone_KeepsTheTimeOfTheFirstAnswer()
+	public void NoPullRequest_AskedAgainWithinADay_IsStillNotBelieved()
 	{
 		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
 		var store = Cache(time).Commits("elastic", "widget");
@@ -200,9 +200,22 @@ public class ChangelogCacheTests : IDisposable
 
 		time.Advance(TimeSpan.FromHours(20));
 		store.SetNoPullRequest("direct");
-		time.Advance(TimeSpan.FromHours(5));
 
-		store.TryGet("direct", out _).Should().BeTrue("25 hours have passed since the first answer, not since the last");
+		store.TryGet("direct", out _).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task CommitsFile_WithANullPullRequestList_IsIgnored()
+	{
+		var path = CommitsFile();
+		_ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+		await File.WriteAllTextAsync(
+			path,
+			"""{"version":1,"commits":{"abc":{"prs":null,"used":1,"seen":1}}}""",
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		Cache().Commits("elastic", "widget").TryGet("abc", out _).Should().BeFalse();
 	}
 
 	[Test]

@@ -448,7 +448,10 @@ public sealed partial class GitHubCommitRangeService(
 				if (store is null)
 					continue;
 
-				if (ToCacheable(node) is { Count: > 0 } merged && merged.Any(a => a.BaseRepository == repoFullName))
+				if (
+					ToCacheable(node) is { Count: > 0 } merged
+					&& merged.Any(a => string.Equals(a.BaseRepository, repoFullName, StringComparison.OrdinalIgnoreCase))
+				)
 					store.Set(sha, merged);
 				else
 					store.SetNoPullRequest(sha);

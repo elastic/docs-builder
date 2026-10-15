@@ -230,7 +230,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task ResolvePullRequests_WithACache_ACommitWithoutAPullRequestIsBelievedOnceItIsADayOld()
+	public async Task ResolvePullRequests_WithACache_ACommitWithoutAPullRequestIsBelievedOnceAFreshAnswerAfterADayConfirmsIt()
 	{
 		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
 		var (direct, merged) = (Sha(1), Sha(2));
@@ -240,11 +240,13 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var sameDay = await ResolveWithCacheAsync(commits, time: time);
 		time.Advance(TimeSpan.FromHours(25));
 		var nextDay = await ResolveWithCacheAsync(commits, time: time);
+		var dayAfter = await ResolveWithCacheAsync(commits, time: time);
 
 		sameDay.Associations.Should().Be(1, "the direct commit is too young to be believed");
-		nextDay.Associations.Should().Be(0, "it has stood for a day, so nothing is asked");
-		nextDay.Result!.CommitsWithoutPullRequest.Should().Equal(direct);
-		nextDay.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
+		nextDay.Associations.Should().Be(1, "a negative older than a day is asked of GitHub once more");
+		dayAfter.Associations.Should().Be(0, "the fresh negative confirmed it, so nothing is asked");
+		dayAfter.Result!.CommitsWithoutPullRequest.Should().Equal(direct);
+		dayAfter.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
 	}
 
 	[Test]
