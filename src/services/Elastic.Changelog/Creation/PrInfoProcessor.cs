@@ -39,10 +39,9 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return new PrProcessingResult { FetchFailed = true, ShouldSkip = false };
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = input.Products;
-		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
+		// Resolve the products the entry will get (explicit, else labels, else products.default) so the blocker check
+		// sees the per-product rules of the product; only a genuinely unresolved product falls back to the global rules.
+		var effectiveProducts = ResolveProductsForBlockerCheck(input.Products, prInfo, config);
 
 		// Check for label blockers using effective products (including label-derived ones)
 		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions))
@@ -80,11 +79,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return (false, null);
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = products;
-		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
-
+		var effectiveProducts = ResolveProductsForBlockerCheck(products, prInfo, config);
 		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions);
 		return (shouldSkip, prInfo);
 	}
@@ -237,6 +232,23 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			logger.LogDebug("Using explicitly provided issues, ignoring PR body");
 
 		return derived;
+	}
+
+	/// <summary>
+	/// The products the entry will get, for the blocker check: the explicit products, else the label-derived ones
+	/// (with implied products), else <c>products.default</c>. Empty only when none applies.
+	/// </summary>
+	internal static IReadOnlyList<ProductArgument> ResolveProductsForBlockerCheck(
+		IReadOnlyList<ProductArgument> explicitProducts,
+		GitHubPrInfo prInfo,
+		ChangelogConfiguration config
+	)
+	{
+		if (explicitProducts.Count > 0)
+			return explicitProducts;
+
+		var labelProducts = config.LabelToProducts != null ? ProductResolution.FromLabels(prInfo.Labels.ToArray(), config) : [];
+		return labelProducts.Count > 0 ? labelProducts : ProductResolution.Defaults(config);
 	}
 
 	internal static bool ShouldSkipPrDueToLabelBlockers(
