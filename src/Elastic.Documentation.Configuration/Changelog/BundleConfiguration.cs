@@ -4,6 +4,16 @@
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
+/// <summary>Which pull requests are backports of an earlier pull request.</summary>
+public record BackportsConfiguration
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport. Globs are not supported: a pattern such as
+	/// <c>backport*</c> would also match opt-out labels like <c>backport-skip</c>.
+	/// </summary>
+	public required IReadOnlyList<string> Labels { get; init; }
+}
+
 /// <summary>
 /// Configuration for bundle operations
 /// </summary>
@@ -73,6 +83,12 @@ public record BundleConfiguration
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; init; }
+
+	/// <summary>
+	/// Which pull requests are backports. When set, a commit-range bundle replaces a pull request that has one of
+	/// these labels with the original pull request it was backported from. <c>null</c> leaves tracing off.
+	/// </summary>
+	public BackportsConfiguration? Backports { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.
@@ -162,19 +178,6 @@ public record BundleProfile
 	/// When the bundle is rendered, entries with matching feature-id values will be commented out.
 	/// </summary>
 	public IReadOnlyList<string>? HideFeatures { get; init; }
-
-	/// <summary>
-	/// Labels that leave a pull request out of a commit-range bundle (<c>release serverless</c>, <c>release unified</c>).
-	/// A pull request that carries one of these labels is reported as excluded, unless it also carries a
-	/// <see cref="KeepLabels"/> label. Ignored by bundles that are not built from a commit range.
-	/// </summary>
-	public IReadOnlyList<string>? ExcludeLabels { get; init; }
-
-	/// <summary>
-	/// Labels that protect a pull request from <see cref="ExcludeLabels"/>. A pull request that carries both an
-	/// exclude label and a keep label stays in the bundle.
-	/// </summary>
-	public IReadOnlyList<string>? KeepLabels { get; init; }
 
 	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.

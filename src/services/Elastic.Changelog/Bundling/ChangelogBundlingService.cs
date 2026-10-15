@@ -157,14 +157,11 @@ public record BundleChangelogsArguments
 	public string? BaseRef { get; init; }
 
 	/// <summary>
-	/// With a git ref range, pull requests that carry one of these labels are left out and appear in the run report
-	/// as excluded, unless they also carry a <see cref="KeepLabels"/> label. Taken from the profile's
-	/// <c>exclude_labels</c>; not a <c>changelog bundle</c> option.
+	/// With a git ref range, leaves out the pull requests that the labels route to another product
+	/// (see <see cref="ProductLabelRouting"/>). Set programmatically by <c>release serverless</c>; not a
+	/// <c>changelog bundle</c> option.
 	/// </summary>
-	public IReadOnlyList<string>? ExcludeLabels { get; init; }
-
-	/// <summary>A pull request that carries any of these labels is never excluded by <see cref="ExcludeLabels"/>. Taken from the profile's <c>keep_labels</c>.</summary>
-	public IReadOnlyList<string>? KeepLabels { get; init; }
+	public ProductLabelRouting? ProductLabelRouting { get; init; }
 
 	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
@@ -216,7 +213,8 @@ public partial class ChangelogBundlingService(
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	IGitHubBackportService? backportService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
@@ -225,6 +223,7 @@ public partial class ChangelogBundlingService(
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -674,8 +673,6 @@ public partial class ChangelogBundlingService(
 		string? owner = null;
 		string? branch = null;
 		string[]? mergedHideFeatures = null;
-		IReadOnlyList<string>? excludeLabels = null;
-		IReadOnlyList<string>? keepLabels = null;
 		string? profileDescription = null;
 		var profileSuppressReleaseDate = false;
 
@@ -750,8 +747,6 @@ public partial class ChangelogBundlingService(
 #pragma warning restore CS0618
 			branch = profile.Branch ?? config.Bundle.Branch;
 			mergedHideFeatures = profile.HideFeatures?.Count > 0 ? [.. profile.HideFeatures] : null;
-			excludeLabels = profile.ExcludeLabels?.Count > 0 ? [.. profile.ExcludeLabels] : null;
-			keepLabels = profile.KeepLabels?.Count > 0 ? [.. profile.KeepLabels] : null;
 			profileSuppressReleaseDate = !(profile.ReleaseDates ?? config.Bundle.ReleaseDates ?? true);
 
 			// Handle profile-specific description with placeholder substitution.
@@ -827,8 +822,6 @@ public partial class ChangelogBundlingService(
 			Owner = owner ?? input.Owner,
 			Branch = branch ?? input.Branch,
 			HideFeatures = mergedHideFeatures,
-			ExcludeLabels = excludeLabels ?? input.ExcludeLabels,
-			KeepLabels = keepLabels ?? input.KeepLabels,
 			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
@@ -987,6 +980,7 @@ public partial class ChangelogBundlingService(
 		}
 
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
+		var routedLabels = input.ProductLabelRouting?.DeriveLabels(config?.LabelToProducts);
 		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
 			collector,
 			new CommitRangeArguments
@@ -996,13 +990,31 @@ public partial class ChangelogBundlingService(
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
 				BaseRef = input.BaseRef,
-				ExcludeLabels = input.ExcludeLabels,
-				KeepLabels = input.KeepLabels
+				ExcludeLabels = routedLabels?.Exclude,
+				KeepLabels = routedLabels?.Keep
 			},
 			ctx
 		);
 		if (resolution == null)
 			return false;
+
+		var backportReport = string.Empty;
+		if (config?.Bundle?.Backports is { Labels.Count: > 0 } backports)
+		{
+			var trace = await BackportTracer.TraceAsync(
+				collector,
+				_backportService,
+				(owner, sourcing.Repo),
+				backports.Labels,
+				resolution,
+				ctx
+			);
+			if (trace == null)
+				return false;
+
+			resolution = trace.Resolution;
+			backportReport = trace.ToMarkdown();
+		}
 
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
@@ -1031,7 +1043,7 @@ public partial class ChangelogBundlingService(
 			ctx
 		);
 
-		var report = result.Report.ToMarkdown();
+		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
 		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)

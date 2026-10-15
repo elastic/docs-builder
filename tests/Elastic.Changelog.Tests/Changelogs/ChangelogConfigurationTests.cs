@@ -52,56 +52,6 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task LoadChangelogConfiguration_BundleProfileExcludeAndKeepLabels_AcceptAStringAndAList()
-	{
-		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		var docsDir = FileSystem.Path.Join(configDir, "docs");
-		FileSystem.Directory.CreateDirectory(docsDir);
-		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
-		// language=yaml
-		var configContent =
-			"""
-			pivot:
-			  types:
-			    feature: ">feature"
-			    bug-fix: ">bug"
-			    breaking-change: ">breaking"
-			bundle:
-			  profiles:
-			    serverless-release:
-			      product: cloud-serverless
-			      exclude_labels: stateful
-			      keep_labels:
-			        - serverless
-			        - both
-			    plain:
-			      product: elasticsearch
-			""";
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
-
-		var originalDir = FileSystem.Directory.GetCurrentDirectory();
-		try
-		{
-			FileSystem.Directory.SetCurrentDirectory(configDir);
-
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
-
-			config.Should().NotBeNull();
-			Collector.Errors.Should().Be(0);
-			var profiles = config.Bundle!.Profiles!;
-			profiles["serverless-release"].ExcludeLabels.Should().Equal("stateful");
-			profiles["serverless-release"].KeepLabels.Should().Equal("serverless", "both");
-			profiles["plain"].ExcludeLabels.Should().BeNull();
-			profiles["plain"].KeepLabels.Should().BeNull();
-		}
-		finally
-		{
-			FileSystem.Directory.SetCurrentDirectory(originalDir);
-		}
-	}
-
-	[Test]
 	public async Task LoadChangelogConfiguration_WithPivotTypes_UsesConfiguredTypes()
 	{
 		// Arrange
@@ -1917,5 +1867,107 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Bundle!.UseLocalChangelogs.Should().BeTrue();
+	}
+
+	private async Task<ChangelogConfiguration?> LoadBundleConfig(string bundleYaml)
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, bundleYaml, TestContext.Current!.Execution.CancellationToken);
+		return await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_ParsesTheList()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: [backport, auto-backport]
+			"""
+		);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.Backports!.Labels.Should().Equal("backport", "auto-backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_AcceptsASingleLabel()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: backport
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports!.Labels.Should().Equal("backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_TrimsAndDropsDuplicatesIgnoringCase()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: ['backport ', Backport, auto-backport]
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports!.Labels.Should().Equal("backport", "auto-backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_NoBackports_LeavesTracingOff()
+	{
+		var config = await LoadBundleConfig("""
+			bundle:
+			  directory: docs/changelog
+			""");
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports.Should().BeNull();
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_EmptyBackportLabels_LeavesTracingOff()
+	{
+		var config = await LoadBundleConfig("""
+			bundle:
+			  backports:
+			    labels: []
+			""");
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports.Should().BeNull();
+	}
+
+	[Test]
+	[Arguments("backport*")]
+	[Arguments("backport-?")]
+	public async Task LoadChangelogConfiguration_BackportLabelWithAGlob_IsAnError(string label)
+	{
+		var config = await LoadBundleConfig(
+			$$"""
+			bundle:
+			  backports:
+			    labels: ['{{label}}']
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("bundle.backports.labels") && d.Message.Contains("exact label name")
+			);
 	}
 }

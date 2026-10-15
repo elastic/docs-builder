@@ -48,6 +48,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | ------------------------- | ----------- |
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
+| `bundle.backports.labels` | Exact label names that mark a pull request as a backport, for example `[backport]`. When bundling a commit range, such a pull request is replaced by the original pull request it was backported from, so the entry and the links come from the original. Not a pattern: `backport*` would also match opt-out labels such as `backport-skip`. When omitted, no tracing happens. |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written here in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead. |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
@@ -126,14 +127,6 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 `hide_features`
 :   Feature IDs to mark as hidden in the bundle.
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
-
-`exclude_labels`
-:   Labels that leave a pull request out of a bundle built from a commit range, such as the bundles that `release serverless` and `release unified` build. A pull request that carries one of these labels is not bundled and shows as `excluded (label)` in the run report.
-:   Accepts a comma-separated string or a list. Label names compare case-insensitively. Bundles that are not built from a commit range ignore this setting.
-
-`keep_labels`
-:   Labels that protect a pull request from `exclude_labels`. A pull request that carries both an exclude label and a keep label stays in the bundle.
-:   For example, with `exclude_labels: stateful` and `keep_labels: serverless`, a pull request labelled `stateful` is left out, and a pull request labelled `stateful` and `serverless` stays in.
 
 `output`
 :   Removed. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (the first product in `output_products`, or `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on any profile is a hard error at bundle time; remove the field.
@@ -333,6 +326,24 @@ products:
     - product: elasticsearch
       lifecycle: ga
 ```
+
+### Routing a pull request between release notes [products-routing]
+
+`pivot.products` also decides which release notes a pull request appears in when a bundle is built for Serverless (`release serverless`). The labels that route are the ones that map to the service's product (for example `elasticsearch` or `kibana`) or to `cloud-serverless`. Labels that map to other products, such as team labels, do not.
+
+- A pull request with a label that maps to the service's product, and no label that maps to `cloud-serverless`, stays out of the Serverless bundle.
+- A pull request with a label that maps to `cloud-serverless`, with labels for both products, or with no routing label at all stays in.
+
+```yaml
+pivot:
+  products:
+    'elasticsearch':
+      - "stateful"
+    'cloud-serverless':
+      - "serverless"
+```
+
+With this mapping, a pull request labelled `stateful` stays out of the Serverless release notes. A pull request labelled `serverless`, labelled with both, or labelled with neither stays in. The entry carries only the products that its labels map to, or both products when no label does.
 
 ## Rules
 

@@ -660,8 +660,6 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					Owner = profileYaml.Owner,
 					Branch = profileYaml.Branch,
 					HideFeatures = profileYaml.HideFeatures?.Values,
-					ExcludeLabels = profileYaml.ExcludeLabels?.Values,
-					KeepLabels = profileYaml.KeepLabels?.Values,
 					ReleaseDates = profileYaml.ReleaseDates,
 					Source = profileYaml.Source
 				};
@@ -671,6 +669,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		var releases = ParseBundleReleases(collector, configPath, yaml.Releases, profiles, validProductIds);
 		if (releases == null && collector.Errors > 0)
+			return null;
+
+		var backports = ParseBundleBackports(collector, configPath, yaml.Backports);
+		if (backports == null && collector.Errors > 0)
 			return null;
 
 		return new BundleConfiguration
@@ -684,9 +686,44 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
+			Backports = backports,
 			Profiles = profiles,
 			Releases = releases
 		};
+	}
+
+	/// <summary>
+	/// Reads <c>bundle.backports.labels</c>. Labels are exact names: trimmed, de-duplicated ignoring case, and
+	/// never globs, because <c>backport*</c> would also match opt-out labels such as <c>backport-skip</c>.
+	/// Returns <c>null</c> when tracing is not configured, or after emitting an error for an invalid label.
+	/// </summary>
+	private static BackportsConfiguration? ParseBundleBackports(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleBackportsYaml? yaml
+	)
+	{
+		var raw = yaml?.Labels?.Values;
+		if (raw is not { Count: > 0 })
+			return null;
+
+		var labels = new List<string>();
+		foreach (var label in raw.Select(l => l.Trim()).Where(l => l.Length > 0))
+		{
+			if (label.AsSpan().IndexOfAny('*', '?') >= 0)
+			{
+				collector.EmitError(
+					configPath,
+					$"bundle.backports.labels: '{label}' must be an exact label name. Globs are not supported, because 'backport*' would also match opt-out labels such as 'backport-skip'."
+				);
+				return null;
+			}
+
+			if (!labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+				labels.Add(label);
+		}
+
+		return labels.Count == 0 ? null : new BackportsConfiguration { Labels = labels };
 	}
 
 	private static BundleReleases? ParseBundleReleases(

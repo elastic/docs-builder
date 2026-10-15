@@ -327,6 +327,11 @@ internal sealed record BundleConfigurationYaml
 	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
+	/// Which pull requests are backports of an earlier pull request.
+	/// </summary>
+	public BundleBackportsYaml? Backports { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, BundleProfileYaml>? Profiles { get; set; }
@@ -336,6 +341,17 @@ internal sealed record BundleConfigurationYaml
 	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
 	/// </summary>
 	public BundleReleasesYaml? Releases { get; set; }
+}
+
+/// <summary>
+/// Internal DTO for <c>bundle.backports</c> in YAML.
+/// </summary>
+internal sealed record BundleBackportsYaml
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport.
+	/// </summary>
+	public YamlLenientList? Labels { get; set; }
 }
 
 /// <summary>
@@ -398,16 +414,6 @@ internal sealed record BundleProfileYaml
 	/// Feature IDs to mark as hidden in the bundle output (string or list).
 	/// </summary>
 	public YamlLenientList? HideFeatures { get; set; }
-
-	/// <summary>
-	/// Labels that leave a pull request out of a commit-range bundle (string or list).
-	/// </summary>
-	public YamlLenientList? ExcludeLabels { get; set; }
-
-	/// <summary>
-	/// Labels that protect a pull request from <c>exclude_labels</c> (string or list).
-	/// </summary>
-	public YamlLenientList? KeepLabels { get; set; }
 
 	/// <summary>
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.

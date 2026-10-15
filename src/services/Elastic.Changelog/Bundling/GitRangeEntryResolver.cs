@@ -64,7 +64,7 @@ public enum GitRangePrSourceKind
 	/// <summary>Merged into a branch other than the requested base branch (for example a feature branch).</summary>
 	ExcludedBaseBranch,
 
-	/// <summary>Carries a label the profile excludes (<c>exclude_labels</c>) and no label that keeps it (<c>keep_labels</c>).</summary>
+	/// <summary>A label routes it to another product (<c>pivot.products</c>) and no label routes it to the bundle's product.</summary>
 	ExcludedLabel,
 
 	/// <summary>The PR's metadata could not be fetched; no entry could be produced.</summary>
@@ -392,7 +392,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: the explicit entry products when set; otherwise label-derived
+	/// Products for a synthesized entry: the explicit entry products when set, narrowed to the ones a label maps to; otherwise label-derived
 	/// products win; otherwise the concrete (non-wildcard) fallback products from the profile/CLI.
 	/// Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
 	/// </summary>
@@ -404,7 +404,15 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	)
 	{
 		if (options.EntryProducts is { Count: > 0 })
-			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
+		{
+			// A label that maps to one of the entry products narrows them: a pull request labelled for one product
+			// is an entry of that product only. Any other label, such as a team label, does not decide.
+			var mapped = options
+				.EntryProducts
+				.Where(entry => labelProducts.Any(label => SameProductId(label.Product, entry.Product)))
+				.ToList();
+			return (mapped.Count > 0 ? mapped : options.EntryProducts).Select(p => p.ToProductReference()).ToList();
+		}
 
 		var source = labelProducts.Count > 0
 			? labelProducts
@@ -422,6 +430,9 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		return source.Select(p => p.ToProductReference()).ToList();
 	}
+
+	private static bool SameProductId(string? left, string? right) =>
+		string.Equals(left?.Replace('_', '-'), right?.Replace('_', '-'), StringComparison.OrdinalIgnoreCase);
 
 	private static GitRangePrReportRow Row(CommitRangePullRequest pr, GitRangePrSourceKind source, string? fileName = null) =>
 		new() { Number = pr.Number, Url = pr.Url, Source = source, EntryFileNames = fileName != null ? [fileName] : [] };

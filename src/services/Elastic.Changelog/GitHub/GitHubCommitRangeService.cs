@@ -27,9 +27,6 @@ public sealed partial class GitHubCommitRangeService(
 	private const int GraphQlBatchSize = 50;
 	private const int MaxAssociatedPullRequests = 10;
 
-	/// <summary>Labels read per pull request when label exclusion is configured. A pull request with more is not expected.</summary>
-	private const int MaxLabelsPerPullRequest = 50;
-
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubCommitRangeService>();
 	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
 
@@ -205,7 +202,7 @@ public sealed partial class GitHubCommitRangeService(
 			return null;
 		}
 
-		var prsByNumber = new Dictionary<int, (string Url, List<string> Shas)>();
+		var prsByNumber = new Dictionary<int, (string Url, IReadOnlyList<string> Labels, List<string> Shas)>();
 		var orderedPrNumbers = new List<int>();
 		var commitsWithoutPr = new List<string>();
 		var excluded = new Dictionary<int, CommitRangeExcludedPullRequest>();
@@ -246,14 +243,25 @@ public sealed partial class GitHubCommitRangeService(
 					existing.Shas.Add(sha);
 				else
 				{
-					prsByNumber[selected.Number] = (selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", [sha]);
+					var labels = await CompleteLabelsAsync(collector, args, selected, ctx).ConfigureAwait(false);
+					if (labels == null)
+						return null;
+
+					prsByNumber[selected.Number] =
+						(selected.Url ?? $"https://github.com/{repoFullName}/pull/{selected.Number}", labels, [sha]);
 					orderedPrNumbers.Add(selected.Number);
 				}
 			}
 		}
 
 		var pullRequests = orderedPrNumbers.Select(
-			number => new CommitRangePullRequest { Number = number, Url = prsByNumber[number].Url, CommitShas = prsByNumber[number].Shas }
+			number => new CommitRangePullRequest
+			{
+				Number = number,
+				Url = prsByNumber[number].Url,
+				CommitShas = prsByNumber[number].Shas,
+				Labels = prsByNumber[number].Labels
+			}
 		).ToList();
 
 		_logger.LogInformation(
@@ -396,7 +404,7 @@ public sealed partial class GitHubCommitRangeService(
 		Cancel ctx
 	)
 	{
-		var query = BuildBatchQuery(args.Owner, args.Repo, shas, includeLabels: args.ExcludeLabels is { Count: > 0 });
+		var query = BuildBatchQuery(args.Owner, args.Repo, shas);
 		var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
 
 		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
@@ -432,10 +440,50 @@ public sealed partial class GitHubCommitRangeService(
 	}
 
 	/// <summary>
+	/// Returns every label of the pull request. The batch query returns the first page; a pull request with more
+	/// labels is read page by page, because a missing label would hide a backport.
+	/// </summary>
+	private async Task<List<string>?> CompleteLabelsAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		GraphQlPullRequest pr,
+		Cancel ctx
+	)
+	{
+		var labels = pr.Labels?.Nodes?.Select(l => l?.Name).OfType<string>().ToList() ?? [];
+		var page = pr.Labels?.PageInfo;
+		while (page is { HasNextPage: true, EndCursor: { } cursor })
+		{
+			var query = $"query {{ repository(owner: \"{args.Owner}\", name: \"{args.Repo}\") {{ pullRequest(number: {pr.Number}) {{ "
+				+ $"labels(first: 100, after: \"{cursor}\") {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }} }} }}";
+			var body = JsonSerializer.Serialize(new GraphQlRequest { Query = query }, CommitRangeJsonContext.Default.GraphQlRequest);
+
+			using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+			var parsed = response.IsSuccessStatusCode
+				? JsonSerializer.Deserialize(
+					await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false),
+					CommitRangeJsonContext.Default.GraphQlLabelPageResponse
+				)
+				: null;
+			var next = parsed?.Errors is { Count: > 0 } ? null : parsed?.Data?.Repository?.PullRequest?.Labels;
+			if (next == null)
+			{
+				collector.EmitError(string.Empty, $"GitHub GraphQL request for the labels of {args.Owner}/{args.Repo}#{pr.Number} failed.");
+				return null;
+			}
+
+			labels.AddRange(next.Nodes?.Select(l => l?.Name).OfType<string>() ?? []);
+			page = next.PageInfo;
+		}
+
+		return labels;
+	}
+
+	/// <summary>
 	/// Builds one aliased GraphQL query resolving <c>associatedPullRequests</c> for every sha in
 	/// the batch. Shas are validated hex and owner/repo validated identifiers before interpolation.
 	/// </summary>
-	private static string BuildBatchQuery(string owner, string repo, IReadOnlyList<string> shas, bool includeLabels = false)
+	private static string BuildBatchQuery(string owner, string repo, IReadOnlyList<string> shas)
 	{
 		var sb = new StringBuilder();
 		_ = sb.Append("query { repository(owner: \"").Append(owner).Append("\", name: \"").Append(repo).Append("\") {");
@@ -450,10 +498,10 @@ public sealed partial class GitHubCommitRangeService(
 				.Append(" oid associatedPullRequests(first: ")
 				.Append(MaxAssociatedPullRequests)
 				.Append(") { nodes {")
-				.Append(" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner }");
-			if (includeLabels)
-				_ = sb.Append(" labels(first: ").Append(MaxLabelsPerPullRequest).Append(") { nodes { name } }");
-			_ = sb.Append(" } } } }");
+				.Append(
+					" number url merged baseRefName mergeCommit { oid } baseRepository { nameWithOwner } labels(first: 100) { pageInfo { hasNextPage endCursor } nodes { name } }"
+				)
+				.Append(" } } } }");
 		}
 
 		_ = sb.Append(" } }");
@@ -528,6 +576,9 @@ public sealed partial class GitHubCommitRangeService(
 		[JsonPropertyName("url")]
 		public string? Url { get; set; }
 
+		[JsonPropertyName("labels")]
+		public GraphQlLabelConnection? Labels { get; set; }
+
 		[JsonPropertyName("merged")]
 		public bool Merged { get; set; }
 
@@ -539,13 +590,43 @@ public sealed partial class GitHubCommitRangeService(
 
 		[JsonPropertyName("baseRepository")]
 		public GraphQlRepositoryRef? BaseRepository { get; set; }
+	}
 
-		[JsonPropertyName("labels")]
-		public GraphQlLabelConnection? Labels { get; set; }
+	private sealed class GraphQlPageInfo
+	{
+		[JsonPropertyName("hasNextPage")]
+		public bool HasNextPage { get; set; }
+
+		[JsonPropertyName("endCursor")]
+		public string? EndCursor { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageResponse
+	{
+		[JsonPropertyName("data")]
+		public GraphQlLabelPageData? Data { get; set; }
+
+		[JsonPropertyName("errors")]
+		public List<GraphQlError>? Errors { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageData
+	{
+		[JsonPropertyName("repository")]
+		public GraphQlLabelPageRepository? Repository { get; set; }
+	}
+
+	private sealed class GraphQlLabelPageRepository
+	{
+		[JsonPropertyName("pullRequest")]
+		public GraphQlPullRequest? PullRequest { get; set; }
 	}
 
 	private sealed class GraphQlLabelConnection
 	{
+		[JsonPropertyName("pageInfo")]
+		public GraphQlPageInfo? PageInfo { get; set; }
+
 		[JsonPropertyName("nodes")]
 		public List<GraphQlLabel?>? Nodes { get; set; }
 	}
@@ -571,5 +652,6 @@ public sealed partial class GitHubCommitRangeService(
 	[JsonSerializable(typeof(GitHubCompareResponse))]
 	[JsonSerializable(typeof(GraphQlRequest))]
 	[JsonSerializable(typeof(GraphQlResponse))]
+	[JsonSerializable(typeof(GraphQlLabelPageResponse))]
 	private sealed partial class CommitRangeJsonContext : JsonSerializerContext;
 }

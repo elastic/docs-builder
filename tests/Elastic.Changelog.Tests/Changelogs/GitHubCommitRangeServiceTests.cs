@@ -306,30 +306,6 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task ResolvePullRequests_ExcludeLabels_FetchesLabelsOnlyWhenConfigured()
-	{
-		var queries = new List<string>();
-		var sha1 = Sha(1);
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			queries.Add(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult());
-			return GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]);
-		});
-		var service = Service(handler);
-
-		_ = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
-		_ = await service.ResolvePullRequestsAsync(
-			Collector,
-			Args with { ExcludeLabels = ["stateful"] },
-			TestContext.Current!.Execution.CancellationToken
-		);
-
-		queries.Should().HaveCount(2);
-		queries[0].Should().NotContain("labels(");
-		queries[1].Should().Contain("labels(");
-	}
-
-	[Test]
 	public async Task ResolvePullRequests_BaseRef_StillReportsCommitsWithNoMergedPr()
 	{
 		var (sha1, sha2) = (Sha(1), Sha(2));
@@ -472,6 +448,30 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().BeNull();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("boom"));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_PullRequestWithManyLabels_ReadsEveryLabelPage()
+	{
+		var sha1 = Sha(1);
+		const string firstPage =
+			"""
+			{ "number": 11, "url": "https://github.com/elastic/widget/pull/11", "title": "Fix (#5)", "merged": true, "baseRefName": "main",
+			  "mergeCommit": { "oid": "0000000000000000000000000000000000000001" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
+			  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } }
+			""";
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			return query.Contains("cursor-1", StringComparison.Ordinal)
+				? """{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "backport" } ] } } } } }"""
+				: GraphQlJson([(sha1, [firstPage])]);
+		});
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
 	}
 
 	private static HttpResponseMessage Json(string body) =>
