@@ -332,10 +332,12 @@ products:
 
 `changelog add`, the PR evaluation, and bundles built from a git range resolve the products of an entry in the same order:
 
-1. The `--products` option, when given.
+1. The `--products` option, when given. An explicit list is taken as given: `products.implies` does not apply to it.
 2. The products that the labels map to in `pivot.products`, plus the products that `products.implies` lists for each of them.
 3. `products.default`, with its lifecycle.
-4. For `changelog add`, the product inferred from the repository name. For a git range bundle, the profile's output products.
+4. Without a default, when `pivot.products` maps two or more distinct products: an error that names the pull request or issue and lists the labels to add. Otherwise, for `changelog add`, the product inferred from the repository name; for a git range bundle, the profile's output products.
+
+A team that wants every pull request to name its product omits `products.default`.
 
 ### Implied products [products-implies]
 
@@ -357,6 +359,10 @@ pivot:
 ```
 
 With this configuration, a pull request labelled `Team:obs-ux-logs` gets the products `observability`, `kibana`, and `cloud-serverless`. A pull request with no product label gets the defaults. An implied product carries the product ID only, and `implies` applies one level: a product that `observability` implies does not imply further products. `implies` applies to label-derived products only, not to `--products`, `products.default`, or checked-in entries.
+
+Per-product `rules.create` blockers see the implied products. A blocker for `cloud-serverless` applies to every pull request whose label maps to a product that implies `cloud-serverless`.
+
+The loader warns about an `implies` key that no `pivot.products` label maps to, because it never applies.
 
 ## Rules
 

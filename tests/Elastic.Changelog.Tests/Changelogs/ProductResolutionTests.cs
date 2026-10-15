@@ -84,6 +84,34 @@ public class ProductResolutionTests
 	}
 
 	[Test]
+	public void RequiresProductLabel_WhenTwoProductsAreMappedAndNoDefaultIsSet()
+	{
+		ProductResolution.RequiresProductLabel(Config()).Should().BeTrue();
+		ProductResolution.RequiresProductLabel(Config(defaults: [new DefaultProduct { Product = "kibana" }])).Should().BeFalse();
+		ProductResolution.RequiresProductLabel(ChangelogConfiguration.Default).Should().BeFalse();
+
+		// Two specs of one product are one product.
+		var oneProduct = ChangelogConfiguration.Default with
+		{
+			LabelToProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+			{
+				["v92"] = "kibana 9.2.0",
+				["v93"] = "kibana 9.3.0"
+			}
+		};
+		ProductResolution.RequiresProductLabel(oneProduct).Should().BeFalse();
+	}
+
+	[Test]
+	public void MissingProductLabelMessage_NamesTheSubjectAndListsTheLabels() =>
+		ProductResolution
+			.MissingProductLabelMessage("PR https://github.com/elastic/kibana/pull/1", Config())
+			.Should()
+			.Be(
+				"No matching product label found on PR https://github.com/elastic/kibana/pull/1. Add one of the following labels: Team:obs-ux-logs, Team:SecuritySolution, serverless."
+			);
+
+	[Test]
 	public void Defaults_CarryTheConfiguredLifecycle()
 	{
 		var config = Config(defaults: [

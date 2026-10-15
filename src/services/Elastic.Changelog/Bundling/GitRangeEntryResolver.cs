@@ -305,7 +305,9 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		var labels = prInfo.Labels.ToArray();
 		// Labels win, then products.default, then the profile's output products: the order of changelog add.
-		var resolvedProducts = ResolveProductsFromConfiguration(labels, config, options);
+		var resolvedProducts = ResolveProductsFromConfiguration(collector, pr, labels, config, options);
+		if (resolvedProducts == null)
+			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
 		if (config != null)
 		{
@@ -388,9 +390,12 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	/// <summary>
 	/// The products of a pull request from the configuration, in the order <c>changelog add</c> uses: the products its
 	/// labels map to and imply (<see cref="ProductResolution.FromLabels"/>), else <c>products.default</c>, else the
-	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies.
+	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies. Null after an error when
+	/// the pull request has no product label and the configuration requires one (<see cref="ProductResolution.RequiresProductLabel"/>).
 	/// </summary>
-	private static List<ProductArgument> ResolveProductsFromConfiguration(
+	private static List<ProductArgument>? ResolveProductsFromConfiguration(
+		IDiagnosticsCollector collector,
+		CommitRangePullRequest pr,
 		string[] labels,
 		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options
@@ -405,6 +410,14 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			var defaults = ProductResolution.Defaults(config);
 			if (defaults.Count > 0)
 				return defaults;
+
+			// Two or more mapped products and no default: the pull request must name its product with a label,
+			// unless the caller sets the entry products itself.
+			if (options.EntryProducts is not { Count: > 0 } && ProductResolution.RequiresProductLabel(config))
+			{
+				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return null;
+			}
 		}
 
 		return (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();

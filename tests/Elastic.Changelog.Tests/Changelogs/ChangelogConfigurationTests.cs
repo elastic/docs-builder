@@ -1470,6 +1470,31 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_WarnsWhenNoLabelMapsToTheKey()
+	{
+		var config = await LoadConfig(
+			"""
+			products:
+			  implies:
+			    security: [kibana]
+			    cloud-hosted: [cloud-serverless]
+			pivot:
+			  products:
+			    security: "Team:SecuritySolution"
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config.Should().NotBeNull();
+		Collector
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Warning)
+			.Select(d => d.Message)
+			.Should()
+			.ContainSingle(m => m.Contains("'cloud-hosted' in products_config.implies has no label in pivot.products"));
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_WithProductsImplies_UnknownProduct_ReturnsError()
 	{
 		_ = await LoadConfig("""

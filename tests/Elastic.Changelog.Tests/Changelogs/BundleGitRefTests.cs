@@ -697,6 +697,29 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task InferredEntry_Products_TwoMappedProductsAndNoDefault_FailAPullRequestWithoutAProductLabel()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			string.Empty,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching product label found on PR https://github.com/elastic/widget/pull/300",
+					StringComparison.Ordinal
+				) && d.Message.Contains("stateful, serverless", StringComparison.Ordinal)
+			);
+	}
+
+	[Test]
 	public async Task InferredEntry_EntryProducts_ReplaceLabelDerivedProducts()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

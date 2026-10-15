@@ -118,7 +118,7 @@ public class ChangelogLabelValidationService(
 			return false;
 		}
 
-		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR");
 			var productLabels = config.LabelToProducts is { Count: > 0 }

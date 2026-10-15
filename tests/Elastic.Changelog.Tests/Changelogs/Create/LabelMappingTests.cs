@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -324,6 +325,61 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		yamlContent.Should().Contain("- product: security");
 		yamlContent.Should().Contain("- product: kibana");
 		yamlContent.Should().Contain("- product: cloud-serverless");
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithTwoMappedProductsAndNoDefault_FailsAPrWithoutAProductLabel()
+	{
+		// Arrange — two products are mapped, no default is set, and the PR carries no product label
+		var prInfo = new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug"] };
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching product label found on PR https://github.com/elastic/elasticsearch/pull/12345"
+				) && d.Message.Contains(":stack/elasticsearch, :stack/kibana")
+			);
+		var outputDir = input.Output!;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
 	}
 
 	[Test]

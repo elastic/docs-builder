@@ -336,6 +336,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yamlConfig.Products != null)
 			productsConfig = ParseProductsConfig(collector, yamlConfig.Products, configPath, validProductIds);
 
+		// An implied-products key only fires for a product that a label maps to. Warn, not fail: a config can
+		// name a product before its labels exist.
+		if (productsConfig?.Implies is { Count: > 0 } implies)
+		{
+			var mappedProductIds = ((IEnumerable<string>?)labelToProducts?.Values ?? [])
+				.Select(
+					spec => spec.Split(
+						' ',
+						StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+					).FirstOrDefault()?.Replace('_', '-')
+				)
+				.OfType<string>()
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var productId in implies.Keys.Where(id => !mappedProductIds.Contains(id)))
+			{
+				collector.EmitWarning(
+					configPath,
+					$"Product '{productId}' in products_config.implies has no label in pivot.products that maps to it, so it never applies."
+				);
+			}
+		}
+
 		// Process bundle configuration
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)

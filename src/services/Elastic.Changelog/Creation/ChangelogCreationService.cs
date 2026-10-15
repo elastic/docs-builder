@@ -458,6 +458,16 @@ public class ChangelogCreationService(
 	{
 		if (input.Products.Count == 0)
 		{
+			// Two or more mapped products and no default: a pull request must name its product with a label.
+			if (!prFetchFailed && input.Prs is { Length: > 0 } && ProductResolution.RequiresProductLabel(config))
+			{
+				collector.EmitError(
+					string.Empty,
+					ProductResolution.MissingProductLabelMessage($"PR {input.Prs[0]}", config) + " Or pass --products."
+				);
+				return false;
+			}
+
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
@@ -577,6 +587,16 @@ public class ChangelogCreationService(
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
 		{
+			// Two or more mapped products and no default: an issue must name its product with a label.
+			if (!issueResult.FetchFailed && ProductResolution.RequiresProductLabel(config))
+			{
+				collector.EmitError(
+					string.Empty,
+					ProductResolution.MissingProductLabelMessage($"issue {issueUrl}", config) + " Or pass --products."
+				);
+				return false;
+			}
+
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };

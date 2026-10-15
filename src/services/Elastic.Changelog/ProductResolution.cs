@@ -49,5 +49,25 @@ public static class ProductResolution
 			? defaults.Select(d => new ProductArgument { Product = d.Product, Lifecycle = d.Lifecycle }).ToList()
 			: [];
 
+	/// <summary>
+	/// True when a pull request or issue without a product label is an error: <c>pivot.products</c> maps two or more
+	/// distinct products and <c>products.default</c> is not set. A repository that maps a single product, or none, keeps
+	/// its fallbacks: the repository name for <c>changelog add</c>, the profile's output products for a range bundle.
+	/// </summary>
+	public static bool RequiresProductLabel(ChangelogConfiguration config) =>
+		config.ProductsConfiguration?.Default is not { Count: > 0 }
+			&& config.LabelToProducts is { Count: > 0 } mapping
+			&& mapping.Values.Select(ProductIdOf).Distinct(StringComparer.OrdinalIgnoreCase).Count() >= 2;
+
+	/// <summary>
+	/// The error for <paramref name="subject"/> without a product label, for example <c>PR https://github.com/elastic/kibana/pull/1</c>.
+	/// It lists the labels of <c>pivot.products</c>, as the PR evaluation does.
+	/// </summary>
+	public static string MissingProductLabelMessage(string subject, ChangelogConfiguration config) =>
+		$"No matching product label found on {subject}. Add one of the following labels: {string.Join(", ", config.LabelToProducts?.Keys ?? [])}.";
+
+	private static string ProductIdOf(string spec) =>
+		Normalize(spec.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault());
+
 	private static string Normalize(string? productId) => (productId ?? string.Empty).Replace('_', '-');
 }
