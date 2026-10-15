@@ -474,10 +474,16 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
 	}
 
-	private static string PrNodeWithLabelPages(int number, string sha, string firstPageLabel) =>
+	private static string PrNodeWithLabelPages(
+		int number,
+		string sha,
+		string firstPageLabel,
+		string repoFullName = "elastic/widget",
+		string baseRefName = "main"
+	) =>
 		$$"""
-		{ "number": {{number}}, "url": "https://github.com/elastic/widget/pull/{{number}}", "merged": true, "baseRefName": "main",
-		  "mergeCommit": { "oid": "{{sha}}" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
+		{ "number": {{number}}, "url": "https://github.com/{{repoFullName}}/pull/{{number}}", "merged": true, "baseRefName": "{{baseRefName}}",
+		  "mergeCommit": { "oid": "{{sha}}" }, "baseRepository": { "nameWithOwner": "{{repoFullName}}" },
 		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "{{firstPageLabel}}" } ] } }
 		""";
 
@@ -523,6 +529,63 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.Should().NotBeNull();
 		result.PullRequests.Should().BeEmpty();
 		result.ExcludedPullRequests.Should().ContainSingle().Which.Number.Should().Be(12);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_DoesNotReadLabelPagesOfPullRequestsFromOtherRepositories()
+	{
+		// The foreign PR has a second page of labels. Its number means a different PR in this repository, so asking for it would be wrong.
+		var sha1 = Sha(1);
+		var labelPageRequests = 0;
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			if (!query.Contains("cursor-1", StringComparison.Ordinal))
+				return GraphQlJson([
+					(sha1, [
+						PrNodeWithLabelPages(99, sha1, "bug", repoFullName: "someone/else"),
+						PrNode(11, mergeCommitSha: sha1, labels: ["bug"])
+					])
+				]);
+			labelPageRequests++;
+			return LabelPage("stateful");
+		});
+		var args = Args with { ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		labelPageRequests.Should().Be(0);
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ExcludeLabels_DoesNotReadLabelPagesOfPullRequestsOnOtherBranches()
+	{
+		var sha1 = Sha(1);
+		var labelPageRequests = 0;
+		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
+		{
+			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+			if (!query.Contains("cursor-1", StringComparison.Ordinal))
+				return GraphQlJson([
+					(sha1, [
+						PrNodeWithLabelPages(11, sha1, "bug", baseRefName: "feature/x"),
+						PrNode(12, mergeCommitSha: sha1, labels: ["bug"])
+					])
+				]);
+			labelPageRequests++;
+			return LabelPage("stateful");
+		});
+		var args = Args with { BaseRef = "main", ExcludeLabels = ["stateful"] };
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		labelPageRequests.Should().Be(0);
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(12);
+		result.ExcludedPullRequests.Select(pr => pr.Number).Should().Equal(11);
 	}
 
 	private static HttpResponseMessage Json(string body) =>

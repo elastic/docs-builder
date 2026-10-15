@@ -225,7 +225,19 @@ public sealed partial class GitHubCommitRangeService(
 				// with more labels is read in full before the exclusion decides, or a label on a later page would be missed.
 				if (args.ExcludeLabels is { Count: > 0 })
 				{
-					foreach (var pr in commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>() ?? [])
+					// Only the pull requests the selection can pick: merged in this repository, and on the base branch when one is set.
+					// A pull request from another repository has a number that means something else here.
+					var candidates = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
+						.Where(pr => IsMergedInRepository(pr, repoFullName))
+						.Where(
+							pr => string.IsNullOrWhiteSpace(args.BaseRef) || string.Equals(
+								pr.BaseRefName,
+								args.BaseRef,
+								StringComparison.Ordinal
+							)
+						)
+						?? [];
+					foreach (var pr in candidates)
 					{
 						if (pr.Labels?.PageInfo is not { HasNextPage: true } || completedLabels.ContainsKey(pr.Number))
 							continue;
@@ -326,7 +338,7 @@ public sealed partial class GitHubCommitRangeService(
 	{
 		onlyExcluded = false;
 		var merged = commitNode?.AssociatedPullRequests?.Nodes?.OfType<GraphQlPullRequest>()
-			.Where(pr => pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase))
+			.Where(pr => IsMergedInRepository(pr, repoFullName))
 			.ToList()
 			?? [];
 
@@ -406,6 +418,9 @@ public sealed partial class GitHubCommitRangeService(
 
 		return candidates[0];
 	}
+
+	private static bool IsMergedInRepository(GraphQlPullRequest pr, string repoFullName) =>
+		pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase);
 
 	/// <summary>
 	/// The first of <paramref name="excludeLabels"/> that the pull request carries, or <c>null</c> when it carries none
