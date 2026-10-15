@@ -18,15 +18,8 @@ public class BackportTracerTests() : ChangelogTestBase()
 {
 	private static readonly (string, string) Repository = ("elastic", "widget");
 
-	private static CommitRangePullRequest Pr(int number, string? title = null, params string[] labels) =>
-		new()
-		{
-			Number = number,
-			Url = $"https://github.com/elastic/widget/pull/{number}",
-			CommitShas = [$"sha-{number}"],
-			Title = title,
-			Labels = labels
-		};
+	private static CommitRangePullRequest Pr(int number, params string[] labels) =>
+		new() { Number = number, Url = $"https://github.com/elastic/widget/pull/{number}", CommitShas = [$"sha-{number}"], Labels = labels };
 
 	private static CommitRangeResolution Range(params CommitRangePullRequest[] prs) =>
 		new() { TotalCommits = prs.Length, PullRequests = prs, CommitsWithoutPullRequest = [] };
@@ -56,7 +49,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = Roots(5) });
 
-		var trace = await TraceAsync(service, Range(Pr(10), Pr(20, "Fix (#5)", "backport"), Pr(30)));
+		var trace = await TraceAsync(service, Range(Pr(10), Pr(20, "backport"), Pr(30)));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Select(p => p.Number).Should().Equal(10, 5, 30);
@@ -71,7 +64,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = Roots(5) });
 
-		var trace = await TraceAsync(service, Range(Pr(5), Pr(20, "Fix (#5)", "backport")));
+		var trace = await TraceAsync(service, Range(Pr(5), Pr(20, "backport")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Should().ContainSingle();
@@ -83,7 +76,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = Roots(5), [21] = Roots(5) });
 
-		var trace = await TraceAsync(service, Range(Pr(20, "A (#5)", "backport"), Pr(21, "B (#5)", "backport")));
+		var trace = await TraceAsync(service, Range(Pr(20, "backport"), Pr(21, "backport")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Should().ContainSingle().Which.CommitShas.Should().BeEquivalentTo(["sha-20", "sha-21"]);
@@ -94,7 +87,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = Roots(5, 6) });
 
-		var trace = await TraceAsync(service, Range(Pr(20, "Fix (#5) (#6)", "backport")));
+		var trace = await TraceAsync(service, Range(Pr(20, "backport")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Select(p => p.Number).Should().Equal(5, 6);
@@ -105,7 +98,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = null });
 
-		var trace = await TraceAsync(service, Range(Pr(20, "Something", "backport")));
+		var trace = await TraceAsync(service, Range(Pr(20, "backport")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Select(p => p.Number).Should().Equal(20);
@@ -114,14 +107,11 @@ public class BackportTracerTests() : ChangelogTestBase()
 	}
 
 	[Test]
-	public async Task Trace_RevertAndUnlabeledPullRequests_AreNotTraced()
+	public async Task Trace_PullRequestsWithoutAConfiguredLabel_AreNotTraced()
 	{
 		var service = Backports(new());
 
-		var trace = await TraceAsync(
-			service,
-			Range(Pr(10, "Fix (#5)"), Pr(20, "Revert \"Fix (#5)\"", "backport"), Pr(30, "Fix", "backport-skip"))
-		);
+		var trace = await TraceAsync(service, Range(Pr(10), Pr(20, "backports"), Pr(30, "backport-skip")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Select(p => p.Number).Should().Equal(10, 20, 30);
@@ -134,7 +124,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	{
 		var service = Backports(new() { [20] = Roots(5) });
 
-		var trace = await TraceAsync(service, Range(Pr(20, "Fix (#5)", "Backport")));
+		var trace = await TraceAsync(service, Range(Pr(20, "Backport")));
 
 		trace.Should().NotBeNull();
 		trace.Resolution.PullRequests.Select(p => p.Number).Should().Equal(5);
@@ -154,7 +144,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 			)
 		).Returns((IReadOnlyDictionary<int, BackportRoots?>?)null);
 
-		var trace = await TraceAsync(service, Range(Pr(20, "Fix (#5)", "backport")));
+		var trace = await TraceAsync(service, Range(Pr(20, "backport")));
 
 		trace.Should().BeNull();
 	}

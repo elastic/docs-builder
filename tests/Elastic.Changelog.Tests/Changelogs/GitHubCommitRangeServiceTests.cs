@@ -370,7 +370,6 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 		result.Should().NotBeNull();
 		result.PullRequests.Should().ContainSingle().Which.Labels.Should().Equal("bug", "backport");
-		result.PullRequests[0].Title.Should().Be("Fix (#5)");
 	}
 
 	private static HttpResponseMessage Json(string body) =>

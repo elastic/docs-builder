@@ -102,19 +102,6 @@ public class BackportReferencesTests
 	public void Extract_BodyLinkToAnotherRepository_IsIgnored() =>
 		Extract("[9.5] Fix", "Backport of https://github.com/elastic/elasticsearch/pull/5").BodyRefs.Should().BeEmpty();
 
-	// ── reverts ─────────────────────────────────────────────────────────
-
-	[Test]
-	[Arguments("Revert \"[9.5](backport #7794) refactor: clone ParsedPolicy\"")]
-	[Arguments("Revert \"Revert \\\"[8.19] ESQL: Push down SORT _score (#160651)\\\"\"")]
-	[Arguments("revert: the last change (#200)")]
-	public void IsRevert_RevertTitles_AreRecognised(string title) => BackportReferences.IsRevert(title).Should().BeTrue();
-
-	[Test]
-	[Arguments("[9.5] Fix the revert button (#200)")]
-	[Arguments("[9.5](backport #7794) refactor: clone ParsedPolicy")]
-	public void IsRevert_OtherTitles_AreNot(string title) => BackportReferences.IsRevert(title).Should().BeFalse();
-
 	// ── choosing ────────────────────────────────────────────────────────
 
 	[Test]

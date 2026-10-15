@@ -220,7 +220,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns(new CommitRangeResolution
 		{
 			TotalCommits = 1,
-			PullRequests = [RangePr(300) with { Title = "Faster hosted search (#100)", Labels = ["backport"] }],
+			PullRequests = [RangePr(300) with { Labels = ["backport"] }],
 			CommitsWithoutPullRequest = []
 		});
 		var backports = A.Fake<IGitHubBackportService>();

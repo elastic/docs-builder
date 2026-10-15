@@ -98,7 +98,7 @@ public static class BackportTracer
 	}
 
 	private static bool IsBackport(CommitRangePullRequest pr, IReadOnlyCollection<string> labels) =>
-		pr.Labels.Any(l => labels.Contains(l, StringComparer.OrdinalIgnoreCase)) && !BackportReferences.IsRevert(pr.Title ?? string.Empty);
+		pr.Labels.Any(l => labels.Contains(l, StringComparer.OrdinalIgnoreCase));
 
 	/// <summary>Keeps the first appearance of each pull request and collects the commits of all its appearances.</summary>
 	private static List<CommitRangePullRequest> Merge(IEnumerable<CommitRangePullRequest> pullRequests)

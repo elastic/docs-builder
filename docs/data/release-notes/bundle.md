@@ -152,7 +152,7 @@ bundle:
 
 For each pull request in the range that has one of these labels, the command finds the pull request it was backported from and uses that in its place.
 It reads a `cherry picked from commit` trailer, the commit subjects, the title, and the body, and accepts a number only when it is a merged pull request on the default branch of the same repository. Issue numbers and pull requests of other repositories are ignored.
-Reverts are not traced, because a revert title repeats the number of the change it undoes. A pull request that has a backport label and a title starting with `Revert` stays in the bundle as itself, like any other pull request, and its own entry rules apply. Reverts without a backport label are not affected by this setting. A backport whose original cannot be found stays in the bundle as it is, and the run report lists it.
+A backport whose original cannot be found stays in the bundle as it is, and the run report lists it.
 
 Use the exact label names. A pattern such as `backport*` would also match opt-out labels like `backport-skip`.
 

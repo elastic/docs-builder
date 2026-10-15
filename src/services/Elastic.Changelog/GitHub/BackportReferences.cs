@@ -57,12 +57,6 @@ public static partial class BackportReferences
 	[GeneratedRegex(@"(?:backport(?:s|ed)?\s+of(?:\s+pull\s+request)?|automatic\s+backport\s+of\s+pull\s+request)\s*#(\d+)", RegexOptions.IgnoreCase)]
 	private static partial Regex BodyMarkerRegex();
 
-	[GeneratedRegex(@"^\s*(?:Revert\b|Reapply\b)", RegexOptions.IgnoreCase)]
-	private static partial Regex RevertTitleRegex();
-
-	/// <summary>A revert of a change, often of a backport, repeats the backport's title and number. It is not a backport.</summary>
-	public static bool IsRevert(string title) => RevertTitleRegex().IsMatch(title);
-
 	/// <summary>Reads every route from the text of a pull request. Nothing here is checked against GitHub.</summary>
 	public static BackportCandidates Extract(
 		string owner,
