@@ -252,6 +252,80 @@ public class ChangelogEntryValidatorTests
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
+	// Allowed products (per-repo restriction)
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+	[Fact]
+	public void Validate_AllowedProducts_ProductInAllowedSet_NoError()
+	{
+		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
+		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
+		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			Config,
+			null,
+			knownProducts,
+			allowedProducts: allowedProducts
+		);
+		findings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void Validate_AllowedProducts_ProductNotInAllowedSet_ProducesError()
+	{
+		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
+		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
+		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: kibana");
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			Config,
+			null,
+			knownProducts,
+			allowedProducts: allowedProducts
+		);
+		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("not allowed for this repository"));
+	}
+
+	[Fact]
+	public void Validate_AllowedProducts_Null_SkipsRestrictionCheck()
+	{
+		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
+		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: kibana");
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			Config,
+			null,
+			knownProducts,
+			allowedProducts: null
+		);
+		findings.Should().BeEmpty();
+	}
+
+	[Fact]
+	public void Validate_AllowedProducts_UnknownProductDoesNotAlsoFireAllowedError()
+	{
+		// When a product is unknown (not in knownProducts), only the "not in products.yml" error fires,
+		// not the allowed-products error — the else-if ensures mutual exclusion.
+		var knownProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
+		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
+		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: totally-unknown");
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			Config,
+			null,
+			knownProducts,
+			allowedProducts: allowedProducts
+		);
+		findings.Should().ContainSingle(f => f.Message.Contains("not in the list of available products"));
+		findings.Should().NotContain(f => f.Message.Contains("not allowed for this repository"));
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 	// Filename validation
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
