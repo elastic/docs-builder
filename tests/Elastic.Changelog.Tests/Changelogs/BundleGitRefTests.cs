@@ -425,8 +425,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		seen.Should().NotBeNull();
-		seen.ExcludeLabels.Should().Equal("stateful");
-		seen.KeepLabels.Should().Equal("serverless");
+		seen.FindRoutingLabel.Should().NotBeNull();
+		seen.FindRoutingLabel!(["stateful"]).Should().Be("stateful");
+		seen.FindRoutingLabel!(["stateful", "serverless"]).Should().BeNull();
+		seen.FindRoutingLabel!(["serverless"]).Should().BeNull();
+		seen.FindRoutingLabel!(["Team:Search"]).Should().BeNull();
 	}
 
 	[Test]
@@ -460,8 +463,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		seen.Should().NotBeNull();
-		seen.ExcludeLabels.Should().BeNull();
-		seen.KeepLabels.Should().BeNull();
+		seen.FindRoutingLabel.Should().BeNull();
 	}
 
 	[Test]

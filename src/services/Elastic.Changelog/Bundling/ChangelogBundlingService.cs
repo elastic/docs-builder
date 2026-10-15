@@ -980,7 +980,6 @@ public partial class ChangelogBundlingService(
 		}
 
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
-		var routedLabels = input.ProductLabelRouting?.DeriveLabels(config?.LabelToProducts);
 		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
 			collector,
 			new CommitRangeArguments
@@ -990,8 +989,7 @@ public partial class ChangelogBundlingService(
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
 				BaseRef = input.BaseRef,
-				ExcludeLabels = routedLabels?.Exclude,
-				KeepLabels = routedLabels?.Keep
+				FindRoutingLabel = input.ProductLabelRouting?.CreateLabelRouter(config?.LabelToProducts)
 			},
 			ctx
 		);

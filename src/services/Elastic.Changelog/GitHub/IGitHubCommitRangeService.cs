@@ -32,18 +32,12 @@ public record CommitRangeArguments
 	public string? BaseRef { get; init; }
 
 	/// <summary>
-	/// Pull requests that carry any of these labels are left out and reported in
-	/// <see cref="CommitRangeResolution.ExcludedPullRequests"/>, unless they also carry a label in
-	/// <see cref="KeepLabels"/>. Labels are compared case-insensitively. <c>null</c> or empty keeps every pull request
-	/// and skips fetching labels.
+	/// Decides whether a pull request is routed out of the range by its labels. Receives every label of the pull request
+	/// and returns the label that routes it out, or <c>null</c> to keep it. Routed-out pull requests are reported in
+	/// <see cref="CommitRangeResolution.ExcludedPullRequests"/>. <c>null</c> keeps every pull request and skips reading
+	/// the labels beyond the first page.
 	/// </summary>
-	public IReadOnlyList<string>? ExcludeLabels { get; init; }
-
-	/// <summary>
-	/// A pull request that carries any of these labels is never excluded by <see cref="ExcludeLabels"/>.
-	/// With <c>exclude: stateful</c> and <c>keep: serverless</c>, a pull request labelled with both stays in.
-	/// </summary>
-	public IReadOnlyList<string>? KeepLabels { get; init; }
+	public Func<IReadOnlyCollection<string>, string?>? FindRoutingLabel { get; init; }
 }
 
 /// <summary>Why a merged pull request was left out of a range.</summary>
@@ -52,7 +46,7 @@ public enum CommitRangeExclusionReason
 	/// <summary>Merged into a branch other than <see cref="CommitRangeArguments.BaseRef"/>.</summary>
 	BaseBranch,
 
-	/// <summary>Carries a label in <see cref="CommitRangeArguments.ExcludeLabels"/>.</summary>
+	/// <summary>Routed out by its labels, see <see cref="CommitRangeArguments.FindRoutingLabel"/>.</summary>
 	Label
 }
 
@@ -111,7 +105,7 @@ public record CommitRangeResolution
 	/// <summary>Shas of range commits with no associated merged pull request.</summary>
 	public required IReadOnlyList<string> CommitsWithoutPullRequest { get; init; }
 
-	/// <summary>Merged pull requests excluded because of <see cref="CommitRangeArguments.BaseRef"/> or <see cref="CommitRangeArguments.ExcludeLabels"/>.</summary>
+	/// <summary>Merged pull requests excluded because of <see cref="CommitRangeArguments.BaseRef"/> or <see cref="CommitRangeArguments.FindRoutingLabel"/>.</summary>
 	public IReadOnlyList<CommitRangeExcludedPullRequest> ExcludedPullRequests { get; init; } = [];
 }
 

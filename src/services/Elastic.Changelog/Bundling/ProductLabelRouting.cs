@@ -16,17 +16,18 @@ namespace Elastic.Changelog.Bundling;
 public sealed record ProductLabelRouting(string Product, IReadOnlyList<string> RelatedProducts)
 {
 	/// <summary>
-	/// Splits the labels of <c>pivot.products</c> into those that leave a pull request out of the bundle and those that
-	/// keep it in. A label that maps to <see cref="Product"/> keeps. A label that maps to another related product
-	/// excludes, unless the pull request also has a keeping label. Returns <c>null</c> when no label routes anything.
+	/// Creates the function that decides, from the labels of a pull request, whether the routing leaves it out of the bundle.
+	/// It returns the first label that maps to another related product, or <c>null</c> to keep the pull request: when no such
+	/// label is present, or when a label maps it to <see cref="Product"/>. Labels compare case-insensitively, as GitHub treats them.
+	/// Returns <c>null</c> when no label of <paramref name="labelToProducts"/> routes anything.
 	/// </summary>
-	public (IReadOnlyList<string> Exclude, IReadOnlyList<string> Keep)? DeriveLabels(IReadOnlyDictionary<string, string>? labelToProducts)
+	public Func<IReadOnlyCollection<string>, string?>? CreateLabelRouter(IReadOnlyDictionary<string, string>? labelToProducts)
 	{
 		if (labelToProducts is not { Count: > 0 })
 			return null;
 
 		var exclude = new List<string>();
-		var keep = new List<string>();
+		var keep = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var (label, spec) in labelToProducts)
 		{
 			var productId = ProductId(spec);
@@ -34,12 +35,19 @@ public sealed record ProductLabelRouting(string Product, IReadOnlyList<string> R
 				continue;
 
 			if (SameProduct(Product, productId))
-				keep.Add(label);
+				_ = keep.Add(label);
 			else
 				exclude.Add(label);
 		}
 
-		return exclude.Count == 0 ? null : (exclude, keep);
+		if (exclude.Count == 0)
+			return null;
+
+		return labels =>
+		{
+			var present = labels.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			return keep.Any(present.Contains) ? null : exclude.FirstOrDefault(present.Contains);
+		};
 	}
 
 	/// <summary>The product ID of a <c>pivot.products</c> spec such as <c>cloud-serverless 2026-10 ga</c>.</summary>

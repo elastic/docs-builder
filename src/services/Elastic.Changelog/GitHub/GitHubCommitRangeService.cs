@@ -223,7 +223,7 @@ public sealed partial class GitHubCommitRangeService(
 
 				// Label exclusion must see every label. The batch query returns the first page only, so a pull request
 				// with more labels is read in full before the exclusion decides, or a label on a later page would be missed.
-				if (args.ExcludeLabels is { Count: > 0 })
+				if (args.FindRoutingLabel != null)
 				{
 					// Only the pull requests the selection can pick: merged in this repository, and on the base branch when one is set.
 					// A pull request from another repository has a number that means something else here.
@@ -255,8 +255,7 @@ public sealed partial class GitHubCommitRangeService(
 					commitNode,
 					repoFullName,
 					args.BaseRef,
-					args.ExcludeLabels,
-					args.KeepLabels,
+					args.FindRoutingLabel,
 					completedLabels,
 					excluded,
 					out var onlyExcluded
@@ -329,8 +328,7 @@ public sealed partial class GitHubCommitRangeService(
 		GraphQlCommit? commitNode,
 		string repoFullName,
 		string? baseRef,
-		IReadOnlyList<string>? excludeLabels,
-		IReadOnlyList<string>? keepLabels,
+		Func<IReadOnlyCollection<string>, string?>? findRoutingLabel,
 		IReadOnlyDictionary<int, IReadOnlyList<string>> completedLabels,
 		Dictionary<int, CommitRangeExcludedPullRequest> excluded,
 		out bool onlyExcluded
@@ -363,13 +361,13 @@ public sealed partial class GitHubCommitRangeService(
 			}
 		}
 
-		// A pull request with an exclude label stays out unless it also has a keep label.
-		if (excludeLabels is { Count: > 0 })
+		// A pull request routed out by its labels stays out.
+		if (findRoutingLabel != null)
 		{
 			var kept = new List<GraphQlPullRequest>();
 			foreach (var pr in candidates)
 			{
-				var matched = FindExcludingLabel(pr, excludeLabels, keepLabels, completedLabels);
+				var matched = FindRoutingLabel(pr, findRoutingLabel, completedLabels);
 				if (matched == null)
 				{
 					kept.Add(pr);
@@ -422,14 +420,10 @@ public sealed partial class GitHubCommitRangeService(
 	private static bool IsMergedInRepository(GraphQlPullRequest pr, string repoFullName) =>
 		pr.Merged && string.Equals(pr.BaseRepository?.NameWithOwner, repoFullName, StringComparison.OrdinalIgnoreCase);
 
-	/// <summary>
-	/// The first of <paramref name="excludeLabels"/> that the pull request carries, or <c>null</c> when it carries none
-	/// or carries any of <paramref name="keepLabels"/>. Labels compare case-insensitively, as GitHub treats them.
-	/// </summary>
-	private static string? FindExcludingLabel(
+	/// <summary>The label that routes the pull request out, or <c>null</c> when <paramref name="findRoutingLabel"/> keeps it.</summary>
+	private static string? FindRoutingLabel(
 		GraphQlPullRequest pr,
-		IReadOnlyList<string> excludeLabels,
-		IReadOnlyList<string>? keepLabels,
+		Func<IReadOnlyCollection<string>, string?> findRoutingLabel,
 		IReadOnlyDictionary<int, IReadOnlyList<string>> completedLabels
 	)
 	{
@@ -437,10 +431,7 @@ public sealed partial class GitHubCommitRangeService(
 		var all = completedLabels.TryGetValue(pr.Number, out var complete)
 			? complete
 			: pr.Labels?.Nodes?.Select(label => label?.Name).OfType<string>().ToList() ?? [];
-		var names = all.ToHashSet(StringComparer.OrdinalIgnoreCase);
-		if (keepLabels != null && keepLabels.Any(names.Contains))
-			return null;
-		return excludeLabels.FirstOrDefault(names.Contains);
+		return findRoutingLabel(all);
 	}
 
 	private async Task<Dictionary<string, GraphQlCommit?>?> FetchAssociatedPullRequestsBatchAsync(
