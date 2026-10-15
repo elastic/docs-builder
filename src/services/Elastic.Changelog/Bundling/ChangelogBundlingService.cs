@@ -41,12 +41,6 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-
-	/// <summary>
-	/// Commit-range mode only. Products set on every entry synthesized from PR metadata, replacing
-	/// label-derived and <see cref="OutputProducts"/> products. Entries from the changelog pool keep their own products.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -1056,8 +1050,7 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts,
-				EntryProducts = input.EntryProducts
+				FallbackProducts = input.OutputProducts
 			},
 			ctx
 		);
