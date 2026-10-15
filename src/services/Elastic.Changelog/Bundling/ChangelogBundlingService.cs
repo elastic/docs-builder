@@ -233,7 +233,9 @@ public partial class ChangelogBundlingService(
 	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
 	// Otherwise the pull requests of a range are read in batches.
 	private readonly IPullRequestSummaryProvider _summaries = summaries
-		?? (prService is not null ? new RestPullRequestSummaryProvider(prService) : new GraphQlPullRequestSummaryProvider(logFactory));
+		?? (prService is not null
+			? new RestPullRequestSummaryProvider(prService)
+			: new GraphQlPullRequestSummaryProvider(logFactory, cache: cache));
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
 		?? new GitHubCommitRangeService(logFactory, cache: cache);
 	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);

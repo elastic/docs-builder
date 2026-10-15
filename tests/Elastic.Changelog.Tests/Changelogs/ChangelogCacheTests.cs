@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Caching;
+using Elastic.Changelog.GitHub;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Time.Testing;
 
@@ -214,6 +215,108 @@ public class ChangelogCacheTests : IDisposable
 
 		store.TryGet("sha1", out var pullRequests).Should().BeTrue();
 		pullRequests.Should().Equal(Squashed);
+	}
+
+	private static readonly DateTimeOffset Updated = new(2026, 10, 1, 12, 30, 15, TimeSpan.Zero);
+
+	[Test]
+	public async Task PullRequestText_IsFoundOnlyForTheStateItWasStoredFor()
+	{
+		var first = Cache();
+		first.PullRequestTexts("elastic", "widget").Set(
+			7,
+			Updated,
+			new CachedPullRequestText("Search is faster.", true, ["https://github.com/elastic/widget/issues/1"])
+		);
+		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var store = Cache().PullRequestTexts("elastic", "widget");
+		store.TryGet(7, Updated, out var text).Should().BeTrue();
+		text.ReleaseNote.Should().Be("Search is faster.");
+		text.ReleaseNoteTruncated.Should().BeTrue();
+		text.LinkedIssues.Should().Equal("https://github.com/elastic/widget/issues/1");
+
+		store.TryGet(7, Updated.AddSeconds(1), out _).Should().BeFalse("the pull request changed after it was stored");
+		store.TryGet(8, Updated, out _).Should().BeFalse();
+	}
+
+	[Test]
+	public void PullRequestText_StoredAgainForANewerState_ReplacesTheOldOne()
+	{
+		var store = Cache().PullRequestTexts("elastic", "widget");
+		store.Set(7, Updated, new CachedPullRequestText("Old.", false, []));
+
+		store.Set(7, Updated.AddHours(1), new CachedPullRequestText("New.", false, []));
+
+		store.TryGet(7, Updated, out _).Should().BeFalse();
+		store.TryGet(7, Updated.AddHours(1), out var text).Should().BeTrue();
+		text.ReleaseNote.Should().Be("New.");
+	}
+
+	[Test]
+	public async Task PullRequestText_WithoutAReleaseNote_IsRemembered()
+	{
+		var first = Cache();
+		first.PullRequestTexts("elastic", "widget").Set(7, Updated, new CachedPullRequestText(null, false, []));
+		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		Cache().PullRequestTexts("elastic", "widget").TryGet(7, Updated, out var text).Should().BeTrue();
+		text.ReleaseNote.Should().BeNull();
+	}
+
+	[Test]
+	public async Task Backport_WithAnOriginal_AndWithoutOne_AreBothRemembered()
+	{
+		var first = Cache();
+		var store = first.Backports("elastic", "widget");
+		store.Set(20, Updated, new CachedBackport(new BackportRoots([5, 6], BackportRootRoute.CherryPickTrailer, RoutesDisagree: true)));
+		store.Set(21, Updated, new CachedBackport(null));
+		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var loaded = Cache().Backports("elastic", "widget");
+		loaded.TryGet(20, Updated, out var found).Should().BeTrue();
+		found.Roots!.Roots.Should().Equal(5, 6);
+		found.Roots.Route.Should().Be(BackportRootRoute.CherryPickTrailer);
+		found.Roots.RoutesDisagree.Should().BeTrue();
+		loaded.TryGet(21, Updated, out var none).Should().BeTrue("looking again at the same text finds the same");
+		none.Roots.Should().BeNull();
+		loaded.TryGet(20, Updated.AddMinutes(1), out _).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task VersionedStores_UnusedForTheMaxAge_AreDropped()
+	{
+		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+		var first = Cache(time, TimeSpan.FromDays(30));
+		first.PullRequestTexts("elastic", "widget").Set(7, Updated, new CachedPullRequestText(null, false, []));
+		first.Backports("elastic", "widget").Set(7, Updated, new CachedBackport(null));
+		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		time.Advance(TimeSpan.FromDays(31));
+		var second = Cache(time, TimeSpan.FromDays(30));
+		second.PullRequestTexts("elastic", "widget").Set(8, Updated, new CachedPullRequestText(null, false, []));
+		second.Backports("elastic", "widget").Set(8, Updated, new CachedBackport(null));
+		await second.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		var last = Cache(time, TimeSpan.FromDays(30));
+		last.PullRequestTexts("elastic", "widget").TryGet(7, Updated, out _).Should().BeFalse();
+		last.PullRequestTexts("elastic", "widget").TryGet(8, Updated, out _).Should().BeTrue();
+		last.Backports("elastic", "widget").TryGet(7, Updated, out _).Should().BeFalse();
+		last.Backports("elastic", "widget").TryGet(8, Updated, out _).Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("pulls.json")]
+	[Arguments("backports.json")]
+	public async Task VersionedStores_UnreadableFile_IsIgnored(string fileName)
+	{
+		var path = Path.Combine(_directory, "github", "elastic/widget", fileName);
+		Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+		await File.WriteAllTextAsync(path, "garbage", TestContext.Current!.Execution.CancellationToken);
+
+		var cache = Cache();
+		cache.PullRequestTexts("elastic", "widget").TryGet(7, Updated, out _).Should().BeFalse();
+		cache.Backports("elastic", "widget").TryGet(7, Updated, out _).Should().BeFalse();
 	}
 
 	[Test]

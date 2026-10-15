@@ -16,11 +16,11 @@ public sealed class RestPullRequestSummaryProvider(IGitHubPrService prService) :
 		IDiagnosticsCollector collector,
 		string owner,
 		string repo,
-		IReadOnlyCollection<int> numbers,
+		IReadOnlyCollection<CommitRangePullRequest> pullRequests,
 		Cancel ctx
 	)
 	{
-		var distinct = numbers.Distinct().ToList();
+		var distinct = pullRequests.Select(pr => pr.Number).Distinct().ToList();
 		var summaries = new PullRequestSummary?[distinct.Count];
 		using var gate = new SemaphoreSlim(MaxParallel);
 		await Task.WhenAll(distinct.Select(async (number, index) =>

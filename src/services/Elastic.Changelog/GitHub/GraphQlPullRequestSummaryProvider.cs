@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -15,17 +16,24 @@ namespace Elastic.Changelog.GitHub;
 /// <summary>
 /// Reads the pull requests of a range 50 at a time through GraphQL, where REST needs one request each. A range of a minor
 /// release holds thousands of pull requests. The body is reduced to its release note and linked issues on arrival.
+/// <para>
+/// A pull request that comes from a commit range already carries its title, labels and update time, so only its body is read,
+/// and not even that when a run has read it for this state of the pull request: what is derived from the body is kept in the
+/// cache until the <c>updatedAt</c> of the pull request moves.
+/// </para>
 /// </summary>
 public sealed partial class GraphQlPullRequestSummaryProvider(
 	ILoggerFactory logFactory,
-	GitHubApiTransport? transport = null
+	GitHubApiTransport? transport = null,
+	ChangelogCache? cache = null
 ) : IPullRequestSummaryProvider
 {
 	private const int BatchSize = 50;
 	private const int LabelPageSize = 100;
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GraphQlPullRequestSummaryProvider>();
-	private readonly GitHubApiTransport _transport = transport ?? new GitHubApiTransport();
+	private readonly GitHubApiTransport _transport = transport
+		?? new GitHubApiTransport(logger: logFactory.CreateLogger<GraphQlPullRequestSummaryProvider>());
 
 	[GeneratedRegex("^[A-Za-z0-9_.-]+$")]
 	private static partial Regex SafeIdentifierRegex();
@@ -34,12 +42,12 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		IDiagnosticsCollector collector,
 		string owner,
 		string repo,
-		IReadOnlyCollection<int> numbers,
+		IReadOnlyCollection<CommitRangePullRequest> pullRequests,
 		Cancel ctx
 	)
 	{
-		var distinct = numbers.Distinct().Order().ToList();
-		var result = distinct.ToDictionary(n => n, _ => (PullRequestSummary?)null);
+		var distinct = pullRequests.GroupBy(pr => pr.Number).Select(g => g.First()).OrderBy(pr => pr.Number).ToList();
+		var result = distinct.ToDictionary(pr => pr.Number, _ => (PullRequestSummary?)null);
 		if (distinct.Count == 0)
 			return result;
 
@@ -61,10 +69,112 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 			return null;
 		}
 
-		var batches = distinct.Chunk(BatchSize).ToList();
+		var store = cache?.PullRequestTexts(owner, repo);
+		var needBody = new List<CommitRangePullRequest>();
+		var needEverything = new List<CommitRangePullRequest>();
+		var cached = 0;
+		foreach (var pr in distinct)
+		{
+			if (pr.Title is null)
+				needEverything.Add(pr);
+			else if (store is not null && pr.UpdatedAt is { } updatedAt && store.TryGet(pr.Number, updatedAt, out var text))
+			{
+				result[pr.Number] = Summarize(pr.Number, pr.Title, pr.Labels, text);
+				cached++;
+			}
+			else
+				needBody.Add(pr);
+		}
+
+		var bodies = await ReadAsync(
+			collector,
+			owner,
+			repo,
+			needBody.Select(pr => pr.Number).ToList(),
+			everything: false,
+			ctx
+		).ConfigureAwait(false);
+		var all = await ReadAsync(
+			collector,
+			owner,
+			repo,
+			needEverything.Select(pr => pr.Number).ToList(),
+			everything: true,
+			ctx
+		).ConfigureAwait(false);
+		if (bodies is null || all is null)
+			return null;
+
+		foreach (var pr in needBody)
+		{
+			if (bodies.GetValueOrDefault(pr.Number) is not { } node)
+			{
+				_logger.LogWarning("Pull request #{Number} of {Owner}/{Repo} could not be read", pr.Number, owner, repo);
+				continue;
+			}
+
+			var text = TextOf(owner, repo, node);
+			if (pr.UpdatedAt is { } updatedAt)
+				store?.Set(pr.Number, updatedAt, text);
+
+			result[pr.Number] = Summarize(pr.Number, pr.Title!, pr.Labels, text);
+		}
+
+		foreach (var pr in needEverything)
+		{
+			if (all.GetValueOrDefault(pr.Number) is not { } node)
+			{
+				_logger.LogWarning("Pull request #{Number} of {Owner}/{Repo} could not be read", pr.Number, owner, repo);
+				continue;
+			}
+
+			var labels = await AllLabelsAsync(collector, owner, repo, node, ctx).ConfigureAwait(false);
+			if (labels is null)
+				return null;
+
+			var text = TextOf(owner, repo, node);
+			if (node.UpdatedAt is { } updatedAt)
+				store?.Set(pr.Number, updatedAt, text);
+
+			result[pr.Number] = Summarize(pr.Number, node.Title ?? string.Empty, labels, text);
+		}
+
+		_logger.LogInformation(
+			"Read {Count} pull request(s) of {Owner}/{Repo}: {Cached} from the cache, {Asked} from GitHub",
+			distinct.Count,
+			owner,
+			repo,
+			cached,
+			needBody.Count + needEverything.Count
+		);
+		return result;
+	}
+
+	private static CachedPullRequestText TextOf(string owner, string repo, Node node)
+	{
+		var body = node.Body ?? string.Empty;
+		var note = ReleaseNotesExtractor.ExtractReleaseNote(body);
+		return new CachedPullRequestText(note.Content, note.WasTruncated, LinkedIssueExtractor.Extract(body, owner, repo));
+	}
+
+	private static PullRequestSummary Summarize(int number, string title, IReadOnlyList<string> labels, CachedPullRequestText text) =>
+		new(number, title, labels, new ReleaseNoteExtractionResult(text.ReleaseNote, text.ReleaseNoteTruncated), text.LinkedIssues);
+
+	/// <summary>Reads the pull requests 50 at a time: their body, and with <paramref name="everything"/> their title, labels and update time too.</summary>
+	private async Task<Dictionary<int, Node>?> ReadAsync(
+		IDiagnosticsCollector collector,
+		string owner,
+		string repo,
+		IReadOnlyList<int> numbers,
+		bool everything,
+		Cancel ctx
+	)
+	{
+		var found = new Dictionary<int, Node>();
+		var batches = numbers.Chunk(BatchSize).ToList();
 		var responses = await BatchRunner.RunAsync(
 			batches,
-			(batch, token) => QueryBatchAsync(collector, owner, repo, batch, token),
+			(batch, token) => QueryBatchAsync(collector, owner, repo, batch, everything, token),
 			data => data is null,
 			ctx
 		).ConfigureAwait(false);
@@ -75,35 +185,12 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		{
 			foreach (var number in batches[i])
 			{
-				if (responses[i]!.GetValueOrDefault($"p{number}") is not { } node)
-				{
-					_logger.LogWarning("Pull request #{Number} of {Owner}/{Repo} could not be read", number, owner, repo);
-					continue;
-				}
-
-				var labels = await AllLabelsAsync(collector, owner, repo, node, ctx).ConfigureAwait(false);
-				if (labels is null)
-					return null;
-
-				var body = node.Body ?? string.Empty;
-				result[number] = new PullRequestSummary(
-					number,
-					node.Title ?? string.Empty,
-					labels,
-					ReleaseNotesExtractor.ExtractReleaseNote(body),
-					LinkedIssueExtractor.Extract(body, owner, repo)
-				);
+				if (responses[i]!.GetValueOrDefault($"p{number}") is { } node)
+					found[number] = node;
 			}
 		}
 
-		_logger.LogInformation(
-			"Read {Count} pull request(s) of {Owner}/{Repo} in {Batches} request(s)",
-			distinct.Count,
-			owner,
-			repo,
-			batches.Count
-		);
-		return result;
+		return found;
 	}
 
 	private async Task<Dictionary<string, Node?>?> QueryBatchAsync(
@@ -111,15 +198,18 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		string owner,
 		string repo,
 		int[] batch,
+		bool everything,
 		Cancel ctx
 	)
 	{
 		var selection = new StringBuilder();
 		foreach (var number in batch)
-			_ = selection.Append(
-				CultureInfo.InvariantCulture,
-				$" p{number}: pullRequest(number: {number}) {{ number title body labels(first: {LabelPageSize}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }} }}"
-			);
+		{
+			var fields = everything
+				? $"number title updatedAt body labels(first: {LabelPageSize}) {{ pageInfo {{ hasNextPage endCursor }} nodes {{ name }} }}"
+				: "number body";
+			_ = selection.Append(CultureInfo.InvariantCulture, $" p{number}: pullRequest(number: {number}) {{ {fields} }}");
+		}
 
 		return await QueryAsync(collector, owner, repo, selection.ToString(), ctx).ConfigureAwait(false);
 	}
@@ -160,7 +250,14 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 		var query = $"query {{ repository(owner: \"{owner}\", name: \"{repo}\") {{{selection} }} }}";
 		var body = JsonSerializer.Serialize(new Request { Query = query }, PullRequestJsonContext.Default.Request);
 
-		using var response = await _transport.PostGraphQlAsync(body, ctx).ConfigureAwait(false);
+		using var response = await _transport.PostGraphQlOrNullAsync(
+			body,
+			failure => collector.EmitError(string.Empty, $"GitHub GraphQL request for {owner}/{repo} failed: {failure}"),
+			ctx
+		).ConfigureAwait(false);
+		if (response is null)
+			return null;
+
 		if (!response.IsSuccessStatusCode)
 		{
 			collector.EmitError(
@@ -242,6 +339,9 @@ public sealed partial class GraphQlPullRequestSummaryProvider(
 
 		[JsonPropertyName("title")]
 		public string? Title { get; set; }
+
+		[JsonPropertyName("updatedAt")]
+		public DateTimeOffset? UpdatedAt { get; set; }
 
 		[JsonPropertyName("body")]
 		public string? Body { get; set; }
