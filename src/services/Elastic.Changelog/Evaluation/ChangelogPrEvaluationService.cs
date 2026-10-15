@@ -186,7 +186,7 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null;
 		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
+			var products = ProductResolution.FromLabels(input.PrLabels, config);
 			if (products.Count > 0)
 			{
 				resolvedProducts = ProductArgument.FormatProductSpecs(products);
@@ -241,7 +241,7 @@ public class ChangelogPrEvaluationService(
 		// available to fill in via inference at 'changelog add' time. Surface this as a
 		// missing-label failure so the contributor sees an actionable hint instead of a hard
 		// error later in the workflow.
-		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
 			var productLabels = config.LabelToProducts is { Count: > 0 }

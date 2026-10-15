@@ -336,13 +336,28 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		}
 
 		var labels = summary.Labels.ToArray();
-		var labelProducts = config?.LabelToProducts != null ? PrInfoProcessor.MapLabelsToProducts(labels, config.LabelToProducts) : [];
+		// Labels win, then products.default, then the profile's output products: the order of changelog add.
+		var labelProducts = config != null ? ProductResolution.FromLabels(labels, config) : [];
+		var resolvedProducts = ResolveProductsFromConfiguration(labelProducts, config, options);
 
+		// rules.create exclusions come first: a pull request that a skip label leaves out needs no product label.
 		if (config != null)
 		{
-			var effectiveProducts = labelProducts.Count > 0 ? labelProducts : (options.FallbackProducts ?? []).ToList();
-			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, effectiveProducts, config, pr.Url, decisions))
+			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
+
+			// Two or more mapped products and no default: the pull request must name its product with a label,
+			// unless the caller sets the entry products itself.
+			if (
+				labelProducts.Count == 0
+				&& options.EntryProducts is not { Count: > 0 }
+				&& ProductResolution.Defaults(config).Count == 0
+				&& ProductResolution.RequiresProductLabel(config)
+			)
+			{
+				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+			}
 		}
 
 		var title = summary.Title;
@@ -366,7 +381,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			allowMatchingMetadataAttribute: true
 		) ? parsedType : ChangelogEntryType.Other;
 
-		var products = ResolveProducts(collector, pr, labelProducts, options);
+		var products = ResolveProducts(collector, pr, resolvedProducts, options);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
@@ -418,35 +433,51 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: the explicit entry products when set; otherwise label-derived
-	/// products win; otherwise the concrete (non-wildcard) fallback products from the profile/CLI.
-	/// Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
+	/// The products of a pull request from the configuration, in the order <c>changelog add</c> uses: the products its
+	/// labels map to and imply (<paramref name="labelProducts"/>), else <c>products.default</c>, else the
+	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies.
+	/// </summary>
+	private static List<ProductArgument> ResolveProductsFromConfiguration(
+		List<ProductArgument> labelProducts,
+		ChangelogConfiguration? config,
+		GitRangeEntryResolutionOptions options
+	)
+	{
+		if (labelProducts.Count > 0)
+			return labelProducts;
+
+		var defaults = config != null ? ProductResolution.Defaults(config) : [];
+		if (defaults.Count > 0)
+			return defaults;
+
+		return (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
+	}
+
+	/// <summary>
+	/// Products for a synthesized entry: the explicit entry products when set; otherwise the products resolved from the
+	/// configuration. Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
-		IReadOnlyList<ProductArgument> labelProducts,
+		IReadOnlyList<ProductArgument> resolvedProducts,
 		GitRangeEntryResolutionOptions options
 	)
 	{
 		if (options.EntryProducts is { Count: > 0 })
 			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
 
-		var source = labelProducts.Count > 0
-			? labelProducts
-			: (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
-
-		if (source.Count == 0)
+		if (resolvedProducts.Count == 0)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"Cannot determine products for the entry synthesized from PR {pr.Url}: its labels map to no product and no output products are configured. " +
-					"Configure pivot.products label mappings or set output_products on the bundle profile."
+				$"Cannot determine products for the entry synthesized from PR {pr.Url}: its labels map to no product, and neither products.default nor output products are configured. " +
+					"Configure pivot.products label mappings, set products.default, or set output_products on the bundle profile."
 			);
 			return null;
 		}
 
-		return source.Select(p => p.ToProductReference()).ToList();
+		return resolvedProducts.Select(p => p.ToProductReference()).ToList();
 	}
 
 	private static GitRangePrReportRow Row(CommitRangePullRequest pr, GitRangePrSourceKind source, string? fileName = null) =>

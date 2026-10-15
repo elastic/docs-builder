@@ -243,6 +243,97 @@ public class BlockingLabelTests() : CreateChangelogTestBase()
 	}
 
 	[Test]
+	public async Task CreateChangelog_WithDefaultProductThatHasAnOverride_GlobalSkipLabelDoesNotApply()
+	{
+		// The entry gets products.default, so the blocker check must see that product's override, which replaces the
+		// global rules: the global skip label does not skip the pull request.
+		var prInfo = new GitHubPrInfo { Title = "PR with the global skip label", Labels = ["type:feature", "changelog:skip"] };
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			products:
+			  default:
+			    - product: kibana
+			lifecycles:
+			  - ga
+			rules:
+			  create:
+			    exclude: "changelog:skip"
+			    products:
+			      kibana:
+			        exclude: "kibana:skip"
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+		var service = CreateService();
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Logged.Should().NotContain(l => l.Contains("entries: exclude"));
+		FileSystem.Directory.GetFiles(input.Output!, "*.yaml").Should().HaveCount(1);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithNoResolvedProductAndProductOverrides_GlobalSkipLabelApplies()
+	{
+		// No explicit, label-derived or default product: the per-product overrides name nothing that applies, so the
+		// global skip label decides and the pull request is skipped.
+		var prInfo = new GitHubPrInfo { Title = "PR with the global skip label", Labels = ["type:feature", "changelog:skip"] };
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			lifecycles:
+			  - ga
+			rules:
+			  create:
+			    exclude: "changelog:skip"
+			    products:
+			      kibana:
+			        exclude: "kibana:skip"
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+		var service = CreateService();
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		Logged.Should().Contain(l => l.Contains("entries: exclude") && l.Contains("changelog:skip"));
+		if (!FileSystem.Directory.Exists(input.Output!))
+			FileSystem.Directory.CreateDirectory(input.Output!);
+		FileSystem.Directory.GetFiles(input.Output!, "*.yaml").Should().HaveCount(0);
+	}
+
+	[Test]
 	public async Task CreateChangelog_WithAllPrsSkippedByCreateRules_ReturnsSuccessWithoutErrors()
 	{
 		var prInfo = new GitHubPrInfo { Title = "PR with blocking label", Labels = ["type:feature", "skip:releaseNotes"] };
