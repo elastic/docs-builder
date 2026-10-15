@@ -23,10 +23,10 @@ toc:
   - toc: get-started
   # Product hub pages. elastic-stack.md is the parent, with the Elasticsearch, Kibana, and Logstash hubs as children.
   - toc: products
+  - toc: deploy-manage
   - toc: solutions
   - toc: manage-data
   - toc: explore-analyze
-  - toc: deploy-manage
   - toc: cloud-account
     navigation_title: Manage your Cloud account
   - toc: troubleshoot
