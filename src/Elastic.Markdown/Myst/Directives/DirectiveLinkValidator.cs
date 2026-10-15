@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
@@ -17,7 +18,7 @@ namespace Elastic.Markdown.Myst.Directives;
 /// Returns the resolved URL (or the original on failure) so callers can write it back into
 /// their own data. Errors and hints are emitted against the supplying <see cref="DirectiveBlock"/>.
 /// </summary>
-internal static class DirectiveLinkValidator
+internal static partial class DirectiveLinkValidator
 {
 	/// <summary>
 	/// Resolve cross-link schemes and check that an internal path points at a real file.
@@ -26,6 +27,27 @@ internal static class DirectiveLinkValidator
 	/// </summary>
 	public static string? ValidateAndResolve(string? url, DirectiveBlock block, ParserContext context) =>
 		Resolve(url, block, context, allowRelative: false, checkFileExists: true);
+
+	/// <summary>
+	/// Resolve every inline markdown link, such as <c>[label](/path/page.md)</c>, in a directive
+	/// option or YAML field that is rendered later as inline markdown. Each target goes through
+	/// <see cref="ValidateAndResolve"/>, then becomes a final href, so a <c>.md</c> path or a
+	/// cross-link works the same as in a link card. Anchors and external URLs stay as written.
+	/// </summary>
+	public static string? ResolveMarkdownLinks(string? markdown, DirectiveBlock block, ParserContext context)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return markdown;
+
+		return InlineLinkTarget().Replace(markdown, match =>
+		{
+			var resolved = ValidateAndResolve(match.Groups["url"].Value, block, context);
+			return $"({ToHref(resolved, context.Build.UrlPathPrefix)})";
+		});
+	}
+
+	[GeneratedRegex(@"(?<=\])\((?<url>[^)\s]+)\)")]
+	private static partial Regex InlineLinkTarget();
 
 	/// <summary>
 	/// Resolve cross-link schemes only, and accept a path relative to the source file.

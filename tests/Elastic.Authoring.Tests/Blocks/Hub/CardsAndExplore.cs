@@ -69,6 +69,46 @@ public class CardGroupWithLinksInTheIntro : MarkdownTest
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
+public class CardGroupWithAMarkdownLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:id: deploy
+		:intro: Choose where to run it. [Compare options](/index.md).
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("turns the markdown path into a page link")]
+	public async Task TurnsMarkdownPathIntoPageLink() => await Docs.ConvertsToContainingRawHtml("""<a href="/">Compare options</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithABrokenLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: See [the guide](/does-not-exist.md).
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("reports a link to a page that does not exist")]
+	public async Task ReportsMissingPage() => await Docs.HasError("does-not-exist");
+}
+
 public class CardGroupWithSolutionsVariant : MarkdownTest
 {
 	protected override string Markdown =>

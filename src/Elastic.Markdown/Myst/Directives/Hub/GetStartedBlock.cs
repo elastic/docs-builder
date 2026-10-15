@@ -50,12 +50,17 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 		if (string.IsNullOrWhiteSpace(Data.Title))
 			this.EmitError("{get-started} requires a `title` field in its YAML body.");
 
+		Data.Intro = DirectiveLinkValidator.ResolveMarkdownLinks(Data.Intro, this, context);
 		foreach (var step in Data.Steps)
 		{
 			if (!string.IsNullOrWhiteSpace(step.Link))
 				step.Link = DirectiveLinkValidator.ValidateAndResolve(step.Link, this, context);
+			step.Description = DirectiveLinkValidator.ResolveMarkdownLinks(step.Description, this, context);
 			foreach (var option in step.Options)
+			{
 				option.Url = DirectiveLinkValidator.ValidateAndResolve(option.Url, this, context);
+				option.Description = DirectiveLinkValidator.ResolveMarkdownLinks(option.Description, this, context);
+			}
 		}
 	}
 }
