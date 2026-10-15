@@ -720,6 +720,20 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task InferredEntry_Products_TwoMappedProductsAndNoDefault_SkipLabelNeedsNoProductLabel()
+	{
+		// The skip label leaves the pull request out through rules.create, so its missing product label is not an error.
+		_ = await BundleSinglePr(
+			["skip-me"],
+			"  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			"rules:\n  create:\n    exclude: 'skip-me'",
+			"cloud-serverless"
+		);
+
+		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
+	}
+
+	[Test]
 	public async Task InferredEntry_EntryProducts_ReplaceLabelDerivedProducts()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

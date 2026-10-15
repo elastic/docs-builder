@@ -383,6 +383,59 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 	}
 
 	[Test]
+	public async Task CreateChangelog_WithTwoMappedProductsAndNoDefault_FailsAnIssueWithTitleAndTypeButNoProductLabel()
+	{
+		// Arrange — --title and --type are set, so the issue would not be fetched unless products are missing
+		A.CallTo(
+			() => MockGitHubService.FetchIssueInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubIssueInfo { Title = "Fix something", Labels = ["type:bug"] });
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Issues = ["https://github.com/elastic/elasticsearch/issues/12345"],
+			Title = "Fix something",
+			Type = "bug-fix",
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching product label found on issue https://github.com/elastic/elasticsearch/issues/12345"
+				)
+			);
+	}
+
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_ExplicitProductsOverrideLabels()
 	{
 		// Arrange — PR has label for elasticsearch but --products specifies kibana

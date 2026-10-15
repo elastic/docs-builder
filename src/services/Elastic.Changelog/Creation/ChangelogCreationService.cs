@@ -132,7 +132,9 @@ public class ChangelogCreationService(
 				// Create a single changelog file with all issues recorded as metadata.
 				var titleProvided = !string.IsNullOrWhiteSpace(input.Title);
 				var typeProvided = !string.IsNullOrWhiteSpace(input.Type);
-				if (titleProvided && typeProvided)
+				// A configuration that requires a product label still needs the issue: its labels name the product.
+				var productsProvided = input.Products.Count > 0 || !ProductResolution.RequiresProductLabel(config);
+				if (titleProvided && typeProvided && productsProvided)
 					return await CreateSingleChangelogAsync(collector, input, config, ctx);
 
 				if (input.Issues.Length > 1)

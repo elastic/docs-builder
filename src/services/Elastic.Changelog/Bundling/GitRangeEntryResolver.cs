@@ -305,14 +305,27 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 		var labels = prInfo.Labels.ToArray();
 		// Labels win, then products.default, then the profile's output products: the order of changelog add.
-		var resolvedProducts = ResolveProductsFromConfiguration(collector, pr, labels, config, options);
-		if (resolvedProducts == null)
-			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+		var labelProducts = config != null ? ProductResolution.FromLabels(labels, config) : [];
+		var resolvedProducts = ResolveProductsFromConfiguration(labelProducts, config, options);
 
+		// rules.create exclusions come first: a pull request that a skip label leaves out needs no product label.
 		if (config != null)
 		{
 			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, collector, pr.Url))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
+
+			// Two or more mapped products and no default: the pull request must name its product with a label,
+			// unless the caller sets the entry products itself.
+			if (
+				labelProducts.Count == 0
+				&& options.EntryProducts is not { Count: > 0 }
+				&& ProductResolution.Defaults(config).Count == 0
+				&& ProductResolution.RequiresProductLabel(config)
+			)
+			{
+				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+			}
 		}
 
 		var title = prInfo.Title;
@@ -389,36 +402,21 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 
 	/// <summary>
 	/// The products of a pull request from the configuration, in the order <c>changelog add</c> uses: the products its
-	/// labels map to and imply (<see cref="ProductResolution.FromLabels"/>), else <c>products.default</c>, else the
-	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies. Null after an error when
-	/// the pull request has no product label and the configuration requires one (<see cref="ProductResolution.RequiresProductLabel"/>).
+	/// labels map to and imply (<paramref name="labelProducts"/>), else <c>products.default</c>, else the
+	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies.
 	/// </summary>
-	private static List<ProductArgument>? ResolveProductsFromConfiguration(
-		IDiagnosticsCollector collector,
-		CommitRangePullRequest pr,
-		string[] labels,
+	private static List<ProductArgument> ResolveProductsFromConfiguration(
+		List<ProductArgument> labelProducts,
 		ChangelogConfiguration? config,
 		GitRangeEntryResolutionOptions options
 	)
 	{
-		if (config != null)
-		{
-			var labelProducts = ProductResolution.FromLabels(labels, config);
-			if (labelProducts.Count > 0)
-				return labelProducts;
+		if (labelProducts.Count > 0)
+			return labelProducts;
 
-			var defaults = ProductResolution.Defaults(config);
-			if (defaults.Count > 0)
-				return defaults;
-
-			// Two or more mapped products and no default: the pull request must name its product with a label,
-			// unless the caller sets the entry products itself.
-			if (options.EntryProducts is not { Count: > 0 } && ProductResolution.RequiresProductLabel(config))
-			{
-				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
-				return null;
-			}
-		}
+		var defaults = config != null ? ProductResolution.Defaults(config) : [];
+		if (defaults.Count > 0)
+			return defaults;
 
 		return (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
 	}
