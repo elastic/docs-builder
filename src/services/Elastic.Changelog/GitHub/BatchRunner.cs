@@ -16,7 +16,8 @@ internal static class BatchRunner
 	/// Runs every batch, with at most <paramref name="degree"/> running at once, and returns the results in batch order.
 	/// When a batch fails (<paramref name="failed"/>) or throws, the batches that have not started never start, the
 	/// running ones get a cancelled token, and the method returns only after all of them are done, so nothing keeps
-	/// spending the rate budget once the caller has moved on. A failure returns <c>null</c>; an exception is rethrown.
+	/// spending the rate budget once the caller has moved on. A failure returns <c>null</c>; an exception, including a
+	/// batch's own timeout, is rethrown.
 	/// </summary>
 	public static async Task<IReadOnlyList<TResult>?> RunAsync<TBatch, TResult>(
 		IReadOnlyList<TBatch> batches,
@@ -28,6 +29,7 @@ internal static class BatchRunner
 	{
 		using var cts = CancellationTokenSource.CreateLinkedTokenSource(ctx);
 		using var gate = new SemaphoreSlim(degree);
+		Exception? timedOut = null;
 
 		var tasks = batches.Select(async batch =>
 		{
@@ -41,6 +43,14 @@ internal static class BatchRunner
 			}
 			catch (Exception e) when (e is not OperationCanceledException)
 			{
+				await cts.CancelAsync().ConfigureAwait(false);
+				throw;
+			}
+			catch (OperationCanceledException e) when (!cts.IsCancellationRequested)
+			{
+				// Neither the caller nor another batch cancelled, so this is the batch's own timeout (an HttpClient
+				// timeout throws it). It is an error, not a stop signal: it goes to the caller after the rest are done.
+				_ = Interlocked.CompareExchange(ref timedOut, e, null);
 				await cts.CancelAsync().ConfigureAwait(false);
 				throw;
 			}
@@ -61,6 +71,9 @@ internal static class BatchRunner
 
 		if (tasks.FirstOrDefault(t => t.IsFaulted) is { } faulted)
 			_ = await faulted.ConfigureAwait(false);
+
+		if (timedOut is not null)
+			System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(timedOut).Throw();
 
 		ctx.ThrowIfCancellationRequested();
 

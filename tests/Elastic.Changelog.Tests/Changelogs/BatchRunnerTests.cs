@@ -21,10 +21,12 @@ public class BatchRunnerTests
 		private int _running;
 		private int _max;
 		private int _started;
+		private int _cancelled;
 
 		public int Max => _max;
 		public int Running => Volatile.Read(ref _running);
 		public int Started => Volatile.Read(ref _started);
+		public int Cancelled => Volatile.Read(ref _cancelled);
 
 		public async Task<int> RunAsync(int batch, int delayMs, Cancel ctx)
 		{
@@ -37,6 +39,11 @@ public class BatchRunnerTests
 			{
 				await Task.Delay(delayMs, ctx);
 				return batch;
+			}
+			catch (OperationCanceledException)
+			{
+				_ = Interlocked.Increment(ref _cancelled);
+				throw;
 			}
 			finally
 			{
@@ -93,6 +100,101 @@ public class BatchRunnerTests
 			);
 
 		_ = await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("boom");
+		probe.Running.Should().Be(0);
+	}
+
+	[Test]
+	public async Task Run_ABatchFailsLate_RunningSiblingsObserveCancellation()
+	{
+		var probe = new Probe();
+		var watch = System.Diagnostics.Stopwatch.StartNew();
+
+		// Batch 0 fails after the siblings have started. They would sleep for ten seconds if nothing cancelled them.
+		var results = await BatchRunner.RunAsync(
+			Enumerable.Range(0, 4).ToList(),
+			async (b, ctx) =>
+			{
+				if (b != 0)
+					return await probe.RunAsync(b, 10_000, ctx);
+
+				await Task.Delay(100, ctx);
+				return -1;
+			},
+			r => r < 0,
+			Token
+		);
+
+		results.Should().BeNull();
+		probe.Cancelled.Should().Be(3, "every running sibling gets the cancelled token, not the caller's token");
+		watch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(5));
+	}
+
+	[Test]
+	public async Task Run_ABatchThrowsLate_RunningSiblingsObserveCancellation()
+	{
+		var probe = new Probe();
+
+		var act =
+			async () => await BatchRunner.RunAsync(
+				Enumerable.Range(0, 4).ToList(),
+				async (b, ctx) =>
+				{
+					if (b != 0)
+						return await probe.RunAsync(b, 10_000, ctx);
+
+					await Task.Delay(100, ctx);
+					throw new InvalidOperationException("boom");
+				},
+				_ => false,
+				Token
+			);
+
+		_ = await act.Should().ThrowAsync<InvalidOperationException>();
+		probe.Cancelled.Should().Be(3);
+	}
+
+	[Test]
+	public async Task Run_ABatchTimesOutOnItsOwn_IsRethrownAndStopsTheRest()
+	{
+		var probe = new Probe();
+
+		// An HttpClient timeout throws a cancellation that no token asked for.
+		var act =
+			async () => await BatchRunner.RunAsync(
+				Enumerable.Range(0, 4).ToList(),
+				async (b, ctx) =>
+				{
+					if (b != 0)
+						return await probe.RunAsync(b, 10_000, ctx);
+
+					await Task.Delay(100, ctx);
+					throw new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.");
+				},
+				_ => false,
+				Token
+			);
+
+		_ = await act.Should().ThrowAsync<TaskCanceledException>().WithMessage("*Timeout*");
+		probe.Cancelled.Should().Be(3);
+		probe.Running.Should().Be(0);
+	}
+
+	[Test]
+	public async Task Run_TheCallerCancels_StopsEveryBatchAndThrows()
+	{
+		var probe = new Probe();
+		using var cts = CancellationTokenSource.CreateLinkedTokenSource(Token);
+		cts.CancelAfter(100);
+
+		var act =
+			async () => await BatchRunner.RunAsync(
+				Enumerable.Range(0, 8).ToList(),
+				(b, ctx) => probe.RunAsync(b, 10_000, ctx),
+				_ => false,
+				cts.Token
+			);
+
+		_ = await act.Should().ThrowAsync<OperationCanceledException>();
 		probe.Running.Should().Be(0);
 	}
 
