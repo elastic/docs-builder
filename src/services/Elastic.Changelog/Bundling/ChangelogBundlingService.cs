@@ -28,6 +28,12 @@ namespace Elastic.Changelog.Bundling;
 public record BundleChangelogsArguments
 {
 	/// <summary>
+	/// Called with a message when the CDN has no entry pool for the repository. When set, the bundle is skipped and
+	/// the run still succeeds; when <c>null</c> a missing pool is an error. Set for commit-range bundles only.
+	/// </summary>
+	public Action<string>? OnPoolMissing { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -1009,9 +1015,25 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
+		// A repository without an entry pool is not onboarded. The caller may ask to skip it instead of failing.
+		var poolMissing = false;
+		var notifyPoolMissing = input.OnPoolMissing;
+		Action<string>? onPoolMissing = null;
+		if (notifyPoolMissing is not null)
+		{
+			onPoolMissing = message =>
+			{
+				poolMissing = true;
+				notifyPoolMissing(message);
+			};
+		}
+
 		var candidates = sourcing.UseCdn
-			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
+			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, onPoolMissing, ctx)
 			: await ReadLocalEntriesAsync(collector, directory, outputPath, ctx);
+		if (poolMissing)
+			return true;
+
 		if (candidates == null)
 			return false;
 
@@ -1521,6 +1543,7 @@ public partial class ChangelogBundlingService(
 		string? org,
 		string? repo,
 		string? branch,
+		Action<string>? onPoolMissing,
 		Cancel ctx
 	)
 	{
@@ -1562,7 +1585,8 @@ public partial class ChangelogBundlingService(
 				collector.EmitError(string.Empty, msg);
 			},
 			msg => collector.EmitWarning(string.Empty, msg),
-			ctx
+			ctx,
+			onPoolMissing
 		);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that

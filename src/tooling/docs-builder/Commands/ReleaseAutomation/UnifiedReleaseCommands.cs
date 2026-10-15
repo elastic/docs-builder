@@ -149,7 +149,13 @@ internal sealed class UnifiedReleaseCommands(
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
-		var bundleService = new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
+		var productBundler = new UnifiedProductBundler(
+			new ChangelogBundlingService(logFactory, fileSystem, configurationContext),
+			http,
+			new FileSystem(),
+			_logger,
+			collector
+		);
 
 		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
 		if (targets is null)
@@ -237,23 +243,13 @@ internal sealed class UnifiedReleaseCommands(
 				_ = Directory.CreateDirectory(productOutput);
 
 				var requested = products?.Contains(range.ProductId, StringComparer.OrdinalIgnoreCase) ?? false;
-				var outcome = await BundleProductAsync(
-					http,
-					bundleService,
-					range,
-					productOutput,
-					changelogConfigs?.FullName,
-					strict || requested,
-					ctx
-				);
-				if (outcome == ProductOutcome.Failed)
+				var outcome = await productBundler.BundleAsync(range, productOutput, changelogConfigs?.FullName, strict || requested, ctx);
+				if (outcome == ProductBundleOutcome.Failed)
 					return 1;
 
-				if (outcome == ProductOutcome.Skipped)
+				if (outcome == ProductBundleOutcome.Skipped)
 				{
 					skipped.Add($"{range.ProductId}@{target.Version}");
-					if (!Directory.EnumerateFileSystemEntries(productOutput).Any())
-						Directory.Delete(productOutput);
 					continue;
 				}
 
@@ -450,110 +446,6 @@ internal sealed class UnifiedReleaseCommands(
 			_logger.LogError("{Message}", message);
 			collector.EmitError(string.Empty, message);
 		}
-	}
-
-	private async Task<ProductOutcome> BundleProductAsync(
-		HttpClient http,
-		ChangelogBundlingService bundleService,
-		ProductBundleRange range,
-		string outputDirectory,
-		string? changelogConfigsDir,
-		bool failWhenNotOnboarded,
-		CancellationToken ctx
-	)
-	{
-		var (productId, repoKey, _, _, commitHash) = range;
-		var resolver = new ChangelogConfigResolver(http, new FileSystem(), _logger, collector);
-		var config = await resolver.ResolveAsync(productId, repoKey, commitHash, changelogConfigsDir, ctx);
-		if (config.Failed)
-			return ProductOutcome.Failed;
-
-		var changelogYaml = config.Content;
-		if (changelogYaml is null)
-			return NotOnboarded(
-				$"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml — " +
-					"add docs/changelog.yml or changelog.yml to the repository, or provide a prototype in --changelog-configs.",
-				failWhenNotOnboarded
-			);
-
-		IReadOnlyList<string> profiles;
-		try
-		{
-			profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
-		}
-		catch (YamlException ex)
-		{
-			var msg = $"Product '{productId}' changelog.yml is not valid YAML: {ex.Message}";
-			_logger.LogError("{Message}", msg);
-			collector.EmitError(string.Empty, msg);
-			return ProductOutcome.Failed;
-		}
-
-		if (profiles.Count == 0)
-			return NotOnboarded(
-				$"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) changelog.yml has no bundle.profiles section. " +
-					"Add a bundle profile to the changelog.yml to opt into DRA bundling.",
-				failWhenNotOnboarded
-			);
-
-		if (await HasNoEntryPoolAsync(http, repoKey, ctx))
-			return NotOnboarded(
-				$"Product '{productId}' (repo: elastic/{repoKey}) publishes no changelog entry pool to the CDN. " +
-					"Onboard the repository to the changelog workflow so its entries are uploaded.",
-				failWhenNotOnboarded
-			);
-
-		var profileName = profiles[0];
-		if (profiles.Count > 1)
-			_logger.LogWarning(
-				"'{Product}' changelog.yml has {Count} profiles; using the first: '{Profile}'",
-				productId,
-				profiles.Count,
-				profileName
-			);
-
-		var tempConfig = Path.Combine(outputDirectory, $"changelog-config-{repoKey}-{commitHash[..8]}.yml");
-		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
-
-		try
-		{
-			var arguments = UnifiedBundleArguments.Create(range, profileName, tempConfig, outputDirectory);
-
-			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			return success ? ProductOutcome.Bundled : ProductOutcome.Failed;
-		}
-		finally
-		{
-			File.Delete(tempConfig);
-		}
-	}
-
-	private enum ProductOutcome
-	{
-		Bundled,
-		Skipped,
-		Failed
-	}
-
-	/// <summary>A product that is not onboarded is skipped with a warning, or fails the run when it was asked for.</summary>
-	private ProductOutcome NotOnboarded(string message, bool fail)
-	{
-		if (!fail)
-		{
-			_logger.LogWarning("{Message} Skipping it.", message);
-			return ProductOutcome.Skipped;
-		}
-
-		_logger.LogError("{Message}", message);
-		collector.EmitError(string.Empty, message);
-		return ProductOutcome.Failed;
-	}
-
-	private static async Task<bool> HasNoEntryPoolAsync(HttpClient http, string repoKey, CancellationToken ctx)
-	{
-		var baseUri = ChangelogCdn.ResolveBaseUri();
-		return baseUri is not null
-			&& await ChangelogPoolProbe.ExistsAsync(http, baseUri, UnifiedBundleArguments.Owner, repoKey, "main", ctx) == false;
 	}
 
 	private sealed record FetchResult<T>(T? Value, bool Failed) where T : class;
