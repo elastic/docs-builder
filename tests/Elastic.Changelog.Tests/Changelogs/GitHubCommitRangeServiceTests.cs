@@ -65,7 +65,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		return $$"""{ "data": { "repository": {{{sb}} } } }""";
 	}
 
-	private GitHubCommitRangeService Service(StubHandler handler) =>
+	private GitHubCommitRangeService Service(HttpMessageHandler handler) =>
 		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"));
 
 	/// <summary>
@@ -469,6 +469,85 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().HaveCount(150);
 		result.PullRequests[0].Number.Should().Be(1);
 		result.PullRequests[^1].Number.Should().Be(150);
+	}
+
+	private const string NoPullRequests = """{ "data": { "repository": {} } }""";
+
+	[Test]
+	public async Task ResolvePullRequests_ManyComparePages_AreReadSideBySideAndKeepCommitOrder()
+	{
+		var shas = Enumerable.Range(1, 1050).Select(Sha).ToList();
+		var (inFlight, maxInFlight) = (0, 0);
+		var pages = new System.Collections.Concurrent.ConcurrentQueue<int>();
+		var handler = new DelayedHandler(async req =>
+		{
+			if (req.RequestUri!.AbsolutePath == "/graphql")
+				return Json(NoPullRequests);
+
+			var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+			pages.Enqueue(page);
+			var now = Interlocked.Increment(ref inFlight);
+			int seen;
+			while (now > (seen = Volatile.Read(ref maxInFlight)) && Interlocked.CompareExchange(ref maxInFlight, now, seen) != seen) { }
+
+			// Later pages answer sooner, so the pages do not finish in order.
+			await Task.Delay(Math.Max(10, 130 - (page * 10)));
+			_ = Interlocked.Decrement(ref inFlight);
+			return Json(CompareJson(shas.Count, shas.Skip((page - 1) * 100).Take(100)));
+		});
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.TotalCommits.Should().Be(1050);
+		result.CommitsWithoutPullRequest.Should().Equal(shas);
+		pages.Order().Should().Equal(Enumerable.Range(1, 11));
+		maxInFlight.Should().BeGreaterThan(1).And.BeLessThanOrEqualTo(BatchRunner.DefaultDegree);
+	}
+
+	private sealed class DelayedHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responder) : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			responder(request);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GitHubReturnsShorterPagesThanAsked_ReadsOnUntilTheRangeIsComplete()
+	{
+		var shas = Enumerable.Range(1, 230).Select(Sha).ToList();
+		var handler = Handler(
+			req =>
+			{
+				// GitHub caps a page at 60 here, though 100 were asked for, so three pages cover less than the total says.
+				var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+				return CompareJson(shas.Count, shas.Skip((page - 1) * 60).Take(60));
+			},
+			_ => NoPullRequests
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.CommitsWithoutPullRequest.Should().Equal(shas);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_AMiddleComparePageFails_IsAnErrorNotAPartialRange()
+	{
+		var shas = Enumerable.Range(1, 450).Select(Sha).ToList();
+		var handler = Handler(
+			req =>
+			{
+				var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+				return page == 3 ? null : CompareJson(shas.Count, shas.Skip((page - 1) * 100).Take(100));
+			},
+			_ => NoPullRequests
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not compare"));
 	}
 
 	[Test]

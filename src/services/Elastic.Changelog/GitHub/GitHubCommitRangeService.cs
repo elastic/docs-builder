@@ -85,8 +85,8 @@ public sealed partial class GitHubCommitRangeService(
 	}
 
 	/// <summary>
-	/// Enumerates the commit shas in <c>start...end</c> via the compare REST API, following
-	/// pagination until <c>total_commits</c> commits have been collected.
+	/// Enumerates the commit shas in <c>start...end</c> via the compare REST API. The first page says how many commits there are,
+	/// so the other pages are read side by side, and in order. A range of a minor release is dozens of pages.
 	/// </summary>
 	private async Task<IReadOnlyList<string>?> FetchCompareCommitsAsync(
 		IDiagnosticsCollector collector,
@@ -96,85 +96,63 @@ public sealed partial class GitHubCommitRangeService(
 	{
 		var basehead = $"{Uri.EscapeDataString(args.StartRef)}...{Uri.EscapeDataString(args.EndRef)}";
 		var commits = new List<string>();
-		var totalCommits = 0;
-		var page = 1;
 
-		while (true)
+		var first = await FetchComparePageAsync(collector, args, basehead, 1, ctx).ConfigureAwait(false);
+		if (first == null)
+			return null;
+
+		var totalCommits = first.TotalCommits;
+		if (
+			string.Equals(first.Status, "behind", StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(first.Status, "identical", StringComparison.OrdinalIgnoreCase)
+		)
 		{
-			var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
-			_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
+			collector.EmitWarning(
+				string.Empty,
+				$"Commit range {args.StartRef}...{args.EndRef} for {args.Owner}/{args.Repo} is '{first.Status}' — the end ref adds no commits over the start ref."
+			);
+			return [];
+		}
 
-			using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
-			if (response.StatusCode == HttpStatusCode.NotFound)
-			{
-				collector.EmitError(
-					string.Empty,
-					$"GitHub could not compare {args.StartRef}...{args.EndRef} in {args.Owner}/{args.Repo} (404). " +
-						"Ensure both refs exist in the repository and the token can read it."
-				);
+		if (string.Equals(first.Status, "diverged", StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered."
+			);
+		}
+
+		AddShas(commits, first);
+
+		var lastPage = (totalCommits + ComparePageSize - 1) / ComparePageSize;
+		if (lastPage > 1)
+		{
+			var rest = Enumerable.Range(2, lastPage - 1).ToList();
+			var pages = await BatchRunner.RunAsync(
+				rest,
+				(page, token) => FetchComparePageAsync(collector, args, basehead, page, token),
+				compare => compare == null,
+				ctx
+			).ConfigureAwait(false);
+			if (pages == null)
 				return null;
-			}
 
-			if (!response.IsSuccessStatusCode)
-			{
-				collector.EmitError(
-					string.Empty,
-					$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
-				);
+			foreach (var page in pages)
+				AddShas(commits, page!);
+		}
+
+		// A page that comes back short, because GitHub caps it lower than asked, leaves a gap that the pages above did not
+		// cover. Read on page by page until the count is complete or a page is empty, as a range was always read.
+		for (var page = lastPage + 1; commits.Count < totalCommits; page++)
+		{
+			var more = await FetchComparePageAsync(collector, args, basehead, page, ctx).ConfigureAwait(false);
+			if (more == null)
 				return null;
-			}
 
-			var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
-			GitHubCompareResponse? compare;
-			try
-			{
-				compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
-			}
-			catch (JsonException)
-			{
-				compare = null;
-			}
-
-			if (compare == null)
-			{
-				collector.EmitError(string.Empty, "Failed to deserialize GitHub compare response.");
-				return null;
-			}
-
-			if (page == 1)
-			{
-				totalCommits = compare.TotalCommits;
-				if (
-					string.Equals(compare.Status, "behind", StringComparison.OrdinalIgnoreCase)
-					|| string.Equals(compare.Status, "identical", StringComparison.OrdinalIgnoreCase)
-				)
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Commit range {args.StartRef}...{args.EndRef} for {args.Owner}/{args.Repo} is '{compare.Status}' — the end ref adds no commits over the start ref."
-					);
-					return [];
-				}
-
-				if (string.Equals(compare.Status, "diverged", StringComparison.OrdinalIgnoreCase))
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Refs {args.StartRef} and {args.EndRef} for {args.Owner}/{args.Repo} have diverged; only commits reachable from {args.EndRef} but not {args.StartRef} are considered."
-					);
-				}
-			}
-
-			var pageCommits = compare.Commits ?? [];
-			foreach (var commit in pageCommits)
-			{
-				if (!string.IsNullOrWhiteSpace(commit.Sha))
-					commits.Add(commit.Sha);
-			}
-
-			if (commits.Count >= totalCommits || pageCommits.Count == 0)
+			if (more.Commits is not { Count: > 0 })
 				break;
-			page++;
+
+			AddShas(commits, more);
 		}
 
 		_logger.LogInformation(
@@ -196,6 +174,64 @@ public sealed partial class GitHubCommitRangeService(
 		}
 
 		return commits;
+	}
+
+	private static void AddShas(List<string> commits, GitHubCompareResponse page)
+	{
+		foreach (var commit in page.Commits ?? [])
+		{
+			if (!string.IsNullOrWhiteSpace(commit.Sha))
+				commits.Add(commit.Sha);
+		}
+	}
+
+	/// <summary>One page of the compare API, or <c>null</c> after reporting why it could not be read.</summary>
+	private async Task<GitHubCompareResponse?> FetchComparePageAsync(
+		IDiagnosticsCollector collector,
+		CommitRangeArguments args,
+		string basehead,
+		int page,
+		Cancel ctx
+	)
+	{
+		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
+		_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
+
+		using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
+		if (response.StatusCode == HttpStatusCode.NotFound)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub could not compare {args.StartRef}...{args.EndRef} in {args.Owner}/{args.Repo} (404). " +
+					"Ensure both refs exist in the repository and the token can read it."
+			);
+			return null;
+		}
+
+		if (!response.IsSuccessStatusCode)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub compare request for {args.Owner}/{args.Repo} {args.StartRef}...{args.EndRef} failed: {(int)response.StatusCode} {response.ReasonPhrase}."
+			);
+			return null;
+		}
+
+		var json = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		GitHubCompareResponse? compare;
+		try
+		{
+			compare = JsonSerializer.Deserialize(json, CommitRangeJsonContext.Default.GitHubCompareResponse);
+		}
+		catch (JsonException)
+		{
+			compare = null;
+		}
+
+		if (compare == null)
+			collector.EmitError(string.Empty, "Failed to deserialize GitHub compare response.");
+
+		return compare;
 	}
 
 	/// <summary>
