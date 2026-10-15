@@ -224,7 +224,7 @@ public partial class ChangelogBundlingService(
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
-	private readonly DecisionLog? _decisions = decisions;
+	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -1039,7 +1039,7 @@ public partial class ChangelogBundlingService(
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _logger, _decisions);
+		var resolver = new GitRangeEntryResolver(_prService, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -1104,13 +1104,7 @@ public partial class ChangelogBundlingService(
 	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
 	/// hundreds. Other runs keep the warning.
 	/// </summary>
-	private void ExcludeFromBundle(IDiagnosticsCollector collector, MatchedChangelogFile entry, string code, string why)
-	{
-		if (_decisions is not null)
-			_decisions.Record("bundle", "exclude", entry.FileName, why);
-		else
-			collector.EmitWarning(entry.FilePath, $"{code} Excluding '{entry.FileName}' from bundle ({why}).");
-	}
+	private void ExcludeFromBundle(MatchedChangelogFile entry, string why) => _decisions.Record("bundle", "exclude", entry.FileName, why);
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> ReadLocalEntriesAsync(
@@ -2330,7 +2324,7 @@ public partial class ChangelogBundlingService(
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"global type/area filter");
+					ExcludeFromBundle(entry, "global type/area filter");
 					continue;
 				}
 
@@ -2340,13 +2334,13 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				ExcludeFromBundle(collector, entry, $"[-bundle-{productReason}]", $"global product filter");
+				ExcludeFromBundle(entry, $"global product filter, {productReason}");
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"global type/area filter");
+				ExcludeFromBundle(entry, "global type/area filter");
 				continue;
 			}
 
@@ -2395,12 +2389,12 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					ExcludeFromBundle(collector, entry, $"[-bundle-missing-products]", $"no products declared");
+					ExcludeFromBundle(entry, "no products declared");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					ExcludeFromBundle(collector, entry, $"[-bundle-disjoint]", $"disjoint from rule context '{ruleContextProduct}'");
+					ExcludeFromBundle(entry, $"disjoint from rule context '{ruleContextProduct}'");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
@@ -2431,14 +2425,14 @@ public partial class ChangelogBundlingService(
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						ExcludeFromBundle(collector, entry, $"[-bundle-{productReason}]", $"per-product filter");
+						ExcludeFromBundle(entry, $"per-product filter, {productReason}");
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						ExcludeFromBundle(collector, entry, $"[-bundle-type-area]", $"per-product type/area filter");
+						ExcludeFromBundle(entry, "per-product type/area filter");
 						continue;
 					}
 					break;

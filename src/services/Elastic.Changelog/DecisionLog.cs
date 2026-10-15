@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -12,11 +13,22 @@ namespace Elastic.Changelog;
 /// Collects the per-item decisions of a long run, such as "pull request #123 is excluded because of label
 /// <c>&gt;non-issue</c>", and logs them as a few lines instead of one line each. Every section ("entries", "bundle",
 /// "notes") has its own buffer. A section logs when it holds <c>maxItems</c> decisions or when its oldest decision is
-/// <c>interval</c> old, and once more when the log is flushed or disposed. A line groups the decisions of a section by
-/// outcome and reason: <c>entries: pool #1 #2 · inferred #3 · exclude (&gt;non-issue) #4 #5</c>.
+/// <c>interval</c> old, and the rest logs on <see cref="Flush"/> and <see cref="Dispose"/>. A line groups the decisions of a
+/// section by outcome and reason: <c>entries: pool #1 #2 · inferred #3 · exclude (&gt;non-issue) #4 #5</c>.
 /// Warnings and errors do not go through here. They are reported at once.
+/// <para>
+/// There are no locks and no timer. A section is a concurrent queue that any thread can add to, and a flush drains it:
+/// every decision is dequeued by exactly one thread, so none is lost or logged twice. Age is checked when a decision is
+/// added, against a cheap timestamp, so a section that stops receiving decisions waits for the next flush. The timing
+/// is approximate on purpose.
+/// </para>
 /// </summary>
-public sealed partial class DecisionLog : IDisposable
+public sealed partial class DecisionLog(
+	ILogger logger,
+	int maxItems = DecisionLog.DefaultMaxItems,
+	TimeSpan? interval = null,
+	TimeProvider? time = null
+) : IDisposable
 {
 	public const int DefaultMaxItems = 50;
 	public static readonly TimeSpan DefaultInterval = TimeSpan.FromSeconds(4);
@@ -24,101 +36,98 @@ public sealed partial class DecisionLog : IDisposable
 	[GeneratedRegex(@"/(?:pull|issues)/(\d+)")]
 	private static partial Regex PullRequestUrlRegex();
 
-	private readonly ILogger _logger;
-	private readonly int _maxItems;
-	private readonly TimeSpan _interval;
-	private readonly TimeProvider _time;
-	private readonly ITimer _timer;
-	private readonly Lock _gate = new();
-	private readonly Dictionary<string, Section> _sections = [];
+	private readonly int _maxItems = Math.Max(1, maxItems);
+	private readonly TimeSpan _interval = interval ?? DefaultInterval;
+	private readonly TimeProvider _time = time ?? TimeProvider.System;
+	private readonly ConcurrentDictionary<string, Section> _sections = [];
 
-	private sealed class Section(DateTimeOffset startedAt)
+	private readonly record struct Decision(string Outcome, string? Reason, string Subject);
+
+	private sealed class Section
 	{
-		public DateTimeOffset StartedAt { get; } = startedAt;
-		public int Count { get; set; }
+		private int _pending;
+		private long _firstAt;
 
-		/// <summary>The decisions in the order they first appeared, grouped by outcome and reason.</summary>
-		public Dictionary<(string Outcome, string? Reason), List<string>> Groups { get; } = [];
+		public ConcurrentQueue<Decision> Decisions { get; } = new();
+
+		public int Pending => Volatile.Read(ref _pending);
+
+		/// <summary>When the oldest pending decision was added, or 0 when nothing is pending.</summary>
+		public long FirstAt => Volatile.Read(ref _firstAt);
+
+		public void Add(Decision decision, long now)
+		{
+			Decisions.Enqueue(decision);
+			_ = Interlocked.CompareExchange(ref _firstAt, now, 0);
+			_ = Interlocked.Increment(ref _pending);
+		}
+
+		public void Drained(int count)
+		{
+			_ = Interlocked.Add(ref _pending, -count);
+			_ = Interlocked.Exchange(ref _firstAt, 0);
+		}
 	}
 
-	public DecisionLog(ILogger logger, int maxItems = DefaultMaxItems, TimeSpan? interval = null, TimeProvider? time = null)
-	{
-		_logger = logger;
-		_maxItems = Math.Max(1, maxItems);
-		_interval = interval ?? DefaultInterval;
-		_time = time ?? TimeProvider.System;
-		_timer = _time.CreateTimer(_ => FlushDue(), null, _interval, _interval);
-	}
+	/// <summary>
+	/// A log that does not batch: every decision is logged as soon as it is recorded. For a single command, such as
+	/// <c>changelog add</c>, where there is nothing to group.
+	/// </summary>
+	public static DecisionLog Immediate(ILogger logger) => new(logger, maxItems: 1);
 
 	/// <summary>The subject of a pull request URL, <c>#123</c>, or the URL itself when it names no number.</summary>
 	public static string PullRequestSubject(string url) =>
 		PullRequestUrlRegex().Match(url) is { Success: true } m ? $"#{m.Groups[1].Value}" : url;
 
-	/// <summary>Records one decision. The section logs at once when it is full.</summary>
+	/// <summary>Records one decision, and logs every section that is full or has waited longer than the interval.</summary>
 	public void Record(string section, string outcome, string subject, string? reason = null)
 	{
-		string? full = null;
-		lock (_gate)
+		var now = _time.GetTimestamp();
+		var buffer = _sections.GetOrAdd(section, static _ => new Section());
+		buffer.Add(new Decision(outcome, reason, subject), now);
+
+		if (buffer.Pending >= _maxItems)
+			Flush(section, buffer);
+
+		foreach (var (name, other) in _sections)
 		{
-			if (!_sections.TryGetValue(section, out var buffer))
-				_sections[section] = buffer = new Section(_time.GetUtcNow());
-
-			if (!buffer.Groups.TryGetValue((outcome, reason), out var subjects))
-				buffer.Groups[(outcome, reason)] = subjects = [];
-
-			subjects.Add(subject);
-			buffer.Count++;
-			if (buffer.Count >= _maxItems)
-				full = section;
+			if (other.FirstAt is var first and not 0 && _time.GetElapsedTime(first, now) >= _interval)
+				Flush(name, other);
 		}
-
-		if (full is not null)
-			Flush(full);
 	}
 
-	/// <summary>Logs every section that holds something, oldest first.</summary>
+	/// <summary>Logs everything that is pending, the sections that started first coming first.</summary>
 	public void Flush()
 	{
-		string[] sections;
-		lock (_gate)
-			sections = [.. _sections.OrderBy(s => s.Value.StartedAt).Select(s => s.Key)];
-
-		foreach (var section in sections)
-			Flush(section);
+		foreach (var (name, buffer) in _sections.OrderBy(s => s.Value.FirstAt == 0 ? long.MaxValue : s.Value.FirstAt))
+			Flush(name, buffer);
 	}
 
-	private void FlushDue()
+	private void Flush(string section, Section buffer)
 	{
-		string[] due;
-		lock (_gate)
+		var groups = new Dictionary<(string Outcome, string? Reason), List<string>>();
+		var drained = 0;
+		while (buffer.Decisions.TryDequeue(out var decision))
 		{
-			var now = _time.GetUtcNow();
-			due = [.. _sections.Where(s => now - s.Value.StartedAt >= _interval).Select(s => s.Key)];
+			drained++;
+			if (!groups.TryGetValue((decision.Outcome, decision.Reason), out var subjects))
+				groups[(decision.Outcome, decision.Reason)] = subjects = [];
+
+			subjects.Add(decision.Subject);
 		}
 
-		foreach (var section in due)
-			Flush(section);
+		if (drained == 0)
+			return;
+
+		buffer.Drained(drained);
+		logger.LogInformation("{Decisions}", Format(section, groups));
 	}
 
-	private void Flush(string section)
-	{
-		string? line;
-		lock (_gate)
-		{
-			if (!_sections.Remove(section, out var buffer) || buffer.Count == 0)
-				return;
-
-			line = Format(section, buffer);
-		}
-
-		_logger.LogInformation("{Decisions}", line);
-	}
-
-	private static string Format(string section, Section buffer)
+	private static string Format(string section, Dictionary<(string Outcome, string? Reason), List<string>> groups)
 	{
 		var sb = new StringBuilder(section).Append(':');
 		var first = true;
-		foreach (var ((outcome, reason), subjects) in buffer.Groups)
+		foreach (var ((outcome, reason), subjects) in groups)
 		{
 			_ = sb.Append(first ? " " : " · ").Append(outcome);
 			if (reason is not null)
@@ -130,9 +139,5 @@ public sealed partial class DecisionLog : IDisposable
 		return sb.ToString();
 	}
 
-	public void Dispose()
-	{
-		_timer.Dispose();
-		Flush();
-	}
+	public void Dispose() => Flush();
 }

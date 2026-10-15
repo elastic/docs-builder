@@ -115,7 +115,7 @@ public class DecisionLogTests
 	}
 
 	[Test]
-	public void Timer_SectionIsOlderThanTheInterval_LogsWithoutAnotherRecord()
+	public void Record_SectionIsOlderThanTheInterval_LogsOnTheNextRecord()
 	{
 		var time = new FakeTimeProvider();
 		var logger = new ListLogger();
@@ -123,15 +123,32 @@ public class DecisionLogTests
 
 		log.Record("entries", "pool", "#1");
 		time.Advance(TimeSpan.FromSeconds(3));
-		logger.Lines.Should().BeEmpty();
+		log.Record("entries", "pool", "#2");
+		logger.Lines.Should().BeEmpty("the section is not stale yet");
 
 		time.Advance(TimeSpan.FromSeconds(2));
+		logger.Lines.Should().BeEmpty("there is no timer, so nothing is logged until something is recorded");
+		log.Record("entries", "pool", "#3");
 
-		logger.Lines.Should().Equal("entries: pool #1");
+		logger.Lines.Should().Equal("entries: pool #1 #2 #3");
 	}
 
 	[Test]
-	public void Timer_AfterALog_TheNextSectionStartsItsOwnInterval()
+	public void Record_AnotherSectionIsStale_LogsThatSectionToo()
+	{
+		var time = new FakeTimeProvider();
+		var logger = new ListLogger();
+		using var log = new DecisionLog(logger, interval: TimeSpan.FromSeconds(4), time: time);
+
+		log.Record("bundle", "exclude", "a.yaml", "filter");
+		time.Advance(TimeSpan.FromSeconds(5));
+		log.Record("entries", "pool", "#1");
+
+		logger.Lines.Should().Equal("bundle: exclude (filter) a.yaml");
+	}
+
+	[Test]
+	public void Record_AfterALog_TheNextBatchStartsItsOwnInterval()
 	{
 		var time = new FakeTimeProvider();
 		var logger = new ListLogger();
@@ -140,11 +157,57 @@ public class DecisionLogTests
 		log.Record("entries", "pool", "#1");
 		time.Advance(TimeSpan.FromSeconds(4));
 		log.Record("entries", "pool", "#2");
-		time.Advance(TimeSpan.FromSeconds(2));
+		logger.Lines.Should().Equal("entries: pool #1 #2");
 
-		logger.Lines.Should().Equal("entries: pool #1");
 		time.Advance(TimeSpan.FromSeconds(2));
-		logger.Lines.Should().Equal("entries: pool #1", "entries: pool #2");
+		log.Record("entries", "pool", "#3");
+		time.Advance(TimeSpan.FromSeconds(3));
+		log.Record("entries", "pool", "#4");
+		logger.Lines.Should().HaveCount(1, "the second batch started with #3 and is only 3 seconds old");
+
+		time.Advance(TimeSpan.FromSeconds(1));
+		log.Record("entries", "pool", "#5");
+
+		logger.Lines.Should().Equal("entries: pool #1 #2", "entries: pool #3 #4 #5");
+	}
+
+	[Test]
+	public async Task Record_FromManyThreads_LogsEveryDecisionExactlyOnce()
+	{
+		var logger = new ConcurrentListLogger();
+		using var log = new DecisionLog(logger, maxItems: 7);
+		const int threads = 8;
+		const int perThread = 500;
+
+		await Task.WhenAll(Enumerable.Range(0, threads).Select(t => Task.Run(() =>
+		{
+			for (var i = 0; i < perThread; i++)
+				log.Record(i % 2 == 0 ? "entries" : "bundle", "pool", $"t{t}-{i}");
+		})));
+		log.Flush();
+
+		var logged = logger.Lines.SelectMany(line => line[(line.IndexOf(" pool ", StringComparison.Ordinal) + 6)..].Split(' ')).ToList();
+		logged.Should().HaveCount(threads * perThread);
+		logged.Should().OnlyHaveUniqueItems();
+	}
+
+	private sealed class ConcurrentListLogger : ILogger
+	{
+		private readonly System.Collections.Concurrent.ConcurrentQueue<string> _lines = new();
+
+		public IReadOnlyCollection<string> Lines => _lines;
+
+		public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+		public bool IsEnabled(LogLevel logLevel) => true;
+
+		public void Log<TState>(
+			LogLevel logLevel,
+			EventId eventId,
+			TState state,
+			Exception? exception,
+			Func<TState, Exception?, string> formatter
+		) => _lines.Enqueue(formatter(state, exception));
 	}
 
 	[Test]

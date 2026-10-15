@@ -192,10 +192,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
 		bundle.Should().Contain("name: 300.yaml");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Only the first paragraph was used", StringComparison.Ordinal));
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 
 		// The published endpoint ref is recorded as bundle metadata.
 		bundle.Should().Contain($"git_ref: {EndRef}");
@@ -601,12 +598,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Unlabeled change");
 		bundle.Should().Contain("type: other");
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("defaulting to 'other'"));
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
-			);
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
 	[Test]
