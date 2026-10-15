@@ -91,6 +91,49 @@ public class CardGroupWithAMarkdownLinkInTheIntro : MarkdownTest
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
+public class CardGroupWithATitledLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: Choose where to run it. [Compare options](/index.md "Deployment comparison").
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("resolves the link and keeps its title")]
+	public async Task ResolvesLinkAndKeepsTitle() =>
+		await Docs.ConvertsToContainingRawHtml("""<a href="/" title="Deployment comparison">Compare options</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithLinkSyntaxInCodeInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: Write links as `[guide](/does-not-exist.md)` in your text.
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("keeps the code span as written")]
+	public async Task KeepsCodeSpan() => await Docs.ConvertsToContainingRawHtml("<code>[guide](/does-not-exist.md)</code>");
+
+	[Test, DisplayName("does not report a link inside code")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
 public class CardGroupWithABrokenLinkInTheIntro : MarkdownTest
 {
 	protected override string Markdown =>

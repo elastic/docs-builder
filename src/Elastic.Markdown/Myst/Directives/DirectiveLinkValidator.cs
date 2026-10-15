@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.RegularExpressions;
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
+using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -18,7 +20,7 @@ namespace Elastic.Markdown.Myst.Directives;
 /// Returns the resolved URL (or the original on failure) so callers can write it back into
 /// their own data. Errors and hints are emitted against the supplying <see cref="DirectiveBlock"/>.
 /// </summary>
-internal static partial class DirectiveLinkValidator
+internal static class DirectiveLinkValidator
 {
 	/// <summary>
 	/// Resolve cross-link schemes and check that an internal path points at a real file.
@@ -28,26 +30,47 @@ internal static partial class DirectiveLinkValidator
 	public static string? ValidateAndResolve(string? url, DirectiveBlock block, ParserContext context) =>
 		Resolve(url, block, context, allowRelative: false, checkFileExists: true);
 
+	private static readonly MarkdownPipeline InlineLinkPipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+
 	/// <summary>
 	/// Resolve every inline markdown link, such as <c>[label](/path/page.md)</c>, in a directive
 	/// option or YAML field that is rendered later as inline markdown. Each target goes through
 	/// <see cref="ValidateAndResolve"/>, then becomes a final href, so a <c>.md</c> path or a
 	/// cross-link works the same as in a link card. Anchors and external URLs stay as written.
+	/// The text is parsed first, so only real link destinations change. Code spans and escaped
+	/// link syntax stay literal, and a link title is kept.
 	/// </summary>
 	public static string? ResolveMarkdownLinks(string? markdown, DirectiveBlock block, ParserContext context)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
 			return markdown;
 
-		return InlineLinkTarget().Replace(markdown, match =>
+		var document = Markdig.Markdown.Parse(markdown, InlineLinkPipeline);
+		var edits = new List<(int Start, int Length, string Href)>();
+		foreach (var link in document.Descendants<LinkInline>())
 		{
-			var resolved = ValidateAndResolve(match.Groups["url"].Value, block, context);
-			return $"({ToHref(resolved, context.Build.UrlPathPrefix)})";
-		});
-	}
+			if (link.IsImage || link.IsAutoLink || string.IsNullOrEmpty(link.Url))
+				continue;
 
-	[GeneratedRegex(@"(?<=\])\((?<url>[^)\s]+)\)")]
-	private static partial Regex InlineLinkTarget();
+			var span = link.UrlSpan;
+			if (span.Start < 0 || span.End >= markdown.Length || span.Length <= 0)
+				continue;
+
+			// Only rewrite when the span holds the destination as written.
+			var written = markdown.Substring(span.Start, span.Length);
+			if (!string.Equals(written, link.Url, StringComparison.Ordinal))
+				continue;
+
+			var resolved = ValidateAndResolve(written, block, context);
+			edits.Add((span.Start, span.Length, ToHref(resolved, context.Build.UrlPathPrefix) ?? written));
+		}
+
+		// Apply from the end so earlier offsets stay valid.
+		var result = markdown;
+		foreach (var (start, length, href) in edits.OrderByDescending(edit => edit.Start))
+			result = result[..start] + href + result[(start + length)..];
+		return result;
+	}
 
 	/// <summary>
 	/// Resolve cross-link schemes only, and accept a path relative to the source file.
