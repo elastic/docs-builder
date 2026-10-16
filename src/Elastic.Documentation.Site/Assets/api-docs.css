@@ -93,12 +93,29 @@
 	overflow-wrap: anywhere;
 }
 
+/* A wrapped route keeps the method badge on its first line. The text offsets below center a single line against the badge. */
+.api-url-row > .api-url {
+	align-items: flex-start;
+}
+
+.api-url-row > .api-url .api-url-path {
+	padding-top: 2px;
+}
+
+.api-url-row > .api-url .api-url-also-method {
+	margin-top: 4px;
+}
+
 /* The first route is the one to read; the alternates below it are compact and muted. */
 .api-page-intro .api-url-listing > li:first-child .api-url {
 	padding: 4px 12px 4px 4px;
 	font-size: 16px;
 	font-weight: 400;
 	line-height: 22px;
+}
+
+.api-page-intro .api-url-listing > li:first-child .api-url .api-url-path {
+	padding-top: 1px;
 }
 
 .api-page-intro .api-url-listing > li + li .api-url {
@@ -115,8 +132,13 @@
 }
 
 .api-page-intro .api-url-listing > li + li .api-url-also-method {
+	margin-top: 3px;
 	font-size: 10px;
 	line-height: 14px;
+}
+
+.api-page-intro .api-url-listing > li + li .api-url .api-url-path {
+	padding-top: 1px;
 }
 
 /* One 16px step between title, badges, servers, paths, and auth. */
