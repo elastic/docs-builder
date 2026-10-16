@@ -5,14 +5,14 @@
 	// An object with no named fields, such as a binary upload, has nothing to brace. The names are drawn from data-name by the
 	// stylesheet, so find-in-page skips them and a search for a field opens its section instead of landing on this summary.
 	var style = Model.Style;
-	var isArray = style == SummaryStyle.ArrayOfFields;
+	var (open, close) = style == SummaryStyle.ArrayOfFields ? ("[{ ", " }]") : ("{ ", " }");
 	var braces = style is SummaryStyle.Fields or SummaryStyle.ArrayOfFields && Model.Names.Count > 0;
 	var variants = style == SummaryStyle.Variants;
 }
 <span class="api-param-summary@(style is SummaryStyle.Variants or SummaryStyle.All ? $" is-{style.ToString().ToLowerInvariant()}" : "")" data-param-summary @(variants ? new HtmlString("data-param-more-noun=\"variant\"") : HtmlString.Empty)>
 	@if (braces)
 	{
-		<span class="api-param-summary-brace">@(isArray ? "[{ " : "{ ")</span>
+		<span class="api-param-summary-brace">@open</span>
 	}
 	<span class="api-param-summary-list">
 		@foreach (var name in Model.Names)
@@ -25,6 +25,6 @@
 	</span>
 	@if (braces)
 	{
-		<span class="api-param-summary-brace">@(isArray ? " }]" : " }")</span>
+		<span class="api-param-summary-brace">@close</span>
 	}
 </span>

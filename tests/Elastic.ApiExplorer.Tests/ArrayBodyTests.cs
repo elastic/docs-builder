@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
@@ -18,8 +19,6 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ArrayBodyTests(ApiExplorerFixture fixture)
 {
-	private const string Label = "An array; each item has these fields:";
-
 	private const string Spec =
 		"""
 		{
@@ -102,7 +101,7 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 		html.Should().Contain("property-item depth-1", "the item fields sit one level under the array row");
 		html.Should().Contain("array-icon\" data-tippy-content=\"\">[]</span>", "the row's type reads object[]");
 		html.Should().NotContain("Response Type:");
-		html.Should().NotContain(Label);
+		html.Should().NotContain(ApiBodyContent.ArrayItemsLabel);
 	}
 
 	[Test]
@@ -122,7 +121,7 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 
 		var markdown = OperationCommonMark.Write(operation.Model, page, context);
 
-		markdown.Should().Contain(Label).And.Contain("`alias`");
+		markdown.Should().Contain(ApiBodyContent.ArrayItemsLabel).And.Contain("`alias`");
 		markdown
 			.Split("Type: `object[]`")
 			.Should()
