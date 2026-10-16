@@ -1074,6 +1074,7 @@ button.response-status-toggle:focus {
 
 .response-status-row > .response-status-chip {
 	grid-column: 1;
+	justify-self: start;
 }
 
 .response-summary {
