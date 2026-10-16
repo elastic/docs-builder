@@ -28,9 +28,9 @@ public static partial class CodexConfigurationConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("Every codex group has a name.");
 
-	public static Constraint<CodexConfiguration> GroupIdsUnique { get; } = Constraints<CodexConfiguration>
+	public static Constraint<CodexConfiguration> GroupIdsUnique { get; } = Relation
 		.Unique(
-			m => m.Groups.Where(g => !string.IsNullOrWhiteSpace(g.Id)),
+			(CodexConfiguration m) => m.Groups.Where(g => !string.IsNullOrWhiteSpace(g.Id)),
 			g => g.Id,
 			StringComparer.OrdinalIgnoreCase,
 			describe: (id, count) => $"Codex group id '{id}' is declared {count} times. Group ids must be unique."

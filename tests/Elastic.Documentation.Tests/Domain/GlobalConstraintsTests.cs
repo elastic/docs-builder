@@ -352,7 +352,7 @@ public class CodexConfigurationConstraintsTests
 			.For(
 				CodexConfigurationConstraints.All,
 				DomainGen.Of<CodexConfiguration>(
-					o => o.Identity<CodexGroupDefinition, string>(g => g.Id).Normalize<CodexConfiguration>(
+					o => o.From(CodexConfigurationConstraints.All).Normalize<CodexConfiguration>(
 						c =>
 							c with
 							{

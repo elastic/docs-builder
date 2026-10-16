@@ -56,10 +56,10 @@ public static partial class BundleConstraints
 		"R85: Every bundle entry is inlined, with a title and a type (stage dependent: a warning in the loader and the directive's CDN mode, an error in local mode and the render CLI)."
 	);
 
-	public static Constraint<Bundle> BundleEntryFilesUnique { get; } = Constraints<Bundle>
+	public static Constraint<Bundle> BundleEntryFilesUnique { get; } = Relation
 		.Unique(
-			m => m.Entries.Where(e => !string.IsNullOrWhiteSpace(e.File?.Name)),
-			e => e.File!.Name,
+			(Bundle m) => m.Entries.Select(e => e.File).Where(f => !string.IsNullOrWhiteSpace(f?.Name)),
+			f => f!.Name,
 			StringComparer.OrdinalIgnoreCase,
 			describe: (name, _) => $"Changelog file '{name}' appears multiple times in the same bundle"
 		)

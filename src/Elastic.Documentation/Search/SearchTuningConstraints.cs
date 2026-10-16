@@ -20,8 +20,8 @@ public static partial class SearchTuningConstraints
 		.WithSeverity(Severity.Warning)
 		.Describe("G97: Every synonym term is a single word; a term with spaces is left out of the bidirectional map.");
 
-	public static Constraint<SearchTuning> QueryRuleIdUnique { get; } = Constraints<SearchTuning>
-		.Unique(s => s.Rules, r => r.RuleId, StringComparer.Ordinal)
+	public static Constraint<SearchTuning> QueryRuleIdUnique { get; } = Relation
+		.Unique((SearchTuning s) => s.Rules, r => r.RuleId, StringComparer.Ordinal)
 		.WithSeverity(Severity.Warning)
 		.Describe("G99: A query rule id is used by one rule only; the loader does not check it.");
 

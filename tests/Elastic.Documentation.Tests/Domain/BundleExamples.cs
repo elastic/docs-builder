@@ -44,7 +44,7 @@ internal static class BundleExamples
 		GenAuto.Of<T>(
 			AutoMode.Plausible,
 			o => o
-				.Identity<BundledFile, string>(f => f.Name)
+				.From(BundleConstraints.All)
 				.Use(ReleaseDates)
 				// a bundle belongs to one product (bundle-has-one-product); a product keeps its one target (bundle-product-single-target)
 				.Normalize<Bundle>(b => b.Products is [var product, ..] ? b with { Products = [product] } : b)

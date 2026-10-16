@@ -14,13 +14,10 @@ public sealed record DocumentationSetInCodex(DocumentationSetDefinition Docset, 
 [Constraints]
 public static partial class DocumentationSetInCodexConstraints
 {
-	public static Constraint<DocumentationSetInCodex> CodexGroupKnown { get; } = Constraints<DocumentationSetInCodex>
-		.References<string, string>(
-			p => string.IsNullOrEmpty(p.Docset.CodexGroup) ? [] : [p.Docset.CodexGroup],
-			group => [group],
-			p => p.Codex.Groups.Select(g => g.Id),
-			message: "codex.group names a group the codex site does not define, so the group is created with a title made from its slug."
-		)
+	// Declared as a relation, so the generator reads which members it relates and the rule is not written twice.
+	public static Constraint<DocumentationSetInCodex> CodexGroupKnown { get; } = Relation
+		.Reference((DocumentationSetInCodex p) => new[] { p.Docset }, d => d.CodexGroup, p => p.Codex.Groups, g => g.Id)
+		.Rule(message: "codex.group names a group the codex site does not define, so the group is created with a title made from its slug.")
 		.WithSeverity(Severity.Warning)
 		.Describe("D29: A documentation set's codex.group is one of the groups the codex site defines (also G110).");
 }

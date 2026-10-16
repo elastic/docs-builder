@@ -113,7 +113,7 @@ public class SearchTuningConstraintsTests
 				SearchTuningConstraints.All,
 				DomainGen.Of<SearchTuning>(
 					o => o
-						.Identity<QueryRule, string>(r => r.RuleId)
+						.From(SearchTuningConstraints.All)
 						.Normalize<SynonymGroup>(g => new SynonymGroup([.. g.Terms.Select(t => t.Replace(' ', '-'))]))
 						.Normalize<QueryRuleCriteria>(
 							c =>

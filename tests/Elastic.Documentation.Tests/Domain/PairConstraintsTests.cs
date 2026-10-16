@@ -56,7 +56,7 @@ public class NavigationInAssemblyConstraintsTests
 
 public class DocumentationSetInCodexConstraintsTests
 {
-	// codex.group refers to a group the codex site defines: the declared reference does it, so the groups are the generated ones
+	// codex.group refers to a group the codex site defines: the rule is declared as a relation, so the generator keeps it and the groups are the generated ones
 	[Test]
 	[MethodDataSource(nameof(Axes))]
 	public Task EveryDeclaredAxisHolds(AxisCase axis) => axis.RunAsync();
@@ -65,12 +65,7 @@ public class DocumentationSetInCodexConstraintsTests
 		DomainAutoTest
 			.For(
 				DocumentationSetInCodexConstraints.All,
-				DomainGen.Of<DocumentationSetInCodex>(
-					o => o.UseFileSystem().Reference<DocumentationSetDefinition, CodexGroupDefinition, string>(
-						d => d.CodexGroup!,
-						g => g.Id
-					)
-				)
+				DomainGen.Of<DocumentationSetInCodex>(o => o.UseFileSystem().From(DocumentationSetInCodexConstraints.All))
 			)
 			.Options(o => o.UseFileSystem())
 			.CounterExamples(CounterExamples)
