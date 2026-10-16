@@ -12,11 +12,19 @@
 }
 else if (content.HasBody)
 {
-	if (content.IsArray)
+	if (content.IsArray && content.Properties is not null)
 	{
-		<p class="union-options"><span class="values-label">@ApiBodyContent.ArrayItemsLabel</span></p>
+		@* The array is the root of a tree: its row, then each item's fields under it, as a nested array property draws them. *@
+		<dl class="property-list">
+			<div class="property-item depth-0 last-sibling has-children expanded">
+				<dt><code>&lt;array&gt;</code> @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</dt>
+				<div class="nested-properties">
+					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+				</div>
+			</div>
+		</dl>
 	}
-	if (content.Properties is not null)
+	else if (content.Properties is not null)
 	{
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
 	}

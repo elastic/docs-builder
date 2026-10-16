@@ -84,16 +84,25 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Render_ArrayResponse_LabelsTheFieldsInPlaceOfTheTypeLine()
+	public async Task Render_ArrayResponse_NestsTheItemFieldsUnderARowForTheArray()
 	{
 		var (page, _, _) = await Build();
 		var contents = MediaContentsModel.ForResponse("200", page.Responses.Single(r => r.StatusCode == "200").Contents);
 
 		var html = await _MediaContents.Create(contents).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain($"<span class=\"values-label\">{Label}</span>");
+		var root = html.IndexOf("property-item depth-0 last-sibling has-children expanded", StringComparison.Ordinal);
+		var arrayRow = html.IndexOf("<code>&lt;array&gt;</code>", StringComparison.Ordinal);
+		var nested = html.IndexOf("class=\"nested-properties\"", StringComparison.Ordinal);
+		var field = html.IndexOf("id=\"res-200-alias\"", StringComparison.Ordinal);
+		root.Should().BeGreaterThanOrEqualTo(0);
+		arrayRow.Should().BeGreaterThan(root);
+		nested.Should().BeGreaterThan(arrayRow);
+		field.Should().BeGreaterThan(nested);
+		html.Should().Contain("property-item depth-1", "the item fields sit one level under the array row");
+		html.Should().Contain("array-icon\" data-tippy-content=\"\">[]</span>", "the row's type reads object[]");
 		html.Should().NotContain("Response Type:");
-		html.IndexOf(Label, StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("id=\"res-200-alias\"", StringComparison.Ordinal));
+		html.Should().NotContain(Label);
 	}
 
 	[Test]

@@ -9,7 +9,10 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 /// <summary>What a request or response body lists: its properties, the variants of a union body, or both.</summary>
 /// <param name="Requires">Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</param>
-/// <param name="IsArray">Whether the body is an array of objects, so <paramref name="Properties"/> lists the fields of each item.</param>
+/// <param name="IsArray">
+/// Whether the body is an array of objects. <paramref name="Properties"/> then lists the fields of each item, one level down,
+/// so they sit under a row for the array.
+/// </param>
 internal sealed record ApiBodyContent(
 	ApiPropertyList? Properties,
 	ApiUnionVariants? UnionVariants,
@@ -17,7 +20,7 @@ internal sealed record ApiBodyContent(
 	bool IsArray = false
 )
 {
-	/// <summary>The line above the fields of an array body, so they read as each item's rather than the body's own.</summary>
+	/// <summary>Says in prose what the tree shows under an array body's row, for output that has no tree.</summary>
 	public const string ArrayItemsLabel = "An array; each item has these fields:";
 
 	/// <summary>
@@ -35,7 +38,7 @@ internal sealed record ApiBodyContent(
 		var variants = typeInfo.IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
 		if (variants is null && typeInfo.IsArray && ArrayItemSchema(schema, analyzer) is { } itemSchema)
 		{
-			var itemProperties = builder.BuildPropertyList(itemSchema, scope);
+			var itemProperties = builder.BuildPropertyList(itemSchema, scope with { Depth = scope.Depth + 1 });
 			if (itemProperties is not null)
 				return new ApiBodyContent(itemProperties, null, null, IsArray: true);
 		}
