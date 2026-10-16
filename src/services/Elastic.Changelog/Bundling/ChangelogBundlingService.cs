@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Utilities;
@@ -214,16 +216,25 @@ public partial class ChangelogBundlingService(
 	IGitHubCommitRangeService? commitRangeService = null,
 	IEnvironmentVariables? env = null,
 	IGitHubBackportService? backportService = null,
-	DecisionLog? decisions = null
+	DecisionLog? decisions = null,
+	IPullRequestSummaryProvider? summaries = null,
+	ChangelogCache? cache = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
-	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
-	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory);
+
+	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
+	// Otherwise the pull requests of a range are read in batches.
+	private readonly IPullRequestSummaryProvider _summaries = summaries
+		?? (prService is not null
+			? new RestPullRequestSummaryProvider(prService)
+			: new GraphQlPullRequestSummaryProvider(logFactory, cache: cache));
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
+		?? new GitHubCommitRangeService(logFactory, cache: cache);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory, cache: cache);
 	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
@@ -1039,7 +1050,7 @@ public partial class ChangelogBundlingService(
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _decisions);
+		var resolver = new GitRangeEntryResolver(_summaries, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -1558,7 +1569,59 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
+	private readonly ConcurrentDictionary<string, Task<PoolFetch>> _pools = [];
+
+	/// <summary>What fetching a pool came to: its entries, or the message that the repository publishes none.</summary>
+	private sealed record PoolFetch(IReadOnlyList<(string FileName, string Content)>? Entries, string? PoolMissing);
+
+	/// <summary>
+	/// The entries of a pool. A run reads the same pool for every target it bundles, such as the patch and the minor release of
+	/// one product, so each pool is fetched once. What the pool held at the start of the run is what every target sees.
+	/// </summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		Action<string>? onPoolMissing,
+		Cancel ctx
+	)
+	{
+		// A pool that could not be read is fetched again by the next target, so only a pool that was read is kept.
+		var key = $"{org}/{repo}/{branch}".ToLowerInvariant();
+		if (_pools.TryGetValue(key, out var known))
+		{
+			var kept = await known.ConfigureAwait(false);
+			if (kept.PoolMissing is not null)
+				onPoolMissing?.Invoke(kept.PoolMissing);
+
+			if (kept.Entries is not null || kept.PoolMissing is not null)
+				return kept.Entries;
+		}
+
+		string? poolMissing = null;
+
+		void Remember(string message)
+		{
+			poolMissing = message;
+			onPoolMissing?.Invoke(message);
+		}
+
+		var entries = await FetchCdnEntriesCoreAsync(
+			collector,
+			org,
+			repo,
+			branch,
+			onPoolMissing is null ? null : Remember,
+			ctx
+		).ConfigureAwait(false);
+		if (entries is not null || poolMissing is not null)
+			_pools[key] = Task.FromResult(new PoolFetch(entries, poolMissing));
+
+		return entries;
+	}
+
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesCoreAsync(
 		IDiagnosticsCollector collector,
 		string? org,
 		string? repo,

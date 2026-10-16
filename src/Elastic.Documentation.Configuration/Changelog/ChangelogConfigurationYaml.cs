@@ -249,6 +249,11 @@ internal sealed record ProductsConfigYaml
 	/// Default products to use when --products is not specified.
 	/// </summary>
 	public List<DefaultProductYaml>? Default { get; set; }
+
+	/// <summary>
+	/// Products that a label-derived product implies, keyed by product ID (string or list of product IDs).
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Implies { get; set; }
 }
 
 /// <summary>

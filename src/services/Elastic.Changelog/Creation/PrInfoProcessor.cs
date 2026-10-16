@@ -39,10 +39,9 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return new PrProcessingResult { FetchFailed = true, ShouldSkip = false };
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = input.Products;
-		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+		// Resolve the products the entry will get (explicit, else labels, else products.default) so the blocker check
+		// sees the per-product rules of the product; only a genuinely unresolved product falls back to the global rules.
+		var effectiveProducts = ResolveProductsForBlockerCheck(input.Products, prInfo, config);
 
 		// Check for label blockers using effective products (including label-derived ones)
 		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions))
@@ -80,11 +79,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return (false, null);
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = products;
-		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
-
+		var effectiveProducts = ResolveProductsForBlockerCheck(products, prInfo, config);
 		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions);
 		return (shouldSkip, prInfo);
 	}
@@ -197,7 +192,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Map labels to products if products were not explicitly provided
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
 		{
-			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			var mappedProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 			if (mappedProducts.Count > 0)
 			{
 				derived.Products = mappedProducts;
@@ -239,6 +234,23 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
+	/// <summary>
+	/// The products the entry will get, for the blocker check: the explicit products, else the label-derived ones
+	/// (with implied products), else <c>products.default</c>. Empty only when none applies.
+	/// </summary>
+	internal static IReadOnlyList<ProductArgument> ResolveProductsForBlockerCheck(
+		IReadOnlyList<ProductArgument> explicitProducts,
+		GitHubPrInfo prInfo,
+		ChangelogConfiguration config
+	)
+	{
+		if (explicitProducts.Count > 0)
+			return explicitProducts;
+
+		var labelProducts = config.LabelToProducts != null ? ProductResolution.FromLabels(prInfo.Labels.ToArray(), config) : [];
+		return labelProducts.Count > 0 ? labelProducts : ProductResolution.Defaults(config);
+	}
+
 	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
@@ -251,8 +263,9 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		if (createRules == null)
 			return false;
 
-		// Check product-specific overrides first, then fall back to global
-		if (createRules.ByProduct is { Count: > 0 })
+		// Check product-specific overrides first, then fall back to global. A per-product override only replaces the
+		// global rules for the product it names, so without a product to look up the global rules decide.
+		if (createRules.ByProduct is { Count: > 0 } && products.Count > 0)
 		{
 			foreach (var product in products)
 			{
@@ -269,7 +282,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return false;
 		}
 
-		// No product-specific rules - check global
+		// No product-specific rules, or no products to look them up for: check global
 		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions);
 	}
 
