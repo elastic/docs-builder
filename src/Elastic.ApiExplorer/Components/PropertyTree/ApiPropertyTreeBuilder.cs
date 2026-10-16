@@ -74,12 +74,16 @@ public partial class ApiPropertyTreeBuilder(
 		string? Example = null
 	);
 
-	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
-	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
+	/// <summary>Builds the property rows for a schema, <paramref name="leadingProperty"/> first; null when it has no renderable properties.</summary>
+	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope, string? leadingProperty = null)
 	{
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
-		var propArray = properties.Where(p => p.Value is not null && IsListed(p.Value, scope)).ToArray();
+		// A union variant lists the property that selects it first, so the choice is the first thing its fields say.
+		var propArray = properties
+			.Where(p => p.Value is not null && IsListed(p.Value, scope))
+			.OrderBy(p => p.Key != leadingProperty)
+			.ToArray();
 		if (propArray.Length == 0)
 			return null;
 

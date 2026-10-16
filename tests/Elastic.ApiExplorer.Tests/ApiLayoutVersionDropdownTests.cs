@@ -49,9 +49,9 @@ public class ApiLayoutVersionDropdownTests
 		layout.ApiContext.Should().NotBeNull();
 		layout.ApiContext!.Title.Should().Be("Elasticsearch");
 		layout.ApiContext.HubUrl.Should().Be("/docs/api");
-		layout.ApiContext.Products.Select(p => p.Label).Should().Equal("Elasticsearch", "Kibana");
-		layout.ApiContext.Products.Should().ContainSingle(p => p.Selected && p.Label == "Elasticsearch");
-		layout.ApiContext.Products.Should().OnlyContain(p => p.IconSvg != null);
+		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Select(p => p.Label).Should().Equal("Elasticsearch", "Kibana");
+		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Should().ContainSingle(p => p.Selected && p.Label == "Elasticsearch");
+		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Should().OnlyContain(p => p.IconSvg != null);
 		layout.ApiContext.Versions.Should().HaveCount(3);
 		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
 		layout.Breadcrumbs.Select(b => b.Url).Should().Equal("/docs", "/docs/api");
@@ -63,7 +63,7 @@ public class ApiLayoutVersionDropdownTests
 		var layout = CreateLayout(catalogEntries: Catalog);
 
 		layout.ApiContext.Should().NotBeNull();
-		layout.ApiContext!.Products.Should().HaveCount(2);
+		layout.ApiContext!.ProductGroups.SelectMany(g => g.Products).Should().HaveCount(2);
 	}
 
 	private static readonly ApiCatalogEntry[] Catalog =

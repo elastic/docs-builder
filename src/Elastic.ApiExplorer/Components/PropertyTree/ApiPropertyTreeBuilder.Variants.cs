@@ -36,6 +36,16 @@ public partial class ApiPropertyTreeBuilder
 			_shapes
 		);
 
+		var selector = discriminator?.PropertyName is { Length: > 0 } declared
+			? declared
+			: _analyzer.GetSelectingProperty(
+				// One schema per object shape, as LabelObjects counts them: X and X[] share one, a scalar has none.
+				variantsToRender
+					.Where(v => v is { IsObject: true, Props: not null })
+					.Select(v => v.Schema)
+					.Distinct(ReferenceEqualityComparer.Instance)
+					.Cast<IOpenApiSchema?>()
+			);
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		var optionIds = variantsToRender.Select(
 			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
@@ -77,7 +87,9 @@ public partial class ApiPropertyTreeBuilder
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
 					? childBuilder.BuildPropertyList(
-						dictionaryValue is null ? variant.Schema : WithDictionaryKeyRow(variant.Schema, variant.Props, dictionaryValue),
+						dictionaryValue is null
+							? variant.Schema
+							: WithDictionaryKeyRow(_analyzer.Flatten(variant.Schema).Required, variant.Props, dictionaryValue),
 						scope with
 						{
 							Prefix = optionId,
@@ -85,7 +97,8 @@ public partial class ApiPropertyTreeBuilder
 							AncestorRefs = newAncestors,
 							RequiredProperties = null,
 							Owner = VariantDisplayName(variant)
-						}
+						},
+						selector
 					)
 						?? new ApiPropertyList([])
 					: null,
@@ -102,8 +115,8 @@ public partial class ApiPropertyTreeBuilder
 	/// The variant's properties plus a <c>&lt;string&gt;</c> key row for its map values, the way a plain dictionary property
 	/// lists them. A pure map has no properties, so it shows the key row alone.
 	/// </summary>
-	private static OpenApiSchema WithDictionaryKeyRow(
-		IOpenApiSchema schema,
+	internal static OpenApiSchema WithDictionaryKeyRow(
+		ISet<string> required,
 		IDictionary<string, IOpenApiSchema>? properties,
 		IOpenApiSchema value
 	) =>
@@ -114,7 +127,7 @@ public partial class ApiPropertyTreeBuilder
 			{
 				[DictionaryKeyName] = value
 			},
-			Required = schema.Required
+			Required = new HashSet<string>(required)
 		};
 
 	/// <summary>

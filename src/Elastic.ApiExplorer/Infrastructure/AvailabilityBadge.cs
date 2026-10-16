@@ -19,6 +19,17 @@ public static class AvailabilityBadge
 	public static ApplicableToViewModel? From(IDictionary<string, IOpenApiExtension>? extensions, VersionsConfiguration? versionsConfig) =>
 		Create(XStateApplicability.From(extensions), versionsConfig);
 
+	/// <summary>
+	/// The badge of an operation. <c>x-state</c> wins; an operation that is only flagged <c>x-beta: true</c> gets the same
+	/// <c>beta</c> badge, with the standard lifecycle popover, instead of a bespoke label.
+	/// </summary>
+	public static ApplicableToViewModel? FromOperation(OpenApiOperation operation, VersionsConfiguration? versionsConfig) =>
+		Create(
+			XStateApplicability.From(operation.Extensions) ??
+				(OpenApiExtensionReader.IsBeta(operation) ? XStateApplicability.Parse("Beta") : null),
+			versionsConfig
+		);
+
 	public static ApplicableToViewModel? Create(ApplicableTo? applicableTo, VersionsConfiguration? versionsConfig)
 	{
 		if (applicableTo is null || versionsConfig is null || !XStateApplicability.IsWorthABadge(applicableTo))

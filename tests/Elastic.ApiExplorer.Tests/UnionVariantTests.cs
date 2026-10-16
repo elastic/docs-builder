@@ -54,6 +54,116 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public async Task BuildPropertyList_VariantSelectedByProperty_ListsThatPropertyFirst(bool declared)
+	{
+		var discriminator = declared ? "\"discriminator\": { \"propertyName\": \"type\" }," : "";
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            {{discriminator}}
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
+		variants.Select(v => v.Properties!.Items.Select(p => p.Name).First()).Should().Equal("type", "type");
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("type", "lives");
+	}
+
+	[Test]
+	[Arguments("""{ "type": "string" }""", "pet")]
+	[Arguments("""{ "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }""", "pet")]
+	public async Task BuildPropertyList_UnionOfObjectsWithOtherForms_ListsTheSelectingPropertyFirst(string extra, string property)
+	{
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" }, {{extra}} ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == property).Children.Variants!.Variants;
+		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items.First().Name == "type");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionOfObjectArrays_ListsTheSelectingPropertyFirst()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pets": {
+			            "oneOf": [
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pets").Children.Variants!.Variants;
+		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items.First().Name == "type");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_AnyOfRequiredOnlyMembers_SaysWhichFieldsAreRequired()
 	{
 		var json =

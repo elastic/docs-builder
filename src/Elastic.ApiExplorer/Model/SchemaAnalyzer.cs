@@ -394,6 +394,10 @@ public class SchemaAnalyzer(
 						.Count() == constants.Count
 				);
 
+	/// <summary>The property each of the object <paramref name="members"/> fixes to a value of its own, null when none does.</summary>
+	public string? GetSelectingProperty(IEnumerable<IOpenApiSchema?> members) =>
+		SelectingConstant([.. members.OfType<IOpenApiSchema>().Select(ConstantFields)]);
+
 	/// <summary>The fields an object fixes to a single value (<c>type: eql</c>), in property order.</summary>
 	private Dictionary<string, string> ConstantFields(IOpenApiSchema member)
 	{
