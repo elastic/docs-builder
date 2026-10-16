@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer._Partials.Layout;
@@ -188,16 +189,72 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Description_IsANoteWithAToggleForLongText()
+	public async Task Render_RequestDescription_IsACaptionUnderTheRequestLabelWithAToggleForLongText()
 	{
 		var html = await RenderScenario(TermSearch with
 		{
-			DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
+			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
 		});
 
 		html.Should().Contain("data-example-description");
 		html.Should().Contain("Splits the search into slices.");
 		html.Should().MatchRegex("data-description-toggle[^>]*\\shidden>");
+		html.Should().NotContain("api-example-description");
+		var caption = html.IndexOf("Splits the search into slices.", StringComparison.Ordinal);
+		caption.Should().BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+		caption.Should().BeLessThan(html.IndexOf("api-code-carousel-strip", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Render_ResponseDescription_IsACaptionUnderTheResponseLabelPerStatus()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Get",
+			TabId = "get",
+			Responses =
+			[
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					JsonValue = "{}",
+					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>")
+				},
+				new ExampleResponse
+				{
+					StatusCode = "404",
+					JsonValue = "{}",
+					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>")
+				}
+			]
+		});
+
+		var found = html.IndexOf("Found it.", StringComparison.Ordinal);
+		found.Should().BeGreaterThan(html.IndexOf(">Response</span>", StringComparison.Ordinal));
+		found.Should().BeLessThan(html.IndexOf("data-api-response-samples", StringComparison.Ordinal));
+		html.Should().Contain("<div data-caption-status=\"200\">");
+		html.Should().Contain("<div data-caption-status=\"404\" hidden=\"hidden\">");
+		html.Should().NotContain(">Request</span>");
+	}
+
+	[Test]
+	public async Task Render_StatusDescription_IsTheTooltipOfItsTab()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Get",
+			TabId = "get",
+			Responses =
+			[
+				new ExampleResponse { StatusCode = "200", JsonValue = "{}", StatusDescription = "Unauthorized" },
+				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+			]
+		});
+
+		// A tab without one renders an empty value, which the tooltip script skips.
+		html.Should().Contain("data-status=\"200\"");
+		Regex.Matches(html, "data-tippy-content=\"Unauthorized\"").Should().ContainSingle();
+		Regex.Matches(html, "data-status=\"404\"[^>]*data-tippy-content=\"\"").Should().ContainSingle();
 	}
 
 	[Test]
