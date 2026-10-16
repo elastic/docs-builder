@@ -36,6 +36,9 @@ public partial class ApiPropertyTreeBuilder
 			_shapes
 		);
 
+		var selector = discriminator?.PropertyName is { Length: > 0 } declared
+			? declared
+			: _analyzer.GetSelectingProperty(variantsToRender.Where(v => !v.IsArray).Select(v => v.Schema));
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		var optionIds = variantsToRender.Select(
 			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
@@ -87,7 +90,8 @@ public partial class ApiPropertyTreeBuilder
 							AncestorRefs = newAncestors,
 							RequiredProperties = null,
 							Owner = VariantDisplayName(variant)
-						}
+						},
+						selector
 					)
 						?? new ApiPropertyList([])
 					: null,

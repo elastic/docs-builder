@@ -170,7 +170,7 @@ public class ApiBodyContentTests
 
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
-		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "kind", "lives");
+		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("kind", "id", "lives");
 	}
 
 	[Test]
