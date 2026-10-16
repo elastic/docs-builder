@@ -129,12 +129,12 @@
 
 	.api-context-menu-group-label {
 		padding: 4px 8px;
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0.06em;
+		font-size: 11px;
+		font-weight: 500;
+		letter-spacing: 0.04em;
 		line-height: 16px;
 		text-transform: uppercase;
-		color: #516381;
+		color: #6a7a96;
 		user-select: none;
 	}
 
