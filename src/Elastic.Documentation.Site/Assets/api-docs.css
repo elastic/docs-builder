@@ -3571,19 +3571,15 @@ html:has(.api-page-shell) {
 	line-height: 16px;
 }
 
-/* The example's description: a muted note under the chips, set apart from the code below it. */
-.api-example-description {
-	margin: 0 0 14px;
-	padding: 10px 12px;
-	border-left: 3px solid var(--color-grey-30, #c4cbd8);
-	border-radius: 0 10px 10px 0;
-	background: var(--color-grey-10, #f5f7fa);
+/* An example's description: plain muted text beside what it describes (under REQUEST, or above a response body). */
+.api-example-caption {
+	margin: 0 0 10px;
 	color: #475569;
 	font-size: 13px;
 	line-height: 1.55;
 }
 
-.api-example-description-text {
+.api-example-caption-text {
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 3;
@@ -3591,25 +3587,25 @@ html:has(.api-page-shell) {
 	overflow: hidden;
 }
 
-.api-example-description.is-open .api-example-description-text {
+.api-example-caption.is-open .api-example-caption-text {
 	display: block;
 	-webkit-line-clamp: unset;
 	line-clamp: unset;
 }
 
-.api-example-description p {
+.api-example-caption p {
 	margin: 0;
 }
 
-.api-example-description p + p {
+.api-example-caption p + p {
 	margin-top: 6px;
 }
 
-.api-example-description :not(pre) > code {
+.api-example-caption :not(pre) > code {
 	font-size: 12px;
 }
 
-.api-example-description-toggle {
+.api-example-caption-toggle {
 	margin-top: 4px;
 	padding: 0;
 	border: 0;
@@ -3620,11 +3616,11 @@ html:has(.api-page-shell) {
 	cursor: pointer;
 }
 
-.api-example-description-toggle[hidden] {
+.api-example-caption-toggle[hidden] {
 	display: none;
 }
 
-.api-example-description-toggle:hover {
+.api-example-caption-toggle:hover {
 	text-decoration: underline;
 }
 
@@ -4024,7 +4020,7 @@ html:has(.api-page-shell) {
 
 	#api-examples-panel .api-examples-heading,
 	#api-examples-panel .api-example-chips-row,
-	#api-examples-panel .api-example-description {
+	#api-examples-panel .api-example-caption {
 		flex: 0 0 auto;
 	}
 

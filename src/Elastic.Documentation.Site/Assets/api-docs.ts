@@ -4,7 +4,7 @@
  * for both OperationView and SchemaView pages.
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
-import { initApiExamples } from './api-examples-carousel'
+import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
@@ -397,7 +397,18 @@ function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
             panel.toggleAttribute('hidden', panel.dataset.status !== effective)
         })
 
+    const rail = widget.closest<HTMLElement>('.api-rail-response') ?? widget
+    rail.querySelectorAll<HTMLElement>('[data-caption-status]').forEach(
+        (caption) => {
+            caption.toggleAttribute(
+                'hidden',
+                caption.dataset.captionStatus !== effective
+            )
+        }
+    )
+
     syncCopyButtons(widget, effective)
+    syncDescriptions(rail)
 }
 
 let apiResponseStatusTabsDelegated = false
