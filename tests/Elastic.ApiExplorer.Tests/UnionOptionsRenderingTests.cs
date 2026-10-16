@@ -70,11 +70,12 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_ThreeVariants_ShowsTheFieldsAtOnceWithoutRepeatingTheName()
+	public async Task Render_ThreeVariants_ShowsTheFieldsAtOnceWithAToggleAndWithoutRepeatingTheName()
 	{
 		var html = await Render(3, foldable: true);
 
-		html.Should().NotContain("show properties", "picking a chip is the choice to read that variant");
+		html.Should().Contain("hide properties", "the fields show at once, and a toggle offers a shorter view");
+		html.Should().NotContain("show properties", "nothing starts folded");
 		html.Should().Contain("""<div class="nested-properties" id="v-0--children">""", "the fields are not folded");
 		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
 		html.Should().Contain(
