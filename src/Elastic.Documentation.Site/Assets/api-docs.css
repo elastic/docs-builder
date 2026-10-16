@@ -4292,3 +4292,89 @@ html:has(.api-page-shell) {
 		}
 	}
 }
+
+/* Open nodes sit in nested boxes instead of guide lines. The toggle sits on the box's top edge and cuts the line behind
+   its text, like a fieldset legend; the innermost open box gets the darker border, so the open path reads from the
+   outlines alone. The row keeps one height folded or open, so the toggle does not move. */
+.property-item::before,
+.property-item::after,
+.nested-properties::before,
+.expand-toggle-row::after,
+.union-expand-toggle::after {
+	display: none;
+}
+
+.property-item.depth-1,
+.property-item.depth-2,
+.property-item.depth-3,
+.property-item.depth-4 {
+	padding-left: 0.25rem;
+}
+
+/* The reference link has no branch to hang from; it lines up with the toggle label below it. */
+.property-list .reference-link-row {
+	padding-left: calc(0.875rem + 1px);
+
+	&::before,
+	&::after {
+		display: none;
+	}
+
+	/* With no toggle below it, the link reads as part of the description. */
+	&:not(:has(+ .expand-toggle-row)) {
+		padding-left: 0;
+	}
+}
+
+.property-item > .expand-toggle-row,
+.union-variant-item > .union-expand-toggle {
+	margin: 0.5rem 0 0;
+	padding: 0.25rem calc(0.875rem + 1px);
+
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 50% 0 0;
+		height: auto;
+		width: auto;
+		border: 1px solid transparent;
+		border-bottom: 0;
+		border-radius: 6px 6px 0 0;
+		opacity: 1;
+	}
+
+	> .expand-toggle {
+		position: relative;
+		z-index: 1;
+		margin-left: -0.375rem;
+		padding: 0 0.375rem;
+		background: var(--color-white, #fff);
+	}
+}
+
+.property-item.expanded > .expand-toggle-row::before,
+.union-variant-item.expanded > .union-expand-toggle::before {
+	border-color: var(--color-grey-20);
+}
+
+.property-item.expanded > .nested-properties,
+.union-variant-item.expanded > .nested-properties {
+	margin: 0 0 0.25rem;
+	padding: 0 0.5rem 1rem;
+	border: 1px solid var(--color-grey-20);
+	border-top: 0;
+	border-radius: 0 0 6px 6px;
+
+	/* The first row's usual top padding would leave twice the gap under the edge that the bottom edge has. */
+	> .property-list > .property-item:first-child > dt {
+		--property-row-pad: 6px;
+	}
+}
+
+.property-item.expanded:not(:has(.expanded)) > .expand-toggle-row::before,
+.property-item.expanded:not(:has(.expanded)) > .nested-properties,
+.union-variant-item.expanded:not(:has(.expanded))
+	> .union-expand-toggle::before,
+.union-variant-item.expanded:not(:has(.expanded)) > .nested-properties {
+	border-color: var(--color-grey-60);
+}
