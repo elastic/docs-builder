@@ -4311,6 +4311,16 @@ html:has(.api-page-shell) {
 	padding-left: 0.25rem;
 }
 
+/* The reference link has no branch to hang from; it lines up with the toggle label below it. */
+.property-list .reference-link-row {
+	padding-left: calc(0.875rem + 1px);
+
+	&::before,
+	&::after {
+		display: none;
+	}
+}
+
 .property-item > .expand-toggle-row,
 .union-variant-item > .union-expand-toggle {
 	margin: 0.5rem 0 0;
