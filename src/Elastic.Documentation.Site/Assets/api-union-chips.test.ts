@@ -175,6 +175,44 @@ describe('content type panels', () => {
         initUnionChips()
     })
 
+    const pick = (id: string, value: string) => {
+        picker(id).value = value
+        picker(id).dispatchEvent(new Event('change', { bubbles: true }))
+    }
+
+    it('shows the panel the select picks and keeps the others findable', () => {
+        pick('req', 'req-1')
+
+        expect(shown(['req-0', 'req-1'])).toEqual(['req-1'])
+        expect(byId('req-0').getAttribute('hidden')).toBe('until-found')
+    })
+
+    it('updates the content type tag to the picked content type', () => {
+        pick('res', 'res-1')
+
+        expect(tag('res').textContent).toBe('application/yaml')
+        expect(shown(['res-0', 'res-1'])).toEqual(['res-1'])
+    })
+
+    it("leaves another body's panel and select untouched", () => {
+        pick('res', 'res-1')
+
+        expect(shown(['res-0', 'res-1'])).toEqual(['res-1'])
+        expect(shown(['req-0', 'req-1'])).toEqual(['req-0'])
+        expect(picker('req').value).toBe('req-0')
+        expect(tag('req').textContent).toBe('application/zip')
+    })
+
+    it('shows the first panel again when the select goes back to it', () => {
+        pick('req', 'req-1')
+        expect(shown(['req-0', 'req-1'])).toEqual(['req-1'])
+
+        pick('req', 'req-0')
+
+        expect(shown(['req-0', 'req-1'])).toEqual(['req-0'])
+        expect(tag('req').textContent).toBe('application/zip')
+    })
+
     it('moves the picker and tag to a panel the browser revealed for a link before the script ran', () => {
         // The browser unhides the target's panel itself for a fragment, leaving the first panel open as well.
         byId('req-1').removeAttribute('hidden')
