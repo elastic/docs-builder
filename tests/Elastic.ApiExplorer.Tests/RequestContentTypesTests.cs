@@ -58,6 +58,18 @@ public class RequestContentTypesTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Create_ExamplesOnTheSchemalessEntry_AreStillShown()
+	{
+		var (page, _, _) = await Build();
+
+		page
+			.RequestExamples
+			.Should()
+			.ContainSingle("the example sits on the entry without a schema, and picking the other as primary must not drop it");
+		page.RequestExamples[0].JsonValue.Should().Contain("binary package archive");
+	}
+
+	[Test]
 	public async Task Write_TwoContentTypes_ListsBothContentTypes()
 	{
 		var (page, operation, context) = await Build();
