@@ -22,7 +22,7 @@ public class UnionOptionsRenderingTests
 			.Contain("data-chip-row")
 			.And
 			.Contain("""id="v-1" hidden="until-found">""", "TotalHits or number reads like any other union");
-		html.Should().Contain(">Variant1</span></code>", "the primitive keeps its type name");
+		html.Should().NotContain(">Variant1</span></code>", "the primitive's chip already names its type");
 	}
 
 	[Test]
@@ -42,12 +42,16 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_PrimitiveVariantBehindChips_KeepsItsTypeName()
+	public async Task Render_PrimitiveVariantBehindChips_LeavesItsPanelWithoutTheTypeName()
 	{
-		// Variant2 is an array, which keeps its name anyway; Variant3 is a plain primitive.
+		// Variant2 is an array, which keeps its heading; Variant3 is a plain primitive.
 		var html = await Render(4, objects: 3);
 
-		html.Should().Contain(">Variant3</span></code>", "a primitive's type is all its panel has to show");
+		html.Should().NotContain(">Variant3</span></code>", "a primitive's type is on its chip");
+		html.Should().Contain(
+			">Variant2</span><span class=\"type-wrapper array-icon\">[]</span></code>",
+			"an array variant keeps its heading"
+		);
 		html.Should().NotContain(">Variant0</span></code>", "an object variant's name is on its chip");
 	}
 
