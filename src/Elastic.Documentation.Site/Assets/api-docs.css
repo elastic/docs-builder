@@ -4293,14 +4293,13 @@ html:has(.api-page-shell) {
 	}
 }
 
-/* Open nodes sit in nested boxes instead of guide lines: the toggle is the box's header, and the innermost open
-   box gets the darker border, so the open path reads from the outlines alone. */
+/* Open nodes sit in nested boxes instead of guide lines. The toggle sits on the box's top edge and cuts the line behind
+   its text, like a fieldset legend; the innermost open box gets the darker border, so the open path reads from the
+   outlines alone. The row keeps one height folded or open, so the toggle does not move. */
 .property-item::before,
 .property-item::after,
 .nested-properties::before,
-.expand-toggle-row::before,
 .expand-toggle-row::after,
-.union-expand-toggle::before,
 .union-expand-toggle::after {
 	display: none;
 }
@@ -4312,18 +4311,34 @@ html:has(.api-page-shell) {
 	padding-left: 0.25rem;
 }
 
-/* A folded toggle keeps the box's metrics under a transparent border, so opening it does not move the toggle. */
 .property-item > .expand-toggle-row,
 .union-variant-item > .union-expand-toggle {
 	margin: 0.5rem 0 0;
-	padding: 0.375rem 0.5rem 0;
-	border: 1px solid transparent;
-	border-bottom: 0;
-	border-radius: 6px 6px 0 0;
+	padding: 0.25rem calc(0.875rem + 1px);
+
+	&::before {
+		content: '';
+		position: absolute;
+		inset: 50% 0 0;
+		height: auto;
+		width: auto;
+		border: 1px solid transparent;
+		border-bottom: 0;
+		border-radius: 6px 6px 0 0;
+		opacity: 1;
+	}
+
+	> .expand-toggle {
+		position: relative;
+		z-index: 1;
+		margin-left: -0.375rem;
+		padding: 0 0.375rem;
+		background: var(--color-white, #fff);
+	}
 }
 
-.property-item.expanded > .expand-toggle-row,
-.union-variant-item.expanded > .union-expand-toggle {
+.property-item.expanded > .expand-toggle-row::before,
+.union-variant-item.expanded > .union-expand-toggle::before {
 	border-color: var(--color-grey-20);
 }
 
@@ -4336,9 +4351,10 @@ html:has(.api-page-shell) {
 	border-radius: 0 0 6px 6px;
 }
 
-.property-item.expanded:not(:has(.expanded)) > .expand-toggle-row,
+.property-item.expanded:not(:has(.expanded)) > .expand-toggle-row::before,
 .property-item.expanded:not(:has(.expanded)) > .nested-properties,
-.union-variant-item.expanded:not(:has(.expanded)) > .union-expand-toggle,
+.union-variant-item.expanded:not(:has(.expanded))
+	> .union-expand-toggle::before,
 .union-variant-item.expanded:not(:has(.expanded)) > .nested-properties {
 	border-color: var(--color-grey-60);
 }
