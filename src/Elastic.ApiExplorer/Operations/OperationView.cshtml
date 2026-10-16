@@ -32,7 +32,7 @@
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
 	</div>
-	@if (pageModel.Availability is not null || operation.Deprecated || pageModel.IsBeta)
+	@if (pageModel.Availability is not null || operation.Deprecated)
 	{
 		<div class="api-title-badges">
 			@if (pageModel.Availability is { } availability)
@@ -42,10 +42,6 @@
 			@if (operation.Deprecated)
 			{
 				<span class="deprecated-badge type-status">deprecated</span>
-			}
-			@if (pageModel.IsBeta)
-			{
-				<span class="beta-badge type-status">Beta</span>
 			}
 		</div>
 	}

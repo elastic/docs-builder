@@ -43,8 +43,6 @@ internal static class OperationCommonMark
 	{
 		if (operation.Deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
-		if (page.IsBeta)
-			ApiCommonMark.Paragraph(markdown, "Beta");
 		if (page.Availability is null)
 			return;
 

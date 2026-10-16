@@ -1843,8 +1843,7 @@ a.type-linked:hover {
 	line-height: 16px;
 }
 
-.deprecated-badge.type-status,
-.beta-badge.type-status {
+.deprecated-badge.type-status {
 	color: #f04e98;
 }
 
@@ -1938,8 +1937,7 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-.api-title-badges .deprecated-badge,
-.api-title-badges .beta-badge {
+.api-title-badges .deprecated-badge {
 	@apply mr-2 inline;
 }
 
@@ -1961,11 +1959,6 @@ a.type-linked:hover {
 /* Version badge - subtle grey */
 .version-badge {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
-}
-
-/* Beta badge - orange/amber warning */
-.beta-badge {
-	@apply text-yellow-90 bg-yellow-10 border-yellow-30 rounded border px-1 py-0.5 text-xs font-medium;
 }
 
 /* Reference documentation link — styled like a regular docs link, on its own line */

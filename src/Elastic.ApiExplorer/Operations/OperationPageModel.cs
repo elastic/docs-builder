@@ -17,7 +17,6 @@ namespace Elastic.ApiExplorer.Operations;
 public partial record OperationPageModel
 {
 	public required ApplicableToViewModel? Availability { get; init; }
-	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	/// <summary>Every route and method of the operation, merged into display rows.</summary>
@@ -188,8 +187,7 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadge.From(operation.Extensions, context.BuildContext.VersionsConfiguration),
-			IsBeta = OpenApiExtensionReader.IsBeta(operation),
+			Availability = AvailabilityBadge.FromOperation(operation, context.BuildContext.VersionsConfiguration),
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
