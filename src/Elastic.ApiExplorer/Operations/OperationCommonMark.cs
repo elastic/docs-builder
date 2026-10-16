@@ -211,7 +211,10 @@ internal static class OperationCommonMark
 			if (content.HasBody)
 			{
 				if (content.IsArray)
+				{
+					ApiPropertyMarkdown.WriteType(markdown, content.Type);
 					ApiCommonMark.Paragraph(markdown, ApiBodyContent.ArrayItemsLabel);
+				}
 				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
 				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
 			}

@@ -36,7 +36,7 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 		        "responses": {
 		          "200": {
 		            "description": "OK",
-		            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Alias" } } } }
+		            "content": { "application/json": { "schema": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": { "$ref": "#/components/schemas/Alias" } } } }
 		          },
 		          "400": {
 		            "description": "Bad",
@@ -105,6 +105,27 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Render_ArrayResponseWithItemLimits_KeepsTheLimitsOnTheArrayRow()
+	{
+		var (page, _, _) = await Build();
+		var contents = MediaContentsModel.ForResponse("200", page.Responses.Single(r => r.StatusCode == "200").Contents);
+
+		var html = await _MediaContents.Create(contents).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("min items: 1").And.Contain("max items: 100").And.Contain("unique");
+	}
+
+	[Test]
+	public async Task Write_ArrayResponseWithItemLimits_KeepsTheLimits()
+	{
+		var (page, operation, context) = await Build();
+
+		var markdown = OperationCommonMark.Write(operation.Model, page, context);
+
+		markdown.Should().Contain("min items: 1").And.Contain("max items: 100").And.Contain("unique");
+	}
+
+	[Test]
 	public async Task Render_ArrayRequestSummary_WrapsTheFieldNamesInBracketsAndBraces()
 	{
 		var html = await _ParamSummary.Create(
@@ -115,17 +136,13 @@ public class ArrayBodyTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Write_ArrayResponse_LabelsTheFieldsInPlaceOfTheTypeLine()
+	public async Task Write_ArrayResponse_ListsTheFieldsUnderTheArrayLabel()
 	{
 		var (page, operation, context) = await Build();
 
 		var markdown = OperationCommonMark.Write(operation.Model, page, context);
 
 		markdown.Should().Contain(ApiBodyContent.ArrayItemsLabel).And.Contain("`alias`");
-		markdown
-			.Split("Type: `object[]`")
-			.Should()
-			.HaveCount(2, "only the free-form 400 body keeps a type line; the listed ones carry the label");
 	}
 
 	private async Task<(OperationPageModel Page, OperationNavigationItem Operation, ApiRenderContext Context)> Build()
