@@ -14,6 +14,7 @@ using Elastic.Changelog;
 using Elastic.Changelog.AllowlistIdentity;
 using Elastic.Changelog.Backfill;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
@@ -784,6 +785,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
+	/// <param name="cacheDir">Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the application data of docs-builder. Anything unused for 30 days is dropped.</param>
+	/// <param name="noCache">Do not read or write the cache of commit ranges.</param>
 	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions. Supported in profile-based commands.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -815,13 +818,16 @@ internal sealed partial class ChangelogCommands(
 		string? startGitRef = null,
 		string? endGitRef = null,
 		bool dryRun = false,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? cacheDir = null,
+		bool noCache = false,
 		CancellationToken ct = default
 	)
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext);
+		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
+		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext, cache: cache);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 		var isGitRefMode = !string.IsNullOrWhiteSpace(startGitRef) || !string.IsNullOrWhiteSpace(endGitRef);
@@ -892,7 +898,7 @@ internal sealed partial class ChangelogCommands(
 				}
 
 				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
-				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
+				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory, cache: cache);
 				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 				if (release == null)
 				{
@@ -1291,6 +1297,8 @@ internal sealed partial class ChangelogCommands(
 		);
 
 		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (cache is not null)
+			await cache.SaveAsync(ctx);
 		if (bundlePath != null)
 			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
 		return exitCode;
