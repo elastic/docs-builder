@@ -141,12 +141,14 @@ describe('flash of the linked target', () => {
     it('keeps a second flash on the same target alive past the timer of the first', async () => {
         ;(await open('#prop')).initApiDocs()
         scrollIntoView()
-        jest.advanceTimersByTime(3000)
+        // The first flash started at 200ms and its fallback fires at 3400ms
+        jest.advanceTimersByTime(2000)
         window.location.hash = '#other'
         window.location.hash = '#prop'
         window.dispatchEvent(new HashChangeEvent('hashchange'))
         scrollIntoView()
-        jest.advanceTimersByTime(300)
+        // Past the first flash's deadline, while the second one is still inside its own
+        jest.advanceTimersByTime(1500)
         expect(flashing('prop-name')).toBe(true)
     })
 
