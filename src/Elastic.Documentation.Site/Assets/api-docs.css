@@ -2953,17 +2953,6 @@ button.example-response-tab:focus-visible {
 		grid-template-rows: auto 1fr;
 	}
 
-	.api-page-main {
-		grid-column: 1;
-		grid-row: 1;
-	}
-
-	.api-page-grid > page-feedback {
-		grid-column: 1;
-		grid-row: 2;
-		align-self: start;
-	}
-
 	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
 	.api-page-rail {
 		grid-column: 2;
