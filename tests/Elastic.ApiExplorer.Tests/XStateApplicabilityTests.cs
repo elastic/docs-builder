@@ -152,6 +152,15 @@ public class XStateApplicabilityTests
 	}
 
 	[Test]
+	public void FromOperation_XBetaAndPlainGeneralAvailability_XStateWinsAndShowsNoBadge()
+	{
+		var operation = OperationWithState("Generally available");
+		operation.Extensions!["x-beta"] = new JsonNodeExtension(JsonValue.Create(true));
+
+		AvailabilityBadge.FromOperation(operation, StackVersions()).Should().BeNull();
+	}
+
+	[Test]
 	public void FromOperation_NoBetaNoState_ReturnsNull() =>
 		AvailabilityBadge.FromOperation(new OpenApiOperation(), StackVersions()).Should().BeNull();
 

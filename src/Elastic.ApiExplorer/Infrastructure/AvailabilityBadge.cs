@@ -24,8 +24,11 @@ public static class AvailabilityBadge
 	/// <c>beta</c> badge, with the standard lifecycle popover, instead of a bespoke label.
 	/// </summary>
 	public static ApplicableToViewModel? FromOperation(OpenApiOperation operation, VersionsConfiguration? versionsConfig) =>
-		From(operation.Extensions, versionsConfig)
-			?? (OpenApiExtensionReader.IsBeta(operation) ? Create(XStateApplicability.Parse("Beta"), versionsConfig) : null);
+		Create(
+			XStateApplicability.From(operation.Extensions) ??
+				(OpenApiExtensionReader.IsBeta(operation) ? XStateApplicability.Parse("Beta") : null),
+			versionsConfig
+		);
 
 	public static ApplicableToViewModel? Create(ApplicableTo? applicableTo, VersionsConfiguration? versionsConfig)
 	{
