@@ -1,0 +1,8 @@
+/*
+ * The cascade order of the design system. Load this before ds.css.
+ *
+ * It is a separate file because the bundler can reorder a layer statement that sits beside layer blocks, and the order here is the
+ * theming contract. While the legacy bundle (Tailwind) still loads next to the design system, the order also names Tailwind's
+ * layers, so the design system sits above Tailwind's base and components and below its utilities. A theme goes in ds.theme or after it.
+ */
+@layer theme, base, components, ds.tokens, ds.theme, ds.reset, ds.base, ds.components, ds.patterns, ds.pages, ds.utilities, utilities;

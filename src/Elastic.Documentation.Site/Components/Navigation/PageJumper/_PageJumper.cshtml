@@ -1,0 +1,41 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Navigation.PageJumper.PageJumperModel>
+@* Without script this is a plain search form. Script finds the live one and lists matches under the field as you type. A specimen of a state carries no script hooks. *@
+<form class="page-jumper@(Model.Live ? "" : " page-jumper--static")" role="search" method="get" action="@Model.Action" @(Model.Live ? new HtmlString("data-page-jumper") : HtmlString.Empty)>
+	<div class="page-jumper__field">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "search", Size = IconSize.Small }))
+		<input class="page-jumper__input" id="@(Model.Id)-q" name="q" type="search" role="combobox" aria-expanded="@(Model.PanelOpen ? "true" : "false")" aria-controls="@(Model.Id)-results" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="@Model.Placeholder" aria-label="@Model.Label"@(Model.Query.Length > 0 ? new HtmlString($" value=\"{System.Net.WebUtility.HtmlEncode(Model.Query)}\"") : HtmlString.Empty)@(Model.Live ? new HtmlString(" data-page-jumper-input") : HtmlString.Empty)>
+	</div>
+	<div class="page-jumper__panel" @(Model.Live ? new HtmlString("data-page-jumper-panel hidden") : (Model.PanelOpen ? HtmlString.Empty : new HtmlString("hidden")))>
+		<div class="page-jumper__loading" @(Model.Live ? new HtmlString("data-page-jumper-loading hidden") : (Model.State is SearchDialogState.Loading ? HtmlString.Empty : new HtmlString("hidden")))>@await RenderPartialAsync(_LoadingBar.Create(new LoadingBarModel { Label = "Searching" }))</div>
+		<p class="page-jumper__status" role="status" @(Model.Live ? new HtmlString("data-page-jumper-status") : HtmlString.Empty)>@Model.StatusText</p>
+		<ol class="page-jumper__results" id="@(Model.Id)-results" role="listbox" aria-label="Pages" @(Model.Live ? new HtmlString("data-page-jumper-results") : HtmlString.Empty)>
+			@{ string? group = null; var position = 0; }
+			@foreach (var result in Model.Results)
+			{
+				if (result.Group != group)
+				{
+					group = result.Group;
+					<li class="page-jumper__group" role="presentation">@group</li>
+				}
+				<li class="search-result" role="option" id="@(Model.Id)-result-@(position++)" aria-selected="@(result.Selected ? "true" : "false")">
+					<a class="search-result__link" href="#">
+						<span class="search-result__path">@result.Path</span>
+						<span class="search-result__title">@result.Title</span>
+					</a>
+				</li>
+			}
+		</ol>
+		@if (Model.Live)
+		{
+			<template data-search-result>
+				<li class="search-result" role="option">
+					<a class="search-result__link" href="#">
+						<span class="search-result__path" data-search-path></span>
+						<span class="search-result__title" data-search-title></span>
+						<span class="search-result__excerpt" data-search-excerpt hidden></span>
+					</a>
+				</li>
+			</template>
+		}
+	</div>
+</form>

@@ -1,0 +1,63 @@
+/*
+ * Reader preferences about contrast and colour. Both only restyle through tokens and system colours, so they work in any theme.
+ */
+
+/* More contrast: hairlines and control borders take the strong border, and muted text takes the body colour. */
+@media (prefers-contrast: more) {
+	:root {
+		--color-border: var(--color-border-strong);
+		--color-border-control: var(--color-border-strong);
+		--color-text-muted: var(--color-text);
+	}
+}
+
+/*
+ * Forced colours: the system picks the colours and drops backgrounds, so anything that is only a fill needs a border or an outline,
+ * and checked states are drawn with the system's highlight colours.
+ */
+@media (forced-colors: active) {
+	:focus-visible {
+		outline: 3px solid Highlight;
+	}
+
+	[aria-current='page'] {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
+	}
+
+	.segmented__label {
+		border: var(--border-width) solid transparent;
+	}
+
+	.segmented__input:checked + .segmented__label {
+		border-color: Highlight;
+		background: Highlight;
+		color: HighlightText;
+		forced-color-adjust: none;
+	}
+
+	.switch__track::after {
+		background: CanvasText;
+		forced-color-adjust: none;
+	}
+
+	.switch__input:checked + .switch__track {
+		border-color: Highlight;
+		background: Highlight;
+		forced-color-adjust: none;
+	}
+
+	.switch__input:checked + .switch__track::after {
+		background: HighlightText;
+	}
+
+	.check__input:checked + .check__box {
+		border-color: Highlight;
+		background: Highlight;
+		forced-color-adjust: none;
+	}
+
+	.check__input:checked + .check__box::after {
+		border-color: HighlightText;
+	}
+}

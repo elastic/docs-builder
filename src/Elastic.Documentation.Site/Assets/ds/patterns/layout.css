@@ -1,0 +1,425 @@
+/*
+ * The page layouts. Every page of the site is one of these, so a new page picks one and fills its slots.
+ *
+ *   .layout--single   one column inside the page width. Landing pages, archives, search, the 404.
+ *   .layout--bands    a stack of full-width bands, each with its content in the box. Hub pages and the landing page.
+ *   .layout--two      sidebar | content. The API pages.
+ *   .layout--three    sidebar | content | rail. Documentation articles.
+ *
+ * They share the page width (--layout-max), the side gutters (--layout-gutter) and the column gap (--layout-gap), which are tokens in
+ * tokens/scales.css. Two width modes: contained (the default, as wide as the elastic.co header) and layout-full on the body. The breakpoints are the system's: 1100 (the rail drops above the content) and 860 (the sidebar
+ * becomes a drawer). Custom properties cannot be used in media queries, so the two numbers live in this file and in the style guide.
+ */
+/* The box every layout shares: the page width, centred, with a gutter each side. The hub's blocks are directives, so they take it by name. */
+.layout,
+.band__content,
+.hub-on-this-page,
+.get-started,
+.hub-whats-new,
+.hub-zone,
+.hub-card-grid,
+.hub-explore,
+.codex-sections {
+	max-width: var(--layout-max);
+	margin-inline: auto;
+	padding-inline: var(--layout-gutter);
+}
+
+/* No sidebar: the content simply takes the box. The class names the layout; the box itself needs no more rules. */
+.layout--single {
+	--layout-columns: 1;
+}
+
+/*
+ * Sidebar and rail.
+ *
+ * The content wants --layout-measure. Whatever is left of the box after that and the gaps is shared between the sidebar (55%) and the
+ * rail (45%), and each stops growing at its max; beyond that the content grows instead, in the contained layout, or the whole group
+ * is centred in the full-width layout. Below its min a column stops shrinking and the content gives way.
+ */
+.layout--two,
+.layout--three {
+	--layout-free: calc(100% - var(--layout-measure) - 2 * var(--layout-gap));
+	--layout-nav-width: clamp(
+		var(--layout-nav-min),
+		calc(var(--layout-free) * 0.55),
+		var(--layout-nav-max)
+	);
+	--layout-rail-width: clamp(
+		var(--layout-rail-min),
+		calc(var(--layout-free) * 0.45),
+		var(--layout-rail-max)
+	);
+	/* The tree's rows carry their own padding, so the sidebar's box reaches left into the gutter to line its text up with the logo. */
+	--layout-nav-bleed: var(--space-3);
+	--layout-nav-track: calc(var(--layout-nav-width) - var(--layout-nav-bleed));
+
+	display: grid;
+	grid-template-columns: var(--layout-columns);
+	grid-template-areas: var(--layout-areas);
+}
+
+.layout--two {
+	--layout-columns-contained: var(--layout-nav-track) var(--layout-gap)
+		minmax(0, 1fr);
+	--layout-areas-contained: 'nav . content';
+	--layout-columns-full: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		minmax(0, 1fr);
+	--layout-areas-full: 'nav . content .';
+	--layout-areas-contained-tablet: 'nav . content';
+	--layout-areas-full-tablet: 'nav . content .';
+}
+
+.layout--three {
+	--layout-columns-contained: var(--layout-nav-track) var(--layout-gap)
+		minmax(0, 1fr) var(--layout-gap) var(--layout-rail-width);
+	--layout-areas-contained: 'nav . content . rail';
+	--layout-columns-full: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		var(--layout-gap) var(--layout-rail-width) minmax(0, 1fr);
+	--layout-areas-full: 'nav . content . rail .';
+	/* Below 1100px the rail sits above the content. */
+	--layout-areas-contained-tablet: 'nav . rail' 'nav . content';
+	--layout-areas-full-tablet: 'nav . rail .' 'nav . content .';
+}
+
+/* The tablet and phone columns have no rail column: the rail is a row above the content. */
+.layout--two,
+.layout--three {
+	--layout-columns-tablet: var(--layout-nav-track) var(--layout-gap)
+		minmax(0, 1fr);
+	--layout-columns-full-tablet: var(--layout-nav-track)
+		minmax(var(--layout-gap), 1fr) minmax(0, var(--layout-measure))
+		minmax(0, 1fr);
+	--layout-columns: var(--layout-columns-contained);
+	--layout-areas: var(--layout-areas-contained);
+}
+
+/*
+ * Full width is a mode of the page, set by layout-full on the body, not of one layout: the header's content and the page's box share
+ * --layout-max, so the sidebar stays aligned with the header's left edge. The header bar itself is always the whole window. The
+ * sidebar anchors to the left of that box and the content and rail are centred in the rest, and the box stops at --layout-max-wide.
+ */
+.layout-full {
+	--layout-max: var(--layout-max-wide);
+	--layout-measure: var(--layout-measure-wide);
+}
+
+.layout-full .layout--two,
+.layout-full .layout--three {
+	--layout-columns: var(--layout-columns-full);
+	--layout-areas: var(--layout-areas-full);
+}
+
+/*
+ * A tree's rows carry their own padding, so the sidebar's box reaches left into the gutter and the text lines up with the header. A
+ * sidebar whose controls start at the box edge, such as the API pages' version select and filter, is flush: no reach.
+ */
+.layout--nav-flush {
+	--layout-nav-bleed: 0rem;
+}
+
+/* The slots take their cells by name. The wrapper around content and rail only groups them in the markup. */
+.layout--two .layout__main,
+.layout--three .layout__main {
+	display: contents;
+}
+
+.layout__nav {
+	grid-area: nav;
+	margin-left: calc(var(--layout-nav-bleed) * -1);
+	position: sticky;
+	top: var(--layout-offset);
+	align-self: start;
+	display: flex;
+	max-height: calc(100vh - var(--layout-offset));
+	padding-top: var(--space-5);
+}
+
+.layout__nav > .nav-side {
+	flex: 1;
+	min-height: 0;
+}
+
+/* A page with versions opens its sidebar with the version picker, above the tree. */
+.layout__nav {
+	flex-direction: column;
+}
+
+.layout__version {
+	flex: none;
+	padding-bottom: var(--space-3);
+}
+
+.layout__version .link-menu {
+	display: block;
+}
+
+.layout__version .link-menu__trigger {
+	width: 100%;
+	justify-content: space-between;
+}
+
+.layout__main {
+	min-width: 0;
+}
+
+.layout__content {
+	grid-area: content;
+	min-width: 0;
+	/* The breadcrumb's first line lines up with the first rows of the sidebar and the rail. */
+	padding-top: calc(var(--space-5) + var(--space-1));
+	padding-bottom: var(--space-8);
+}
+
+.layout__rail {
+	grid-area: rail;
+	position: sticky;
+	top: var(--layout-offset);
+	align-self: start;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-5);
+	max-height: calc(100vh - var(--layout-offset));
+	padding-top: var(--space-5);
+	overflow-y: auto;
+}
+
+.layout__scrim {
+	display: none;
+}
+
+.layout__drawer-toggle {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.layout__menu-button {
+	display: none;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) 0;
+	color: var(--color-accent);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+	.layout--two,
+	.layout--three {
+		--layout-columns: var(--layout-columns-tablet);
+		--layout-areas: var(--layout-areas-contained-tablet);
+	}
+
+	.layout-full .layout--two,
+	.layout-full .layout--three {
+		--layout-columns: var(--layout-columns-full-tablet);
+		--layout-areas: var(--layout-areas-full-tablet);
+	}
+
+	.layout__rail {
+		position: static;
+		order: -1;
+		max-height: none;
+		flex-flow: row wrap;
+		gap: var(--space-2) var(--space-5);
+		padding-top: var(--space-3);
+		overflow: visible;
+	}
+
+	.layout__rail .toc,
+	.layout__rail .cta-card {
+		display: none;
+	}
+}
+
+@media (max-width: 860px) {
+	.layout--two,
+	.layout--three,
+	.layout-full .layout--two,
+	.layout-full .layout--three {
+		--layout-columns: minmax(0, 1fr);
+		--layout-areas: 'rail' 'content';
+	}
+
+	.layout__menu-button {
+		display: inline-flex;
+		margin-top: var(--space-3);
+	}
+
+	/* The sidebar becomes a drawer that opens from a checkbox, so it needs no JavaScript. */
+	.layout__nav {
+		position: fixed;
+		inset: var(--layout-offset) auto 0 0;
+		margin-left: 0;
+		z-index: var(--z-overlay);
+		width: min(80vw, 20rem);
+		height: calc(100dvh - var(--layout-offset));
+		max-height: none;
+		overflow-y: auto;
+		padding: var(--space-4);
+		border-right: var(--border-width) solid var(--color-border);
+		background: var(--color-surface);
+		translate: -100% 0;
+		visibility: hidden;
+	}
+
+	.layout__drawer-toggle:checked ~ .layout__nav {
+		box-shadow: var(--shadow-overlay);
+		translate: 0 0;
+		visibility: visible;
+	}
+
+	.layout__drawer-toggle:checked ~ .layout__scrim {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-overlay) - 1);
+		display: block;
+		background: color-mix(in oklab, var(--color-heading) 45%, transparent);
+	}
+
+	.layout__drawer-toggle:focus-visible
+		~ .layout__content
+		.layout__menu-button {
+		outline: 3px solid var(--color-focus-ring);
+		outline-offset: 2px;
+	}
+}
+
+@media (max-width: 860px) {
+	.layout__rail {
+		display: none;
+	}
+}
+
+@media (max-width: 860px) {
+	:root[data-motion='full'] .layout__nav {
+		transition: translate var(--duration-base) var(--ease-standard);
+	}
+}
+
+/*
+ * Bands: a page that is a stack of full-width strips. Each strip is a band, and what is in it sits in band__content, which takes the
+ * same box as the header's content, so a hero lines up with the header above it. Hub pages and the landing page are this layout.
+ */
+.layout--bands {
+	display: block;
+	max-width: none;
+	padding-inline: 0;
+}
+
+.layout--bands .layout__nav,
+.layout--bands .layout__scrim,
+.layout--bands .layout__menu-button {
+	display: none;
+}
+
+.layout--bands .layout__main,
+.layout--bands .layout__content {
+	display: block;
+	max-width: none;
+	padding-bottom: 0;
+}
+
+/* The wash behind a page's sections, which the hub shows through its bands. */
+.layout--wash {
+	background:
+		repeating-linear-gradient(
+			135deg,
+			transparent 0 22px,
+			var(--color-hatch) 22px 23px
+		),
+		var(--gradient-wash);
+}
+
+/*
+ * The content grid, for cards, tiles and any other repeating blocks inside a layout's content. Pick a column count; it steps down
+ * on its own: four columns become two at 1100, and everything is one column at 760.
+ */
+.grid {
+	display: grid;
+	grid-template-columns: repeat(var(--grid-columns, 1), minmax(0, 1fr));
+	gap: var(--grid-gap, var(--space-5));
+}
+
+.grid--2 {
+	--grid-columns: 2;
+}
+
+.grid--3 {
+	--grid-columns: 3;
+}
+
+.grid--4 {
+	--grid-columns: 4;
+}
+
+/* As many columns as fit, none narrower than --grid-min. */
+.grid--auto {
+	grid-template-columns: repeat(
+		auto-fill,
+		minmax(var(--grid-min, 16rem), 1fr)
+	);
+}
+
+@media (max-width: 1100px) {
+	.grid--3,
+	.grid--4 {
+		--grid-columns: 2;
+	}
+}
+
+@media (max-width: 760px) {
+	.grid--2,
+	.grid--3,
+	.grid--4 {
+		--grid-columns: 1;
+	}
+}
+
+/*
+ * Vertical rhythm. Gaps between things come from six steps, named for what they separate:
+ *   tight    inside a component (a label and its field)
+ *   stack    between paragraphs and siblings in running content
+ *   block    between a heading and its content, and between components
+ *   group    between groups of components
+ *   section  between sections of a page, and the padding of a band
+ *   band     the top of a hero and the foot of the page's last band
+ */
+.stack > * + * {
+	margin-top: var(--stack-space, var(--rhythm-stack));
+}
+
+.stack--tight {
+	--stack-space: var(--rhythm-tight);
+}
+
+.stack--block {
+	--stack-space: var(--rhythm-block);
+}
+
+.stack--group {
+	--stack-space: var(--rhythm-group);
+}
+
+.stack--section {
+	--stack-space: var(--rhythm-section);
+}
+
+/* A band: a full-width strip with the section rhythm above and below. A hero, or the page's last band, takes the larger one. */
+.band {
+	position: relative;
+	overflow: hidden;
+	isolation: isolate;
+	padding-block: var(--rhythm-section);
+}
+
+.band--hero {
+	padding-block: var(--rhythm-band)
+		calc(var(--rhythm-band) + var(--rhythm-block));
+}
+
+/* What is behind a band is the theme's surface art (themes/surfaces.css): band--soft, --tint, --dots, --grid, --hatch, --halftone, --wash-a to -c, --ink, --blue, --lagoon, --dusk and --aurora. */
