@@ -26,6 +26,13 @@ internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVaria
 	{
 		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
 		var listed = ListedProperties(schema, variants, analyzer);
+		// A map has no fields of its own, so its values' fields list under a <string> key row, as a nested map's do.
+		if (variants is null && analyzer.GetExpandableDictionaryValue(schema) is { } mapValue)
+			listed = ApiPropertyTreeBuilder.WithDictionaryKeyRow(
+				analyzer.Flatten(schema).Required,
+				analyzer.GetSchemaProperties(schema),
+				mapValue
+			);
 		var properties = listed is null ? null : builder.BuildPropertyList(listed, scope);
 		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
