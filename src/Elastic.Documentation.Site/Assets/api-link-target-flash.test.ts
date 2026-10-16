@@ -1,5 +1,12 @@
+const FLASH = 'api-link-target-flash'
+
 function markup(): string {
-    return `<section id="elastic-api-v3"><dl><dt id="prop">rule</dt></dl><h2 id="heading">Query parameters</h2></section>`
+    return `
+        <ul id="paths"><li><a id="param-link" class="api-url-param" href="#prop">{rule}</a></li></ul>
+        <section id="elastic-api-v3">
+            <dl><dt id="prop">rule</dt></dl>
+            <h2 id="heading">Query parameters</h2>
+        </section>`
 }
 
 const observers: {
@@ -12,14 +19,24 @@ function scrollIntoView(visible = true) {
     jest.advanceTimersByTime(250)
 }
 
-async function open(navType: string, hash: string) {
+const hashListeners: EventListener[] = []
+const addListener = window.addEventListener.bind(window)
+window.addEventListener = ((
+    type: string,
+    listener: EventListener,
+    ...rest: []
+) => {
+    if (type === 'hashchange') hashListeners.push(listener)
+    addListener(type, listener, ...rest)
+}) as typeof window.addEventListener
+
+async function open(hash: string) {
     document.body.innerHTML = markup()
     window.location.hash = hash
-    Object.defineProperty(performance, 'getEntriesByType', {
-        configurable: true,
-        value: () => [{ type: navType }],
-    })
+    // jsdom reports the hash change on a timer; run it before the page's listener exists
+    jest.runOnlyPendingTimers()
     observers.length = 0
+    Element.prototype.scrollIntoView = jest.fn()
     window.IntersectionObserver = class {
         constructor(
             public cb: (entries: { isIntersecting: boolean }[]) => void
@@ -38,86 +55,97 @@ async function open(navType: string, hash: string) {
     return api
 }
 
-const prop = () => document.getElementById('prop')!
+const flashing = (id: string) =>
+    document.getElementById(id)!.classList.contains(FLASH)
 
 describe('flash of the linked target', () => {
     beforeEach(() => jest.useFakeTimers())
 
     afterEach(() => {
+        hashListeners
+            .splice(0)
+            .forEach((l) => window.removeEventListener('hashchange', l))
         jest.useRealTimers()
-        jest.restoreAllMocks()
         window.location.hash = ''
     })
 
-    it.each(['navigate', 'reload'])(
-        'flashes on %s with a fragment',
-        async (type) => {
-            ;(await open(type, '#prop')).initApiDocs()
-            scrollIntoView()
-            expect(prop().classList.contains('api-link-target-flash')).toBe(
-                true
-            )
-        }
-    )
-
-    it('stays quiet on back/forward', async () => {
-        ;(await open('back_forward', '#prop')).initApiDocs()
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+    it('flashes the target when the page opens with a fragment', async () => {
+        ;(await open('#prop')).initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop')).toBe(true)
     })
 
-    it('stays quiet when the fragment points at a heading', async () => {
-        ;(await open('navigate', '#heading')).initApiDocs()
+    it('flashes the target when the fragment changes', async () => {
+        ;(await open('')).initApiDocs()
+        window.location.hash = '#prop'
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
         scrollIntoView()
-        expect(
-            document
-                .getElementById('heading')!
-                .classList.contains('api-link-target-flash')
-        ).toBe(false)
+        expect(flashing('prop')).toBe(true)
+    })
+
+    it('flashes the target of an in-page link', async () => {
+        ;(await open('')).initApiDocs()
+        document.getElementById('param-link')!.click()
+        scrollIntoView()
+        expect(flashing('prop')).toBe(true)
     })
 
     it('stays quiet without a fragment', async () => {
-        ;(await open('navigate', '')).initApiDocs()
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        ;(await open('')).initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop')).toBe(false)
     })
 
-    it('flashes only on the first init, not on an htmx swap', async () => {
-        const api = await open('navigate', '#prop')
+    it('stays quiet when the fragment points at a heading', async () => {
+        ;(await open('#heading')).initApiDocs()
+        scrollIntoView()
+        expect(flashing('heading')).toBe(false)
+    })
+
+    it('does not replay the opening flash on an htmx swap', async () => {
+        const api = await open('#prop')
         api.initApiDocs()
         scrollIntoView()
-        prop().classList.remove('api-link-target-flash')
+        document.getElementById('prop')!.classList.remove(FLASH)
         api.initApiDocs()
         scrollIntoView()
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        expect(flashing('prop')).toBe(false)
     })
 
     it('waits until the target is on screen', async () => {
-        ;(await open('navigate', '#prop')).initApiDocs()
+        ;(await open('#prop')).initApiDocs()
         jest.advanceTimersByTime(1000)
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        expect(flashing('prop')).toBe(false)
         scrollIntoView()
-        expect(prop().classList.contains('api-link-target-flash')).toBe(true)
+        expect(flashing('prop')).toBe(true)
     })
 
     it('does not flash a target that only passed through the viewport', async () => {
-        ;(await open('navigate', '#prop')).initApiDocs()
-        observers.forEach((o) => o.cb([{ isIntersecting: true }]))
+        ;(await open('#prop')).initApiDocs()
+        ;[...observers].forEach((o) => o.cb([{ isIntersecting: true }]))
         jest.advanceTimersByTime(100)
         scrollIntoView(false)
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        expect(flashing('prop')).toBe(false)
     })
 
-    it('stays quiet on a later hashchange', async () => {
-        const api = await open('navigate', '')
-        api.initApiDocs()
+    it('keeps a second flash on the same target alive past the timer of the first', async () => {
+        ;(await open('#prop')).initApiDocs()
+        scrollIntoView()
+        jest.advanceTimersByTime(3000)
+        window.location.hash = '#other'
         window.location.hash = '#prop'
         window.dispatchEvent(new HashChangeEvent('hashchange'))
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        scrollIntoView()
+        jest.advanceTimersByTime(300)
+        expect(flashing('prop')).toBe(true)
     })
 
     it('clears the class when the animation ends', async () => {
-        ;(await open('navigate', '#prop')).initApiDocs()
+        ;(await open('#prop')).initApiDocs()
         scrollIntoView()
-        prop().dispatchEvent(new Event('animationend'))
-        expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+        document
+            .getElementById('prop')!
+            .dispatchEvent(new Event('animationend'))
+        expect(flashing('prop')).toBe(false)
     })
 })

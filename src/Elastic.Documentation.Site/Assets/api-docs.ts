@@ -190,7 +190,7 @@ function initParamSummaries(): void {
 
     if (!paramHashListenerBound) {
         paramHashListenerBound = true
-        window.addEventListener('hashchange', revealHashTarget)
+        window.addEventListener('hashchange', onHashChange)
     }
 }
 
@@ -226,14 +226,24 @@ const FLASH_SETTLE_MS = 200
 const FLASH_GIVE_UP_MS = 10000
 let initialHashFlashDone = false
 
+const flashCleanups = new WeakMap<HTMLElement, () => void>()
+
 function flashLinkedTarget(target: HTMLElement): void {
+    // A flash still running on this target must not clear the new one early
+    flashCleanups.get(target)?.()
     target.classList.remove(FLASH_CLASS)
     // Reflow so a class re-added in the same frame restarts the animation
     void target.offsetWidth
     target.classList.add(FLASH_CLASS)
-    const clear = () => target.classList.remove(FLASH_CLASS)
-    target.addEventListener('animationend', clear, { once: true })
-    window.setTimeout(clear, FLASH_FALLBACK_MS)
+    const clear = () => {
+        window.clearTimeout(fallback)
+        target.removeEventListener('animationend', clear)
+        target.classList.remove(FLASH_CLASS)
+        flashCleanups.delete(target)
+    }
+    const fallback = window.setTimeout(clear, FLASH_FALLBACK_MS)
+    target.addEventListener('animationend', clear)
+    flashCleanups.set(target, clear)
 }
 
 /**
@@ -261,20 +271,22 @@ function flashWhenSettled(target: HTMLElement): void {
     }, FLASH_GIVE_UP_MS)
 }
 
-/**
- * Flashes the target of the URL fragment, once, when the reader opened the page with it (a shared
- * link). A reload counts as opening it again; back/forward, in-page links and htmx swaps stay quiet.
- */
-function flashInitialHashTarget(): void {
-    if (initialHashFlashDone) return
-    initialHashFlashDone = true
-    const navigation = performance.getEntriesByType?.('navigation')[0] as
-        PerformanceNavigationTiming | undefined
-    if (navigation?.type === 'back_forward') return
+/** A heading keeps the browser's plain jump; anything else a link points at pulses. */
+function flashLinkTarget(target: HTMLElement): void {
+    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    flashWhenSettled(target)
+}
+
+/** Flashes what the URL fragment points at, so a reader who followed a link to it can find it. */
+function flashHashTarget(): void {
     const id = decodeURIComponent(window.location.hash.slice(1))
     const target = id ? document.getElementById(id) : null
-    if (!target || target.matches('h1, h2, h3, h4, h5, h6')) return
-    flashWhenSettled(target)
+    if (target) flashLinkTarget(target)
+}
+
+function onHashChange(): void {
+    revealHashTarget()
+    flashHashTarget()
 }
 
 /**
@@ -401,6 +413,7 @@ function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
     revealHiddenAncestors(target)
     target.scrollIntoView({ behavior: 'smooth' })
     if (window.location.hash !== href) history.pushState(null, '', href)
+    flashLinkTarget(target)
 }
 
 /**
@@ -686,5 +699,9 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
-    flashInitialHashTarget()
+    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
+    if (!initialHashFlashDone) {
+        initialHashFlashDone = true
+        flashHashTarget()
+    }
 }
