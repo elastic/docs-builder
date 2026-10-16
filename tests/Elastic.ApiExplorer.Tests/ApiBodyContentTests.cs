@@ -513,6 +513,40 @@ public class ApiBodyContentTests
 	}
 
 	[Test]
+	public async Task Build_MapBodyWithInlineAllOfRequiredField_KeepsTheFieldRequired()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Collection": { "type": "object", "properties": { "name": { "type": "string" } } },
+			      "Collections": {
+			        "type": "object",
+			        "allOf": [ { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } } ],
+			        "additionalProperties": { "$ref": "#/components/schemas/Collection" }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas!["Collections"],
+			new PropertyTreeScope { Prefix = "res-200", IsResponse = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.Properties!.Items.Select(p => p.Name).Should().Equal("id", "<string>");
+		body.Properties.Items.Single(p => p.Name == "id").IsRequired.Should().BeTrue("the allOf member requires it");
+	}
+
+	[Test]
 	public async Task Build_ArrayOfUnion_SaysEachItemIsAVariant()
 	{
 		var json =
