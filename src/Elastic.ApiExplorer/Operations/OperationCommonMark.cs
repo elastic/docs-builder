@@ -174,18 +174,8 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Request body");
-		if (!string.IsNullOrEmpty(page.RequestContentType))
-			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.RequestContentType));
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
-		if (page.RequestRequires is { } requestRequires)
-			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requestRequires));
-		if (page.HasRequestBody)
-		{
-			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
-			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
-		}
-		else
-			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
+		WriteMediaContents(markdown, page.RequestContents, apiBaseUrl);
 		_ = markdown.AppendLine();
 	}
 
@@ -203,26 +193,30 @@ internal static class OperationCommonMark
 
 			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
-			foreach (var content in response.Contents)
-			{
-				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
-				if (content.Requires is { } requires)
-					ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
-				if (content.HasBody)
-				{
-					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
-					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
-				}
-				else if (content.ArrayItemProperties is not null)
-				{
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-					ApiPropertyMarkdown.WriteList(markdown, content.ArrayItemProperties, apiBaseUrl);
-				}
-				else
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-			}
+			WriteMediaContents(markdown, response.Contents, apiBaseUrl);
 
 			WriteHeaders(markdown, response, apiBaseUrl);
+		}
+	}
+
+	private static void WriteMediaContents(StringBuilder markdown, IReadOnlyList<ApiMediaContent> contents, string apiBaseUrl)
+	{
+		foreach (var content in contents)
+		{
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
+			if (content.Requires is { } requires)
+				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+			if (content.HasBody)
+			{
+				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
+			}
+			else
+			{
+				ApiPropertyMarkdown.WriteType(markdown, content.Type);
+				if (content.ArrayItemProperties is not null)
+					ApiPropertyMarkdown.WriteList(markdown, content.ArrayItemProperties, apiBaseUrl);
+			}
 		}
 	}
 

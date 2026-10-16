@@ -9,11 +9,13 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
-/// <summary>One response content entry with its property tree prebuilt.</summary>
-public record ApiResponseContent
+/// <summary>One content entry of a request or response body with its property tree prebuilt.</summary>
+public record ApiMediaContent
 {
 	public required string ContentType { get; init; }
-	public required TypeAnnotation Type { get; init; }
+
+	/// <summary>Null when the entry declares no schema, as when the spec lists a content type only to attach examples.</summary>
+	public required TypeAnnotation? Type { get; init; }
 	public required ApiPropertyList? Properties { get; init; }
 
 	/// <summary>Item properties when the response is an array of objects.</summary>
@@ -44,13 +46,11 @@ public record ApiResponse
 	public required IOpenApiResponse Response { get; init; }
 	public required string StatusClass { get; init; }
 
-	/// <summary>Content type of the first content entry regardless of whether it declares a schema.</summary>
-	public required string? FirstContentType { get; init; }
-	public required IReadOnlyList<ApiResponseContent> Contents { get; init; }
+	public required IReadOnlyList<ApiMediaContent> Contents { get; init; }
 	public required IReadOnlyList<ApiResponseHeader> Headers { get; init; }
 
 	/// <summary>False when there is no schema or header to document, e.g. an example-only or 204 response.</summary>
-	public bool HasDetails => Contents.Count > 0 || Headers.Count > 0;
+	public bool HasDetails => Contents.Any(static c => c.Type is not null) || Headers.Count > 0;
 }
 
 /// <summary>Status-code accordion under the Responses heading.</summary>
@@ -77,17 +77,15 @@ public partial record OperationPageModel
 			{
 				StatusCode = statusCode,
 				Response = response,
-				FirstContentType = response.Content is { Count: > 0 } ? response.Content.First().Key : null,
 				StatusClass = statusCode.StartsWith('2')
 					? "success"
 					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error" : "info",
-				Contents = response.Content is null
-					? []
-					: response
-						.Content
-						.Where(ct => ct.Value?.Schema is not null)
-						.Select(ct => BuildResponseContent(ct.Key, ct.Value!.Schema!, statusCode, analyzer, builder))
-						.ToArray(),
+				Contents = BuildMediaContents(
+					response.Content,
+					new PropertyTreeScope { Prefix = $"res-{statusCode}", IsResponse = true },
+					analyzer,
+					builder
+				),
 				Headers = response.Headers is null
 					? []
 					: response
@@ -107,24 +105,59 @@ public partial record OperationPageModel
 		return responses;
 	}
 
-	private static ApiResponseContent BuildResponseContent(
-		string contentType,
-		IOpenApiSchema responseSchema,
-		string statusCode,
+	/// <summary>
+	/// Every content entry, entries with a schema first so the first is the one the page leads with. Entries after the first
+	/// get their own scope prefix so their field ids stay unique on the page.
+	/// </summary>
+	/// <summary>Content entries in spec order, those with a schema first, so the first is the one a page leads with.</summary>
+	internal static IEnumerable<KeyValuePair<string, IOpenApiMediaType>> SchemaFirst(IDictionary<string, IOpenApiMediaType> content) =>
+		content.OrderBy(static e => e.Value?.Schema is null);
+
+	private static IReadOnlyList<ApiMediaContent> BuildMediaContents(
+		IDictionary<string, IOpenApiMediaType>? content,
+		PropertyTreeScope scope,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var scope = new PropertyTreeScope { Prefix = $"res-{statusCode}", IsResponse = true };
-		var body = ApiBodyContent.Build(responseSchema, scope, analyzer, builder);
-		var arrayItemProperties = body is { Properties: null, UnionVariants: null }
-			? BuildArrayItemProperties(responseSchema, scope, analyzer, builder)
+		if (content is not { Count: > 0 })
+			return [];
+
+		return [
+			.. SchemaFirst(content).Select(
+				(e, i) => BuildMediaContent(
+					e.Key,
+					e.Value?.Schema,
+					i == 0 ? scope : scope with { Prefix = $"{scope.Prefix}-ct{i}" },
+					analyzer,
+					builder
+				)
+			)
+		];
+	}
+
+	private static ApiMediaContent BuildMediaContent(
+		string contentType,
+		IOpenApiSchema? schema,
+		PropertyTreeScope scope,
+		SchemaAnalyzer analyzer,
+		ApiPropertyTreeBuilder builder
+	)
+	{
+		if (schema is null)
+		{
+			return new ApiMediaContent { ContentType = contentType, Type = null, Properties = null, ArrayItemProperties = null };
+		}
+
+		var body = ApiBodyContent.Build(schema, scope, analyzer, builder);
+		var arrayItemProperties = scope.IsResponse && body is { Properties: null, UnionVariants: null }
+			? BuildArrayItemProperties(schema, scope, analyzer, builder)
 			: null;
 
-		return new ApiResponseContent
+		return new ApiMediaContent
 		{
 			ContentType = contentType,
-			Type = builder.Describe(responseSchema),
+			Type = builder.Describe(schema),
 			Properties = body.Properties,
 			ArrayItemProperties = arrayItemProperties,
 			UnionVariants = body.UnionVariants,
@@ -157,3 +190,25 @@ public partial record OperationPageModel
 		return null;
 	}
 }
+
+/// <summary>
+/// The content entries of one request or response body. <see cref="IdPrefix"/> keeps panel ids unique per body, and
+/// <see cref="Label"/> ("Request body", "200 response") names the body's group to a screen reader.
+/// </summary>
+public record MediaContentsModel(IReadOnlyList<ApiMediaContent> Contents, string IdPrefix, string TypeLabel, string Label)
+{
+	public static MediaContentsModel ForRequest(IReadOnlyList<ApiMediaContent> contents) =>
+		new(contents, "request-body-content", "Type", "Request body");
+
+	public static MediaContentsModel ForResponse(string statusCode, IReadOnlyList<ApiMediaContent> contents) =>
+		new(contents, $"response-{statusCode}-content", "Response Type", $"{statusCode} response");
+
+	/// <summary>Whether there is more than one content type to pick from.</summary>
+	public bool HasChoice => Contents.Count > 1;
+
+	public string PanelId(int index) => $"{IdPrefix}-{index}";
+
+	public string SelectId => $"{IdPrefix}-select";
+}
+
+public record MediaContentBodyModel(ApiMediaContent Content, string TypeLabel);

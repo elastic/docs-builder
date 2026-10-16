@@ -1,46 +1,49 @@
 @using Elastic.ApiExplorer.Components.PropertyTree
+@using Elastic.ApiExplorer.Infrastructure
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
 @{
-	// The privileges stay visible; the credentials fold away, since a reader who is already set up does not need them.
+	// Both sections fold away like every other section: a reader who is already set up does not need them.
 	var requirements = Model.Requirements;
 	var useTabs = requirements.Count > 1;
 }
 @if (Model.Privileges.Count > 0)
 {
-	<div class="api-list-block">
-		@(await RenderPartialAsync<_SectionHeader, SectionHeader>(new SectionHeader("Required authorization", "required-authorization")))
-		<dl class="property-list api-privileges">
-			@foreach (var row in Model.Privileges)
-			{
-				<div class="prerequisite-item">
-					<dt>
-						@if (row.Values.Count == 0)
-						{
-							@Model.RenderMarkdown(row.Label)
-						}
-						else
-						{
-							<span class="privilege-label">@row.Label</span>
-							@for (var i = 0; i < row.Values.Count; i++)
+	<div @ParamSectionHeader.WrapAttributes()>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Required authorization", "required-authorization", Model.PrivilegeNames, Model.PrivilegeStyle)))
+		<div @ParamSectionHeader.BodyAttributes("required-authorization-list")>
+			<dl class="property-list api-privileges">
+				@foreach (var row in Model.Privileges)
+				{
+					<div class="prerequisite-item">
+						<dt>
+							@if (row.Values.Count == 0)
 							{
-								if (i > 0 && row.Join is not null)
-								{
-									<span class="privilege-join">@row.Join</span>
-								}
-								<span class="api-type-badge">@row.Values[i]</span>
+								@Model.RenderMarkdown(row.Label)
 							}
-						}
-					</dt>
-				</div>
-			}
-		</dl>
+							else
+							{
+								<span class="privilege-label">@row.Label</span>
+								@for (var i = 0; i < row.Values.Count; i++)
+								{
+									if (i > 0 && row.Join is not null)
+									{
+										<span class="privilege-join">@row.Join</span>
+									}
+									<span class="api-type-badge">@row.Values[i]</span>
+								}
+							}
+						</dt>
+					</div>
+				}
+			</dl>
+		</div>
 	</div>
 }
 @if (requirements.Count > 0)
 {
 	<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. requirements.Select(static r => r.Label)], NamesAreVariants: true)))
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. requirements.Select(static r => r.Label)], Style: SummaryStyle.Variants)))
 		<div @ParamSectionHeader.BodyAttributes("authentication-list")>
 			@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable.
 			   The schemes inside one requirement are sent together, so they share a panel. *@

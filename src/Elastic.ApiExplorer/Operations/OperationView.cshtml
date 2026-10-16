@@ -96,33 +96,16 @@
 	}
 	@if (operation.RequestBody is not null)
 	{
+		var requestContents = MediaContentsModel.ForRequest(pageModel.RequestContents);
 		<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request body", "request-body", pageModel.RequestPropertyNames, pageModel.RequestNamesAreVariants)))
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Request body", "request-body", pageModel.RequestPropertyNames, pageModel.RequestSummaryStyle)))
 		<div @ParamSectionHeader.BodyAttributes("request-body-list")>
 		@if (!string.IsNullOrEmpty(operation.RequestBody.Description))
 		{
 			<p>@Model.RenderMarkdown(operation.RequestBody.Description)</p>
 		}
 
-		@if (pageModel.RequestRequires is { } requestRequires)
-		{
-			<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requestRequires))</p>
-		}
-		@if (pageModel.HasRequestBody)
-		{
-			if (pageModel.RequestProperties is not null)
-			{
-				@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(pageModel.RequestProperties))
-			}
-			if (pageModel.RequestUnionVariants is { Variants.Count: > 0 } requestVariants)
-			{
-				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(requestVariants))
-			}
-		}
-		else if (pageModel.RequestType is not null)
-		{
-			<p>Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(pageModel.RequestType))</p>
-		}
+		@(await RenderPartialAsync<_MediaContents, MediaContentsModel>(requestContents))
 		</div>
 		</div>
 	}

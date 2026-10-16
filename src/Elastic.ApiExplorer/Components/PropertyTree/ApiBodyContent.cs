@@ -11,8 +11,6 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 /// <param name="Requires">Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</param>
 internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVariants? UnionVariants, RequiredAlternatives? Requires)
 {
-	public static readonly ApiBodyContent Empty = new(null, null, null);
-
 	/// <summary>
 	/// The content of a request or response body, as property rows list it: a union that declares properties lists them
 	/// above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
@@ -26,6 +24,13 @@ internal sealed record ApiBodyContent(ApiPropertyList? Properties, ApiUnionVaria
 	{
 		var variants = analyzer.GetTypeInfo(schema).IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
 		var listed = ListedProperties(schema, variants, analyzer);
+		// A map has no fields of its own, so its values' fields list under a <string> key row, as a nested map's do.
+		if (variants is null && analyzer.GetExpandableDictionaryValue(schema) is { } mapValue)
+			listed = ApiPropertyTreeBuilder.WithDictionaryKeyRow(
+				analyzer.Flatten(schema).Required,
+				analyzer.GetSchemaProperties(schema),
+				mapValue
+			);
 		var properties = listed is null ? null : builder.BuildPropertyList(listed, scope);
 		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
