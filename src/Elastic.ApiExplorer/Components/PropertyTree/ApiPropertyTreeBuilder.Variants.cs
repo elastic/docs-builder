@@ -36,6 +36,16 @@ public partial class ApiPropertyTreeBuilder
 			_shapes
 		);
 
+		var selector = discriminator?.PropertyName is { Length: > 0 } declared
+			? declared
+			: _analyzer.GetSelectingProperty(
+				// One schema per object shape, as LabelObjects counts them: X and X[] share one, a scalar has none.
+				variantsToRender
+					.Where(v => v is { IsObject: true, Props: not null })
+					.Select(v => v.Schema)
+					.Distinct(ReferenceEqualityComparer.Instance)
+					.Cast<IOpenApiSchema?>()
+			);
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
 		var optionIds = variantsToRender.Select(
 			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
@@ -87,7 +97,8 @@ public partial class ApiPropertyTreeBuilder
 							AncestorRefs = newAncestors,
 							RequiredProperties = null,
 							Owner = VariantDisplayName(variant)
-						}
+						},
+						selector
 					)
 						?? new ApiPropertyList([])
 					: null,
