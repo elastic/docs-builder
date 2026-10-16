@@ -208,14 +208,17 @@ internal static class OperationCommonMark
 				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
 			if (content.HasBody)
 			{
+				if (content.IsArray)
+				{
+					ApiPropertyMarkdown.WriteType(markdown, content.Type);
+					ApiCommonMark.Paragraph(markdown, ApiBodyContent.ArrayItemsLabel);
+				}
 				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
 				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
 			}
 			else
 			{
 				ApiPropertyMarkdown.WriteType(markdown, content.Type);
-				if (content.ArrayItemProperties is not null)
-					ApiPropertyMarkdown.WriteList(markdown, content.ArrayItemProperties, apiBaseUrl);
 			}
 		}
 	}

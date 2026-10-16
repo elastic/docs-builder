@@ -60,11 +60,16 @@ public partial record OperationPageModel
 			}.Where(static s => s.Parameters.Items.Count > 0)
 		];
 
-	/// <summary>A union body's names are its variants, a JSON body's its fields as an object, and any other body's a plain list.</summary>
+	/// <summary>
+	/// A union body's names are its variants, a JSON body's its fields as an object, an array body's its items' fields, and any
+	/// other body's a plain list.
+	/// </summary>
 	public SummaryStyle RequestSummaryStyle =>
 		RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 }
 			? SummaryStyle.Variants
-			: PrimaryRequest is { } primary && RequestBodyExample.IsJson(primary.ContentType) ? SummaryStyle.Fields : SummaryStyle.List;
+			: PrimaryRequest is { } primary && RequestBodyExample.IsJson(primary.ContentType)
+				? primary.IsArray ? SummaryStyle.ArrayOfFields : SummaryStyle.Fields
+				: SummaryStyle.List;
 
 	public IReadOnlyList<string> RequestPropertyNames =>
 		NamesOf(

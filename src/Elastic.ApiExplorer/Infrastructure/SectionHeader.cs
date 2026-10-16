@@ -21,6 +21,9 @@ public enum SummaryStyle
 	/// <summary>The fields of a JSON object: <c>{ a, b }</c>.</summary>
 	Fields,
 
+	/// <summary>The fields of each object in a JSON array: <c>[{ a, b }]</c>.</summary>
+	ArrayOfFields,
+
 	/// <summary>Alternatives, as when a body is a union: <c>A | B</c>.</summary>
 	Variants,
 

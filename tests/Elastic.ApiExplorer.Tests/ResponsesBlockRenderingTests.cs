@@ -71,7 +71,6 @@ public class ResponsesBlockRenderingTests
 					ContentType = "application/json",
 					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
 					Properties = null,
-					ArrayItemProperties = null,
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants =
@@ -110,7 +109,6 @@ public class ResponsesBlockRenderingTests
 					ContentType = "application/json",
 					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
 					Properties = null,
-					ArrayItemProperties = null,
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants = [Variant(displayName, "res-400-variant-x")],
@@ -174,10 +172,7 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with
 		{
-			Contents =
-			[
-				new ApiMediaContent { ContentType = "application/json", Type = null, Properties = null, ArrayItemProperties = null }
-			]
+			Contents = [new ApiMediaContent { ContentType = "application/json", Type = null, Properties = null }]
 		});
 
 		html.Should().Contain("response-panel--static");
@@ -198,8 +193,7 @@ public class ResponsesBlockRenderingTests
 		{
 			ContentType = "application/zip",
 			Type = new TypeAnnotation([new TypeSpan("string(binary)")]),
-			Properties = null,
-			ArrayItemProperties = null
+			Properties = null
 		};
 
 		var html = await RenderHtml(response with { Contents = [.. response.Contents, binary] });
@@ -252,13 +246,7 @@ public class ResponsesBlockRenderingTests
 			Response = new OpenApiResponse { Description = description },
 			Contents =
 			[
-				new ApiMediaContent
-				{
-					ContentType = contentType,
-					Type = new TypeAnnotation([new TypeSpan("object")]),
-					Properties = null,
-					ArrayItemProperties = null
-				}
+				new ApiMediaContent { ContentType = contentType, Type = new TypeAnnotation([new TypeSpan("object")]), Properties = null }
 			],
 			Headers = []
 		};

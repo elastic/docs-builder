@@ -12,7 +12,19 @@
 }
 else if (content.HasBody)
 {
-	if (content.Properties is not null)
+	if (content.IsArray && content.Properties is not null)
+	{
+		@* The array is the root of a tree: its row, then each item's fields under it, as a nested array property draws them. *@
+		<dl class="property-list">
+			<div class="property-item depth-0 last-sibling has-children expanded">
+				<dt><code>&lt;array&gt;</code> @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</dt>
+				<div class="nested-properties">
+					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+				</div>
+			</div>
+		</dl>
+	}
+	else if (content.Properties is not null)
 	{
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
 	}
@@ -24,8 +36,4 @@ else if (content.HasBody)
 else
 {
 	<p>@Model.TypeLabel: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-	if (content.ArrayItemProperties is not null)
-	{
-		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
-	}
 }
