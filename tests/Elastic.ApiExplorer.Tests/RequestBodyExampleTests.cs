@@ -402,6 +402,7 @@ public class RequestBodyExampleTests
 	[Test]
 	[Arguments("application/json", true)]
 	[Arguments("application/problem+json", true)]
+	[Arguments("application/json; charset=utf-8", true)]
 	[Arguments("application/x-ndjson", false)]
 	[Arguments("multipart/form-data", false)]
 	[Arguments(null, false)]

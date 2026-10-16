@@ -132,7 +132,8 @@
 	margin: 0;
 	padding-top: 0;
 	color: var(--color-ink-navy, #111c2c);
-	font-family: var(--font-body, Inter, ui-sans-serif, system-ui, sans-serif);
+	/* The same face as the section titles below it. */
+	font-family: var(--font-sans);
 	font-size: 30px;
 	font-weight: 600;
 	line-height: 36px;
@@ -972,7 +973,6 @@
 	dt a {
 		@apply no-underline;
 	}
-	h1,
 	h2,
 	h3,
 	h4,
@@ -985,10 +985,15 @@
 	}
 }
 
+/* No line under Responses: its rows are a bordered list of their own, right below the title. */
 #elastic-api-v3 h2.section-header.responses-header,
 #schema-definition h2.section-header.responses-header {
-	padding-bottom: 0;
+	padding: 0;
 	border-bottom: 0;
+}
+
+.responses-block {
+	margin-top: 32px;
 }
 
 .responses-header.section-header {
@@ -1003,7 +1008,8 @@
 	display: flex;
 	flex-direction: column;
 	gap: 0;
-	margin-top: 16px;
+	/* The same space under the title as between a section's title and its line, measured from the text. */
+	margin-top: 14px;
 	overflow: visible;
 	isolation: isolate;
 	background-color: #fff;
@@ -1555,7 +1561,45 @@ button.response-status-toggle:focus {
 	/* The title and the monospace summary differ in font, so centring their boxes leaves the text a pixel apart. */
 	align-items: baseline;
 	justify-content: flex-start;
-	gap: 12px;
+	/* The title and the toggle carry the card's padding themselves, so no part of the row is dead. */
+	gap: 0;
+	padding: 0;
+}
+
+/* Sections are told apart by space and by size: the heading is a real title, larger than the property names (small bold
+   monospace), and the line under it ties it to its content. The shared h2.section-header rule is id-qualified, so these need
+   to be too. */
+.api-param-section {
+	margin-top: 32px;
+}
+
+:is(#elastic-api-v3, #schema-definition)
+	h2.section-header.api-param-section-header {
+	padding: 0;
+}
+
+:is(#elastic-api-v3, #schema-definition)
+	h2.section-header.api-param-section-header
+	.api-param-section-title,
+:is(#elastic-api-v3, #schema-definition)
+	h2.section-header.responses-header
+	.responses-title {
+	font-size: 20px;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+	line-height: 28px;
+}
+
+.api-param-section.expanded > .api-param-section-body {
+	padding: 4px 0 8px;
+}
+
+#path-params-list > .property-list > .property-item:last-child,
+#query-params-list > .property-list > .property-item:last-child,
+#header-params-list > .property-list > .property-item:last-child,
+.api-param-section-body > .api-privileges > .prerequisite-item:last-child {
+	padding-bottom: 0;
+	border-bottom: 0;
 }
 
 .api-param-section-toggle {
@@ -1565,9 +1609,10 @@ button.response-status-toggle:focus {
 	gap: 8px;
 	flex: 1 1 auto;
 	min-width: 0;
-	height: 24px;
+	box-sizing: border-box;
+	height: 48px;
 	margin: 0;
-	padding: 0;
+	padding: 11px 0 13px 12px;
 	border: 0;
 	background: none;
 	color: inherit;
@@ -1581,8 +1626,10 @@ button.response-status-toggle:focus {
 	display: flex;
 	align-items: center;
 	flex: 0 0 auto;
-	height: 24px;
-	line-height: 24px;
+	box-sizing: border-box;
+	height: 48px;
+	padding: 9px 0 11px;
+	line-height: 28px;
 }
 
 .api-param-chevron {
@@ -1629,12 +1676,24 @@ button.response-status-toggle:focus {
 	font-size: 14px;
 	font-weight: 400;
 	line-height: 24px;
+	/* Optical: the monospace names are smaller than the title and sit low on a shared baseline, so lift them to its centre. */
+	position: relative;
+	top: -1px;
 	--api-param-sep: ', ';
 }
 
-/* The union body reads as alternatives (A | B), not as an object. */
+/* The punctuation says what the names are: { a, b } fields of a JSON object, A | B alternatives, A + B needed together, a, b anything else. */
 .api-param-summary.is-variants {
 	--api-param-sep: ' | ';
+}
+
+.api-param-summary.is-all {
+	--api-param-sep: ' + ';
+}
+
+/* A body with no named fields has an empty summary, which would leave the button without a text baseline and sit it above the title. */
+.api-param-summary::before {
+	content: '\200b';
 }
 
 /* Invisible until the first fit, so it never shows the unfitted wrap. The animation reveals it anyway if the script never runs. */
@@ -1655,7 +1714,8 @@ button.response-status-toggle:focus {
 	flex: 0 1 auto;
 	min-width: 0;
 	height: 24px;
-	overflow: hidden;
+	/* Not hidden: a scroll container's baseline is its bottom edge, which would put the names below the title's baseline. */
+	overflow: clip;
 }
 
 .api-param-summary-brace {
@@ -1680,6 +1740,11 @@ button.response-status-toggle:focus {
 	padding: 0;
 	margin: 0;
 	border-radius: 0;
+}
+
+/* Generated content is not searchable, so Ctrl+F skips the names here and finds the field in the folded body, which opens. */
+.api-param-summary-item::after {
+	content: attr(data-name);
 }
 
 .api-param-summary-item + .api-param-summary-item::before,
@@ -4106,4 +4171,62 @@ html:has(.api-page-shell) {
 		line-height: 24px;
 		text-transform: none;
 	}
+}
+
+/* A body with several content types picks one from a select at the top of its body. A response's summary row shows the type
+   in view as a tag, which the select updates. */
+.content-type-panels {
+	margin-top: 8px;
+}
+
+.content-type-picker {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 4px 0 16px;
+}
+
+.content-type-picker > label {
+	color: var(--color-subdued, #516381);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.content-type-select {
+	box-sizing: border-box;
+	appearance: none;
+	width: auto;
+	max-width: min(100%, 24rem);
+	height: 32px;
+	padding: 0 32px 0 12px;
+	border: 1px solid #798eaf;
+	border-radius: 8px;
+	background-color: #fff;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%235a6d8c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	color: #29395a;
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 13px;
+	font-weight: 400;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.content-type-select:hover {
+	background-color: #f5f7fb;
+}
+
+.content-type-select:focus-visible {
+	outline: var(--outline-size) var(--outline-style) var(--outline-color);
+	outline-offset: var(--outline-offset, var(--outline-size));
+}
+
+.content-type-empty {
+	margin: 0;
+	color: var(--color-subdued, #516381);
+	font-size: 14px;
 }

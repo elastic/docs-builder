@@ -15,7 +15,17 @@ public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
 	Func<string?, HtmlString> RenderMarkdown
-);
+)
+{
+	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
+	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+
+	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
+	public SummaryStyle PrivilegeStyle =>
+		Privileges.Any(static r => r.Join == "or")
+			? SummaryStyle.Variants
+			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
+}
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {

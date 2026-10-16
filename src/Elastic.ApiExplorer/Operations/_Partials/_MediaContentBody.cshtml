@@ -1,0 +1,31 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.MediaContentBodyModel>
+@{
+	var content = Model.Content;
+}
+@if (content.Requires is { } requires)
+{
+	<p class="union-options">@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))</p>
+}
+@if (content.Type is null)
+{
+	<p class="content-type-empty">No schema is declared for this content type.</p>
+}
+else if (content.HasBody)
+{
+	if (content.Properties is not null)
+	{
+		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
+	}
+	if (content.UnionVariants is { Variants.Count: > 0 } unionVariants)
+	{
+		@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
+	}
+}
+else
+{
+	<p>@Model.TypeLabel: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
+	if (content.ArrayItemProperties is not null)
+	{
+		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
+	}
+}

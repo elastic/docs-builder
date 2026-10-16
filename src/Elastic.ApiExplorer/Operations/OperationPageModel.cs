@@ -39,21 +39,21 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames),
+					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List),
 					"path-params-list",
 					PathParameters,
 					"Path parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Query,
-					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames),
+					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames, SummaryStyle.List),
 					"query-params-list",
 					QueryParameters,
 					"Query string parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Header,
-					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames),
+					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames, SummaryStyle.List),
 					"header-params-list",
 					HeaderParameters,
 					"Header parameters"
@@ -61,8 +61,11 @@ public partial record OperationPageModel
 			}.Where(static s => s.Parameters.Items.Count > 0)
 		];
 
-	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
-	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
+	/// <summary>A union body's names are its variants, a JSON body's its fields as an object, and any other body's a plain list.</summary>
+	public SummaryStyle RequestSummaryStyle =>
+		RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 }
+			? SummaryStyle.Variants
+			: PrimaryRequest is { } primary && RequestBodyExample.IsJson(primary.ContentType) ? SummaryStyle.Fields : SummaryStyle.List;
 
 	public IReadOnlyList<string> RequestPropertyNames =>
 		NamesOf(
@@ -73,18 +76,17 @@ public partial record OperationPageModel
 
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
-	public required string RequestContentType { get; init; }
-	public required ApiPropertyList? RequestProperties { get; init; }
 
-	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; listed below <see cref="RequestProperties"/> when it has both.</summary>
-	public ApiUnionVariants? RequestUnionVariants { get; init; }
+	/// <summary>Every content type the request body declares; the first is the one the examples, samples, and field names follow.</summary>
+	public required IReadOnlyList<ApiMediaContent> RequestContents { get; init; }
 
-	/// <summary>Which of the request body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
-	public RequiredAlternatives? RequestRequires { get; init; }
+	/// <summary>The content type the examples, samples, and field names follow.</summary>
+	public ApiMediaContent? PrimaryRequest => RequestContents is [var first, ..] ? first : null;
 
-	/// <summary>Whether the request body lists properties, variants, or both, rather than only its type.</summary>
-	public bool HasRequestBody => RequestProperties is not null || RequestUnionVariants is { Variants.Count: > 0 };
-	public required TypeAnnotation? RequestType { get; init; }
+	public ApiPropertyList? RequestProperties => PrimaryRequest?.Properties;
+
+	public ApiUnionVariants? RequestUnionVariants => PrimaryRequest?.UnionVariants;
+
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }
 	public required IReadOnlyList<ExampleDisplay> RequestExamples { get; init; }
@@ -122,15 +124,15 @@ public partial record OperationPageModel
 			siblings
 		);
 		var privileges = RequiredPrivilegesExtractor.Extract(operation, endpoint.Description, context.ApiExplorerLog, apiOperation.Route);
-		var requestExamples = MapExamples(
-			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
-			options.RenderMarkdown,
-			endpoint: endpoint
-		);
+		var requestContentEntry = PrimaryRequestContent(operation.RequestBody);
+		// Examples may sit on another content type than the schema does, as when the spec lists one only to attach them.
+		var requestExampleSource = requestContentEntry?.Value?.Examples is { Count: > 0 } primaryExamples
+			? primaryExamples
+			: operation.RequestBody?.Content?.Values.Select(static m => m?.Examples).FirstOrDefault(static e => e is { Count: > 0 });
+		var requestExamples = MapExamples(requestExampleSource, options.RenderMarkdown, endpoint: endpoint);
 		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		var parameters = apiOperation.Parameters;
-		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
 		var target = GeneratedCodeSamples.SampleTargetFor(context.Product?.Id);
 		if (codeSamples.Count == 0)
@@ -182,9 +184,7 @@ public partial record OperationPageModel
 			IsRequest = true,
 			DescriptionOverrides = supplemental?.RequestBodyOverrides
 		};
-		var request = requestSchema is not null
-			? ApiBodyContent.Build(requestSchema, requestScope, analyzer, builder)
-			: ApiBodyContent.Empty;
+		var requestContents = BuildMediaContents(operation.RequestBody?.Content, requestScope, analyzer, builder);
 
 		return new OperationPageModel
 		{
@@ -196,13 +196,9 @@ public partial record OperationPageModel
 			PathParameters = pathParameters,
 			QueryParameters = queryParameters,
 			HeaderParameters = headerParameters,
-			RequestContentType = requestContentEntry?.Key ?? "application/json",
-			RequestProperties = request.Properties,
-			RequestUnionVariants = request.UnionVariants,
-			RequestRequires = request.Requires,
+			RequestContents = requestContents,
 			DescriptionMarkdown = privileges.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
-			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
 			Responses = BuildResponses(operation, analyzer, builder),
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,
@@ -214,6 +210,10 @@ public partial record OperationPageModel
 			AuthRequirements = OpenApiAuthSchemeResolver.Resolve(operation, document)
 		};
 	}
+
+	/// <summary>The request content entry with a schema, else the first entry, so a leading example-only entry does not hide the body.</summary>
+	internal static KeyValuePair<string, IOpenApiMediaType>? PrimaryRequestContent(IOpenApiRequestBody? requestBody) =>
+		requestBody?.Content is { Count: > 0 } content ? SchemaFirst(content).First() : null;
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];
 }
