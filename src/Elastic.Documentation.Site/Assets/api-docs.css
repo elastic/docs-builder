@@ -4292,3 +4292,47 @@ html:has(.api-page-shell) {
 		}
 	}
 }
+
+/* Open nodes sit in nested boxes instead of guide lines: the toggle is the box's header, and the innermost open
+   box gets the darker border, so the open path reads from the outlines alone. */
+.property-item::before,
+.property-item::after,
+.nested-properties::before,
+.expand-toggle-row::before,
+.expand-toggle-row::after,
+.union-expand-toggle::before,
+.union-expand-toggle::after {
+	display: none;
+}
+
+.property-item.depth-1,
+.property-item.depth-2,
+.property-item.depth-3,
+.property-item.depth-4 {
+	padding-left: 0.25rem;
+}
+
+.property-item.expanded > .expand-toggle-row,
+.union-variant-item.expanded > .union-expand-toggle {
+	margin: 0.5rem 0 0;
+	padding: 0.375rem 0.5rem 0;
+	border: 1px solid var(--color-grey-20);
+	border-bottom: 0;
+	border-radius: 6px 6px 0 0;
+}
+
+.property-item.expanded > .nested-properties,
+.union-variant-item.expanded > .nested-properties {
+	margin: 0 0 0.25rem;
+	padding: 0.25rem 0.5rem;
+	border: 1px solid var(--color-grey-20);
+	border-top: 0;
+	border-radius: 0 0 6px 6px;
+}
+
+.property-item.expanded:not(:has(.expanded)) > .expand-toggle-row,
+.property-item.expanded:not(:has(.expanded)) > .nested-properties,
+.union-variant-item.expanded:not(:has(.expanded)) > .union-expand-toggle,
+.union-variant-item.expanded:not(:has(.expanded)) > .nested-properties {
+	border-color: var(--color-grey-60);
+}
