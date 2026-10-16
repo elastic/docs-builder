@@ -3379,6 +3379,26 @@
             },
             {
               "role": "flag",
+              "name": "cache-dir",
+              "type": "string",
+              "required": false,
+              "summary": "Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the application data of docs-builder. Anything unused for 30 days is dropped.",
+              "validations": [
+                {
+                  "kind": "rejectSymbolicLinks"
+                }
+              ]
+            },
+            {
+              "role": "flag",
+              "name": "no-cache",
+              "type": "boolean",
+              "required": false,
+              "summary": "Do not read or write the cache of commit ranges.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -7006,6 +7026,29 @@
                   "summary": "Limit the run to these products (repeatable). Every product with release-notes: dra is bundled by default.\nUse it to bundle only the products that have a changelog entry pool, or to try one product.",
                   "repeatable": true,
                   "elementType": "string"
+                },
+                {
+                  "role": "flag",
+                  "name": "strict",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Fail when a product is not onboarded. By default a product without a changelog.yml, a bundle profile,\nor a changelog entry pool is skipped with a warning. A product named with --products always fails.",
+                  "defaultValue": "false"
+                },
+                {
+                  "role": "flag",
+                  "name": "cache-dir",
+                  "type": "string",
+                  "required": false,
+                  "summary": "Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the\napplication data of docs-builder. Anything unused for 30 days is dropped."
+                },
+                {
+                  "role": "flag",
+                  "name": "no-cache",
+                  "type": "boolean",
+                  "required": false,
+                  "summary": "Do not read or write the cache of commit ranges.",
+                  "defaultValue": "false"
                 },
                 {
                   "role": "flag",

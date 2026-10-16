@@ -76,6 +76,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(BundleConfigurationYaml))]
 [YamlSerializable(typeof(BundleProfileYaml))]
 [YamlSerializable(typeof(BundleReleasesYaml))]
+[YamlSerializable(typeof(BundleBackportsYaml))]
 [YamlSerializable(typeof(ExtractConfigurationYaml))]
 [YamlSerializable(typeof(YamlLenientList))]
 // Related learning catalog
