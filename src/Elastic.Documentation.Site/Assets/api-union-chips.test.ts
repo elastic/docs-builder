@@ -138,3 +138,51 @@ describe('union variant chips', () => {
         expect(revealVariantsAround(byId('deep'))).toBe(false)
     })
 })
+
+function contentTypeBody(id: string, types: string[]): string {
+    const options = types
+        .map(
+            (t, i) =>
+                `<option value="${id}-${i}"${i === 0 ? ' selected' : ''}>${t}</option>`
+        )
+        .join('')
+    const panels = types
+        .map(
+            (t, i) =>
+                `<div class="content-type-panel" id="${id}-${i}"${i === 0 ? '' : ' hidden="until-found"'}><p id="${id}-${i}-text">${t} body</p></div>`
+        )
+        .join('')
+    return `
+        <span data-content-type-current="${id}">${types[0]}</span>
+        <select data-content-type-select="${id}">${options}</select>
+        <div class="content-type-panels" id="${id}">${panels}</div>`
+}
+
+describe('content type panels', () => {
+    const picker = (id: string) =>
+        document.querySelector<HTMLSelectElement>(
+            `select[data-content-type-select="${id}"]`
+        )!
+    const tag = (id: string) =>
+        document.querySelector<HTMLElement>(
+            `[data-content-type-current="${id}"]`
+        )!
+
+    beforeEach(() => {
+        document.body.innerHTML =
+            contentTypeBody('req', ['application/zip', 'application/gzip']) +
+            contentTypeBody('res', ['application/json', 'application/yaml'])
+        initUnionChips()
+    })
+
+    it('moves the picker and tag to a panel the browser revealed for a link before the script ran', () => {
+        // The browser unhides the target's panel itself for a fragment, leaving the first panel open as well.
+        byId('req-1').removeAttribute('hidden')
+
+        revealVariantsAround(byId('req-1-text'))
+
+        expect(shown(['req-0', 'req-1'])).toEqual(['req-1'])
+        expect(picker('req').value).toBe('req-1')
+        expect(tag('req').textContent).toBe('application/gzip')
+    })
+})

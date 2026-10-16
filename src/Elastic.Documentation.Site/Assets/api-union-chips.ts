@@ -64,18 +64,25 @@ export function showVariant(container: HTMLElement, variantId: string): void {
     fitChipRow(row, variantChips)
 }
 
+/** The select that picks a content-type panel list's panel, which sits beside the body's heading and not in the list. */
+function contentTypeSelect(container: HTMLElement): HTMLSelectElement | null {
+    if (!container.id) return null
+    return document.querySelector<HTMLSelectElement>(
+        `select[data-content-type-select="${CSS.escape(container.id)}"]`
+    )
+}
+
 /** A body's content types are picked from a select above its panels; it and the content type tag in the header follow the panel shown. */
 function syncContentType(container: HTMLElement, variantId: string) {
-    if (!container.id) return
-    const id = CSS.escape(container.id)
-    const select = document.querySelector<HTMLSelectElement>(
-        `select[data-content-type-select="${id}"]`
-    )
-    if (select) select.value = variantId
-    const label = select?.selectedOptions[0]?.textContent
+    const select = contentTypeSelect(container)
+    if (!select) return
+    select.value = variantId
+    const label = select.selectedOptions[0]?.textContent
     if (!label) return
     document
-        .querySelectorAll<HTMLElement>(`[data-content-type-current="${id}"]`)
+        .querySelectorAll<HTMLElement>(
+            `[data-content-type-current="${CSS.escape(container.id)}"]`
+        )
         .forEach((tag) => (tag.textContent = label))
 }
 
@@ -101,7 +108,11 @@ function keepScrollPosition(container: HTMLElement, scrolled: number) {
 function isShown(panel: HTMLElement, container: HTMLElement): boolean {
     if (panel.hasAttribute('hidden')) return false
     const row = ownRow(container)
-    if (!row) return true
+    if (!row) {
+        // The browser can reveal a panel by itself for a fragment, before init, leaving the first one open too.
+        const select = contentTypeSelect(container)
+        return select ? select.value === panel.id : true
+    }
     const chip = row.querySelector<HTMLElement>(
         `${variantChips.chip}.is-active`
     )
