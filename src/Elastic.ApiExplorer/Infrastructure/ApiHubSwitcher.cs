@@ -9,17 +9,26 @@ namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiHubSwitcher
 {
-	public static IReadOnlyList<ApiContextProduct> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey)
+	/// <summary>The catalog's groups, so the menu and the landing page sort the APIs into the same bands.</summary>
+	public static IReadOnlyList<ApiContextProductGroup> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey)
 	{
 		if (entries.Count == 0 || currentApiKey is null)
 			return [];
 
 		return [
-			.. entries
-				.OrderBy(e => ApiCatalogOrder.Rank(e.Key))
-				.ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
-				.ThenBy(e => e.Key, StringComparer.Ordinal)
-				.Select(e => new ApiContextProduct(e.Title, e.Url, e.Key == currentApiKey, e.IconSvg))
+			.. ApiCatalogViewModel.Group(entries).Select(
+				g => new ApiContextProductGroup(
+					g.Title,
+					[
+						.. g
+							.Entries
+							.OrderBy(e => ApiCatalogOrder.Rank(e.Key))
+							.ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
+							.ThenBy(e => e.Key, StringComparer.Ordinal)
+							.Select(e => new ApiContextProduct(e.Title, e.Url, e.Key == currentApiKey, e.IconSvg))
+					]
+				)
+			)
 		];
 	}
 }
