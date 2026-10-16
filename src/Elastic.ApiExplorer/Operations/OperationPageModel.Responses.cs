@@ -16,10 +16,12 @@ public record ApiMediaContent
 
 	/// <summary>Null when the entry declares no schema, as when the spec lists a content type only to attach examples.</summary>
 	public required TypeAnnotation? Type { get; init; }
+
+	/// <summary>The body's fields; for an array of objects, the fields of each item (see <see cref="IsArray"/>).</summary>
 	public required ApiPropertyList? Properties { get; init; }
 
-	/// <summary>Item properties when the response is an array of objects.</summary>
-	public required ApiPropertyList? ArrayItemProperties { get; init; }
+	/// <summary>Whether the body is an array of objects, so <see cref="Properties"/> lists each item's fields.</summary>
+	public bool IsArray { get; init; }
 
 	/// <summary>Expanded oneOf/anyOf variants when the response body is a union of objects.</summary>
 	public ApiUnionVariants? UnionVariants { get; init; }
@@ -146,48 +148,20 @@ public partial record OperationPageModel
 	{
 		if (schema is null)
 		{
-			return new ApiMediaContent { ContentType = contentType, Type = null, Properties = null, ArrayItemProperties = null };
+			return new ApiMediaContent { ContentType = contentType, Type = null, Properties = null };
 		}
 
 		var body = ApiBodyContent.Build(schema, scope, analyzer, builder);
-		var arrayItemProperties = scope.IsResponse && body is { Properties: null, UnionVariants: null }
-			? BuildArrayItemProperties(schema, scope, analyzer, builder)
-			: null;
 
 		return new ApiMediaContent
 		{
 			ContentType = contentType,
 			Type = builder.Describe(schema),
 			Properties = body.Properties,
-			ArrayItemProperties = arrayItemProperties,
+			IsArray = body.IsArray,
 			UnionVariants = body.UnionVariants,
 			Requires = body.Requires
 		};
-	}
-
-	private static ApiPropertyList? BuildArrayItemProperties(
-		IOpenApiSchema responseSchema,
-		PropertyTreeScope scope,
-		SchemaAnalyzer analyzer,
-		ApiPropertyTreeBuilder builder
-	)
-	{
-		if (!analyzer.GetTypeInfo(responseSchema).IsArray)
-			return null;
-
-		var arrayItemSchema = ResolveArrayItems(responseSchema, analyzer);
-		return arrayItemSchema is null ? null : builder.BuildPropertyList(arrayItemSchema, scope);
-	}
-
-	private static IOpenApiSchema? ResolveArrayItems(IOpenApiSchema schema, SchemaAnalyzer analyzer)
-	{
-		if (schema.Items is not null)
-			return schema.Items;
-
-		// Schema references may need explicit resolution before Items is available
-		if (schema is OpenApiSchemaReference)
-			return analyzer.ResolveSchema(schema)?.Items;
-		return null;
 	}
 }
 

@@ -201,7 +201,7 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants, _) = ApiBodyContent.Build(
+		var (properties, variants, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Composed"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			analyzer,
@@ -211,7 +211,7 @@ public class ApiBodyContentTests
 		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 
-		var (byReference, _, _) = ApiBodyContent.Build(
+		var (byReference, _, _, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Composed", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -247,7 +247,7 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants, _) = ApiBodyContent.Build(
+		var (properties, variants, _, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Declared", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -569,7 +569,7 @@ public class ApiBodyContentTests
 		var analyzer = new SchemaAnalyzer(document);
 		var builder = BuilderFor(document);
 
-		var (_, array, _) = ApiBodyContent.Build(
+		var (_, array, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pets"],
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -581,7 +581,7 @@ public class ApiBodyContentTests
 		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");
 
-		var (_, single, _) = ApiBodyContent.Build(
+		var (_, single, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,

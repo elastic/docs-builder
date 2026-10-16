@@ -12,6 +12,10 @@
 }
 else if (content.HasBody)
 {
+	if (content.IsArray)
+	{
+		<p class="union-options"><span class="values-label">@ApiBodyContent.ArrayItemsLabel</span></p>
+	}
 	if (content.Properties is not null)
 	{
 		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
@@ -24,8 +28,4 @@ else if (content.HasBody)
 else
 {
 	<p>@Model.TypeLabel: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-	if (content.ArrayItemProperties is not null)
-	{
-		@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
-	}
 }
