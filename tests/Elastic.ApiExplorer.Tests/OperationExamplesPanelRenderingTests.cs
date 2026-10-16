@@ -206,6 +206,25 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_RequestDescription_ShowsForAnExternalOnlyExampleWithoutSamples()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "External",
+			TabId = "external",
+			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Posted from a file.</p>"),
+			RequestExternalValue = "https://example.test/request.json"
+		});
+
+		html.Should().Contain("Posted from a file.");
+		html.Should().Contain("https://example.test/request.json");
+		html
+			.IndexOf("Posted from a file.", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+	}
+
+	[Test]
 	public async Task Render_ResponseDescription_IsACaptionUnderTheResponseLabelPerStatus()
 	{
 		var html = await RenderScenario(new ExampleScenario

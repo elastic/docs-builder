@@ -75,16 +75,23 @@
 		}
 	</div>
 }
+@if (samples.Count == 0)
+{
+	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	@if (scenario.RequestDescriptionHtml is { } requestCaptionWithoutSamples)
+	{
+		@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaptionWithoutSamples))
+	}
+}
 @if (scenario.ShowRequest && scenario.RequestJson is not null)
 {
 	var requestSample = new CodeSample("JSON", scenario.RequestJson, "language-json");
 	var requestModel = samples.Count > 0
 		? new ApiCodeSampleModel(requestSample, Title: "Request example")
 		: new ApiCodeSampleModel(requestSample, scenario.HttpMethod, scenario.Route);
-	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
-	@if (samples.Count == 0 && scenario.RequestDescriptionHtml is { } jsonCaption)
+	@if (samples.Count > 0)
 	{
-		@(await RenderPartialAsync<_ExampleCaption, HtmlString>(jsonCaption))
+		<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
 	}
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
