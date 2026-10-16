@@ -70,9 +70,9 @@
 		var collapsible = variant.IsCollapsible;
 		var expanded = Model.UseChips || variant.DefaultExpanded;
 		var folded = variant.UseHidden && !Model.UseChips;
-		// An array variant keeps its "X[]" heading, so its fields read as each item's; a primitive keeps its type, which is
-		// all its panel has to show.
-		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant || !variant.IsObjectType;
+		// An array variant keeps its "X[]" heading, so its fields read as each item's. A primitive's chip already says its
+		// type, so its panel shows nothing more than the description, if any.
+		var showName = !Model.UseChips || variant.PageUrl is { Length: > 0 } || variant.IsArrayVariant;
 		var showLabel = showName || variant.DiscriminatorLabel is { Length: > 0 };
 
 		<div class="union-variant-item @(variant.ShowProperties ? "has-children" : "") @(collapsible ? (expanded ? "expanded" : "collapsed") : "")" id="@variant.AnchorId" hidden="@(Model.UseChips && i > 0 ? "until-found" : null)">
