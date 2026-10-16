@@ -7,7 +7,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 

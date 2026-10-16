@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc.Listing;
 
@@ -48,49 +47,53 @@ public static class ListingFrontMatterReader
 
 		try
 		{
-			var reader = new StringReader(yaml);
-			var parser = new Parser(reader);
-			_ = parser.TryConsume<StreamStart>(out _);
-			_ = parser.TryConsume<DocumentStart>(out _);
-			if (!parser.TryConsume<MappingStart>(out _))
+			var reader = YamlReader.Create(yaml);
+			if (!reader.Read() || reader.TokenType != YamlTokenType.StartMapping)
 				return null;
+			_ = reader.Read(); // consume StartMapping
 
-			while (!parser.TryConsume<MappingEnd>(out _) && !parser.Accept<DocumentEnd>(out _) && !parser.Accept<StreamEnd>(out _))
+			while (reader.TokenType is not YamlTokenType.EndMapping and not YamlTokenType.None)
 			{
-				if (!parser.TryConsume<Scalar>(out var key))
+				if (reader.TokenType != YamlTokenType.Scalar)
 				{
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 					continue;
 				}
 
-				if (key.Value != "listing")
+				var key = reader.ScalarValue;
+				_ = reader.Read();
+
+				if (key != "listing")
 				{
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 					continue;
 				}
 
 				// Found the listing key — value is either a scalar (group name) or a mapping {group: name}
-				if (parser.TryConsume<Scalar>(out var scalar))
-					return string.IsNullOrWhiteSpace(scalar.Value) ? null : scalar.Value;
-
-				if (parser.TryConsume<MappingStart>(out _))
+				if (reader.TokenType == YamlTokenType.Scalar)
 				{
-					while (!parser.TryConsume<MappingEnd>(out _))
+					var scalarValue = reader.ScalarValue;
+					return string.IsNullOrWhiteSpace(scalarValue) ? null : scalarValue;
+				}
+
+				if (reader.TokenType == YamlTokenType.StartMapping)
+				{
+					_ = reader.Read(); // consume StartMapping
+					while (reader.TokenType != YamlTokenType.EndMapping)
 					{
-						if (!parser.TryConsume<Scalar>(out var mapKey))
+						if (reader.TokenType != YamlTokenType.Scalar)
 						{
-							parser.SkipThisAndNestedEvents();
+							reader.Skip();
 							continue;
 						}
-						if (mapKey.Value == "group" && parser.TryConsume<Scalar>(out var groupVal))
-							return string.IsNullOrWhiteSpace(groupVal.Value) ? null : groupVal.Value;
-						parser.SkipThisAndNestedEvents();
+						var mapKey = reader.ScalarValue;
+						_ = reader.Read();
+						if (mapKey == "group" && reader.TokenType == YamlTokenType.Scalar)
+							return string.IsNullOrWhiteSpace(reader.ScalarValue) ? null : reader.ScalarValue;
+						reader.Skip();
 					}
 				}
-				else
-				{
-					parser.SkipThisAndNestedEvents();
-				}
+
 				return null;
 			}
 		}

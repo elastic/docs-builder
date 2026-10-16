@@ -140,7 +140,8 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain($"description: {longReleaseNote}");
+		// Commas trigger SharpYaml's more conservative plain-scalar quoting rules.
+		yamlContent.Should().Contain($"description: \"{longReleaseNote}\"");
 	}
 
 	[Test]

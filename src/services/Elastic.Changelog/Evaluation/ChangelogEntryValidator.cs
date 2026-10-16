@@ -21,7 +21,7 @@ public record EntryFileFinding(string File, FindingSeverity Severity, string Mes
 
 /// <summary>
 /// Pure, stateless rule engine for changelog entry files.
-/// A <see cref="YamlDotNet.Core.YamlException"/> during parse should be converted to a single
+/// A <see cref="SharpYaml.YamlException"/> during parse should be converted to a single
 /// <see cref="EntryFileFinding"/> error by the caller before calling <see cref="Validate"/>.
 /// </summary>
 public static class ChangelogEntryValidator

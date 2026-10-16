@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
@@ -32,7 +33,7 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 {
 	private const string WhatsNewFileName = "hub-whats-new.yml";
 
-	private static readonly ConcurrentDictionary<string, WhatsNewConfig?> CentralConfigCache = new();
+	private static readonly ConcurrentDictionary<string, (WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics)> CentralConfigCache = new();
 
 	public override string Directive => "whats-new";
 
@@ -65,7 +66,8 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.ProductsConfiguration) ?? WhatsNewData.Empty;
+			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
+				?? WhatsNewData.Empty;
 		}
 		catch (YamlException ex)
 		{
@@ -126,83 +128,98 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (!Build.ReadFileSystem.File.Exists(path))
 			return null;
 
-		var config = CentralConfigCache.GetOrAdd(path, p =>
-		{
-			try
-			{
-				var yaml = Build.ReadFileSystem.File.ReadAllText(p);
-				return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
-			}
-			catch
-			{
-				return null;
-			}
-		});
+		// The parse only runs once per path, cached across builds (e.g. --watch). A rebuild that hits
+		// the cache must still see the diagnostics the first build's parse produced, so every call
+		// replays them into the current Build.Collector rather than relying on whichever collector
+		// happened to trigger the parse.
+		var (config, diagnostics) = CentralConfigCache.GetOrAdd(path, ParseCentralConfig);
+		foreach (var diagnostic in diagnostics)
+			Build.Collector.Write(diagnostic);
 
 		if (config?.Products is null)
 			return null;
 		return config.Products.TryGetValue(productKey, out var data) ? data : null;
 	}
 
+	private (WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics) ParseCentralConfig(string path)
+	{
+		var diagnostics = new List<Diagnostic>();
+		try
+		{
+			var yaml = Build.ReadFileSystem.File.ReadAllText(path);
+			var config = YamlSerialization.Deserialize<WhatsNewConfig>(
+				yaml,
+				Build.ProductsConfiguration,
+				new YamlUnmappedMemberReporting(diagnostics.Add, path)
+			);
+			return (config, diagnostics);
+		}
+		catch (YamlException e)
+		{
+			var message = $"Unable to parse {WhatsNewFileName}: {e.Message}{Environment.NewLine}{e}"
+				+ (e.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+			diagnostics.Add(new Diagnostic { Severity = Severity.Error, File = path, Message = message });
+			return (null, diagnostics);
+		}
+	}
+
 	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
 }
 
-[YamlSerializable]
 public record WhatsNewConfig
 {
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public Dictionary<string, WhatsNewData> Products { get; set; } = [];
 }
 
-[YamlSerializable]
 public record WhatsNewData
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 
-	[YamlMember(Alias = "intro")]
+	[YamlPropertyName("intro")]
 	public string? Intro { get; set; }
 
-	[YamlMember(Alias = "release-links")]
+	[YamlPropertyName("release-links")]
 	public LinkCardLink[] ReleaseLinks { get; set; } = [];
 
-	[YamlMember(Alias = "upgrade-link")]
+	[YamlPropertyName("upgrade-link")]
 	public LinkCardLink? UpgradeLink { get; set; }
 
-	[YamlMember(Alias = "items")]
+	[YamlPropertyName("items")]
 	public WhatsNewItem[] Items { get; set; } = [];
 
+	[YamlIgnore]
 	public static WhatsNewData Empty { get; } = new();
 }
 
-[YamlSerializable]
 public record WhatsNewItem
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "link")]
+	[YamlPropertyName("link")]
 	public string? Link { get; set; }
 
 	/// <summary>
 	/// Where the item is available, for example <c>9.5</c> and <c>Serverless</c>. The card shows the
 	/// entries in order. When the list is empty the card falls back to <see cref="Date"/>.
 	/// </summary>
-	[YamlMember(Alias = "availability")]
+	[YamlPropertyName("availability")]
 	public string[] Availability { get; set; } = [];
 
-	[YamlMember(Alias = "date")]
+	[YamlPropertyName("date")]
 	public string? Date { get; set; }
 
-	[YamlMember(Alias = "tag")]
+	[YamlPropertyName("tag")]
 	public string? Tag { get; set; }
 
-	[YamlMember(Alias = "featured")]
+	[YamlPropertyName("featured")]
 	public bool Featured { get; set; }
 }

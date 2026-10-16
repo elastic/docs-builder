@@ -309,7 +309,11 @@ public sealed class NoteAmendReconciler(
 				var yaml = await reader.ReadToEndAsync(ctx);
 
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions(key)
+				)
+					?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 				var entry = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ChangelogBundlingService.ComputeSha1(yaml);
 

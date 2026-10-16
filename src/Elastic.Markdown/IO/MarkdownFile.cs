@@ -442,7 +442,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
 		fm.AppliesTo ??= FallbackAppliesTo;
 
 		if (fm.AppliesTo?.Diagnostics is not null)
@@ -484,18 +484,52 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw) => ReadYamlFrontMatter(raw, Products, Collector, FilePath);
+	private YamlFrontMatter ReadYamlFrontMatter(string raw, int lineOffset) =>
+		ReadYamlFrontMatter(
+			raw,
+			Products,
+			Collector,
+			FilePath,
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterLegacyKeys())
+		);
 
+	// Built fresh per document: each policy closes over a "reported" set that must only suppress a
+	// repeated hint within one document, not across every document the process ever parses.
+	// internal: exercised directly by tests that assert the curator override without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterLegacyKeys()
+	{
+		// `type` and `comment` appear in the frontmatter of pages in the content repositories but are not
+		// supported keys, so they are tolerated as hints for now. TODO: make them errors once the
+		// repositories drop them, see https://github.com/elastic/docs-eng-team/issues/1076.
+		var legacyKeys = YamlUnknownKeyPolicies.ToleratedAsHint("frontmatter", "type", "comment");
+
+		// `curator/docs/reference/ex_reindex.md` has `navigation_tite` (a typo for `navigation_title`).
+		// The previous YAML parser silently dropped unknown keys, so this went unnoticed until unmapped
+		// keys became errors. TODO: remove once https://github.com/elastic/curator/pull/1798 merges.
+		var curatorNavigationTitleTypo = YamlUnknownKeyPolicies.ToleratedAsHintForSource(
+			"curator/docs/reference/ex_reindex.md",
+			"navigation_tite",
+			"'navigation_tite' is a typo for 'navigation_title'; fix pending in https://github.com/elastic/curator/pull/1798."
+		);
+
+		return member => legacyKeys(member) ?? curatorNavigationTitleTypo(member);
+	}
+
+	// reporting is null when the same front matter is only being read for its titles, so unknown keys
+	// are reported once, by the full page parse.
 	private static YamlFrontMatter ReadYamlFrontMatter(
 		string raw,
 		ProductsConfiguration products,
 		IDiagnosticsCollector collector,
-		string filePath
+		string filePath,
+		YamlUnmappedMemberReporting? reporting = null
 	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, products);
+			return reporting is null
+				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
+				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
 		}
 		catch (InvalidProductException e)
 		{

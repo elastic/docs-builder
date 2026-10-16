@@ -6,55 +6,54 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-[YamlSerializable]
 public class YamlFrontMatter
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "navigation_title")]
+	[YamlPropertyName("navigation_title")]
 	public string? NavigationTitle { get; set; }
 
-	[YamlMember(Alias = "meta_title")]
+	[YamlPropertyName("meta_title")]
 	public string? MetaTitle { get; set; }
 
-	[YamlMember(Alias = "sub")]
+	[YamlPropertyName("sub")]
 	public Dictionary<string, string>? Properties { get; set; }
 
-	[YamlMember(Alias = "layout")]
+	[YamlPropertyName("layout")]
 	public MarkdownPageLayout? Layout { get; set; }
 
-	[YamlMember(Alias = "applies_to")]
+	[YamlPropertyName("applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }
 
-	[YamlMember(Alias = "mapped_pages")]
+	[YamlPropertyName("mapped_pages")]
 	public IReadOnlyCollection<string>? MappedPages { get; set; }
 
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public IReadOnlyCollection<Product>? Products { get; set; }
 
-	[YamlMember(Alias = "noindex")]
+	[YamlPropertyName("noindex")]
 	public bool? NoIndex { get; set; }
 
 	/// <summary>
 	/// Selects a right-gutter CTA template declared in the docset's <c>docset.yml</c> <c>cta</c> map.
 	/// Falls back to the built-in <c>trial</c> default when omitted or unknown.
 	/// </summary>
-	[YamlMember(Alias = "cta")]
+	[YamlPropertyName("cta")]
 	public CtaFrontMatter? Cta { get; set; }
 
 	/// <summary>
 	/// Declares which listing group this page belongs to.
 	/// Accepts both shorthand (<c>listing: group-name</c>) and full form (<c>listing: {group: group-name}</c>).
 	/// </summary>
-	[YamlMember(Alias = "listing")]
+	[YamlPropertyName("listing")]
 	public ListingFrontMatter? Listing { get; set; }
 }
 
@@ -62,9 +61,8 @@ public class YamlFrontMatter
 /// Selects a right-gutter CTA template by <see cref="Id"/>. A dedicated type (rather than a bare string)
 /// so future per-page CTA options can be added here without another frontmatter format change.
 /// </summary>
-[YamlSerializable]
 public class CtaFrontMatter
 {
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 }
