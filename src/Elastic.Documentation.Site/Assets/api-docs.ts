@@ -210,9 +210,18 @@ export function revealHiddenAncestors(target: HTMLElement): boolean {
     return revealed
 }
 
+function hashTarget(): HTMLElement | null {
+    let id = window.location.hash.slice(1)
+    try {
+        id = decodeURIComponent(id)
+    } catch {
+        // A malformed escape is looked up as written
+    }
+    return id ? document.getElementById(id) : null
+}
+
 function revealHashTarget(): void {
-    const id = window.location.hash.slice(1)
-    const target = id ? document.getElementById(id) : null
+    const target = hashTarget()
     if (!target) return
     // Not short-circuited: a section can already be open while a tab inside it is not
     const collapsed = revealCollapsedAncestors(target)
@@ -228,31 +237,31 @@ let initialHashFlashDone = false
 
 const flashCleanups = new WeakMap<HTMLElement, () => void>()
 
-function flashLinkedTarget(target: HTMLElement): void {
-    // A flash still running on this target must not clear the new one early
-    flashCleanups.get(target)?.()
-    target.classList.remove(FLASH_CLASS)
+function playFlash(el: HTMLElement): void {
+    // A flash still running on this element must not clear the new one early
+    flashCleanups.get(el)?.()
+    el.classList.remove(FLASH_CLASS)
     // Reflow so a class re-added in the same frame restarts the animation
-    void target.offsetWidth
-    target.classList.add(FLASH_CLASS)
+    void el.offsetWidth
+    el.classList.add(FLASH_CLASS)
     const clear = () => {
         window.clearTimeout(fallback)
-        target.removeEventListener('animationend', clear)
-        target.classList.remove(FLASH_CLASS)
-        flashCleanups.delete(target)
+        el.removeEventListener('animationend', clear)
+        el.classList.remove(FLASH_CLASS)
+        flashCleanups.delete(el)
     }
     const fallback = window.setTimeout(clear, FLASH_FALLBACK_MS)
-    target.addEventListener('animationend', clear)
-    flashCleanups.set(target, clear)
+    el.addEventListener('animationend', clear)
+    flashCleanups.set(el, clear)
 }
 
 /**
- * Waits until the target has stayed on screen for a moment, so a scroll still in flight doesn't
+ * Waits until the element has stayed on screen for a moment, so a scroll still in flight doesn't
  * spend the flash before the reader arrives. Without IntersectionObserver it flashes at once.
  */
-function flashWhenSettled(target: HTMLElement): void {
+function playFlashWhenSettled(el: HTMLElement): void {
     if (typeof IntersectionObserver === 'undefined') {
-        flashLinkedTarget(target)
+        playFlash(el)
         return
     }
     let settle: number | undefined
@@ -260,33 +269,35 @@ function flashWhenSettled(target: HTMLElement): void {
         window.clearTimeout(settle)
         if (!entries[entries.length - 1]?.isIntersecting) return
         settle = window.setTimeout(() => {
-            observer.disconnect()
-            flashLinkedTarget(target)
+            stop()
+            playFlash(el)
         }, FLASH_SETTLE_MS)
     })
-    observer.observe(target)
-    window.setTimeout(() => {
+    const giveUp = window.setTimeout(() => stop(), FLASH_GIVE_UP_MS)
+    function stop() {
         window.clearTimeout(settle)
+        window.clearTimeout(giveUp)
         observer.disconnect()
-    }, FLASH_GIVE_UP_MS)
+    }
+    observer.observe(el)
 }
 
-/** A heading keeps the browser's plain jump; anything else a link points at pulses. */
-function flashLinkTarget(target: HTMLElement): void {
+/**
+ * Pulses what a link points at so the reader can find it. A property row pulses on its name, a
+ * heading keeps the browser's plain jump, and anything else pulses as a whole.
+ */
+function flashTarget(target: HTMLElement): void {
     if (target.matches('h1, h2, h3, h4, h5, h6')) return
-    flashWhenSettled(target)
-}
-
-/** Flashes what the URL fragment points at, so a reader who followed a link to it can find it. */
-function flashHashTarget(): void {
-    const id = decodeURIComponent(window.location.hash.slice(1))
-    const target = id ? document.getElementById(id) : null
-    if (target) flashLinkTarget(target)
+    const name = target.matches('dt')
+        ? target.querySelector<HTMLElement>(':scope > code')
+        : null
+    playFlashWhenSettled(name ?? target)
 }
 
 function onHashChange(): void {
     revealHashTarget()
-    flashHashTarget()
+    const target = hashTarget()
+    if (target) flashTarget(target)
 }
 
 /**
@@ -413,7 +424,7 @@ function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
     revealHiddenAncestors(target)
     target.scrollIntoView({ behavior: 'smooth' })
     if (window.location.hash !== href) history.pushState(null, '', href)
-    flashLinkTarget(target)
+    flashTarget(target)
 }
 
 /**
@@ -702,6 +713,7 @@ export function initApiDocs(): void {
     // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
     if (!initialHashFlashDone) {
         initialHashFlashDone = true
-        flashHashTarget()
+        const target = hashTarget()
+        if (target) flashTarget(target)
     }
 }
