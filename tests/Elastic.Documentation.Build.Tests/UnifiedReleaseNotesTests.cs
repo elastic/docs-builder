@@ -262,6 +262,43 @@ public class UnifiedReleaseNotesTests : IDisposable
 	}
 
 	[Test]
+	public async Task Build_MultipleBundleVersionsSuppliedOutOfOrder_EachVersionPageHasOnlyItsOwnEntriesAndNavigationIsNewestFirst()
+	{
+		// Written oldest-first, and with the 'v' prefix a release tag actually has, to prove that
+		// neither enumeration order nor the target/filename version mismatch affects the result.
+		_ = WriteBundle("elasticsearch", "elasticsearch-elasticsearch-v9.5.0.yaml", "v9.5.0", "Elasticsearch 9.5.0 change");
+		_ = WriteBundle("elasticsearch", "elasticsearch-elasticsearch-v9.6.0.yaml", "v9.6.0", "Elasticsearch 9.6.0 change");
+		var collector = new DiagnosticsCollector([]);
+
+		var succeeded = await Service().Build(collector, Options("v9.5.0", "v9.6.0"), TestContext.Current!.Execution.CancellationToken);
+
+		succeeded.Should().BeTrue();
+		collector
+			.Warnings
+			.Should()
+			.Be(0, "each version page's :version: filter should match its own bundle despite the bundle target's 'v' prefix");
+
+		var output = _fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch");
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(output, "9.5.0", "index.html"))
+			.Should()
+			.Contain("Elasticsearch 9.5.0 change")
+			.And
+			.NotContain("Elasticsearch 9.6.0 change");
+		_fileSystem
+			.File
+			.ReadAllText(_fileSystem.Path.Join(output, "9.6.0", "index.html"))
+			.Should()
+			.Contain("Elasticsearch 9.6.0 change")
+			.And
+			.NotContain("Elasticsearch 9.5.0 change");
+
+		var index = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(output, "index.html"));
+		index.IndexOf("9.6.0", StringComparison.Ordinal).Should().BeLessThan(index.IndexOf("9.5.0", StringComparison.Ordinal));
+	}
+
+	[Test]
 	public async Task Build_ExpectedVersionMissingForAProduct_StillBuilds()
 	{
 		// A product that did not change in a release has no bundle for it.
