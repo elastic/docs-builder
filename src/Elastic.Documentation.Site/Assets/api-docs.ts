@@ -220,6 +220,63 @@ function revealHashTarget(): void {
     if (collapsed || hidden) target.scrollIntoView()
 }
 
+const FLASH_CLASS = 'api-link-target-flash'
+const FLASH_FALLBACK_MS = 3200
+const FLASH_SETTLE_MS = 200
+const FLASH_GIVE_UP_MS = 10000
+let initialHashFlashDone = false
+
+function flashLinkedTarget(target: HTMLElement): void {
+    target.classList.remove(FLASH_CLASS)
+    // Reflow so a class re-added in the same frame restarts the animation
+    void target.offsetWidth
+    target.classList.add(FLASH_CLASS)
+    const clear = () => target.classList.remove(FLASH_CLASS)
+    target.addEventListener('animationend', clear, { once: true })
+    window.setTimeout(clear, FLASH_FALLBACK_MS)
+}
+
+/**
+ * Waits until the target has stayed on screen for a moment, so a scroll still in flight doesn't
+ * spend the flash before the reader arrives. Without IntersectionObserver it flashes at once.
+ */
+function flashWhenSettled(target: HTMLElement): void {
+    if (typeof IntersectionObserver === 'undefined') {
+        flashLinkedTarget(target)
+        return
+    }
+    let settle: number | undefined
+    const observer = new IntersectionObserver((entries) => {
+        window.clearTimeout(settle)
+        if (!entries[entries.length - 1]?.isIntersecting) return
+        settle = window.setTimeout(() => {
+            observer.disconnect()
+            flashLinkedTarget(target)
+        }, FLASH_SETTLE_MS)
+    })
+    observer.observe(target)
+    window.setTimeout(() => {
+        window.clearTimeout(settle)
+        observer.disconnect()
+    }, FLASH_GIVE_UP_MS)
+}
+
+/**
+ * Flashes the target of the URL fragment, once, when the reader opened the page with it (a shared
+ * link). A reload counts as opening it again; back/forward, in-page links and htmx swaps stay quiet.
+ */
+function flashInitialHashTarget(): void {
+    if (initialHashFlashDone) return
+    initialHashFlashDone = true
+    const navigation = performance.getEntriesByType?.('navigation')[0] as
+        PerformanceNavigationTiming | undefined
+    if (navigation?.type === 'back_forward') return
+    const id = decodeURIComponent(window.location.hash.slice(1))
+    const target = id ? document.getElementById(id) : null
+    if (!target) return
+    flashWhenSettled(target)
+}
+
 /**
  * Initialize API docs for OperationView pages
  */
@@ -629,4 +686,5 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
+    flashInitialHashTarget()
 }
