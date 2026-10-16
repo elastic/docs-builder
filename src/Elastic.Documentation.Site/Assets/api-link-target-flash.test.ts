@@ -1,5 +1,5 @@
 function markup(): string {
-    return `<section id="elastic-api-v3"><dl><dt id="prop">rule</dt></dl></section>`
+    return `<section id="elastic-api-v3"><dl><dt id="prop">rule</dt></dl><h2 id="heading">Query parameters</h2></section>`
 }
 
 const observers: {
@@ -63,6 +63,16 @@ describe('flash of the linked target', () => {
     it('stays quiet on back/forward', async () => {
         ;(await open('back_forward', '#prop')).initApiDocs()
         expect(prop().classList.contains('api-link-target-flash')).toBe(false)
+    })
+
+    it('stays quiet when the fragment points at a heading', async () => {
+        ;(await open('navigate', '#heading')).initApiDocs()
+        scrollIntoView()
+        expect(
+            document
+                .getElementById('heading')!
+                .classList.contains('api-link-target-flash')
+        ).toBe(false)
     })
 
     it('stays quiet without a fragment', async () => {

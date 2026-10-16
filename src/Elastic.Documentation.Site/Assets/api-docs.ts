@@ -273,7 +273,7 @@ function flashInitialHashTarget(): void {
     if (navigation?.type === 'back_forward') return
     const id = decodeURIComponent(window.location.hash.slice(1))
     const target = id ? document.getElementById(id) : null
-    if (!target) return
+    if (!target || target.matches('h1, h2, h3, h4, h5, h6')) return
     flashWhenSettled(target)
 }
 
