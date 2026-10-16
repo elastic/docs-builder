@@ -102,7 +102,7 @@ public partial class ApiPropertyTreeBuilder
 	/// The variant's properties plus a <c>&lt;string&gt;</c> key row for its map values, the way a plain dictionary property
 	/// lists them. A pure map has no properties, so it shows the key row alone.
 	/// </summary>
-	private static OpenApiSchema WithDictionaryKeyRow(
+	internal static OpenApiSchema WithDictionaryKeyRow(
 		IOpenApiSchema schema,
 		IDictionary<string, IOpenApiSchema>? properties,
 		IOpenApiSchema value
