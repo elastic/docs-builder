@@ -103,18 +103,25 @@ public class UnifiedReleaseNotesTests : IDisposable
 		);
 	}
 
+	private static IReadOnlyDictionary<string, string> GenerateFiles() =>
+		UnifiedReleaseNotesDocset.Generate([
+			.. UnifiedReleaseNotesDocset.SelectProducts(Products).Select(p => new ProductVersions(p, ["9.6.0", "9.5.6"]))
+		]);
+
 	[Test]
 	public void SelectProducts_MixedReleaseNotesPaths_KeepsOnlyDraProductsInIdOrder() =>
 		UnifiedReleaseNotesDocset.SelectProducts(Products).Select(p => p.Id).Should().Equal("elasticsearch", "kibana");
 
 	[Test]
-	public void Generate_DraProducts_CreatesFourPagesAndTocPerProduct()
+	public void Generate_DraProducts_CreatesAPagePerVersionAndTheSharedPagesAndTocPerProduct()
 	{
-		var files = UnifiedReleaseNotesDocset.Generate(UnifiedReleaseNotesDocset.SelectProducts(Products));
+		var files = GenerateFiles();
 
 		foreach (var product in new[] { "elasticsearch", "kibana" })
 		{
 			files.Should().ContainKey($"release-notes/{product}/index.md");
+			files.Should().ContainKey($"release-notes/{product}/9.6.0.md");
+			files.Should().ContainKey($"release-notes/{product}/9.5.6.md");
 			files.Should().ContainKey($"release-notes/{product}/known-issues.md");
 			files.Should().ContainKey($"release-notes/{product}/breaking-changes.md");
 			files.Should().ContainKey($"release-notes/{product}/deprecations.md");
@@ -127,7 +134,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 	[Test]
 	public void Generate_Docset_DeclaresTheTocWithProductsInOrder()
 	{
-		var files = UnifiedReleaseNotesDocset.Generate(UnifiedReleaseNotesDocset.SelectProducts(Products));
+		var files = GenerateFiles();
 
 		files["docset.yml"]
 			.Should()
@@ -140,21 +147,49 @@ public class UnifiedReleaseNotesTests : IDisposable
 	[Test]
 	public void Generate_ProductPages_PointTheChangelogDirectiveAtTheProductBundles()
 	{
-		var files = UnifiedReleaseNotesDocset.Generate(UnifiedReleaseNotesDocset.SelectProducts(Products));
+		var files = GenerateFiles();
 
 		files["release-notes/elasticsearch/index.md"].Should().Contain("# Elasticsearch release notes");
-		files["release-notes/elasticsearch/index.md"]
+		files["release-notes/elasticsearch/index.md"].Should().Contain("- [9.6.0](9.6.0.md)\n- [9.5.6](9.5.6.md)");
+		files["release-notes/elasticsearch/9.6.0.md"]
 			.Should()
-			.Contain(":::{changelog} /changelog/bundles/elasticsearch\n:highlights:\n:::");
+			.Contain(":::{changelog} /changelog/bundles/elasticsearch\n:version: 9.6.0\n:highlights:\n:subsections:\n:::");
+		files["release-notes/elasticsearch/9.6.0.md"].Should().Contain("# Elasticsearch 9.6.0");
 		files["release-notes/kibana/breaking-changes.md"].Should().Contain(":type: breaking-change\n:dropdowns:");
 		files["release-notes/kibana/known-issues.md"].Should().Contain(":type: known-issue");
 		files["release-notes/kibana/deprecations.md"].Should().Contain(":type: deprecation");
 	}
 
 	[Test]
+	public void Generate_ProductPages_AreNamedInTheNavigationAfterTheProductAndTheVersion()
+	{
+		var files = GenerateFiles();
+
+		files["release-notes/kibana/9.6.0.md"].Should().Contain("navigation_title: 9.6.0\n");
+		files["release-notes/kibana/toc.yml"]
+			.Should()
+			.Be(
+				"toc:\n  - file: index.md\n  - file: 9.6.0.md\n  - file: 9.5.6.md\n  - file: known-issues.md\n  - file: breaking-changes.md\n  - file: deprecations.md\n"
+			);
+
+		files["release-notes/kibana/index.md"].Should().Contain("navigation_title: Kibana\n");
+		files["release-notes/kibana/known-issues.md"].Should().Contain("navigation_title: Known issues\n");
+		files["release-notes/index.md"].Should().Contain("navigation_title: Release notes\n");
+	}
+
+	[Test]
+	public void Generate_EveryPage_WarnsThatTheVersionsAreUnreleased()
+	{
+		var files = GenerateFiles();
+
+		foreach (var (path, content) in files.Where(f => f.Key.EndsWith(".md", StringComparison.Ordinal)))
+			content.Should().Contain(":::{warning}\nThis is a preview of an unreleased version.", $"{path} shows unreleased versions");
+	}
+
+	[Test]
 	public void Generate_RootIndex_LinksEveryProductByDisplayName()
 	{
-		var files = UnifiedReleaseNotesDocset.Generate(UnifiedReleaseNotesDocset.SelectProducts(Products));
+		var files = GenerateFiles();
 
 		files["release-notes/index.md"].Should().Contain("- [Elasticsearch](elasticsearch/index.md)");
 		files["release-notes/index.md"].Should().Contain("- [Kibana](kibana/index.md)");
@@ -182,9 +217,18 @@ public class UnifiedReleaseNotesTests : IDisposable
 			.BeTrue();
 		_fileSystem
 			.File
+			.ReadAllText(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "9.5.0", "index.html"))
+			.Should()
+			.Contain("Elasticsearch unified change")
+			.And
+			.Contain("This is a preview of an unreleased version");
+		_fileSystem
+			.File
 			.ReadAllText(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "index.html"))
 			.Should()
-			.Contain("Elasticsearch unified change");
+			.Contain("9.5.0")
+			.And
+			.NotContain("Elasticsearch unified change");
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "release-notes", "auditbeat")).Should().BeFalse();
 	}
 
@@ -289,7 +333,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		succeeded.Should().BeTrue();
 		var html = _fileSystem.File.ReadAllText(
-			_fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch", "index.html")
+			_fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch", "9.5.0", "index.html")
 		);
 		html.Should().Contain("Original change");
 		html.Should().Contain("Change added by the amend");

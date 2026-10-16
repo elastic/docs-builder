@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Isolated;
@@ -53,7 +54,10 @@ public class UnifiedReleaseNotesBuildService(
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<UnifiedReleaseNotesBuildService>();
 
-	private sealed record ProductBundles(Product Product, IReadOnlyList<(string FileName, string Content)> Files);
+	private sealed record ProductBundles(ProductVersions Versions, IReadOnlyList<(string FileName, string Content)> Files)
+	{
+		public Product Product => Versions.Product;
+	}
 
 	public async Task<bool> Build(IDiagnosticsCollector collector, UnifiedReleaseNotesBuildOptions options, Cancel ctx = default)
 	{
@@ -78,7 +82,7 @@ public class UnifiedReleaseNotesBuildService(
 		products = [.. bundles.Select(b => b.Product)];
 
 		var docsRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "unified-release-notes", "docs");
-		var mockFs = CreateVirtualDocset(docsRoot, products, bundles);
+		var mockFs = CreateVirtualDocset(docsRoot, bundles);
 		PrepareOutput(realFs, options.Output.FullName);
 
 		var docFs = DocumentationFileSystem.Resolve(
@@ -155,7 +159,9 @@ public class UnifiedReleaseNotesBuildService(
 				.Order(StringComparer.Ordinal)
 				.Select(file => (FileName: realFs.Path.GetFileName(file), Content: realFs.File.ReadAllText(file)))
 				.ToArray();
-			result.Add(new ProductBundles(product, files));
+			result.Add(
+				new ProductBundles(new ProductVersions(product, NewestFirst(loaded.Select(b => NormalizeVersion(b.Version)))), files)
+			);
 		}
 
 		return result;
@@ -169,22 +175,21 @@ public class UnifiedReleaseNotesBuildService(
 
 	private static string NormalizeVersion(string version) => version.TrimStart('v');
 
-	private static MockFileSystem CreateVirtualDocset(
-		string docsRoot,
-		IReadOnlyList<Product> products,
-		IReadOnlyList<ProductBundles> bundles
-	)
+	private static IReadOnlyList<string> NewestFirst(IEnumerable<string> versions) =>
+		[.. versions.Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(VersionOrDate.Parse)];
+
+	private static MockFileSystem CreateVirtualDocset(string docsRoot, IReadOnlyList<ProductBundles> bundles)
 	{
 		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = docsRoot, CreateDefaultTempDir = false });
 
-		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate(products))
+		foreach (var (relativePath, content) in UnifiedReleaseNotesDocset.Generate([.. bundles.Select(b => b.Versions)]))
 			mockFs.AddFile(mockFs.Path.Join(docsRoot, relativePath), new MockFileData(content));
 
-		foreach (var (product, files) in bundles)
+		foreach (var (productVersions, files) in bundles)
 		{
 			foreach (var (fileName, content) in files)
 			{
-				var path = mockFs.Path.Join(docsRoot, UnifiedReleaseNotesDocset.BundlesPath(product.Id), fileName);
+				var path = mockFs.Path.Join(docsRoot, UnifiedReleaseNotesDocset.BundlesPath(productVersions.Product.Id), fileName);
 				mockFs.AddFile(path, new MockFileData(content));
 			}
 		}
