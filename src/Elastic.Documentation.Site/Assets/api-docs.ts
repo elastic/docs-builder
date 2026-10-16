@@ -190,7 +190,7 @@ function initParamSummaries(): void {
 
     if (!paramHashListenerBound) {
         paramHashListenerBound = true
-        window.addEventListener('hashchange', revealHashTarget)
+        window.addEventListener('hashchange', onHashChange)
     }
 }
 
@@ -210,14 +210,94 @@ export function revealHiddenAncestors(target: HTMLElement): boolean {
     return revealed
 }
 
+function hashTarget(): HTMLElement | null {
+    let id = window.location.hash.slice(1)
+    try {
+        id = decodeURIComponent(id)
+    } catch {
+        // A malformed escape is looked up as written
+    }
+    return id ? document.getElementById(id) : null
+}
+
 function revealHashTarget(): void {
-    const id = window.location.hash.slice(1)
-    const target = id ? document.getElementById(id) : null
+    const target = hashTarget()
     if (!target) return
     // Not short-circuited: a section can already be open while a tab inside it is not
     const collapsed = revealCollapsedAncestors(target)
     const hidden = revealHiddenAncestors(target)
     if (collapsed || hidden) target.scrollIntoView()
+}
+
+const FLASH_CLASS = 'api-link-target-flash'
+const FLASH_FALLBACK_MS = 3200
+const FLASH_SETTLE_MS = 200
+const FLASH_GIVE_UP_MS = 10000
+let initialHashFlashDone = false
+
+const flashCleanups = new WeakMap<HTMLElement, () => void>()
+
+function playFlash(el: HTMLElement): void {
+    // A flash still running on this element must not clear the new one early
+    flashCleanups.get(el)?.()
+    el.classList.remove(FLASH_CLASS)
+    // Reflow so a class re-added in the same frame restarts the animation
+    void el.offsetWidth
+    el.classList.add(FLASH_CLASS)
+    const clear = () => {
+        window.clearTimeout(fallback)
+        el.removeEventListener('animationend', clear)
+        el.classList.remove(FLASH_CLASS)
+        flashCleanups.delete(el)
+    }
+    const fallback = window.setTimeout(clear, FLASH_FALLBACK_MS)
+    el.addEventListener('animationend', clear)
+    flashCleanups.set(el, clear)
+}
+
+/**
+ * Waits until the element has stayed on screen for a moment, so a scroll still in flight doesn't
+ * spend the flash before the reader arrives. Without IntersectionObserver it flashes at once.
+ */
+function playFlashWhenSettled(el: HTMLElement): void {
+    if (typeof IntersectionObserver === 'undefined') {
+        playFlash(el)
+        return
+    }
+    let settle: number | undefined
+    const observer = new IntersectionObserver((entries) => {
+        window.clearTimeout(settle)
+        if (!entries[entries.length - 1]?.isIntersecting) return
+        settle = window.setTimeout(() => {
+            stop()
+            playFlash(el)
+        }, FLASH_SETTLE_MS)
+    })
+    const giveUp = window.setTimeout(() => stop(), FLASH_GIVE_UP_MS)
+    function stop() {
+        window.clearTimeout(settle)
+        window.clearTimeout(giveUp)
+        observer.disconnect()
+    }
+    observer.observe(el)
+}
+
+/**
+ * Pulses what a link points at so the reader can find it. A property row pulses on its name, a
+ * heading keeps the browser's plain jump, and anything else pulses as a whole.
+ */
+function flashTarget(target: HTMLElement): void {
+    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    const name = target.matches('dt')
+        ? target.querySelector<HTMLElement>(':scope > code')
+        : null
+    playFlashWhenSettled(name ?? target)
+}
+
+function onHashChange(): void {
+    revealHashTarget()
+    const target = hashTarget()
+    if (target) flashTarget(target)
 }
 
 /**
@@ -344,6 +424,7 @@ function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
     revealHiddenAncestors(target)
     target.scrollIntoView({ behavior: 'smooth' })
     if (window.location.hash !== href) history.pushState(null, '', href)
+    flashTarget(target)
 }
 
 /**
@@ -629,4 +710,10 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
+    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
+    if (!initialHashFlashDone) {
+        initialHashFlashDone = true
+        const target = hashTarget()
+        if (target) flashTarget(target)
+    }
 }

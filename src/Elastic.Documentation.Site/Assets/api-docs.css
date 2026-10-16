@@ -4223,3 +4223,50 @@ html:has(.api-page-shell) {
 	color: var(--color-subdued, #516381);
 	font-size: 14px;
 }
+
+/* Marks what a link points at: one soft pulse. A property row pulses on its name; the padding with a
+   matching negative margin gives the tint room around the text without moving anything. */
+.api-link-target-flash {
+	--api-link-flash-tint: color-mix(
+		in srgb,
+		var(--color-yellow-40, #facb3d) 40%,
+		transparent
+	);
+	animation: api-link-target-flash 2.4s ease-in-out;
+}
+
+.property-list dt > code.api-link-target-flash {
+	padding: 2px 6px;
+	margin: -2px -6px;
+}
+
+/* Quick attack, short hold, long release: the eye catches the onset, then the fade lets it settle */
+@keyframes api-link-target-flash {
+	0% {
+		background-color: transparent;
+		animation-timing-function: ease-out;
+	}
+	8%,
+	38% {
+		background-color: var(--api-link-flash-tint);
+		animation-timing-function: ease-in;
+	}
+	100% {
+		background-color: transparent;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.api-link-target-flash {
+		animation-name: api-link-target-fade;
+	}
+
+	@keyframes api-link-target-fade {
+		0% {
+			background-color: var(--api-link-flash-tint);
+		}
+		100% {
+			background-color: transparent;
+		}
+	}
+}
