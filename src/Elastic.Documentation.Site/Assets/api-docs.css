@@ -4319,6 +4319,11 @@ html:has(.api-page-shell) {
 	&::after {
 		display: none;
 	}
+
+	/* With no toggle below it, the link reads as part of the description. */
+	&:not(:has(+ .expand-toggle-row)) {
+		padding-left: 0;
+	}
 }
 
 .property-item > .expand-toggle-row,
