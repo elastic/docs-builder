@@ -334,43 +334,30 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		if (schemas is null || schemas.Count == 0)
 			return;
 
-		var typesCategory = new SchemaCategory("Types", "Shared type definitions");
-		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
-		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+		var present = TypePages.All.Where(p => schemas.ContainsKey(p.SchemaId)).ToArray();
+		if (present.Length == 0)
+			return;
 
-		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
-		foreach (var category in TypePages.All.GroupBy(static p => p.Category))
-		{
-			var present = category.Where(p => schemas.ContainsKey(p.SchemaId)).ToArray();
-			if (present.Length == 0)
-				continue;
-
-			var categoryNav = new SchemaCategoryNavigationItem(
-				new SchemaCategory(category.Key.Title, category.Key.Description),
-				rootNavigation,
-				typesCategoryNav
-			);
-			categoryNav.NavigationItems =
-			[
-				.. present.Select(
-					page => new SchemaNavigationItem(
-						context.UrlPathPrefix,
-						apiUrlSuffix,
-						new ApiSchema(page.SchemaId, page.Title, category.Key.Slug, schemas[page.SchemaId]),
-						rootNavigation,
-						categoryNav
-					)
+		var group = new SchemaCategoryNavigationItem(
+			new SchemaCategory(TypePages.GroupTitle, "Types documented on a page of their own"),
+			rootNavigation,
+			rootNavigation
+		);
+		group.NavigationItems =
+		[
+			.. present.Select(
+				page => new SchemaNavigationItem(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					new ApiSchema(page.SchemaId, page.Title, schemas[page.SchemaId]),
+					rootNavigation,
+					group
 				)
-			];
-			categoryNavigationItems.Add(categoryNav);
-		}
-
-		if (categoryNavigationItems.Count > 0)
-		{
-			typesCategoryNav.NavigationItems = categoryNavigationItems;
-			topLevelNavigationItems.Add(typesCategoryNav);
-		}
+			)
+		];
+		topLevelNavigationItems.Add(group);
 	}
+
 	private string ResolveTagClassification(string? tag, XTagGroups? xTagGroups, HashSet<string> orphanTagsLogged)
 	{
 		if (xTagGroups is null)

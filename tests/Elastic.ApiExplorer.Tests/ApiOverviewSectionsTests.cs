@@ -41,7 +41,7 @@ public class ApiOverviewSectionsTests
 	public void Sections_SchemasUnderACategory_AreGroupedUnderIt()
 	{
 		var sections = ApiOverviewBuilder.Sections([
-			Row(OverviewRowKind.SchemaCategoryHeading, "Types"),
+			Row(OverviewRowKind.SchemaCategoryHeading, "Reference types"),
 			Row(OverviewRowKind.Schema, "A"),
 			Row(OverviewRowKind.Schema, "B")
 		]);
