@@ -47,7 +47,8 @@ jobs:
         uses: actions/deploy-pages@v5.0.0
 
   build:
-    runs-on: ubuntu-latest
+    # Native AOT links against the host glibc; keep in sync with the noble-chiseled base image (build/Targets.fs).
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
