@@ -21,13 +21,13 @@ public class ApiBreadcrumbsRenderingTests
 	[Test]
 	public async Task Render_ParentsAreLinks_AndCurrentPageIsAbsent()
 	{
-		var html = await Render([Crumb("/api/", "APIs"), Crumb("/api/es/", "[cmd]search")], BuildType.Assembler);
+		var html = await Render([Crumb("/api/", "API"), Crumb("/api/es/", "[cmd]search")], BuildType.Assembler);
 
 		html.Should().Contain("id=\"breadcrumbs\"");
 		html.Should().Contain("href=\"/api/\"");
 		html.Should().Contain("hx-disable=true");
 		html.Should().Contain("href=\"/api/es/\"");
-		html.Should().Contain(">APIs<");
+		html.Should().Contain(">API<");
 		html.Should().Contain(">search<");
 		html.Should().NotContain("[cmd]");
 		html.Should().NotContain("aria-current");
@@ -37,7 +37,7 @@ public class ApiBreadcrumbsRenderingTests
 	[Test]
 	public async Task Render_IsolatedSingleParent_IsHidden()
 	{
-		var html = await Render([Crumb("/api/", "APIs")], BuildType.Isolated);
+		var html = await Render([Crumb("/api/", "API")], BuildType.Isolated);
 
 		html.Should().NotContain("id=\"breadcrumbs\"");
 	}
@@ -46,7 +46,7 @@ public class ApiBreadcrumbsRenderingTests
 	public async Task Render_IsolatedSingleParent_IsShownWhenRequested()
 	{
 		var html = await _Breadcrumbs.Create(
-			new BreadcrumbsView([Crumb("/api/", "APIs")], BuildType.Isolated, ShowSingle: true)
+			new BreadcrumbsView([Crumb("/api/", "API")], BuildType.Isolated, ShowSingle: true)
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("id=\"breadcrumbs\"");
@@ -56,7 +56,7 @@ public class ApiBreadcrumbsRenderingTests
 	[Test]
 	public async Task Render_AssemblerSingleParent_IsShown()
 	{
-		var html = await Render([Crumb("/api/", "APIs")], BuildType.Assembler);
+		var html = await Render([Crumb("/api/", "API")], BuildType.Assembler);
 
 		html.Should().Contain("href=\"/api/\"");
 	}

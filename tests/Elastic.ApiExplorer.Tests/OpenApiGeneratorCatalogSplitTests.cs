@@ -138,7 +138,7 @@ public class OpenApiGeneratorCatalogSplitTests
 		var catalogPath = Path.Join(outputRoot, "api", "index.html");
 		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
-		html.Should().Contain("<h1>Elastic APIs</h1>");
+		html.Should().Contain("<h1>Elastic API</h1>");
 		html.Should().Contain(
 			"<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-card api-catalog-card "
 		);
@@ -225,16 +225,16 @@ public class OpenApiGeneratorCatalogSplitTests
 		var catalogHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
 		productHtml.Should().Contain("<h1>Elasticsearch main</h1>");
-		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">All APIs<");
+		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">Elastic API<");
 		productHtml.Should().Contain(">Elasticsearch main</span>");
-		productHtml.Should().Contain(">APIs<");
+		productHtml.Should().Contain(">API<");
 		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping\"");
 		productHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/operation/operation-ping/\"");
 		productHtml.Should().NotContain("href=\"/docs/api/\"");
 		catalogHtml.Should().Contain("<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby");
 		catalogHtml.Should().NotContain("href=\"/docs/api/doc/elasticsearch/\"");
 		catalogHtml.Should().NotContain("id=\"api-hub-switcher\"");
-		catalogHtml.Should().Contain("<h1>Elastic APIs</h1>");
+		catalogHtml.Should().Contain("<h1>Elastic API</h1>");
 		catalogHtml.Should().Contain("api-card api-catalog-card");
 		catalogHtml.Should().NotContain("listing-group-chips");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch.md")).Should().BeTrue();
@@ -265,7 +265,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		var productHtml = context.WriteFileSystem.File.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"));
 		productHtml.Should().Contain("id=\"api-hub-switcher\"");
-		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">All APIs<");
+		productHtml.Should().Contain("href=\"/docs/api\"").And.Contain(">Elastic API<");
 		productHtml.Should().Contain("secondary-nav-dropdown-link--selected");
 		productHtml.Should().Contain("href=\"/docs/api/doc/elasticsearch\"");
 		productHtml.Should().Contain("href=\"/docs/api/doc/kibana\"").And.Contain(">Kibana</span>");
@@ -376,7 +376,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
 		html.Should().NotContain("<ul class=\"api-catalog-featured ", "Kibana is missing, so there is no featured pair");
 		html.Should().Contain("lg:grid-cols-3");
-		html.Should().NotContain("Other APIs");
+		html.Should().NotContain("Other API");
 		html.Split("href=\"/docs/api/doc/elasticsearch\"").Length.Should().Be(2, "an API shows once, however many deployments it declares");
 		html
 			.IndexOf("Cloud Connect", StringComparison.Ordinal)

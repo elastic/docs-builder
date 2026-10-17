@@ -28,7 +28,7 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		layout.Title.Should().Be("Run a search | Fixture API");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
-		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "API");
 		layout.Breadcrumbs[1].Url.Should().Be("/api");
 		layout.Breadcrumbs.Should().Contain(b => b.NavigationTitle == "Fixture API");
 		layout.Breadcrumbs.Should().NotContain(b => b.NavigationTitle == "Api Overview");

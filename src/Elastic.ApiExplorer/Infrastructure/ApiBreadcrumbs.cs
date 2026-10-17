@@ -11,7 +11,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 public static class ApiBreadcrumbs
 {
 	public const string DocsLabel = "Docs";
-	public const string CatalogLabel = "APIs";
+	public const string CatalogLabel = "API";
 
 	/// <summary>The trail starts at Docs, like the docs pages do. The API tree has no site root of its own, so the crumb is added here.</summary>
 	public static INavigationItem[] Build(INavigationItem current, string docsUrl, string catalogUrl, string specName, bool onCatalog)
