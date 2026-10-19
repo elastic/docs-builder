@@ -30,7 +30,8 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false
+	bool AirGapped = false,
+	string? WafIntegrationUrl = null
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
@@ -187,7 +188,15 @@ public record GlobalLayoutViewModel
 	{
 		BuildType.Assembler when Features.AirGappedEnabled =>
 			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Assembler =>
+			new FrontendConfig(
+				"assembler",
+				"docs-frontend",
+				true,
+				StaticPathPrefix,
+				ApiBasePath,
+				WafIntegrationUrl: Features.WafIntegrationUrl
+			),
 		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 	};
