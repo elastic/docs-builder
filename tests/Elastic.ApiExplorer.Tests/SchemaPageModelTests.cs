@@ -35,6 +35,29 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Create_CollapsedNestedFields_StayFindableInPage()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Single(n => n.Model.DisplayName == "Aggregation result");
+		var context = RenderContext(item);
+
+		var page = SchemaPageModel.Create(item.Model, context);
+
+		var folded = page.UnionVariants!
+			.Variants
+			.Where(v => v.Properties is not null)
+			.SelectMany(v => Flatten(v.Properties!))
+			.Where(p => p.Children.Kind != ChildKind.None);
+		folded.Should().NotBeEmpty();
+		folded
+			.Where(p => !p.Children.UseHidden && p.Children.Properties is not null && p.IsCollapsible && !p.DefaultExpanded)
+			.Should()
+			.BeEmpty("collapsed rows use hidden=\"until-found\", so find-in-page reaches their fields");
+	}
+
+	private static IEnumerable<ApiProperty> Flatten(ApiPropertyList list) =>
+		list.Items.SelectMany(p => new[] { p }.Concat(p.Children.Properties is { } nested ? Flatten(nested) : []));
+
+	[Test]
 	public void Write_RequiredSetsWithoutProperties_StillSaysWhichFieldsAreRequired()
 	{
 		var item = fixture.Walk().OfType<SchemaNavigationItem>().Single(n => n.Model.DisplayName == "Aggregation result");

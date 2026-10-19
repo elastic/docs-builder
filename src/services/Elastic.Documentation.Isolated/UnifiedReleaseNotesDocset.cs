@@ -7,18 +7,25 @@ using Elastic.Documentation.Configuration.ReleaseSchedule;
 
 namespace Elastic.Documentation.Isolated;
 
+/// <summary>A product and the versions it has bundles for, newest first.</summary>
+public sealed record ProductVersions(Product Product, IReadOnlyList<string> Versions);
+
 /// <summary>
 /// Synthesizes the markdown and navigation files of the unified release notes docset in memory.
-/// Every product with <c>release-notes: dra</c> gets the same four pages, so onboarding a product
-/// is a one-line change in <c>products.yml</c>.
+/// Every product with <c>release-notes: dra</c> gets the same pages, so onboarding a product is a
+/// one-line change in <c>products.yml</c>. A version has a page of its own, so its URL can be shared.
 /// </summary>
 public static class UnifiedReleaseNotesDocset
 {
 	public const string BundlesFolder = "changelog/bundles";
 
+	private const string UnreleasedNotice =
+		":::{warning}\nThis is a preview of an unreleased version. The release notes can change until the version ships.\n:::";
+
+	private const string VersionOptions = ":highlights:\n:subsections:";
+
 	private static readonly (string FileName, string NavigationTitle, string Heading, string Options)[] Pages =
 	[
-		("index.md", "Release notes", "release notes", ":highlights:"),
 		("known-issues.md", "Known issues", "known issues", ":type: known-issue"),
 		("breaking-changes.md", "Breaking changes", "breaking changes", ":type: breaking-change\n:dropdowns:"),
 		("deprecations.md", "Deprecations", "deprecations", ":type: deprecation")
@@ -32,7 +39,7 @@ public static class UnifiedReleaseNotesDocset
 	public static string BundlesPath(string productId) => $"{BundlesFolder}/{productId}";
 
 	/// <summary>Generates every file of the docset, keyed by its path relative to the docset root.</summary>
-	public static IReadOnlyDictionary<string, string> Generate(IReadOnlyList<Product> products)
+	public static IReadOnlyDictionary<string, string> Generate(IReadOnlyList<ProductVersions> products)
 	{
 		var files = new Dictionary<string, string>(StringComparer.Ordinal)
 		{
@@ -40,10 +47,13 @@ public static class UnifiedReleaseNotesDocset
 			["release-notes/index.md"] = GenerateRootIndex(products)
 		};
 
-		foreach (var product in products)
+		foreach (var (product, versions) in products)
 		{
 			var folder = $"release-notes/{product.Id}";
-			files[$"{folder}/toc.yml"] = GenerateProductToc();
+			files[$"{folder}/toc.yml"] = GenerateProductToc(versions);
+			files[$"{folder}/index.md"] = GenerateProductIndex(product, versions);
+			foreach (var version in versions)
+				files[$"{folder}/{version}.md"] = GenerateVersionPage(product, version);
 			foreach (var page in Pages)
 				files[$"{folder}/{page.FileName}"] = GeneratePage(product, page);
 		}
@@ -51,16 +61,20 @@ public static class UnifiedReleaseNotesDocset
 		return files;
 	}
 
-	private static string GenerateToc(IReadOnlyList<Product> products)
+	private static string GenerateToc(IReadOnlyList<ProductVersions> products)
 	{
 		var lines = new List<string> { "toc:", "  - folder: release-notes", "    children:", "      - file: index.md" };
-		lines.AddRange(products.Select(p => $"      - toc: {p.Id}"));
+		lines.AddRange(products.Select(p => $"      - toc: {p.Product.Id}"));
 		return string.Join('\n', lines) + "\n";
 	}
 
-	private static string GenerateProductToc() => string.Join('\n', Pages.Select(p => $"  - file: {p.FileName}").Prepend("toc:")) + "\n";
+	private static string GenerateProductToc(IReadOnlyList<string> versions)
+	{
+		IEnumerable<string> files = ["index.md", .. versions.Select(v => $"{v}.md"), .. Pages.Select(p => p.FileName)];
+		return string.Join('\n', files.Select(f => $"  - file: {f}").Prepend("toc:")) + "\n";
+	}
 
-	private static string GenerateRootIndex(IReadOnlyList<Product> products)
+	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products)
 	{
 		var lines = new List<string>
 		{
@@ -74,12 +88,50 @@ public static class UnifiedReleaseNotesDocset
 			"",
 			"A scheduled workflow rebuilds it whenever a new build candidate is cut or a SNAPSHOT advances.",
 			"",
+			UnreleasedNotice,
+			"",
 			"## Products",
 			""
 		};
-		lines.AddRange(products.Select(p => $"- [{p.DisplayName}]({p.Id}/index.md)"));
+		lines.AddRange(products.Select(p => $"- [{p.Product.DisplayName}]({p.Product.Id}/index.md)"));
 		return string.Join('\n', lines) + "\n";
 	}
+
+	private static string GenerateProductIndex(Product product, IReadOnlyList<string> versions) =>
+		string.Join(
+			'\n',
+			new[]
+			{
+				"---",
+				$"navigation_title: {product.DisplayName}",
+				"---",
+				"",
+				$"# {product.DisplayName} release notes",
+				"",
+				UnreleasedNotice,
+				"",
+				"## Versions",
+				""
+			}.Concat(versions.Select(v => $"- [{v}]({v}.md)")).Append("")
+		);
+
+	private static string GenerateVersionPage(Product product, string version) =>
+		string.Join(
+			'\n',
+			"---",
+			$"navigation_title: {version}",
+			"---",
+			"",
+			$"# {product.DisplayName} {version}",
+			"",
+			UnreleasedNotice,
+			"",
+			":::{changelog} /" + BundlesPath(product.Id),
+			$":version: {version}",
+			VersionOptions,
+			":::",
+			""
+		);
 
 	private static string GeneratePage(Product product, (string FileName, string NavigationTitle, string Heading, string Options) page) =>
 		string.Join(
@@ -89,6 +141,8 @@ public static class UnifiedReleaseNotesDocset
 			"---",
 			"",
 			$"# {product.DisplayName} {page.Heading}",
+			"",
+			UnreleasedNotice,
 			"",
 			":::{changelog} /" + BundlesPath(product.Id),
 			page.Options,
