@@ -2263,6 +2263,19 @@ a.docs-reference-btn::after {
 	margin: calc(var(--spacing) * 1) 0;
 }
 
+/* A long list's search box sits at the end of the chip row and fills what the chips leave on their last line. */
+.union-variant-search {
+	box-sizing: border-box;
+	flex: 1 1 160px;
+	min-width: 160px;
+	max-width: 260px;
+	padding: 4px 10px;
+	border: 1px solid var(--color-grey-20, #e3e8f2);
+	border-radius: 999px;
+	font-size: 12.5px;
+	line-height: 18px;
+}
+
 /* hidden="until-found" keeps a box in the layout: without its padding, a hidden variant takes no room, so the picked
    one sits right under the chips whichever it is. */
 .union-variant-chips > .union-variants > .union-variant-item[hidden] {

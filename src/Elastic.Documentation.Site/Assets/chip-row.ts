@@ -68,7 +68,9 @@ export function packChips(
     return activeIndex >= 0 ? [activeIndex] : []
 }
 
-function chipMenuSupported(menu: HTMLElement | null): menu is HTMLElement {
+function chipMenuSupported(
+    menu: HTMLElement | null | undefined
+): menu is HTMLElement {
     return !!menu && typeof menu.hidePopover === 'function'
 }
 
@@ -154,7 +156,7 @@ export function observeChipRow(row: HTMLElement, parts: ChipRowParts): void {
 }
 
 const registered: ChipRowParts[] = []
-let openMenu: { menu: HTMLElement; more: HTMLElement } | null = null
+let openMenu: { menu: HTMLElement; anchor: HTMLElement } | null = null
 let followQueued = false
 
 function partsOf(element: Element): ChipRowParts | undefined {
@@ -167,13 +169,13 @@ function followOpenMenu() {
     followQueued = true
     requestAnimationFrame(() => {
         followQueued = false
-        if (openMenu) positionMenu(openMenu.menu, openMenu.more)
+        if (openMenu) positionMenu(openMenu.menu, openMenu.anchor)
     })
 }
 
-/** Under the "more" button, or above it when there is no room below. Run again on scroll, so the menu stays with its button. */
-function positionMenu(menu: HTMLElement, more: HTMLElement) {
-    const anchor = more.getBoundingClientRect()
+/** Under its anchor (the "more" button, or the row's search box), or above it when there is no room below. Run again on scroll, so the menu stays with its anchor. */
+function positionMenu(menu: HTMLElement, anchorElement: HTMLElement) {
+    const anchor = anchorElement.getBoundingClientRect()
     const size = menu.getBoundingClientRect()
     const margin = 8
     const left = Math.max(
@@ -200,15 +202,22 @@ function onMenuToggle(event: Event) {
         ?.querySelector<HTMLElement>(parts.more)
     const open = (event as ToggleEvent).newState === 'open'
     more?.setAttribute('aria-expanded', open ? 'true' : 'false')
-    const filter = menu.querySelector<HTMLInputElement>(parts.filter)
-    openMenu = open && more ? { menu, more } : null
+    const rowSearch = menu
+        .closest<HTMLElement>(parts.row)
+        ?.querySelector<HTMLInputElement>(`:scope > ${parts.filter}`)
+    const filter =
+        rowSearch ?? menu.querySelector<HTMLInputElement>(parts.filter)
+    const anchor = rowSearch ?? more
+    openMenu = open && anchor ? { menu, anchor } : null
     if (!open && filter?.value) {
         filter.value = ''
         filterMenu(filter, parts)
     }
-    if (!open || !more) return
+    if (!open || !anchor) return
 
-    positionMenu(menu, more)
+    positionMenu(menu, anchor)
+    // Typing in the row's search box keeps the focus there while the menu fills.
+    if (rowSearch) return
     if (filter) filter.focus()
     else menuItems(menu)[0]?.focus()
 }
@@ -276,10 +285,20 @@ function searchWords(fuse: MenuSearch['fuse'], query: string): HTMLElement[] {
         .map(([item]) => item)
 }
 
-/** Fuzzy filter: shows the menu items that are not in the row and match, best match first. */
+/** The filter field that sits in the row itself rather than inside the menu. */
+function isRowSearch(input: HTMLElement, parts: ChipRowParts): boolean {
+    return !input.closest(parts.menu)
+}
+
+/**
+ * Fuzzy filter: shows the menu items that match, best match first. The menu's own field lists only items that are
+ * not in the row; the row's search box lists every match, so a typed name always finds its variant.
+ */
 function filterMenu(input: HTMLInputElement, parts: ChipRowParts) {
-    const menu = input.closest<HTMLElement>(parts.menu)
     const row = input.closest<HTMLElement>(parts.row)
+    const menu =
+        input.closest<HTMLElement>(parts.menu) ??
+        row?.querySelector<HTMLElement>(parts.menu)
     if (!menu || !row) return
     const inRow = new Set(
         Array.from(row.querySelectorAll<HTMLElement>(parts.chip))
@@ -289,7 +308,10 @@ function filterMenu(input: HTMLInputElement, parts: ChipRowParts) {
     const { fuse, all } = menuSearch(menu, parts)
     const query = input.value.trim()
     const matches = query ? searchWords(fuse, query) : all
-    const shown = matches.filter((item) => !inRow.has(chipId(item, parts)))
+    const searching = isRowSearch(input, parts) && query !== ''
+    const shown = matches.filter(
+        (item) => searching || !inRow.has(chipId(item, parts))
+    )
     const shownSet = new Set(shown)
     const parent = shown[0]?.parentElement ?? all[0]?.parentElement
     // Matches first, in rank order; the rest follow hidden. Without a query, the original order comes back.
@@ -317,10 +339,31 @@ function moveInMenu(menu: HTMLElement, from: HTMLElement, key: string) {
     return true
 }
 
+/** In the row's search box, Down moves into the matches and Enter picks the best one. Returns whether the key was handled. */
+function searchKeydown(
+    event: KeyboardEvent,
+    input: HTMLInputElement,
+    parts: ChipRowParts
+): boolean {
+    const menu = input
+        .closest<HTMLElement>(parts.row)
+        ?.querySelector<HTMLElement>(parts.menu)
+    if (!menu || !menu.matches(':popover-open')) return false
+    const items = menuItems(menu)
+    if (event.key === 'ArrowDown') items[0]?.focus()
+    else if (event.key === 'Enter') items[0]?.click()
+    else return false
+    event.preventDefault()
+    return true
+}
+
 function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null
     if (!target || event.metaKey || event.ctrlKey || event.altKey) return
     for (const parts of registered) {
+        if (target.matches(parts.filter) && isRowSearch(target, parts)) {
+            if (searchKeydown(event, target as HTMLInputElement, parts)) return
+        }
         const menu = target.closest<HTMLElement>(parts.menu)
         if (menu && moveInMenu(menu, target, event.key)) {
             event.preventDefault()
@@ -329,14 +372,25 @@ function onKeydown(event: KeyboardEvent) {
     }
 }
 
+/** Typing in the row's search box opens the menu, since the matches show there. */
+function openForSearch(input: HTMLInputElement, parts: ChipRowParts) {
+    if (!isRowSearch(input, parts) || !input.value.trim()) return
+    const menu = input
+        .closest<HTMLElement>(parts.row)
+        ?.querySelector<HTMLElement>(parts.menu)
+    if (chipMenuSupported(menu) && !menu.matches(':popover-open'))
+        menu.showPopover()
+}
+
 function onInput(event: Event) {
     const input = event.target as HTMLElement | null
     if (!input) return
     const parts = registered.find((p) => input.matches(p.filter))
     if (!parts) return
     filterMenu(input as HTMLInputElement, parts)
+    openForSearch(input as HTMLInputElement, parts)
     // A menu that opened above its button shrinks as it filters; place it again so it stays against the button.
-    if (openMenu) positionMenu(openMenu.menu, openMenu.more)
+    if (openMenu) positionMenu(openMenu.menu, openMenu.anchor)
 }
 
 /**

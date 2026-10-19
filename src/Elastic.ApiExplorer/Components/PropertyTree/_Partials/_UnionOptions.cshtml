@@ -42,11 +42,12 @@
 				<span data-chip-more-label></span>
 				<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
 			</button>
+			@* A long list searches from the row itself: typing opens the menu with every match, so nobody has to open it first. *@
+			@if (Model.HasFilter)
+			{
+				<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" aria-label="Search variants" aria-controls="@menuId" autocomplete="off" />
+			}
 			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
-				@if (Model.HasFilter)
-				{
-					<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" aria-label="Filter variants" autocomplete="off" />
-				}
 				<div role="menu" aria-label="More variants">
 					@for (var i = 0; i < Model.Variants.Count; i++)
 					{

@@ -224,3 +224,47 @@ describe('content type panels', () => {
         expect(tag('req').textContent).toBe('application/gzip')
     })
 })
+
+describe('union variant search box', () => {
+    const proto = HTMLElement.prototype as unknown as Record<string, unknown>
+
+    beforeEach(() => {
+        proto.hidePopover = jest.fn()
+        proto.showPopover = jest.fn()
+        document.body.innerHTML = chipList('list', ['query', 'eql', 'esql'])
+        document
+            .querySelector('[data-chip-menu]')!
+            .insertAdjacentHTML(
+                'beforebegin',
+                '<input type="search" data-chip-filter />'
+            )
+        initUnionChips()
+    })
+
+    afterEach(() => {
+        delete proto.hidePopover
+        delete proto.showPopover
+    })
+
+    const type = (value: string) => {
+        const input =
+            document.querySelector<HTMLInputElement>('[data-chip-filter]')!
+        input.value = value
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    const listed = () =>
+        Array.from(
+            document.querySelectorAll<HTMLElement>(
+                '[data-chip-menu] [data-chip]'
+            )
+        )
+            .filter((item) => !item.hidden)
+            .map((item) => item.dataset.chip)
+
+    it('opens the menu with every match, the ones in the row included', () => {
+        type('eql')
+
+        expect(proto.showPopover).toHaveBeenCalled()
+        expect(listed()).toEqual(['eql', 'esql'])
+    })
+})
