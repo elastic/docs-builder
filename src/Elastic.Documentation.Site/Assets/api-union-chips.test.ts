@@ -328,7 +328,10 @@ describe('union variant search box', () => {
         const other = document.getElementById('menu2')!
         other.setAttribute('popover', 'manual')
         initUnionChips()
-        const hide = jest.spyOn(menu, 'hidePopover')
+        const hideFirst = jest.fn()
+        const hideSecond = jest.fn()
+        menu.hidePopover = hideFirst
+        other.hidePopover = hideSecond
 
         other.dispatchEvent(
             Object.assign(new Event('toggle'), { newState: 'open' })
@@ -336,10 +339,11 @@ describe('union variant search box', () => {
         menu.dispatchEvent(
             Object.assign(new Event('toggle'), { newState: 'closed' })
         )
+        expect(hideFirst).toHaveBeenCalledTimes(1)
 
-        expect(hide).toHaveBeenCalled()
         document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
-        expect(proto.hidePopover).toHaveBeenCalled()
+        expect(hideSecond).toHaveBeenCalledTimes(1)
+        expect(hideFirst).toHaveBeenCalledTimes(1)
     })
 
     it('opens the menu with every match, the ones in the row included', () => {
