@@ -475,8 +475,23 @@
 	text-underline-offset: 2px;
 }
 
-.api-group-row .api-overview-title {
+.api-group-heading {
 	grid-area: title;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 8px;
+	row-gap: 4px;
+	min-width: 0;
+}
+
+.api-group-heading .api-title-badges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.api-group-row .api-overview-title {
 	color: inherit;
 	font-size: 16px;
 	font-weight: 600;
