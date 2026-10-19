@@ -56,7 +56,7 @@ describe('NavigationSearchWrapper type attribute', () => {
         render(<NavigationSearchWrapper type="api" />)
 
         const input = await screen.findByPlaceholderText(
-            'Press ❲/❳ to search API'
+            'Press ❲/❳ to find API'
         )
         await userEvent.type(input, '_bulk')
 
@@ -72,7 +72,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             <NavigationSearchWrapper type="api" variant="sidebar" />
         )
 
-        await screen.findByPlaceholderText('Press ❲/❳ to search API')
+        await screen.findByPlaceholderText('Press ❲/❳ to find API')
 
         expect(container.querySelector('.sticky')).toBeNull()
         expect(container.querySelector('hr')).toBeNull()
@@ -105,7 +105,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper slash shortcut', () => {
-    const apiPlaceholder = 'Press ❲/❳ to search API'
+    const apiPlaceholder = 'Press ❲/❳ to find API'
 
     beforeEach(() => {
         sharedQueryClient.clear()
