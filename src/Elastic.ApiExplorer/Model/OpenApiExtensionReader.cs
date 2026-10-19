@@ -39,6 +39,10 @@ public static class OpenApiExtensionReader
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>
 		(TryGetString(operation.Extensions, "x-namespace"), TryGetString(operation.Extensions, "x-api-name"));
 
+	/// <summary>The operation summary, trimmed; null when absent or blank (specs sometimes emit <c>summary: ''</c>).</summary>
+	public static string? GetSummary(OpenApiOperation operation) =>
+		string.IsNullOrWhiteSpace(operation.Summary) ? null : operation.Summary.Trim();
+
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>
 		operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true

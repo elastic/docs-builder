@@ -11,6 +11,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -41,5 +42,36 @@ public class DashboardOpenApiNavigationTests
 		var navigation = generator.CreateNavigation("dashboard", doc);
 
 		navigation.NavigationItems.Should().NotBeEmpty();
+	}
+
+	[Test]
+	public async Task CreateNavigation_BlankSummary_TitlesOperationByOperationId()
+	{
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(
+			new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
+		var fs = new FileSystem();
+		var fi = fs.FileInfo.New(fs.Path.Combine(AppContext.BaseDirectory, "TestData", "blank-summary-openapi.json"));
+		var doc = await OpenApiReader.Instance.ReadAsync(fi);
+
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
+		var navigation = generator.CreateNavigation("blank", doc);
+
+		var titles = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().Select(o => o.NavigationTitle).ToArray();
+		titles.Should().ContainSingle().Which.Should().Be("get-script");
+	}
+
+	private static IEnumerable<INavigationItem> Flatten(IEnumerable<INavigationItem> items)
+	{
+		foreach (var item in items)
+		{
+			yield return item;
+			if (item is INodeNavigationItem<INavigationModel, INavigationItem> node)
+				foreach (var child in Flatten(node.NavigationItems))
+					yield return child;
+		}
 	}
 }
