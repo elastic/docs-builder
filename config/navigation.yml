@@ -13,6 +13,10 @@ phantoms:
   - toc: docs-content://
   - toc: docs-content://products
   - toc: cloud://release-notes
+  # Temporary: the AutoOps insights parent page in docs-content (elastic/docs-content#8900).
+  # The trailing slash is required, the prefix checker compares against paths that end in '/'.
+  # Remove this phantom when the real mount lands (elastic/docs-builder#4499).
+  - toc: docs-content://reference/autoops-insights/
   # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
   # Remove this phantom and update the nav entry below once that PR merges.
   - toc: elastic-agent://reference/otel-collector
