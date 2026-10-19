@@ -394,6 +394,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 		return UnknownTagGroupName;
 	}
 
+	// The raw operationId stays the grouping key: humanized titles of distinct ids (get-script, get_script) can collide.
 	private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
 	private static List<string> GetOrderedClassificationKeys(XTagGroups xTagGroups, HashSet<string> presentClassifications)

@@ -45,7 +45,7 @@ public class DashboardOpenApiNavigationTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_BlankSummary_TitlesOperationByOperationId()
+	public async Task CreateNavigation_BlankSummary_TitlesOperationByHumanizedOperationId()
 	{
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
 		var context = new BuildContext(
@@ -61,7 +61,30 @@ public class DashboardOpenApiNavigationTests
 		var navigation = generator.CreateNavigation("blank", doc);
 
 		var titles = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().Select(o => o.NavigationTitle).ToArray();
-		titles.Should().ContainSingle().Which.Should().Be("get-script");
+		titles.Should().ContainSingle().Which.Should().Be("Get Script");
+	}
+
+	[Test]
+	public async Task CreateNavigation_OperationIdsWithTheSameTitle_StaySeparatePages()
+	{
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(
+			new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
+		var fs = new FileSystem();
+		var fi = fs.FileInfo.New(fs.Path.Combine(AppContext.BaseDirectory, "TestData", "colliding-operation-ids-openapi.json"));
+		var doc = await OpenApiReader.Instance.ReadAsync(fi);
+
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
+		var navigation = generator.CreateNavigation("colliding", doc);
+
+		var operations = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().ToArray();
+		operations.Should().HaveCount(2);
+		operations.Select(o => o.Url).Should().OnlyHaveUniqueItems();
+		operations.Should().OnlyContain(o => o.Siblings.Count == 0);
+		operations.Select(o => o.NavigationTitle).Should().AllBe("Get Script");
 	}
 
 	private static IEnumerable<INavigationItem> Flatten(IEnumerable<INavigationItem> items)
