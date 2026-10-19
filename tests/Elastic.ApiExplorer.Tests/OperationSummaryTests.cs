@@ -21,4 +21,12 @@ public class OperationSummaryTests
 
 		OpenApiExtensionReader.GetSummary(operation).Should().Be(expected);
 	}
+
+	[Test]
+	[Arguments(null, null)]
+	[Arguments(" ", null)]
+	[Arguments("get-actions-connector-oauth-callback-script", "Get actions connector oauth callback script")]
+	[Arguments("async_search_delete", "Async search delete")]
+	public void HumanizeOperationId_KebabOrSnakeCase_ReturnsReadableTitle(string? operationId, string? expected) =>
+		OpenApiExtensionReader.HumanizeOperationId(operationId).Should().Be(expected);
 }

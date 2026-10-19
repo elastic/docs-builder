@@ -43,6 +43,16 @@ public static class OpenApiExtensionReader
 	public static string? GetSummary(OpenApiOperation operation) =>
 		string.IsNullOrWhiteSpace(operation.Summary) ? null : operation.Summary.Trim();
 
+	/// <summary>Turns a kebab- or snake-case operationId into a readable title ("get-actions-connector" becomes "Get actions connector"); null when blank.</summary>
+	public static string? HumanizeOperationId(string? operationId)
+	{
+		if (string.IsNullOrWhiteSpace(operationId))
+			return null;
+
+		var text = operationId.Trim().Replace('-', ' ').Replace('_', ' ');
+		return char.ToUpperInvariant(text[0]) + text[1..];
+	}
+
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>
 		operation.Extensions?.TryGetValue("x-beta", out var betaValue) == true
