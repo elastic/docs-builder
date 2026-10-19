@@ -164,6 +164,49 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task BuildParameterList_QueryParameterRefToEnumOrEnumArray_ReadsAsUnionWithItsValues()
+	{
+		var document = await TestSpecs.LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3", "info": { "title": "t", "version": "1" }, "paths": {},
+			  "components": {
+			    "parameters": {
+			      "search-expand_wildcards": {
+			        "in": "query", "name": "expand_wildcards", "description": "Which indices to match.",
+			        "schema": { "$ref": "#/components/schemas/_types.ExpandWildcards" }
+			      }
+			    },
+			    "schemas": {
+			      "_types.ExpandWildcard": { "type": "string", "enum": ["all", "open", "closed", "hidden", "none"] },
+			      "_types.ExpandWildcards": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.ExpandWildcard" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.ExpandWildcard" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+		var parameter = document.Components!.Parameters!["search-expand_wildcards"];
+
+		var list = TestSpecs.BuilderFor(document).BuildParameterList(
+			[new ParameterRowInput(parameter, "Which indices to match.")],
+			new PropertyTreeScope { Prefix = "query", IsRequest = true }
+		);
+
+		var row = list.Items.Single();
+		System.Console.WriteLine(
+			"DBG type=" + row.Type.Text + " enum=" + string.Join(",", row.EnumValues ?? []) + " union=" + row.Union?.Kind +
+				" kids=" + row.Children.Kind
+		);
+		row.Type.Text.Should().Be("union enum | enum[]");
+		row.EnumValues.Should().Equal("all", "open", "closed", "hidden", "none");
+	}
+
+	[Test]
 	public async Task Render_PathParameters_KeepTheirRowAnchors()
 	{
 		var html = await RenderAsync(DocsGet);
