@@ -69,7 +69,7 @@ public class UnionOptionsRenderingTests
 			"""data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1">""",
 			"only the picked chip is in the tab order"
 		);
-		html.Should().NotContain("data-chip-filter", "three variants fit the menu without a filter");
+		html.Should().NotContain("data-chip-filter", "three variants need no search box");
 		html.Should().Contain("Variant2[] &#xB7; kind: two", "a menu entry names the array form and the discriminator value");
 	}
 
@@ -97,12 +97,22 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_ElevenVariants_AddsAFilterToTheMenu()
+	public async Task Render_ElevenVariants_AddsASearchBoxToTheChipRow()
 	{
 		var html = await Render(11);
 
-		html.Should().Contain("""<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" """);
-		html.Should().Contain("""id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>""");
+		html.Should().Contain("""<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" """);
+		html
+			.IndexOf("data-chip-filter", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(
+				html.IndexOf("data-chip-menu", StringComparison.Ordinal),
+				"the search box sits in the row, outside the popover menu"
+			);
+		html.Should().Contain(
+			"""id="opts-menu" class="api-example-menu simple-scrollbar" popover="manual" data-chip-menu>""",
+			"the search box sits outside the popover, so the menu is closed by script and not by light dismiss"
+		);
 	}
 
 	[Test]
