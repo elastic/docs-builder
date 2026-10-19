@@ -1412,49 +1412,11 @@ button.response-status-toggle:focus {
 			padding-bottom: 16px;
 		}
 
-		&.depth-1 {
-			padding-left: 1.25rem;
-		}
-		&.depth-2 {
-			padding-left: 1.25rem;
-		}
-		&.depth-3 {
-			padding-left: 1.25rem;
-		}
-		&.depth-4 {
-			padding-left: 1.25rem;
-		}
-
-		/* Vertical line for siblings below - extends through to next sibling */
-		&.depth-1:not(.last-sibling),
-		&.depth-2:not(.last-sibling),
-		&.depth-3:not(.last-sibling),
-		&.depth-4:not(.last-sibling) {
-			&::after {
-				content: '';
-				position: absolute;
-				left: 0.375rem;
-				top: calc(var(--spacing) * 2 + 0.4rem);
-				bottom: calc(-1 * var(--spacing) * 3 - 0.125rem);
-				border-left: 1px solid #cbd5e1;
-			}
-		}
-
-		/* L-shaped branch connector - horizontal aligns to middle of text */
 		&.depth-1,
 		&.depth-2,
 		&.depth-3,
 		&.depth-4 {
-			&::before {
-				content: '';
-				position: absolute;
-				left: 0.375rem;
-				height: calc(var(--spacing) * 5 + 0.525rem);
-				width: 0.5rem;
-				border-left: 1px solid #cbd5e1;
-				border-bottom: 1px solid #cbd5e1;
-				border-bottom-left-radius: 3px;
-			}
+			padding-left: 1.25rem;
 		}
 	}
 
@@ -1472,66 +1434,6 @@ button.response-status-toggle:focus {
 		}
 	}
 
-	/* Expand/collapse toggle row - aligned with nested properties */
-	.expand-toggle-row {
-		padding: calc(var(--spacing) * 1) 0;
-		padding-left: 1.25rem; /* Same as depth-1 indentation */
-		margin: 0;
-		margin-top: calc(var(--spacing) * 2);
-		position: relative;
-		display: flex;
-		align-items: center;
-
-		/* Vertical line - always visible when has children, extends to button center */
-		&::before {
-			content: '';
-			position: absolute;
-			left: 0.375rem;
-			top: 0;
-			height: 50%;
-			width: 0;
-			border-left: 1px solid #cbd5e1;
-			opacity: 0;
-			transition: opacity 0.1s ease;
-		}
-
-		/* Horizontal connector - only when collapsed */
-		&::after {
-			content: '';
-			position: absolute;
-			left: 0.375rem;
-			top: 50%;
-			width: 0.5rem;
-			border-top: 1px solid #cbd5e1;
-			opacity: 0;
-			transition: opacity 0.1s ease;
-		}
-	}
-
-	/* Expanded state - show vertical line extending through the row */
-	.property-item.expanded > .expand-toggle-row::before {
-		opacity: 1;
-		height: 100%; /* Extend to bottom of toggle row */
-	}
-
-	/* Continuation line from expand toggle down to nested properties */
-	.property-item.expanded > .nested-properties::before {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 0;
-		height: calc(
-			var(--spacing) * 5 + 0.4rem
-		); /* Connect to first child's L-connector */
-		border-left: 1px solid #cbd5e1;
-	}
-
-	/* Collapsed state - show both vertical and horizontal connector */
-	.property-item.collapsed > .expand-toggle-row::before,
-	.property-item.collapsed > .expand-toggle-row::after {
-		opacity: 1;
-	}
-
 	/* Collapsed state - hide nested properties using hidden="until-found" for searchability */
 	/* The hidden attribute handles visibility; this is a fallback for unsupported browsers */
 	.property-item.collapsed > .nested-properties:not([hidden='until-found']) {
@@ -1542,6 +1444,8 @@ button.response-status-toggle:focus {
 	.property-item.expanded > .nested-properties {
 		display: block;
 	}
+
+	/* The toggle row and the open boxes are styled with the union ones, below the "Union variant item" rules. */
 
 	/* Ensure hidden="until-found" elements don't show borders/padding from container */
 	.nested-properties[hidden='until-found'] {
@@ -2014,37 +1918,19 @@ a.docs-reference-btn::after {
 	display: none;
 }
 
-/* A property's reference link: indented and sized like the "show properties" toggle right below it, but a link. */
+/*
+ * A property's reference link: sized like the "show properties" toggle right below it, but a link, and lined up with the
+ * toggle's icon. With no toggle below it, it reads as part of the description.
+ */
 .property-list .reference-link-row {
 	@apply text-sm;
 	margin: calc(var(--spacing) * 2) 0 0;
-	padding: calc(var(--spacing) * 1) 0;
-	padding-left: 1.25rem;
-	position: relative;
+	padding: calc(var(--spacing) * 1) 0 calc(var(--spacing) * 1)
+		calc(0.875rem + 1px);
 
-	/* The same L-shaped branch as the toggle row: down to the row's middle, then across to the link. */
-	&::before {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 0;
-		height: 50%;
-		border-left: 1px solid #cbd5e1;
+	&:not(:has(+ .expand-toggle-row)) {
+		padding-left: 0;
 	}
-
-	&::after {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 50%;
-		width: 0.5rem;
-		border-top: 1px solid #cbd5e1;
-	}
-}
-
-/* With the toggle below, the line runs on into the toggle's own branch. */
-.property-list .reference-link-row:has(+ .expand-toggle-row)::before {
-	height: 100%;
 }
 
 .property-list .reference-link-row a {
@@ -2347,67 +2233,68 @@ a.docs-reference-btn::after {
 	@apply flex items-center gap-1;
 }
 
-/* Union expand toggle row - on new line with tree connector when collapsed */
+/*
+ * Open nodes sit in nested boxes, for properties and union variants alike. The toggle sits on the box's top edge and
+ * cuts the line behind its text, like a fieldset legend. The row keeps one height folded or open, so the toggle does
+ * not move, and the innermost open box gets the darker border, so the open path reads from the outlines alone.
+ */
+.property-list .expand-toggle-row,
 .union-expand-toggle {
-	padding: calc(var(--spacing) * 1) 0;
-	padding-left: 1.25rem;
-	margin: 0;
 	position: relative;
 	display: flex;
 	align-items: center;
+	margin: 0.5rem 0 0;
+	padding: 0.25rem calc(0.875rem + 1px);
 
-	/* Vertical line - extends to button center */
+	/* The box's top and side edges, from the toggle's middle down; the box below carries the rest. */
 	&::before {
 		content: '';
 		position: absolute;
-		left: 0.375rem;
-		top: 0;
-		height: 50%;
-		width: 0;
-		border-left: 1px solid #cbd5e1;
-		opacity: 0;
-		transition: opacity 0.1s ease;
+		inset: 50% 0 0;
+		border: 1px solid transparent;
+		border-bottom: 0;
+		border-radius: 6px 6px 0 0;
 	}
 
-	/* Horizontal connector - only when collapsed */
-	&::after {
-		content: '';
-		position: absolute;
-		left: 0.375rem;
-		top: 50%;
-		width: 0.5rem;
-		border-top: 1px solid #cbd5e1;
-		opacity: 0;
-		transition: opacity 0.1s ease;
+	> .expand-toggle {
+		position: relative;
+		z-index: 1;
+		margin-left: -0.375rem;
+		padding: 0 0.375rem;
+		background: var(--color-white, #fff);
 	}
 }
 
-/* Union expanded state - show vertical line extending through the toggle row */
-.union-variant-item.expanded > .union-expand-toggle::before {
-	opacity: 1;
-	height: 100%; /* Extend to bottom of toggle row */
-}
-
-/* Continuation line from union expand toggle down to nested properties */
+.property-list .property-item.expanded > .nested-properties,
 .union-variant-item.expanded > .nested-properties {
 	position: relative;
+	margin: 0 0 0.25rem;
+	padding: 0 0.5rem 1rem;
+	border: 1px solid var(--color-grey-20);
+	border-top: 0;
+	border-radius: 0 0 6px 6px;
+
+	/* The first row's usual top padding would leave twice the gap under the edge that the bottom edge has. */
+	> .property-list > .property-item:first-child > dt {
+		--property-row-pad: 6px;
+	}
 }
 
-.union-variant-item.expanded > .nested-properties::before {
-	content: '';
-	position: absolute;
-	left: 0.375rem;
-	top: 0;
-	height: calc(
-		var(--spacing) * 5 + 0.4rem
-	); /* Connect to first child's L-connector */
-	border-left: 1px solid #cbd5e1;
+.property-list .property-item.expanded > .expand-toggle-row::before,
+.union-variant-item.expanded > .union-expand-toggle::before {
+	border-color: var(--color-grey-20);
 }
 
-/* Union collapsed state - show both vertical and horizontal connector */
-.union-variant-item.collapsed > .union-expand-toggle::before,
-.union-variant-item.collapsed > .union-expand-toggle::after {
-	opacity: 1;
+.property-list
+	.property-item.expanded:not(:has(.expanded))
+	> .expand-toggle-row::before,
+.property-list
+	.property-item.expanded:not(:has(.expanded))
+	> .nested-properties,
+.union-variant-item.expanded:not(:has(.expanded))
+	> .union-expand-toggle::before,
+.union-variant-item.expanded:not(:has(.expanded)) > .nested-properties {
+	border-color: var(--color-grey-60);
 }
 
 .variant-description {
@@ -4300,90 +4187,4 @@ html:has(.api-page-shell) {
 			background-color: transparent;
 		}
 	}
-}
-
-/* Open nodes sit in nested boxes instead of guide lines. The toggle sits on the box's top edge and cuts the line behind
-   its text, like a fieldset legend; the innermost open box gets the darker border, so the open path reads from the
-   outlines alone. The row keeps one height folded or open, so the toggle does not move. */
-.property-item::before,
-.property-item::after,
-.nested-properties::before,
-.expand-toggle-row::after,
-.union-expand-toggle::after {
-	display: none;
-}
-
-.property-item.depth-1,
-.property-item.depth-2,
-.property-item.depth-3,
-.property-item.depth-4 {
-	padding-left: 0.25rem;
-}
-
-/* The reference link has no branch to hang from; it lines up with the toggle label below it. */
-.property-list .reference-link-row {
-	padding-left: calc(0.875rem + 1px);
-
-	&::before,
-	&::after {
-		display: none;
-	}
-
-	/* With no toggle below it, the link reads as part of the description. */
-	&:not(:has(+ .expand-toggle-row)) {
-		padding-left: 0;
-	}
-}
-
-.property-item > .expand-toggle-row,
-.union-variant-item > .union-expand-toggle {
-	margin: 0.5rem 0 0;
-	padding: 0.25rem calc(0.875rem + 1px);
-
-	&::before {
-		content: '';
-		position: absolute;
-		inset: 50% 0 0;
-		height: auto;
-		width: auto;
-		border: 1px solid transparent;
-		border-bottom: 0;
-		border-radius: 6px 6px 0 0;
-		opacity: 1;
-	}
-
-	> .expand-toggle {
-		position: relative;
-		z-index: 1;
-		margin-left: -0.375rem;
-		padding: 0 0.375rem;
-		background: var(--color-white, #fff);
-	}
-}
-
-.property-item.expanded > .expand-toggle-row::before,
-.union-variant-item.expanded > .union-expand-toggle::before {
-	border-color: var(--color-grey-20);
-}
-
-.property-item.expanded > .nested-properties,
-.union-variant-item.expanded > .nested-properties {
-	margin: 0 0 0.25rem;
-	padding: 0 0.5rem 1rem;
-	border: 1px solid var(--color-grey-20);
-	border-top: 0;
-	border-radius: 0 0 6px 6px;
-
-	/* The first row's usual top padding would leave twice the gap under the edge that the bottom edge has. */
-	> .property-list > .property-item:first-child > dt {
-		--property-row-pad: 6px;
-	}
-}
-
-.property-item.expanded:not(:has(.expanded)) > .expand-toggle-row::before,
-.property-item.expanded:not(:has(.expanded)) > .nested-properties,
-.union-variant-item.expanded:not(:has(.expanded))
-	> .union-expand-toggle::before,
-.union-variant-item.expanded:not(:has(.expanded)) > .nested-properties {
-	border-color: var(--color-grey-60);
 }
