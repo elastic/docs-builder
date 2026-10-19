@@ -2263,17 +2263,30 @@ a.docs-reference-btn::after {
 	margin: calc(var(--spacing) * 1) 0;
 }
 
-/* A long list's search box sits at the end of the chip row and fills what the chips leave on their last line. */
+/* A long list's search box is one more chip at the end of the row: same height, border and type, fitted with the chips (chip-row.ts). */
 .union-variant-search {
+	appearance: none;
 	box-sizing: border-box;
-	flex: 1 1 160px;
-	min-width: 160px;
-	max-width: 260px;
-	padding: 4px 10px;
+	width: 180px;
+	max-width: 100%;
+	height: var(--api-chip-height);
+	margin: 0;
+	padding: 4px 12px;
 	border: 1px solid var(--color-grey-20, #e3e8f2);
 	border-radius: 999px;
+	background: #fff;
+	color: #1d2a3e;
 	font-size: 12.5px;
 	line-height: 18px;
+}
+
+.union-variant-search:hover {
+	border-color: var(--color-grey-40, #98a2b3);
+}
+
+.union-variant-search:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: -2px;
 }
 
 /* hidden="until-found" keeps a box in the layout: without its padding, a hidden variant takes no room, so the picked

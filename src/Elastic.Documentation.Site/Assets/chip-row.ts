@@ -84,6 +84,12 @@ function setMoreLabel(more: HTMLElement, parts: ChipRowParts, count: number) {
     more.querySelector(parts.moreLabel)!.textContent = `+${count} more`
 }
 
+/** Room the row's search box takes at the end of the last line, with the gap before it; 0 when the row has none. */
+function searchWidth(row: HTMLElement, parts: ChipRowParts, gap: number) {
+    const search = row.querySelector<HTMLElement>(`:scope > ${parts.filter}`)
+    return search ? search.offsetWidth + 1 + gap : 0
+}
+
 /** Moves the chips that do not fit in two lines into the "more" menu. Without popover support every chip stays. */
 export function fitChipRow(row: HTMLElement, parts: ChipRowParts): void {
     // Until the first fit the row is clipped to two lines (api-docs.css), so the page does not jump when chips move into the menu.
@@ -117,7 +123,7 @@ export function fitChipRow(row: HTMLElement, parts: ChipRowParts): void {
             widths,
             rowWidth,
             gap,
-            more.offsetWidth + 1,
+            more.offsetWidth + 1 + searchWidth(row, parts, gap),
             maxChipRows,
             chips.findIndex((chip) => chip.classList.contains('is-active'))
         )
