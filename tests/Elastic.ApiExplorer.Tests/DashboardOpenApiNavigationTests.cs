@@ -61,7 +61,7 @@ public class DashboardOpenApiNavigationTests
 		var navigation = generator.CreateNavigation("blank", doc);
 
 		var titles = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().Select(o => o.NavigationTitle).ToArray();
-		titles.Should().ContainSingle().Which.Should().Be("Get script");
+		titles.Should().ContainSingle().Which.Should().Be("Get Script");
 	}
 
 	private static IEnumerable<INavigationItem> Flatten(IEnumerable<INavigationItem> items)

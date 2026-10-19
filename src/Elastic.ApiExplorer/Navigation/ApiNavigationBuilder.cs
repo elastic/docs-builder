@@ -57,7 +57,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				var apiString = ns is null
 					? api
 						?? OpenApiExtensionReader.GetSummary(op.Value)
-						?? OpenApiExtensionReader.HumanizeOperationId(op.Value.OperationId)
+						?? OperationIdTitle(op.Value.OperationId)
 						?? $"{pair.Path.Key}:{op.Key}"
 					: $"{ns}.{api}";
 				return new { Classification = tagClassification, Api = apiString, Tag = tag, pair.Path, pair.Operation };
@@ -396,6 +396,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 
 		return UnknownTagGroupName;
 	}
+
+	private static string? OperationIdTitle(string? operationId) =>
+		string.IsNullOrWhiteSpace(operationId) ? null : MarkdownNavigationTitleReader.TitleCaseFromSlug(operationId.Trim());
 
 	private static List<string> GetOrderedClassificationKeys(XTagGroups xTagGroups, HashSet<string> presentClassifications)
 	{
