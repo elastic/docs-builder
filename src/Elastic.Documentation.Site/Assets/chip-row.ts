@@ -222,8 +222,8 @@ function onMenuToggle(event: Event) {
     if (!open || !anchor) return
 
     positionMenu(menu, anchor)
-    // Typing in the row's search box keeps the focus there while the menu fills.
-    if (rowSearch) return
+    // Typing in the row's search box keeps the focus there while the menu fills; opened from the button, the focus moves in.
+    if (rowSearch && document.activeElement === rowSearch) return
     if (filter) filter.focus()
     else menuItems(menu)[0]?.focus()
 }
@@ -366,6 +366,13 @@ function searchKeydown(
 function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null
     if (!target || event.metaKey || event.ctrlKey || event.altKey) return
+    if (
+        event.key === 'Escape' &&
+        openMenu?.menu.getAttribute('popover') === 'manual'
+    ) {
+        openMenu.menu.hidePopover()
+        return
+    }
     for (const parts of registered) {
         if (target.matches(parts.filter) && isRowSearch(target, parts)) {
             if (searchKeydown(event, target as HTMLInputElement, parts)) return
@@ -386,6 +393,21 @@ function openForSearch(input: HTMLInputElement, parts: ChipRowParts) {
         ?.querySelector<HTMLElement>(parts.menu)
     if (chipMenuSupported(menu) && !menu.matches(':popover-open'))
         menu.showPopover()
+}
+
+/**
+ * A menu next to a row search box is popover="manual", since the box sits outside the popover and a click in it would
+ * light-dismiss the menu and clear the query. So the menu closes here instead: on a press outside the menu, the box
+ * and the "more" button, which toggles it itself.
+ */
+function onPointerDown(event: PointerEvent) {
+    if (!openMenu || openMenu.menu.getAttribute('popover') !== 'manual') return
+    const { menu, anchor } = openMenu
+    const target = event.target as Node | null
+    const more = document.querySelector(`[popovertarget="${menu.id}"]`)
+    if (target && [menu, anchor, more].some((el) => el?.contains(target)))
+        return
+    openMenu.menu.hidePopover()
 }
 
 function onInput(event: Event) {
@@ -410,6 +432,7 @@ export function registerChipRows(parts: ChipRowParts): void {
         document.addEventListener('toggle', onMenuToggle, true)
         document.addEventListener('keydown', onKeydown)
         document.addEventListener('input', onInput)
+        document.addEventListener('pointerdown', onPointerDown)
         window.addEventListener('scroll', followOpenMenu, {
             capture: true,
             passive: true,

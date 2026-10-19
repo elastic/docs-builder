@@ -261,6 +261,61 @@ describe('union variant search box', () => {
             .filter((item) => !item.hidden)
             .map((item) => item.dataset.chip)
 
+    const open = () => {
+        const menu = document.querySelector<HTMLElement>('[data-chip-menu]')!
+        menu.id = 'menu'
+        menu.setAttribute('popover', 'manual')
+        jest.spyOn(menu, 'matches').mockImplementation(
+            (selector: string) =>
+                selector === ':popover-open' ||
+                Element.prototype.matches.call(menu, selector)
+        )
+        const input =
+            document.querySelector<HTMLInputElement>('[data-chip-filter]')!
+        input.focus()
+        type('eql')
+        const toggle = Object.assign(new Event('toggle'), { newState: 'open' })
+        menu.dispatchEvent(toggle)
+        return { menu, input }
+    }
+
+    it('moves the focus into the matches on ArrowDown', () => {
+        const { input } = open()
+
+        input.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })
+        )
+
+        expect(document.activeElement).toBe(
+            document.querySelector('[data-chip-menu] [data-chip="eql"]')
+        )
+    })
+
+    it('picks the best match on Enter, closes the menu and clears the query', () => {
+        const { menu, input } = open()
+
+        input.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        menu.dispatchEvent(
+            Object.assign(new Event('toggle'), { newState: 'closed' })
+        )
+
+        expect(shown(['query', 'eql', 'esql'])).toEqual(['eql'])
+        expect(proto.hidePopover).toHaveBeenCalled()
+        expect(input.value).toBe('')
+    })
+
+    it('keeps the menu open when the search box is pressed, and closes it for a press elsewhere', () => {
+        const { input } = open()
+
+        input.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+        expect(proto.hidePopover).not.toHaveBeenCalled()
+
+        document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+        expect(proto.hidePopover).toHaveBeenCalled()
+    })
+
     it('opens the menu with every match, the ones in the row included', () => {
         type('eql')
 

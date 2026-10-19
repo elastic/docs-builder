@@ -47,7 +47,7 @@
 			{
 				<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" aria-label="Search variants" aria-controls="@menuId" autocomplete="off" />
 			}
-			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
+			<div id="@menuId" class="api-example-menu simple-scrollbar" popover="@(Model.HasFilter ? "manual" : "auto")" data-chip-menu>
 				<div role="menu" aria-label="More variants">
 					@for (var i = 0; i < Model.Variants.Count; i++)
 					{

@@ -109,7 +109,10 @@ public class UnionOptionsRenderingTests
 				html.IndexOf("data-chip-menu", StringComparison.Ordinal),
 				"the search box sits in the row, outside the popover menu"
 			);
-		html.Should().Contain("""id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>""");
+		html.Should().Contain(
+			"""id="opts-menu" class="api-example-menu simple-scrollbar" popover="manual" data-chip-menu>""",
+			"the search box sits outside the popover, so the menu is closed by script and not by light dismiss"
+		);
 	}
 
 	[Test]
