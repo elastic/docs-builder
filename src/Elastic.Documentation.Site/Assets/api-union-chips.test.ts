@@ -316,6 +316,32 @@ describe('union variant search box', () => {
         expect(proto.hidePopover).toHaveBeenCalled()
     })
 
+    it('closes the open menu when another list opens its own', () => {
+        const { menu } = open()
+        document.body.insertAdjacentHTML(
+            'beforeend',
+            chipList('other', ['x', 'y']).replace(
+                'data-chip-menu',
+                'data-chip-menu id="menu2"'
+            )
+        )
+        const other = document.getElementById('menu2')!
+        other.setAttribute('popover', 'manual')
+        initUnionChips()
+        const hide = jest.spyOn(menu, 'hidePopover')
+
+        other.dispatchEvent(
+            Object.assign(new Event('toggle'), { newState: 'open' })
+        )
+        menu.dispatchEvent(
+            Object.assign(new Event('toggle'), { newState: 'closed' })
+        )
+
+        expect(hide).toHaveBeenCalled()
+        document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+        expect(proto.hidePopover).toHaveBeenCalled()
+    })
+
     it('opens the menu with every match, the ones in the row included', () => {
         type('eql')
 

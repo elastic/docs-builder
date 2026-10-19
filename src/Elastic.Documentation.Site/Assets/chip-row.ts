@@ -214,7 +214,12 @@ function onMenuToggle(event: Event) {
     const filter =
         rowSearch ?? menu.querySelector<HTMLInputElement>(parts.filter)
     const anchor = rowSearch ?? more
-    openMenu = open && anchor ? { menu, anchor } : null
+    const previous = openMenu
+    if (open && anchor) openMenu = { menu, anchor }
+    // A late "closed" event from a menu that another one replaced must not forget the new one.
+    else if (previous?.menu === menu) openMenu = null
+    // A manual popover is not dismissed by opening another, so the earlier menu is closed here.
+    if (open && previous && previous.menu !== menu) previous.menu.hidePopover()
     if (!open && filter?.value) {
         filter.value = ''
         filterMenu(filter, parts)
