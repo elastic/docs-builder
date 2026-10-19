@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
@@ -12,7 +13,7 @@ namespace Elastic.Documentation.Search;
 /// so the builder is decoupled from any specific TDocument and reusable across docs-only and
 /// unified indices.
 /// </summary>
-public static class SearchQueryBuilder
+public static partial class SearchQueryBuilder
 {
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
@@ -82,6 +83,25 @@ public static class SearchQueryBuilder
 
 		return query;
 	}
+
+	/// <summary>
+	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>)
+	/// ranks that operation above every other API whose search title merely starts with the same token.
+	/// </summary>
+	public static Query? BuildApiEndpointQuery(string searchQuery)
+	{
+		var endpoint = NormalizeEndpointQuery(searchQuery);
+		if (endpoint.Length == 0)
+			return null;
+
+		return new ConstantScoreQuery { Filter = new TermQuery { Field = QueryFieldNames.ApiEndpoints, Value = endpoint }, Boost = 5.0f };
+	}
+
+	internal static string NormalizeEndpointQuery(string searchQuery) =>
+		HttpMethodPrefix().Replace(searchQuery.Trim(), string.Empty).TrimStart('/').ToLowerInvariant().Trim();
+
+	[GeneratedRegex(@"^(GET|POST|PUT|DELETE|HEAD|PATCH)(?:\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	private static partial Regex HttpMethodPrefix();
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }
@@ -170,6 +190,10 @@ public static class SearchQueryBuilder
 		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);
 		if (titleKeywordQuery is not null)
 			query |= titleKeywordQuery;
+
+		var apiEndpointQuery = BuildApiEndpointQuery(searchQuery);
+		if (apiEndpointQuery is not null)
+			query |= apiEndpointQuery;
 
 		var startsWithQuery = BuildTitleStartsWithQuery(searchQuery);
 		if (startsWithQuery is not null)

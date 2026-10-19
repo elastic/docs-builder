@@ -46,6 +46,10 @@ public class SearchRelevanceTests
 		yield return ("runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [
 			"/docs/solutions/security/endpoint-response-actions"
 		]);
+		yield return ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
 		yield return ("data-streams", "/docs/manage-data/data-store/data-streams", null);
 		yield return ("datastream", "/docs/manage-data/data-store/data-streams", null);
 		yield return ("data stream", "/docs/manage-data/data-store/data-streams", null);
