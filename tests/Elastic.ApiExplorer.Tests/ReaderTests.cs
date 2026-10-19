@@ -50,6 +50,35 @@ public class ReaderTests
 	}
 
 	[Test]
+	public async Task ReadsStream_YamlWithUnquotedMultiMediaTypeKey_QuotesKeyAndParses()
+	{
+		const string specification =
+			"""
+			openapi: 3.0.3
+			info:
+			  title: Test
+			  version: '1'
+			paths:
+			  /events:
+			    post:
+			      requestBody:
+			        content:
+			          application/json; application/*+json; text/plain; */*:
+			            schema: {}
+			      responses:
+			        '200':
+			          description: OK
+			""";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(specification));
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "openapi.yaml");
+
+		document.Should().NotBeNull();
+		var content = document.Paths["/events"].Operations![System.Net.Http.HttpMethod.Post].RequestBody!.Content!;
+		content.Keys.Should().ContainSingle().Which.Should().Be("application/json; application/*+json; text/plain; */*");
+	}
+
+	[Test]
 	public async Task ReadsSwagger20Fixture()
 	{
 		var path = Path.Combine(AppContext.BaseDirectory, "TestData", "swagger-2.0-sample.json");

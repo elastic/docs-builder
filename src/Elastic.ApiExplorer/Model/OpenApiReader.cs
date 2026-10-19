@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -13,7 +14,7 @@ using YamlDotNet.RepresentationModel;
 
 namespace Elastic.ApiExplorer.Model;
 
-public sealed class OpenApiReader : IOpenApiSpecificationReader
+public sealed partial class OpenApiReader : IOpenApiSpecificationReader
 {
 	private const string JsonFormat = "json";
 
@@ -122,8 +123,8 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	private static async Task<MemoryStream> ParseYamlToJsonStreamAsync(Stream specStream)
 	{
 		using var reader = new StreamReader(specStream, leaveOpen: false);
-		var yaml = new YamlStream();
-		yaml.Load(reader);
+		var text = await reader.ReadToEndAsync().ConfigureAwait(false);
+		var yaml = LoadYaml(text);
 
 		var root = yaml.Documents[0].RootNode ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
 
@@ -134,6 +135,30 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		jsonStream.Position = 0;
 		return jsonStream;
 	}
+
+	private static YamlStream LoadYaml(string text)
+	{
+		try
+		{
+			return LoadYamlStream(text);
+		}
+		catch (YamlException)
+		{
+			// Kibana emits media-type keys like `application/json; text/plain; */*:` unquoted. That is valid
+			// YAML to libyaml but YamlDotNet rejects it, so quote them and retry before giving up.
+			return LoadYamlStream(UnquotedMultiMediaTypeKey().Replace(text, "$1\"$2\":"));
+		}
+	}
+
+	private static YamlStream LoadYamlStream(string text)
+	{
+		var yaml = new YamlStream();
+		yaml.Load(new StringReader(text));
+		return yaml;
+	}
+
+	[GeneratedRegex(@"^([ \t]*)([^\s;:]+/[^\s;:]+(?:; [^\s;:]+/[^\s;:]+)+):[ \t]*$", RegexOptions.Multiline)]
+	private static partial Regex UnquotedMultiMediaTypeKey();
 
 	private static void WriteYamlNode(Utf8JsonWriter writer, YamlNode node)
 	{
