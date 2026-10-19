@@ -519,7 +519,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		PathType(document.Components!.Schemas!["inline.StringOrArray"]).Should().Be("union string | string[]");
 		PathType(name).Should().Be("string");
 		PathType(new OpenApiSchema { Type = JsonSchemaType.String }).Should().Be("string");
-		QueryType(names).Should().Be("union oneOf", "a query row keeps the wrapper's name");
+		QueryType(names).Should().Be("union string | string[]", "a query row reads like a path row");
 	}
 
 	private static ApiProperty PathRow(ApiPropertyTreeBuilder builder, IOpenApiSchema schema) =>
