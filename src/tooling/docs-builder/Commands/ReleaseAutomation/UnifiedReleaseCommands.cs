@@ -288,8 +288,9 @@ internal sealed class UnifiedReleaseCommands(
 	/// <remarks>
 	/// <para>
 	/// The docset is created in memory from <c>products.yml</c>. Every product with
-	/// <c>features.release-notes: dra</c> gets a release notes, known issues, breaking changes and
-	/// deprecations page. No documentation folder is needed.
+	/// <c>features.release-notes: dra</c> gets a page per version at <c>/{product}/{version}</c>,
+	/// with known issues, breaking changes, and deprecations nested under that version.
+	/// No documentation folder is needed.
 	/// </para>
 	/// <para>
 	/// The command resolves the argument like <c>release unified bundle</c>. A product without bundles is left

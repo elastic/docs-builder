@@ -6907,7 +6907,7 @@
               ],
               "name": "build",
               "summary": "Build the unified release notes site from the bundles that release unified bundle wrote.",
-              "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a release notes, known issues, breaking changes and\ndeprecations page. No documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle. A product without bundles is left\nout of the site, and the build fails only when no product has any bundle.",
+              "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a page per version at /{product}/{version},\nwith known issues, breaking changes, and deprecations nested under that version.\nNo documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle. A product without bundles is left\nout of the site, and the build fails only when no product has any bundle.",
               "usage": "docs-builder release unified build \u003Cversion-or-keyword\u003E [options]",
               "examples": [],
               "parameters": [
