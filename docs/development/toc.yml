@@ -5,4 +5,5 @@ toc:
   - file: essc.md
   - file: changelog-bundle-registry.md
   - file: page-feedback.md
+  - file: code-blocks.md
   - toc: link-validation

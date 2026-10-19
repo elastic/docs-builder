@@ -131,6 +131,24 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 	}
 
 	[Test]
+	public void DiscoverApiOwners_SkipsIsolatedFixtureDocsets()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var fixtures = CreateDocumentationSet("docs-builder", "docs-builder-elasticsearch", collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
+		{
+			[content.Checkout.Repository.Name] = content,
+			[fixtures.Checkout.Repository.Name] = fixtures
+		}.ToFrozenDictionary();
+
+		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSets, collector);
+
+		collector.Errors.Should().Be(0);
+		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
+	}
+
+	[Test]
 	public void DiscoverApiOwners_ReturnsOwnersForSetsWithApiDeclarations()
 	{
 		var collector = new DiagnosticsCollector([]);

@@ -1,13 +1,19 @@
 @inherits RazorSlice<Elastic.Documentation.Site.ApiSpecDownload>
-<details class="secondary-nav-dropdown secondary-nav-legacy-product" id="api-download-source">
-	<summary aria-label="Download source">
-		<span>Download source</span>
+<div class="api-context-spec" id="api-download-source">
+	<button type="button"
+	        class="api-context-spec-trigger"
+	        popovertarget="api-spec-menu"
+	        aria-label="Download OpenAPI spec">
+		<span class="api-context-spec__icon" aria-hidden="true">
+			<svg viewBox="0 0 16 16"><path fill="currentColor" d="M8.5 1v8.793l2.646-2.647.708.708L8 11.207 4.146 7.854l.708-.708L7.5 9.793V1h1ZM3 13h10v1H3v-1Z"/></svg>
+		</span>
+		<span class="api-context-spec__label">Download OpenAPI spec</span>
 		<span class="nav-select__chevron" aria-hidden="true">
 			<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
 		</span>
-	</summary>
-	<div class="secondary-nav-dropdown-menu" aria-label="Download source">
+	</button>
+	<div id="api-spec-menu" class="api-menu" popover data-placement="bottom-end" aria-label="Download OpenAPI spec">
 		<a class="secondary-nav-dropdown-link" href="@Model.JsonUrl" download hx-boost="false">JSON</a>
 		<a class="secondary-nav-dropdown-link" href="@Model.YamlUrl" download hx-boost="false">YAML</a>
 	</div>
-</details>
+</div>

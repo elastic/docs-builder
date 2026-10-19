@@ -15,6 +15,8 @@ namespace Elastic.Changelog.Creation;
 /// </summary>
 public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 {
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logger);
+
 	/// <summary>
 	/// Fetches PR information and derives changelog fields from it.
 	/// </summary>
@@ -37,13 +39,12 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return new PrProcessingResult { FetchFailed = true, ShouldSkip = false };
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = input.Products;
-		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+		// Resolve the products the entry will get (explicit, else labels, else products.default) so the blocker check
+		// sees the per-product rules of the product; only a genuinely unresolved product falls back to the global rules.
+		var effectiveProducts = ResolveProductsForBlockerCheck(input.Products, prInfo, config);
 
 		// Check for label blockers using effective products (including label-derived ones)
-		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
+		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions))
 		{
 			return new PrProcessingResult { FetchFailed = false, ShouldSkip = true };
 		}
@@ -78,12 +79,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			return (false, null);
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = products;
-		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
-
-		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
+		var effectiveProducts = ResolveProductsForBlockerCheck(products, prInfo, config);
+		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions);
 		return (shouldSkip, prInfo);
 	}
 
@@ -106,6 +103,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				derived.Description = releaseNote;
 				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
+
+			var impact = ReleaseNotesExtractor.FindImpact(prInfo.Body);
+			if (impact != null && string.IsNullOrWhiteSpace(input.Impact))
+				derived.Impact = impact;
+
+			var action = ReleaseNotesExtractor.FindAction(prInfo.Body);
+			if (action != null && string.IsNullOrWhiteSpace(input.Action))
+				derived.Action = action;
 		}
 
 		// Use PR title if title was not explicitly provided
@@ -123,7 +128,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			var prTitle = prInfo.Title;
 			// Strip prefix if requested
 			if (input.StripTitlePrefix == true)
-				prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+				prTitle = ChangelogTextUtilities.StripTitlePrefix(prTitle);
 			derived.Title = prTitle;
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
 		}
@@ -187,7 +192,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Map labels to products if products were not explicitly provided
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
 		{
-			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			var mappedProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 			if (mappedProducts.Count > 0)
 			{
 				derived.Products = mappedProducts;
@@ -229,20 +234,38 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
+	/// <summary>
+	/// The products the entry will get, for the blocker check: the explicit products, else the label-derived ones
+	/// (with implied products), else <c>products.default</c>. Empty only when none applies.
+	/// </summary>
+	internal static IReadOnlyList<ProductArgument> ResolveProductsForBlockerCheck(
+		IReadOnlyList<ProductArgument> explicitProducts,
+		GitHubPrInfo prInfo,
+		ChangelogConfiguration config
+	)
+	{
+		if (explicitProducts.Count > 0)
+			return explicitProducts;
+
+		var labelProducts = config.LabelToProducts != null ? ProductResolution.FromLabels(prInfo.Labels.ToArray(), config) : [];
+		return labelProducts.Count > 0 ? labelProducts : ProductResolution.Defaults(config);
+	}
+
 	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl
+		string prUrl,
+		DecisionLog decisions
 	)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
 			return false;
 
-		// Check product-specific overrides first, then fall back to global
-		if (createRules.ByProduct is { Count: > 0 })
+		// Check product-specific overrides first, then fall back to global. A per-product override only replaces the
+		// global rules for the product it names, so without a product to look up the global rules decide.
+		if (createRules.ByProduct is { Count: > 0 } && products.Count > 0)
 		{
 			foreach (var product in products)
 			{
@@ -250,34 +273,26 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					// Product-specific rules override global rules
-					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+					if (ShouldSkipByCreateRules(prLabels, productRules, prUrl, decisions))
 						return true;
 				}
-				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+				else if (ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions))
 					return true;
 			}
 			return false;
 		}
 
-		// No product-specific rules - check global
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		// No product-specific rules, or no products to look them up for: check global
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions);
 	}
 
-	internal static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext
-	)
+	internal static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
@@ -297,10 +312,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (matchingLabel != null)
 			{
-				collector.EmitHint(
-					string.Empty,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -316,11 +328,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitHint(
-					string.Empty,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}
@@ -524,6 +532,8 @@ public record DerivedPrFields
 	public string? Title { get; set; }
 	public string? Type { get; set; }
 	public string? Description { get; set; }
+	public string? Impact { get; set; }
+	public string? Action { get; set; }
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }

@@ -21,6 +21,65 @@ const overflowObserver = new ResizeObserver((entries) => {
 // callback for every table still on the page, not just the ones that changed.
 const observedWrappers = new Set<HTMLElement>()
 
+/**
+ * The fullscreen copy of a `:filterable:` table has to bring its own controls.
+ * Cloning just the .table-wrapper would carry the `hidden` rows of an active
+ * filter into the dialog with no search box, dropdowns or count - a subset of
+ * the table with no way to see or clear the filter. So clone the host element
+ * instead, strip the enhancement so the custom element rebuilds live controls
+ * (listeners don't survive cloneNode), and copy the reader's filter across.
+ */
+function cloneTableForModal(wrapper: HTMLElement): {
+    node: HTMLElement
+    source: Element | null
+} {
+    const host = wrapper.closest('filterable-table')
+    if (!host)
+        return { node: wrapper.cloneNode(true) as HTMLElement, source: null }
+
+    const clone = host.cloneNode(true) as HTMLElement
+    clone.querySelector('.filterable-table-controls')?.remove()
+    delete clone.dataset.enhanced
+    delete clone.dataset.filtered
+    for (const row of clone.querySelectorAll<HTMLTableRowElement>('tbody tr'))
+        row.hidden = false
+
+    // Drop the .table-container this table is already wrapped in: it carries
+    // its own expand button, which inside the dialog would open a second one.
+    // Promoting .table-wrapper back to a direct child also restores the
+    // structure dialog.table-modal's own styles are written against.
+    const container = clone.querySelector('.table-container')
+    const inner = container?.querySelector('.table-wrapper')
+    if (container && inner) container.replaceWith(inner)
+
+    return { node: clone, source: host }
+}
+
+function copyFilterState(source: Element, clone: Element): void {
+    const from = source.querySelector<HTMLInputElement>(
+        '.filterable-table-search'
+    )
+    const to = clone.querySelector<HTMLInputElement>('.filterable-table-search')
+    if (from && to && from.value) {
+        to.value = from.value
+        to.dispatchEvent(new Event('input'))
+    }
+
+    // Same table, so the dropdowns are generated in the same column order.
+    const fromSelects = source.querySelectorAll<HTMLSelectElement>(
+        '.filterable-table-facet select'
+    )
+    const toSelects = clone.querySelectorAll<HTMLSelectElement>(
+        '.filterable-table-facet select'
+    )
+    fromSelects.forEach((select, i) => {
+        const target = toSelects[i]
+        if (!target || !select.value) return
+        target.value = select.value
+        target.dispatchEvent(new Event('change'))
+    })
+}
+
 function openTableModal(wrapper: HTMLElement): void {
     const dialog = document.createElement('dialog')
     dialog.className = 'table-modal'
@@ -36,7 +95,8 @@ function openTableModal(wrapper: HTMLElement): void {
     closeBtn.innerHTML = closeIcon
     closeBtn.addEventListener('click', () => dialog.close())
 
-    content.append(closeBtn, wrapper.cloneNode(true))
+    const { node, source } = cloneTableForModal(wrapper)
+    content.append(closeBtn, node)
     dialog.appendChild(content)
 
     // Native <dialog> handles Escape and focus trapping; backdrop click is ours.
@@ -47,6 +107,10 @@ function openTableModal(wrapper: HTMLElement): void {
 
     document.body.appendChild(dialog)
     dialog.showModal()
+
+    // Appending upgrades the cloned custom element and builds its controls,
+    // so the reader's filter can only be replayed onto them afterwards.
+    if (source) copyFilterState(source, node)
 }
 
 /**

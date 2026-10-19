@@ -3,42 +3,32 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Landing;
-using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Site;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
 public static class ApiHubSwitcher
 {
-	public static IReadOnlyList<ApiCatalogEntry> CollectDeclaredEntries(
-		string? urlPathPrefix,
-		IReadOnlyDictionary<string, ResolvedApiConfiguration>? apiConfigurations
-	)
-	{
-		if (apiConfigurations is null || apiConfigurations.Count == 0)
-			return [];
-
-		var entries = new List<ApiCatalogEntry>(apiConfigurations.Count);
-		foreach (var (key, config) in apiConfigurations)
-		{
-			entries.Add(new(key, config.Product.DisplayName, $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, key)}/", config.Product.Id)
-			{
-				CatalogCategories = config.CatalogCategories
-			});
-		}
-
-		return entries;
-	}
-
-	public static IReadOnlyList<ApiVersionSwitcherItem> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey, string hubUrl)
+	/// <summary>The catalog's groups, so the menu and the landing page sort the APIs into the same bands.</summary>
+	public static IReadOnlyList<ApiContextProductGroup> Build(IReadOnlyList<ApiCatalogEntry> entries, string? currentApiKey)
 	{
 		if (entries.Count == 0 || currentApiKey is null)
 			return [];
 
-		var items = new List<ApiVersionSwitcherItem>(entries.Count + 1) { new("Back to hub", hubUrl, Selected: false) };
-
-		foreach (var entry in entries.OrderBy(e => e.Title, StringComparer.OrdinalIgnoreCase))
-			items.Add(new(entry.Title, entry.Url, Selected: entry.Key == currentApiKey));
-
-		return items;
+		return [
+			.. ApiCatalogViewModel.Group(entries).Select(
+				g => new ApiContextProductGroup(
+					g.Title,
+					[
+						.. g
+							.Entries
+							.OrderBy(e => ApiCatalogOrder.Rank(e.Key))
+							.ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
+							.ThenBy(e => e.Key, StringComparer.Ordinal)
+							.Select(e => new ApiContextProduct(e.Title, e.Url, e.Key == currentApiKey, e.IconSvg))
+					]
+				)
+			)
+		];
 	}
 }

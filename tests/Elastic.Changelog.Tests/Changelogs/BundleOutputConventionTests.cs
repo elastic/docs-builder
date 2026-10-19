@@ -686,4 +686,88 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 
 		BundleOutputNaming.ResolveVersion(null, null, "latest").Should().BeNull();
 	}
+
+	/// <summary>
+	/// Regression: before the fix, <see cref="BundleChangelogsArguments.OutputDirectory"/> was only a
+	/// fallback — a profile's <c>output_directory</c> silently took precedence, so DRA bundling
+	/// wrote bundles to the profile's repo-relative path instead of the caller's directory.
+	/// </summary>
+	[Test]
+	public async Task OutputDirectory_WhenSet_WinsOverProfileOutputDirectory()
+	{
+		var callerOutputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "dra-output");
+		FileSystem.Directory.CreateDirectory(callerOutputDir);
+
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			  profiles:
+			    kibana-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "kibana {version}"
+			      output_directory: CHANGELOG_DIR/docs/releases/kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "kibana-release",
+			ProfileArgument = "9.3.0",
+			Config = configPath,
+			OutputDirectory = callerOutputDir,
+		};
+
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var expectedPath = FileSystem.Path.Join(callerOutputDir, "kibana-kibana-9.3.0.yaml");
+		FileSystem.File.Exists(expectedPath).Should().BeTrue("explicit OutputDirectory must win over the profile's output_directory");
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "docs", "releases", "kibana", "kibana-kibana-9.3.0.yaml"))
+			.Should()
+			.BeFalse("bundle must not appear under the profile's output_directory when OutputDirectory is set");
+	}
+
+	[Test]
+	public async Task OutputDirectory_WhenNotSet_ProfileOutputDirectoryIsUsed()
+	{
+		var configPath = await WriteConfig(
+			"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  use_local_changelogs: true
+			  repo: kibana
+			  profiles:
+			    kibana-release:
+			      products: "elasticsearch {version} *"
+			      output_products: "kibana {version}"
+			      output_directory: CHANGELOG_DIR/docs/releases/kibana
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "kibana-release",
+			ProfileArgument = "9.3.0",
+			Config = configPath,
+			// OutputDirectory intentionally omitted — profile's output_directory is the fallback.
+		};
+
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem
+			.File
+			.Exists(FileSystem.Path.Join(_changelogDir, "docs", "releases", "kibana", "kibana-kibana-9.3.0.yaml"))
+			.Should()
+			.BeTrue("when OutputDirectory is not set the profile's output_directory is still respected");
+	}
 }

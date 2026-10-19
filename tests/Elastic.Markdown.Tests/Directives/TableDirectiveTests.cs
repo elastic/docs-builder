@@ -147,6 +147,75 @@ public class TableDirectiveWithoutMatrixTests() : DirectiveTest<TableDirectiveBl
 }
 
 [InheritsTests]
+public class TableDirectiveFilterableTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void ParsesFilterableOption() => Block!.Filterable.Should().BeTrue();
+
+	[Test]
+	public void WrapsTableInHostElement()
+	{
+		Html.Should().Contain("<filterable-table>");
+		Html.Should().Contain("</filterable-table>");
+	}
+
+	[Test]
+	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
+}
+
+[InheritsTests]
+public class TableDirectiveWithoutFilterableTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void DoesNotParseFilterableOption() => Block!.Filterable.Should().BeFalse();
+
+	[Test]
+	public void DoesNotWrapTable() => Html.Should().NotContain("filterable-table");
+}
+
+[InheritsTests]
+public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<TableDirectiveBlock>(
+	"""
+:::{table}
+:filterable:
+:matrix:
+:widths: 4-8
+
+| head a | head b |
+| --- | --- |
+| a | b |
+:::
+"""
+)
+{
+	[Test]
+	public void ComposesWithMatrixAndWidths()
+	{
+		Html.Should().Contain("<filterable-table><div class=\"table-wrapper table-matrix\"");
+		Html.Should().Contain("colgroup");
+		Html.Should().Contain("table-layout:fixed");
+	}
+}
+
+[InheritsTests]
 public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirectiveBlock>(
 	"""
 :::{table}

@@ -10,6 +10,7 @@ import {
     pinPagesNavScroll,
     shouldRetargetArticleSwap,
     shouldRetargetApiContentSwap,
+    shouldResetPageScroll,
     syncPagesNavFromResponse,
 } from './pages-nav'
 
@@ -795,5 +796,222 @@ describe('shouldRetargetApiContentSwap', () => {
                 '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
             )
         ).toBe(false)
+    })
+})
+
+describe('API nav deep link', () => {
+    const operation = '/api/doc/es/operation/operation-search'
+
+    function scrolledApiPage() {
+        document.body.innerHTML = `
+            <div id="api-content-grid"></div>
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                    <ul id="nav-tree-es">
+                        <li class="nav-folder">
+                            <div class="peer nav-folder-peer">
+                                <input id="other-group" type="checkbox" checked>
+                                <a class="sidebar-link current" href="/api/doc/es/operation/operation-other">Other</a>
+                            </div>
+                            <ul class="nav-subtree"><li>Other child</li></ul>
+                        </li>
+                        <li class="nav-folder">
+                            <div class="peer nav-folder-peer">
+                                <input id="search-group" type="checkbox">
+                                <a class="sidebar-link" href="/api/doc/es/group/search">Search</a>
+                            </div>
+                            <ul class="nav-subtree">
+                                <li><a class="sidebar-link" href="${operation}">Run a search</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        `
+    }
+
+    function setScrollY(value: number) {
+        Object.defineProperty(window, 'scrollY', {
+            configurable: true,
+            value,
+        })
+    }
+
+    it('expands the current operation after a same-tree swap', () => {
+        scrolledApiPage()
+        const response = `
+            <html>
+                <head><meta name="docs:nav-active" content="${operation}"></head>
+                <body>
+                    <nav id="pages-nav">
+                        <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                            <ul id="nav-tree-es"></ul>
+                        </div>
+                    </nav>
+                </body>
+            </html>
+        `
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: { xhr: { response } },
+            })
+        )
+
+        expect(
+            document.querySelector<HTMLInputElement>('#search-group')?.checked
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(`a[href="${operation}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(
+                    'a[href="/api/doc/es/operation/operation-other"]'
+                )
+                ?.classList.contains('current')
+        ).toBe(false)
+        expect(
+            document.querySelector<HTMLInputElement>('#other-group')?.checked
+        ).toBe(true)
+    })
+
+    it('scrolls the current operation into view after a same-tree swap', () => {
+        jest.useFakeTimers()
+        scrolledApiPage()
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+        const link = document.querySelector<HTMLElement>(
+            `a[href="${operation}"]`
+        )!
+        Object.defineProperty(nav, 'scrollTop', {
+            configurable: true,
+            writable: true,
+            value: 80,
+        })
+        jest.spyOn(nav, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 200 })
+        )
+        jest.spyOn(link, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 500, width: 100, height: 20 })
+        )
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: {
+                    xhr: {
+                        response: `<html><head><meta name="docs:nav-active" content="${operation}"></head><body><nav id="pages-nav"><div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch"><ul id="nav-tree-es"></ul></div></nav></body></html>`,
+                    },
+                },
+            })
+        )
+        document.head.insertAdjacentHTML(
+            'beforeend',
+            `<meta name="docs:nav-active" content="${operation}">`
+        )
+        initNav()
+        jest.advanceTimersByTime(150)
+
+        expect(nav.scrollTop).toBe(490)
+        jest.useRealTimers()
+    })
+
+    it('scrolls the article to the top when an API nav swap settles', () => {
+        scrolledApiPage()
+        setScrollY(240)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const grid = document.getElementById('api-content-grid')!
+        grid.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                bubbles: true,
+                detail: { xhr: { response: '<html></html>' } },
+            })
+        )
+        expect(scrollTo).toHaveBeenCalledWith(0, 0)
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('scrolls the article to the top on keyboard activation', () => {
+        scrolledApiPage()
+        setScrollY(180)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${operation}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        expect(
+            shouldResetPageScroll(document.getElementById('api-content-grid'))
+        ).toBe(true)
+        expect(scrollTo).toHaveBeenCalledWith(0, 0)
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('keeps the article scroll when Space is pressed on a nav link', () => {
+        scrolledApiPage()
+        setScrollY(180)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${operation}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('keeps the article scroll when the current folder row is toggled', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        initNav()
+        setScrollY(220)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, button: 0 })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        expect(
+            document.querySelector<HTMLInputElement>('#other-group')?.checked
+        ).toBe(false)
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
+    })
+
+    it('keeps the article scroll when Enter toggles the current folder row', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        setScrollY(220)
+        const scrollTo = jest
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
     })
 })

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
@@ -9,18 +10,6 @@ using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
-
-/// <summary>
-/// Controls how property sections collapse/expand by default.
-/// </summary>
-public enum CollapseMode
-{
-	/// <summary>Properties always start collapsed when toggle is shown (OperationView behavior).</summary>
-	AlwaysCollapsed,
-
-	/// <summary>Depth-based: depth 0 collapsed, deeper levels expand if less than 5 properties (SchemaView behavior).</summary>
-	DepthBased
-}
 
 /// <summary>
 /// Page-level display settings consumed by <see cref="ApiPropertyTreeBuilder"/>; views never see this.
@@ -37,7 +26,6 @@ public record PropertyDisplayOptions
 	public bool ShowVersionInfo { get; init; } = true;
 	public bool ShowExternalDocs { get; init; } = true;
 	public bool UseHiddenUntilFound { get; init; } = true;
-	public CollapseMode CollapseMode { get; init; } = CollapseMode.AlwaysCollapsed;
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 	public VersionsConfiguration? VersionsConfiguration { get; init; }
 
@@ -47,5 +35,5 @@ public record PropertyDisplayOptions
 	/// <see cref="SchemaAnalyzer"/> it creates so component schemas are looked up in
 	/// <c>OpenApiDocument.Components</c> at most once per unit rather than on every proxy access.
 	/// </summary>
-	internal Dictionary<string, IOpenApiSchema?>? SchemaResolveCache { get; init; }
+	internal ConcurrentDictionary<string, IOpenApiSchema?>? SchemaResolveCache { get; init; }
 }

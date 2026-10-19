@@ -292,7 +292,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return;
 
-		var viewModel = new Components.ApplicableToViewModel
+		var viewModel = new Elastic.Documentation.Site.ApplicabilityBadges.ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
 			Inline = false,

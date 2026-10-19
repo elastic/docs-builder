@@ -4,7 +4,11 @@ name: updatecli
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 8 * * 1-5"
+    - cron: "*/30 * * * *"
+
+concurrency:
+  group: updatecli
+  cancel-in-progress: false
 
 permissions:
   contents: read

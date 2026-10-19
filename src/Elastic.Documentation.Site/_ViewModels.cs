@@ -39,6 +39,22 @@ public record CodexBreadcrumb(string Title, string? Url);
 /// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
 public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
 
+/// <summary>One API product in the context bar's product menu.</summary>
+public sealed record ApiContextProduct(string Label, string Url, bool Selected, string? IconSvg);
+
+/// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
+public sealed record ApiContextProductGroup(string? Title, IReadOnlyList<ApiContextProduct> Products);
+
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads.</summary>
+public sealed record ApiContextBar(
+	string Title,
+	string? IconSvg,
+	IReadOnlyList<ApiContextProductGroup> ProductGroups,
+	string? HubUrl,
+	IReadOnlyList<NavigationSelectOption> Versions,
+	ApiSpecDownload Spec
+);
+
 public record GlobalLayoutViewModel
 {
 	public required string DocSetName { get; init; }
@@ -103,27 +119,14 @@ public record GlobalLayoutViewModel
 
 	public bool ShowVersionDropdown { get; init; }
 
-	/// <summary>
-	/// When true, the flag-off grey secondary nav renders <c>version-dropdown</c> on the far right.
-	/// Docs pages leave it false so the picker stays in the right rail. API explorer leaves it
-	/// false too: the version picker lives in the API sidebar.
-	/// </summary>
-	public bool ShowLegacyBarVersionDropdown { get; init; }
+	/// <summary>False where the page brings its own bar in place of the shared secondary nav (API pages).</summary>
+	public bool ShowSecondaryNav { get; init; } = true;
 
 	/// <summary>
-	/// API product choices for the flag-off grey secondary nav. Empty on Docs pages and on
-	/// isolated API builds (those keep the sidebar <c>&lt;select&gt;</c>).
+	/// Which API the reader is looking at: product, versions and spec downloads. Null on Docs
+	/// pages and on the API catalog.
 	/// </summary>
-	public IReadOnlyList<NavigationSelectOption> LegacyBarProductSwitcher { get; init; } = [];
-
-	/// <summary>API catalog URL. Set on API explorer pages so the top bar home link reads APIs.</summary>
-	public string? ApiCatalogUrl { get; init; }
-
-	/// <summary>Whole-spec JSON download. Null on Docs pages and on the API catalog.</summary>
-	public string? SpecJsonUrl { get; init; }
-
-	/// <summary>Whole-spec YAML download. Null on Docs pages and on the API catalog.</summary>
-	public string? SpecYamlUrl { get; init; }
+	public ApiContextBar? ApiContext { get; init; }
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
@@ -191,15 +194,7 @@ public record GlobalLayoutViewModel
 
 	public string FrontendConfigJson => JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
-	public string Static(string path)
-	{
-		var staticPath = $"_static/{path.TrimStart('/')}";
-		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
-
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
-
-		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
-	}
+	public string Static(string path) => StaticFileContentHashProvider.GetUrl(path, StaticPathPrefix);
 
 	private string GetStaticPathPrefix()
 	{

@@ -6,7 +6,6 @@ import {
     useSearchActions,
     useSelectedIndex,
 } from './navigationSearch.store'
-import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import {
@@ -116,12 +115,6 @@ export const NavigationSearch = ({
         }
         setIsPopoverOpen(false)
     }
-
-    useGlobalKeyboardShortcut('k', () => {
-        trackOpened('keyboard_shortcut')
-        inputRef.current?.focus()
-        inputRef.current?.select()
-    })
 
     // Close popover and blur input when htmx navigation starts from a search result
     useEffect(() => {

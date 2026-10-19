@@ -22,7 +22,7 @@ public class AppliesToRoleHtmlRenderer : HtmlObjectRenderer<AppliesToRole>
 			return;
 
 		// Create the view model with the VersionsConfig from the role's BuildContext
-		var viewModel = new Components.ApplicableToViewModel
+		var viewModel = new Elastic.Documentation.Site.ApplicabilityBadges.ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
 			Inline = true,

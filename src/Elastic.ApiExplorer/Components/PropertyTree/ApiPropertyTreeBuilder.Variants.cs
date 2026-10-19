@@ -1,0 +1,244 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
+using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Components.PropertyTree;
+
+public partial class ApiPropertyTreeBuilder
+{
+	private const string DictionaryKeyName = "<string>";
+
+	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>
+	public ApiUnionVariants? BuildUnionVariants(
+		List<UnionOption> unionOptions,
+		PropertyTreeScope scope,
+		OpenApiDiscriminator? discriminator = null
+	)
+	{
+		if (unionOptions.Count == 0 || !unionOptions.Any(o => o.IsObject))
+			return null;
+
+		var variantsToRender = CollectVariantsToRender(unionOptions);
+		if (variantsToRender.Count == 0)
+			return null;
+
+		// Children of union variants always show deprecated/version/external-docs regardless of page settings.
+		var childBuilder = new ApiPropertyTreeBuilder(
+			document,
+			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
+			currentPageSchemaId,
+			_shapes
+		);
+
+		var selector = discriminator?.PropertyName is { Length: > 0 } declared
+			? declared
+			: _analyzer.GetSelectingProperty(
+				// One schema per object shape, as LabelObjects counts them: X and X[] share one, a scalar has none.
+				variantsToRender
+					.Where(v => v is { IsObject: true, Props: not null })
+					.Select(v => v.Schema)
+					.Distinct(ReferenceEqualityComparer.Instance)
+					.Cast<IOpenApiSchema?>()
+			);
+		var usedIds = new HashSet<string>(StringComparer.Ordinal);
+		var optionIds = variantsToRender.Select(
+			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
+		).ToArray();
+		// The plain variant of an X[] | X pair is built first, so it keeps the full listing of the fields both share and the
+		// array side links to it, as links into X's fields expect.
+		var variants = new ApiUnionVariant[variantsToRender.Count];
+		foreach (var index in Enumerable.Range(0, variantsToRender.Count).OrderBy(i => variantsToRender[i].IsArray))
+		{
+			var variant = variantsToRender[index];
+			var optionId = optionIds[index];
+			var dictionaryValue = variant.PageUrl is null ? _analyzer.GetExpandableDictionaryValue(variant.Schema) : null;
+			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
+			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
+			var showProperties = hasProperties;
+
+			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
+			// An inline map takes its value's $ref, but the value type is listed below under the key row, not above it.
+			if (!string.IsNullOrEmpty(variant.Ref) && !_analyzer.GetTypeInfo(variant.Schema).IsDictionary)
+				_ = newAncestors.Add(variant.Ref);
+
+			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
+			var isCollapsible = showProperties && nestedCount > 0;
+			var defaultExpanded = ComputeDefaultExpanded();
+
+			var description = FirstParagraph(variant.Schema?.Description);
+
+			variants[index] = new ApiUnionVariant
+			{
+				DisplayName = VariantDisplayName(variant),
+				PageUrl = variant.PageUrl,
+				IsArrayVariant = variant.IsArray,
+				IsObjectType = variant.IsObject,
+				AnchorId = optionId,
+				ShowProperties = showProperties && variant.Schema is not null,
+				IsCollapsible = isCollapsible,
+				DefaultExpanded = defaultExpanded,
+				NestedCount = nestedCount,
+				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
+				Properties = showProperties && variant.Schema is not null
+					? childBuilder.BuildPropertyList(
+						dictionaryValue is null
+							? variant.Schema
+							: WithDictionaryKeyRow(_analyzer.Flatten(variant.Schema).Required, variant.Props, dictionaryValue),
+						scope with
+						{
+							Prefix = optionId,
+							Depth = scope.Depth + 1,
+							AncestorRefs = newAncestors,
+							RequiredProperties = null,
+							Owner = VariantDisplayName(variant)
+						},
+						selector
+					)
+						?? new ApiPropertyList([])
+					: null,
+				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
+				DescriptionMarkdown = description,
+				DiscriminatorLabel = variant.IsArray ? null : BuildDiscriminatorLabel(discriminator, variant)
+			};
+		}
+
+		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
+	}
+
+	/// <summary>
+	/// The variant's properties plus a <c>&lt;string&gt;</c> key row for its map values, the way a plain dictionary property
+	/// lists them. A pure map has no properties, so it shows the key row alone.
+	/// </summary>
+	internal static OpenApiSchema WithDictionaryKeyRow(
+		ISet<string> required,
+		IDictionary<string, IOpenApiSchema>? properties,
+		IOpenApiSchema value
+	) =>
+		new()
+		{
+			Type = JsonSchemaType.Object,
+			Properties = new Dictionary<string, IOpenApiSchema>(properties ?? new Dictionary<string, IOpenApiSchema>())
+			{
+				[DictionaryKeyName] = value
+			},
+			Required = new HashSet<string>(required)
+		};
+
+	/// <summary>
+	/// What a variant's tab reads: its label (a title or the fields it is told apart by), its shown name when that says
+	/// something (a page title, a primitive), and as a last resort the shortened name of the schema it refers to.
+	/// </summary>
+	private static string VariantDisplayName(VariantCandidate variant) =>
+		variant.Label
+			?? (variant is { IsObject: true, Ref.Length: > 0 } && !TypePages.TryGet(variant.Ref, out _)
+				? SchemaHelpers.ReadableSchemaName(variant.BaseName)
+				: variant.ShownBase);
+
+	/// <summary>Two variants with the same name (two inline <c>object</c> members) still need distinct anchors.</summary>
+	private static string UniqueId(string id, HashSet<string> used)
+	{
+		var candidate = id;
+		for (var n = 2; !used.Add(candidate); n++)
+			candidate = $"{id}-{n}";
+		return candidate;
+	}
+
+	private static string? FirstParagraph(string? description) =>
+		description?.Split(["\r\n\r\n", "\n\n"], 2, StringSplitOptions.TrimEntries)[0] is { Length: > 0 } first ? first : null;
+
+	/// <summary>
+	/// An explicit <c>mapping</c> entry wins. Otherwise an enum on the variant's discriminator property lists the values that select it.
+	/// Otherwise a referenced variant is selected by its schema name, OpenAPI's implicit mapping.
+	/// </summary>
+	private string? BuildDiscriminatorLabel(OpenApiDiscriminator? discriminator, VariantCandidate variant)
+	{
+		if (discriminator?.PropertyName is not { Length: > 0 } propertyName)
+			return null;
+
+		var mapped = discriminator.Mapping?.FirstOrDefault(
+			m => !string.IsNullOrEmpty(variant.Ref) && m.Value.Reference.Id == variant.Ref
+		).Key;
+		if (!string.IsNullOrEmpty(mapped))
+			return $"{propertyName}: {mapped}";
+
+		var property = variant.Props is not null && variant.Props.TryGetValue(propertyName, out var schema) ? schema : null;
+		var values = _analyzer.GetEnumValues(property);
+		if (values.Count > 0)
+			return $"{propertyName}: {string.Join(" | ", values)}";
+
+		// OpenAPI's implicit mapping: a referenced schema with no mapping entry, and no enum on the property, is selected by its own name.
+		return string.IsNullOrEmpty(variant.Ref) ? null : $"{propertyName}: {variant.Ref}";
+	}
+
+	private sealed record VariantCandidate(
+		string Name,
+		string BaseName,
+		string? Ref,
+		bool IsArray,
+		bool IsObject,
+		IOpenApiSchema? Schema,
+		IDictionary<string, IOpenApiSchema>? Props,
+		string ShownBase,
+		string? PageUrl = null,
+		string? Label = null
+	);
+
+	/// <summary>
+	/// Named options pair up as <c>X</c> and <c>X[]</c> by name. An inline object has no name to pair on, so each one
+	/// stays its own variant instead of folding into another <c>object</c>.
+	/// </summary>
+	private static object VariantGroupKey(UnionOption option) =>
+		option is { Ref: null or "", IsObject: true, Schema: { } schema } ? schema : option.BaseName;
+
+	private List<VariantCandidate> CollectVariantsToRender(List<UnionOption> unionOptions)
+	{
+		// One group per base name, array variant first; groups keep the order their first option appeared in.
+		var variantsToRender = new List<VariantCandidate>();
+		foreach (var variants in unionOptions.GroupBy(VariantGroupKey).Select(g => g.OrderByDescending(o => o.IsArray).ToList()))
+		{
+			var primaryOption = variants.FirstOrDefault(o => !o.IsArray);
+			if (primaryOption?.Schema is null)
+				primaryOption = variants.First();
+
+			var baseName = primaryOption.BaseName;
+			var schemaToRender = primaryOption.Schema;
+			// An array-only variant describes its items; the array schema itself carries no properties.
+			if (primaryOption.IsArray && schemaToRender?.Items is { } items)
+				schemaToRender = items;
+			// A type with its own page (QueryContainer, …) links there instead of listing its fields again, as property rows do.
+			var pageUrl = schemaToRender is null ? null : PageUrl(_analyzer.GetTypeInfo(schemaToRender).LinkedSchemaId);
+			var optionProps = primaryOption.IsObject && schemaToRender is not null && pageUrl is null
+				? _analyzer.GetSchemaProperties(schemaToRender)
+				: null;
+
+			VariantCandidate Candidate(bool isArray) =>
+				new(
+					isArray ? $"{baseName}[]" : baseName,
+					baseName,
+					primaryOption.Ref,
+					isArray,
+					primaryOption.IsObject,
+					schemaToRender,
+					optionProps,
+					primaryOption.ShownBase,
+					pageUrl,
+					primaryOption.Label
+				);
+
+			var hasArrayVariant = variants.Any(v => v.IsArray);
+			var hasNonArrayVariant = variants.Any(v => !v.IsArray);
+			if (hasArrayVariant)
+				variantsToRender.Add(Candidate(isArray: true));
+			if (hasNonArrayVariant)
+				variantsToRender.Add(Candidate(isArray: false));
+		}
+
+		return variantsToRender;
+	}
+}

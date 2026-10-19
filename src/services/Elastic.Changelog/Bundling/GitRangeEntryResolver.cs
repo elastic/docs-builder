@@ -38,6 +38,12 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
+
+	/// <summary>
+	/// Products applied to every entry synthesized from PR metadata, replacing label-derived and
+	/// <see cref="FallbackProducts"/> products. Label-derived products still drive label blockers.
+	/// </summary>
+	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -54,6 +60,9 @@ public enum GitRangePrSourceKind
 
 	/// <summary>Excluded by <c>rules.create</c> label rules.</summary>
 	Excluded,
+
+	/// <summary>Merged into a branch other than the requested base branch (for example a feature branch).</summary>
+	ExcludedBaseBranch,
 
 	/// <summary>The PR's metadata could not be fetched; no entry could be produced.</summary>
 	Missing
@@ -102,6 +111,7 @@ public record GitRangeBundleReport
 				GitRangePrSourceKind.InferredPrBody => "inferred (PR body)",
 				GitRangePrSourceKind.InferredTitle => "inferred (title)",
 				GitRangePrSourceKind.Excluded => "excluded (rules)",
+				GitRangePrSourceKind.ExcludedBaseBranch => "excluded (base branch)",
 				_ => "missing"
 			};
 			var entry = row.EntryFileNames.Count > 0 ? string.Join(", ", row.EntryFileNames.Select(f => $"`{f}`")) : "—";
@@ -135,7 +145,7 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
+public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, DecisionLog decisions)
 {
 	/// <summary>
 	/// Resolves entries for every PR in <paramref name="resolution"/> against the candidate pool
@@ -156,6 +166,31 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		var entries = new List<MatchedChangelogFile>();
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
+
+		// Pull requests without a pool entry need their metadata. It is read up front, in batches, and everything after
+		// that runs in range order, so the report and diagnostics stay stable.
+		var needSummary = resolution
+			.PullRequests
+			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
+			.ToList();
+		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
+		if (prSummaries is null)
+		{
+			// The provider has reported why. Listing every pull request as unreadable on top of that would only repeat it.
+			return new GitRangeEntryResolutionResult
+			{
+				Success = false,
+				Entries = [],
+				Report = new GitRangeBundleReport
+				{
+					StartRef = options.StartRef,
+					EndRef = options.EndRef,
+					TotalCommits = resolution.TotalCommits,
+					Rows = [],
+					CommitsWithoutPullRequest = resolution.CommitsWithoutPullRequest
+				}
+			};
+		}
 
 		foreach (var pr in resolution.PullRequests)
 		{
@@ -188,15 +223,32 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 					Source = GitRangePrSourceKind.Pool,
 					EntryFileNames = fileNames
 				});
+				decisions.Record("entries", "pool", $"#{pr.Number}");
 				continue;
 			}
 
-			var (row, synthesized, failed) = await SynthesizeFromPrMetadata(collector, pr, config, options, ctx);
+			var (row, synthesized, failed) = SynthesizeFromPrMetadata(
+				collector,
+				pr,
+				prSummaries.GetValueOrDefault(pr.Number),
+				config,
+				options
+			);
 			rows.Add(row);
 			if (synthesized != null)
 				entries.Add(synthesized);
 			if (failed)
 				success = false;
+		}
+
+		foreach (var excluded in resolution.ExcludedPullRequests)
+		{
+			rows.Add(new GitRangePrReportRow
+			{
+				Number = excluded.Number,
+				Url = excluded.Url,
+				Source = GitRangePrSourceKind.ExcludedBaseBranch
+			});
 		}
 
 		var report = new GitRangeBundleReport
@@ -264,16 +316,15 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 	/// mapped to type/areas/products/feature-id/highlight via the config pivots, and
 	/// <c>rules.create</c> label rules deciding inclusion.
 	/// </summary>
-	private async Task<(GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed)> SynthesizeFromPrMetadata(
+	private (GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed) SynthesizeFromPrMetadata(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
+		PullRequestSummary? summary,
 		ChangelogConfiguration? config,
-		GitRangeEntryResolutionOptions options,
-		Cancel ctx
+		GitRangeEntryResolutionOptions options
 	)
 	{
-		var prInfo = await prService.FetchPrInfoAsync(pr.Url, options.Owner, options.Repo, ctx);
-		if (prInfo == null || string.IsNullOrWhiteSpace(prInfo.Title))
+		if (summary == null || string.IsNullOrWhiteSpace(summary.Title))
 		{
 			collector.EmitWarning(
 				string.Empty,
@@ -283,19 +334,34 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, false);
 		}
 
-		var labels = prInfo.Labels.ToArray();
-		var labelProducts = config?.LabelToProducts != null ? PrInfoProcessor.MapLabelsToProducts(labels, config.LabelToProducts) : [];
+		var labels = summary.Labels.ToArray();
+		// Labels win, then products.default, then the profile's output products: the order of changelog add.
+		var labelProducts = config != null ? ProductResolution.FromLabels(labels, config) : [];
+		var resolvedProducts = ResolveProductsFromConfiguration(labelProducts, config, options);
 
+		// rules.create exclusions come first: a pull request that a skip label leaves out needs no product label.
 		if (config != null)
 		{
-			var effectiveProducts = labelProducts.Count > 0 ? labelProducts : (options.FallbackProducts ?? []).ToList();
-			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, effectiveProducts, config, collector, pr.Url))
+			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
+
+			// Two or more mapped products and no default: the pull request must name its product with a label,
+			// unless the caller sets the entry products itself.
+			if (
+				labelProducts.Count == 0
+				&& options.EntryProducts is not { Count: > 0 }
+				&& ProductResolution.Defaults(config).Count == 0
+				&& ProductResolution.RequiresProductLabel(config)
+			)
+			{
+				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+			}
 		}
 
-		var title = prInfo.Title;
+		var title = summary.Title;
 		if (config?.Extract.StripTitlePrefix == true)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
 		var typeString = config?.LabelToType != null ? PrInfoProcessor.MapLabelsToType(labels, config.LabelToType) : null;
 		if (typeString == null)
@@ -314,16 +380,16 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 			allowMatchingMetadataAttribute: true
 		) ? parsedType : ChangelogEntryType.Other;
 
-		var products = ResolveProducts(collector, pr, labelProducts, options);
+		var products = ResolveProducts(collector, pr, resolvedProducts, options);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
 		string? description = null;
 		if (config?.Extract.ReleaseNotes != false)
 		{
-			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo.Body);
+			var extraction = summary.ReleaseNote;
 			description = extraction.Content;
-			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
 		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
@@ -335,7 +401,7 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		var highlight = config?.HighlightLabels is { Count: > 0 } highlightLabels
 			&& labels.Any(label => highlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase)) ? true : (bool?)null;
 
-		var issues = config?.Extract.Issues != false && prInfo.LinkedIssues.Count > 0 ? prInfo.LinkedIssues.ToList() : null;
+		var issues = config?.Extract.Issues != false && summary.LinkedIssues.Count > 0 ? summary.LinkedIssues.ToList() : null;
 
 		var entryData = new ChangelogEntry
 		{
@@ -361,37 +427,56 @@ public class GitRangeEntryResolver(IGitHubPrService prService, ILogger logger)
 		};
 
 		var kind = description != null ? GitRangePrSourceKind.InferredPrBody : GitRangePrSourceKind.InferredTitle;
-		logger.LogInformation("Synthesized changelog entry for PR #{Number} from PR metadata ({Kind})", pr.Number, kind);
+		decisions.Record("entries", "inferred", $"#{pr.Number}", kind == GitRangePrSourceKind.InferredPrBody ? "PR body" : "title");
 		return (Row(pr, kind, fileName), entry, false);
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: label-derived products win; otherwise the concrete
-	/// (non-wildcard) fallback products from the profile/CLI. Returns null after emitting an
-	/// error when neither yields a product — a bundle entry without products is invalid.
+	/// The products of a pull request from the configuration, in the order <c>changelog add</c> uses: the products its
+	/// labels map to and imply (<paramref name="labelProducts"/>), else <c>products.default</c>, else the
+	/// concrete (non-wildcard) fallback products from the profile/CLI. Empty when none applies.
+	/// </summary>
+	private static List<ProductArgument> ResolveProductsFromConfiguration(
+		List<ProductArgument> labelProducts,
+		ChangelogConfiguration? config,
+		GitRangeEntryResolutionOptions options
+	)
+	{
+		if (labelProducts.Count > 0)
+			return labelProducts;
+
+		var defaults = config != null ? ProductResolution.Defaults(config) : [];
+		if (defaults.Count > 0)
+			return defaults;
+
+		return (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
+	}
+
+	/// <summary>
+	/// Products for a synthesized entry: the explicit entry products when set; otherwise the products resolved from the
+	/// configuration. Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
-		IReadOnlyList<ProductArgument> labelProducts,
+		IReadOnlyList<ProductArgument> resolvedProducts,
 		GitRangeEntryResolutionOptions options
 	)
 	{
-		var source = labelProducts.Count > 0
-			? labelProducts
-			: (options.FallbackProducts ?? []).Where(p => !string.IsNullOrWhiteSpace(p.Product) && p.Product != "*").ToList();
+		if (options.EntryProducts is { Count: > 0 })
+			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
 
-		if (source.Count == 0)
+		if (resolvedProducts.Count == 0)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"Cannot determine products for the entry synthesized from PR {pr.Url}: its labels map to no product and no output products are configured. " +
-					"Configure pivot.products label mappings or set output_products on the bundle profile."
+				$"Cannot determine products for the entry synthesized from PR {pr.Url}: its labels map to no product, and neither products.default nor output products are configured. " +
+					"Configure pivot.products label mappings, set products.default, or set output_products on the bundle profile."
 			);
 			return null;
 		}
 
-		return source.Select(p => p.ToProductReference()).ToList();
+		return resolvedProducts.Select(p => p.ToProductReference()).ToList();
 	}
 
 	private static GitRangePrReportRow Row(CommitRangePullRequest pr, GitRangePrSourceKind source, string? fileName = null) =>

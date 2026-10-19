@@ -125,6 +125,11 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.Exists(elasticsearchLanding)
 			.Should()
 			.BeTrue("staging assembler builds should emit the unversioned elasticsearch API landing page");
+		fileSystem
+			.File
+			.ReadAllText(elasticsearchLanding)
+			.Should()
+			.Contain("<meta name=\"robots\" content=\"noindex, nofollow\">", "API pages honor the environment's allow_indexing: false");
 
 		var versionedLanding = fileSystem
 			.Directory

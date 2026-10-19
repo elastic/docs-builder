@@ -33,7 +33,7 @@ public class ApiConfigurationConverter : IYamlTypeConverter
 		+ "                              # different repo than the current checkout\n"
 		+ "      children:          # optional\n"
 		+ "        - file: getting-started.md\n"
-		+ "      catalog:           # optional; category chips on the API catalog\n"
+		+ "      catalog:           # optional; deployment tags on the API catalog\n"
 		+ "        categories: [self, ece, ess, serverless]";
 
 	public bool Accepts(Type type) => type == typeof(ApiProductSequence) || type == typeof(ApiProductEntry);

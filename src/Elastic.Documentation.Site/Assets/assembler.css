@@ -13,6 +13,9 @@
 	body.navigation-preview {
 		--offset-top: 56px;
 	}
+	body:has(.api-context-bar-host) {
+		--offset-top: var(--api-context-bar-height);
+	}
 }
 
 /* Reserve the space used by elastic-nav.js before its asynchronous render.
@@ -36,6 +39,17 @@
 /* Air-gapped: uses elastic-docs-header web component instead of elastic nav */
 body.air-gapped {
 	--offset-top: 48px;
+}
+
+/* On md+ the API context bar is sticky too, so it sits under the 48px air-gapped header
+   and the sidebar clears both. */
+@media screen and (min-width: 768px) {
+	body.air-gapped .api-context-bar-host {
+		top: 48px;
+	}
+	body.air-gapped:has(.api-context-bar-host) {
+		--offset-top: calc(48px + var(--api-context-bar-height));
+	}
 }
 
 body.air-gapped elastic-docs-header .euiHeader {

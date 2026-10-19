@@ -1,5 +1,8 @@
 .parcel-cache/
 node_modules/
+_static/assets/
+_static/asset-*
+_static/chunk-*
 _static/*.css
 _static/*.css.map
 _static/*.ttf
@@ -8,4 +11,5 @@ _static/*.woff2
 _static/*.js
 _static/*.js.map
 _static/.build-stamp
+_static/.vite/
 _static/mermaid.min.js

@@ -31,7 +31,7 @@ public class DashboardOpenApiNavigationTests
 			configurationContext
 		);
 		var fs = new FileSystem();
-		var path = fs.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "dashboard-openapi.json");
+		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", "dashboard-openapi.json");
 		var fi = fs.FileInfo.New(path);
 		var doc = await OpenApiReader.Instance.ReadAsync(fi);
 

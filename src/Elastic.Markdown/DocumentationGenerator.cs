@@ -317,8 +317,10 @@ public partial class DocumentationGenerator
 
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
+		const string prefix = "Elastic.Documentation.Site._static.";
+		// Dot-prefixed entries (Vite's `.vite/manifest.json`) are build metadata, not site files.
 		foreach (var a in assembly.GetManifestResourceNames().Where(
-			r => r.StartsWith("Elastic.Documentation.Site._static.", StringComparison.Ordinal)
+			r => r.StartsWith(prefix, StringComparison.Ordinal) && r[prefix.Length] != '.'
 		))
 		{
 			await using var resourceStream = assembly.GetManifestResourceStream(a);
