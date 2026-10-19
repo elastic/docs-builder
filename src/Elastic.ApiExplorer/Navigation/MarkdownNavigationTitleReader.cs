@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Extensions;
 using YamlDotNet.RepresentationModel;
 
 namespace Elastic.ApiExplorer.Navigation;
@@ -57,16 +58,5 @@ public static class MarkdownNavigationTitleReader
 	}
 
 	/// <summary>Converts kebab-case/snake_case file names to a title-cased navigation title.</summary>
-	internal static string TitleCaseFromFileName(string fileName) => TitleCaseFromSlug(Path.GetFileNameWithoutExtension(fileName));
-
-	/// <summary>Converts a kebab-case/snake_case identifier to a title-cased string.</summary>
-	internal static string TitleCaseFromSlug(string slug) =>
-		string.Join(
-			' ',
-			slug
-				.Replace('-', ' ')
-				.Replace('_', ' ')
-				.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-				.Select(word => char.ToUpper(word[0]) + word[1..].ToLower())
-		);
+	internal static string TitleCaseFromFileName(string fileName) => Path.GetFileNameWithoutExtension(fileName).TitleCaseFromSlug();
 }

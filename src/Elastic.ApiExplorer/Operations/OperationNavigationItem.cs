@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
-using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi;
@@ -29,7 +28,7 @@ public record ApiOperation(
 	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
 	public string DisplayName =>
 		!string.IsNullOrWhiteSpace(Operation.OperationId) && string.Equals(ApiName, Operation.OperationId, StringComparison.Ordinal)
-			? MarkdownNavigationTitleReader.TitleCaseFromSlug(ApiName)
+			? ApiName.TitleCaseFromSlug()
 			: ApiName;
 
 	/// <summary>
