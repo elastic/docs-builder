@@ -37,10 +37,10 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	public AuthorizationSectionModel Authorization =>
 		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
-	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
+	protected override string? LayoutPageTitle => Operation.DisplaySummary ?? CurrentNavigationItem.NavigationTitle;
 
 	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
-	protected override string? LayoutPageDescription => DescriptionOrSummary(Page.DescriptionMarkdown, Operation.Operation.Summary);
+	protected override string? LayoutPageDescription => DescriptionOrSummary(Page.DescriptionMarkdown, Operation.DisplaySummary);
 
 	internal static string? DescriptionOrSummary(string? description, string? summary) =>
 		string.IsNullOrWhiteSpace(description) ? summary : description;

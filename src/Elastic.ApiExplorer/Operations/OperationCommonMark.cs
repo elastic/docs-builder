@@ -16,7 +16,7 @@ internal static class OperationCommonMark
 		var markdown = new StringBuilder();
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
-		var title = operation.Summary ?? apiOperation.ApiName;
+		var title = apiOperation.DisplaySummary ?? apiOperation.ApiName;
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);

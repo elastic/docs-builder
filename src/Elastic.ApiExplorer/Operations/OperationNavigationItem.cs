@@ -21,6 +21,9 @@ public record ApiOperation(
 	string ApiName
 ) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
 {
+	// Only these five characters count as whitespace, as in HTML: a non-breaking space or an en space stays.
+	private static readonly char[] AsciiWhitespace = [' ', '\t', '\n', '\f', '\r'];
+
 	// The page header leads with the dominant method, which can come from the description's method listing
 	// rather than the spec; the sidebar badge must agree with it.
 	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
@@ -30,6 +33,17 @@ public record ApiOperation(
 	/// declares one of the same name and location itself.
 	/// </summary>
 	public IOpenApiParameter[] Parameters { get; } = MergeParameters(Operation, Path);
+
+	/// <summary>
+	/// The summary as a single line, for titles. Some specs end a summary with a newline (a YAML block scalar),
+	/// and one has a blank line inside it. The spec value stays as written, so the downloadable spec stays faithful.
+	/// A spec lint should flag these upstream; until one exists, titles clean them up here.
+	/// </summary>
+	public string? DisplaySummary { get; } = Operation.Summary is { } summary ? StripAndCollapseAsciiWhitespace(summary) : null;
+
+	// https://infra.spec.whatwg.org/#strip-and-collapse-ascii-whitespace
+	private static string StripAndCollapseAsciiWhitespace(string value) =>
+		string.Join(' ', value.Split(AsciiWhitespace, StringSplitOptions.RemoveEmptyEntries));
 
 	private static IOpenApiParameter[] MergeParameters(OpenApiOperation operation, IOpenApiPathItem path)
 	{
