@@ -147,4 +147,14 @@ public class JsonPathTests
 
 		body.Properties!.Items.Single().JsonPath.Should().Be("[].field");
 	}
+
+	[Test]
+	public async Task Render_Permalink_AnnouncesPath()
+	{
+		var list = await BuildAsync("");
+
+		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("""aria-label="Link to bool.must[].field" """.TrimEnd());
+	}
 }

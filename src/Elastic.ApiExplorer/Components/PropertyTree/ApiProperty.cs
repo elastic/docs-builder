@@ -166,6 +166,9 @@ public record ApiProperty
 	/// <summary>Where the field sits in the body, such as <c>query.bool.must[].match</c>; null where paths are not shown.</summary>
 	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
+
+	/// <summary>What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.</summary>
+	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? path : Name;
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 
