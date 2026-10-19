@@ -45,15 +45,12 @@ describe('ModalSearch', () => {
         })
     })
 
-    it('closes before an HTMX navigation swaps the page', () => {
+    it('stays mounted during an HTMX request and closes after the swap', () => {
         renderModalSearch()
 
         act(() => {
             modalSearchStore.getState().actions.openModal()
         })
-        expect(
-            screen.getByRole('button', { name: 'Close search modal' })
-        ).toBeInTheDocument()
 
         const result = document.createElement('a')
         result.setAttribute('data-search-result-index', '0')
@@ -65,7 +62,14 @@ describe('ModalSearch', () => {
                 })
             )
         })
+        expect(modalSearchStore.getState().isOpen).toBe(true)
+        expect(
+            screen.getByRole('button', { name: 'Close search modal' })
+        ).toBeInTheDocument()
 
+        act(() => {
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
+        })
         expect(modalSearchStore.getState().isOpen).toBe(false)
         expect(
             screen.queryByRole('button', { name: 'Close search modal' })
