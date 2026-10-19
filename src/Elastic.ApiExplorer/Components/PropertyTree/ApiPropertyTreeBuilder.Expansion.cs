@@ -169,10 +169,7 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.PropertyList,
 					UseHidden = useHidden,
-					Properties = BuildPropertyList(
-						properties.Schema,
-						properties.OfItems ? childScope with { JsonPath = AppendArray(childScope.JsonPath) } : childScope
-					)
+					Properties = BuildPropertyList(properties.Schema, properties.OfItems ? childScope.IntoItems() : childScope)
 						?? new ApiPropertyList([]),
 					Variants = properties.UnionVariants is { } variants ? BuildLabelledVariants(row, childScope, variants) : null
 				},
@@ -181,7 +178,7 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.UnionVariants,
 					UseHidden = useHidden,
-					Variants = BuildVariantChildren(row, childScope, variants)
+					Variants = BuildVariantChildren(row, row.TypeInfo.IsArray ? childScope.IntoItems() : childScope, variants)
 				},
 			_ => ApiPropertyChildren.None
 		};

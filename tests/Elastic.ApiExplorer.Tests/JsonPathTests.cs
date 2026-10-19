@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Elastic.ApiExplorer.Model;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -24,9 +25,14 @@ public class JsonPathTests
 		      "Match": { "type": "object", "properties": { "field": { "type": "string" } } },
 		      "Bool": { "type": "object", "properties": { "must": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } } } },
 		      "Agg": { "type": "object", "properties": { "terms": { "type": "string" } } },
+		      "Many": { "type": "array", "items": { "$ref": "#/components/schemas/Match" } },
+		      "Cat": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["cat"] }, "lives": { "type": "integer" } } },
+		      "Dog": { "type": "object", "properties": { "kind": { "type": "string", "enum": ["dog"] }, "barks": { "type": "boolean" } } },
+		      "Pets": { "type": "array", "items": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] } },
 		      "Root": {
 		        "type": "object",
 		        "properties": {
+		          "pets": { "type": "array", "items": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ] } },
 		          "bool": { "$ref": "#/components/schemas/Bool" },
 		          "aggs": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Agg" } }
 		        }
@@ -99,5 +105,16 @@ public class JsonPathTests
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		html.Should().Contain("""<code data-tippy-content="" data-tippy-theme="mono">bool</code>""", "tooltip.ts skips an empty tooltip");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayOfUnion_VariantFieldsReadAsItems()
+	{
+		var list = await BuildAsync("");
+
+		var pets = list.Items.Single(p => p.Name == "pets");
+		var cat = pets.Children.Variants!.Variants.First(v => v.Properties!.Items.Any(p => p.Name == "lives"));
+
+		cat.Properties!.Items.Single(p => p.Name == "lives").JsonPath.Should().Be("pets[].lives");
 	}
 }

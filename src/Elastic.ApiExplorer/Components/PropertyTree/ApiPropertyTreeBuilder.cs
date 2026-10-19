@@ -37,6 +37,9 @@ public sealed record PropertyTreeScope
 
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
+
+	/// <summary>The scope of an array's items: the path gains <c>[]</c>.</summary>
+	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : $"{JsonPath}[]" };
 }
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
@@ -80,8 +83,6 @@ public partial class ApiPropertyTreeBuilder(
 
 	private static string? AppendPath(string? parent, string segment) =>
 		parent is null ? null : parent.Length == 0 ? segment : $"{parent}.{segment}";
-
-	private static string? AppendArray(string? path) => path is null ? null : $"{path}[]";
 
 	/// <summary>Builds the property rows for a schema, <paramref name="leadingProperty"/> first; null when it has no renderable properties.</summary>
 	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope, string? leadingProperty = null)
