@@ -1283,6 +1283,18 @@ button.response-status-toggle:focus {
 	@apply font-mono font-semibold;
 }
 
+/* The JSON path tooltip on a property name (data-tippy-theme="mono"); tippy mounts it outside the list. */
+/* Tippy sets max-width inline (350px), so the wider cap needs !important. */
+.tippy-box[data-theme~='mono'] {
+	max-width: min(90vw, 48rem) !important;
+}
+
+.tippy-box[data-theme~='mono'] .tippy-content {
+	@apply font-mono;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 /* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
 .property-list {
 	margin-top: 0;

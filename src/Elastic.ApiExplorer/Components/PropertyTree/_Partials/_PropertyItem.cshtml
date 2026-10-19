@@ -7,7 +7,7 @@
 		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.Name">
 			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 		</a>
-		<code>@Model.Name</code>
+		<code data-tippy-content="@Model.JsonPath" data-tippy-theme="mono">@Model.Name</code>
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
@@ -159,7 +159,7 @@
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
-							<code>&lt;string&gt;</code>
+							<code data-tippy-content="@dict.JsonPath" data-tippy-theme="mono">&lt;string&gt;</code>
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))

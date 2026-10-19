@@ -20,6 +20,9 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 public sealed record PropertyTreeScope
 {
 	public required string Prefix { get; init; }
+
+	/// <summary>The JSON path of the value these properties belong to, "" at a body root; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public bool IsRequest { get; init; }
 
 	/// <summary>A response lists no <c>writeOnly</c> fields, as a request lists no <c>readOnly</c> ones.</summary>
@@ -71,8 +74,14 @@ public partial class ApiPropertyTreeBuilder(
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null,
 		string? OptionalRoute = null,
-		string? Example = null
+		string? Example = null,
+		string? JsonPath = null
 	);
+
+	private static string? AppendPath(string? parent, string segment) =>
+		parent is null ? null : parent.Length == 0 ? segment : $"{parent}.{segment}";
+
+	private static string? AppendArray(string? path) => path is null ? null : $"{path}[]";
 
 	/// <summary>Builds the property rows for a schema, <paramref name="leadingProperty"/> first; null when it has no renderable properties.</summary>
 	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope, string? leadingProperty = null)
@@ -166,7 +175,8 @@ public partial class ApiPropertyTreeBuilder(
 			IsDeprecated: schema.Deprecated,
 			AppliesTo: XStateApplicability.From(schema.Extensions),
 			ShapeKey: shapeKey,
-			Repeats: ancestor
+			Repeats: ancestor,
+			JsonPath: AppendPath(scope.JsonPath, name)
 		);
 	}
 
@@ -282,6 +292,7 @@ public partial class ApiPropertyTreeBuilder(
 			Name = row.Name,
 			Schema = propSchema,
 			AnchorId = row.AnchorId,
+			JsonPath = row.JsonPath,
 			Depth = scope.Depth,
 			IsRequired = row.IsRequired,
 			IsNullable = _analyzer.IsNullable(propSchema),
@@ -486,6 +497,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
+		var keyPath = AppendPath(row.JsonPath, DictionaryKeyName);
 		var dictIsCollapsible = expansion.NestedCount > 0;
 		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
@@ -495,6 +507,7 @@ public partial class ApiPropertyTreeBuilder(
 			Dictionary = new DictionaryChildDisplay
 			{
 				KeyAnchorId = keyAnchorId,
+				JsonPath = keyPath,
 				Depth = childScope.Depth,
 				IsCollapsible = dictIsCollapsible,
 				DefaultExpanded = dictDefaultExpanded,
@@ -504,7 +517,7 @@ public partial class ApiPropertyTreeBuilder(
 				EnumValues = _analyzer.GetEnumValues(row.TypeInfo.DictValueSchema),
 				Properties = BuildPropertyList(
 					row.TypeInfo.DictValueSchema,
-					childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 }
+					childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 }
 				)
 					?? new ApiPropertyList([])
 			}

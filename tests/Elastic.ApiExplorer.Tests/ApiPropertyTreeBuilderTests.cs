@@ -564,7 +564,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var anchorId = list.Items.Single(p => p.Name == "only").AnchorId;
 		html.Should().Contain($"href=\"#{anchorId}\" aria-label=\"Link to only\"");
-		html.Should().MatchRegex("</a>\\s*<code>only</code>");
+		html.Should().MatchRegex("</a>\\s*<code[^>]*>only</code>");
 	}
 
 	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
