@@ -1999,13 +1999,6 @@ a.docs-reference-btn::after {
 	font-size: 0.85em;
 }
 
-/* Dictionary/map type icon - same color as object icon */
-.dict-icon {
-	@apply text-grey-60 font-normal;
-	font-size: 1.2em;
-	font-variant: small-caps;
-}
-
 /* Enum type icon - purple to match enum values */
 .enum-icon {
 	@apply text-purple-70 font-normal;
