@@ -117,4 +117,34 @@ public class JsonPathTests
 
 		cat.Properties!.Items.Single(p => p.Name == "lives").JsonPath.Should().Be("pets[].lives");
 	}
+
+	[Test]
+	public async Task Build_RootArrayOfUnion_PathStartsWithItems()
+	{
+		var document = await LoadSpecAsync(Spec);
+
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas!["Pets"],
+			new PropertyTreeScope { Prefix = "res-200", JsonPath = "", IsResponse = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.UnionVariants!.Variants.SelectMany(v => v.Properties!.Items).Select(p => p.JsonPath).Should().Contain("[].lives");
+	}
+
+	[Test]
+	public async Task Build_RootArrayOfObjects_PathStartsWithItems()
+	{
+		var document = await LoadSpecAsync(Spec);
+
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas!["Many"],
+			new PropertyTreeScope { Prefix = "req", JsonPath = "", IsRequest = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.Properties!.Items.Single().JsonPath.Should().Be("[].field");
+	}
 }
