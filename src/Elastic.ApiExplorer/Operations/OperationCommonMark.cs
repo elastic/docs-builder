@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -16,7 +17,7 @@ internal static class OperationCommonMark
 		var markdown = new StringBuilder();
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
-		var title = operation.Summary ?? apiOperation.ApiName;
+		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.ApiName;
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);

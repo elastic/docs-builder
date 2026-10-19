@@ -50,7 +50,7 @@ public class UnionVariantTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 	}
 
 	[Test]
@@ -408,7 +408,7 @@ public class UnionVariantTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
-		var policy = variants.Single(v => v.DisplayName == "{ name, inputs }");
+		var policy = variants.Single(v => v.DisplayName == "Policy");
 		policy.IsArrayVariant.Should().BeTrue();
 		policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
 		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
@@ -593,7 +593,7 @@ public class UnionVariantTests
 		sort.EnumValues.Should().BeEmpty("the literals move into the One of row");
 		sort.Union!.Badges.Select(b => b.Text).Should().Equal("asc", "desc");
 		sort.Union.MoreOptions.Should().Be("or an object listed below");
-		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ order, missing }");
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
@@ -604,7 +604,7 @@ public class UnionVariantTests
 
 		var rank = list.Items.Single(p => p.Name == "rank");
 		rank.Union!.MoreOptions.Should().Be("or a type listed below", "the list below holds integer as well as the object");
-		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "{ order, missing }");
+		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "SortObject");
 	}
 
 	[Test]
@@ -988,7 +988,7 @@ public class UnionVariantTests
 		var container = variants.Single(v => v.DisplayName == "Query");
 		container.PageUrl.Should().NotBeNullOrEmpty();
 		container.Properties.Should().BeNull("QueryContainer has its own page");
-		variants.Single(v => v.DisplayName == "{ template }").Properties!.Items.Select(p => p.Name).Should().Equal("template");
+		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");
 	}
 
 	[Test]
