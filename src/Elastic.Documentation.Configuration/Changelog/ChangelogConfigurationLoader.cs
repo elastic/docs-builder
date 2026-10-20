@@ -6,6 +6,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
@@ -428,6 +429,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			filenameStrategy = parsed;
 		}
 
+		ChangelogEntryFormat? entryFormat = null;
+		if (
+			!string.IsNullOrWhiteSpace(yamlConfig.EntryFormat)
+			&& !ChangelogEntryFormat.All.TryGetValue(yamlConfig.EntryFormat, out entryFormat)
+		)
+		{
+			collector.EmitError(
+				configPath,
+				$"entry_format: '{yamlConfig.EntryFormat}' is not a known changelog entry format. Known formats: {string.Join(", ", ChangelogEntryFormat.All.Keys.Order(StringComparer.Ordinal))}."
+			);
+			return null;
+		}
+
 		var labelToAreasReadOnly = labelToAreas?.ToDictionary(
 			kvp => kvp.Key,
 			kvp => (IReadOnlyList<string>)kvp.Value,
@@ -451,7 +465,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			ProductsConfiguration = productsConfig,
 			Bundle = bundleConfig,
 			Extract = extract,
-			Filename = filenameStrategy
+			Filename = filenameStrategy,
+			EntryFormat = entryFormat
 		};
 	}
 

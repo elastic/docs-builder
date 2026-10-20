@@ -154,7 +154,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		Cancel ctx
 	)
 	{
-		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content)).ToList();
+		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content, config?.EntryFormat)).ToList();
 
 		var rows = new List<GitRangePrReportRow>();
 		var entries = new List<MatchedChangelogFile>();
@@ -271,18 +271,17 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		IReadOnlyList<string> Prs
 	);
 
-	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
+	/// <param name="entryFormat">
+	/// The repository's entry format (<c>entry_format</c>), or null. A pool entry that is not in the docs-builder format
+	/// is read in this format: files uploaded before the repository set it are still in their original format.
+	/// </param>
+	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content, ChangelogEntryFormat? entryFormat = null)
 	{
 		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		try
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
-				normalized,
-				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
-			)
-				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
+			var dto = DeserializePoolEntry(fileName, content, entryFormat);
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),
@@ -297,6 +296,25 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
+	}
+
+	private static ChangelogEntryDto DeserializePoolEntry(string fileName, string content, ChangelogEntryFormat? entryFormat)
+	{
+		try
+		{
+			return Deserialize(content);
+		}
+		catch (YamlException) when (entryFormat != null)
+		{
+			return Deserialize(entryFormat.ToEntryYaml(content, fileName));
+		}
+
+		ChangelogEntryDto Deserialize(string yaml) =>
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				ReleaseNotesSerialization.NormalizeYaml(yaml),
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 	}
 
 	/// <summary>

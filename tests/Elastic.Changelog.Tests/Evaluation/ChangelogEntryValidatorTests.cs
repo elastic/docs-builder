@@ -28,10 +28,13 @@ public class ChangelogEntryValidatorTests
 	) => ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, labelDerivedType, knownProducts);
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
-	// Elasticsearch format: no products field, products.default supplies them
+	// entry_format: entries have no products field, products.default supplies them
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
 	private const string ElasticsearchFormatEntry = "pr: 42\nsummary: Limit size of sql query\narea: SQL\ntype: bug\nissues: []\n";
+
+	private static ChangelogEntryDto ParseElasticsearch(string yaml) =>
+		ParseYaml(ChangelogEntryFormat.All["elasticsearch"].ToEntryYaml(yaml));
 
 	[Test]
 	public void Validate_ElasticsearchFormatWithProductsDefault_HasNoFindings()
@@ -43,7 +46,7 @@ public class ChangelogEntryValidatorTests
 
 		var findings = ChangelogEntryValidator.Validate(
 			"docs/changelog/42.yaml",
-			ParseYaml(ElasticsearchFormatEntry),
+			ParseElasticsearch(ElasticsearchFormatEntry),
 			config,
 			ChangelogEntryType.BugFix,
 			null,
@@ -61,7 +64,7 @@ public class ChangelogEntryValidatorTests
 		{
 			ProductsConfiguration = new ProductsConfig { Default = [new DefaultProduct { Product = "elasticsearch" }] }
 		};
-		var entry = ParseYaml(ElasticsearchFormatEntry + "source_repo: elasticsearch-serverless\n");
+		var entry = ParseElasticsearch(ElasticsearchFormatEntry + "source_repo: elasticsearch-serverless\n");
 
 		var findings = ChangelogEntryValidator.Validate(
 			"docs/changelog/42.yaml",
@@ -83,7 +86,7 @@ public class ChangelogEntryValidatorTests
 	{
 		var findings = ChangelogEntryValidator.Validate(
 			"docs/changelog/42.yaml",
-			ParseYaml(ElasticsearchFormatEntry),
+			ParseElasticsearch(ElasticsearchFormatEntry),
 			Config,
 			null,
 			null,

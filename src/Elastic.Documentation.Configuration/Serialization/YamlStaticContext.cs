@@ -30,7 +30,7 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(SiteNavigationFile))]
 [YamlSerializable(typeof(SearchConfigDto))]
 [YamlSerializable(typeof(ChangelogEntryDto))]
-[YamlSerializable(typeof(ElasticsearchChangelogEntryDto))]
+[YamlSerializable(typeof(ChangelogEntryFormatsFileYaml))]
 [YamlSerializable(typeof(BundleDto))]
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
 [YamlSerializable(typeof(ChangelogConfigurationYaml))]

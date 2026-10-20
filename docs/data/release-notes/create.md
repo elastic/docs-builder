@@ -124,31 +124,37 @@ Some of the fields in the schema accept only a specific set of values:
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 :::
 
-### Elasticsearch changelog format [elasticsearch-format]
+### Other entry formats [entry-formats]
 
-`elastic/elasticsearch` and `elastic/elasticsearch-serverless` write changelog files in their own format.
-docs-builder reads those files as if they used the schema above:
+Some repositories write changelog files in their own format.
+docs-builder reads them when the repository names the format in its changelog configuration file:
 
-| Elasticsearch field | Read as |
+```yaml
+entry_format: elasticsearch
+```
+
+The formats are defined as data in [changelog-entry-formats.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog-entry-formats.yml):
+
+| Format | Used by |
 |---|---|
-| `summary` | `title` |
-| `area` | `areas`, split on commas |
-| `pr`, `issues` | `pr`, `issues` |
-| `source_repo` | The repository of `pr`: the entry gets `prs: [elastic/<repo>#<pr>]` instead of `pr` |
-| `type: bug` | `type: bug-fix` |
-| `type: breaking`, `type: breaking-java` | `type: breaking-change` |
-| `type: new-aggregation` | `type: feature` |
-| `type: upgrade` | `type: other` |
-| `breaking` or `deprecation` block | `details` becomes `description`, `impact` becomes `impact` |
-| `highlight` block | `highlight: true` (or the block's `notable` value), and `body` becomes `description` |
+| `elasticsearch` | `elastic/elasticsearch` and `elastic/elasticsearch-serverless` (`summary`, `area`, `type`, and `breaking`, `deprecation`, and `highlight` blocks) |
+| `elastic-agent-changelog-tool` | Repositories that use elastic-agent-changelog-tool, such as `elastic/beats` and `elastic/elastic-agent` (`kind`, `summary`, `component`, `pr`, `issue`) |
 
-The other type names are the same in both formats.
-These files have no `products` field:
+Each format maps the fields of the schema above to fields of the source file, and can translate values such as type names.
+To support another format, add it to that file. No code change is needed.
+
+docs-builder converts the files where it reads the repository's own files:
+
+- `changelog validate` checks the converted entry.
+- `changelog upload` uploads the converted entry, so the changelog pool holds the docs-builder format.
+- A commit-range bundle (`release unified bundle`, `release serverless`, or `changelog bundle` with a git range) reads pool entries that are still in the repository's format.
+
+A key that the format doesn't know is an error.
+The converted entries have no `products`:
 
 - `changelog validate` accepts them when the changelog configuration file sets `products.default`.
-- A commit-range bundle (`release unified bundle`, `release serverless`, or `changelog bundle` with a git range) gives each of them the products that its pull request's labels map to, or else `products.default`.
+- A commit-range bundle gives each of them the products that its pull request's labels map to, or else `products.default`.
 - Other bundles don't add products. A `changelog bundle` that reads these files directly, for example with `--files`, fails with "missing required field: products".
-The `title` of a `breaking`, `deprecation`, or `highlight` block is not used.
 
 ## Examples
 

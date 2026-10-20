@@ -155,7 +155,9 @@ public class ChangelogEntryValidationService(
 			ChangelogEntryDto? dto = null;
 			try
 			{
-				var normalized = ReleaseNotesSerialization.NormalizeYaml(rawYaml);
+				// A repository with its own entry format (entry_format in changelog.yml) has its files converted first.
+				var entryYaml = config.EntryFormat is { } format ? format.ToEntryYaml(rawYaml, relPath) : rawYaml;
+				var normalized = ReleaseNotesSerialization.NormalizeYaml(entryYaml);
 				dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
 					normalized,
 					ReleaseNotesSerialization.GetEntryDeserializerOptions(relPath)
@@ -170,7 +172,7 @@ public class ChangelogEntryValidationService(
 						labelDerivedType,
 						knownProducts,
 						fnNum,
-						productsFromDefaults: ReleaseNotesSerialization.IsElasticsearchEntryFormat(rawYaml)
+						productsFromDefaults: config.EntryFormat is not null
 					);
 					allFindings.AddRange(findings);
 				}

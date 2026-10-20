@@ -14,6 +14,7 @@ using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using SharpYaml;
 
 namespace Elastic.Changelog.Uploading;
 
@@ -105,9 +106,16 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var directories = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
-			? await ResolveBundleScanDirectories(collector, args, ctx)
-			: [await ResolveChangelogDirectory(collector, args, ctx) ?? "docs/changelog"];
+		ChangelogEntryFormat? entryFormat = null;
+		IReadOnlyList<string> directories;
+		if (args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend)
+			directories = await ResolveBundleScanDirectories(collector, args, ctx);
+		else
+		{
+			var (directory, format) = await ResolveChangelogDirectory(collector, args, ctx);
+			directories = [directory ?? "docs/changelog"];
+			entryFormat = format;
+		}
 
 		var existing = directories.Where(d => !string.IsNullOrWhiteSpace(d) && _fileSystem.Directory.Exists(d)).ToList();
 		if (existing.Count == 0)
@@ -120,7 +128,7 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var targets = DiscoverTargets(collector, args, existing);
+		var targets = DiscoverTargets(collector, args, existing, entryFormat);
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -256,12 +264,17 @@ public class ChangelogUploadService(
 		}
 	}
 
+	/// <param name="entryFormat">
+	/// The repository's entry format (<c>entry_format</c>), or null. Entry files in that format are converted and
+	/// uploaded in the docs-builder format, so the pool only holds docs-builder entries.
+	/// </param>
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
 		IDiagnosticsCollector collector,
 		string changelogDir,
 		string? org,
 		string? repo,
-		string? branch
+		string? branch,
+		ChangelogEntryFormat? entryFormat = null
 	)
 	{
 		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
@@ -325,10 +338,22 @@ public class ChangelogUploadService(
 			}
 
 			ChangelogEntry? entry = null;
+			string? converted = null;
 			try
 			{
 				var content = _fileSystem.File.ReadAllText(filePath);
-				entry = ReleaseNotesSerialization.DeserializeEntry(content);
+				if (entryFormat != null)
+				{
+					converted = entryFormat.ToEntryYaml(content, filePath);
+					entry = ReleaseNotesSerialization.DeserializeEntry(converted);
+				}
+				else
+					entry = ReleaseNotesSerialization.DeserializeEntry(content);
+			}
+			catch (YamlException ex) when (entryFormat != null)
+			{
+				collector.EmitError(filePath, $"Cannot convert this entry from the '{entryFormat.Name}' entry format: {ex.Message}");
+				continue;
 			}
 			catch (Exception ex)
 			{
@@ -337,7 +362,7 @@ public class ChangelogUploadService(
 
 			var (canonicalFileName, markerEntries) = DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
 			var primaryKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, canonicalFileName);
-			targets.Add(new UploadTarget(filePath, primaryKey));
+			targets.Add(new UploadTarget(filePath, primaryKey, converted));
 
 			foreach (var (markerFileName, markerContent) in markerEntries)
 			{
@@ -540,7 +565,8 @@ public class ChangelogUploadService(
 	private IReadOnlyList<UploadTarget> DiscoverTargets(
 		IDiagnosticsCollector collector,
 		ChangelogUploadArguments args,
-		IReadOnlyList<string> directories
+		IReadOnlyList<string> directories,
+		ChangelogEntryFormat? entryFormat
 	)
 	{
 		var targets = new List<UploadTarget>();
@@ -550,7 +576,7 @@ public class ChangelogUploadService(
 			{
 				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
 				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
-				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch, entryFormat)
 			};
 			targets.AddRange(found);
 		}
@@ -607,15 +633,19 @@ public class ChangelogUploadService(
 		return CollectBundleScanDirectories(null, config);
 	}
 
-	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
+	private async Task<(string? Directory, ChangelogEntryFormat? EntryFormat)> ResolveChangelogDirectory(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		Cancel ctx
+	)
 	{
 		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return args.Directory;
+			return (args.Directory, null);
 
 		if (_configLoader == null)
-			return "docs/changelog";
+			return ("docs/changelog", null);
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.Directory ?? "docs/changelog";
+		return (config?.Bundle?.Directory ?? "docs/changelog", config?.EntryFormat);
 	}
 }

@@ -55,6 +55,47 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 	}
 
 	[Test]
+	public void DiscoverUploadTargets_EntryFormat_UploadsTheDocsBuilderFormat()
+	{
+		AddChangelog("144630.yaml", "pr: 144630\nsummary: Limit size of sql query\narea: SQL\ntype: bug\nissues: []\n");
+
+		var targets = _service.DiscoverUploadTargets(
+			_collector,
+			_changelogDir,
+			"elastic",
+			"elasticsearch",
+			"main",
+			ChangelogEntryFormat.All["elasticsearch"]
+		);
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/144630.yaml");
+		var uploaded = ReleaseNotesSerialization.DeserializeEntry(targets[0].InlineContent!);
+		uploaded.Title.Should().Be("Limit size of sql query");
+		uploaded.Type.Should().Be(ChangelogEntryType.BugFix);
+		uploaded.Areas.Should().Equal("SQL");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public void DiscoverUploadTargets_EntryFormat_ReportsAFileItCannotConvert()
+	{
+		AddChangelog("1.yaml", "pr: 1\nsummary: A change\narea: Search\ntype: bug\nsumary: typo\n");
+
+		var targets = _service.DiscoverUploadTargets(
+			_collector,
+			_changelogDir,
+			"elastic",
+			"elasticsearch",
+			"main",
+			ChangelogEntryFormat.All["elasticsearch"]
+		);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().Be(1);
+	}
+
+	[Test]
 	public void DiscoverUploadTargets_SingleEntry_MapsToPoolScopedKey()
 	{
 		// language=yaml

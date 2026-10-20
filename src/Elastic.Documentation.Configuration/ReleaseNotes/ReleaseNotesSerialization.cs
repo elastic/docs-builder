@@ -52,8 +52,6 @@ public static partial class ReleaseNotesSerialization
 	public static ChangelogEntry DeserializeEntry(string yaml, string? sourceName = null)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		if (IsElasticsearchEntryFormat(yaml))
-			yaml = NormalizeYaml(yaml);
 		var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(yaml, GetEntryDeserializerOptions(sourceName))
 			?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 		return ToEntry(yamlDto);
@@ -91,6 +89,11 @@ public static partial class ReleaseNotesSerialization
 		var yaml = YamlSerializer.Serialize(dto, SerializerOptions);
 		return ApplyDefensiveTitleQuotingIfNeeded(yaml, entry.Title);
 	}
+
+	/// <summary>
+	/// Serializes a changelog entry DTO to YAML in the docs-builder entry format.
+	/// </summary>
+	public static string SerializeEntryDto(ChangelogEntryDto dto) => YamlSerializer.Serialize(dto, SerializerOptions);
 
 	/// <summary>
 	/// Serializes bundled changelog data to YAML.
@@ -401,66 +404,10 @@ public static partial class ReleaseNotesSerialization
 		var yamlLines = yaml.Split('\n');
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
 
-		if (IsElasticsearchEntryFormat(yamlWithoutComments))
-			return ConvertElasticsearchEntry(yamlWithoutComments);
-
 		// Normalize version to target
 		var normalized = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
 		return normalized;
 	}
-
-	/// <summary>
-	/// Whether <paramref name="yaml"/> is an entry in the Elasticsearch changelog format: it has a top-level
-	/// <c>summary</c> or <c>area</c> key, which the docs-builder format names <c>title</c> and <c>areas</c>.
-	/// </summary>
-	public static bool IsElasticsearchEntryFormat(string yaml) => ElasticsearchEntryKeyRegex().IsMatch(yaml);
-
-	[GeneratedRegex(@"^(summary|area)[ \t]*:", RegexOptions.Multiline)]
-	private static partial Regex ElasticsearchEntryKeyRegex();
-
-	/// <summary>
-	/// Converts an entry in the Elasticsearch changelog format to the docs-builder format. The entry has no
-	/// <c>products</c>: they come from <c>products.default</c> where the entry is used.
-	/// </summary>
-	private static string ConvertElasticsearchEntry(string yaml)
-	{
-		var es = YamlSerializer.Deserialize<ElasticsearchChangelogEntryDto>(yaml, DeserializerOptions)
-			?? throw new InvalidOperationException("Failed to deserialize Elasticsearch changelog entry YAML.");
-
-		// An entry carries at most one of these blocks: breaking and deprecation describe the change,
-		// highlight promotes it.
-		var notice = es.Breaking ?? es.Deprecation;
-		var area = es.Area ?? notice?.Area;
-		var dto = new ChangelogEntryDto
-		{
-			// A PR in another repository goes to prs as owner/repo#number, which the PR matching understands.
-			// pr stays a bare number, which validation compares with the file name.
-			Pr = string.IsNullOrWhiteSpace(es.SourceRepo) ? es.Pr : null,
-			Prs = es.Pr is not null && !string.IsNullOrWhiteSpace(es.SourceRepo) ? [QualifiedPrReference(es.Pr, es.SourceRepo)] : null,
-			Issues = es.Issues is { Count: > 0 } ? es.Issues : null,
-			Type = ToEntryTypeName(es.Type),
-			Title = es.Summary,
-			Areas = area?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
-			Description = notice?.Details ?? es.Highlight?.Body,
-			Impact = notice?.Impact,
-			Highlight = es.Highlight is null ? null : es.Highlight.Notable ?? true
-		};
-		return YamlSerializer.Serialize(dto, SerializerOptions);
-	}
-
-	private static string QualifiedPrReference(string pr, string sourceRepo) =>
-		sourceRepo.Contains('/') ? $"{sourceRepo}#{pr}" : $"elastic/{sourceRepo}#{pr}";
-
-	// The Elasticsearch type names that differ from the docs-builder ones. The rest (deprecation, enhancement,
-	// feature, known-issue, regression, security) are the same.
-	private static string? ToEntryTypeName(string? type) => type?.Trim().ToLowerInvariant() switch
-	{
-		"bug" => "bug-fix",
-		"breaking" or "breaking-java" => "breaking-change",
-		"new-aggregation" => "feature",
-		"upgrade" => "other",
-		_ => type
-	};
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.yml file.

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Documentation.Configuration.Changelog;
@@ -125,6 +126,11 @@ public record ChangelogConfiguration
 	/// Controls how files created by 'changelog add' are named.
 	/// </summary>
 	public FilenameStrategy Filename { get; init; } = FilenameStrategy.Pr;
+
+	/// <summary>
+	/// The format of the repository's changelog entry files, from <c>entry_format</c>. Null for the docs-builder format.
+	/// </summary>
+	public ChangelogEntryFormat? EntryFormat { get; init; }
 
 	/// <summary>
 	/// Bundle configuration with profiles and defaults.

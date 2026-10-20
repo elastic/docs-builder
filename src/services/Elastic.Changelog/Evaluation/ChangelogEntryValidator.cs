@@ -42,9 +42,9 @@ public static class ChangelogEntryValidator
 	/// Null means skip product membership check.
 	/// </param>
 	/// <param name="productsFromDefaults">
-	/// True for an entry in the Elasticsearch format, which has no <c>products</c> field: it takes
-	/// <c>products.default</c> from the configuration, so a missing <c>products</c> is only an error when
-	/// the configuration has no defaults.
+	/// True when the repository sets <c>entry_format</c>: those entries have no <c>products</c> field and take
+	/// <c>products.default</c> from the configuration, so a missing <c>products</c> is only an error when the
+	/// configuration has no defaults.
 	/// </param>
 	public static IReadOnlyList<EntryFileFinding> Validate(
 		string filePath,

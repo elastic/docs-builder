@@ -949,24 +949,26 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		""";
 
 	[Test]
-	public async Task ProfileMode_ElasticsearchFormatPoolEntry_IsReadAndTakesProductsFromConfiguration()
+	public async Task ProfileMode_EntryFormatPoolEntries_AreReadAndTakeProductsFromConfiguration()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
 		var configPath = await WriteProfileConfig(
 			outputDir,
 			pivotProducts: "  products:\n    cloud-serverless: \"serverless\"",
-			topLevel: "products:\n  default:\n    - product: cloud-hosted"
+			topLevel: "entry_format: elasticsearch\nproducts:\n  default:\n    - product: cloud-hosted"
 		);
 
-		// PR 100 has a pool entry without products and no product label: it takes products.default.
-		// PR 200 has a pool entry without products and the serverless label: its label wins.
+		// The repository sets entry_format, and its pool still holds files in that format from before it did.
+		// PR 100 has such an entry and no product label: it takes products.default.
+		// PR 200 has such an entry and the serverless label: its label wins.
+		// PR 300 has an entry in the docs-builder format, as the upload now writes it: it is read as it is.
 		var pool = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
 				return Json(
-					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" }, { "file": "200.yaml" } ] }"""
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" }, { "file": "200.yaml" }, { "file": "300.yaml" } ] }"""
 				);
 			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
 				return Yaml(ElasticsearchFormatPoolEntry);
@@ -974,6 +976,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 				return Yaml(
 					ElasticsearchFormatPoolEntry.Replace("pr: 100", "pr: 200").Replace("Faster hosted search", "Leaner serverless search")
 				);
+			if (path.EndsWith("300.yaml", StringComparison.Ordinal))
+				return Yaml("title: Converted entry\ntype: feature\npr: \"300\"\nproducts:\n  - product: cloud-hosted\n");
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var prService = A.Fake<IGitHubPrService>();
@@ -984,7 +988,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/200", A<string?>._, A<string?>._, A<Cancel>._)
 		).Returns(new GitHubPrInfo { Title = "PR title 200", Body = "", Labels = [">bug", "serverless"], LinkedIssues = [] });
 
-		var service = Service(pool, RangeService(100, 200), prService);
+		var service = Service(pool, RangeService(100, 200, 300), prService);
 		var input = new BundleChangelogsArguments
 		{
 			Profile = "promotion",
@@ -1005,14 +1009,49 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		);
 
 		// The entries come from the pool, not from the PR titles.
-		bundle.Should().Contain("Faster hosted search").And.Contain("Leaner serverless search").And.NotContain("PR title");
+		bundle.Should().Contain("Faster hosted search").And.Contain("Leaner serverless search").And.Contain("Converted entry");
+		bundle.Should().NotContain("PR title");
 		bundle.Should().Contain("type: bug-fix").And.Contain("- Search");
 
 		var entries = bundle[bundle.IndexOf("entries:", StringComparison.Ordinal)..];
-		var first = entries[..entries.IndexOf("Leaner serverless search", StringComparison.Ordinal)];
-		first.Should().Contain("product: cloud-hosted").And.NotContain("product: cloud-serverless");
-		var second = entries[entries.IndexOf("Leaner serverless search", StringComparison.Ordinal)..];
-		second.Should().Contain("product: cloud-serverless").And.NotContain("product: cloud-hosted");
+		var second = entries.IndexOf("Leaner serverless search", StringComparison.Ordinal);
+		var third = entries.IndexOf("Converted entry", StringComparison.Ordinal);
+		entries[..second].Should().Contain("product: cloud-hosted").And.NotContain("product: cloud-serverless");
+		entries[second..third].Should().Contain("product: cloud-serverless").And.NotContain("product: cloud-hosted");
+	}
+
+	[Test]
+	public async Task ProfileMode_EntryFormatPoolEntryWithoutEntryFormat_FailsToParse()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, topLevel: "products:\n  default:\n    - product: cloud-hosted");
+
+		// Without entry_format, a pool entry in another format is an error, as it was before entry formats.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json("""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" } ] }""");
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(ElasticsearchFormatPoolEntry);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var service = Service(pool, RangeService(100));
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be parsed"));
 	}
 
 	private static HttpResponseMessage Json(string body) =>
