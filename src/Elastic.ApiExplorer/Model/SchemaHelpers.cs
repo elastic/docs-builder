@@ -236,14 +236,9 @@ public static partial class SchemaHelpers
 
 	public static string? ValueCssClassOrNull(string? name) => !string.IsNullOrEmpty(name) && IsValueType(name) ? ValueCssClass : null;
 
-	public static string? ObjectCssClassOrNull(string? name)
-	{
-		if (string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name))
-			return null;
-		if (IsPrimitiveDisplayName(name) || IsValueType(name))
-			return null;
-		return ObjectCssClass;
-	}
+	// Reached after the primitive, value and shape checks, so any other plain name is a schema.
+	private static string? ObjectCssClassOrNull(string? name) =>
+		string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name) ? null : ObjectCssClass;
 
 	public static bool IsCompoundTypeName(string? name) =>
 		!string.IsNullOrEmpty(name) && (name.Contains('|') || name.Contains(' ') || name.EndsWith("[]", StringComparison.Ordinal));
@@ -288,11 +283,19 @@ public static partial class SchemaHelpers
 
 	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
 	public static string? TypeAtomCssClassOrNull(string? name) =>
-		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ShapeCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ShapeKeywordCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
 
-	// A shape name (union) is a keyword, not a schema: it takes the wrapper colour of the union keyword, not the object one.
-	private static string? ShapeCssClassOrNull(string? name) =>
-		!string.IsNullOrEmpty(name) && ShapeNames.Contains(name) ? WrapperCssClass : null;
+	/// <summary>
+	/// A shape name (enum, union) is a keyword, not a schema. The annotation builder and the type atom classifier both
+	/// take its class from here so the keyword reads the same wherever it shows.
+	/// </summary>
+	public static string? ShapeKeywordCssClassOrNull(string? name) => name switch
+	{
+		"enum" => WrapperEnumCssClass,
+		"union" => WrapperUnionCssClass,
+		not null when ShapeNames.Contains(name) => WrapperCssClass,
+		_ => null
+	};
 
 	public static string UnionOptionClasses(bool isTypeOption, string text)
 	{
