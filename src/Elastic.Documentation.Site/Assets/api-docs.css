@@ -2360,6 +2360,7 @@ a.docs-reference-btn::after {
 		.union-type-option
 	),
 .example-description :not(pre) > code,
+.api-example-caption :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -3613,10 +3614,6 @@ html:has(.api-page-shell) {
 
 .api-example-caption p + p {
 	margin-top: 6px;
-}
-
-.api-example-caption :not(pre) > code {
-	font-size: 12px;
 }
 
 .api-example-caption-toggle {
