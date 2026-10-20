@@ -32,7 +32,7 @@ public record ApiOverviewRow
 	/// <summary>Merged method and route rows of an operation row.</summary>
 	public OperationEndpoint? Endpoint { get; init; }
 
-	/// <summary>The lifecycle badge of an operation row (beta, preview, ...), as the operation page shows it.</summary>
+	/// <summary>The lifecycle badge of an operation row (beta, preview, ...) without its popover: the row is a link, and a tap on the badge must follow it.</summary>
 	public ApplicableToViewModel? Availability { get; init; }
 
 	public bool Deprecated { get; init; }
@@ -205,7 +205,7 @@ public static class ApiOverviewBuilder
 			Title = operation.NavigationTitle,
 			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
 			Url = operation.Url,
-			Availability = AvailabilityBadge.FromOperation(operation.Model.Operation, versionsConfig),
+			Availability = AvailabilityBadge.FromOperation(operation.Model.Operation, versionsConfig, showTooltip: false),
 			Deprecated = operation.Model.Operation.Deprecated
 		};
 }
