@@ -288,7 +288,11 @@ public static partial class SchemaHelpers
 
 	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
 	public static string? TypeAtomCssClassOrNull(string? name) =>
-		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ShapeCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+
+	// A shape name (union) is a keyword, not a schema: it takes the wrapper colour of the union keyword, not the object one.
+	private static string? ShapeCssClassOrNull(string? name) =>
+		!string.IsNullOrEmpty(name) && ShapeNames.Contains(name) ? WrapperCssClass : null;
 
 	public static string UnionOptionClasses(bool isTypeOption, string text)
 	{
