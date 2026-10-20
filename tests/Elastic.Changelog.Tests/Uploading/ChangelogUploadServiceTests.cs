@@ -8,6 +8,7 @@ using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using AwesomeAssertions;
+using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
@@ -74,6 +75,56 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		uploaded.Title.Should().Be("Limit size of sql query");
 		uploaded.Type.Should().Be(ChangelogEntryType.BugFix);
 		uploaded.Areas.Should().Equal("SQL");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task FindPullRequestsOfFiles_TimestampedFragment_UploadsItUnderThePullRequestThatAddedIt()
+	{
+		var path = AddChangelog("1792145980-fix-the-registry.yaml", "kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n");
+		AddChangelog(
+			"1792145981-named.yaml",
+			"kind: feature\nsummary: Named\ncomponent: all\npr: https://github.com/elastic/beats/pull/7\n"
+		);
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(
+			() => prService.FetchPullRequestAddingFileAsync(
+				"elastic",
+				"beats",
+				A<string>.That.EndsWith("1792145980-fix-the-registry.yaml"),
+				"main",
+				A<CancellationToken>._
+			)
+		).Returns(4242);
+		var service = new ChangelogUploadService(
+			NullLoggerFactory.Instance,
+			fileSystem: _fileSystem,
+			s3Client: _s3Client,
+			prService: prService
+		);
+		var format = ChangelogEntryFormat.All["elastic-agent-changelog-tool"];
+
+		var pullRequests = await service.FindPullRequestsOfFilesAsync(
+			[_changelogDir],
+			format,
+			"elastic",
+			"beats",
+			"main",
+			CancellationToken.None
+		);
+		var targets = service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "beats", "main", format, pullRequests);
+
+		pullRequests.Should().ContainSingle().Which.Value.Should().Be("https://github.com/elastic/beats/pull/4242");
+		A.CallTo(
+			() => prService.FetchPullRequestAddingFileAsync(A<string>._, A<string>._, A<string>._, A<string>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		var fragment = targets.Single(t => t.LocalPath == path);
+		fragment.S3Key.Should().Be("changelog/elastic/beats/main/4242.yaml");
+		ReleaseNotesSerialization
+			.DeserializeEntry(fragment.InlineContent!)
+			.Prs
+			.Should()
+			.Equal("https://github.com/elastic/beats/pull/4242");
 		_collector.Errors.Should().Be(0);
 	}
 

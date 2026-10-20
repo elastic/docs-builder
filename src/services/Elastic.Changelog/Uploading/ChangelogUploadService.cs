@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Amazon.S3;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -89,10 +90,12 @@ public class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IAmazonS3? s3Client = null
+	IAmazonS3? s3Client = null,
+	IGitHubPrService? prService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
+	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
@@ -128,7 +131,12 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var targets = DiscoverTargets(collector, args, existing, entryFormat);
+		// A format whose file names don't carry the PR: find the pull request that added each file that names none.
+		var pullRequests = entryFormat is { FileNamesCarryPr: false } && args.ArtifactType is ArtifactType.Changelog
+			? await FindPullRequestsOfFilesAsync(existing, entryFormat, args.Owner, args.Repo, args.Branch, ctx)
+			: null;
+
+		var targets = DiscoverTargets(collector, args, existing, entryFormat, pullRequests);
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -274,7 +282,8 @@ public class ChangelogUploadService(
 		string? org,
 		string? repo,
 		string? branch,
-		ChangelogEntryFormat? entryFormat = null
+		ChangelogEntryFormat? entryFormat = null,
+		IReadOnlyDictionary<string, string>? pullRequests = null
 	)
 	{
 		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
@@ -344,7 +353,7 @@ public class ChangelogUploadService(
 				var content = _fileSystem.File.ReadAllText(filePath);
 				if (entryFormat != null)
 				{
-					converted = entryFormat.ToEntryYaml(content, filePath);
+					converted = entryFormat.ToEntryYaml(content, filePath, pullRequests?.GetValueOrDefault(filePath));
 					entry = ReleaseNotesSerialization.DeserializeEntry(converted);
 				}
 				else
@@ -562,11 +571,68 @@ public class ChangelogUploadService(
 		}
 	}
 
+	/// <summary>
+	/// For entry files that name no pull request, the pull request that added each one on the branch, as a PR URL keyed
+	/// by file path. Files that already name one, or whose pull request can't be found, are left out.
+	/// </summary>
+	internal async Task<IReadOnlyDictionary<string, string>> FindPullRequestsOfFilesAsync(
+		IReadOnlyList<string> directories,
+		ChangelogEntryFormat entryFormat,
+		string? org,
+		string? repo,
+		string? branch,
+		Cancel ctx
+	)
+	{
+		var result = new Dictionary<string, string>(StringComparer.Ordinal);
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
+			return result;
+
+		var currentDirectory = _fileSystem.Directory.GetCurrentDirectory();
+		foreach (var directory in directories)
+		{
+			var files = _fileSystem
+				.Directory
+				.GetFiles(directory, "*.yaml", SearchOption.TopDirectoryOnly)
+				.Concat(_fileSystem.Directory.GetFiles(directory, "*.yml", SearchOption.TopDirectoryOnly))
+				.Where(f => !_fileSystem.Path.GetFileName(f).StartsWith("note-", StringComparison.OrdinalIgnoreCase));
+			foreach (var filePath in files)
+			{
+				try
+				{
+					var entry = ReleaseNotesSerialization.DeserializeEntry(
+						entryFormat.ToEntryYaml(_fileSystem.File.ReadAllText(filePath), filePath)
+					);
+					if (entry.Prs is { Count: > 0 })
+						continue;
+				}
+				catch (YamlException)
+				{
+					// DiscoverUploadTargets reports files that don't convert.
+					continue;
+				}
+
+				var repoPath = _fileSystem
+					.Path
+					.GetRelativePath(currentDirectory, _fileSystem.Path.GetFullPath(filePath))
+					.Replace('\\', '/');
+				var number = await _prService.FetchPullRequestAddingFileAsync(org, repo, repoPath, branch, ctx);
+				if (number is { } pr)
+					result[filePath] = $"https://github.com/{org}/{repo}/pull/{pr}";
+				else
+					_logger.LogWarning("No pull request found that added {File}; uploading it without one", filePath);
+			}
+		}
+
+		return result;
+	}
+
 	private IReadOnlyList<UploadTarget> DiscoverTargets(
 		IDiagnosticsCollector collector,
 		ChangelogUploadArguments args,
 		IReadOnlyList<string> directories,
-		ChangelogEntryFormat? entryFormat
+		ChangelogEntryFormat? entryFormat,
+		IReadOnlyDictionary<string, string>? pullRequests
 	)
 	{
 		var targets = new List<UploadTarget>();
@@ -576,7 +642,7 @@ public class ChangelogUploadService(
 			{
 				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
 				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
-				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch, entryFormat)
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch, entryFormat, pullRequests)
 			};
 			targets.AddRange(found);
 		}

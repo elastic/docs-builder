@@ -24,6 +24,12 @@ public sealed record ChangelogEntryFormatYaml
 	public Dictionary<string, ChangelogEntryFieldYaml>? Fields { get; set; }
 	public Dictionary<string, Dictionary<string, string>>? Values { get; set; }
 	public YamlLenientList? Ignore { get; set; }
+
+	/// <summary>
+	/// <c>pr-number</c> (default) when entry file names start with the PR number; <c>any</c> when they don't, for
+	/// example timestamped fragments. The PR then comes from the pull request or commit that adds the file.
+	/// </summary>
+	public string? Files { get; set; }
 }
 
 /// <summary>How one docs-builder entry field is read from a source file.</summary>
@@ -55,6 +61,13 @@ public sealed partial class ChangelogEntryFormat
 	private ChangelogEntryFormat(string name, ChangelogEntryFormatYaml yaml)
 	{
 		Name = name;
+		FileNamesCarryPr = yaml.Files?.Trim().ToLowerInvariant() switch
+		{
+			null or "" or "pr-number" => true,
+			"any" => false,
+			var other =>
+				throw new InvalidOperationException($"Changelog entry format '{name}' has files: '{other}'. Use 'pr-number' or 'any'.")
+		};
 		_fields = yaml.Fields ?? [];
 		_values = (yaml.Values ?? []).ToDictionary(
 			kv => kv.Key,
@@ -89,9 +102,18 @@ public sealed partial class ChangelogEntryFormat
 
 	public string Name { get; }
 
+	/// <summary>
+	/// False when the format's file names don't start with the PR number (<c>files: any</c>): the PR of an entry
+	/// then comes from the pull request that adds the file.
+	/// </summary>
+	public bool FileNamesCarryPr { get; }
+
 	/// <summary>Converts an entry file in this format to an entry in the docs-builder format, as YAML.</summary>
+	/// <param name="yaml">The entry file.</param>
+	/// <param name="sourceName">The file name, for error messages.</param>
+	/// <param name="pullRequest">The pull request that added the file, used as <c>prs</c> when the file names none.</param>
 	/// <exception cref="YamlException">The file is not a mapping or has keys that this format does not know.</exception>
-	public string ToEntryYaml(string yaml, string? sourceName = null)
+	public string ToEntryYaml(string yaml, string? sourceName = null, string? pullRequest = null)
 	{
 		var stream = YamlStream.Load(new StringReader(yaml));
 		if (stream.Count == 0 || stream[0].Contents is not YamlMapping root)
@@ -122,6 +144,8 @@ public sealed partial class ChangelogEntryFormat
 			Issues = List(root, "issues"),
 			Highlight = Highlight(root)
 		};
+		if (dto.Pr is null && dto.Prs is null && !string.IsNullOrWhiteSpace(pullRequest))
+			dto.Prs = [pullRequest];
 		return ReleaseNotesSerialization.SerializeEntryDto(dto);
 	}
 

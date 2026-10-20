@@ -138,10 +138,19 @@ public class ChangelogEntryValidationService(
 		var filenamePrNumbers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 		foreach (var relPath in filesToValidate)
 		{
-			// Filename validation (must be <digits>[-<name>].yaml)
-			allFindings.AddRange(ChangelogEntryValidator.ValidateFilename(relPath));
-			if (ChangelogEntryValidator.TryParseFilenameAsPrNumber(relPath, out var fnPrNum))
-				filenamePrNumbers[relPath] = fnPrNum;
+			if (config.EntryFormat is { FileNamesCarryPr: false })
+			{
+				// The format's file names don't carry the PR (for example timestamped fragments): a file this PR adds
+				// belongs to this PR.
+				filenamePrNumbers[relPath] = input.PrNumber;
+			}
+			else
+			{
+				// Filename validation (must be <digits>[-<name>].yaml)
+				allFindings.AddRange(ChangelogEntryValidator.ValidateFilename(relPath));
+				if (ChangelogEntryValidator.TryParseFilenameAsPrNumber(relPath, out var fnPrNum))
+					filenamePrNumbers[relPath] = fnPrNum;
+			}
 
 			var fullPath = fileSystem.Path.GetFullPath(relPath);
 			if (!fileSystem.File.Exists(fullPath))
@@ -156,7 +165,9 @@ public class ChangelogEntryValidationService(
 			try
 			{
 				// A repository with its own entry format (entry_format in changelog.yml) has its files converted first.
-				var entryYaml = config.EntryFormat is { } format ? format.ToEntryYaml(rawYaml, relPath) : rawYaml;
+				var entryYaml = config.EntryFormat is { } format
+					? format.ToEntryYaml(rawYaml, relPath, $"https://github.com/{input.Owner}/{input.Repo}/pull/{input.PrNumber}")
+					: rawYaml;
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entryYaml);
 				dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
 					normalized,

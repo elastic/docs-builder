@@ -150,6 +150,14 @@ docs-builder converts the files where it reads the repository's own files:
 - A commit-range bundle (`release unified bundle`, `release serverless`, or `changelog bundle` with a git range) reads pool entries that are still in the repository's format.
 
 A key that the format doesn't know is an error.
+
+Some formats name their files by timestamp, not by pull request (`files: any` in the format definition).
+For those, docs-builder finds the pull request instead:
+
+- `changelog validate` assigns a file to the pull request that adds it.
+- `changelog upload` looks up the pull request that added each file that names none, and uploads the entry under that pull request's number. This needs a `GITHUB_TOKEN`.
+- A commit-range bundle matches a pool entry that still names no pull request to the pull request in the range that added a file with the same name.
+
 The converted entries have no `products`:
 
 - `changelog validate` accepts them when the changelog configuration file sets `products.default`.

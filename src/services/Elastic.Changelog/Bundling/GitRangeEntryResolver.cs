@@ -139,7 +139,17 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, DecisionLog decisions)
+/// <param name="summaries">Reads the metadata of the pull requests in a range.</param>
+/// <param name="decisions">Records per-PR decisions.</param>
+/// <param name="changedFiles">
+/// Lists the files a pull request added or changed. Used for an entry format whose file names don't carry the PR
+/// (<c>files: any</c>) to find the pull request of a pool entry that names none. Null skips that lookup.
+/// </param>
+public class GitRangeEntryResolver(
+	IPullRequestSummaryProvider summaries,
+	DecisionLog decisions,
+	Func<string, string, int, Cancel, Task<IReadOnlyList<string>?>>? changedFiles = null
+)
 {
 	/// <summary>
 	/// Resolves entries for every PR in <paramref name="resolution"/> against the candidate pool
@@ -155,6 +165,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	)
 	{
 		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content, config?.EntryFormat)).ToList();
+		if (config?.EntryFormat is { FileNamesCarryPr: false } && changedFiles != null)
+			parsedCandidates = await AttributeEntriesWithoutPrAsync(parsedCandidates, resolution, options, ctx);
 
 		var rows = new List<GitRangePrReportRow>();
 		var entries = new List<MatchedChangelogFile>();
@@ -277,7 +289,9 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	/// </param>
 	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content, ChangelogEntryFormat? entryFormat = null)
 	{
-		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
+		// A format whose file names don't carry the PR (files: any) has leading numbers that are timestamps, not PRs:
+		// its entries match by their prs references only.
+		var numbers = entryFormat is { FileNamesCarryPr: false } ? [] : ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		try
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
@@ -296,6 +310,51 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
+	}
+
+	/// <summary>
+	/// Pool entries in a format whose file names don't carry the PR, uploaded before the upload looked the PR up, name no
+	/// pull request. A pull request in the range that added a file with the same name owns that entry. Only the pull
+	/// requests without a pool entry are asked for their files, one API call each.
+	/// </summary>
+	private async Task<List<ChangelogPoolCandidate>> AttributeEntriesWithoutPrAsync(
+		List<ChangelogPoolCandidate> candidates,
+		CommitRangeResolution resolution,
+		GitRangeEntryResolutionOptions options,
+		Cancel ctx
+	)
+	{
+		var orphans = candidates
+			.Select((candidate, index) => (candidate, index))
+			.Where(c => c.candidate.Entry != null && c.candidate.FileNameNumbers.Count == 0 && c.candidate.Prs.Count == 0)
+			.ToDictionary(c => c.candidate.FileName, c => c.index, StringComparer.Ordinal);
+		if (orphans.Count == 0)
+			return candidates;
+
+		var result = candidates.ToList();
+		foreach (var pr in resolution.PullRequests)
+		{
+			if (orphans.Count == 0)
+				break;
+			if (result.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
+				continue;
+
+			var files = await changedFiles!(options.Owner, options.Repo, pr.Number, ctx);
+			foreach (var name in (files ?? []).Select(f => f[(f.LastIndexOf('/') + 1)..]))
+			{
+				if (!orphans.Remove(name, out var index))
+					continue;
+				var candidate = result[index];
+				result[index] = candidate with
+				{
+					Prs = [pr.Url],
+					Entry = candidate.Entry! with { Data = candidate.Entry.Data with { Prs = [pr.Url] } }
+				};
+				decisions.Record("entries", "pool by changed file", $"#{pr.Number}", name);
+			}
+		}
+
+		return result;
 	}
 
 	private static ChangelogEntryDto DeserializePoolEntry(string fileName, string content, ChangelogEntryFormat? entryFormat)

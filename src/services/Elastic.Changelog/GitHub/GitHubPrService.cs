@@ -272,6 +272,66 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 		}
 	}
 
+	public async Task<int?> FetchPullRequestAddingFileAsync(
+		string owner,
+		string repo,
+		string filePath,
+		string branch,
+		CancellationToken ctx = default
+	)
+	{
+		try
+		{
+			// The commits come newest first, so the commit that added the file is the last one of the last page.
+			// Entry files are rarely edited, so this is almost always a single page.
+			string? oldest = null;
+			for (var page = 1; page <= 10; page++)
+			{
+				var url =
+					$"https://api.github.com/repos/{owner}/{repo}/commits?path={Uri.EscapeDataString(filePath)}&sha={Uri.EscapeDataString(branch)}&per_page=100&page={page}";
+				using var response = await _transport.GetAsync(url, ctx);
+				if (!response.IsSuccessStatusCode)
+				{
+					_logger.LogWarning("Failed to fetch the commits of {FilePath}. Status: {StatusCode}", filePath, response.StatusCode);
+					return null;
+				}
+
+				var json = await response.Content.ReadAsStringAsync(ctx);
+				var commits = JsonSerializer.Deserialize(json, GitHubPrJsonContext.Default.ListGitHubCommitListItem);
+				if (commits is not { Count: > 0 })
+					break;
+				oldest = commits[^1].Sha ?? oldest;
+				if (commits.Count < 100)
+					break;
+			}
+
+			if (oldest is null)
+				return null;
+
+			using var pullsResponse = await _transport.GetAsync($"https://api.github.com/repos/{owner}/{repo}/commits/{oldest}/pulls", ctx);
+			if (!pullsResponse.IsSuccessStatusCode)
+			{
+				_logger.LogWarning(
+					"Failed to fetch the pull request of commit {Sha}. Status: {StatusCode}",
+					oldest,
+					pullsResponse.StatusCode
+				);
+				return null;
+			}
+
+			var pulls = JsonSerializer.Deserialize(
+				await pullsResponse.Content.ReadAsStringAsync(ctx),
+				GitHubPrJsonContext.Default.ListGitHubCommitPullItem
+			);
+			return pulls is { Count: > 0 } ? pulls[0].Number : null;
+		}
+		catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+		{
+			_logger.LogWarning(ex, "Error finding the pull request that added {FilePath}", filePath);
+			return null;
+		}
+	}
+
 	private static (string? owner, string? repo, int? issueNumber) ParseIssueUrl(
 		string issueUrl,
 		string? defaultOwner = null,
@@ -565,7 +625,13 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 
 	private sealed class GitHubCommitListItem
 	{
+		public string? Sha { get; set; }
 		public GitHubCommitAuthor? Author { get; set; }
+	}
+
+	private sealed class GitHubCommitPullItem
+	{
+		public int Number { get; set; }
 	}
 
 	private sealed class GitHubPrFileItem
@@ -624,6 +690,8 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 	[JsonSerializable(typeof(GitHubCommitAuthor))]
 	[JsonSerializable(typeof(GitHubCommitListItem))]
 	[JsonSerializable(typeof(List<GitHubCommitListItem>))]
+	[JsonSerializable(typeof(GitHubCommitPullItem))]
+	[JsonSerializable(typeof(List<GitHubCommitPullItem>))]
 	[JsonSerializable(typeof(GitHubPrFileItem))]
 	[JsonSerializable(typeof(List<GitHubPrFileItem>))]
 	[JsonSerializable(typeof(GraphQlRequest))]

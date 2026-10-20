@@ -218,6 +218,7 @@ public partial class ChangelogBundlingService(
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
+	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 
 	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
@@ -1044,7 +1045,7 @@ public partial class ChangelogBundlingService(
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_summaries, _decisions);
+		var resolver = new GitRangeEntryResolver(_summaries, _decisions, _prService.FetchChangedFilesAsync);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,

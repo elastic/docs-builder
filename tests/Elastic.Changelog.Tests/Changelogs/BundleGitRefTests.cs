@@ -1021,6 +1021,73 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ProfileMode_TimestampedPoolEntryWithoutPr_IsMatchedThroughThePullRequestFiles()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			topLevel: "entry_format: elastic-agent-changelog-tool\nproducts:\n  default:\n    - product: cloud-hosted"
+		);
+
+		// The pool holds a timestamped fragment that names no PR. PR 100 added it; PR 200 added nothing in the pool.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "1792145980-fix-the-registry.yaml" } ] }"""
+				);
+			if (path.EndsWith("1792145980-fix-the-registry.yaml", StringComparison.Ordinal))
+				return Yaml("kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchChangedFilesAsync("elastic", "widget", 100, A<Cancel>._)).Returns(new List<string>
+		{
+			"changelog/fragments/1792145980-fix-the-registry.yaml",
+			"filebeat/registry.go"
+		});
+		_ = A.CallTo(() => prService.FetchChangedFilesAsync("elastic", "widget", 200, A<Cancel>._)).Returns(new List<string>
+		{
+			"README.md"
+		});
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).ReturnsLazily(
+			(string url, string? _, string? _, Cancel _) => new GitHubPrInfo
+			{
+				Title = $"PR title {url[^3..]}",
+				Body = "",
+				Labels = [">feature"],
+				LinkedIssues = []
+			}
+		);
+
+		var service = Service(pool, RangeService(100, 200), prService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// PR 100 gets the fragment, not its title; PR 200 has no fragment, so its entry comes from its title.
+		bundle.Should().Contain("Fix the registry").And.NotContain("PR title 100").And.Contain("PR title 200");
+		bundle.Should().Contain("https://github.com/elastic/widget/pull/100");
+	}
+
+	[Test]
 	public async Task ProfileMode_EntryFormatPoolEntryWithoutEntryFormat_FailsToParse()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());

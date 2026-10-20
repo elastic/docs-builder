@@ -42,6 +42,12 @@ public interface IGitHubPrService
 	);
 
 	/// <summary>
+	/// Returns the number of the pull request that added a file on <paramref name="branch"/>: the pull request of the
+	/// oldest commit that touched the file. Null when there is none or the API call fails.
+	/// </summary>
+	Task<int?> FetchPullRequestAddingFileAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default);
+
+	/// <summary>
 	/// Fetches the list of files changed by a pull request (status added or modified).
 	/// Returns null when the API call fails — callers decide whether that is fatal.
 	/// </summary>

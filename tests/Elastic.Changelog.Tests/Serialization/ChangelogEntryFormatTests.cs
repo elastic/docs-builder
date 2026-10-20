@@ -45,6 +45,10 @@ public class ChangelogEntryFormatTests
 	}
 
 	[Test]
+	public void Elasticsearch_TranslatesSchemaAreaNames() =>
+		Read("elasticsearch", "pr: 1\nsummary: A change\narea: Snapshot/Restore\ntype: bug\n").Areas.Should().Equal("Snapshot and restore");
+
+	[Test]
 	public void Elasticsearch_SplitsACommaSeparatedArea()
 	{
 		var entry = Read(
@@ -220,5 +224,41 @@ public class ChangelogEntryFormatTests
 		var act = () => ChangelogEntryFormat.Parse("formats:\n  acme:\n    fields:\n      headline: { from: summary }\n");
 
 		act.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("unknown field 'headline'");
+	}
+
+	[Test]
+	public void Files_DefaultsToPrNumberAndAgentToolUsesAny()
+	{
+		ChangelogEntryFormat.All["elasticsearch"].FileNamesCarryPr.Should().BeTrue();
+		ChangelogEntryFormat.All["elastic-agent-changelog-tool"].FileNamesCarryPr.Should().BeFalse();
+	}
+
+	[Test]
+	public void Files_UnknownValue_IsRejected()
+	{
+		var act =
+			() => ChangelogEntryFormat.Parse("formats:\n  acme:\n    files: timestamp\n    fields:\n      title: { from: summary }\n");
+
+		act.Should().Throw<InvalidOperationException>().Which.Message.Should().Contain("Use 'pr-number' or 'any'");
+	}
+
+	[Test]
+	public void ToEntryYaml_PullRequestFillsPrsOnlyWhenTheFileNamesNone()
+	{
+		var format = ChangelogEntryFormat.All["elastic-agent-changelog-tool"];
+		const string pr = "https://github.com/elastic/beats/pull/99";
+
+		ReleaseNotesSerialization
+			.DeserializeEntry(format.ToEntryYaml("kind: feature\nsummary: A\ncomponent: all\n", null, pr))
+			.Prs
+			.Should()
+			.Equal(pr);
+		ReleaseNotesSerialization
+			.DeserializeEntry(
+				format.ToEntryYaml("kind: feature\nsummary: A\ncomponent: all\npr: https://github.com/elastic/beats/pull/1\n", null, pr)
+			)
+			.Prs
+			.Should()
+			.Equal("https://github.com/elastic/beats/pull/1");
 	}
 }
