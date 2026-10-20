@@ -124,6 +124,29 @@ Some of the fields in the schema accept only a specific set of values:
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 :::
 
+### Elasticsearch changelog format [elasticsearch-format]
+
+`elastic/elasticsearch` and `elastic/elasticsearch-serverless` write changelog files in their own format.
+docs-builder reads those files as if they used the schema above:
+
+| Elasticsearch field | Read as |
+|---|---|
+| `summary` | `title` |
+| `area` | `areas`, split on commas |
+| `pr`, `issues` | `pr`, `issues` |
+| `source_repo` | The repository of `pr`, as `elastic/<repo>#<pr>` |
+| `type: bug` | `type: bug-fix` |
+| `type: breaking`, `type: breaking-java` | `type: breaking-change` |
+| `type: new-aggregation` | `type: feature` |
+| `type: upgrade` | `type: other` |
+| `breaking` or `deprecation` block | `details` becomes `description`, `impact` becomes `impact` |
+| `highlight` block | `highlight: true` (or the block's `notable` value), and `body` becomes `description` |
+
+The other type names are the same in both formats.
+These files have no `products` field.
+They take `products.default` from the changelog configuration file, and in a commit-range bundle the products that the pull request's labels map to win over the defaults.
+The `title` of a `breaking`, `deprecation`, or `highlight` block is not used.
+
 ## Examples
 
 ### Control changelog creation [rules]

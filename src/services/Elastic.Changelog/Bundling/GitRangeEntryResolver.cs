@@ -161,11 +161,16 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
 
-		// Pull requests without a pool entry need their metadata. It is read up front, in batches, and everything after
-		// that runs in range order, so the report and diagnostics stay stable.
+		// Pull requests without a pool entry need their metadata, and so do those whose pool entry has no products: their
+		// labels decide the products. It is read up front, in batches, and everything after that runs in range order, so
+		// the report and diagnostics stay stable.
 		var needSummary = resolution
 			.PullRequests
-			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
+			.Where(pr =>
+			{
+				var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)).ToList();
+				return matches.Count == 0 || matches.Any(c => c.Entry is { Data.Products: null or { Count: 0 } });
+			})
 			.ToList();
 		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
 		if (prSummaries is null)
@@ -207,7 +212,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 						continue;
 					}
 
-					entries.Add(match.Entry);
+					entries.Add(WithProductsFromConfiguration(match.Entry, prSummaries.GetValueOrDefault(pr.Number), config, options));
 				}
 
 				rows.Add(new GitRangePrReportRow
@@ -421,6 +426,28 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var kind = description != null ? GitRangePrSourceKind.InferredPrBody : GitRangePrSourceKind.InferredTitle;
 		decisions.Record("entries", "inferred", $"#{pr.Number}", kind == GitRangePrSourceKind.InferredPrBody ? "PR body" : "title");
 		return (Row(pr, kind, fileName), entry, false);
+	}
+
+	/// <summary>
+	/// A pool entry without <c>products</c>, such as one in the Elasticsearch changelog format, takes the products
+	/// of its pull request from the configuration, the same way an entry synthesized from the pull request does.
+	/// An entry that has products keeps them.
+	/// </summary>
+	private static MatchedChangelogFile WithProductsFromConfiguration(
+		MatchedChangelogFile entry,
+		PullRequestSummary? summary,
+		ChangelogConfiguration? config,
+		GitRangeEntryResolutionOptions options
+	)
+	{
+		if (entry.Data.Products is { Count: > 0 })
+			return entry;
+
+		var labelProducts = config != null && summary != null ? ProductResolution.FromLabels([.. summary.Labels], config) : [];
+		var products = ResolveProductsFromConfiguration(labelProducts, config, options);
+		return products.Count == 0
+			? entry
+			: entry with { Data = entry.Data with { Products = products.Select(p => p.ToProductReference()).ToList() } };
 	}
 
 	/// <summary>

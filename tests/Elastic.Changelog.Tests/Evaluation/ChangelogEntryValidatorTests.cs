@@ -28,6 +28,49 @@ public class ChangelogEntryValidatorTests
 	) => ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, labelDerivedType, knownProducts);
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
+	// Elasticsearch format: no products field, products.default supplies them
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+	private const string ElasticsearchFormatEntry = "pr: 42\nsummary: Limit size of sql query\narea: SQL\ntype: bug\nissues: []\n";
+
+	[Test]
+	public void Validate_ElasticsearchFormatWithProductsDefault_HasNoFindings()
+	{
+		var config = Config with
+		{
+			ProductsConfiguration = new ProductsConfig { Default = [new DefaultProduct { Product = "elasticsearch" }] }
+		};
+
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			ParseYaml(ElasticsearchFormatEntry),
+			config,
+			ChangelogEntryType.BugFix,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Validate_ElasticsearchFormatWithoutProductsDefault_RequiresProducts()
+	{
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			ParseYaml(ElasticsearchFormatEntry),
+			Config,
+			null,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("sets no products.default"));
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
 	// Title rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 

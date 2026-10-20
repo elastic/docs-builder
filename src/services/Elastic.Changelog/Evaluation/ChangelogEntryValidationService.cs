@@ -163,7 +163,15 @@ public class ChangelogEntryValidationService(
 				if (dto is not null)
 				{
 					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
-					var findings = ChangelogEntryValidator.Validate(relPath, dto, config, labelDerivedType, knownProducts, fnNum);
+					var findings = ChangelogEntryValidator.Validate(
+						relPath,
+						dto,
+						config,
+						labelDerivedType,
+						knownProducts,
+						fnNum,
+						productsFromDefaults: ReleaseNotesSerialization.IsElasticsearchEntryFormat(rawYaml)
+					);
 					allFindings.AddRange(findings);
 				}
 			}

@@ -937,6 +937,84 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	public void ParseLeadingPrNumbers_CoversNamingSchemes(string fileName, int[] expected) =>
 		ChangelogPrIdentity.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
 
+	// An entry in the Elasticsearch changelog format: summary and area instead of title and areas, and no products.
+	// language=yaml
+	private const string ElasticsearchFormatPoolEntry =
+		"""
+		pr: 100
+		summary: Faster hosted search
+		area: Search
+		type: bug
+		issues: []
+		""";
+
+	[Test]
+	public async Task ProfileMode_ElasticsearchFormatPoolEntry_IsReadAndTakesProductsFromConfiguration()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			pivotProducts: "  products:\n    cloud-serverless: \"serverless\"",
+			topLevel: "products:\n  default:\n    - product: cloud-hosted"
+		);
+
+		// PR 100 has a pool entry without products and no product label: it takes products.default.
+		// PR 200 has a pool entry without products and the serverless label: its label wins.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" }, { "file": "200.yaml" } ] }"""
+				);
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(ElasticsearchFormatPoolEntry);
+			if (path.EndsWith("200.yaml", StringComparison.Ordinal))
+				return Yaml(
+					ElasticsearchFormatPoolEntry.Replace("pr: 100", "pr: 200").Replace("Faster hosted search", "Leaner serverless search")
+				);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/100", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo { Title = "PR title 100", Body = "", Labels = [">bug"], LinkedIssues = [] });
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/200", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo { Title = "PR title 200", Body = "", Labels = [">bug", "serverless"], LinkedIssues = [] });
+
+		var service = Service(pool, RangeService(100, 200), prService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// The entries come from the pool, not from the PR titles.
+		bundle.Should().Contain("Faster hosted search").And.Contain("Leaner serverless search").And.NotContain("PR title");
+		bundle.Should().Contain("type: bug-fix").And.Contain("- Search");
+
+		var entries = bundle[bundle.IndexOf("entries:", StringComparison.Ordinal)..];
+		var first = entries[..entries.IndexOf("Leaner serverless search", StringComparison.Ordinal)];
+		first.Should().Contain("product: cloud-hosted").And.NotContain("product: cloud-serverless");
+		var second = entries[entries.IndexOf("Leaner serverless search", StringComparison.Ordinal)..];
+		second.Should().Contain("product: cloud-serverless").And.NotContain("product: cloud-hosted");
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
