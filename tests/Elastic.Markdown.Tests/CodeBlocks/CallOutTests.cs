@@ -107,6 +107,37 @@ public class ClassicCallOutsOnEmptyLines() : CodeBlockCallOutTests("csharp", """
 }
 
 [InheritsTests]
+public class ClassicCallOutsAtColumnZero() : CodeBlockCallOutTests(
+	"csharp",
+	"""
+<1>
+var x = 1;
+<2>
+""",
+	"""
+1. The first annotation
+2. The last annotation
+"""
+)
+{
+	[Test]
+	public void ParseClassicCallOuts_ColumnZero_ParsesBothMarkers() =>
+		Block!
+			.CallOuts
+			.Should()
+			.HaveCount(2)
+			.And
+			.SatisfyRespectively(first => first.Index.Should().Be(1), last => last.Index.Should().Be(2));
+
+	[Test]
+	public void Render_ColumnZero_ProducesCalloutList() =>
+		Html.Should().Contain("<ol class=\"code-callouts\">").And.Contain("The first annotation").And.Contain("The last annotation");
+
+	[Test]
+	public void Parse_ColumnZero_HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+}
+
+[InheritsTests]
 public class ClassicCallOutsNotFollowedByList() : CodeBlockCallOutTests(
 	"csharp",
 	"""
@@ -562,4 +593,19 @@ var z = y - 2; <2>
 
 	[Test]
 	public void RenderedHtmlDoesNotContainComments() => Html.Should().NotContain("basque_keywords");
+}
+
+public class ClassicCallOutMatcherTests
+{
+	[Test]
+	[Arguments("<1>", true)]
+	[Arguments("  <1>", true)]
+	[Arguments("\t<1>", true)]
+	[Arguments("code <1>", true)]
+	[Arguments("code<1>", false)]
+	[Arguments("<name>", false)]
+	[Arguments("<1> code", false)]
+	[Arguments("", false)]
+	public void Match_PrefixAndMarker_RequiresAStandaloneOrSeparatedNumber(string line, bool expected) =>
+		CallOutParser.CallOutNumber().IsMatch(line).Should().Be(expected);
 }

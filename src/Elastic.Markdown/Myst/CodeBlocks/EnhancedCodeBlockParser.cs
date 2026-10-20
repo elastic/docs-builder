@@ -270,7 +270,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	{
 		var indexOfLastComment = Math.Max(span.LastIndexOf(" # "), span.LastIndexOf(" // "));
 		var startIndex = span.LastIndexOf('<');
-		if (startIndex <= 0)
+		if (startIndex < 0)
 			return [];
 
 		var allStartIndices = new List<int>();
