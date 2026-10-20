@@ -2359,7 +2359,6 @@ a.docs-reference-btn::after {
 	code:not(pre > code):not(.enum-value):not(.schema-type):not(
 		.union-type-option
 	),
-.example-description :not(pre) > code,
 .api-example-caption :not(pre) > code,
 .union-option {
 	display: inline-flex;
@@ -3085,18 +3084,6 @@ button.example-response-tab:focus-visible {
 
 .api-code-sample-body {
 	min-width: 0;
-}
-
-/* Example description - smaller font like property descriptions */
-.example-description {
-	@apply text-grey-80;
-	font-size: 0.9em;
-	line-height: 1.5;
-	margin-bottom: 0.75rem;
-
-	p {
-		margin: 0;
-	}
 }
 
 /* Sticky Examples button - bottom right of content area */
