@@ -766,8 +766,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		var entry = EntryProductsOf(bundle!);
-		entry.Should().Contain("- product: kibana\n    lifecycle: ga\n");
-		entry.Should().Contain("- product: cloud-serverless\n    lifecycle: ga\n");
+		entry.Should().Contain("- product: kibana\n        lifecycle: ga\n");
+		entry.Should().Contain("- product: cloud-serverless\n        lifecycle: ga\n");
 		entry.Should().NotContain("versions:");
 	}
 

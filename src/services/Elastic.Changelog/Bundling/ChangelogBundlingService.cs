@@ -416,7 +416,7 @@ public partial class ChangelogBundlingService(
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
 			// the named paths, in CDN mode it selects pool entries by file name.
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -1732,7 +1732,11 @@ public partial class ChangelogBundlingService(
 			try
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions()
+				)
+					?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 				var data = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ComputeSha1(entry.Content);
 				matchedNotes.Add(new MatchedChangelogFile

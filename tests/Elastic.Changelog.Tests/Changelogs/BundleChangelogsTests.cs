@@ -1598,7 +1598,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("€");
 
 		// Verify the content structure is correct
-		bundleContent.Should().Contain("title: Feature with special characters & symbols");
+		bundleContent.Should().Contain("title: \"Feature with special characters & symbols\"");
 		bundleContent.Should().Contain("type: feature");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.3.0");
@@ -1854,8 +1854,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is included in the bundle output
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:hidden-api");
-		bundleContent.Should().Contain("- feature:another-hidden");
+		bundleContent.Should().Contain("- \"feature:hidden-api\"");
+		bundleContent.Should().Contain("- \"feature:another-hidden\"");
 	}
 
 	[Test]
@@ -1946,8 +1946,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field contains feature IDs from the file
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-file");
-		bundleContent.Should().Contain("- feature:another");
+		bundleContent.Should().Contain("- \"feature:from-file\"");
+		bundleContent.Should().Contain("- \"feature:another\"");
 	}
 
 	[Test]
@@ -2433,8 +2433,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Verify that hide-features from the profile are written to the bundle
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:profile-hidden");
-		bundleContent.Should().Contain("- feature:another-profile-hidden");
+		bundleContent.Should().Contain("- \"feature:profile-hidden\"");
+		bundleContent.Should().Contain("- \"feature:another-profile-hidden\"");
 	}
 
 	[Test]
@@ -2503,7 +2503,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Verify that only the profile hide-features are present
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-profile");
+		bundleContent.Should().Contain("- \"feature:from-profile\"");
 	}
 
 	[Test]
@@ -2568,8 +2568,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("- feature:profile-one");
-		bundleContent.Should().Contain("- feature:profile-two");
+		bundleContent.Should().Contain("- \"feature:profile-one\"");
+		bundleContent.Should().Contain("- \"feature:profile-two\"");
 	}
 
 	[Test]

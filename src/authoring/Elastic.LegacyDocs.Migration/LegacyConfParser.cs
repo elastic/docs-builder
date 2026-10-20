@@ -2,29 +2,26 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using System.Text.Json;
+using SharpYaml;
+using SharpYaml.Model;
 
 namespace Elastic.LegacyDocs.Migration;
 
 public static class LegacyConfParser
 {
-	private static readonly IDeserializer RawDeserializer = new DeserializerBuilder().Build();
-
-	private static readonly ISerializer RoundTripSerializer = new SerializerBuilder().DisableAliases().Build();
-
-	private static readonly IDeserializer TypedDeserializer = new DeserializerBuilder()
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.WithTypeConverter(new BranchRefListConverter())
-		.WithTypeConverter(new BranchRefConverter())
-		.IgnoreUnmatchedProperties()
-		.Build();
+	private static readonly YamlSerializerOptions TypedOptions = new()
+	{
+		PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+		Converters = [new BranchRefListConverter(), new BranchRefConverter()]
+	};
 
 	public static LegacyConf Parse(string yaml)
 	{
-		var raw = RawDeserializer.Deserialize<object>(yaml);
-		var resolved = RoundTripSerializer.Serialize(raw);
-		var conf = TypedDeserializer.Deserialize<LegacyConf>(resolved) ?? new LegacyConf();
+		// Materializes anchor/alias references into their resolved values before typed deserialization
+		// (legacy conf.yaml files commonly share branch lists via YAML anchors).
+		var resolved = YamlStream.Load(new StringReader(yaml)).ToString();
+		var conf = YamlSerializer.Deserialize<LegacyConf>(resolved, TypedOptions) ?? new LegacyConf();
 		return Flatten(conf);
 	}
 

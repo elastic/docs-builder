@@ -5,7 +5,8 @@
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using YamlDotNet.RepresentationModel;
+using SharpYaml.Model;
+using Path = System.IO.Path;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -177,56 +178,49 @@ public static class DocSetYamlGenerator
 	/// </summary>
 	private static IReadOnlySet<string> CollectRedirectTargetPaths(string yamlText)
 	{
-		var stream = new YamlStream();
 		using var reader = new StringReader(yamlText);
-		stream.Load(reader);
+		var stream = YamlStream.Load(reader);
 
-		if (stream.Documents.Count == 0)
+		if (stream.Count == 0)
 			return new HashSet<string>();
 
-		if (stream.Documents[0].RootNode is not YamlMappingNode rootMap)
+		if (stream[0].Contents is not YamlMapping rootMap)
 			return new HashSet<string>();
 
-		var redirectsMap = rootMap
-			.Children
-			.OfType<KeyValuePair<YamlNode, YamlNode>>()
-			.Select(kv => kv)
-			.FirstOrDefault(kv => kv.Key is YamlScalarNode sk && sk.Value == "redirects")
-			.Value
-			as YamlMappingNode;
+		var redirectsMap = rootMap.FirstOrDefault(kv => kv.Key is YamlValue sk && sk.Value == "redirects").Value as YamlMapping;
 
 		if (redirectsMap is null)
 			return new HashSet<string>();
 
 		var result = new HashSet<string>(StringComparer.Ordinal);
-		foreach (var kv in redirectsMap.Children)
+		foreach (var kv in redirectsMap)
 		{
-			var fromKey = kv.Key is YamlScalarNode sk ? sk.Value ?? string.Empty : string.Empty;
+			var fromKey = kv.Key is YamlValue sk ? sk.Value : string.Empty;
 			var value = kv.Value;
 
 			switch (value)
 			{
-				case YamlScalarNode scalar:
+				case YamlValue scalar:
 					var scalarTarget = string.IsNullOrEmpty(scalar.Value) ? "index.md" : scalar.Value;
 					AddLocal(scalarTarget, result);
 					break;
 
-				case YamlMappingNode mapping:
+				case YamlMapping mapping:
 					string? toVal = null;
-					YamlSequenceNode? manyNode = null;
+					YamlSequence? manyNode = null;
 
-					foreach (var child in mapping.Children)
+					foreach (var child in mapping)
 					{
-						if (child.Key is not YamlScalarNode childKey)
+						if (child.Key is not YamlValue childKey)
 							continue;
 						switch (childKey.Value)
 						{
 							case "to":
-								if (child.Value is YamlScalarNode toScalar)
+								if (child.Value is YamlValue toScalar)
 									toVal = toScalar.Value;
 								break;
 							case "many":
-								if (child.Value is YamlSequenceNode seq)
+								if (child.Value is YamlSequence seq)
 									manyNode = seq;
 								break;
 						}
@@ -248,24 +242,24 @@ public static class DocSetYamlGenerator
 		return result;
 	}
 
-	private static IEnumerable<string> CollectManyTargets(string outerFromKey, YamlSequenceNode seq)
+	private static IEnumerable<string> CollectManyTargets(string outerFromKey, YamlSequence seq)
 	{
-		foreach (var node in seq.Children)
+		foreach (var node in seq)
 		{
-			if (node is not YamlMappingNode m)
+			if (node is not YamlMapping m)
 				continue;
 
 			string? toVal = null;
 			var hasAnchors = false;
 
-			foreach (var kv in m.Children)
+			foreach (var kv in m)
 			{
-				if (kv.Key is not YamlScalarNode k)
+				if (kv.Key is not YamlValue k)
 					continue;
 				switch (k.Value)
 				{
 					case "to":
-						if (kv.Value is YamlScalarNode ts)
+						if (kv.Value is YamlValue ts)
 							toVal = ts.Value;
 						break;
 					case "anchors":

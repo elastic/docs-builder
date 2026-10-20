@@ -12,7 +12,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -273,7 +273,11 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
 			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				normalized,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),

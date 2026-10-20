@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
-using YamlDotNet.RepresentationModel;
+using SharpYaml.Model;
 
 namespace Elastic.ApiExplorer.Navigation;
 
@@ -43,14 +43,13 @@ public static class MarkdownNavigationTitleReader
 			return null;
 
 		// YamlStream is reflection-free and therefore native-AOT safe
-		var yaml = new YamlStream();
-		yaml.Load(new StringReader(content[3..end]));
-		if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode mapping)
+		var yaml = YamlStream.Load(new StringReader(content[3..end]));
+		if (yaml.Count == 0 || yaml[0].Contents is not YamlMapping mapping)
 			return null;
 
-		foreach (var (key, value) in mapping.Children)
+		foreach (var (key, value) in mapping)
 		{
-			if (key is YamlScalarNode { Value: "navigation_title" } && value is YamlScalarNode scalar)
+			if (key is YamlValue { Value: "navigation_title" } && value is YamlValue scalar)
 				return scalar.Value;
 		}
 
@@ -58,5 +57,6 @@ public static class MarkdownNavigationTitleReader
 	}
 
 	/// <summary>Converts kebab-case/snake_case file names to a title-cased navigation title.</summary>
-	internal static string TitleCaseFromFileName(string fileName) => Path.GetFileNameWithoutExtension(fileName).TitleCaseFromSlug();
+	internal static string TitleCaseFromFileName(string fileName) =>
+		System.IO.Path.GetFileNameWithoutExtension(fileName).TitleCaseFromSlug();
 }
