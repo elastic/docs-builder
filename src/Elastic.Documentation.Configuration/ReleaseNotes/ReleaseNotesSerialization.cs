@@ -433,7 +433,10 @@ public static partial class ReleaseNotesSerialization
 		var area = es.Area ?? notice?.Area;
 		var dto = new ChangelogEntryDto
 		{
-			Pr = es.Pr is null ? null : ToPrReference(es.Pr, es.SourceRepo),
+			// A PR in another repository goes to prs as owner/repo#number, which the PR matching understands.
+			// pr stays a bare number, which validation compares with the file name.
+			Pr = string.IsNullOrWhiteSpace(es.SourceRepo) ? es.Pr : null,
+			Prs = es.Pr is not null && !string.IsNullOrWhiteSpace(es.SourceRepo) ? [QualifiedPrReference(es.Pr, es.SourceRepo)] : null,
 			Issues = es.Issues is { Count: > 0 } ? es.Issues : null,
 			Type = ToEntryTypeName(es.Type),
 			Title = es.Summary,
@@ -445,9 +448,8 @@ public static partial class ReleaseNotesSerialization
 		return YamlSerializer.Serialize(dto, SerializerOptions);
 	}
 
-	// A PR in another repository is written as owner/repo#number, which the PR matching understands.
-	private static string ToPrReference(string pr, string? sourceRepo) =>
-		string.IsNullOrWhiteSpace(sourceRepo) ? pr : sourceRepo.Contains('/') ? $"{sourceRepo}#{pr}" : $"elastic/{sourceRepo}#{pr}";
+	private static string QualifiedPrReference(string pr, string sourceRepo) =>
+		sourceRepo.Contains('/') ? $"{sourceRepo}#{pr}" : $"elastic/{sourceRepo}#{pr}";
 
 	// The Elasticsearch type names that differ from the docs-builder ones. The rest (deprecation, enhancement,
 	// feature, known-issue, regression, security) are the same.

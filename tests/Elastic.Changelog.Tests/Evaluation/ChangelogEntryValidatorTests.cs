@@ -55,6 +55,30 @@ public class ChangelogEntryValidatorTests
 	}
 
 	[Test]
+	public void Validate_ElasticsearchFormatWithSourceRepo_AcceptsTheFileNamePr()
+	{
+		var config = Config with
+		{
+			ProductsConfiguration = new ProductsConfig { Default = [new DefaultProduct { Product = "elasticsearch" }] }
+		};
+		var entry = ParseYaml(ElasticsearchFormatEntry + "source_repo: elasticsearch-serverless\n");
+
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			config,
+			null,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().BeEmpty();
+		entry.Pr.Should().BeNull();
+		entry.Prs.Should().Equal("elastic/elasticsearch-serverless#42");
+	}
+
+	[Test]
 	public void Validate_ElasticsearchFormatWithoutProductsDefault_RequiresProducts()
 	{
 		var findings = ChangelogEntryValidator.Validate(

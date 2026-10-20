@@ -134,7 +134,7 @@ docs-builder reads those files as if they used the schema above:
 | `summary` | `title` |
 | `area` | `areas`, split on commas |
 | `pr`, `issues` | `pr`, `issues` |
-| `source_repo` | The repository of `pr`, as `elastic/<repo>#<pr>` |
+| `source_repo` | The repository of `pr`: the entry gets `prs: [elastic/<repo>#<pr>]` instead of `pr` |
 | `type: bug` | `type: bug-fix` |
 | `type: breaking`, `type: breaking-java` | `type: breaking-change` |
 | `type: new-aggregation` | `type: feature` |
@@ -143,8 +143,11 @@ docs-builder reads those files as if they used the schema above:
 | `highlight` block | `highlight: true` (or the block's `notable` value), and `body` becomes `description` |
 
 The other type names are the same in both formats.
-These files have no `products` field.
-They take `products.default` from the changelog configuration file, and in a commit-range bundle the products that the pull request's labels map to win over the defaults.
+These files have no `products` field:
+
+- `changelog validate` accepts them when the changelog configuration file sets `products.default`.
+- A commit-range bundle (`release unified bundle`, `release serverless`, or `changelog bundle` with a git range) gives each of them the products that its pull request's labels map to, or else `products.default`.
+- Other bundles don't add products. A `changelog bundle` that reads these files directly, for example with `--files`, fails with "missing required field: products".
 The `title` of a `breaking`, `deprecation`, or `highlight` block is not used.
 
 ## Examples
