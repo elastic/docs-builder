@@ -14,4 +14,15 @@ public static class StringExtensions
 			relativePath = relativePath.Replace('\\', '/');
 		return relativePath;
 	}
+
+	/// <summary>Converts a kebab-case/snake_case identifier to a title-cased string ("get-script" becomes "Get Script").</summary>
+	public static string TitleCaseFromSlug(this string slug) =>
+		string.Join(
+			' ',
+			slug
+				.Replace('-', ' ')
+				.Replace('_', ' ')
+				.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+				.Select(word => char.ToUpperInvariant(word[0]) + word[1..].ToLowerInvariant())
+		);
 }

@@ -27,12 +27,35 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 		var page = SchemaPageModel.Create(item.Model, context);
 
 		page.UnionKeyword.Should().Be(UnionKeyword.OneOf);
-		page.UnionVariants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ buckets }", "{ value }"]);
+		page.UnionVariants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 		page.UnionVariants.Variants.Should().OnlyContain(v => v.AnchorId.StartsWith("oneof-variant-"), "links to a variant keep working");
 		page.UnionVariants.Label.Should().BeNull("the section heading already names the keyword");
 		page.Requires.Should().BeNull();
 		SchemaCommonMark.Write(item.Model, page, context).Should().Contain("## Union types (oneOf)");
 	}
+
+	[Test]
+	public void Create_CollapsedNestedFields_StayFindableInPage()
+	{
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Single(n => n.Model.DisplayName == "Aggregation result");
+		var context = RenderContext(item);
+
+		var page = SchemaPageModel.Create(item.Model, context);
+
+		var folded = page.UnionVariants!
+			.Variants
+			.Where(v => v.Properties is not null)
+			.SelectMany(v => Flatten(v.Properties!))
+			.Where(p => p.Children.Kind != ChildKind.None);
+		folded.Should().NotBeEmpty();
+		folded
+			.Where(p => !p.Children.UseHidden && p.Children.Properties is not null && p.IsCollapsible && !p.DefaultExpanded)
+			.Should()
+			.BeEmpty("collapsed rows use hidden=\"until-found\", so find-in-page reaches their fields");
+	}
+
+	private static IEnumerable<ApiProperty> Flatten(ApiPropertyList list) =>
+		list.Items.SelectMany(p => new[] { p }.Concat(p.Children.Properties is { } nested ? Flatten(nested) : []));
 
 	[Test]
 	public void Write_RequiredSetsWithoutProperties_StillSaysWhichFieldsAreRequired()

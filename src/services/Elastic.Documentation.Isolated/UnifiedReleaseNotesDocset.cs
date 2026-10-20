@@ -13,7 +13,9 @@ public sealed record ProductVersions(Product Product, IReadOnlyList<string> Vers
 /// <summary>
 /// Synthesizes the markdown and navigation files of the unified release notes docset in memory.
 /// Every product with <c>release-notes: dra</c> gets the same pages, so onboarding a product is a
-/// one-line change in <c>products.yml</c>. A version has a page of its own, so its URL can be shared.
+/// one-line change in <c>products.yml</c>. A version has a page of its own, and its known issues,
+/// breaking changes, and deprecations are pages under that version, so a version can be shared as
+/// <c>/kibana/9.6.0</c>.
 /// </summary>
 public static class UnifiedReleaseNotesDocset
 {
@@ -26,9 +28,9 @@ public static class UnifiedReleaseNotesDocset
 
 	private static readonly (string FileName, string NavigationTitle, string Heading, string Options)[] Pages =
 	[
-		("known-issues.md", "Known issues", "known issues", ":type: known-issue"),
-		("breaking-changes.md", "Breaking changes", "breaking changes", ":type: breaking-change\n:dropdowns:"),
-		("deprecations.md", "Deprecations", "deprecations", ":type: deprecation")
+		("known-issues.md", "Known issues", "known issues", ":type: known-issue\n:subsections:"),
+		("breaking-changes.md", "Breaking changes", "breaking changes", ":type: breaking-change\n:dropdowns:\n:subsections:"),
+		("deprecations.md", "Deprecations", "deprecations", ":type: deprecation\n:subsections:")
 	];
 
 	/// <summary>The products that appear in the docset, in navigation order.</summary>
@@ -44,18 +46,20 @@ public static class UnifiedReleaseNotesDocset
 		var files = new Dictionary<string, string>(StringComparer.Ordinal)
 		{
 			["docset.yml"] = "project: unified-release-notes\n" + GenerateToc(products),
-			["release-notes/index.md"] = GenerateRootIndex(products)
+			["index.md"] = GenerateRootIndex(products)
 		};
 
 		foreach (var (product, versions) in products)
 		{
-			var folder = $"release-notes/{product.Id}";
+			var folder = product.Id;
 			files[$"{folder}/toc.yml"] = GenerateProductToc(versions);
 			files[$"{folder}/index.md"] = GenerateProductIndex(product, versions);
 			foreach (var version in versions)
+			{
 				files[$"{folder}/{version}.md"] = GenerateVersionPage(product, version);
-			foreach (var page in Pages)
-				files[$"{folder}/{page.FileName}"] = GeneratePage(product, page);
+				foreach (var page in Pages)
+					files[$"{folder}/{version}/{page.FileName}"] = GenerateVersionSectionPage(product, version, page);
+			}
 		}
 
 		return files;
@@ -63,15 +67,22 @@ public static class UnifiedReleaseNotesDocset
 
 	private static string GenerateToc(IReadOnlyList<ProductVersions> products)
 	{
-		var lines = new List<string> { "toc:", "  - folder: release-notes", "    children:", "      - file: index.md" };
-		lines.AddRange(products.Select(p => $"      - toc: {p.Product.Id}"));
+		var lines = new List<string> { "toc:", "  - file: index.md" };
+		lines.AddRange(products.Select(p => $"  - toc: {p.Product.Id}"));
 		return string.Join('\n', lines) + "\n";
 	}
 
 	private static string GenerateProductToc(IReadOnlyList<string> versions)
 	{
-		IEnumerable<string> files = ["index.md", .. versions.Select(v => $"{v}.md"), .. Pages.Select(p => p.FileName)];
-		return string.Join('\n', files.Select(f => $"  - file: {f}").Prepend("toc:")) + "\n";
+		var lines = new List<string> { "toc:", "  - file: index.md" };
+		foreach (var version in versions)
+		{
+			lines.Add($"  - file: {version}.md");
+			lines.Add("    children:");
+			lines.AddRange(Pages.Select(page => $"      - file: {version}/{page.FileName}"));
+		}
+
+		return string.Join('\n', lines) + "\n";
 	}
 
 	private static string GenerateRootIndex(IReadOnlyList<ProductVersions> products)
@@ -133,18 +144,23 @@ public static class UnifiedReleaseNotesDocset
 			""
 		);
 
-	private static string GeneratePage(Product product, (string FileName, string NavigationTitle, string Heading, string Options) page) =>
+	private static string GenerateVersionSectionPage(
+		Product product,
+		string version,
+		(string FileName, string NavigationTitle, string Heading, string Options) page
+	) =>
 		string.Join(
 			'\n',
 			"---",
 			$"navigation_title: {page.NavigationTitle}",
 			"---",
 			"",
-			$"# {product.DisplayName} {page.Heading}",
+			$"# {product.DisplayName} {version} {page.Heading}",
 			"",
 			UnreleasedNotice,
 			"",
 			":::{changelog} /" + BundlesPath(product.Id),
+			$":version: {version}",
 			page.Options,
 			":::",
 			""

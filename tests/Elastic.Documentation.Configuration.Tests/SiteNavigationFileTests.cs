@@ -165,7 +165,7 @@ public class SiteNavigationFileTests
 
 		act
 			.Should()
-			.Throw<YamlDotNet.Core.YamlException>()
+			.Throw<SharpYaml.YamlException>()
 			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");
 	}
@@ -182,7 +182,7 @@ public class SiteNavigationFileTests
 		// A typo (no 'toc:' or 'section:' key) must throw rather than silently drop the entry.
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<YamlDotNet.Core.YamlException>().WithMessage("*has no 'toc:' key*");
+		act.Should().Throw<SharpYaml.YamlException>().WithMessage("*has no 'toc:' key*");
 	}
 
 	[Test]

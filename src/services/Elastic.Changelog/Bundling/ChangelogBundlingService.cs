@@ -43,12 +43,6 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-
-	/// <summary>
-	/// Commit-range mode only. Products set on every entry synthesized from PR metadata, replacing
-	/// label-derived and <see cref="OutputProducts"/> products. Entries from the changelog pool keep their own products.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -422,7 +416,7 @@ public partial class ChangelogBundlingService(
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
 			// the named paths, in CDN mode it selects pool entries by file name.
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -1062,8 +1056,7 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts,
-				EntryProducts = input.EntryProducts
+				FallbackProducts = input.OutputProducts
 			},
 			ctx
 		);
@@ -1739,7 +1732,11 @@ public partial class ChangelogBundlingService(
 			try
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions()
+				)
+					?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 				var data = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ComputeSha1(entry.Content);
 				matchedNotes.Add(new MatchedChangelogFile

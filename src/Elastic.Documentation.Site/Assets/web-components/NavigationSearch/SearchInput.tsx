@@ -35,6 +35,7 @@ export interface SearchInputProps {
     onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void
     disabled: boolean
     isLoading: boolean
+    keyShortcuts?: string
 }
 
 export const SearchInput = ({
@@ -48,6 +49,7 @@ export const SearchInput = ({
     onKeyDown,
     disabled,
     isLoading,
+    keyShortcuts,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
 
@@ -79,6 +81,7 @@ export const SearchInput = ({
                 ref={inputRef}
                 type="text"
                 placeholder={placeholder}
+                aria-keyshortcuts={keyShortcuts}
                 value={value}
                 onChange={onChange}
                 onFocus={onFocus}
