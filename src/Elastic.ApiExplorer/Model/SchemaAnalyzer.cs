@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Referenced maps this instance is classifying; a map whose values refer back to it stays a plain named type.
+	private readonly HashSet<string> _expandingMapRefs = [with(StringComparer.Ordinal)];
+
 	// Each schema's allOf folds once per page.
 	private readonly Dictionary<IOpenApiSchema, EffectiveSchema> _flattened = [with(ReferenceEqualityComparer.Instance)];
 
@@ -352,15 +355,22 @@ public class SchemaAnalyzer(
 			StringComparer.Ordinal
 		);
 		var shared = SelectingConstant(shapes.Values.Select(static s => s.Constants).ToList());
+		var namedShapes = labelled
+			.Where(static x => !string.IsNullOrEmpty(x.Option.Ref))
+			.Select(static x => x.Shape)
+			.ToHashSet(StringComparer.Ordinal);
 		var labels = shapes.ToDictionary(
 			static s => s.Key,
-			s => ObjectLabel(
-				s.Value.Schema,
-				s.Value.Constants,
-				shared,
-				s.Value.Properties,
-				shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
-			),
+			s => ObjectLabel(s.Value.Schema, s.Value.Constants, shared)
+			// A named member without a title or selecting field goes by its schema's name, not by a field list.
+			??
+				(namedShapes.Contains(s.Key)
+					? null
+					: FieldsLabel(
+						s.Value.Schema,
+						s.Value.Properties,
+						shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
+					)),
 			StringComparer.Ordinal
 		);
 		var byIndex = labelled.ToDictionary(static x => x.Index, x => labels[x.Shape]);
@@ -391,6 +401,10 @@ public class SchemaAnalyzer(
 						.Count() == constants.Count
 				);
 
+	/// <summary>The property each of the object <paramref name="members"/> fixes to a value of its own, null when none does.</summary>
+	public string? GetSelectingProperty(IEnumerable<IOpenApiSchema?> members) =>
+		SelectingConstant([.. members.OfType<IOpenApiSchema>().Select(ConstantFields)]);
+
 	/// <summary>The fields an object fixes to a single value (<c>type: eql</c>), in property order.</summary>
 	private Dictionary<string, string> ConstantFields(IOpenApiSchema member)
 	{
@@ -403,21 +417,17 @@ public class SchemaAnalyzer(
 		return constants;
 	}
 
-	private static string? ObjectLabel(
-		IOpenApiSchema member,
-		Dictionary<string, string> constants,
-		string? sharedConstant,
-		IReadOnlyList<string> own,
-		IEnumerable<string> siblingNames
-	)
+	private static string? ObjectLabel(IOpenApiSchema member, Dictionary<string, string> constants, string? sharedConstant)
 	{
 		if (!string.IsNullOrWhiteSpace(member.Title))
 			return member.Title;
 
 		var constant = sharedConstant ?? constants.Keys.FirstOrDefault();
-		if (constant is not null)
-			return $"{constant}: {constants[constant]}";
+		return constant is null ? null : $"{constant}: {constants[constant]}";
+	}
 
+	private static string? FieldsLabel(IOpenApiSchema member, IReadOnlyList<string> own, IEnumerable<string> siblingNames)
+	{
 		// The fields no sibling has tell the variant apart; required ones define it, so they come first.
 		var others = siblingNames.ToHashSet(StringComparer.Ordinal);
 		var distinct = own.Where(n => !others.Contains(n)).ToList();
@@ -573,6 +583,9 @@ public class SchemaAnalyzer(
 		// Description/Title/ReadOnly/WriteOnly intentionally stay on the proxy because
 		// OpenAPI 3.1 allows sibling keywords alongside $ref to override those fields.
 		var resolvedTarget = ResolveSchema(reference) ?? reference;
+		if (ClassifyReferencedMap(refId, resolvedTarget) is { } map)
+			return map;
+
 		var isArray = resolvedTarget.Type?.HasFlag(JsonSchemaType.Array) ?? false;
 		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
 		var isEnum = resolvedTarget.Enum is { Count: > 0 };
@@ -831,6 +844,37 @@ public class SchemaAnalyzer(
 			_ = _expandingAllOfRefs.Remove(refId);
 		}
 	}
+
+	/// <summary>
+	/// A named map without a page of its own reads like an inline one (<c>map string to X</c>), since its name never shows.
+	/// Null for any other schema, so classification goes on as for a named type.
+	/// </summary>
+	private TypeInfo? ClassifyReferencedMap(string refId, IOpenApiSchema target)
+	{
+		if (!IsPlainMap(target) || TypePages.TryGet(refId, out _) || !_expandingMapRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyScalar(target);
+		}
+		finally
+		{
+			_ = _expandingMapRefs.Remove(refId);
+		}
+	}
+
+	/// <summary>An object made of map values only: no fields, composition, union or enum of its own.</summary>
+	private static bool IsPlainMap(IOpenApiSchema schema) =>
+		schema is
+		{
+			AdditionalProperties: not null,
+			Properties: null or { Count: 0 },
+			AllOf: null or { Count: 0 },
+			Enum: null or { Count: 0 }
+		}
+			&& schema.Type?.HasFlag(JsonSchemaType.Array) != true
+			&& !UnionSchemas.IsUnion(schema);
 
 	/// <summary>Each object variant carries the shared base members, so it expands to base plus its own properties.</summary>
 	private TypeInfo ClassifyAllOfUnion(AllOfUnion split)

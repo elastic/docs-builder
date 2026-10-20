@@ -67,7 +67,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 			Extensions = new Dictionary<string, IOpenApiExtension> { ["x-state"] = new JsonNodeExtension(JsonNode.Parse(json)!) }
 		};
 
-		OpenApiExtensionReader.GetState(operation).Should().Be(expected);
+		OpenApiExtensionReader.GetState(operation.Extensions).Should().Be(expected);
 	}
 
 	private async Task<string> RenderAsync(OperationNavigationItem nav)

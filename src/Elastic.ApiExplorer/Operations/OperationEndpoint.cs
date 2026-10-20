@@ -13,7 +13,11 @@ namespace Elastic.ApiExplorer.Operations;
 public sealed record EndpointVariant(string Method, string Route);
 
 /// <summary>One <c>/segment</c> of a route. Optional segments can be left out to call a shorter variant.</summary>
-public sealed record EndpointSegment(string Text, bool Optional);
+public sealed record EndpointSegment(string Text, bool Optional)
+{
+	/// <summary>The path parameter a <c>{name}</c> segment stands for; null for a literal segment.</summary>
+	public string? Parameter => OperationEndpoint.IsPlaceholder(Text) ? Text[1..^1] : null;
+}
 
 /// <summary>One distinct route of an operation, with its dominant method and the methods that behave the same.</summary>
 public sealed record EndpointRow(string Route, string Method, IReadOnlyList<string> AlsoMethods, IReadOnlyList<EndpointSegment> Segments);
@@ -360,7 +364,7 @@ public sealed partial record OperationEndpoint(
 
 	private static string[] Split(string route) => route.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-	private static bool IsPlaceholder(string segment) => segment.Length > 2 && segment[0] == '{' && segment[^1] == '}';
+	internal static bool IsPlaceholder(string segment) => segment.Length > 2 && segment[0] == '{' && segment[^1] == '}';
 
 	[GeneratedRegex("""<span class="operation-verb\s+[^"]*">([^<]*)</span>\s*(?:&nbsp;)?\s*<span class="operation-path">([^<]+)</span>""", RegexOptions.IgnoreCase
 		| RegexOptions.CultureInvariant)]

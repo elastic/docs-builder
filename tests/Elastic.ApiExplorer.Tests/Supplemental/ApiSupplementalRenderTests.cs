@@ -109,12 +109,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"parameters\"");
-		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().Contain("id=\"path-params\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
 		html.Should().Contain("api-param-section collapsed");
-		html.Should().Contain("id=\"parameters-list\"");
-		html.Should().Contain("aria-controls=\"parameters-list\"");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
 
 	[Test]
@@ -124,9 +124,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("api-param-section collapsed");
-		html.Should().Contain("id=\"parameters-list\"");
-		html.Should().Contain("aria-controls=\"parameters-list\"");
-		html.Should().Contain("href=\"#parameters\">Path parameters</a>");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 	}
 
 	[Test]
@@ -180,7 +180,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().MatchRegex(
-			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request</a>\s*<button"""
+			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request body</a>\s*<button"""
 		);
 		html.Should().MatchRegex("""id="responses"[^>]*>\s*<a class="headerlink responses-title" href="#responses">Response""");
 		html.Should().NotMatchRegex("""<button[^>]*api-param-section-toggle[^>]*>(?:(?!</button>)[\s\S])*<a\s""");
@@ -195,7 +195,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
-		html.Should().Contain("href=\"#request-body\">Request</a>");
+		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
 		html.Should().NotContain("content-type-badge");
 	}
@@ -486,9 +486,23 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
 
 		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
-		html.IndexOf("class=\"api-rail-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
-		html.Should().NotContain("<dt>Size</dt>").And.NotContain("<dt>Version</dt>");
+		// The first server is the copy under the intro; the last one is in the rail.
+		html.LastIndexOf("class=\"api-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().Contain("<dt>Base URL").And.Contain("api-server-field");
+		html.Should().NotContain("<dt>Size</dt>");
 		html.Should().Contain("api-url-copy");
+	}
+
+	[Test]
+	public async Task Product_Facts_RenderUnderTheIntroAndInTheRail()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var inline = html.IndexOf("api-rail-facts--inline", StringComparison.Ordinal);
+		var rail = html.IndexOf("api-rail-facts--rail", StringComparison.Ordinal);
+		inline.Should().BeGreaterThan(html.IndexOf("<h1>", StringComparison.Ordinal));
+		inline.Should().BeLessThan(html.IndexOf("class=\"api-overview\"", StringComparison.Ordinal));
+		rail.Should().BeGreaterThan(html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal));
 	}
 
 	[Test]

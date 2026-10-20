@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer._Partials.Layout;
@@ -145,26 +146,134 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
-	public async Task Render_GeneratedSample_IsMarkedInTheMarkupButNotInTheCard()
+	public async Task Render_GeneratedSample_SaysSoInsideItsOwnCard()
 	{
 		var html = await RenderScenario(Slicing);
 
 		html.Should().Contain("data-generated");
-		html.Should().NotContain("Built from this example");
-		html.Should().NotContain("<footer");
+		// One note per generated card, inside the card after its code, so it is about this sample and no other.
+		var cards = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(
+				html,
+				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
+				System.Text.RegularExpressions.RegexOptions.Singleline
+			);
+		cards.Should().HaveCount(2);
+		foreach (var card in cards.Select(static c => c.Value))
+		{
+			card.Should().Contain("<p class=\"api-code-carousel-card-note\">");
+			card.Should().Contain(">Generated from the API spec</span>");
+			card.Should().Contain("data-tippy-content=\"This sample was generated from the API spec, not written by hand.");
+			// Inside the code area, so the strip height measured from the body includes it.
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeLessThan(card.LastIndexOf("</div>", StringComparison.Ordinal));
+			card
+				.IndexOf("api-code-carousel-card-note", StringComparison.Ordinal)
+				.Should()
+				.BeGreaterThan(card.IndexOf("api-code-carousel-card-body", StringComparison.Ordinal));
+		}
 	}
 
 	[Test]
-	public async Task Render_Description_IsANoteWithAToggleForLongText()
+	public async Task Render_SpecSample_HasNoNote()
+	{
+		var html = await RenderScenario(Slicing with { CodeSamples = [Sample("Console"), Sample("curl")] });
+
+		html.Should().NotContain("data-generated");
+		html.Should().NotContain("api-code-carousel-card-note");
+	}
+
+	[Test]
+	public async Task Render_RequestDescription_IsACaptionUnderTheRequestLabelWithAToggleForLongText()
 	{
 		var html = await RenderScenario(TermSearch with
 		{
-			DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
+			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Splits the search into slices.</p>")
 		});
 
 		html.Should().Contain("data-example-description");
 		html.Should().Contain("Splits the search into slices.");
 		html.Should().MatchRegex("data-description-toggle[^>]*\\shidden>");
+		html.Should().NotContain("api-example-description");
+		var caption = html.IndexOf("Splits the search into slices.", StringComparison.Ordinal);
+		caption.Should().BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+		caption.Should().BeLessThan(html.IndexOf("api-code-carousel-strip", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Render_RequestDescription_ShowsForAnExternalOnlyExampleWithoutSamples()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "External",
+			TabId = "external",
+			RequestDescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Posted from a file.</p>"),
+			RequestExternalValue = "https://example.test/request.json"
+		});
+
+		html.Should().Contain("Posted from a file.");
+		html.Should().Contain("https://example.test/request.json");
+		html
+			.IndexOf("Posted from a file.", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf(">Request</span>", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Render_ResponseDescription_IsACaptionUnderTheResponseLabelPerStatus()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Get",
+			TabId = "get",
+			Responses =
+			[
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					JsonValue = "{}",
+					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>")
+				},
+				new ExampleResponse
+				{
+					StatusCode = "404",
+					JsonValue = "{}",
+					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>")
+				}
+			]
+		});
+
+		var found = html.IndexOf("Found it.", StringComparison.Ordinal);
+		found.Should().BeGreaterThan(html.IndexOf(">Response</span>", StringComparison.Ordinal));
+		found.Should().BeLessThan(html.IndexOf("data-api-response-samples", StringComparison.Ordinal));
+		html.Should().Contain("<div data-caption-status=\"200\">");
+		html.Should().Contain("<div data-caption-status=\"404\" hidden=\"hidden\">");
+		html.Should().NotContain(">Request</span>");
+	}
+
+	[Test]
+	public async Task Render_StatusDescription_IsTheTooltipOfItsTab()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Get",
+			TabId = "get",
+			Responses =
+			[
+				new ExampleResponse { StatusCode = "200", JsonValue = "{}", StatusDescription = "Unauthorized" },
+				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+			]
+		});
+
+		// A tab without one renders an empty value, which the tooltip script skips.
+		html.Should().Contain("data-status=\"200\"");
+		Regex.Matches(html, "data-tippy-content=\"Unauthorized\"").Should().ContainSingle();
+		Regex.Matches(html, "data-status=\"404\"[^>]*data-tippy-content=\"\"").Should().ContainSingle();
 	}
 
 	[Test]

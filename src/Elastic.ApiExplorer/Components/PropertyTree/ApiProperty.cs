@@ -108,16 +108,27 @@ public enum ChildKind
 	UnionVariants
 }
 
+/// <summary>The id of the container that holds a row's nested rows, which its show/hide toggle controls.</summary>
+public static class NestedRowsId
+{
+	// A field's anchor is "{row}-{name}", so a field named "children" would take a single-dash suffix: the double dash keeps them apart.
+	public static string Of(string anchorId) => $"{anchorId}--children";
+}
+
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>
 public record DictionaryChildDisplay
 {
 	public required string KeyAnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public required TypeAnnotation ValueType { get; init; }
+
+	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
+	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
 }
 
@@ -148,15 +159,19 @@ public record ApiProperty
 	public required IOpenApiSchema Schema { get; init; }
 
 	public required string AnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(AnchorId);
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
+
+	/// <summary>For a path parameter that some routes leave out, the route to use without it; the row reads "optional".</summary>
+	public string? OptionalRoute { get; init; }
 
 	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
 	public bool IsNullable { get; init; }
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
-	/// <summary>Whether the row is in a request body (vs response); kept for callers that branch on context.</summary>
+	/// <summary>Whether the row is part of the request, in its body or its parameters, rather than a response or a type page.</summary>
 	public required bool IsRequest { get; init; }
 
 	public required TypeAnnotation Type { get; init; }
@@ -171,6 +186,9 @@ public record ApiProperty
 	public ExternalDocLink? ExternalDocs { get; init; }
 	public IReadOnlyList<ConstraintDisplay> Constraints { get; init; } = [];
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
+
+	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
+	public string? Example { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>

@@ -27,13 +27,21 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 			.Should()
 			.Equal("h1", "h2", "h2", "h2", "h2", "h2", "h2", "h3");
 		html.Should().Contain("<h1>Run a search</h1>");
-		html.Should().Contain("<h2 class=\"section-header\" id=\"required-authorization\" data-section=\"required-authorization\">");
 		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"authentication\" data-section=\"authentication\">"
+			"<h2 class=\"section-header api-param-section-header\" id=\"required-authorization\" data-section=\"required-authorization\" aria-label=\"Required authorization\">"
 		);
-		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"parameters\" data-section=\"parameters\">");
-		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"query-params\" data-section=\"query-params\">");
-		html.Should().Contain("<h2 class=\"section-header api-param-section-header\" id=\"request-body\" data-section=\"request-body\">");
+		html.Should().Contain(
+			"<h2 class=\"section-header api-param-section-header\" id=\"authentication\" data-section=\"authentication\" aria-label=\"Authentication\">"
+		);
+		html.Should().Contain(
+			"<h2 class=\"section-header api-param-section-header\" id=\"path-params\" data-section=\"path-params\" aria-label=\"Path parameters\">"
+		);
+		html.Should().Contain(
+			"<h2 class=\"section-header api-param-section-header\" id=\"query-params\" data-section=\"query-params\" aria-label=\"Query parameters\">"
+		);
+		html.Should().Contain(
+			"<h2 class=\"section-header api-param-section-header\" id=\"request-body\" data-section=\"request-body\" aria-label=\"Request body\">"
+		);
 		html.Should().Contain("<h2 class=\"section-header responses-header\" id=\"responses\" data-section=\"responses\">");
 		html.Should().Contain("<h3>Response headers</h3>");
 	}

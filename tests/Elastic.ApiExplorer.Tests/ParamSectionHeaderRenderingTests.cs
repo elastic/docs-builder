@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
 using RazorSlices;
 
@@ -14,7 +15,7 @@ public class ParamSectionHeaderRenderingTests
 	[Test]
 	public async Task Render_UnionRequestBody_ListsVariantsAsAlternatives()
 	{
-		var html = await Render(new ParamSectionHeader("Request", "request-body", ["EqlRule", "QueryRule"], NamesAreVariants: true));
+		var html = await Render(new ParamSectionHeader("Request", "request-body", ["EqlRule", "QueryRule"], SummaryStyle.Variants));
 
 		html.Should().Contain("data-param-more-noun=\"variant\"");
 		html.Should().Contain("api-param-summary is-variants");
@@ -22,13 +23,41 @@ public class ParamSectionHeaderRenderingTests
 	}
 
 	[Test]
-	public async Task Render_PropertyNames_KeepTheObjectBraces()
+	public async Task Render_JsonFields_AreBracedAsAnObject()
 	{
-		var html = await Render(new ParamSectionHeader("Request", "request-body", ["name", "query"]));
+		var html = await Render(new ParamSectionHeader("Request", "request-body", ["name", "query"], SummaryStyle.Fields));
 
-		html.Should().Contain("api-param-summary-brace");
+		html.Should().NotContain("is-fields", "a style with no rule of its own adds no class");
+		html.Should().Contain("api-param-summary-brace\">{ ");
+		html.Should().Contain("api-param-summary-brace\"> }");
 		html.Should().NotContain("data-param-more-noun");
-		html.Should().NotContain("is-variants");
+	}
+
+	[Test]
+	public async Task Render_ParametersAndOtherNames_ArePlainLists()
+	{
+		var html = await Render(new ParamSectionHeader("Query parameters", "query-params", ["pretty", "human"], SummaryStyle.List));
+
+		html.Should().NotContain("is-list", "a style with no rule of its own adds no class");
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"pretty\"></code>");
+		html.Should().NotContain("api-param-summary-brace", "a parameter list is not a JSON object");
+	}
+
+	[Test]
+	public async Task Render_SummaryNames_AreGeneratedContentSoFindInPageSkipsThem()
+	{
+		var html = await Render(new ParamSectionHeader("Query parameters", "query-params", ["pretty"], SummaryStyle.List));
+
+		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"pretty\"></code>");
+		html.Should().NotContain(">pretty<", "the name is not text in the page, so Ctrl+F finds the field in the section body instead");
+	}
+
+	[Test]
+	public async Task Render_FieldsWithNoNames_HaveNothingToBrace()
+	{
+		var html = await Render(new ParamSectionHeader("Request body", "request-body", [], SummaryStyle.Fields));
+
+		html.Should().NotContain("api-param-summary-brace");
 	}
 
 	private static async Task<string> Render(ParamSectionHeader model) =>

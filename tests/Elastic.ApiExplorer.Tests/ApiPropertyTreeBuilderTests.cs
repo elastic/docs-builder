@@ -257,11 +257,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
-		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ buckets }", "{ value }"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
 
 	[Test]
-	public void BuildUnionVariants_CodegenOneOf_LabelsVariantsByTheFieldsOnlyTheyHave()
+	public void BuildUnionVariants_CodegenOneOf_NamesReferencedVariantsByTheirSchema()
 	{
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
@@ -274,7 +274,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ error, statusCode }", "{ status_code }"]);
+		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}
@@ -508,13 +508,31 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var name = new OpenApiSchemaReference("_types.Name", document);
 
 		builder.Describe(names).Text.Should().Be("union oneOf");
-		builder.DescribePathParameter(names).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(dataStreams).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(document.Components!.Schemas!["inline.StringOrArray"]).Text.Should().Be("union string | string[]");
-		builder.DescribePathParameter(name).Text.Should().Be("string");
 		builder.Describe(name).Text.Should().Be("string");
-		builder.DescribePathParameter(new OpenApiSchema { Type = JsonSchemaType.String }).Text.Should().Be("string");
+
+		string PathType(IOpenApiSchema schema) => PathRow(builder, schema).Type.Text;
+
+		string QueryType(IOpenApiSchema schema) => ParameterRow(builder, schema, ParameterLocation.Query).Type.Text;
+
+		PathType(names).Should().Be("union string | string[]");
+		PathType(dataStreams).Should().Be("union string | string[]");
+		PathType(document.Components!.Schemas!["inline.StringOrArray"]).Should().Be("union string | string[]");
+		PathType(name).Should().Be("string");
+		PathType(new OpenApiSchema { Type = JsonSchemaType.String }).Should().Be("string");
+		QueryType(names).Should().Be("union string | string[]", "a query row reads like a path row");
 	}
+
+	private static ApiProperty PathRow(ApiPropertyTreeBuilder builder, IOpenApiSchema schema) =>
+		ParameterRow(builder, schema, ParameterLocation.Path);
+
+	private static ApiProperty ParameterRow(ApiPropertyTreeBuilder builder, IOpenApiSchema schema, ParameterLocation location) =>
+		builder
+			.BuildParameterList(
+				[new ParameterRowInput(new OpenApiParameter { Name = "p", In = location, Required = true, Schema = schema }, null)],
+				new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), IsRequest = true }
+			)
+			.Items
+			.Single();
 
 	[Test]
 	[Arguments(false)]
@@ -570,7 +588,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
 		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
 		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
-		html.Should().Contain($"id=\"{anchorId}-children\"");
+		html.Should().Contain($"id=\"{anchorId}--children\"");
 	}
 
 	private static OpenApiSchema ObjectsAtTwoDepths() =>

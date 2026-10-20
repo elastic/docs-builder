@@ -12,6 +12,7 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 /// are both null and <see cref="Bare"/> is set the text renders without a wrapping span.
 /// <see cref="Href"/> turns that piece into a type-page link; wrappers stay plain text. <see cref="SchemaId"/> is the
 /// <c>$ref</c> id of the type the piece names, which links go by, so the text is free to read however it should.
+/// <see cref="Lead"/> is a separator that stays on the same line as the piece when a long type wraps.
 /// </summary>
 public record TypeSpan(
 	string Text,
@@ -19,7 +20,8 @@ public record TypeSpan(
 	string? Title = null,
 	bool Bare = false,
 	string? Href = null,
-	string? SchemaId = null
+	string? SchemaId = null,
+	string? Lead = null
 );
 
 /// <summary>
@@ -27,5 +29,5 @@ public record TypeSpan(
 /// </summary>
 public record TypeAnnotation(IReadOnlyList<TypeSpan> Spans)
 {
-	public string Text => string.Concat(Spans.Select(s => s.Text)).Trim();
+	public string Text => string.Concat(Spans.Select(s => s.Lead + s.Text)).Trim();
 }

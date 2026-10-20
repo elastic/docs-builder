@@ -429,32 +429,24 @@ public class DocsSyncTests
 			SkipRequests = [],
 			DeleteRequests = []
 		};
-		TransferUtilityUploadDirectoryRequest? captured = null;
+		// The SDK shares one Headers collection across the per-file requests of a directory upload,
+		// so a typed file must never share a directory upload with files of another type.
+		var uploads = new List<(string? ContentType, string[] Files)>();
 		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes(
-			(TransferUtilityUploadDirectoryRequest request, Cancel _) => captured = request
+			(TransferUtilityUploadDirectoryRequest request, Cancel _) => uploads.Add(
+				(request.ContentType, fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption))
+			)
 		);
 		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), A.Fake<IAmazonS3>(), moxTransferUtility, "fake", context, collector);
 
 		// Act
 		await applier.Apply(plan, Cancel.None);
 
-		// Assert - raise the per-file event the way the SDK does for each uploaded file
-		captured.Should().NotBeNull();
-
-		string? ContentTypeAfterFileEvent(string path)
-		{
-			var uploadRequest = new TransferUtilityUploadRequest { FilePath = path };
-			var raise = typeof(TransferUtilityUploadDirectoryRequest).GetMethod(
-				"RaiseUploadDirectoryFileRequestEvent",
-				System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public
-			);
-			raise.Should().NotBeNull("the SDK raises this event for each file in a directory upload");
-			_ = raise!.Invoke(captured, [uploadRequest]);
-			return uploadRequest.ContentType;
-		}
-
-		ContentTypeAfterFileEvent("/tmp/x/docs/api/doc/es.yaml").Should().Be("text/plain; charset=utf-8");
-		ContentTypeAfterFileEvent("/tmp/x/docs/api/doc/es.json").Should().Be("application/json");
-		ContentTypeAfterFileEvent("/tmp/x/docs/index.md").Should().BeNull();
+		// Assert
+		uploads.Should().HaveCount(3);
+		var byType = uploads.ToDictionary(u => u.ContentType ?? "", u => u.Files.Select(f => Path.GetFileName(f)).ToArray());
+		byType["text/plain; charset=utf-8"].Should().BeEquivalentTo(["es.yaml"]);
+		byType["application/json"].Should().BeEquivalentTo(["es.json"]);
+		byType[""].Should().BeEquivalentTo(["index.md"]);
 	}
 }

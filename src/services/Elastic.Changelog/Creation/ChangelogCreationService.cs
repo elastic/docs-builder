@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -32,6 +33,12 @@ public record CreateChangelogArguments
 	public string? Description { get; init; }
 	public string? Impact { get; init; }
 	public string? Action { get; init; }
+
+	/// <summary>Impact held by an existing entry file, from <c>CHANGELOG_ENTRY_IMPACT</c>. Unlike <see cref="Impact"/> it survives disabled extraction.</summary>
+	public string? CiEntryImpact { get; init; }
+
+	/// <summary>Action held by an existing entry file, from <c>CHANGELOG_ENTRY_ACTION</c>. See <see cref="CiEntryImpact"/>.</summary>
+	public string? CiEntryAction { get; init; }
 	public string? FeatureId { get; init; }
 	public bool? Highlight { get; init; }
 	public string? Output { get; init; }
@@ -91,6 +98,8 @@ public class ChangelogCreationService(
 		try
 		{
 			var cliDescription = input.Description;
+			var cliImpact = input.Impact;
+			var cliAction = input.Action;
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
@@ -104,13 +113,9 @@ public class ChangelogCreationService(
 			// Apply config defaults to input (for extract_release_notes, extract_issues)
 			input = ApplyConfigDefaults(input, config);
 
-			// When extraction is disabled (by CLI or config), discard any CI-injected description
-			// that originated from evaluate-pr's release-note extraction.
-			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
-			{
-				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
-				input = input with { Description = null };
-			}
+			// When extraction is disabled (by CLI or config), discard any CI-injected description, impact, and action
+			// that originated from evaluate-pr's extraction.
+			input = DropCiExtractedFieldsWhenDisabled(input, cliDescription, cliImpact, cliAction);
 
 			// CLI-supplied products must not carry versions; fail before any GitHub fetches.
 			if (input.Products.Count > 0 && !_validator.ValidateNoVersionTarget(collector, input))
@@ -127,7 +132,9 @@ public class ChangelogCreationService(
 				// Create a single changelog file with all issues recorded as metadata.
 				var titleProvided = !string.IsNullOrWhiteSpace(input.Title);
 				var typeProvided = !string.IsNullOrWhiteSpace(input.Type);
-				if (titleProvided && typeProvided)
+				// A configuration that requires a product label still needs the issue: its labels name the product.
+				var productsProvided = input.Products.Count > 0 || !ProductResolution.RequiresProductLabel(config);
+				if (titleProvided && typeProvided && productsProvided)
 					return await CreateSingleChangelogAsync(collector, input, config, ctx);
 
 				if (input.Issues.Length > 1)
@@ -155,6 +162,8 @@ public class ChangelogCreationService(
 		try
 		{
 			var cliDescription = input.Description;
+			var cliImpact = input.Impact;
+			var cliAction = input.Action;
 			input = EnrichFromCI(input);
 
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
@@ -166,12 +175,8 @@ public class ChangelogCreationService(
 
 			input = ApplyConfigDefaults(input, config);
 
-			// Mirror CreateChangelog: discard CI-injected description when extraction is disabled
-			if (input.ExtractionDisabled && string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description))
-			{
-				_logger.LogInformation("Clearing CI-provided description because release note extraction is disabled");
-				input = input with { Description = null };
-			}
+			// Mirror CreateChangelog: discard CI-injected description, impact, and action when extraction is disabled
+			input = DropCiExtractedFieldsWhenDisabled(input, cliDescription, cliImpact, cliAction);
 
 			// Validate PR citation format (same rule as `add`: numeric refs require --owner/--repo)
 			if (input.Prs is { Length: > 1 })
@@ -416,8 +421,12 @@ public class ChangelogCreationService(
 		if (!_validator.ValidatePrFormat(collector, prUrl, input.Owner, input.Repo))
 			return false;
 
-		// Fetch PR info when any derivable field is still missing (title, type, or products)
-		var needsDerivation = string.IsNullOrWhiteSpace(input.Title) || string.IsNullOrWhiteSpace(input.Type) || input.Products.Count == 0;
+		// Fetch PR info when any derivable field is still missing (title, type, or products),
+		// or when a breaking change could still pick up Impact and Action from the PR description.
+		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
+			|| string.IsNullOrWhiteSpace(input.Type)
+			|| input.Products.Count == 0
+			|| NeedsImpactActionFromPr(input);
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{
 			var prResult = await _prProcessor.ProcessPrAsync(collector, input, config, prUrl, ctx);
@@ -451,6 +460,16 @@ public class ChangelogCreationService(
 	{
 		if (input.Products.Count == 0)
 		{
+			// Two or more mapped products and no default: a pull request must name its product with a label.
+			if (!prFetchFailed && input.Prs is { Length: > 0 } && ProductResolution.RequiresProductLabel(config))
+			{
+				collector.EmitError(
+					string.Empty,
+					ProductResolution.MissingProductLabelMessage($"PR {input.Prs[0]}", config) + " Or pass --products."
+				);
+				return false;
+			}
+
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
@@ -570,6 +589,16 @@ public class ChangelogCreationService(
 		// If still no products, fall back to products.default or repo name inference
 		if (input.Products.Count == 0)
 		{
+			// Two or more mapped products and no default: an issue must name its product with a label.
+			if (!issueResult.FetchFailed && ProductResolution.RequiresProductLabel(config))
+			{
+				collector.EmitError(
+					string.Empty,
+					ProductResolution.MissingProductLabelMessage($"issue {issueUrl}", config) + " Or pass --products."
+				);
+				return false;
+			}
+
 			var inferredProducts = InferProducts(config.ProductsConfiguration, input.Repo);
 			if (inferredProducts != null)
 				input = input with { Products = inferredProducts };
@@ -625,6 +654,47 @@ public class ChangelogCreationService(
 				"Verify GITHUB_TOKEN is set and can access the repository, then re-run."
 		);
 
+	private CreateChangelogArguments DropCiExtractedFieldsWhenDisabled(
+		CreateChangelogArguments input,
+		string? cliDescription,
+		string? cliImpact,
+		string? cliAction
+	)
+	{
+		if (input.ExtractionDisabled)
+		{
+			var clearDescription = string.IsNullOrWhiteSpace(cliDescription) && !string.IsNullOrWhiteSpace(input.Description);
+			var clearImpact = string.IsNullOrWhiteSpace(cliImpact) && !string.IsNullOrWhiteSpace(input.Impact);
+			var clearAction = string.IsNullOrWhiteSpace(cliAction) && !string.IsNullOrWhiteSpace(input.Action);
+			if (clearDescription || clearImpact || clearAction)
+			{
+				_logger.LogInformation("Clearing CI-provided description, impact, and action because release note extraction is disabled");
+				input = input with
+				{
+					Description = clearDescription ? null : input.Description,
+					Impact = clearImpact ? null : input.Impact,
+					Action = clearAction ? null : input.Action
+				};
+			}
+		}
+
+		// Values that the PR's existing entry file already holds are not extracted from anywhere, so disabling extraction keeps them.
+		return input with
+		{
+			Impact = string.IsNullOrWhiteSpace(input.Impact) ? input.CiEntryImpact : input.Impact,
+			Action = string.IsNullOrWhiteSpace(input.Action) ? input.CiEntryAction : input.Action
+		};
+	}
+
+	/// <summary>
+	/// A breaking change with extraction enabled and a missing Impact or Action still needs the PR description,
+	/// even when title, type, and products were all supplied.
+	/// </summary>
+	private static bool NeedsImpactActionFromPr(CreateChangelogArguments input) =>
+		(input.ExtractReleaseNotes ?? false)
+			&& string.Equals(input.Type, ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase)
+			&& (string.IsNullOrWhiteSpace(input.Impact) || string.IsNullOrWhiteSpace(input.Action));
+
 	private static CreateChangelogArguments CreateInputForSinglePr(CreateChangelogArguments input, string prUrl) =>
 		input with { Prs = [prUrl] };
 
@@ -636,6 +706,8 @@ public class ChangelogCreationService(
 			Description = derived.Description != null && string.IsNullOrWhiteSpace(input.Description)
 				? derived.Description
 				: input.Description,
+			Impact = derived.Impact != null && string.IsNullOrWhiteSpace(input.Impact) ? derived.Impact : input.Impact,
+			Action = derived.Action != null && string.IsNullOrWhiteSpace(input.Action) ? derived.Action : input.Action,
 			Areas = derived.Areas != null && (input.Areas == null || input.Areas.Length == 0) ? derived.Areas : input.Areas,
 			Products = derived.Products is { Count: > 0 } && input.Products.Count == 0 ? derived.Products : input.Products,
 			Highlight = derived.Highlight ?? input.Highlight,
@@ -656,6 +728,10 @@ public class ChangelogCreationService(
 		var prNumber = env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER");
 		var ciTitle = env.GetEnvironmentVariable("CHANGELOG_TITLE");
 		var ciDescription = env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION");
+		var ciImpact = env.GetEnvironmentVariable("CHANGELOG_IMPACT");
+		var ciAction = env.GetEnvironmentVariable("CHANGELOG_ACTION");
+		var ciEntryImpact = env.GetEnvironmentVariable("CHANGELOG_ENTRY_IMPACT");
+		var ciEntryAction = env.GetEnvironmentVariable("CHANGELOG_ENTRY_ACTION");
 		var ciType = env.GetEnvironmentVariable("CHANGELOG_TYPE");
 		var ciOwner = env.GetEnvironmentVariable("CHANGELOG_OWNER");
 		var ciRepo = env.GetEnvironmentVariable("CHANGELOG_REPO");
@@ -680,6 +756,10 @@ public class ChangelogCreationService(
 			Prs = enrichedPrs,
 			Title = !string.IsNullOrWhiteSpace(input.Title) ? input.Title : ciTitle,
 			Description = enrichedDescription,
+			Impact = !string.IsNullOrWhiteSpace(input.Impact) ? input.Impact : input.ExtractionDisabled ? null : ciImpact,
+			Action = !string.IsNullOrWhiteSpace(input.Action) ? input.Action : input.ExtractionDisabled ? null : ciAction,
+			CiEntryImpact = ciEntryImpact,
+			CiEntryAction = ciEntryAction,
 			Type = !string.IsNullOrWhiteSpace(input.Type) ? input.Type : ciType,
 			Owner = input.Owner ?? ciOwner,
 			Repo = !string.IsNullOrWhiteSpace(input.Repo) ? input.Repo : ciRepo,

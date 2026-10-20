@@ -21,10 +21,9 @@ public static partial class XStateApplicability
 	[GeneratedRegex(@"(\d+\.\d+\.\d+)")]
 	private static partial Regex SemVersionRegex();
 
-	public static ApplicableTo? FromOperation(OpenApiOperation operation) => Parse(OpenApiExtensionReader.GetState(operation));
-
-	public static ApplicableTo? FromSchema(IOpenApiSchema schema) =>
-		Parse(OpenApiExtensionReader.TryGetString(schema.Extensions, "x-state"));
+	/// <summary>The applicability an operation, a parameter or a schema declares in its <c>x-state</c>.</summary>
+	public static ApplicableTo? From(IDictionary<string, IOpenApiExtension>? extensions) =>
+		Parse(OpenApiExtensionReader.GetState(extensions));
 
 	/// <summary>Parses an <c>x-state</c> label; null when it carries no lifecycle or version.</summary>
 	public static ApplicableTo? Parse(string? xState)

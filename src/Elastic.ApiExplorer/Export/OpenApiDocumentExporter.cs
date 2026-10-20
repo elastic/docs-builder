@@ -122,7 +122,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
 
 				// Skip APIs introduced in a Stack version that hasn't shipped yet
-				var applies = XStateApplicability.FromOperation(operation.Value);
+				var applies = XStateApplicability.From(operation.Value.Extensions);
 				if (XStateApplicability.IsUnreleased(applies, currentStack))
 					continue;
 

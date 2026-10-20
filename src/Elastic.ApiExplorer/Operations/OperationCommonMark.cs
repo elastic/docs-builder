@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -16,7 +17,7 @@ internal static class OperationCommonMark
 		var markdown = new StringBuilder();
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
-		var title = operation.Summary ?? apiOperation.ApiName;
+		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
@@ -24,7 +25,7 @@ internal static class OperationCommonMark
 		WritePathParameters(markdown, page, apiBaseUrl);
 		WriteDescription(markdown, page, apiBaseUrl);
 		WriteAuthorization(markdown, page, apiBaseUrl);
-		WriteQueryParameters(markdown, page, apiBaseUrl);
+		WriteParameterSections(markdown, page, apiBaseUrl);
 		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
 		WriteResponses(markdown, page, apiBaseUrl);
 		WriteCodeSamples(markdown, page);
@@ -43,8 +44,6 @@ internal static class OperationCommonMark
 	{
 		if (operation.Deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
-		if (page.IsBeta)
-			ApiCommonMark.Paragraph(markdown, "Beta");
 		if (page.Availability is null)
 			return;
 
@@ -65,7 +64,7 @@ internal static class OperationCommonMark
 
 		foreach (var server in page.Servers)
 		{
-			var line = $"`{server.Url}`";
+			var line = ApiCommonMark.CodeSpan(server.Url);
 			if (!string.IsNullOrEmpty(server.Description))
 				line += $" ({server.Description})";
 			_ = markdown.AppendLine($"- Server: {line}");
@@ -88,29 +87,15 @@ internal static class OperationCommonMark
 	{
 		var also = row.AlsoMethods.Count == 0
 			? ""
-			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => $"`{m.ToUpperInvariant()}`"))})";
-		return $"`{row.Method.ToUpperInvariant()}`{also} `{row.Route}`";
+			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => ApiCommonMark.CodeSpan(m.ToUpperInvariant())))})";
+		return $"{ApiCommonMark.CodeSpan(row.Method.ToUpperInvariant())}{also} {ApiCommonMark.CodeSpan(row.Route)}";
 	}
 
+	// Path parameters sit right under the paths, before the description, one level deeper than the other parameter sections.
 	private static void WritePathParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.PathParameters.Count == 0)
-			return;
-
-		ApiCommonMark.Heading(markdown, 4, "Path parameters");
-		foreach (var path in page.PathParameters)
-		{
-			var type = path.Type is null ? "" : $" ({path.Type.Text})";
-			var deprecated = path.Deprecated is true ? " — deprecated" : "";
-			var optional = path.Optional ? $" — optional, leave it out to use `{page.Endpoint.ShortestRoute}`" : "";
-			_ = markdown.AppendLine($"- `{path.Name}`{type}{optional}{deprecated}");
-			var description = ApiMarkdown.Prepare(path.DescriptionMarkdown, apiBaseUrl);
-			if (!string.IsNullOrWhiteSpace(description))
-				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-			WriteValues(markdown, path.UnionOptions, path.UnionLabel, path.EnumValues);
-		}
-
-		_ = markdown.AppendLine();
+		foreach (var section in page.ParameterSections.Where(static s => s.Location == ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 4, apiBaseUrl);
 	}
 
 	private static void WriteDescription(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
@@ -135,7 +120,7 @@ internal static class OperationCommonMark
 			ApiCommonMark.Heading(markdown, 2, "Required authorization");
 			foreach (var row in page.RequiredPrivileges)
 			{
-				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(static v => $"`{v}`"));
+				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
 				_ = markdown.AppendLine(
 					values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}"
 				);
@@ -163,7 +148,7 @@ internal static class OperationCommonMark
 			_ = markdown.AppendLine($"- {requirement.Label} (send all of these)");
 		foreach (var scheme in requirement.Schemes)
 		{
-			var credential = scheme.CredentialExample is null ? "" : $": `{scheme.CredentialExample}`";
+			var credential = scheme.CredentialExample is null ? "" : $": {ApiCommonMark.CodeSpan(scheme.CredentialExample)}";
 			_ = markdown.AppendLine($"{indent}- {scheme.Label}{credential}");
 			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
@@ -171,39 +156,17 @@ internal static class OperationCommonMark
 		}
 	}
 
-	private static void WriteQueryParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	private static void WriteParameterSections(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
 	{
-		if (page.QueryParameters.Count == 0)
-			return;
-
-		ApiCommonMark.Heading(markdown, 2, "Query string parameters");
-		foreach (var query in page.QueryParameters)
-		{
-			var parameter = query.Parameter;
-			var type = query.Type is null ? "" : $" ({query.Type.Text})";
-			var deprecated = parameter.Deprecated ? " — deprecated" : "";
-			_ = markdown.AppendLine($"- `{parameter.Name}`{type}{deprecated}");
-			var description = ApiMarkdown.Prepare(query.DescriptionMarkdown, apiBaseUrl);
-			if (!string.IsNullOrWhiteSpace(description))
-				_ = markdown.AppendLine($"  {description.TrimEnd()}");
-
-			WriteValues(markdown, query.UnionOptions, query.UnionLabel, query.EnumValues);
-		}
-
-		_ = markdown.AppendLine();
+		foreach (var section in page.ParameterSections.Where(static s => s.Location != ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 2, apiBaseUrl);
 	}
 
-	private static void WriteValues(
-		StringBuilder markdown,
-		IReadOnlyList<UnionBadge> unionOptions,
-		string unionLabel,
-		IReadOnlyList<string> enumValues
-	)
+	private static void WriteParameterSection(StringBuilder markdown, ParameterListSection section, int headingLevel, string apiBaseUrl)
 	{
-		if (enumValues.Count > 0)
-			_ = markdown.AppendLine("  Values: " + string.Join(", ", enumValues.Select(v => $"`{v}`")));
-		else if (unionOptions.Count > 0)
-			_ = markdown.AppendLine($"  {unionLabel} " + string.Join(" or ", unionOptions.Select(o => $"`{o.Text}`")));
+		ApiCommonMark.Heading(markdown, headingLevel, section.MarkdownHeading);
+		ApiPropertyMarkdown.WriteList(markdown, section.Parameters, apiBaseUrl);
+		_ = markdown.AppendLine();
 	}
 
 	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)
@@ -212,18 +175,8 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Request body");
-		if (!string.IsNullOrEmpty(page.RequestContentType))
-			ApiCommonMark.Paragraph(markdown, $"`{page.RequestContentType}`");
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
-		if (page.RequestRequires is { } requestRequires)
-			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requestRequires));
-		if (page.HasRequestBody)
-		{
-			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
-			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
-		}
-		else
-			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
+		WriteMediaContents(markdown, page.RequestContents, apiBaseUrl);
 		_ = markdown.AppendLine();
 	}
 
@@ -237,30 +190,37 @@ internal static class OperationCommonMark
 		foreach (var response in page.Responses)
 		{
 			if (!single)
-				ApiCommonMark.Heading(markdown, 4, $"`{response.StatusCode}`");
+				ApiCommonMark.Heading(markdown, 4, ApiCommonMark.CodeSpan(response.StatusCode));
 
 			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
-			foreach (var content in response.Contents)
-			{
-				ApiCommonMark.Paragraph(markdown, $"`{content.ContentType}`");
-				if (content.Requires is { } requires)
-					ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
-				if (content.HasBody)
-				{
-					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
-					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
-				}
-				else if (content.ArrayItemProperties is not null)
-				{
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-					ApiPropertyMarkdown.WriteList(markdown, content.ArrayItemProperties, apiBaseUrl);
-				}
-				else
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-			}
+			WriteMediaContents(markdown, response.Contents, apiBaseUrl);
 
 			WriteHeaders(markdown, response, apiBaseUrl);
+		}
+	}
+
+	private static void WriteMediaContents(StringBuilder markdown, IReadOnlyList<ApiMediaContent> contents, string apiBaseUrl)
+	{
+		foreach (var content in contents)
+		{
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
+			if (content.Requires is { } requires)
+				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+			if (content.HasBody)
+			{
+				if (content.IsArray)
+				{
+					ApiPropertyMarkdown.WriteType(markdown, content.Type);
+					ApiCommonMark.Paragraph(markdown, ApiBodyContent.ArrayItemsLabel);
+				}
+				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
+			}
+			else
+			{
+				ApiPropertyMarkdown.WriteType(markdown, content.Type);
+			}
 		}
 	}
 
@@ -276,7 +236,7 @@ internal static class OperationCommonMark
 			var flags = header.Header?.Required == true ? " — required" : "";
 			if (header.Header?.Deprecated == true)
 				flags += " — deprecated";
-			_ = markdown.AppendLine($"- `{header.Name}`{type}{flags}");
+			_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(header.Name)}{type}{flags}");
 			var description = ApiMarkdown.Prepare(header.Header?.Description, apiBaseUrl);
 			if (!string.IsNullOrWhiteSpace(description))
 				_ = markdown.AppendLine($"  {description.TrimEnd()}");

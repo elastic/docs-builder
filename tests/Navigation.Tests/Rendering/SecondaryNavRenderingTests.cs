@@ -179,8 +179,14 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			"Elasticsearch API",
 			"<svg></svg>",
 			[
-				new ApiContextProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
-				new ApiContextProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+				new ApiContextProductGroup(
+					"Elastic Stack",
+					[
+						new ApiContextProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
+						new ApiContextProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+					]
+				),
+				new ApiContextProductGroup(null, [new ApiContextProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
 			],
 			"/docs/api/",
 			[
@@ -194,6 +200,13 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 
 		// Product and version together on the left, the spec download alone on the right.
 		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("popovertarget=\"api-hub-menu\"");
+		html.Should().Contain("api-context-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
+		// A group without a title gets no label, and the separator sits between the groups.
+		html.Should().NotContain("id=\"api-hub-group-1\"");
+		var groupOrder = new[] { "Kibana APIs", "api-context-menu-sep", "Alpha API" }.Select(
+			t => html.IndexOf(t, StringComparison.Ordinal)
+		).ToArray();
+		groupOrder.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
 		html.Should().Contain("id=\"api-version-switcher\"").And.Contain("popovertarget=\"api-version-menu\"");
 		html.Should().Contain("Download OpenAPI spec").And.Contain("popovertarget=\"api-spec-menu\"");
 		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\"").And.Contain("download");

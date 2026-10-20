@@ -48,6 +48,7 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | ------------------------- | ----------- |
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
+| `bundle.backports.labels` | Exact label names that mark a pull request as a backport, for example `[backport]`. When bundling a commit range, such a pull request is replaced by the original pull request it was backported from, so the entry and the links come from the original. Not a pattern: `backport*` would also match opt-out labels such as `backport-skip`. When omitted, no tracing happens. |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
 | `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written here in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead. |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
@@ -192,7 +193,7 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
 | `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`). |
-| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles; strip a single hyphen separator or colon after the prefix when it is followed by whitespace (default: `false`). |
+| `extract.strip_title_prefix` | Remove square-bracket prefixes and conventional-commit prefixes (such as `fix:` or `feat(scope):`) from PR titles, strip a single hyphen separator or colon after a bracket prefix when it is followed by whitespace, and capitalize the first letter of the result (default: `false`). |
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
 
@@ -209,6 +210,8 @@ The extracted release note text is used in the changelog `description`.
 
 When `extract.strip_title_prefix` is `true`:
 
+- Conventional-commit prefixes (`feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, `test`, `style`, `build`, `ci`, `revert`, with an optional scope and `!`) are removed only when text follows them. For example, `fix(apm): apply filter` becomes `Apply filter`.
+- The first letter is capitalized unless the first word looks like code (it contains digits, underscores, dots, backticks, or inner capitals).
 - The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
 - Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
 - The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
@@ -298,7 +301,7 @@ pivot:
 
 ## Products [products]
 
-Specifies the allowed product values and the default values used by the `changelog add` command.
+Specifies the allowed product values, the default products, and the products that a label-derived product implies.
 
 :::{note}
 The product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). All products in the catalog are valid for changelogs, including those that have `public-reference` disabled.
@@ -310,7 +313,8 @@ The product values must exist in [products.yml](https://github.com/elastic/docs-
 | Setting              | Description                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | `products.available` | List of allowed product IDs. Empty list or omitted means all products from `products.yml` are allowed |
-| `products.default`   | List of default products when `--products` is not specified.                                          |
+| `products.default`   | List of default products when `--products` is not specified and no label maps to a product.          |
+| `products.implies`   | Products that a label-derived product implies, keyed by product ID. Optional.                         |
 
 :::
 
@@ -323,6 +327,42 @@ products:
     - product: elasticsearch
       lifecycle: ga
 ```
+
+### Product resolution order [products-resolution]
+
+`changelog add`, the PR evaluation, and bundles built from a git range resolve the products of an entry in the same order:
+
+1. The `--products` option, when given. An explicit list is taken as given: `products.implies` does not apply to it.
+2. The products that the labels map to in `pivot.products`, plus the products that `products.implies` lists for each of them.
+3. `products.default`, with its lifecycle.
+4. Without a default, when `pivot.products` maps two or more distinct products: an error that names the pull request or issue and lists the labels to add. Otherwise, for `changelog add`, the product inferred from the repository name; for a git range bundle, the profile's output products.
+
+A team that wants every pull request to name its product omits `products.default`.
+
+### Implied products [products-implies]
+
+A label in `pivot.products` maps to one product. With `products.implies`, an entry that gets a product from a label also gets the products listed for it. Use it when a label names a solution rather than a deployment target, so the entry still reaches the release notes of the products it ships in.
+
+```yaml
+products:
+  default:
+    - product: kibana
+    - product: cloud-serverless
+  implies:
+    observability: [kibana, cloud-serverless]
+    security: [kibana, cloud-serverless]
+
+pivot:
+  products:
+    observability: ['Team:obs-ux-logs']
+    security: ['Team:SecuritySolution']
+```
+
+With this configuration, a pull request labelled `Team:obs-ux-logs` gets the products `observability`, `kibana`, and `cloud-serverless`. A pull request with no product label gets the defaults. An implied product carries the product ID only, and `implies` applies one level: a product that `observability` implies does not imply further products. `implies` applies to label-derived products only, not to `--products`, `products.default`, or checked-in entries.
+
+Per-product `rules.create` blockers see the implied products. A blocker for `cloud-serverless` applies to every pull request whose label maps to a product that implies `cloud-serverless`.
+
+The loader warns about an `implies` key that no `pivot.products` label maps to, because it never applies.
 
 ## Rules
 
@@ -364,7 +404,7 @@ You cannot specify both `exclude` and `include`.
 :::
 
 Product keys in `rules.create.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
-Product-specific rules **override** the global create rules entirely.
+Product-specific rules **override** the global create rules entirely. They apply to the product they name: a pull request that resolves to no product, for example one without a product label and without `products.default`, uses the global rules.
 
 ```yaml
 rules:

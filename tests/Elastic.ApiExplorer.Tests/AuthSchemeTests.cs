@@ -70,7 +70,7 @@ public class AuthSchemeTests
 	[Test]
 	public async Task ElasticsearchSearch_InheritsDocumentSchemes()
 	{
-		var specPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		File.Exists(specPath).Should().BeTrue($"Fixture missing: {specPath}");
 
 		var doc = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
@@ -142,7 +142,39 @@ public class AuthSchemeTests
 		OpenApiAuthSchemeResolver.Resolve(op, doc).Select(r => r.Label).Should().Equal("Api key + Basic", "Bearer");
 	}
 
-	private static string EsShapedSpec(string? operationSecurity)
+	[Test]
+	[Arguments("""{ "cookieAuth": [] }, { "bearerAuth": [] }""", "bearer")]
+	[Arguments("""{ "cookieAuth": [], "bearerAuth": [] }, { "basicAuth": [] }""", "basic")]
+	[Arguments("""{ "apiKeyAuth": [], "bearerAuth": [] }""", "Authorization+bearer")]
+	[Arguments("""{ "negotiateAuth": [] }, { "basicAuth": [] }""", "basic")]
+	public async Task CurlSchemes_PicksTheFirstAlternativeCurlCanSend(string security, string expected)
+	{
+		var (op, doc) = await Load(
+			EsShapedSpec(
+				operationSecurity: security,
+				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, "negotiateAuth": { "type": "http", "scheme": "negotiate" }, """
+			)
+		);
+
+		var schemes = OpenApiAuthSchemeResolver.CurlSchemes(op, doc);
+
+		schemes.Select(static s => s.Scheme ?? s.Name).Should().Equal(expected.Split('+'));
+	}
+
+	[Test]
+	public async Task CurlSchemes_WhenNoAlternativeCanBeSent_ReturnsNone()
+	{
+		var (op, doc) = await Load(
+			EsShapedSpec(
+				operationSecurity: """{ "cookieAuth": [] }""",
+				extraScheme: """ "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "sid" }, "negotiateAuth": { "type": "http", "scheme": "negotiate" }, """
+			)
+		);
+
+		OpenApiAuthSchemeResolver.CurlSchemes(op, doc).Should().BeEmpty();
+	}
+
+	private static string EsShapedSpec(string? operationSecurity, string extraScheme = "")
 	{
 		var operationSecurityJson = operationSecurity switch
 		{
@@ -165,6 +197,7 @@ public class AuthSchemeTests
 			  },
 			  "components": {
 			    "securitySchemes": {
+			      {{extraScheme}}
 			      "apiKeyAuth": { "type": "apiKey", "in": "header", "name": "Authorization" },
 			      "basicAuth": { "type": "http", "scheme": "basic" },
 			      "bearerAuth": { "type": "http", "scheme": "bearer" }

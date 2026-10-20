@@ -117,7 +117,7 @@ Refer to these component pages to learn about the required `applies_to` syntax.
 
 ### API reference pages
 
-API reference pages don't use `applies_to` directly. They read the OpenAPI `x-state` extension on each operation and schema property, convert it to a `stack` applicability, and render it with the same badge and popover described on this page.
+API reference pages don't use `applies_to` directly. They read the OpenAPI `x-state` extension on each operation, query parameter and schema property, convert it to a `stack` applicability, and render it with the same badge and popover described on this page.
 
 | `x-state` | Equivalent `applies_to` | Badge |
 |-----------|-------------------------|-------|

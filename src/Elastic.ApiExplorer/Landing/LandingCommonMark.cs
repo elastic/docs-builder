@@ -33,7 +33,7 @@ internal static class LandingCommonMark
 
 	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
 	{
-		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} (`{entry.Key}`)");
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
 			_ = markdown.AppendLine($"  {summary}");
 		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
@@ -48,9 +48,6 @@ internal static class LandingCommonMark
 		var markdown = new StringBuilder();
 		ApiCommonMark.Heading(markdown, 1, info?.Title ?? "API Documentation");
 		ApiCommonMark.Prepared(markdown, info?.Description, apiBaseUrl);
-		if (!string.IsNullOrEmpty(info?.License?.Name))
-			ApiCommonMark.Paragraph(markdown, $"License: {info.License.Name}");
-
 		WriteOverview(markdown, rows);
 		return markdown.ToString();
 	}
@@ -61,7 +58,7 @@ internal static class LandingCommonMark
 		var apiBaseUrl = model.CurrentNavigationItem.NavigationRoot.Url;
 		ApiCommonMark.Heading(markdown, 1, model.Tag.DisplayName);
 		if (!string.Equals(model.Tag.Name, model.Tag.DisplayName, StringComparison.Ordinal))
-			ApiCommonMark.Paragraph(markdown, $"`{model.Tag.Name}`");
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(model.Tag.Name));
 
 		ApiCommonMark.Prepared(markdown, model.DescriptionMarkdown, apiBaseUrl);
 		foreach (var extra in model.PostSections)
@@ -93,7 +90,7 @@ internal static class LandingCommonMark
 					ApiCommonMark.Heading(markdown, 3, row.Title);
 					break;
 				case OverviewRowKind.Schema:
-					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)} (`{row.SchemaId}`)");
+					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)} ({ApiCommonMark.CodeSpan(row.SchemaId)})");
 					break;
 				case OverviewRowKind.MarkdownPage:
 					_ = markdown.AppendLine($"- {ApiCommonMark.Link(row.Title, row.Url)}");

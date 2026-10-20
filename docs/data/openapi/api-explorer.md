@@ -154,7 +154,7 @@ specs per product are not currently supported.
 
 On assembler builds a bar under the site header says which API you are reading: `[logo] Elasticsearch API ⇅ [main ▾]`. The API name opens a switcher that lists every API whose spec loaded (each with its logo, plus an **All APIs** link back to the catalog), and the version picker sits right beside it. Each switcher row uses that spec's title (`info.title`), the same text as the landing page heading. On the right, the **Download OpenAPI spec** button downloads the whole spec as JSON or YAML; on narrow screens it shows only its icon. The page itself starts with the full breadcrumb, which begins at Docs. The bar looks the same whether or not `navigation-preview` is on. The catalog page has no API, so it has no bar.
 
-The left navigation starts with a **Find in all APIs** box. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
+The left navigation starts with a finder, labelled **Press ❲/❳ to find API**. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Press <kbd>/</kbd> anywhere on the page, outside a text field, to jump to the box, as on GitHub. The shortcut is off on narrow screens, where the navigation sits in a drawer. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
 
 ## Remote spec resolution
 
@@ -301,6 +301,27 @@ The API Explorer generates the following types of pages from your OpenAPI spec:
 
 Schema names under `components/schemas` are names for code, not for readers, so the API Explorer never shows them. A property's type reads as its shape instead: `object`, `string[]`, `enum`, `map string to object`, or `union` with its options. A type with its own page reads as that page's title, such as **Query**.
 
+A map (`additionalProperties`) reads as `map string to X`, whether it's inline or a `$ref` to a named schema. When the map's values have fields, limits such as `maxLength` or `pattern`, or allowed values, a `<string>` row under the map lists them. A `default` alone doesn't add the row. The map's own `minProperties` and `maxProperties` show next to its type.
+
+A request body leaves out `readOnly` fields, because only the server sets them, and a response leaves out `writeOnly` fields, because only the client sends them. Schema type pages list both.
+
+A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
+
+Each section is a collapsible heading, folded by default. Its summary punctuation says what the names are:
+
+| Summary | Meaning |
+|---|---|
+| `{ a, b }` | The fields of a JSON request body |
+| `A \| B` | Alternatives, such as the variants of a `oneOf` or the credentials of **Authentication** |
+| `A + B` | Needed together, such as the privileges in **Required authorization** |
+| `a, b` | Anything else, such as parameters or the fields of a form |
+
+The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the folded section, which then opens. This relies on `hidden="until-found"`: in a browser without it, the folded sections can't be searched.
+
+Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
+
+A parameter row shows an **Example** line when its `example`, its `examples` or its schema's `example` says something the type doesn't. The line is left out when the example is a boolean (including `"true"` as text), a bare number, a value the **Values** row already lists, the default, or longer than 60 characters. The picked example is the first of `example`, `examples` and the schema's `example` that passes those checks.
+
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 
 1. The variant schema's `title`.
@@ -353,7 +374,16 @@ How the rail is laid out:
 
 Request and response code boxes show a non-selectable line-number gutter (selection and copy omit the numbers). Response bodies that are JSON objects/arrays use the Figma Card/Code token colors (black structure, green strings, blue booleans, maroon numbers); other payloads such as SSE streams stay plaintext so highlighting does not invent misleading colors. Single-line `curl` samples are reformatted for display (method and URL on the first line, one flag per line, with `\` continuations).
 
-When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a minimal **Console** and **curl** sample from the HTTP method, path, required query parameters, required headers (for example `kbn-xsrf`), and the document `servers` URL so the examples rail is never empty. When the request body has an example, the samples carry its body (Console under the request line, curl as `-d` with a `Content-Type` header), so the body is not repeated in a block of its own. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
+When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a minimal **Console** and **curl** sample from the HTTP method, path, required query parameters, required headers (for example `kbn-xsrf`), and the document `servers` URL so the examples rail is never empty. Every value comes from the spec, and the samples are marked as generated:
+
+- **Parameter values.** A path or required query parameter with an example (on the parameter, then on its schema, in OpenAPI 3.0 `example` or 3.1 `examples`) shows that value, else its schema's `default` or first `enum` value; without any, the parameter's name stands in as an uppercase placeholder: `ORGANIZATION_ID` for `{organization_id}` in Console, and the shell variable `${ORGANIZATION_ID}` in the curl, beside `${KIBANA_URL}` and `${API_KEY}`. Bare braces are never kept, because curl reads them as a glob and would silently send the bare name. An array example follows the parameter's `style` and `explode`: `ids=a&ids=b` for the default query style, one delimited value otherwise. An object example follows them too: `a=1&b=2` for the default query style, `ids[a]=1` for `deepObject`, `key,value` pairs otherwise; an object that holds another object keeps the placeholder.
+- **Authentication.** The curl sample authenticates with the operation's security schemes (the first alternative whose schemes curl can all send; cookie API keys can't be sent): an API key goes in its header or query parameter as `${API_KEY}` (as `Authorization: ApiKey ${API_KEY}` when the header is `Authorization`, the form Elastic APIs expect), basic auth is `-u "${USERNAME}:${PASSWORD}"`, and bearer, OAuth 2.0 and OpenID Connect send `Authorization: Bearer ${TOKEN}`. A required header with an example keeps it; one without is replaced by the credential.
+- **Request body.** When the spec has no request example and the request is JSON, the samples carry a body built from the request schema. It holds the required properties only, without the `readOnly` ones. Each value is the first one the schema states (`example`, `default`, `const`, the first `enum` value), or a placeholder for its type: `"string"`, `0` or `false`. A `oneOf` or `anyOf` takes its first variant that is not `null`, a property that only wraps a `$ref` in `allOf` takes the wrapped type, a literal `null` example, default or enum member is skipped, and a required property with nothing to show is left out rather than written as `null`. Nesting stops after a few levels. The curl sample sends `Content-Type` together with a body.
+- **Host.** A spec that names no `servers` gets the product's host variable before the path: `${ELASTICSEARCH_URL}`, `${KIBANA_URL}`, `${LOGSTASH_URL}`, or `${API_URL}` for other products. A server URL that is one variable, such as Kibana's `https://{kibana_url}`, becomes that variable as a shell variable, `${KIBANA_URL}`, which the product's own samples use.
+- **Generated note.** A sample docs-builder built ends its code block with a muted line, **Generated from the API spec**, whose tooltip says the sample was generated from the spec, not written by hand, and asks the reader to check placeholder values such as `string` or `INDEX` before running it. Samples written in the spec carry no note.
+- **Console only where it runs.** Console calls Elasticsearch, and Kibana with a `kbn:` prefix, so the **Console** sample appears only for the `elasticsearch`, `serverless-elasticsearch` and `kibana` products (and for specs without a product). Other products, such as Elastic Cloud, get curl only, and the language carousel opens on its first card.
+
+When the request body has an example, the samples carry its body (Console under the request line, curl as `-d` with a `Content-Type` header), so the body is not repeated in a block of its own. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
 
 When there is only a single example, the rail skips the example chips. **Console is the default language**, because you can paste it straight into Kibana Dev Tools. Once a reader picks another language, with a dot, an arrow, the keyboard, or by swiping the strip, that choice is remembered in the browser and applies on every operation page, and the link in the address bar follows it. Links can open a specific example and language with `#example=<example>&lang=<language>`, for example `#example=search-slicing&lang=curl`. The link is always written in lowercase and read without regard to case, so `lang=Curl` works too.
 
@@ -368,7 +398,7 @@ The paths come from either of two sources, and both produce the same rows:
 
 ### Required authorization [x-req-auth]
 
-The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. The section is never collapsed.
+The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is folded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
 
 Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 

@@ -4,6 +4,7 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Structural;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -14,7 +15,17 @@ public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
 	Func<string?, HtmlString> RenderMarkdown
-);
+)
+{
+	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
+	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+
+	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
+	public SummaryStyle PrivilegeStyle =>
+		Privileges.Any(static r => r.Join == "or")
+			? SummaryStyle.Variants
+			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
+}
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -26,10 +37,12 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	public AuthorizationSectionModel Authorization =>
 		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
-	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
+	protected override string? LayoutPageTitle =>
+		OpenApiExtensionReader.GetSummary(Operation.Operation) ?? CurrentNavigationItem.NavigationTitle;
 
 	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
-	protected override string? LayoutPageDescription => DescriptionOrSummary(Page.DescriptionMarkdown, Operation.Operation.Summary);
+	protected override string? LayoutPageDescription =>
+		DescriptionOrSummary(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
 
 	internal static string? DescriptionOrSummary(string? description, string? summary) =>
 		string.IsNullOrWhiteSpace(description) ? summary : description;
@@ -45,17 +58,24 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
-		if (Page.QueryParameters.Count > 0)
-			tocItems.Add(new ApiTocItem("Query parameters", "query-params"));
+		// The path parameters have never had an entry: they sit right under the paths they belong to.
+		tocItems.AddRange(
+			Page
+				.ParameterSections
+				.Where(static s => s.Location != ParameterLocation.Path)
+				.Select(static s => new ApiTocItem(s.Header.Title, s.Header.Anchor))
+		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request", "request-body"));
+			tocItems.Add(new ApiTocItem("Request body", "request-body"));
 
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
 		return tocItems;
 	}
+
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ToDisplays(Page.Servers);
 
 	public OperationExamplesPanelModel? ExamplesPanel =>
 		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };

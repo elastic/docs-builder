@@ -336,6 +336,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yamlConfig.Products != null)
 			productsConfig = ParseProductsConfig(collector, yamlConfig.Products, configPath, validProductIds);
 
+		// An implied-products key only fires for a product that a label maps to. Warn, not fail: a config can
+		// name a product before its labels exist.
+		if (productsConfig?.Implies is { Count: > 0 } implies)
+		{
+			var mappedProductIds = ((IEnumerable<string>?)labelToProducts?.Values ?? [])
+				.Select(
+					spec => spec.Split(
+						' ',
+						StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+					).FirstOrDefault()?.Replace('_', '-')
+				)
+				.OfType<string>()
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var productId in implies.Keys.Where(id => !mappedProductIds.Contains(id)))
+			{
+				collector.EmitWarning(
+					configPath,
+					$"Product '{productId}' in products_config.implies has no label in pivot.products that maps to it, so it never applies."
+				);
+			}
+		}
+
 		// Process bundle configuration
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)
@@ -519,7 +541,52 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		return new ProductsConfig { Available = available, Default = defaultProducts };
+		// Parse implied products
+		var implies = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+		if (yaml.Implies != null)
+		{
+			foreach (var (productId, impliedYaml) in yaml.Implies)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
+					return null;
+				}
+
+				List<string> implied = [];
+				foreach (var impliedId in impliedYaml?.Values ?? [])
+				{
+					var normalizedImpliedId = impliedId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedImpliedId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"Product '{impliedId}' implied by '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+						);
+						return null;
+					}
+
+					// A product implies itself already; list each implied product once.
+					if (
+						string.Equals(normalizedImpliedId, normalizedProductId, StringComparison.OrdinalIgnoreCase)
+						|| implied.Contains(normalizedImpliedId, StringComparer.OrdinalIgnoreCase)
+					)
+						continue;
+					implied.Add(normalizedImpliedId);
+				}
+
+				if (implied.Count > 0)
+					implies[normalizedProductId] = implied;
+			}
+		}
+
+		return new ProductsConfig { Available = available, Default = defaultProducts, Implies = implies.Count > 0 ? implies : null };
 	}
 
 	private static BundleConfiguration? ParseBundleConfiguration(
@@ -671,6 +738,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (releases == null && collector.Errors > 0)
 			return null;
 
+		var backports = ParseBundleBackports(collector, configPath, yaml.Backports);
+		if (backports == null && collector.Errors > 0)
+			return null;
+
 		return new BundleConfiguration
 		{
 			Directory = yaml.Directory,
@@ -682,9 +753,44 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
+			Backports = backports,
 			Profiles = profiles,
 			Releases = releases
 		};
+	}
+
+	/// <summary>
+	/// Reads <c>bundle.backports.labels</c>. Labels are exact names: trimmed, de-duplicated ignoring case, and
+	/// never globs, because <c>backport*</c> would also match opt-out labels such as <c>backport-skip</c>.
+	/// Returns <c>null</c> when tracing is not configured, or after emitting an error for an invalid label.
+	/// </summary>
+	private static BackportsConfiguration? ParseBundleBackports(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleBackportsYaml? yaml
+	)
+	{
+		var raw = yaml?.Labels?.Values;
+		if (raw is not { Count: > 0 })
+			return null;
+
+		var labels = new List<string>();
+		foreach (var label in raw.Select(l => l.Trim()).Where(l => l.Length > 0))
+		{
+			if (label.AsSpan().IndexOfAny('*', '?') >= 0)
+			{
+				collector.EmitError(
+					configPath,
+					$"bundle.backports.labels: '{label}' must be an exact label name. Globs are not supported, because 'backport*' would also match opt-out labels such as 'backport-skip'."
+				);
+				return null;
+			}
+
+			if (!labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+				labels.Add(label);
+		}
+
+		return labels.Count == 0 ? null : new BackportsConfiguration { Labels = labels };
 	}
 
 	private static BundleReleases? ParseBundleReleases(

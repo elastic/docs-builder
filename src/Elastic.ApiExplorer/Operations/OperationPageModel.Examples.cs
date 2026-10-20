@@ -21,6 +21,9 @@ public record ExampleDisplay(
 {
 	/// <summary>Method and path named by a <c>Run `METHOD path`</c> description, before boilerplate is stripped.</summary>
 	public (string Method, string Path)? RequestLine { get; init; }
+
+	/// <summary>What the response's status code means, from the spec's <c>responses.&lt;code&gt;.description</c>.</summary>
+	public string? StatusDescription { get; init; }
 }
 
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
@@ -29,6 +32,12 @@ public record ExampleResponse
 	public required string StatusCode { get; init; }
 	public string? JsonValue { get; init; }
 	public string? ExternalValue { get; init; }
+
+	/// <summary>The response example's own description, shown above its body.</summary>
+	public HtmlString? DescriptionHtml { get; init; }
+
+	/// <summary>What the status code means; the status tab's tooltip.</summary>
+	public string? StatusDescription { get; init; }
 
 	/// <summary>
 	/// When true, the OpenAPI response declares no content (e.g. 204). The rail shows
@@ -47,7 +56,7 @@ public record ExampleScenario
 {
 	public required string Title { get; init; }
 	public required string TabId { get; init; }
-	public HtmlString? DescriptionHtml { get; init; }
+	public HtmlString? RequestDescriptionHtml { get; init; }
 	public string? RequestJson { get; init; }
 	public string? RequestExternalValue { get; init; }
 	public IReadOnlyList<ExampleResponse> Responses { get; init; } = [];
@@ -257,7 +266,7 @@ public partial record OperationPageModel
 			{
 				Title = scenarios[0].Title,
 				TabId = scenarios[0].TabId,
-				DescriptionHtml = scenarios[0].DescriptionHtml,
+				RequestDescriptionHtml = scenarios[0].RequestDescriptionHtml,
 				Responses = ordered
 			}
 		];
@@ -276,16 +285,12 @@ public partial record OperationPageModel
 			scenarios[index] = isRequest
 				? existing with
 				{
-					DescriptionHtml = existing.DescriptionHtml ?? example.DescriptionHtml,
+					RequestDescriptionHtml = existing.RequestDescriptionHtml ?? example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
 					RequestLine = example.RequestLine
 				}
-				: existing with
-				{
-					DescriptionHtml = existing.DescriptionHtml ?? example.DescriptionHtml,
-					Responses = UpsertResponse(existing.Responses, example)
-				};
+				: existing with { Responses = UpsertResponse(existing.Responses, example) };
 			return;
 		}
 
@@ -296,7 +301,7 @@ public partial record OperationPageModel
 				{
 					Title = example.Title,
 					TabId = ToTabId(example.Title, scenarios.Count),
-					DescriptionHtml = example.DescriptionHtml,
+					RequestDescriptionHtml = example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
 					RequestLine = example.RequestLine
@@ -305,7 +310,6 @@ public partial record OperationPageModel
 				{
 					Title = example.Title,
 					TabId = ToTabId(example.Title, scenarios.Count),
-					DescriptionHtml = example.DescriptionHtml,
 					Responses = UpsertResponse([], example)
 				}
 		);
@@ -314,7 +318,14 @@ public partial record OperationPageModel
 	private static IReadOnlyList<ExampleResponse> UpsertResponse(IReadOnlyList<ExampleResponse> existing, ExampleDisplay example)
 	{
 		var statusCode = string.IsNullOrEmpty(example.StatusCode) ? "default" : example.StatusCode;
-		var next = new ExampleResponse { StatusCode = statusCode, JsonValue = example.JsonValue, ExternalValue = example.ExternalValue };
+		var next = new ExampleResponse
+		{
+			StatusCode = statusCode,
+			JsonValue = example.JsonValue,
+			ExternalValue = example.ExternalValue,
+			DescriptionHtml = example.DescriptionHtml,
+			StatusDescription = example.StatusDescription
+		};
 		var list = existing.ToList();
 		var index = list.FindIndex(r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase));
 		if (index >= 0)
@@ -445,12 +456,17 @@ public partial record OperationPageModel
 				static pair => new ExampleResponse
 				{
 					StatusCode = pair.Key,
+					StatusDescription = StatusDescriptionOf(pair.Value),
 					IsNoBody = pair.Value.Content is null || pair.Value.Content.Count == 0
 				}
 			)
 			.OrderBy(static r => StatusSortKey(r.StatusCode))
 			.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
 			.ToArray();
+
+	/// <summary>Plain text for the status tab tooltip, which can't render Markdown, so inline code loses its backticks.</summary>
+	private static string? StatusDescriptionOf(IOpenApiResponse? response) =>
+		string.IsNullOrWhiteSpace(response?.Description) ? null : response.Description.Replace("`", "", StringComparison.Ordinal).Trim();
 
 	private static IReadOnlyList<ExampleDisplay> MapResponseExamples(OpenApiResponses? responses, Func<string?, HtmlString> renderMarkdown)
 	{
@@ -461,10 +477,11 @@ public partial record OperationPageModel
 		foreach (var (statusCode, response) in responses)
 		{
 			var media = response?.Content?.FirstOrDefault().Value;
+			var statusDescription = StatusDescriptionOf(response);
 			var named = MapExamples(media?.Examples, renderMarkdown, statusCode);
 			if (named.Count > 0)
 			{
-				list.AddRange(named);
+				list.AddRange(named.Select(e => e with { StatusDescription = statusDescription }));
 				continue;
 			}
 
@@ -475,7 +492,7 @@ public partial record OperationPageModel
 			if (string.IsNullOrWhiteSpace(json))
 				continue;
 
-			list.Add(new ExampleDisplay(statusCode, null, json, null, statusCode));
+			list.Add(new ExampleDisplay(statusCode, null, json, null, statusCode) { StatusDescription = statusDescription });
 		}
 
 		return list;

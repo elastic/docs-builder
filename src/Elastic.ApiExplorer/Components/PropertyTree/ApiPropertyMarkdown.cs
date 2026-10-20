@@ -36,7 +36,7 @@ internal static class ApiPropertyMarkdown
 			_ = markdown.Append(label);
 			_ = markdown.Append("**");
 			if (variant.DiscriminatorLabel is { Length: > 0 } discriminatorLabel)
-				_ = markdown.Append($" (`{discriminatorLabel}`)");
+				_ = markdown.Append($" ({ApiCommonMark.CodeSpan(discriminatorLabel)})");
 			_ = markdown.AppendLine();
 			WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(variant.DescriptionMarkdown, apiBaseUrl));
 			if (variant.Properties is not null)
@@ -49,18 +49,14 @@ internal static class ApiPropertyMarkdown
 		if (type is null || string.IsNullOrEmpty(type.Text))
 			return;
 
-		_ = markdown.Append("Type: `");
-		_ = markdown.Append(type.Text);
-		_ = markdown.AppendLine("`");
+		_ = markdown.AppendLine($"Type: {ApiCommonMark.CodeSpan(type.Text)}");
 		_ = markdown.AppendLine();
 	}
 
 	private static void WriteProperty(StringBuilder markdown, ApiProperty property, string apiBaseUrl, int depth)
 	{
 		_ = markdown.Append(Indent(depth));
-		_ = markdown.Append("- `");
-		_ = markdown.Append(property.Name);
-		_ = markdown.Append('`');
+		_ = markdown.Append($"- {ApiCommonMark.CodeSpan(property.Name)}");
 		if (!string.IsNullOrEmpty(property.Type.Text))
 		{
 			_ = markdown.Append(" (");
@@ -68,7 +64,9 @@ internal static class ApiPropertyMarkdown
 			_ = markdown.Append(')');
 		}
 
-		if (property.IsRequest)
+		if (property.OptionalRoute is { } routeWithout)
+			_ = markdown.Append($" — optional, leave it out to use {ApiCommonMark.CodeSpan(routeWithout)}");
+		else if (property.IsRequest)
 			_ = markdown.Append(property.IsRequired ? " — required" : " — optional");
 		if (property.IsNullable)
 			_ = markdown.Append(" — nullable");
@@ -85,7 +83,8 @@ internal static class ApiPropertyMarkdown
 			WriteNestedLine(
 				markdown,
 				depth,
-				$"{repeated.Label} `{repeated.Name}`" + (repeated.Owner is { Length: > 0 } owner ? $" in `{owner}`" : "")
+				$"{repeated.Label} {ApiCommonMark.CodeSpan(repeated.Name)}" +
+					(repeated.Owner is { Length: > 0 } owner ? $" in {ApiCommonMark.CodeSpan(owner)}" : "")
 			);
 		if (property.TypeLink is { Url: { Length: > 0 } url })
 			WriteNestedLine(markdown, depth, $"See {ApiCommonMark.Link(property.TypeLink.TypeName, url)}");
@@ -96,7 +95,7 @@ internal static class ApiPropertyMarkdown
 			WriteNestedLine(markdown, depth, Format(requires));
 
 		if (property.SingleOrArray is { } shapes)
-			WriteNestedLine(markdown, depth, $"`{shapes.One}` or `{shapes.Many}`");
+			WriteNestedLine(markdown, depth, $"{ApiCommonMark.CodeSpan(shapes.One)} or {ApiCommonMark.CodeSpan(shapes.Many)}");
 
 		WriteChildren(markdown, property, apiBaseUrl, depth);
 	}
@@ -107,7 +106,7 @@ internal static class ApiPropertyMarkdown
 			return;
 
 		var names = property.AlsoIncludes.Select(
-			t => t.Url is { Length: > 0 } url ? ApiCommonMark.Link(t.TypeName, url) : $"`{t.TypeName}`"
+			t => t.Url is { Length: > 0 } url ? ApiCommonMark.Link(t.TypeName, url) : ApiCommonMark.CodeSpan(t.TypeName)
 		);
 		WriteNestedLine(markdown, depth, "Also includes: " + string.Join(", ", names));
 	}
@@ -115,13 +114,14 @@ internal static class ApiPropertyMarkdown
 	private static void WriteArrayItemType(StringBuilder markdown, ApiProperty property, int depth)
 	{
 		if (property.ArrayItemTypeName is { Length: > 0 })
-			WriteNestedLine(markdown, depth, $"Array of: `{property.ArrayItemTypeName}`");
+			WriteNestedLine(markdown, depth, $"Array of: {ApiCommonMark.CodeSpan(property.ArrayItemTypeName)}");
 	}
 
 	private static void WriteEnumOrUnion(StringBuilder markdown, ApiProperty property, int depth)
 	{
-		if (property.EnumValues.Count > 0)
-			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", property.EnumValues.Select(v => $"`{v}`")));
+		WriteValues(markdown, property.EnumValues, depth);
+		if (property.Example is { } example)
+			WriteNestedLine(markdown, depth, $"Example: {ApiCommonMark.CodeSpan(example)}");
 
 		if (property.Union is null || property.Repeats is not null)
 			return;
@@ -134,7 +134,7 @@ internal static class ApiPropertyMarkdown
 					depth,
 					$"{property.Union.Label} " + string.Join(
 						" or ",
-						property.Union.Badges.Select(b => ApiCommonMark.Link($"`{b.Text}`", b.Url))
+						property.Union.Badges.Select(b => ApiCommonMark.Link(ApiCommonMark.CodeSpan(b.Text), b.Url))
 					) + (property.Union.MoreOptions is { } more ? $" {more}" : "")
 				);
 				break;
@@ -152,14 +152,21 @@ internal static class ApiPropertyMarkdown
 				break;
 			case ChildKind.Dictionary when property.Children.Dictionary is { } dictionary:
 				WriteNestedLine(markdown, depth, $"Map values ({dictionary.ValueType.Text})");
+				WriteValues(markdown, dictionary.EnumValues, depth + 1);
 				WriteList(markdown, dictionary.Properties, apiBaseUrl, depth + 1);
 				break;
 		}
 	}
 
+	private static void WriteValues(StringBuilder markdown, IReadOnlyList<string> values, int depth)
+	{
+		if (values.Count > 0)
+			WriteNestedLine(markdown, depth, "Values: " + string.Join(", ", values.Select(ApiCommonMark.CodeSpan)));
+	}
+
 	/// <summary>A "Requires at least one of: `a` or `b`" line, for a property row or the root of a body.</summary>
 	public static string Format(RequiredAlternatives requires) =>
-		$"{requires.Label} " + string.Join(" or ", requires.Options.Select(o => $"`{o}`"));
+		$"{requires.Label} " + string.Join(" or ", requires.Options.Select(ApiCommonMark.CodeSpan));
 
 	private static void WriteNestedLine(StringBuilder markdown, int depth, string? text)
 	{

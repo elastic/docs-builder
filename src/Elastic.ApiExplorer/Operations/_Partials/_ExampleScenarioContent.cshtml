@@ -7,13 +7,6 @@
 	var scenario = Model;
 	var samples = scenario.CodeSamples;
 }
-@if (scenario.DescriptionHtml is { } description)
-{
-	<div class="api-example-description" data-example-description>
-		<div class="api-example-description-text">@description</div>
-		<button type="button" class="api-example-description-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
-	</div>
-}
 @{
 	var hasRequest = samples.Count > 0 || scenario.ShowRequest;
 }
@@ -35,6 +28,10 @@
 				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
 			}
 		</div>
+		@if (scenario.RequestDescriptionHtml is { } requestCaption)
+		{
+			@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaption))
+		}
 		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="@scenario.Title code samples. Use the arrow keys to switch language.">
 			@for (var i = 0; i < samples.Count; i++)
 			{
@@ -57,6 +54,10 @@
 					</header>
 					<div class="api-code-carousel-card-body">
 						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
+						@if (sample.Generated)
+						{
+							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
+						}
 					</div>
 				</section>
 			}
@@ -74,13 +75,24 @@
 		}
 	</div>
 }
+@if (samples.Count == 0)
+{
+	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	@if (scenario.RequestDescriptionHtml is { } requestCaptionWithoutSamples)
+	{
+		@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaptionWithoutSamples))
+	}
+}
 @if (scenario.ShowRequest && scenario.RequestJson is not null)
 {
 	var requestSample = new CodeSample("JSON", scenario.RequestJson, "language-json");
 	var requestModel = samples.Count > 0
 		? new ApiCodeSampleModel(requestSample, Title: "Request example")
 		: new ApiCodeSampleModel(requestSample, scenario.HttpMethod, scenario.Route);
-	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	@if (samples.Count > 0)
+	{
+		<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	}
 	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
 
@@ -95,6 +107,15 @@
 	var responses = scenario.Responses;
 	<div class="api-rail-response">
 	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
+	@for (var i = 0; i < responses.Count; i++)
+	{
+		if (responses[i].DescriptionHtml is { } responseCaption)
+		{
+			<div data-caption-status="@responses[i].StatusCode" hidden="@(i == 0 ? null : "hidden")">
+				@(await RenderPartialAsync<_ExampleCaption, HtmlString>(responseCaption))
+			</div>
+		}
+	}
 	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
@@ -108,7 +129,8 @@
 						class="example-response-tab@(selected ? " is-active" : "")"
 						data-status="@response.StatusCode"
 						aria-selected="@(selected ? "true" : "false")"
-						tabindex="@(selected ? "0" : "-1")">
+						tabindex="@(selected ? "0" : "-1")"
+						data-tippy-content="@response.StatusDescription">
 						<span class="example-response-tab-label">@response.StatusCode</span>
 					</button>
 				}
