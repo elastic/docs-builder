@@ -3311,6 +3311,21 @@ button.example-response-tab:focus-visible {
 	column-gap: 14px;
 }
 
+/* The description's section headings sit under the 36px title, so they step down from it instead of matching it. */
+.api-landing .docs-measure h2 {
+	margin-top: 32px;
+	font-size: var(--text-2xl);
+}
+
+.api-landing .docs-measure h3 {
+	font-size: var(--text-xl);
+}
+
+/* The index starts after the intro with the same 32px that separates its groups. */
+.api-landing .api-overview {
+	margin-top: 32px;
+}
+
 .api-landing-icon,
 .api-landing-icon svg {
 	width: auto;
