@@ -2359,7 +2359,7 @@ a.docs-reference-btn::after {
 	code:not(pre > code):not(.enum-value):not(.schema-type):not(
 		.union-type-option
 	),
-.example-description :not(pre) > code,
+.api-example-caption :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -3086,18 +3086,6 @@ button.example-response-tab:focus-visible {
 	min-width: 0;
 }
 
-/* Example description - smaller font like property descriptions */
-.example-description {
-	@apply text-grey-80;
-	font-size: 0.9em;
-	line-height: 1.5;
-	margin-bottom: 0.75rem;
-
-	p {
-		margin: 0;
-	}
-}
-
 /* Sticky Examples button - bottom right of content area */
 .examples-jump-btn {
 	@apply bg-blue-elastic rounded-full shadow-lg;
@@ -3613,10 +3601,6 @@ html:has(.api-page-shell) {
 
 .api-example-caption p + p {
 	margin-top: 6px;
-}
-
-.api-example-caption :not(pre) > code {
-	font-size: 12px;
 }
 
 .api-example-caption-toggle {
