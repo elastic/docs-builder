@@ -155,8 +155,8 @@ Some formats name their files by timestamp, not by pull request (`files: any` in
 For those, docs-builder finds the pull request instead:
 
 - `changelog validate` assigns a file to the pull request that adds it.
-- `changelog upload` looks up the pull request that added each file that names none, and uploads the entry under that pull request's number. This needs a `GITHUB_TOKEN`.
-- A commit-range bundle matches a pool entry that still names no pull request to the pull request in the range that added a file with the same name.
+- `changelog upload` looks up the pull request that added each file that names none, and writes it to the entry's `prs`. The file keeps its name in the changelog pool, so several files from one pull request don't overwrite each other. This needs a `GITHUB_TOKEN`.
+- A commit-range bundle matches a pool entry that still names no pull request to the pull request in the range that added a file with the same name. A pull request that only edited the file doesn't count.
 
 The converted entries have no `products`:
 

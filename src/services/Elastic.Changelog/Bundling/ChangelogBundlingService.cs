@@ -1045,7 +1045,7 @@ public partial class ChangelogBundlingService(
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_summaries, _decisions, _prService.FetchChangedFilesAsync);
+		var resolver = new GitRangeEntryResolver(_summaries, _decisions, _prService.FetchAddedFilesAsync);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,

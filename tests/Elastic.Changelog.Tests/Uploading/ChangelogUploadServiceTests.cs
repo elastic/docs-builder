@@ -118,14 +118,49 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		A.CallTo(
 			() => prService.FetchPullRequestAddingFileAsync(A<string>._, A<string>._, A<string>._, A<string>._, A<CancellationToken>._)
 		).MustHaveHappenedOnceExactly();
+		// Fragments keep their file names as keys, so several fragments of one pull request don't overwrite each other.
 		var fragment = targets.Single(t => t.LocalPath == path);
-		fragment.S3Key.Should().Be("changelog/elastic/beats/main/4242.yaml");
+		fragment.S3Key.Should().Be("changelog/elastic/beats/main/1792145980-fix-the-registry.yaml");
 		ReleaseNotesSerialization
 			.DeserializeEntry(fragment.InlineContent!)
 			.Prs
 			.Should()
 			.Equal("https://github.com/elastic/beats/pull/4242");
 		_collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task FindPullRequestsOfFiles_TwoFragmentsOfOnePullRequest_KeepDistinctKeys()
+	{
+		AddChangelog("1792145980-first.yaml", "kind: bug-fix\nsummary: First\ncomponent: filebeat\n");
+		AddChangelog("1792145990-second.yaml", "kind: feature\nsummary: Second\ncomponent: filebeat\n");
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.FetchPullRequestAddingFileAsync("elastic", "beats", A<string>._, "main", A<CancellationToken>._)).Returns(
+			4242
+		);
+		var service = new ChangelogUploadService(
+			NullLoggerFactory.Instance,
+			fileSystem: _fileSystem,
+			s3Client: _s3Client,
+			prService: prService
+		);
+		var format = ChangelogEntryFormat.All["elastic-agent-changelog-tool"];
+
+		var pullRequests = await service.FindPullRequestsOfFilesAsync(
+			[_changelogDir],
+			format,
+			"elastic",
+			"beats",
+			"main",
+			CancellationToken.None
+		);
+		var targets = service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "beats", "main", format, pullRequests);
+
+		targets
+			.Select(t => t.S3Key)
+			.Should()
+			.BeEquivalentTo("changelog/elastic/beats/main/1792145980-first.yaml", "changelog/elastic/beats/main/1792145990-second.yaml");
+		targets.Should().OnlyContain(t => t.InlineContent!.Contains("pull/4242"));
 	}
 
 	[Test]

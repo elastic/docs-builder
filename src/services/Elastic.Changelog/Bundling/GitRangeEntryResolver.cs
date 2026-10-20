@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
@@ -141,14 +142,14 @@ public record GitRangeEntryResolutionResult
 /// </summary>
 /// <param name="summaries">Reads the metadata of the pull requests in a range.</param>
 /// <param name="decisions">Records per-PR decisions.</param>
-/// <param name="changedFiles">
-/// Lists the files a pull request added or changed. Used for an entry format whose file names don't carry the PR
+/// <param name="addedFiles">
+/// Lists the files a pull request added. Used for an entry format whose file names don't carry the PR
 /// (<c>files: any</c>) to find the pull request of a pool entry that names none. Null skips that lookup.
 /// </param>
-public class GitRangeEntryResolver(
+public partial class GitRangeEntryResolver(
 	IPullRequestSummaryProvider summaries,
 	DecisionLog decisions,
-	Func<string, string, int, Cancel, Task<IReadOnlyList<string>?>>? changedFiles = null
+	Func<string, string, int, Cancel, Task<IReadOnlyList<string>?>>? addedFiles = null
 )
 {
 	/// <summary>
@@ -165,7 +166,7 @@ public class GitRangeEntryResolver(
 	)
 	{
 		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content, config?.EntryFormat)).ToList();
-		if (config?.EntryFormat is { FileNamesCarryPr: false } && changedFiles != null)
+		if (config?.EntryFormat is { FileNamesCarryPr: false } && addedFiles != null)
 			parsedCandidates = await AttributeEntriesWithoutPrAsync(parsedCandidates, resolution, options, ctx);
 
 		var rows = new List<GitRangePrReportRow>();
@@ -289,13 +290,16 @@ public class GitRangeEntryResolver(
 	/// </param>
 	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content, ChangelogEntryFormat? entryFormat = null)
 	{
-		// A format whose file names don't carry the PR (files: any) has leading numbers that are timestamps, not PRs:
-		// its entries match by their prs references only.
-		var numbers = entryFormat is { FileNamesCarryPr: false } ? [] : ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
+		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		try
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
-			var dto = DeserializePoolEntry(fileName, content, entryFormat);
+			var (dto, converted) = DeserializePoolEntry(fileName, content, entryFormat);
+
+			// In a format whose file names don't carry the PR (files: any), a leading number is a timestamp, not a PR, and
+			// the entry matches by its prs only. A docs-builder entry named <pr>.yaml keeps its file-name match.
+			if (entryFormat is { FileNamesCarryPr: false } && (converted || !PrOnlyFileNameRegex().IsMatch(fileName)))
+				numbers = [];
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),
@@ -314,8 +318,9 @@ public class GitRangeEntryResolver(
 
 	/// <summary>
 	/// Pool entries in a format whose file names don't carry the PR, uploaded before the upload looked the PR up, name no
-	/// pull request. A pull request in the range that added a file with the same name owns that entry. Only the pull
-	/// requests without a pool entry are asked for their files, one API call each.
+	/// pull request. A pull request in the range that added a file with the same name owns that entry; a pull request that
+	/// only edited it does not. Pull requests are asked for their added files, one API call each, until every such entry
+	/// has an owner.
 	/// </summary>
 	private async Task<List<ChangelogPoolCandidate>> AttributeEntriesWithoutPrAsync(
 		List<ChangelogPoolCandidate> candidates,
@@ -336,10 +341,9 @@ public class GitRangeEntryResolver(
 		{
 			if (orphans.Count == 0)
 				break;
-			if (result.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
-				continue;
 
-			var files = await changedFiles!(options.Owner, options.Repo, pr.Number, ctx);
+			// A pull request that already has a pool entry can still have added another fragment that names no PR.
+			var files = await addedFiles!(options.Owner, options.Repo, pr.Number, ctx);
 			foreach (var name in (files ?? []).Select(f => f[(f.LastIndexOf('/') + 1)..]))
 			{
 				if (!orphans.Remove(name, out var index))
@@ -357,15 +361,23 @@ public class GitRangeEntryResolver(
 		return result;
 	}
 
-	private static ChangelogEntryDto DeserializePoolEntry(string fileName, string content, ChangelogEntryFormat? entryFormat)
+	[GeneratedRegex(@"^\d+\.ya?ml$")]
+	private static partial Regex PrOnlyFileNameRegex();
+
+	/// <summary>Reads a pool entry in the docs-builder format, else in the repository's entry format.</summary>
+	private static (ChangelogEntryDto Dto, bool Converted) DeserializePoolEntry(
+		string fileName,
+		string content,
+		ChangelogEntryFormat? entryFormat
+	)
 	{
 		try
 		{
-			return Deserialize(content);
+			return (Deserialize(content), false);
 		}
 		catch (YamlException) when (entryFormat != null)
 		{
-			return Deserialize(entryFormat.ToEntryYaml(content, fileName));
+			return (Deserialize(entryFormat.ToEntryYaml(content, fileName)), true);
 		}
 
 		ChangelogEntryDto Deserialize(string yaml) =>

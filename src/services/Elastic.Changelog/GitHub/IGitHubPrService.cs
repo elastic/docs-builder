@@ -48,6 +48,12 @@ public interface IGitHubPrService
 	Task<int?> FetchPullRequestAddingFileAsync(string owner, string repo, string filePath, string branch, CancellationToken ctx = default);
 
 	/// <summary>
+	/// Fetches the list of files a pull request added (status added only).
+	/// Returns null when the API call fails.
+	/// </summary>
+	Task<IReadOnlyList<string>?> FetchAddedFilesAsync(string owner, string repo, int prNumber, CancellationToken ctx = default);
+
+	/// <summary>
 	/// Fetches the list of files changed by a pull request (status added or modified).
 	/// Returns null when the API call fails — callers decide whether that is fatal.
 	/// </summary>

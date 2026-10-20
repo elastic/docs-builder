@@ -415,11 +415,18 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 	}
 
 	/// <inheritdoc />
-	public async Task<IReadOnlyList<string>?> FetchChangedFilesAsync(
+	public Task<IReadOnlyList<string>?> FetchChangedFilesAsync(string owner, string repo, int prNumber, CancellationToken ctx = default) =>
+		FetchFilesAsync(owner, repo, prNumber, ["added", "modified"], ctx);
+
+	public Task<IReadOnlyList<string>?> FetchAddedFilesAsync(string owner, string repo, int prNumber, CancellationToken ctx = default) =>
+		FetchFilesAsync(owner, repo, prNumber, ["added"], ctx);
+
+	private async Task<IReadOnlyList<string>?> FetchFilesAsync(
 		string owner,
 		string repo,
 		int prNumber,
-		CancellationToken ctx = default
+		string[] statuses,
+		CancellationToken ctx
 	)
 	{
 		try
@@ -445,7 +452,7 @@ public partial class GitHubPrService(ILoggerFactory loggerFactory, GitHubApiTran
 
 				foreach (var item in items)
 				{
-					if (item.Filename is not null && (item.Status == "added" || item.Status == "modified"))
+					if (item.Filename is not null && statuses.Contains(item.Status))
 						files.Add(item.Filename);
 				}
 

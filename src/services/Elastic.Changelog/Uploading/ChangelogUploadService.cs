@@ -253,8 +253,9 @@ public class ChangelogUploadService(
 		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run without --no-overwrite to replace it.{body}";
 	}
 
+	// Inline content is either a PR-alias marker or an entry converted from the repository's entry format.
 	private static bool IsPrAliasMarker(UploadConflict conflict) =>
-		conflict.InlineContent is not null || TryMarkerLink(conflict.RemoteContent) is not null;
+		TryMarkerLink(conflict.InlineContent) is not null || TryMarkerLink(conflict.RemoteContent) is not null;
 
 	private static string? TryMarkerLink(string? yaml)
 	{
@@ -369,7 +370,11 @@ public class ChangelogUploadService(
 				_logger.LogWarning(ex, "Could not read entry from {File}; using filename for key", filePath);
 			}
 
-			var (canonicalFileName, markerEntries) = DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
+			// A format whose file names don't carry the PR keeps them as keys: one pull request can add several fragments,
+			// and keying them by PR number would make them overwrite each other. They match by their prs instead.
+			var (canonicalFileName, markerEntries) = entryFormat is { FileNamesCarryPr: false }
+				? (fileName, [])
+				: DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
 			var primaryKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, canonicalFileName);
 			targets.Add(new UploadTarget(filePath, primaryKey, converted));
 
@@ -705,13 +710,12 @@ public class ChangelogUploadService(
 		Cancel ctx
 	)
 	{
-		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return (args.Directory, null);
-
 		if (_configLoader == null)
-			return ("docs/changelog", null);
+			return (string.IsNullOrWhiteSpace(args.Directory) ? "docs/changelog" : args.Directory, null);
 
+		// The configuration is read even when --directory overrides its directory: entry_format still applies.
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return (config?.Bundle?.Directory ?? "docs/changelog", config?.EntryFormat);
+		var directory = string.IsNullOrWhiteSpace(args.Directory) ? config?.Bundle?.Directory ?? "docs/changelog" : args.Directory;
+		return (directory, config?.EntryFormat);
 	}
 }

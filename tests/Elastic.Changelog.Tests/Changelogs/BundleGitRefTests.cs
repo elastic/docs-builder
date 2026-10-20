@@ -1030,28 +1030,34 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			topLevel: "entry_format: elastic-agent-changelog-tool\nproducts:\n  default:\n    - product: cloud-hosted"
 		);
 
-		// The pool holds a timestamped fragment that names no PR. PR 100 added it; PR 200 added nothing in the pool.
+		// The pool holds two fragments PR 100 added: one names the PR, one names none. PR 200 added nothing in the pool.
+		// A docs-builder entry uploaded as 300.yaml with no prs (a scrubbed copy) still matches PR 300 by its file name.
 		var pool = new StubHandler(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+			{
 				return Json(
-					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "1792145980-fix-the-registry.yaml" } ] }"""
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "1792145980-fix-the-registry.yaml" }, { "file": "1792145999-named.yaml" }, { "file": "300.yaml" } ] }"""
 				);
+			}
 			if (path.EndsWith("1792145980-fix-the-registry.yaml", StringComparison.Ordinal))
 				return Yaml("kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n");
+			if (path.EndsWith("1792145999-named.yaml", StringComparison.Ordinal))
+				return Yaml(
+					"kind: feature\nsummary: Named fragment\ncomponent: filebeat\npr: https://github.com/elastic/widget/pull/100\n"
+				);
+			if (path.EndsWith("300.yaml", StringComparison.Ordinal))
+				return Yaml("title: Scrubbed entry\ntype: feature\nproducts:\n  - product: cloud-hosted\n");
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var prService = A.Fake<IGitHubPrService>();
-		_ = A.CallTo(() => prService.FetchChangedFilesAsync("elastic", "widget", 100, A<Cancel>._)).Returns(new List<string>
+		_ = A.CallTo(() => prService.FetchAddedFilesAsync("elastic", "widget", 100, A<Cancel>._)).Returns(new List<string>
 		{
 			"changelog/fragments/1792145980-fix-the-registry.yaml",
-			"filebeat/registry.go"
+			"changelog/fragments/1792145999-named.yaml"
 		});
-		_ = A.CallTo(() => prService.FetchChangedFilesAsync("elastic", "widget", 200, A<Cancel>._)).Returns(new List<string>
-		{
-			"README.md"
-		});
+		_ = A.CallTo(() => prService.FetchAddedFilesAsync("elastic", "widget", 200, A<Cancel>._)).Returns(new List<string> { "README.md" });
 		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).ReturnsLazily(
 			(string url, string? _, string? _, Cancel _) => new GitHubPrInfo
 			{
@@ -1062,7 +1068,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			}
 		);
 
-		var service = Service(pool, RangeService(100, 200), prService);
+		var service = Service(pool, RangeService(100, 200, 300), prService);
 		var input = new BundleChangelogsArguments
 		{
 			Profile = "promotion",
@@ -1082,8 +1088,17 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		// PR 100 gets the fragment, not its title; PR 200 has no fragment, so its entry comes from its title.
-		bundle.Should().Contain("Fix the registry").And.NotContain("PR title 100").And.Contain("PR title 200");
+		// PR 100 gets both fragments, not its title; PR 200 has none, so its entry comes from its title; PR 300 keeps its entry.
+		bundle
+			.Should()
+			.Contain("Fix the registry")
+			.And
+			.Contain("Named fragment")
+			.And
+			.NotContain("PR title 100")
+			.And
+			.Contain("PR title 200");
+		bundle.Should().Contain("Scrubbed entry").And.NotContain("PR title 300");
 		bundle.Should().Contain("https://github.com/elastic/widget/pull/100");
 	}
 
