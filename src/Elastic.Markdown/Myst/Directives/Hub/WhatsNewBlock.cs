@@ -33,7 +33,9 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 {
 	private const string WhatsNewFileName = "hub-whats-new.yml";
 
-	private static readonly ConcurrentDictionary<string, (WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics)> CentralConfigCache = new();
+	private static readonly ConcurrentDictionary<string, CentralConfigEntry> CentralConfigCache = new();
+
+	private sealed record CentralConfigEntry(string Yaml, WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics);
 
 	public override string Directive => "whats-new";
 
@@ -128,38 +130,44 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) :
 		if (!Build.ReadFileSystem.File.Exists(path))
 			return null;
 
-		// The parse only runs once per path, cached across builds (e.g. --watch). A rebuild that hits
-		// the cache must still see the diagnostics the first build's parse produced, so every call
+		// The parse is cached per path across builds (e.g. --watch) and keyed by the file's content, so
+		// an edit to the file, such as fixing a typo, is parsed again instead of replaying the old result.
+		// A rebuild that hits the cache must still see the diagnostics the parse produced, so every call
 		// replays them into the current Build.Collector rather than relying on whichever collector
 		// happened to trigger the parse.
-		var (config, diagnostics) = CentralConfigCache.GetOrAdd(path, ParseCentralConfig);
-		foreach (var diagnostic in diagnostics)
+		var yaml = Build.ReadFileSystem.File.ReadAllText(path);
+		var entry = CentralConfigCache.AddOrUpdate(
+			path,
+			_ => ParseCentralConfig(path, yaml),
+			(_, cached) => cached.Yaml == yaml ? cached : ParseCentralConfig(path, yaml)
+		);
+		foreach (var diagnostic in entry.Diagnostics)
 			Build.Collector.Write(diagnostic);
 
+		var config = entry.Config;
 		if (config?.Products is null)
 			return null;
 		return config.Products.TryGetValue(productKey, out var data) ? data : null;
 	}
 
-	private (WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics) ParseCentralConfig(string path)
+	private CentralConfigEntry ParseCentralConfig(string path, string yaml)
 	{
 		var diagnostics = new List<Diagnostic>();
 		try
 		{
-			var yaml = Build.ReadFileSystem.File.ReadAllText(path);
 			var config = YamlSerialization.Deserialize<WhatsNewConfig>(
 				yaml,
 				Build.ProductsConfiguration,
 				new YamlUnmappedMemberReporting(diagnostics.Add, path)
 			);
-			return (config, diagnostics);
+			return new CentralConfigEntry(yaml, config, diagnostics);
 		}
 		catch (YamlException e)
 		{
 			var message = $"Unable to parse {WhatsNewFileName}: {e.Message}{Environment.NewLine}{e}"
 				+ (e.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
 			diagnostics.Add(new Diagnostic { Severity = Severity.Error, File = path, Message = message });
-			return (null, diagnostics);
+			return new CentralConfigEntry(yaml, null, diagnostics);
 		}
 	}
 

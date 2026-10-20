@@ -527,9 +527,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	{
 		try
 		{
-			return reporting is null
+			// Comment-only front matter deserializes to null; treat it as empty front matter.
+			var frontMatter = reporting is null
 				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
 				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
+			return frontMatter ?? new YamlFrontMatter();
 		}
 		catch (InvalidProductException e)
 		{

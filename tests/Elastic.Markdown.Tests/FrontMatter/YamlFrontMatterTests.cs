@@ -117,6 +117,24 @@ public class LayoutOmitted() : DirectiveTest("""
 
 // Regression coverage for the diagnostics wiring in `YamlSerialization.Deserialize`: an unmapped
 // front-matter key is an error reported at the key's file line (the body starts below the opening `---`).
+// Comment-only front matter deserializes to null. It must read as empty front matter, not fail the page.
+public class CommentOnlyFrontMatter() : DirectiveTest("""
+	---
+	# no keys yet
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsAsEmpty()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.Title.Should().Be("Test Page");
+	}
+}
+
 public class UnknownFrontMatterKeyErrors() : DirectiveTest(
 	"""
 	---
