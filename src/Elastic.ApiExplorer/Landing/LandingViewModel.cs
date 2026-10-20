@@ -39,14 +39,12 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public HtmlString? DescriptionRemainder => DescriptionParts.Remainder is { } rest ? new HtmlString(rest) : null;
 
-	public string? License => ApiInfo.License?.Name;
-
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
 	/// <summary>The assembler hosts the download in its context bar.</summary>
 	public bool ShowSpecDownload => BuildContext.BuildType != BuildType.Assembler;
 
-	public bool HasFacts => Servers.Count > 0 || License is { Length: > 0 } || Version is not null || ShowSpecDownload;
+	public bool HasFacts => Servers.Count > 0 || Version is not null || ShowSpecDownload;
 
 	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ReadServers(Document);
 

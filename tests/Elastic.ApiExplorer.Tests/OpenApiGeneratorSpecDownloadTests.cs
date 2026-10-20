@@ -146,6 +146,35 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		markdown.Should().NotContain("License:");
 	}
 
+	[Test]
+	public async Task Generate_SpecWithInfoLicense_LandingDoesNotShowLicenseFact()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var fixturePath = Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
+		var document = await OpenApiReader.Instance.ReadAsync(new System.IO.Abstractions.FileSystem().FileInfo.New(fixturePath))
+			?? throw new InvalidOperationException($"Could not read fixture spec at {fixturePath}");
+		document.Info.License = new OpenApiLicense { Name = "Apache 2.0" };
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-license-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(document)
+		);
+
+		await generator.Generate(ct);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		html.Should().Contain("<dt>Version</dt>");
+		html.Should().NotContain("<dt>License").And.NotContain("Apache 2.0");
+	}
+
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);

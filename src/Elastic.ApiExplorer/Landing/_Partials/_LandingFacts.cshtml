@@ -4,13 +4,6 @@
 	{
 		@await RenderPartialAsync(_BaseUrlFact.Create(Model.Page.Servers))
 	}
-	@if (Model.Page.License is { Length: > 0 } license)
-	{
-		<div class="api-rail-fact">
-			<dt>License</dt>
-			<dd>@license</dd>
-		</div>
-	}
 	@if (Model.Page.Version is { } version)
 	{
 		<div class="api-rail-fact">
