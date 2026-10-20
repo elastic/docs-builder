@@ -31,13 +31,21 @@ public class ApiHubSwitcherTests
 	{
 		var items = ApiHubSwitcher.Build([Entry("kibana", "Kibana"), Entry("elasticsearch", "Elasticsearch")], currentApiKey: "kibana");
 
-		items.Select(i => i.Label).Should().Equal("Elasticsearch", "Kibana");
+		items.SelectMany(g => g.Products).Select(i => i.Label).Should().Equal("Elasticsearch", "Kibana");
 	}
 
 	[Test]
-	public void Build_ListsStackWithVariantsThenCloudThenTheRestByTitle()
+	public void Build_SingleGroupHasNoTitle()
 	{
-		var items = ApiHubSwitcher.Build(
+		var groups = ApiHubSwitcher.Build([Entry("kibana", "Kibana"), Entry("elasticsearch", "Elasticsearch")], currentApiKey: "kibana");
+
+		groups.Should().ContainSingle().Which.Title.Should().BeNull();
+	}
+
+	[Test]
+	public void Build_GroupsMatchTheCatalogLanding()
+	{
+		var groups = ApiHubSwitcher.Build(
 			[
 				Entry("zeta", "Zeta API"),
 				Entry("kibana-serverless", "Kibana Serverless APIs"),
@@ -53,21 +61,14 @@ public class ApiHubSwitcherTests
 			currentApiKey: "kibana"
 		);
 
-		items
-			.Select(i => i.Label)
+		groups.Select(g => g.Title).Should().Equal("Elastic Stack", "Orchestration", null);
+		groups[0]
+			.Products
+			.Select(p => p.Label)
 			.Should()
-			.Equal(
-				"Elasticsearch API",
-				"Elasticsearch Serverless API",
-				"Kibana APIs",
-				"Kibana Serverless APIs",
-				"Logstash APIs",
-				"Elastic Cloud API",
-				"Cloud Billing API",
-				"Elastic Cloud Serverless API",
-				"Alpha API",
-				"Zeta API"
-			);
+			.Equal("Elasticsearch API", "Elasticsearch Serverless API", "Kibana APIs", "Kibana Serverless APIs", "Logstash APIs");
+		groups[1].Products.Select(p => p.Label).Should().Equal("Elastic Cloud API", "Cloud Billing API", "Elastic Cloud Serverless API");
+		groups[2].Products.Select(p => p.Label).Should().Equal("Alpha API", "Zeta API");
 	}
 
 	[Test]
@@ -78,8 +79,8 @@ public class ApiHubSwitcherTests
 			currentApiKey: "elasticsearch"
 		);
 
-		items.Count(i => i.Selected).Should().Be(1);
-		items.Single(i => i.Selected).Label.Should().Be("Elasticsearch");
+		items.SelectMany(g => g.Products).Count(i => i.Selected).Should().Be(1);
+		items.SelectMany(g => g.Products).Single(i => i.Selected).Label.Should().Be("Elasticsearch");
 	}
 
 	[Test]
@@ -87,7 +88,7 @@ public class ApiHubSwitcherTests
 	{
 		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: "elasticsearch");
 
-		items.Should().ContainSingle().Which.IconSvg.Should().Contain("<svg");
+		items.SelectMany(g => g.Products).Should().ContainSingle().Which.IconSvg.Should().Contain("<svg");
 	}
 
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");

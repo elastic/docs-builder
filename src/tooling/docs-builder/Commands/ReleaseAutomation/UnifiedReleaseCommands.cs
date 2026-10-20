@@ -5,7 +5,9 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -85,6 +87,11 @@ internal sealed class UnifiedReleaseCommands(
 	/// Fail when a product is not onboarded. By default a product without a <c>changelog.yml</c>, a bundle profile,
 	/// or a changelog entry pool is skipped with a warning. A product named with <c>--products</c> always fails.
 	/// </param>
+	/// <param name="cacheDir">
+	/// Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the
+	/// application data of docs-builder. Anything unused for 30 days is dropped.
+	/// </param>
+	/// <param name="noCache">Do not read or write the cache of commit ranges.</param>
 	/// <param name="changelogConfigs">
 	/// Optional directory of prototype <c>&lt;product-id&gt;.changelog.yml</c> files. When present,
 	/// a product's local file takes precedence over the file fetched from GitHub, allowing teams to
@@ -98,6 +105,8 @@ internal sealed class UnifiedReleaseCommands(
 		[ExpandUserProfile] DirectoryInfo? changelogConfigs = null,
 		string[]? products = null,
 		bool strict = false,
+		[ExpandUserProfile] DirectoryInfo? cacheDir = null,
+		bool noCache = false,
 		CancellationToken ctx = default
 	)
 	{
@@ -149,8 +158,11 @@ internal sealed class UnifiedReleaseCommands(
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
+		// A range holds hundreds of pull requests. Their decisions are logged in batches, not one line each.
+		using var decisions = new DecisionLog(_logger);
+		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
 		var productBundler = new UnifiedProductBundler(
-			new ChangelogBundlingService(logFactory, fileSystem, configurationContext),
+			new ChangelogBundlingService(logFactory, fileSystem, configurationContext, decisions: decisions, cache: cache),
 			http,
 			new FileSystem(),
 			_logger,
@@ -244,6 +256,9 @@ internal sealed class UnifiedReleaseCommands(
 
 				var requested = products?.Contains(range.ProductId, StringComparer.OrdinalIgnoreCase) ?? false;
 				var outcome = await productBundler.BundleAsync(range, productOutput, changelogConfigs?.FullName, strict || requested, ctx);
+				decisions.Flush();
+				if (cache is not null)
+					await cache.SaveAsync(ctx);
 				if (outcome == ProductBundleOutcome.Failed)
 					return 1;
 
@@ -273,8 +288,9 @@ internal sealed class UnifiedReleaseCommands(
 	/// <remarks>
 	/// <para>
 	/// The docset is created in memory from <c>products.yml</c>. Every product with
-	/// <c>features.release-notes: dra</c> gets a release notes, known issues, breaking changes and
-	/// deprecations page. No documentation folder is needed.
+	/// <c>features.release-notes: dra</c> gets a page per version at <c>/{product}/{version}</c>,
+	/// with known issues, breaking changes, and deprecations nested under that version.
+	/// No documentation folder is needed.
 	/// </para>
 	/// <para>
 	/// The command resolves the argument like <c>release unified bundle</c>. A product without bundles is left

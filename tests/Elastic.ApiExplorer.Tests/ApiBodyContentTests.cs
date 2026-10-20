@@ -47,8 +47,8 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ lives }");
-		ApiBodyContent.VariantNames(variants).Should().Equal("{ lives }[]", "{ lives }");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Cat");
+		ApiBodyContent.VariantNames(variants).Should().Equal("Cat[]", "Cat");
 	}
 
 	[Test]
@@ -84,7 +84,7 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants.Variants[0].AnchorId.Should().StartWith("req-variant-");
 		variants.Variants[0].Properties!.Items.Single().IsRequired.Should().BeTrue();
 		variants.Variants[0].Properties!.Items.Single().IsRequest.Should().BeTrue("request variants keep the request flag");
@@ -168,9 +168,9 @@ public class ApiBodyContentTests
 			builder
 		);
 
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: feline", "kind: canine");
-		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "kind", "lives");
+		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("kind", "id", "lives");
 	}
 
 	[Test]
@@ -201,17 +201,17 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants, _) = ApiBodyContent.Build(
+		var (properties, variants, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Composed"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			analyzer,
 			builder
 		);
 		properties.Should().BeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		variants.Variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("id", "lives");
 
-		var (byReference, _, _) = ApiBodyContent.Build(
+		var (byReference, _, _, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Composed", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -247,7 +247,7 @@ public class ApiBodyContentTests
 		var builder = BuilderFor(document);
 		var analyzer = new SchemaAnalyzer(document);
 
-		var (properties, variants, _) = ApiBodyContent.Build(
+		var (properties, variants, _, _) = ApiBodyContent.Build(
 			new OpenApiSchemaReference("Declared", document),
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
@@ -255,12 +255,12 @@ public class ApiBodyContentTests
 		);
 		properties!.Items.Select(p => p.Name).Should().Equal("kind");
 		variants!.Label.Should().Be("One of:");
-		variants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		variants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 
 		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
 		pet.Children.Variants!.Label.Should().Be("One of:", "a label on the row would sit above the properties instead");
-		pet.Children.Variants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		pet.Children.Variants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		pet.Union.Should().BeNull();
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([pet]), "/api/doc/fixture");
@@ -314,7 +314,7 @@ public class ApiBodyContentTests
 
 		var pet = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!.Items.Single();
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 	}
 
 	[Test]
@@ -350,7 +350,7 @@ public class ApiBodyContentTests
 		);
 
 		body.UnionVariants!.Label.Should().Be("Any of:", "the oneOf only lists required sets, so the anyOf carries the variants");
-		body.UnionVariants.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		body.UnionVariants.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		ApiPropertyMarkdown.Format(body.Requires!).Should().Be("Requires exactly one of: `a` or `b`");
 		body.Properties!.Items.Select(p => p.Name).Should().Equal("a", "b");
 	}
@@ -385,11 +385,7 @@ public class ApiBodyContentTests
 			BuilderFor(document)
 		);
 
-		body.UnionVariants!
-			.Variants
-			.Select(v => v.DisplayName)
-			.Should()
-			.Contain("{ lives }", "a mixed list is still a union of its shapes");
+		body.UnionVariants!.Variants.Select(v => v.DisplayName).Should().Contain("Cat", "a mixed list is still a union of its shapes");
 		body.Requires.Should().BeNull("only a list of required sets alone becomes a Requires line");
 	}
 
@@ -477,6 +473,76 @@ public class ApiBodyContentTests
 	}
 
 	[Test]
+	public async Task Build_MapOfObjectsWithoutAPage_ListsTheValueFieldsUnderAStringKeyRow()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Collection": {
+			        "type": "object",
+			        "required": ["event_data_stream"],
+			        "properties": { "event_data_stream": { "type": "object", "properties": { "name": { "type": "string" } } } }
+			      },
+			      "Collections": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Collection" } },
+			      "Names": { "type": "object", "additionalProperties": { "type": "string" } }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var analyzer = new SchemaAnalyzer(document);
+		var builder = BuilderFor(document);
+		var scope = new PropertyTreeScope { Prefix = "res-200", IsResponse = true };
+
+		var body = ApiBodyContent.Build(new OpenApiSchemaReference("Collections", document), scope, analyzer, builder);
+		var key = body.Properties!.Items.Single();
+		key.Name.Should().Be("<string>");
+		key.Children.Properties!.Items.Select(p => p.Name).Should().Equal("event_data_stream");
+
+		var names = ApiBodyContent.Build(new OpenApiSchemaReference("Names", document), scope, analyzer, builder);
+		names.Properties.Should().BeNull("a map of primitives has no fields to list, so its type line says it all");
+	}
+
+	[Test]
+	public async Task Build_MapBodyWithInlineAllOfRequiredField_KeepsTheFieldRequired()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Collection": { "type": "object", "properties": { "name": { "type": "string" } } },
+			      "Collections": {
+			        "type": "object",
+			        "allOf": [ { "type": "object", "required": ["id"], "properties": { "id": { "type": "string" } } } ],
+			        "additionalProperties": { "$ref": "#/components/schemas/Collection" }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var body = ApiBodyContent.Build(
+			document.Components!.Schemas!["Collections"],
+			new PropertyTreeScope { Prefix = "res-200", IsResponse = true },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		);
+
+		body.Properties!.Items.Select(p => p.Name).Should().Equal("id", "<string>");
+		body.Properties.Items.Single(p => p.Name == "id").IsRequired.Should().BeTrue("the allOf member requires it");
+	}
+
+	[Test]
 	public async Task Build_ArrayOfUnion_SaysEachItemIsAVariant()
 	{
 		var json =
@@ -499,19 +565,19 @@ public class ApiBodyContentTests
 		var analyzer = new SchemaAnalyzer(document);
 		var builder = BuilderFor(document);
 
-		var (_, array, _) = ApiBodyContent.Build(
+		var (_, array, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pets"],
 			new PropertyTreeScope { Prefix = "res-200" },
 			analyzer,
 			builder
 		);
 		array!.Label.Should().Be("An array; each item is one of:");
-		array.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		array.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteVariants(markdown, array, "/api/doc/fixture");
 		markdown.ToString().Should().StartWith("An array; each item is one of:");
 
-		var (_, single, _) = ApiBodyContent.Build(
+		var (_, single, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req" },
 			analyzer,

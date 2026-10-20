@@ -35,6 +35,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 				A<string>._,
 				A<string>._,
 				A<IReadOnlyCollection<int>>._,
+				A<IReadOnlyDictionary<int, DateTimeOffset>>._,
 				A<Cancel>._
 			)
 		).Returns((IReadOnlyDictionary<int, BackportRoots?>?)answer);
@@ -140,6 +141,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 				A<string>._,
 				A<string>._,
 				A<IReadOnlyCollection<int>>._,
+				A<IReadOnlyDictionary<int, DateTimeOffset>>._,
 				A<Cancel>._
 			)
 		).Returns((IReadOnlyDictionary<int, BackportRoots?>?)null);

@@ -22,7 +22,7 @@ public class UnionOptionsRenderingTests
 			.Contain("data-chip-row")
 			.And
 			.Contain("""id="v-1" hidden="until-found">""", "TotalHits or number reads like any other union");
-		html.Should().Contain(">Variant1</span></code>", "the primitive keeps its type name");
+		html.Should().NotContain(">Variant1</span></code>", "the primitive's chip already names its type");
 	}
 
 	[Test]
@@ -42,12 +42,16 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_PrimitiveVariantBehindChips_KeepsItsTypeName()
+	public async Task Render_PrimitiveVariantBehindChips_LeavesItsPanelWithoutTheTypeName()
 	{
-		// Variant2 is an array, which keeps its name anyway; Variant3 is a plain primitive.
+		// Variant2 is an array, which keeps its heading; Variant3 is a plain primitive.
 		var html = await Render(4, objects: 3);
 
-		html.Should().Contain(">Variant3</span></code>", "a primitive's type is all its panel has to show");
+		html.Should().NotContain(">Variant3</span></code>", "a primitive's type is on its chip");
+		html.Should().Contain(
+			">Variant2</span><span class=\"type-wrapper array-icon\">[]</span></code>",
+			"an array variant keeps its heading"
+		);
 		html.Should().NotContain(">Variant0</span></code>", "an object variant's name is on its chip");
 	}
 
@@ -65,16 +69,17 @@ public class UnionOptionsRenderingTests
 			"""data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1">""",
 			"only the picked chip is in the tab order"
 		);
-		html.Should().NotContain("data-chip-filter", "three variants fit the menu without a filter");
+		html.Should().NotContain("data-chip-filter", "three variants need no search box");
 		html.Should().Contain("Variant2[] &#xB7; kind: two", "a menu entry names the array form and the discriminator value");
 	}
 
 	[Test]
-	public async Task Render_ThreeVariants_ShowsTheFieldsAtOnceWithoutRepeatingTheName()
+	public async Task Render_ThreeVariants_ShowsTheFieldsAtOnceWithAToggleAndWithoutRepeatingTheName()
 	{
 		var html = await Render(3, foldable: true);
 
-		html.Should().NotContain("show properties", "picking a chip is the choice to read that variant");
+		html.Should().Contain("hide properties", "the fields show at once, and a toggle offers a shorter view");
+		html.Should().NotContain("show properties", "nothing starts folded");
 		html.Should().Contain("""<div class="nested-properties" id="v-0--children">""", "the fields are not folded");
 		html.Should().NotContain(">Variant0</span></code>", "the chip already names the variant");
 		html.Should().Contain(
@@ -92,12 +97,22 @@ public class UnionOptionsRenderingTests
 	}
 
 	[Test]
-	public async Task Render_ElevenVariants_AddsAFilterToTheMenu()
+	public async Task Render_ElevenVariants_AddsASearchBoxToTheChipRow()
 	{
 		var html = await Render(11);
 
-		html.Should().Contain("""<input type="search" class="api-example-menu-filter" data-chip-filter placeholder="Filter variants" """);
-		html.Should().Contain("""id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>""");
+		html.Should().Contain("""<input type="search" class="union-variant-search" data-chip-filter placeholder="Search variants" """);
+		html
+			.IndexOf("data-chip-filter", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(
+				html.IndexOf("data-chip-menu", StringComparison.Ordinal),
+				"the search box sits in the row, outside the popover menu"
+			);
+		html.Should().Contain(
+			"""id="opts-menu" class="api-example-menu simple-scrollbar" popover="manual" data-chip-menu>""",
+			"the search box sits outside the popover, so the menu is closed by script and not by light dismiss"
+		);
 	}
 
 	[Test]
