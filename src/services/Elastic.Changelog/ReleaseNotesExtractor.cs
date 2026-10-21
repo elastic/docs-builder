@@ -244,8 +244,10 @@ public static partial class ReleaseNotesExtractor
 		if (string.IsNullOrWhiteSpace(markdown))
 			return new ReleaseNoteExtractionResult(null, false);
 
-		// Strip HTML comments first to avoid extracting template instructions
-		var cleanedMarkdown = StripHtmlComments(markdown);
+		// Strip HTML comments first to avoid extracting template instructions. Then read the body with "\n" line
+		// endings, as FindSection does: GitHub sends "\r\n", and the terminator below matches a single "\r\n" as
+		// "\r" + "\n", which cut a multi-line note at its first line.
+		var cleanedMarkdown = StripHtmlComments(markdown).Replace("\r\n", "\n");
 
 		// Regex breakdown:
 		// - (?:\n|^)\s*#*\s* - start of line, optional whitespace and markdown headers

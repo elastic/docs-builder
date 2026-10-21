@@ -98,6 +98,18 @@ public class ReleaseNotesExtractorTests
 	}
 
 	[Test]
+	public void FindReleaseNote_CrlfBody_StripsMarkersAndReadsWithLf()
+	{
+		// GitHub sends pull request bodies with "\r\n", and a Windows checkout gives the raw literals above "\r\n" too.
+		var prBody = "## Summary\r\n\r\nText.\r\n\r\n### Release note\r\n\r\n> First line.\r\n> Second line.\r\n\r\nMore body.";
+
+		var result = ReleaseNotesExtractor.ExtractReleaseNote(prBody);
+
+		result.Content.Should().Be("First line.\nSecond line.");
+		result.WasTruncated.Should().BeTrue();
+	}
+
+	[Test]
 	public void FindReleaseNote_GreaterThanInsideTheText_IsKept()
 	{
 		// language=markdown
