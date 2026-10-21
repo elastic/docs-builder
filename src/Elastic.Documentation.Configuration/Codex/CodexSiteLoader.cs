@@ -47,6 +47,16 @@ public static class CodexSiteLoader
 			: Result.Success(config, diagnostics);
 	}
 
+	/// <summary>Loads and checks configuration text that does not come from a file (a built-in preview), under the same rules as <see cref="Load"/>.</summary>
+	public static Result<CodexConfiguration> LoadYaml(string yaml, string sourceName) =>
+		LoaderPipeline.Run(
+			sourceName,
+			parse: () => yaml,
+			map: text => DeserializeOrExplain(text, sourceName),
+			rules: CodexConfigurationConstraints.All,
+			errorsAreFatal: false
+		);
+
 	// An unreadable file (outside a scoped file system) or unparsable text keeps the message that names the file.
 	private static string ReadText(IFileInfo file, string originalPath)
 	{
@@ -73,7 +83,7 @@ public static class CodexSiteLoader
 		}
 	}
 
-	public static CodexConfiguration Deserialize(string yaml, string? sourceName = null)
+	internal static CodexConfiguration Deserialize(string yaml, string? sourceName = null)
 	{
 		var dto = ConfigurationDocument.Read<CodexConfigurationDto>(yaml, sourceName);
 		return new CodexConfiguration

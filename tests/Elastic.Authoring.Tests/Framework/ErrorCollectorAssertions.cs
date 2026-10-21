@@ -128,7 +128,12 @@ internal static class ErrorCollectorAssertions
 			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");
 
 		// Only the first hint — mirrors F# List.tryHead
-		var hintDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
+		var hintDiagnostics = results
+			.Context
+			.Collector
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Hint && !IsFixtureRedirectWarning(d))
+			.ToList();
 
 		if (hintDiagnostics.Count == 0)
 			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");

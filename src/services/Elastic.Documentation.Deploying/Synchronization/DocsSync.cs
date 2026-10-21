@@ -133,7 +133,8 @@ public sealed record SyncPlan
 
 	/// <summary>Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>.</summary>
 	[JsonPropertyName("retain")]
-	public IReadOnlyList<string> RetainedPaths { get; init; } = [];
+	[JsonInclude]
+	public IReadOnlyList<string> RetainedPaths { get; internal init; } = [];
 
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 

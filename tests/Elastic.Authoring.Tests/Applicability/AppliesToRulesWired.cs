@@ -182,11 +182,11 @@ public class UnreadNestedKeyIsReportedByM89 : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("the key no reader maps is a warning, once")]
+	[Test, DisplayName("the key no reader maps is a hint, once")]
 	public async Task ReportedOnce() =>
 		await Docs.HasRuleDiagnosticOnce(
 			ApplicableToConstraints.AppliesToKeysRead.Name,
-			Severity.Warning,
+			Severity.Hint,
 			"The applies_to key 'deployment.bogus' is not read"
 		);
 }

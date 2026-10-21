@@ -4,6 +4,7 @@
     "Areas": null,
     "Bundle": {
       "$type": "BundleConfiguration",
+      "Backports": null,
       "Branch": null,
       "Description": null,
       "Directory": "docs/changelog",
@@ -96,7 +97,8 @@
           "Lifecycle": "ga",
           "Product": "elastic-docs"
         }
-      ]
+      ],
+      "Implies": null
     },
     "Rules": {
       "$type": "RulesConfiguration",

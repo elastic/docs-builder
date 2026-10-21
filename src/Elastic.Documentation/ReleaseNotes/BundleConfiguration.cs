@@ -98,7 +98,7 @@ public partial record BundleConfiguration
 	/// Which pull requests are backports. When set, a commit-range bundle replaces a pull request that has one of
 	/// these labels with the original pull request it was backported from. <c>null</c> leaves tracing off.
 	/// </summary>
-	public BackportsConfiguration? Backports { get; init; }
+	public BackportsConfiguration? Backports { get; internal init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.

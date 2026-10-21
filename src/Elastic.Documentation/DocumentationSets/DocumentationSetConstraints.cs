@@ -219,7 +219,7 @@ public static partial class DocumentationSetConstraints
 
 	public static Constraint<DocumentationSetInCatalog> DevDocsHasNoEffect { get; } = Constraints<DocumentationSetInCatalog>
 		.Always(m => !m.Docset.DevDocs, "'dev_docs' relaxes no rule and is never read; remove it.")
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("D12: dev_docs is not set: it is documented as relaxing a rule that does not exist.");
 
 	public static Constraint<DocumentationSetInCatalog> CrossLinksUnique { get; } = Constraints<DocumentationSetInCatalog>
@@ -482,7 +482,7 @@ public static partial class DocumentationSetConstraints
 			describe: (path, count) => $"File '{path}' is listed {count} times in the table of contents; only the first is used.",
 			at: f => new Located(f.Context)
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("D74: a file appears in the table of contents once; later entries are ignored.");
 
 	public static Constraint<DocumentationSetInCatalog> PageFileNameChars { get; } = Constraints<DocumentationSetInCatalog>.Each(
@@ -532,7 +532,7 @@ public static partial class DocumentationSetConstraints
 			),
 			r => $"Redirect '{r.Key}' points to itself and is dropped."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("P22: a redirect does not point to itself (trimmed, case-insensitive).");
 
 	public static Constraint<DocumentationSetInCatalog> RedirectManySingleTarget { get; } = Constraints<DocumentationSetInCatalog>
@@ -540,7 +540,7 @@ public static partial class DocumentationSetConstraints
 			m => Redirects(m).Where(r => r.Value.Many?.Count(x => x.To is not null) > 1),
 			r => $"Redirect '{r.Key}' lists several 'many' targets; only the first with a 'to' is used."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("P23: a redirect's 'many' lists one target; only the first with a 'to' is used.");
 
 	public static Constraint<DocumentationSetInCatalog> RedirectsFileNamedForDocset { get; } = Constraints<DocumentationSetInCatalog>.Check(

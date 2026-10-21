@@ -93,7 +93,8 @@ public class GlobalConfigurationLoaderTests
 		_ = startup.DrainInto(new CapturingDiagnosticsCollector());
 
 		collector.Diagnostics.Should().ContainSingle(d => d.Message == $"{family}: a catalogue warning");
-		collector.Warnings.Should().Be(1);
+		collector.Warnings.Should().Be(0, "a strict build must not fail on the tool's own configuration findings");
+		collector.Hints.Should().Be(1);
 		startup.IsDrained.Should().BeTrue();
 	}
 

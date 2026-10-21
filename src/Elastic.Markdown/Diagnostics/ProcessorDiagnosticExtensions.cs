@@ -179,6 +179,17 @@ public static class ProcessorDiagnosticExtensions
 		return applicableTo.WithoutDiagnostics();
 	}
 
+	/// <summary>
+	/// As <see cref="ReportApplicableTo(IBlockExtension, ApplicableTo)"/> for blocks that never reported what the reader found (admonitions, dropdowns, applies-items):
+	/// every finding is a hint, because existing docs write <c>{ ess:, ece: }</c>, which reads as the key <c>ess:</c> and would fail strict builds as an error.
+	/// </summary>
+	public static ApplicableTo ReportApplicableToAsHints(this IBlockExtension block, ApplicableTo applicableTo)
+	{
+		foreach (var d in ApplicableToReadConstraints.Check(applicableTo))
+			block.Emit(Severity.Hint, d.Message, ruleId: d.RuleId);
+		return applicableTo;
+	}
+
 	/// <summary>As <see cref="ReportApplicableTo(IBlockExtension, ApplicableTo)"/> for an inline role.</summary>
 	public static ApplicableTo ReportApplicableTo(this InlineProcessor processor, Inline inline, int length, ApplicableTo applicableTo)
 	{

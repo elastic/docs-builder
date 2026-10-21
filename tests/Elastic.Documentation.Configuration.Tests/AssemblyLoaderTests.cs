@@ -98,25 +98,25 @@ public class AssemblyLoaderTests
 		_ = invalid.Should().Throw<Exception>();
 	}
 
-	// The deserializer ignores unmatched properties (a released binary must not crash on a key a newer file adds), so an unknown key is not an error.
+	// An unknown key is an error at the reader, as for every other YAML file (#4506).
 	[Test]
 	[Arguments("bogus: 1")]
 	[Arguments("references:\n  kibana:\n    bogus: 1")]
 	[Arguments("narrative:\n  bogus: 1")]
 	[Arguments("environments:\n  prod:\n    bogus: 1")]
-	public void Deserialize_UnknownKey_IsIgnored(string yaml)
+	public void Deserialize_UnknownKey_Throws(string yaml)
 	{
 		var act = () => AssemblyLoader.Deserialize(yaml, environment: new Environment());
-		_ = act.Should().NotThrow();
+		_ = act.Should().Throw<SharpYaml.YamlException>().WithMessage("*Unknown key 'bogus'*");
 	}
 
 	[Test]
 	[Arguments("bogus: 1")]
 	[Arguments("phantoms:\n  - bogus: 1")]
-	public void SiteNavigation_UnknownKey_IsIgnored(string yaml)
+	public void SiteNavigation_UnknownKey_Throws(string yaml)
 	{
 		var act = () => Toc.SiteNavigationLoader.Deserialize(yaml);
-		_ = act.Should().NotThrow();
+		_ = act.Should().Throw<SharpYaml.YamlException>().WithMessage("*Unknown key 'bogus'*");
 	}
 
 	private const string TwoBadRepositories = "references:\n  a/b:\n  c/d:\n";

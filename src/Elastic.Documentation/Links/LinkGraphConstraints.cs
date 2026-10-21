@@ -52,7 +52,7 @@ public static partial class LinkGraphConstraints
 			StringComparer.OrdinalIgnoreCase,
 			describe: r => $"cross_links entry '{r}' is unused: no cross-link of the manifest uses it."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("N24: Every repository declared under cross_links in docset.yml is the scheme of at least one cross-link.");
 
 	public static Constraint<LinkGraph> CrossLinkResolves { get; } = Constraints<LinkGraph>.Each(
@@ -76,7 +76,7 @@ public static partial class LinkGraphConstraints
 
 	public static Constraint<LinkGraph> CrossLinkTargetNotHidden { get; } = Constraints<LinkGraph>
 		.Each(g => ParsedLinks(g.Manifest), LinkToHiddenPage)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe(
 			"N20: A cross-link does not point at a page its target marks hidden (LinkMetadata.Hidden, which also carries exclusion from indexing)."
 		);
@@ -92,7 +92,7 @@ public static partial class LinkGraphConstraints
 			t => t.Value.Origin.RepositoryName == t.Key,
 			t => $"The manifest filed under '{t.Key}' says its origin repository is '{t.Value.Origin.RepositoryName}'."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("N47: The origin repository of a manifest is the repository it is filed under.");
 
 	private static string? Scheme(string link) => Uri.TryCreate(link, UriKind.Absolute, out var uri) ? uri.Scheme : null;

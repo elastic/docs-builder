@@ -17,7 +17,7 @@ public static partial class ApplicableToConstraints
 			a => Collections(a).Any() || a.Diagnostics is { Count: > 0 },
 			"The 'applies_to' field is present but empty. No applicability will be assumed."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe(
 			"M87: An applies_to block declares at least one key. A block the reader already reported on (it wrote only unsupported or old-style keys) is not reported again as empty."
 		);
@@ -70,7 +70,7 @@ public static partial class ApplicableToConstraints
 			key =>
 				$"The applies_to key '{key}' is not read and has no effect (nested keys must be one of the keys of their parent; product keys use '_', as in 'apm_agent_java')."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe(
 			"M89: Every nested applies_to key (and every product key) is one a reader maps; an unmapped one is silently ignored (top-level unknown keys are reported by M98)."
 		);

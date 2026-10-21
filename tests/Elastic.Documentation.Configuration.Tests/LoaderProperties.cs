@@ -356,29 +356,13 @@ public class LoaderProperties
 
 	// ── record -> text -> record ──────────────────────────────────────────────
 
-	private static IReadOnlyList<T>? NoneIfEmpty<T>(IReadOnlyList<T>? list) => list is { Count: 0 } ? null : list;
-
-	/// <summary>What the file says of an entry: an empty list is written as no list, and the PR number is the file name's, not a field of the file.</summary>
+	/// <summary>What the file says of an entry: the PR number is the file name's, not a field of the file.</summary>
 	private static ChangelogEntry AsWritten(ChangelogEntry e) =>
 #pragma warning disable CS0618 // the obsolete target is read from old files and never written
-		e with
-		{
-			Prs = NoneIfEmpty(e.Prs),
-			Issues = NoneIfEmpty(e.Issues),
-			Areas = NoneIfEmpty(e.Areas),
-			Pr = null,
-			Products = e.Products?.Select(p => p with { Target = null }).ToList()
-		};
+		e with { Pr = null, Products = e.Products?.Select(p => p with { Target = null }).ToList() };
 #pragma warning restore CS0618
 
-	private static BundledEntry AsWritten(BundledEntry e) =>
-		e with
-		{
-			Prs = NoneIfEmpty(e.Prs),
-			Issues = NoneIfEmpty(e.Issues),
-			Areas = NoneIfEmpty(e.Areas),
-			Products = NoneIfEmpty(e.Products)
-		};
+	private static BundledEntry AsWritten(BundledEntry e) => e;
 
 	private static Bundle AsWritten(Bundle b) =>
 		b with { Entries = [.. b.Entries.Select(AsWritten)], ExcludeEntries = [.. b.ExcludeEntries.Select(AsWritten)] };

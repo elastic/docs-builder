@@ -10,9 +10,9 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class SiteNavigationFileTests
 {
-	/// <summary>The loader drops keys it does not read and reads a non-boolean island as false; the model keeps what it dropped (G55, G56, G69).</summary>
+	/// <summary>The loader reads a non-boolean island as false; the model keeps what was written (G56, G69). Keys it does not read are an error at the reader.</summary>
 	[Test]
-	public void KeepsWhatTheLoaderDrops()
+	public void KeepsANonBooleanIslandAsWritten()
 	{
 		// language=yaml
 		var yaml =
@@ -20,35 +20,20 @@ public class SiteNavigationFileTests
 			toc:
 			  - toc: kibana://reference
 			    path_prefix: reference/kibana
-			    pathprefix: reference/typo
 			    island: yes
 			    children:
 			      - toc: kibana://reference/extra
 			        path_prefix: reference/kibana/extra
-			        repo: kibana
-			  - section: Links
-			    colour: red
-			    children:
-			      - toc: elasticsearch://reference
-			        path_prefix: reference/elasticsearch
 			""";
 
 		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		var kibana = siteNav.TableOfContents[0].Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
-		kibana.UnknownKeys.Should().Equal("pathprefix");
 		kibana.Island.Should().BeFalse();
 		kibana.IslandRaw.Should().Be("yes");
-		kibana.Children[0].UnknownKeys.Should().Equal("repo");
 		kibana.Children[0].IslandRaw.Should().BeNull();
-		var section = siteNav.TableOfContents[1].Value.Should().BeOfType<SiteSectionRef>().Which;
-		section.UnknownKeys.Should().Equal("colour");
-		section.Children[0].UnknownKeys.Should().BeEmpty();
 
 		var messages = SiteNavigationConstraints.All.Validate(siteNav).Select(v => v.Message).ToList();
-		messages.Should().Contain(m => m.Contains("'pathprefix'"));
-		messages.Should().Contain(m => m.Contains("'colour'"));
-		messages.Should().Contain(m => m.Contains("'repo:'"));
 		messages.Should().Contain(m => m.Contains("island 'yes'"));
 	}
 

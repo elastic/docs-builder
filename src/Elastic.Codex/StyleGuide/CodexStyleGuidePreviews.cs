@@ -112,7 +112,7 @@ public static class CodexStyleGuidePreviews
 				pair => pair.Navigation
 			);
 			var navigation = new CodexNavigation(
-				CodexSiteLoader.Deserialize(ConfigurationYaml),
+				CodexSiteLoader.LoadYaml(ConfigurationYaml, "codex style guide preview").OrThrow(),
 				references,
 				new PreviewCodexContext(context),
 				navigations

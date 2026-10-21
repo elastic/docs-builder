@@ -66,13 +66,16 @@ public sealed class StartupDiagnostics(IReadOnlyList<Diagnostic> diagnostics)
 	/// <summary>True once <see cref="DrainInto"/> or <see cref="LogTo"/> has run.</summary>
 	public bool IsDrained => Volatile.Read(ref _drained) != 0;
 
-	/// <summary>Writes every diagnostic to <paramref name="collector"/> the first time it is called in the process; later calls (another collector, another command) write nothing. Returns how many were written.</summary>
+	/// <summary>
+	/// Writes every diagnostic to <paramref name="collector"/> the first time it is called in the process; later calls (another collector, another command) write nothing. Returns how many were written.
+	/// A warning is written as a hint: these are findings about the tool's own configuration, not about the documentation being built, and a strict build must not fail on them.
+	/// </summary>
 	public int DrainInto(IDiagnosticsCollector collector)
 	{
 		if (Interlocked.Exchange(ref _drained, 1) != 0)
 			return 0;
 		foreach (var diagnostic in Diagnostics)
-			collector.Write(diagnostic);
+			collector.Write(diagnostic.Severity == Severity.Warning ? diagnostic with { Severity = Severity.Hint } : diagnostic);
 		return Diagnostics.Count;
 	}
 

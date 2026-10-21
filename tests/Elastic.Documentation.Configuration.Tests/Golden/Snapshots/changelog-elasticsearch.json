@@ -85,6 +85,7 @@
     ],
     "Bundle": {
       "$type": "BundleConfiguration",
+      "Backports": null,
       "Branch": null,
       "Description": null,
       "Directory": "docs/changelog",
@@ -672,7 +673,8 @@
           "Lifecycle": "ga",
           "Product": "elasticsearch"
         }
-      ]
+      ],
+      "Implies": null
     },
     "Rules": {
       "$type": "RulesConfiguration",

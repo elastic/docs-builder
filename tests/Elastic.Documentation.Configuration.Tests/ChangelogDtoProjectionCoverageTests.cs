@@ -102,7 +102,7 @@ public class ChangelogDtoProjectionCoverageTests
 	public void ChangelogProductsDto_ToDomain_AccountsForEverySourceMember() =>
 		ProjectionCoverage
 			.For<ChangelogProductsDto>()
-			.Maps(nameof(ChangelogProductsDto.Available), nameof(ChangelogProductsDto.Default))
+			.Maps(nameof(ChangelogProductsDto.Available), nameof(ChangelogProductsDto.Default), nameof(ChangelogProductsDto.Implies))
 			.ShouldBeComplete();
 
 	[Test]
@@ -127,7 +127,8 @@ public class ChangelogDtoProjectionCoverageTests
 				nameof(ChangelogBundleDto.ReleaseDates),
 				nameof(ChangelogBundleDto.LinkAllowRepos),
 				nameof(ChangelogBundleDto.Profiles),
-				nameof(ChangelogBundleDto.Releases)
+				nameof(ChangelogBundleDto.Releases),
+				nameof(ChangelogBundleDto.Backports)
 			)
 			.Ignores(
 				ProjectionCoverage.Ignore(
