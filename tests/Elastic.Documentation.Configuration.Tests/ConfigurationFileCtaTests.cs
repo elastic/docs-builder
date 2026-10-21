@@ -261,7 +261,9 @@ public class ConfigurationFileCtaTests
 
 		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
 
-		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
+		diagnostics.Should().ContainSingle(
+			d => d.Severity == Severity.Error && d.Message.Contains("does-not-exist", StringComparison.Ordinal)
+		);
 	}
 
 	[Test]

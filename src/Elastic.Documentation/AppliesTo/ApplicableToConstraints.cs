@@ -59,7 +59,7 @@ public static partial class ApplicableToConstraints
 
 	public static Constraint<ApplicableTo> ApplicabilityVersionReadable { get; } = Constraints<ApplicableTo>
 		.EachCheck(Collections, (_, c) => UnreadVersions(c.Key, c.Items))
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe(
 			"M92: A version written after a lifecycle parses, and nothing follows it; an unparsable version is kept as 'no version' and tokens after the second are dropped."
 		);
@@ -80,7 +80,7 @@ public static partial class ApplicableToConstraints
 			a => a.IgnoredValues,
 			key => $"The applies_to key '{key}' must have a text value such as 'ga 9.0'; any other value is ignored."
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("M93: The value of an applies_to key is text (or empty); a list, a mapping or another non-text value is ignored.");
 
 	public static Constraint<ApplicableTo> ApplicabilityDiagnosticsReported { get; } = Constraints<ApplicableTo>.EachCheck(

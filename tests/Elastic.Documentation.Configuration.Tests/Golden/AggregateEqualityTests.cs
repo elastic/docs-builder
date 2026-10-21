@@ -59,7 +59,7 @@ public class AggregateEqualityTests
 	private static IReadOnlyList<TocItem> LoadBaselineToc()
 	{
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
-		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
+		var docsetFile = fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml");
 		return DocumentationSetLoader.LoadAndResolve(new CapturingDiagnosticsCollector(), docsetFile).TableOfContents;
 	}
 
@@ -84,7 +84,7 @@ public class AggregateEqualityTests
 	{
 		var catalog = CatalogLoader.Load(BaselineProvider()).OrThrow();
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
-		var docsetFile = fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml"));
+		var docsetFile = fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml");
 		var docSet = DocumentationSetLoader.ParseDefinition(docsetFile, docsetFile.Directory!, fs).OrThrowIfMissing();
 		return DocumentationSetResolver.Resolve(
 			docSet,
@@ -107,7 +107,7 @@ public class AggregateEqualityTests
 		{
 			var fs = DocumentationSetGoldenTests.CreateDocsTree();
 			return DocumentationSetLoader.ParseDefinition(
-				fs.FileInfo.New(Path.Join(DocumentationSetGoldenTests.DocsRoot, "_docset.yml")),
+				fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml"),
 				fs.DirectoryInfo.New(DocumentationSetGoldenTests.DocsRoot),
 				fs
 			).OrThrowIfMissing();

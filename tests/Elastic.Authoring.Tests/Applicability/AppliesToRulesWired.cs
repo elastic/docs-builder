@@ -162,11 +162,11 @@ public class UnparsableVersionIsReportedByM92 : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("the version that could not be read is a warning, once")]
+	[Test, DisplayName("the version that could not be read is a hint, once")]
 	public async Task ReportedOnce() =>
 		await Docs.HasRuleDiagnosticOnce(
 			ApplicableToConstraints.ApplicabilityVersionReadable.Name,
-			Severity.Warning,
+			Severity.Hint,
 			"the version '9.x' in 'ga 9.x' could not be parsed"
 		);
 }
@@ -203,11 +203,11 @@ public class NonTextValueIsReportedByM93 : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("the value that is ignored is a warning, once")]
+	[Test, DisplayName("the value that is ignored is a hint, once")]
 	public async Task ReportedOnce() =>
 		await Docs.HasRuleDiagnosticOnce(
 			ApplicableToConstraints.AppliesToValuesAreText.Name,
-			Severity.Warning,
+			Severity.Hint,
 			"The applies_to key 'serverless.elasticsearch' must have a text value"
 		);
 }

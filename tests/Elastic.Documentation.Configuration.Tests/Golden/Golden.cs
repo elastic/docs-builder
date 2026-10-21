@@ -149,7 +149,13 @@ public static class Golden
 	/// </summary>
 	public static JsonObject Failure(Exception e) => Failure(e.Message);
 
-	public static JsonObject Failure(string message) => Obj(("message", Str(NormalizePath(message))));
+	// the character offsets of a YAML error depend on the line endings of the checkout (Windows has two characters per line), so they are not part of the snapshot
+	private static readonly System.Text.RegularExpressions.Regex YamlOffsets = new(
+		@"\(Lin: \d+, Col: \d+, Chr: \d+\) - \(Lin: \d+, Col: \d+, Chr: \d+\): ",
+		System.Text.RegularExpressions.RegexOptions.Compiled
+	);
+
+	public static JsonObject Failure(string message) => Obj(("message", Str(NormalizePath(YamlOffsets.Replace(message, "")))));
 
 	/// <summary>Rewrites machine-specific absolute paths to stable placeholders.</summary>
 	public static string NormalizePath(string value)

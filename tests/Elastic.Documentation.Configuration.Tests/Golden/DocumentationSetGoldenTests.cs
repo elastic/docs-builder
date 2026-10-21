@@ -41,7 +41,7 @@ public class DocumentationSetGoldenTests
 			var content = relative != "files.txt" && File.Exists(baselineCopy)
 				? File.ReadAllText(baselineCopy)
 				: relative.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? "# Page\n" : string.Empty;
-			fs.AddFile(Path.Join(DocsRoot, relative), new MockFileData(content));
+			fs.AddFile($"{DocsRoot}/{relative}", new MockFileData(content));
 		}
 		return fs;
 	}
@@ -55,7 +55,7 @@ public class DocumentationSetGoldenTests
 		var products = catalog.Products;
 
 		var fs = CreateDocsTree();
-		var docsetFile = fs.FileInfo.New(Path.Join(DocsRoot, "_docset.yml"));
+		var docsetFile = fs.FileInfo.New($"{DocsRoot}/_docset.yml");
 		var collector = new CapturingDiagnosticsCollector();
 
 		var snapshot = Capture(() =>

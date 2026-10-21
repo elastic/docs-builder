@@ -1,5 +1,5 @@
 {
   "failure": {
-    "message": "(Lin: 21, Col: 0, Chr: 778) - (Lin: 23, Col: 2, Chr: 845): (22,1) Unknown key 'documentation_sets'. Valid keys: canonical_base_url, environment, groups, site_prefix, title."
+    "message": "(22,1) Unknown key 'documentation_sets'. Valid keys: canonical_base_url, environment, groups, site_prefix, title."
   }
 }

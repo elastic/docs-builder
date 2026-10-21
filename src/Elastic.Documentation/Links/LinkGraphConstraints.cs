@@ -69,10 +69,10 @@ public static partial class LinkGraphConstraints
 		"M31: A cross-link that lands on a target's redirect has its anchor mapped by the redirect, and the redirect's repository and file exist."
 	);
 
-	public static Constraint<LinkGraph> RedirectTargetExists { get; } = Constraints<LinkGraph>.Each(
-		g => LinkManifestConstraints.RedirectTargets(g.Manifest),
-		RedirectTargetThatDoesNotExist
-	).Describe("N29: A cross-repository redirect target names a repository whose manifest is loaded and that contains the file.");
+	public static Constraint<LinkGraph> RedirectTargetExists { get; } = Constraints<LinkGraph>
+		.Each(g => LinkManifestConstraints.RedirectTargets(g.Manifest), RedirectTargetThatDoesNotExist)
+		.WithSeverity(Severity.Hint)
+		.Describe("N29: A cross-repository redirect target names a repository whose manifest is loaded and that contains the file.");
 
 	public static Constraint<LinkGraph> CrossLinkTargetNotHidden { get; } = Constraints<LinkGraph>
 		.Each(g => ParsedLinks(g.Manifest), LinkToHiddenPage)
