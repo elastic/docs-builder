@@ -138,10 +138,10 @@ public partial record OperationPageModel
 		else if (!hasRequestScenarios && scenarios.Count > 1)
 			scenarios = CollapseIntoSingleScenario(scenarios);
 
-		// Samples whose language name carries an example suffix (cURL_tag_names) are their own examples.
+		// Samples whose language name carries an example suffix (cURL_tag_names) belong to the example of that name.
 		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
 		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
-		return suffixed.Length == 0 ? attached : [.. attached, .. SuffixedScenarios(attached, suffixed)];
+		return suffixed.Length == 0 ? attached : SuffixedScenarios(attached, suffixed);
 	}
 
 	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
@@ -199,23 +199,36 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>One example per suffix, sharing the first example's responses; the samples already say how to call it.</summary>
-	private static IEnumerable<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
+	/// <summary>
+	/// Each suffix names an example. Its samples join the example of the same title when that one has none yet;
+	/// otherwise they become an example of their own, after the existing ones.
+	/// </summary>
+	private static List<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
 	{
 		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
-		var added = new List<ExampleScenario>();
+		var result = new List<ExampleScenario>(scenarios);
 		foreach (var group in suffixed.GroupBy(static c => c.Scenario!, StringComparer.OrdinalIgnoreCase))
 		{
 			var title = HumanizeExampleKey(group.Key);
-			added.Add(new ExampleScenario
+			var existing = result.FindIndex(
+				s => s.CodeSamples.Count == 0 && string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase)
+			);
+			if (existing >= 0)
+			{
+				result[existing] = result[existing] with { CodeSamples = [.. group], CodeSamplesIncludeRequest = true };
+				continue;
+			}
+
+			result.Add(new ExampleScenario
 			{
 				Title = title,
-				TabId = UniqueTabId(ToTabId(title, scenarios.Count + added.Count), [.. scenarios, .. added]),
+				TabId = UniqueTabId(ToTabId(title, result.Count), result),
 				CodeSamples = [.. group],
 				CodeSamplesIncludeRequest = true,
 				Responses = responses
 			});
 		}
-		return added;
+		return result;
 	}
 
 	/// <summary>
