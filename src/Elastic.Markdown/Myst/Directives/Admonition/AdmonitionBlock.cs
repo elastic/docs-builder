@@ -66,9 +66,9 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
 			// Admonitions and dropdowns never reported what the reader found, and `{ ece:, ess: }` reads as the key `ece:`, which would be an error
-			// that fails strict builds of existing docs. Only the hints are reported until those blocks are cleaned up.
-			foreach (var d in ApplicableToReadConstraints.Check(applicableTo).Where(d => d.Severity == Severity.Hint))
-				this.Emit(d.Severity, d.Message, ruleId: d.RuleId);
+			// that fails strict builds of existing docs. Every finding is a hint here until those blocks are cleaned up.
+			foreach (var d in ApplicableToReadConstraints.Check(applicableTo))
+				this.Emit(Severity.Hint, d.Message, ruleId: d.RuleId);
 			return applicableTo;
 		}
 		catch
