@@ -3199,6 +3199,14 @@ button.example-response-tab:focus-visible {
 	text-wrap: balance;
 }
 
+/* The finder is the same box as the API sidebar's, so it looks up operations across every API. It sits
+   under the lede, as wide as the lede, and its results open below it. */
+.api-catalog .api-catalog-finder {
+	max-width: 36rem;
+	margin: 20px auto 0;
+	text-align: left;
+}
+
 @media (max-width: 640px) {
 	.api-catalog .hub-hero.api-catalog-hero {
 		padding: 36px 0 32px;
