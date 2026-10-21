@@ -198,10 +198,9 @@ public partial record OperationPageModel
 		return scenarios;
 	}
 
-	/// <summary>One example per suffix, sharing the first example's responses; the samples already say how to call it.</summary>
 	/// <summary>
 	/// Each suffix names an example. Its samples join the example of the same title when that one has none yet;
-	/// otherwise they become an example of their own, after the existing ones.
+	/// otherwise they become an example of their own, sharing the first example's responses, after the existing ones.
 	/// </summary>
 	private static List<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
 	{
