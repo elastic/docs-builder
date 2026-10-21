@@ -43,6 +43,36 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 }
 
 [InheritsTests]
+public class ImageScreenshotInsideListInAppliesSwitchTests() : DirectiveTest<ImageBlock>(
+	"""
+	:::::{applies-switch}
+	::::{applies-item} serverless: ga
+
+	1. Customize the lifecycle.
+
+	   :::{image} img/observability.png
+	   :alt: Elasticsearch
+	   :width: 250px
+	   :screenshot:
+	   :::
+
+	::::
+	:::::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/observability.png", "");
+
+	[Test]
+	public void ScreenshotReachesTheImage()
+	{
+		Block!.Alt.Should().Be("Elasticsearch");
+		Block!.Width.Should().Be("250px");
+		Block!.Screenshot.Should().Be("screenshot");
+	}
+}
+
+[InheritsTests]
 public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	"""
 :::{image} https://images.contentstack.io/v3/assets/bltefdd0b53724fa2ce/blt/example.gif
