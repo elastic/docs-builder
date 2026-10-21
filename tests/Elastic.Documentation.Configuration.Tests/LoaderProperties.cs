@@ -21,7 +21,7 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Tests.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nullean.ScopedFileSystem;
-using YamlDotNet.Core;
+using SharpYaml;
 using static Elastic.Documentation.Configuration.Tests.Golden.Golden;
 
 namespace Elastic.Documentation.Configuration.Tests;

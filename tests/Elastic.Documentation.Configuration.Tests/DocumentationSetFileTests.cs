@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.InteropServices;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Diagnostics;
@@ -18,7 +19,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class DocumentationSetFileTests
 {
 	// Tests use direct deserialization to test YAML parsing without TOC loading/resolution
-	private DocumentationSetDto Deserialize(string yaml) => ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
+	private DocumentationSetDto Deserialize(string yaml) => ConfigurationFileProvider.Deserialize<DocumentationSetDto>(yaml);
 
 	[Test]
 	public void DeserializesBasicProperties()
@@ -589,6 +590,75 @@ public class DocumentationSetFileTests
 		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileEntryDto>();
 		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderEntryDto>();
 		apiFolder.Children.ElementAt(2).Should().BeOfType<FileEntryDto>();
+	}
+
+	[Test]
+	public void LoadAndResolve_UnknownDocsetKey_EmitsErrorWithLocation()
+	{
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml =
+			"""
+		           project: 'test-project'
+		           totally_unknown_key: some-value
+		           toc:
+		             - file: index.md
+		           """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/index.md", new MockFileData("# Test"));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var collector = new CapturingDiagnosticsCollector();
+		_ = DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+
+		collector.Warnings.Should().Be(0);
+		collector.Errors.Should().Be(1);
+		var diagnostic = collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Error);
+		diagnostic.File.Should().EndWith("docset.yml");
+		diagnostic.Line.Should().Be(2);
+		diagnostic.Column.Should().Be(1);
+		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'");
+	}
+
+	[Test]
+	public void LoadAndResolve_UnknownNestedTocKey_EmitsErrorWithLocation()
+	{
+		var fileSystem = new MockFileSystem();
+
+		// language=yaml
+		var docsetYaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - toc: nested
+		           """;
+		// language=yaml
+		var nestedTocYaml =
+			"""
+		           totally_unknown_key: some-value
+		           toc:
+		             - file: index.md
+		           """;
+
+		fileSystem.AddFile("/docs/docset.yml", new MockFileData(docsetYaml));
+		fileSystem.AddFile("/docs/nested/toc.yml", new MockFileData(nestedTocYaml));
+		fileSystem.AddFile("/docs/nested/index.md", new MockFileData("# Test"));
+
+		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
+		var collector = new CapturingDiagnosticsCollector();
+		_ = DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+
+		collector.Warnings.Should().Be(0);
+		collector.Errors.Should().Be(1);
+		var diagnostic = collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Error);
+		diagnostic.File.Should().EndWith("toc.yml");
+		diagnostic.Line.Should().Be(1);
+		diagnostic.Column.Should().Be(1);
+		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'");
 	}
 
 	[Test]

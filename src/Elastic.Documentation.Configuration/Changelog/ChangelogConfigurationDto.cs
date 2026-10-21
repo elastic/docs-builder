@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Configuration.Changelog;
 /// Internal DTO for YAML deserialization of changelog configuration.
 /// Maps directly to the YAML file structure.
 /// </summary>
-internal sealed record ChangelogConfigurationDto
+public sealed record ChangelogConfigurationDto
 {
 	/// <summary>
 	/// Filename strategy for generated changelog files (pr, issue, timestamp).
@@ -57,7 +57,7 @@ internal sealed record ChangelogConfigurationDto
 /// <summary>
 /// Internal DTO for rules configuration in YAML.
 /// </summary>
-internal sealed record ChangelogRulesDto
+public sealed record ChangelogRulesDto
 {
 	/// <summary>
 	/// Global match mode for multi-valued fields ("any" or "all"). Default: "any".
@@ -83,7 +83,7 @@ internal sealed record ChangelogRulesDto
 /// <summary>
 /// Internal DTO for bundle rules in YAML.
 /// </summary>
-internal sealed record ChangelogBundleRulesDto
+public sealed record ChangelogBundleRulesDto
 {
 	/// <summary>
 	/// Product IDs to exclude from the bundle (string or list). Cannot be combined with IncludeProducts.
@@ -134,7 +134,7 @@ internal sealed record ChangelogBundleRulesDto
 /// <summary>
 /// Internal DTO for create rules in YAML.
 /// </summary>
-internal sealed record ChangelogCreateRulesDto
+public sealed record ChangelogCreateRulesDto
 {
 	/// <summary>
 	/// Labels to exclude (string or list). Cannot be combined with Include.
@@ -161,7 +161,7 @@ internal sealed record ChangelogCreateRulesDto
 /// <summary>
 /// Internal DTO for publish rules in YAML.
 /// </summary>
-internal sealed record ChangelogPublishRulesDto
+public sealed record ChangelogPublishRulesDto
 {
 	/// <summary>
 	/// Match mode for areas ("any" or "all"). Inherits from rules.match if not set.
@@ -198,7 +198,7 @@ internal sealed record ChangelogPublishRulesDto
 /// <summary>
 /// Internal DTO for pivot configuration in YAML.
 /// </summary>
-internal sealed record ChangelogPivotDto
+public sealed record ChangelogPivotDto
 {
 	/// <summary>
 	/// Type definitions with optional labels and subtypes.
@@ -238,7 +238,7 @@ internal sealed record ChangelogPivotDto
 /// <summary>
 /// Internal DTO for products configuration in YAML.
 /// </summary>
-internal sealed record ChangelogProductsDto
+public sealed record ChangelogProductsDto
 {
 	/// <summary>
 	/// List of available product IDs (string or list, empty = all from products.yml).
@@ -249,12 +249,17 @@ internal sealed record ChangelogProductsDto
 	/// Default products to use when --products is not specified.
 	/// </summary>
 	public List<ChangelogDefaultProductDto>? Default { get; set; }
+
+	/// <summary>
+	/// Products that a label-derived product implies, keyed by product ID (string or list of product IDs).
+	/// </summary>
+	public Dictionary<string, YamlLenientList?>? Implies { get; set; }
 }
 
 /// <summary>
 /// Internal DTO for default product specification in YAML.
 /// </summary>
-internal sealed record ChangelogDefaultProductDto
+public sealed record ChangelogDefaultProductDto
 {
 	/// <summary>
 	/// Product ID.
@@ -270,7 +275,7 @@ internal sealed record ChangelogDefaultProductDto
 /// <summary>
 /// Internal DTO for bundle configuration in YAML.
 /// </summary>
-internal sealed record ChangelogBundleDto
+public sealed record ChangelogBundleDto
 {
 	/// <summary>
 	/// Input directory containing changelog YAML files.
@@ -327,6 +332,11 @@ internal sealed record ChangelogBundleDto
 	public YamlLenientList? LinkAllowRepos { get; set; }
 
 	/// <summary>
+	/// Which pull requests are backports of an earlier pull request.
+	/// </summary>
+	public ChangelogBundleBackportsDto? Backports { get; set; }
+
+	/// <summary>
 	/// Named bundle profiles.
 	/// </summary>
 	public Dictionary<string, ChangelogBundleProfileDto>? Profiles { get; set; }
@@ -339,9 +349,20 @@ internal sealed record ChangelogBundleDto
 }
 
 /// <summary>
+/// Internal DTO for <c>bundle.backports</c> in YAML.
+/// </summary>
+public sealed record ChangelogBundleBackportsDto
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport.
+	/// </summary>
+	public YamlLenientList? Labels { get; set; }
+}
+
+/// <summary>
 /// Internal DTO for bundle profile in YAML.
 /// </summary>
-internal sealed record ChangelogBundleProfileDto
+public sealed record ChangelogBundleProfileDto
 {
 	/// <summary>
 	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
@@ -414,7 +435,7 @@ internal sealed record ChangelogBundleProfileDto
 /// <summary>
 /// Internal DTO for bundle releases configuration in YAML.
 /// </summary>
-internal sealed record ChangelogBundleReleasesDto
+public sealed record ChangelogBundleReleasesDto
 {
 	/// <summary>
 	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
@@ -431,7 +452,7 @@ internal sealed record ChangelogBundleReleasesDto
 /// <summary>
 /// Internal DTO for extract configuration in YAML.
 /// </summary>
-internal sealed record ChangelogExtractDto
+public sealed record ChangelogExtractDto
 {
 	/// <summary>
 	/// Whether to extract release note text from PR or issue descriptions for the changelog entry description by default.
@@ -457,7 +478,7 @@ internal sealed record ChangelogExtractDto
 /// Internal DTO for type entry in YAML.
 /// Can represent either a simple label string or an object with labels and subtypes.
 /// </summary>
-internal sealed record ChangelogTypeEntryDto
+public sealed record ChangelogTypeEntryDto
 {
 	/// <summary>
 	/// Labels for this type (comma-separated string).

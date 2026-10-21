@@ -30,6 +30,13 @@ public record EvaluatePrArguments
 	/// </summary>
 	public bool RequireChangelogFile { get; init; }
 
+	/// <summary>
+	/// When true, a <c>breaking-change</c> PR whose description lacks an <c>Impact</c> and/or <c>Action</c> section
+	/// fails with <see cref="PrEvaluationResult.MissingImpactAction"/>.
+	/// Passed as a workflow input (<c>require-impact-action</c>).
+	/// </summary>
+	public bool RequireImpactAction { get; init; }
+
 	// Additional PR context for GithubDecisionMetadata — optional, populated when known.
 	public bool IsFork { get; init; }
 	public bool CanCommit { get; init; }

@@ -30,7 +30,7 @@ The left sidebar stays. A reader can move between sibling hubs from there.
 
 ## Page title
 
-A hub page has no authored H1. The page title comes from the first `{hero}` directive's `:title:` option.
+A hub page has no authored H1. Its visible title comes from the first `{hero}` directive's `:title:` option.
 
 Title detection tries three sources in order:
 
@@ -38,7 +38,8 @@ Title detection tries three sources in order:
 2. An H1 nested inside a directive.
 3. The `:title:` option of the first `{hero}`.
 
-One field therefore drives both the on-page heading and the browser tab title.
+The hero title also becomes the browser title by default.
+Set [`meta_title`](frontmatter.md#meta-title) when the browser title needs more context.
 
 ## Search
 

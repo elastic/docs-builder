@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -16,33 +16,31 @@ internal sealed record BundleDto
 	/// <summary>
 	/// Optional introductory description text for this bundle.
 	/// Empty string is the clear-intro sentinel and must be emitted; null is omitted (inherit).
-	/// Overrides the serializer's OmitEmptyCollections, which would otherwise drop <c>""</c>.
 	/// </summary>
-	[YamlMember(DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
 	public string? Description { get; set; }
 	/// <summary>
 	/// Optional release date for this bundle.
 	/// Purely informative; rendered after the release heading.
 	/// </summary>
-	[YamlMember(Alias = "release-date", ApplyNamingConventions = false)]
+	[YamlPropertyName("release-date")]
 	public string? ReleaseDate { get; set; }
 	/// <summary>
 	/// Optional git ref of the published endpoint this bundle was cut for.
 	/// Written by commit-range bundling (<c>--end-git-ref</c>); serialized as <c>git_ref</c>.
 	/// </summary>
-	[YamlMember(Alias = "git_ref", ApplyNamingConventions = false)]
+	[YamlPropertyName("git_ref")]
 	public string? GitRef { get; set; }
 	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>
-	[YamlMember(Alias = "hide-features", ApplyNamingConventions = false)]
+	[YamlPropertyName("hide-features")]
 	public List<string>? HideFeatures { get; set; }
 	public List<BundledEntryDto>? Entries { get; set; }
 	/// <summary>
 	/// Entries to exclude when this amend file is merged with its parent bundle.
 	/// </summary>
-	[YamlMember(Alias = "exclude-entries", ApplyNamingConventions = false)]
+	[YamlPropertyName("exclude-entries")]
 	public List<BundledEntryDto>? ExcludeEntries { get; set; }
 }
 
@@ -78,7 +76,7 @@ internal sealed record BundledEntryDto
 	public string? Description { get; set; }
 	public string? Impact { get; set; }
 	public string? Action { get; set; }
-	[YamlMember(Alias = "feature-id", ApplyNamingConventions = false)]
+	[YamlPropertyName("feature-id")]
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
 	public string? Subtype { get; set; }

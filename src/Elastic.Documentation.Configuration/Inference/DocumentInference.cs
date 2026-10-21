@@ -18,7 +18,7 @@ public record DocumentInferenceResult
 {
 	/// <summary>
 	/// The canonical/primary product from products.yml.
-	/// Contains Id, DisplayName, VersioningSystem, and RepositoryDto.
+	/// Contains Id, DisplayName, VersioningSystem, and Repository.
 	/// </summary>
 	public Product? Product { get; init; }
 

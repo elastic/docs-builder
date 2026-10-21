@@ -131,6 +131,10 @@ public sealed record SyncPlan
 		return threshold;
 	}
 
+	/// <summary>Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>.</summary>
+	[JsonPropertyName("retain")]
+	public IReadOnlyList<string> RetainedPaths { get; init; } = [];
+
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
 	/// <summary>The raw reader of the plan's wire format; internal: <see cref="SyncPlanLoader.Load"/> checks what it reads.</summary>

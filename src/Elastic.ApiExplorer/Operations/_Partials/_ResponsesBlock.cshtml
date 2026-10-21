@@ -1,3 +1,4 @@
+@using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.ResponsesBlockModel>
 @{
 	var responses = Model.Responses;
@@ -12,6 +13,7 @@
 		{
 			var bodyId = $"response-{response.StatusCode}-fields";
 			var descriptionId = $"response-{response.StatusCode}-description";
+			var contents = MediaContentsModel.ForResponse(response.StatusCode, response.Contents);
 			if (!response.HasDetails)
 			{
 				<div class="response-panel response-panel--static" data-status="@response.StatusCode">
@@ -21,9 +23,9 @@
 						{
 							<div class="response-description">@Model.RenderMarkdown(response.Response.Description)</div>
 						}
-						@if (!string.IsNullOrEmpty(response.FirstContentType))
+						@foreach (var contentType in response.Contents.Select(static c => c.ContentType))
 						{
-							<span class="content-type-tag">@response.FirstContentType</span>
+							<span class="content-type-tag">@contentType</span>
 						}
 					</div>
 				</div>
@@ -43,45 +45,24 @@
 					{
 						<div class="response-description" id="@descriptionId">@Model.RenderMarkdown(response.Response.Description)</div>
 					}
-					@if (!string.IsNullOrEmpty(response.FirstContentType))
-					{
-						<span class="content-type-tag">@response.FirstContentType</span>
-					}
+					@(await RenderPartialAsync<_ContentTypeTag, MediaContentsModel>(contents))
 					<span class="response-toggle-icon" aria-hidden="true"></span>
 				</div>
 				<div class="response-panel-body" id="@bodyId" hidden="until-found">
-					@foreach (var content in response.Contents)
-					{
-						if (content.Properties is not null)
-						{
-							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.Properties))
-						}
-						else if (content.UnionVariants is { Variants.Count: > 0 } unionVariants)
-						{
-							@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(unionVariants))
-						}
-						else if (content.ArrayItemProperties is not null)
-						{
-							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-							@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(content.ArrayItemProperties))
-						}
-						else
-						{
-							<p>Response Type: @(await RenderPartialAsync<_SchemaType, TypeAnnotation>(content.Type))</p>
-						}
-					}
+					@(await RenderPartialAsync<_MediaContents, MediaContentsModel>(contents))
 					@if (response.Headers.Count > 0)
 					{
 						<div class="response-headers">
-							<h3>Response Headers</h3>
+							<h3>Response headers</h3>
 							<dl class="property-list">
 								@foreach (var header in response.Headers)
 								{
 									<div class="header-item">
 										<dt id="header-@response.StatusCode-@header.Name">
-											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name">
-												<code>@header.Name</code>
+											<a class="property-anchor" href="#header-@response.StatusCode-@header.Name" aria-label="Link to @header.Name">
+												<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 											</a>
+											<code>@header.Name</code>
 											@if (header.Type != null)
 											{
 												@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(header.Type))

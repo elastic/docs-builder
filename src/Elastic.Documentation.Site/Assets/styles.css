@@ -28,6 +28,7 @@
 @import './modal.css';
 @import './secondary-nav.css';
 @import './secondary-nav-dropdown.css';
+@import './api-context-bar.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
@@ -79,7 +80,8 @@ body {
 	);
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
-	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
+	--max-examples-width: calc(var(--spacing) * 110);
+	--max-api-content-width: var(--max-text-width);
 }
 
 #pages-nav li.current {

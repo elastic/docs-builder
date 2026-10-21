@@ -16,6 +16,8 @@ namespace Elastic.Changelog.Creation;
 /// </summary>
 public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 {
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logger);
+
 	/// <summary>
 	/// Fetches issue information and derives changelog fields from it.
 	/// </summary>
@@ -41,9 +43,9 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
 		var effectiveProducts = input.Products;
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+			effectiveProducts = ProductResolution.FromLabels(issueInfo.Labels.ToArray(), config);
 
-		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl))
+		if (ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, issueUrl))
 		{
 			return new IssueProcessingResult { FetchFailed = false, ShouldSkip = true };
 		}
@@ -80,9 +82,9 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
 		var effectiveProducts = products;
 		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+			effectiveProducts = ProductResolution.FromLabels(issueInfo.Labels.ToArray(), config);
 
-		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, collector, issueUrl);
+		var shouldSkip = ShouldSkipIssueDueToLabelBlockers(issueInfo.Labels.ToArray(), effectiveProducts, config, issueUrl);
 		return (shouldSkip, issueInfo);
 	}
 
@@ -119,7 +121,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 
 			var issueTitle = issueInfo.Title;
 			if (input.StripTitlePrefix == true)
-				issueTitle = ChangelogTextUtilities.StripSquareBracketPrefix(issueTitle);
+				issueTitle = ChangelogTextUtilities.StripTitlePrefix(issueTitle);
 			derived.Title = issueTitle;
 			logger.LogInformation("Using issue title: {Title}", derived.Title);
 		}
@@ -183,7 +185,7 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		// Map labels to products if products were not explicitly provided
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
 		{
-			var mappedProducts = PrInfoProcessor.MapLabelsToProducts(issueInfo.Labels.ToArray(), config.LabelToProducts);
+			var mappedProducts = ProductResolution.FromLabels(issueInfo.Labels.ToArray(), config);
 			if (mappedProducts.Count > 0)
 			{
 				derived.Products = mappedProducts;
@@ -227,7 +229,6 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 		string[] issueLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
 		string issueUrl
 	)
 	{
@@ -242,16 +243,16 @@ public class IssueInfoProcessor(IGitHubPrService? githubService, ILogger logger)
 				var normalizedProductId = ProductNames.Normalize(product.Product);
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
-					if (PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, productRules, collector, issueUrl, product.Product))
+					if (PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, productRules, issueUrl, _decisions))
 						return true;
 				}
-				else if (PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, createRules, collector, issueUrl, null))
+				else if (PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, createRules, issueUrl, _decisions))
 					return true;
 			}
 			return false;
 		}
 
-		return PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, createRules, collector, issueUrl, null);
+		return PrInfoProcessor.ShouldSkipByCreateRules(issueLabels, createRules, issueUrl, _decisions);
 	}
 
 	private async Task<GitHubIssueInfo?> TryFetchIssueInfoAsync(string? issueUrl, string? owner, string? repo, Cancel ctx)

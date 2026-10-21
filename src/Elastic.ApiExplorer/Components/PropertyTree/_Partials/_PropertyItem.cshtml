@@ -4,14 +4,22 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId">
-			<span class="property-anchor-icon" aria-hidden="true"></span>
-			<code>@Model.Name</code>
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.Name">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 		</a>
+		<code>@Model.Name</code>
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
+		}
+		@if (Model.OptionalRoute is not null)
+		{
+			<span class="optional @SchemaHelpers.StatusCssClass">optional</span>
+		}
+		@if (Model.IsNullable)
+		{
+			<span class="nullable-badge @SchemaHelpers.StatusCssClass" data-tippy-content="This value can be null">nullable</span>
 		}
 		@if (Model.ShowDeprecatedBadge)
 		{
@@ -19,21 +27,17 @@
 		}
 		@if (Model.Availability is not null)
 		{
-			@(await RenderPartialAsync<_AppliesToBadge, Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay>(new Elastic.ApiExplorer.Infrastructure.AppliesToBadgeDisplay(Model.Availability, IsInline: true)))
+			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(Model.Availability))</span>
 		}
 	</dt>
-	@if (Model.HasDescription)
+	@if (Model.HasDescription || Model.OptionalRoute is not null)
 	{
 		<dd>
 			@Model.DescriptionHtml
-		</dd>
-	}
-	@if (Model.ExternalDocs is not null)
-	{
-		<dd class="external-docs-row">
-			<a href="@Model.ExternalDocs.Url" class="docs-reference-btn" @(Model.ExternalDocs.IsElasticDocs ? "" : "target=\"_blank\" rel=\"noopener\"")>
-				@Model.ExternalDocs.LinkText
-			</a>
+			@if (Model.OptionalRoute is { } routeWithout)
+			{
+				<p class="api-path-param-optional-hint">Leave it out to use <code>@routeWithout</code>.</p>
+			}
 		</dd>
 	}
 	@if (Model.AlsoIncludes.Count > 0)
@@ -58,7 +62,28 @@
 			}
 		</dd>
 	}
+	@if (Model.SingleOrArray is { } shapes)
+	{
+		<dd class="union-options">
+			<code>@shapes.One</code>
+			<span class="union-inline-separator">or</span>
+			<code>@shapes.Many</code>
+		</dd>
+	}
+	@if (Model.Requires is { } requires)
+	{
+		<dd class="union-options">
+			@(await RenderPartialAsync<_RequiredAlternatives, RequiredAlternatives>(requires))
+		</dd>
+	}
 	@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(Model.EnumValues)))
+	@if (Model.Example is { } example)
+	{
+		<dd class="example-value">
+			<span class="values-label">Example:</span>
+			<code>@example</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
@@ -76,7 +101,18 @@
 					{
 						<span class="union-inline-separator">or</span>
 					}
-					<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					if (badge.Url is { Length: > 0 } badgeUrl)
+					{
+						<code class="union-type-option"><a href="@badgeUrl" class="@SchemaHelpers.LinkedCssClass" data-hx-boost="false">@badge.LinkText</a>@badge.AfterLink</code>
+					}
+					else
+					{
+						<code class="@SchemaHelpers.UnionOptionClasses(badge.IsTypeOption, badge.Text)">@badge.Text</code>
+					}
+				}
+				@if (Model.Union.MoreOptions is { } moreOptions)
+				{
+					<span class="union-inline-separator">@moreOptions</span>
 				}
 			</dd>
 		}
@@ -100,10 +136,17 @@
 			<code class="primitive-type @SchemaHelpers.TypeAtomCssClassOrNull(Model.ArrayItemTypeName)">@Model.ArrayItemTypeName</code>
 		</dd>
 	}
+	@* Indented like "show properties" and right above it, so the row's own lines stay together under the description. *@
+	@if (Model.ExternalDocs is not null)
+	{
+		<dd class="reference-link-row">
+			<a href="@Model.ExternalDocs.Url" target="@(Model.ExternalDocs.IsElasticDocs ? null : "_blank")" rel="@(Model.ExternalDocs.IsElasticDocs ? null : "noopener")">@Model.ExternalDocs.ShortLinkText</a>
+		</dd>
+	}
 	@if (Model.IsCollapsible)
 	{
 		<dd class="expand-toggle-row">
-			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.AnchorId-children">
+			<button class="expand-toggle" aria-expanded="@(Model.DefaultExpanded ? "true" : "false")" aria-controls="@Model.ChildrenId">
 				<span class="toggle-icon">@(Model.DefaultExpanded ? "−" : "+")</span>
 				<span class="toggle-label">@(Model.DefaultExpanded ? "hide" : "show") properties</span>
 			</button>
@@ -112,17 +155,18 @@
 	@if (Model.Children.Kind == ChildKind.Dictionary)
 	{
 		var dict = Model.Children.Dictionary!;
-			<div class="nested-properties" id="@Model.AnchorId-children">
+			<div class="nested-properties" id="@Model.ChildrenId">
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
 							<code>&lt;string&gt;</code>
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
+						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))
 						@if (dict.IsCollapsible)
 						{
 							<dd class="expand-toggle-row">
-								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.KeyAnchorId-children">
+								<button class="expand-toggle" aria-expanded="@(dict.DefaultExpanded ? "true" : "false")" aria-controls="@dict.ChildrenId">
 									<span class="toggle-icon">@(dict.DefaultExpanded ? "−" : "+")</span>
 									<span class="toggle-label">@(dict.DefaultExpanded ? "hide" : "show") properties</span>
 								</button>
@@ -130,13 +174,13 @@
 						}
 						@if (dict.UseHidden)
 						{
-							<div class="nested-properties" id="@dict.KeyAnchorId-children" hidden="until-found">
+							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
 							</div>
 						}
 						else
 						{
-							<div class="nested-properties" id="@dict.KeyAnchorId-children">
+							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
 							</div>
 						}
@@ -148,34 +192,30 @@
 	{
 		if (Model.Children.UseHidden)
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
+				<div class="nested-properties" id="@Model.ChildrenId" hidden="until-found">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 		else
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children">
+				<div class="nested-properties" id="@Model.ChildrenId">
 					@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(Model.Children.Properties!))
+					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants ?? ApiUnionVariants.Empty))
 				</div>
 		}
 	}
 	else if (Model.Children.Kind == ChildKind.UnionVariants)
 	{
-			<div class="nested-properties" id="@Model.AnchorId-children">
-				@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
-			</div>
-	}
-	else if (Model.Children.Kind == ChildKind.SimpleUnionVariants)
-	{
 		if (Model.Children.UseHidden)
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children" hidden="until-found">
+				<div class="nested-properties" id="@Model.ChildrenId" hidden="until-found">
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
 				</div>
 		}
 		else
 		{
-				<div class="nested-properties" id="@Model.AnchorId-children">
+				<div class="nested-properties" id="@Model.ChildrenId">
 					@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(Model.Children.Variants!))
 				</div>
 		}

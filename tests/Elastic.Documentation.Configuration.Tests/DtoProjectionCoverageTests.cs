@@ -186,7 +186,8 @@ public class DtoProjectionCoverageTests
 				nameof(BrandingDto.HeaderBg),
 				nameof(BrandingDto.OgImage),
 				nameof(BrandingDto.Favicon),
-				nameof(BrandingDto.AppleTouchIcon)
+				nameof(BrandingDto.AppleTouchIcon),
+				nameof(BrandingDto.Copyright)
 			)
 			.ShouldBeComplete();
 

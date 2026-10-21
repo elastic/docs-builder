@@ -5,8 +5,9 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Codex;
 
@@ -64,7 +65,7 @@ public static class CodexSiteLoader
 	{
 		try
 		{
-			return Deserialize(yaml);
+			return Deserialize(yaml, originalPath);
 		}
 		catch (Exception e) when (e is not OutOfMemoryException)
 		{
@@ -72,10 +73,9 @@ public static class CodexSiteLoader
 		}
 	}
 
-	internal static CodexConfiguration Deserialize(string yaml)
+	public static CodexConfiguration Deserialize(string yaml, string? sourceName = null)
 	{
-		using var input = new StringReader(yaml);
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<CodexConfigurationDto>(input) ?? new CodexConfigurationDto();
+		var dto = ConfigurationDocument.Read<CodexConfigurationDto>(yaml, sourceName);
 		return new CodexConfiguration
 		{
 			SitePrefix = NormalizeSitePrefix(dto.SitePrefix),
@@ -109,37 +109,35 @@ public static class CodexSiteLoader
 	}
 }
 
-[YamlSerializable]
 internal sealed class CodexConfigurationDto
 {
-	[YamlMember(Alias = "site_prefix")]
+	[YamlPropertyName("site_prefix")]
 	public string SitePrefix { get; set; } = "/";
 
-	[YamlMember(Alias = "environment")]
+	[YamlPropertyName("environment")]
 	public string? Environment { get; set; }
 
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string Title { get; set; } = "Elastic Internal Docs";
 
-	[YamlMember(Alias = "groups")]
+	[YamlPropertyName("groups")]
 	public List<CodexGroupDefinitionDto> Groups { get; set; } = [];
 
-	[YamlMember(Alias = "canonical_base_url")]
+	[YamlPropertyName("canonical_base_url")]
 	public string? CanonicalBaseUrl { get; set; }
 }
 
-[YamlSerializable]
 internal sealed class CodexGroupDefinitionDto
 {
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string Id { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "name")]
+	[YamlPropertyName("name")]
 	public string Name { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 }

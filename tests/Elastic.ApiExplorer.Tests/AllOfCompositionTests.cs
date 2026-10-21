@@ -149,7 +149,7 @@ public class AllOfCompositionTests
 	}
 
 	[Test]
-	public async Task BuildPropertyList_AllOfWithSeveralRefs_ListsTheOtherSchemasAsAlsoIncludes()
+	public async Task BuildPropertyList_AllOfWithSeveralRefsWithoutPages_ListsNoAlsoIncludes()
 	{
 		var json =
 			"""
@@ -192,8 +192,9 @@ public class AllOfCompositionTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var merged = list!.Items.Single(p => p.Name == "merged");
-		merged.AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
-		list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Select(t => t.TypeName).Should().Equal("Timestamps");
+		merged.AlsoIncludes.Should().BeEmpty("Timestamps has only a code name, and its fields are listed already");
+		merged.Children.Properties!.Items.Select(p => p.Name).Should().Contain("created");
+		list.Items.Single(p => p.Name == "repeated").AlsoIncludes.Should().BeEmpty();
 		list.Items.Single(p => p.Name == "single").AlsoIncludes.Should().BeEmpty();
 	}
 
@@ -366,7 +367,7 @@ public class AllOfCompositionTests
 		cat.DisplayName.Should().Be("Cat");
 		cat.Properties!.Items.Select(p => p.Name).Should().Equal("lives", "<string>");
 
-		var (properties, variants) = ApiBodyContent.Build(
+		var (properties, variants, _, _) = ApiBodyContent.Build(
 			document.Components!.Schemas!["Pet"],
 			new PropertyTreeScope { Prefix = "req", IsRequest = true },
 			new SchemaAnalyzer(document),

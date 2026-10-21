@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
@@ -12,8 +14,53 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Shared static utilities for OpenAPI schema rendering.
 /// </summary>
-public static class SchemaHelpers
+public static partial class SchemaHelpers
 {
+	/// <summary>
+	/// The example a schema states: the first of <c>examples</c> (OpenAPI 3.1), else its <c>example</c>. The reader keeps the
+	/// <c>example</c> of an OpenAPI 3.0 schema in <see cref="IOpenApiSchema.Example"/> and leaves <c>examples</c> empty.
+	/// </summary>
+#pragma warning disable CS0618
+	public static JsonNode? FirstExample(IOpenApiSchema? schema) =>
+		schema?.Examples?.FirstOrDefault(IsValue) ?? (IsValue(schema?.Example) ? schema!.Example : null);
+#pragma warning restore CS0618
+
+	/// <summary>A node that holds a value: not null, and not the sentinel string the reader stores for a literal JSON <c>null</c>.</summary>
+	public static bool IsValue(JsonNode? node) => node is not null && !JsonNullSentinel.IsJsonNullSentinel(node);
+
+	/// <summary>The first value a schema states for itself: an example, its default, its constant, or its first enum member.</summary>
+	public static JsonNode? StatedValue(IOpenApiSchema? schema) =>
+		schema is null
+			? null
+			: FirstExample(schema)
+				?? (IsValue(schema.Default) ? schema.Default : null)
+				?? Const(schema)
+				?? schema.Enum?.FirstOrDefault(IsValue);
+
+	/// <summary>
+	/// The reader keeps <c>const</c> as text and drops its JSON type. A schema typed string keeps the text. Otherwise a
+	/// boolean is told apart by the .NET spelling the reader gives it (<c>True</c>, where the string "true" stays lowercase),
+	/// a number is parsed back, and anything else stays a string. A number and the string of its digits cannot be told
+	/// apart without a type, so <c>{ "const": "7" }</c> reads as 7; a schema that means the string should say <c>type: string</c>.
+	/// </summary>
+	private static JsonNode? Const(IOpenApiSchema schema)
+	{
+		var text = schema.Const;
+		if (string.IsNullOrEmpty(text))
+			return null;
+		if (schema.Type?.HasFlag(JsonSchemaType.String) == true)
+			return JsonValue.Create(text);
+		if (text is "True" or "False")
+			return JsonValue.Create(text == "True");
+		if (schema.Type?.HasFlag(JsonSchemaType.Boolean) == true && bool.TryParse(text, out var flag))
+			return JsonValue.Create(flag);
+		// A JSON number is kept as its own token, so 1e30 or 1e-30 keep their range and precision.
+		return JsonNumber().IsMatch(text) ? JsonNode.Parse(text) : JsonValue.Create(text);
+	}
+
+	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant)]
+	private static partial Regex JsonNumber();
+
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
 	/// </summary>
@@ -72,11 +119,6 @@ public static class SchemaHelpers
 	/// Types that have dedicated pages we can link to.
 	/// Only container types get their own pages - individual queries/aggregations are rendered inline.
 	/// </summary>
-	public static readonly HashSet<string> LinkedTypes = new(
-		["QueryContainer", "AggregationContainer", "Aggregate"],
-		StringComparer.OrdinalIgnoreCase
-	);
-
 	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
 	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
 	[
@@ -92,6 +134,15 @@ public static class SchemaHelpers
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
+	/// <summary>An array of a shown type: <c>string[]</c>, or <c>(string | object)[]</c> so the suffix covers the whole formula.</summary>
+	public static string ArrayOf(string shown) => IsFormulaName(shown) ? $"({shown})[]" : $"{shown}[]";
+
+	/// <summary>Whether a shown name joins several types (<c>string | object</c>).</summary>
+	public static bool IsFormulaName(string shown) => shown.Contains(" | ", StringComparison.Ordinal);
+
+	/// <summary>What a type the spec names reads as when it has no page of its own, besides a primitive.</summary>
+	public static readonly HashSet<string> ShapeNames = new(["enum", "union", "oneOf", "anyOf", "array"], StringComparer.Ordinal);
+
 	public static readonly HashSet<string> PrimitiveTypeNames = new(
 		["boolean", "number", "string", "integer", "object", "null", "array"],
 		StringComparer.OrdinalIgnoreCase
@@ -142,39 +193,6 @@ public static class SchemaHelpers
 	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
 
 	/// <summary>
-	/// Gets the URL for a container type's dedicated page under the given API root
-	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
-	/// </summary>
-	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
-	{
-		var schemaId = typeName switch
-		{
-			"QueryContainer" => "_types.query_dsl.QueryContainer",
-			"AggregationContainer" => "_types.aggregations.AggregationContainer",
-			"Aggregate" => "_types.aggregations.Aggregate",
-			_ => null
-		};
-		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
-	}
-
-	/// <summary>
-	/// Determines if a type should link to its container page.
-	/// </summary>
-	/// <param name="typeName">The type name to check.</param>
-	/// <param name="currentPageType">Optional current page type to prevent self-linking.</param>
-	public static bool ShouldLinkToContainerPage(string typeName, string? currentPageType = null)
-	{
-		if (!LinkedTypes.Contains(typeName))
-			return false;
-
-		// Prevent self-linking on schema pages
-		if (!string.IsNullOrEmpty(currentPageType) && typeName.Equals(currentPageType, StringComparison.OrdinalIgnoreCase))
-			return false;
-
-		return true;
-	}
-
-	/// <summary>
 	/// Converts a JsonSchemaType to a human-readable primitive type name.
 	/// </summary>
 	public static string GetPrimitiveTypeName(JsonSchemaType? type)
@@ -218,17 +236,9 @@ public static class SchemaHelpers
 
 	public static string? ValueCssClassOrNull(string? name) => !string.IsNullOrEmpty(name) && IsValueType(name) ? ValueCssClass : null;
 
-	public static string? LinkedCssClassOrNull(string? name) =>
-		!string.IsNullOrEmpty(name) && LinkedTypes.Contains(name) ? LinkedCssClass : null;
-
-	public static string? ObjectCssClassOrNull(string? name)
-	{
-		if (string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name))
-			return null;
-		if (IsPrimitiveDisplayName(name) || IsValueType(name) || LinkedTypes.Contains(name))
-			return null;
-		return ObjectCssClass;
-	}
+	// Reached after the primitive, value and shape checks, so any other plain name is a schema.
+	private static string? ObjectCssClassOrNull(string? name) =>
+		string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name) ? null : ObjectCssClass;
 
 	public static bool IsCompoundTypeName(string? name) =>
 		!string.IsNullOrEmpty(name) && (name.Contains('|') || name.Contains(' ') || name.EndsWith("[]", StringComparison.Ordinal));
@@ -273,7 +283,19 @@ public static class SchemaHelpers
 
 	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
 	public static string? TypeAtomCssClassOrNull(string? name) =>
-		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? LinkedCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ShapeKeywordCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+
+	/// <summary>
+	/// A shape name (enum, union) is a keyword, not a schema. The annotation builder and the type atom classifier both
+	/// take its class from here so the keyword reads the same wherever it shows.
+	/// </summary>
+	public static string? ShapeKeywordCssClassOrNull(string? name) => name switch
+	{
+		"enum" => WrapperEnumCssClass,
+		"union" => WrapperUnionCssClass,
+		not null when ShapeNames.Contains(name) => WrapperCssClass,
+		_ => null
+	};
 
 	public static string UnionOptionClasses(bool isTypeOption, string text)
 	{

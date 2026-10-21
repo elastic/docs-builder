@@ -81,6 +81,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public string? Description { get; private set; }
+	public string? MetaTitle { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public virtual string NavigationTitle
@@ -151,10 +152,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return document;
 	}
 
-	private IReadOnlyDictionary<string, string> GetSubstitutions()
+	private IReadOnlyDictionary<string, string> GetSubstitutions() => GetSubstitutions(_globalSubstitutions, YamlFrontMatter?.Properties);
+
+	private static IReadOnlyDictionary<string, string> GetSubstitutions(
+		IReadOnlyDictionary<string, string> globalSubstitutions,
+		IReadOnlyDictionary<string, string>? fileSubstitutions
+	)
 	{
-		var globalSubstitutions = _globalSubstitutions;
-		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
 
@@ -176,12 +180,44 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
 	}
 
+	internal static string? ReadTitle(MarkdownDocument document) =>
+		document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? FindNestedTitle(document);
+
+	internal static (string? Title, string? MetaTitle) ReadTitles(MarkdownDocument document, BuildContext build, IFileInfo source)
+	{
+		YamlFrontMatter? frontMatter = null;
+		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
+		{
+			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+			frontMatter = ReadYamlFrontMatter(raw, build.Catalog.Products, build.Collector, source.FullName);
+		}
+		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
+
+		var rawTitle = ReadTitle(document);
+		if (rawTitle is not null && rawTitle.AsSpan().ReplaceSubstitutions(substitutions, build.Collector, out var replacement))
+			rawTitle = replacement;
+
+		return (rawTitle?.StripMarkdown(), NormalizeMetaTitle(frontMatter?.MetaTitle, substitutions, build.Collector));
+	}
+
+	private static string? NormalizeMetaTitle(
+		string? metaTitle,
+		IReadOnlyDictionary<string, string> substitutions,
+		IDiagnosticsCollector collector
+	)
+	{
+		if (string.IsNullOrWhiteSpace(metaTitle))
+			return null;
+
+		if (metaTitle.AsSpan().ReplaceSubstitutions(substitutions, collector, out var replacement))
+			metaTitle = replacement;
+		metaTitle = metaTitle.StripMarkdown();
+		return string.IsNullOrWhiteSpace(metaTitle) ? null : metaTitle;
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title = document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? Title;
-
-		if (Title == RelativePath)
-			Title = FindNestedTitle(document) ?? Title;
+		Title = ReadTitle(document) ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
@@ -200,6 +236,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
+
+		MetaTitle = NormalizeMetaTitle(yamlFrontMatter.MetaTitle, subs, Collector);
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
@@ -412,7 +450,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
 		// Only a block the page itself wrote is checked: a fallback comes from the table of contents and is not this file's to report
 		if (fm.AppliesTo is { } written)
 		{
@@ -454,20 +492,63 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw)
+	private YamlFrontMatter ReadYamlFrontMatter(string raw, int lineOffset) =>
+		ReadYamlFrontMatter(
+			raw,
+			Products,
+			Collector,
+			FilePath,
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterLegacyKeys())
+		);
+
+	// Built fresh per document: each policy closes over a "reported" set that must only suppress a
+	// repeated hint within one document, not across every document the process ever parses.
+	// internal: exercised directly by tests that assert the curator override without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterLegacyKeys()
+	{
+		// `type` and `comment` appear in the frontmatter of pages in the content repositories but are not
+		// supported keys, so they are tolerated as hints for now. TODO: make them errors once the
+		// repositories drop them, see https://github.com/elastic/docs-eng-team/issues/1076.
+		var legacyKeys = YamlUnknownKeyPolicies.ToleratedAsHint("frontmatter", "type", "comment");
+
+		// `curator/docs/reference/ex_reindex.md` has `navigation_tite` (a typo for `navigation_title`).
+		// The previous YAML parser silently dropped unknown keys, so this went unnoticed until unmapped
+		// keys became errors. TODO: remove once https://github.com/elastic/curator/pull/1798 merges.
+		var curatorNavigationTitleTypo = YamlUnknownKeyPolicies.ToleratedAsHintForSource(
+			"curator/docs/reference/ex_reindex.md",
+			"navigation_tite",
+			"'navigation_tite' is a typo for 'navigation_title'; fix pending in https://github.com/elastic/curator/pull/1798."
+		);
+
+		return member => legacyKeys(member) ?? curatorNavigationTitleTypo(member);
+	}
+
+	// reporting is null when the same front matter is only being read for its titles, so unknown keys
+	// are reported once, by the full page parse.
+	private static YamlFrontMatter ReadYamlFrontMatter(
+		string raw,
+		ProductCatalog products,
+		IDiagnosticsCollector collector,
+		string filePath,
+		YamlUnmappedMemberReporting? reporting = null
+	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
+			// Comment-only front matter deserializes to null; treat it as empty front matter.
+			var frontMatter = reporting is null
+				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
+				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
+			return frontMatter ?? new YamlFrontMatter();
 		}
 		catch (InvalidProductException e)
 		{
-			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			collector.EmitError(filePath, "Invalid product in yaml front matter.", e);
 			return new YamlFrontMatter();
 		}
 		catch (Exception e)
 		{
-			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			collector.EmitError(filePath, "Failed to parse yaml front matter block.", e);
 			return new YamlFrontMatter();
 		}
 	}

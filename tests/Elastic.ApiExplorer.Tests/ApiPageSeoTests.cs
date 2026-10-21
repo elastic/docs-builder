@@ -28,8 +28,8 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		layout.Title.Should().Be("Run a search | Fixture API");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
-		layout.Breadcrumbs[0].NavigationTitle.Should().Be("APIs");
-		layout.Breadcrumbs[0].Url.Should().Be("/api/");
+		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs[1].Url.Should().Be("/api");
 		layout.Breadcrumbs.Should().Contain(b => b.NavigationTitle == "Fixture API");
 		layout.Breadcrumbs.Should().NotContain(b => b.NavigationTitle == "Api Overview");
 	}
@@ -37,18 +37,13 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	[Test]
 	public void SchemaLayout_UsesDisplayNameInTitleAndExcerptedDescription()
 	{
-		var item = fixture
-			.Walk()
-			.OfType<SchemaNavigationItem>()
-			.Should()
-			.ContainSingle(n => n.Model.DisplayName == "QueryContainer")
-			.Subject;
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
 		var context = RenderContext(item);
 		var viewModel = new SchemaViewModel(context) { Schema = item.Model, Page = SchemaPageModel.Create(item.Model, context) };
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("QueryContainer | Fixture API");
+		layout.Title.Should().Be("Query | Fixture API");
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
 

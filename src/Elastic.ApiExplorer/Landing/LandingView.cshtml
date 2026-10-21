@@ -4,47 +4,39 @@
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	// What you need to call the API (server URLs, spec download) sits in the right rail, under Copy page.
+	// Below 1024px the rail drops under the whole catalog, so the same facts also sit under the intro (hidden on wide screens).
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name != ApiPageSections.Rail)
+			return;
+		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "rail")))
+	}
 }
 @{
 	var apiHxAttrs = LayoutModel.HxAttributes;
 }
-<section id="elastic-docs-v3">
+<section id="elastic-docs-v3" class="api-landing">
 	<div class="api-landing-heading api-page-heading">
 		@if (Model.IconSvg is not null)
 		{
 			<span class="api-landing-icon">@(new HtmlString(Model.IconSvg))</span>
 		}
 		<h1>@Model.ApiInfo.Title</h1>
-		@(await RenderPartialAsync<_PageActions, string>(LayoutModel.MarkdownUrl))
 	</div>
 	<div class="docs-measure">
-		<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
+		<p>@Model.DescriptionLead</p>
 	</div>
-	<div class="api-landing-meta">
-		@if (Model.ApiInfo.License?.Name is { Length: > 0 } license)
-		{
-			<span>@license license</span>
-		}
-		@if (LayoutModel.BuildType != BuildType.Assembler)
-		{
-			<span class="api-landing-download">
-				<span>Download spec</span>
-				@foreach (var (format, url) in new[] { ("JSON", Model.JsonUrl), ("YAML", Model.YamlUrl) })
-				{
-					<a class="api-chip-link" href="@url" download aria-label="Download spec as @format">
-						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>@format</a>
-				}
-			</span>
-		}
-	</div>
-	@if (Model.TopicPages.Count > 0)
+	@if (Model.HasFacts)
 	{
-		<nav class="api-topics" aria-label="Reference topics">
-			@foreach (var topic in Model.TopicPages)
-			{
-				<a class="api-chip-link" href="@topic.Url" @(new HtmlString(apiHxAttrs))>@topic.Title</a>
-			}
-		</nav>
+		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "inline")))
+	}
+	@if (Model.DescriptionRemainder is { } remainder)
+	{
+		<div class="docs-measure">
+			@remainder
+		</div>
 	}
 	<div class="api-overview">
 		<div class="api-index">

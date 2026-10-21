@@ -256,4 +256,235 @@ public class ReleaseNotesExtractorTests
 		// Assert
 		result.Should().Be(expected);
 	}
+
+	[Test]
+	public void FindImpactAndAction_FromHeadings_ExtractsSections()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Release note
+			Removes the `simulate` parameter.
+
+			## Impact
+			API users that pass `simulate` get a 400.
+
+			- second line
+
+			## Action
+			Stop sending `simulate`.
+
+			## Checklist
+			- [ ] tests
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("API users that pass `simulate` get a 400.\n\n- second line");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Stop sending `simulate`.");
+	}
+
+	[Test]
+	public void FindImpactAndAction_FromLabels_ExtractsInlineText()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			Impact: Clients break.
+			Action: Upgrade the client.
+
+			Unrelated paragraph.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
+	public void FindAction_PluralHeading_ExtractsSection()
+	{
+		// language=markdown
+		var prBody = """
+			### Actions
+			Run the migration.
+			""";
+
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Run the migration.");
+	}
+
+	[Test]
+	public void FindImpactAndAction_OnlyHtmlComments_ReturnNull()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			<!-- describe the impact -->
+
+			## Action
+			<!-- describe the action -->
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpactAndAction_ProseMentions_DoNotMatch()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			Impact of this change is small.
+			Actions taken in CI are unchanged.
+
+			## Impact on tests
+			None.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpactAndAction_KibanaBreakingPrBodyWithoutSections_ReturnNull()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			**Do not merge. This is a throwaway PR.**
+
+			## What
+
+			Two intentional breaking changes.
+
+			## Why
+
+			To see the PR comment the API contracts check posts.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpact_EmptyImpactLabelFollowedByActionLabel_ReturnsNull()
+	{
+		// language=markdown
+		var prBody = """
+			Impact:
+			Action: Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
+	public void FindImpact_ActionHeadingNestedUnderImpact_StopsAtAction()
+	{
+		// language=markdown
+		var prBody = """
+			## Impact
+			Clients break.
+			### Action
+			Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
+	public void FindAction_YamlExampleInsideFence_StaysInTheSection()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			Clients break.
+
+			## Action
+			Set the option:
+
+			```yaml
+			action: restart
+			## not a heading
+			```
+
+			Then migrate your clients.
+
+			## Checklist
+			- [ ] tests
+			""";
+
+		ReleaseNotesExtractor
+			.FindAction(prBody)
+			.Should()
+			.Be("Set the option:\n\n```yaml\naction: restart\n## not a heading\n```\n\nThen migrate your clients.");
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients break.");
+	}
+
+	[Test]
+	public void FindImpact_LabelInsideFencedExampleOnly_DoesNotStartASection()
+	{
+		// language=markdown
+		var prBody = """
+			Example:
+
+			```
+			Impact: not a real section
+			```
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().BeNull();
+	}
+
+	[Test]
+	public void FindImpactAndAction_ShorterFenceInsideLongerFence_DoesNotCloseIt()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			Clients break. Example:
+
+			````markdown
+			```yaml
+			action: restart
+			```
+			## not a heading
+			````
+
+			## Action
+			Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+		ReleaseNotesExtractor
+			.FindImpact(prBody)
+			.Should()
+			.Be("Clients break. Example:\n\n````markdown\n```yaml\naction: restart\n```\n## not a heading\n````");
+	}
+
+	[Test]
+	public void FindAction_FenceWithTextAfterTheRun_DoesNotCloseTheBlock()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Action
+			Run:
+
+			```bash
+			```not a closing fence
+			## still code
+			```
+
+			Then restart.
+			""";
+
+		ReleaseNotesExtractor
+			.FindAction(prBody)
+			.Should()
+			.Be("Run:\n\n```bash\n```not a closing fence\n## still code\n```\n\nThen restart.");
+	}
 }

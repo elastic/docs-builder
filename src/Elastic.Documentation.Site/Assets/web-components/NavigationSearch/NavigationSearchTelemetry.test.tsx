@@ -111,22 +111,6 @@ describe('Navigation Search Telemetry Integration', () => {
                 }
             )
         })
-
-        it('should track keyboard_shortcut trigger when opened via Cmd+K', async () => {
-            // Arrange
-            renderWithProviders(<NavigationSearch />)
-
-            // Act - simulate Cmd+K
-            await userEvent.keyboard('{Meta>}k{/Meta}')
-
-            // Assert
-            expect(logging.logInfo).toHaveBeenCalledWith(
-                'navigation_search_opened',
-                {
-                    'navigation_search.trigger': 'keyboard_shortcut',
-                }
-            )
-        })
     })
 
     describe('Closing Navigation Search', () => {

@@ -11,9 +11,8 @@ using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -24,19 +23,30 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
-	private static readonly IDeserializer ConfigurationDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.WithTypeConverter(new YamlLenientListConverter())
-		.WithTypeConverter(new TypeEntryYamlConverter())
-		.Build();
+	private static readonly YamlSerializerOptions ConfigurationOptions = YamlStaticContext.Default.CreateOptions(
+		o => (o with { Converters = [new YamlLenientListConverter(), new TypeEntryYamlConverter()] }).WithUnmappedKeysThrowing()
+	);
 
 	/// <summary>
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
-	internal static ChangelogConfigurationDto DeserializeConfiguration(string yaml) =>
+	internal static ChangelogConfigurationDto DeserializeConfiguration(string yaml, string? sourceName = null) =>
 		// an empty document (or one of only comments) deserializes to null: it is a configuration that says nothing, as every other config loader reads it
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationDto>(yaml)
+		YamlSerializer.Deserialize<ChangelogConfigurationDto>(
+			yaml,
+			sourceName is null ? ConfigurationOptions : ConfigurationOptions with { SourceName = sourceName }
+		)
 			?? new ChangelogConfigurationDto();
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content, reporting unknown keys to
+	/// <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	private static ChangelogConfigurationDto DeserializeConfiguration(string yaml, IDiagnosticsCollector collector, string configPath)
+	{
+		var options = ConfigurationOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, configPath));
+		return YamlSerializer.Deserialize<ChangelogConfigurationDto>(yaml, options) ?? new ChangelogConfigurationDto();
+	}
 
 	/// <summary>
 	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
@@ -60,7 +70,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = DeserializeConfiguration(yamlContent);
+		var yamlConfig = DeserializeConfiguration(yamlContent, configPath);
 
 		if (yamlConfig.Rules?.Publish == null)
 			return null;
@@ -117,7 +127,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, finalConfigPath);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
@@ -264,6 +274,28 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			productsConfig = ParseProductsConfig(collector, yamlConfig.Products, configPath, validProductIds);
 			if (productsConfig == null)
 				return null;
+		}
+
+		// An implied-products key only fires for a product that a label maps to. Warn, not fail: a config can
+		// name a product before its labels exist.
+		if (productsConfig?.Implies is { Count: > 0 } implies)
+		{
+			var mappedProductIds = ((IEnumerable<string>?)labelToProducts?.Values ?? [])
+				.Select(
+					spec => spec.Split(
+						' ',
+						StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+					).FirstOrDefault()?.Replace('_', '-')
+				)
+				.OfType<string>()
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var productId in implies.Keys.Where(id => !mappedProductIds.Contains(id)))
+			{
+				collector.EmitWarning(
+					configPath,
+					$"Product '{productId}' in products_config.implies has no label in pivot.products that maps to it, so it never applies."
+				);
+			}
 		}
 
 		// Process bundle configuration
@@ -420,7 +452,52 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		return new ProductsConfig { Available = available, Default = defaultProducts };
+		// Parse implied products
+		var implies = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+		if (yaml.Implies != null)
+		{
+			foreach (var (productId, impliedYaml) in yaml.Implies)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
+					return null;
+				}
+
+				List<string> implied = [];
+				foreach (var impliedId in impliedYaml?.Values ?? [])
+				{
+					var normalizedImpliedId = impliedId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedImpliedId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"Product '{impliedId}' implied by '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+						);
+						return null;
+					}
+
+					// A product implies itself already; list each implied product once.
+					if (
+						string.Equals(normalizedImpliedId, normalizedProductId, StringComparison.OrdinalIgnoreCase)
+						|| implied.Contains(normalizedImpliedId, StringComparer.OrdinalIgnoreCase)
+					)
+						continue;
+					implied.Add(normalizedImpliedId);
+				}
+
+				if (implied.Count > 0)
+					implies[normalizedProductId] = implied;
+			}
+		}
+
+		return new ProductsConfig { Available = available, Default = defaultProducts, Implies = implies.Count > 0 ? implies : null };
 	}
 
 	private static BundleConfiguration? ParseBundleConfiguration(
@@ -493,6 +570,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (releases == null && collector.Errors > 0)
 			return null;
 
+		var backports = ParseBundleBackports(collector, configPath, yaml.Backports);
+		if (backports == null && collector.Errors > 0)
+			return null;
+
 		return new BundleConfiguration
 		{
 			Directory = yaml.Directory,
@@ -505,8 +586,43 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
 			Profiles = profiles,
-			Releases = releases
+			Releases = releases,
+			Backports = backports
 		};
+	}
+
+	/// <summary>
+	/// Reads <c>bundle.backports.labels</c>. Labels are exact names: trimmed, de-duplicated ignoring case, and
+	/// never globs, because <c>backport*</c> would also match opt-out labels such as <c>backport-skip</c>.
+	/// Returns <c>null</c> when tracing is not configured, or after emitting an error for an invalid label.
+	/// </summary>
+	private static BackportsConfiguration? ParseBundleBackports(
+		IDiagnosticsCollector collector,
+		string configPath,
+		ChangelogBundleBackportsDto? yaml
+	)
+	{
+		var raw = yaml?.Labels?.Values;
+		if (raw is not { Count: > 0 })
+			return null;
+
+		var labels = new List<string>();
+		foreach (var label in raw.Select(l => l.Trim()).Where(l => l.Length > 0))
+		{
+			if (label.AsSpan().IndexOfAny('*', '?') >= 0)
+			{
+				collector.EmitError(
+					configPath,
+					$"bundle.backports.labels: '{label}' must be an exact label name. Globs are not supported, because 'backport*' would also match opt-out labels such as 'backport-skip'."
+				);
+				return null;
+			}
+
+			if (!labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+				labels.Add(label);
+		}
+
+		return labels.Count == 0 ? null : new BackportsConfiguration { Labels = labels };
 	}
 
 	private static BundleReleases? ParseBundleReleases(
@@ -585,7 +701,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, configPath);
 			return ParseConfiguration(collector, yamlConfig, configPath);
 		}
 		catch (IOException ex)
@@ -598,7 +714,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -627,7 +743,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, foundPath);
 			return ParseConfiguration(collector, yamlConfig, foundPath);
 		}
 		catch (IOException ex)
@@ -640,7 +756,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;

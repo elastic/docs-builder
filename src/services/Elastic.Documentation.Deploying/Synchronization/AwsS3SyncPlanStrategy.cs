@@ -68,17 +68,25 @@ public class AwsS3SyncPlanStrategy(
 			excludeGlobs
 		);
 
-		return SyncPlanLoader.Planned(
+		// Recent builds' hashed assets stay so pages that still reference them keep working
+		var staleObjects = deleteRequests.Select(d => remoteObjects[d.DestinationPath]).ToList();
+		var retainedPaths = StaticAssetRetention.Retain(staleObjects);
+		var kept = deleteRequests.Where(d => !retainedPaths.Contains(d.DestinationPath)).ToList();
+
+		var planned = SyncPlanLoader.Planned(
 			readToCompletion,
 			deleteThreshold,
 			excludePatterns,
 			remoteObjects.Count,
 			localObjects.Length,
-			deleteRequests,
+			kept,
 			addRequests,
 			updateRequests,
 			skipRequests
 		);
+		return planned.Value is null
+			? planned
+			: planned with { Value = planned.Value with { RetainedPaths = retainedPaths.Order(StringComparer.Ordinal).ToList() } };
 	}
 
 	private async Task<(bool readToCompletion, Dictionary<string, S3Object> objects)> ListObjects(Cancel ctx = default)

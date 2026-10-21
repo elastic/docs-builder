@@ -17,8 +17,8 @@
     <PackageReference Include="HtmlSanitizer"/>
     <PackageReference Include="Microsoft.OpenApi"/>
     <PackageReference Include="RazorSlices"/>
+    <PackageReference Include="SharpYaml"/>
     <PackageReference Include="Utf8StreamReader"/>
-    <PackageReference Include="YamlDotNet"/>
   </ItemGroup>
 
   <ItemGroup>

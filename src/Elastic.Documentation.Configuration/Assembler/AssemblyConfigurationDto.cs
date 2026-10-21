@@ -2,120 +2,114 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
 // assembler.yml exactly as authored. AssemblyLoader maps these to the Publishing domain records.
 
-[YamlSerializable]
 internal sealed class AssemblyConfigurationDto
 {
-	[YamlMember(Alias = "narrative")]
+	[YamlPropertyName("narrative")]
 	public NarrativeRepositoryDto? Narrative { get; set; } = new();
 
-	[YamlMember(Alias = "references")]
+	[YamlPropertyName("references")]
 	public Dictionary<string, RepositoryDto?> ReferenceRepositories { get; set; } = [];
 
-	[YamlMember(Alias = "environments")]
+	[YamlPropertyName("environments")]
 	public Dictionary<string, PublishEnvironmentDto> Environments { get; set; } = [];
 
-	[YamlMember(Alias = "shared_configuration")]
+	[YamlPropertyName("shared_configuration")]
 	public Dictionary<string, RepositoryDto> SharedConfigurations { get; set; } = [];
 }
 
-[YamlSerializable]
 internal class RepositoryDto
 {
-	[YamlMember(Alias = "repo")]
+	[YamlPropertyName("repo")]
 	public string Origin { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "checkout_strategy")]
+	[YamlPropertyName("checkout_strategy")]
 	public Publishing.CheckoutStrategy CheckoutStrategy { get; set; } = Publishing.CheckoutStrategy.Partial;
 
-	[YamlMember(Alias = "skip")]
+	[YamlPropertyName("skip")]
 	public bool Skip { get; set; }
 
-	[YamlMember(Alias = "path")]
+	[YamlPropertyName("path")]
 	public string? Path { get; set; }
 
-	[YamlMember(Alias = "current")]
+	[YamlPropertyName("current")]
 	public string GitReferenceCurrent { get; set; } = "main";
 
-	[YamlMember(Alias = "next")]
+	[YamlPropertyName("next")]
 	public string GitReferenceNext { get; set; } = "main";
 
-	[YamlMember(Alias = "edge")]
+	[YamlPropertyName("edge")]
 	public string GitReferenceEdge { get; set; } = "main";
 
-	[YamlMember(Alias = "sparse_paths")]
+	[YamlPropertyName("sparse_paths")]
 	public string[] SparsePaths { get; set; } = ["docs"];
 
-	[YamlMember(Alias = "private")]
+	[YamlPropertyName("private")]
 	public bool Private { get; set; }
 
 	/// <summary>Accepts duration strings such as <c>30s</c> or <c>15m</c>.</summary>
-	[YamlMember(Alias = "clone_timeout")]
+	[YamlPropertyName("clone_timeout")]
 	public TimeSpan? CloneTimeout { get; set; }
 }
 
-[YamlSerializable]
 internal sealed class NarrativeRepositoryDto : RepositoryDto;
 
-[YamlSerializable]
 internal sealed class PublishEnvironmentDto
 {
-	[YamlMember(Alias = "uri")]
+	[YamlPropertyName("uri")]
 	public string Uri { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "path_prefix")]
+	[YamlPropertyName("path_prefix")]
 	public string? PathPrefix { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "allow_indexing")]
+	[YamlPropertyName("allow_indexing")]
 	public bool AllowIndexing { get; set; }
 
-	[YamlMember(Alias = "content_source")]
+	[YamlPropertyName("content_source")]
 	public Publishing.ContentSource? ContentSource { get; set; }
 
-	[YamlMember(Alias = "google_tag_manager")]
+	[YamlPropertyName("google_tag_manager")]
 	public GoogleTagManagerDto GoogleTagManager { get; set; } = new();
 
-	[YamlMember(Alias = "optimizely")]
+	[YamlPropertyName("optimizely")]
 	public OptimizelyDto Optimizely { get; set; } = new();
 
-	[YamlMember(Alias = "feature_flags")]
+	[YamlPropertyName("feature_flags")]
 	public Dictionary<string, bool> FeatureFlags { get; set; } = [];
 
-	[YamlMember(Alias = "website_search_url")]
+	[YamlPropertyName("website_search_url")]
 	public string? WebsiteSearchScriptUrl { get; set; }
 }
 
-[YamlSerializable]
 internal sealed class GoogleTagManagerDto
 {
-	[YamlMember(Alias = "enabled")]
+	[YamlPropertyName("enabled")]
 	public bool Enabled { get; set; }
 
 	// That an enabled container names an id is checked on the model: see AssemblyConstraints.
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 
-	[YamlMember(Alias = "auth")]
+	[YamlPropertyName("auth")]
 	public string? Auth { get; set; }
 
-	[YamlMember(Alias = "preview")]
+	[YamlPropertyName("preview")]
 	public string? Preview { get; set; }
 
-	[YamlMember(Alias = "cookies_win")]
+	[YamlPropertyName("cookies_win")]
 	public string? CookiesWin { get; set; }
 }
 
-[YamlSerializable]
 internal sealed class OptimizelyDto
 {
-	[YamlMember(Alias = "enabled")]
+	[YamlPropertyName("enabled")]
 	public bool Enabled { get; set; }
 
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 }

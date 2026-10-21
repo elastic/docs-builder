@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -18,6 +19,9 @@ public record ExternalDocLink(string Url, bool IsElasticDocs, string? Descriptio
 		!string.IsNullOrWhiteSpace(Description)
 			? Description
 			: IsElasticDocs ? "Read the reference documentation" : "External documentation";
+
+	/// <summary>The text for a property's name line, where the long default would wrap onto a line of its own.</summary>
+	public string ShortLinkText => !string.IsNullOrWhiteSpace(Description) ? Description : IsElasticDocs ? "Reference" : "External docs";
 }
 
 /// <summary>An earlier row on the page whose fields (or union options) a row repeats; the row links back to it.</summary>
@@ -28,7 +32,9 @@ public record RepeatedShape(string Name, string AnchorId, bool IsUnion, string? 
 }
 
 /// <summary>A link from a group-4 property row to that schema's dedicated page.</summary>
-public record TypePageLink(string TypeName, string? Url);
+/// <param name="TypeName">The link text where it stands on its own ("See X", "Also includes").</param>
+/// <param name="SchemaId">The page's schema id; a row's type annotation links the spans that name it.</param>
+public record TypePageLink(string TypeName, string? Url, string? SchemaId = null);
 
 /// <summary>A single validation constraint, e.g. <c>min: 5</c> or <c>default: 10</c>.</summary>
 public record ConstraintDisplay(string Text, string? Code = null);
@@ -44,7 +50,15 @@ public enum UnionDisplayKind
 }
 
 /// <summary>One "One of:" badge for a union option.</summary>
-public record UnionBadge(string Text, bool IsTypeOption);
+/// <param name="Url">The page of a type documented on its own (QueryContainer, …), for <c>X</c> and <c>X[]</c> alike.</param>
+public record UnionBadge(string Text, bool IsTypeOption, string? Url = null)
+{
+	/// <summary>The linked type's name, without the <c>[]</c> an array option adds.</summary>
+	public string LinkText => Text.EndsWith("[]", StringComparison.Ordinal) ? Text[..^2] : Text;
+
+	/// <summary>What follows the link: <c>[]</c> for an array option, so the link names the type alone.</summary>
+	public string AfterLink => Text.EndsWith("[]", StringComparison.Ordinal) ? "[]" : "";
+}
 
 /// <summary>The precomputed inline rendering of a union type on a property row.</summary>
 public record UnionDisplay
@@ -71,6 +85,12 @@ public record UnionDisplay
 
 	/// <summary>Discriminator property name shown next to the badges.</summary>
 	public string? DiscriminatorProperty { get; init; }
+
+	/// <summary>
+	/// Closes the badges of a union that mixes literal values with objects, pointing at the variants listed below, so the
+	/// literals and the objects read as one list of options.
+	/// </summary>
+	public string? MoreOptions { get; init; }
 }
 
 /// <summary>Which nested rendering a property expands into.</summary>
@@ -84,23 +104,31 @@ public enum ChildKind
 	/// <summary>A plain nested property list (object, array items or simple-union base type).</summary>
 	PropertyList,
 
-	/// <summary>Union variants of a regular union property; always visible.</summary>
-	UnionVariants,
+	/// <summary>The variants of a union, or of <c>X</c> in an <c>X | X[]</c> union; hidden until found when collapsed.</summary>
+	UnionVariants
+}
 
-	/// <summary>Union variants nested under an X | X[] simple union; participates in hidden="until-found".</summary>
-	SimpleUnionVariants
+/// <summary>The id of the container that holds a row's nested rows, which its show/hide toggle controls.</summary>
+public static class NestedRowsId
+{
+	// A field's anchor is "{row}-{name}", so a field named "children" would take a single-dash suffix: the double dash keeps them apart.
+	public static string Of(string anchorId) => $"{anchorId}--children";
 }
 
 /// <summary>The synthetic <c>&lt;string&gt;</c> key row a dictionary property nests its value properties under.</summary>
 public record DictionaryChildDisplay
 {
 	public required string KeyAnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
 	public required bool UseHidden { get; init; }
 	public required TypeAnnotation ValueType { get; init; }
+
+	/// <summary>The literals a map value can take, as a "Values:" row under the key.</summary>
+	public IReadOnlyList<string> EnumValues { get; init; } = [];
 	public required ApiPropertyList Properties { get; init; }
 }
 
@@ -131,12 +159,19 @@ public record ApiProperty
 	public required IOpenApiSchema Schema { get; init; }
 
 	public required string AnchorId { get; init; }
+	public string ChildrenId => NestedRowsId.Of(AnchorId);
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
+
+	/// <summary>For a path parameter that some routes leave out, the route to use without it; the row reads "optional".</summary>
+	public string? OptionalRoute { get; init; }
+
+	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
+	public bool IsNullable { get; init; }
 	public required bool IsLast { get; init; }
 	public required bool IsRecursive { get; init; }
 
-	/// <summary>Whether the row is in a request body (vs response); kept for callers that branch on context.</summary>
+	/// <summary>Whether the row is part of the request, in its body or its parameters, rather than a response or a type page.</summary>
 	public required bool IsRequest { get; init; }
 
 	public required TypeAnnotation Type { get; init; }
@@ -147,10 +182,13 @@ public record ApiProperty
 	public bool HasDescription => DescriptionHtml.Value is { Length: > 0 };
 
 	public required bool ShowDeprecatedBadge { get; init; }
-	public AvailabilityBadgeData? Availability { get; init; }
+	public ApplicableToViewModel? Availability { get; init; }
 	public ExternalDocLink? ExternalDocs { get; init; }
 	public IReadOnlyList<ConstraintDisplay> Constraints { get; init; } = [];
 	public IReadOnlyList<string> EnumValues { get; init; } = [];
+
+	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
+	public string? Example { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>
@@ -164,6 +202,15 @@ public record ApiProperty
 	/// <summary>Further schemas an <c>allOf</c> merges in; the row's type names only the first.</summary>
 	public IReadOnlyList<TypePageLink> AlsoIncludes { get; init; } = [];
 
+	/// <summary>Which of the object's fields it needs, when a <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
+	public RequiredAlternatives? Requires { get; init; }
+
+	/// <summary>
+	/// The two shapes of an <c>X | X[]</c> row whose type does not say so and whose fields list <c>X</c>'s: the row reads
+	/// "X or X[]", since nothing else tells the reader an array is accepted too.
+	/// </summary>
+	public SingleOrArray? SingleOrArray { get; init; }
+
 	public required bool IsCollapsible { get; init; }
 	public required bool DefaultExpanded { get; init; }
 	public required int NestedCount { get; init; }
@@ -173,6 +220,15 @@ public record ApiProperty
 
 /// <summary>An ordered list of property rows; the model for <c>_PropertyList</c>.</summary>
 public record ApiPropertyList(IReadOnlyList<ApiProperty> Items);
+
+/// <summary>
+/// How an <c>X | X[]</c> row names its two shapes: <c>Rescore</c> and <c>Rescore[]</c>. A map's array takes the
+/// <c>[]</c> in front, <c>[] map string to X</c>, since <c>map string to X[]</c> would read as a map of arrays.
+/// </summary>
+public record SingleOrArray(string One, string Many);
+
+/// <summary>A "Requires at least one of:" row; each option is a field, or fields joined by <c>+</c> that go together.</summary>
+public record RequiredAlternatives(string Label, IReadOnlyList<string> Options);
 
 /// <summary>A "Values:" row; long lists show the first few literals and fold the rest behind a toggle.</summary>
 public record EnumValueList(IReadOnlyList<string> Values)

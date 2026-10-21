@@ -3,32 +3,31 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-[YamlSerializable]
 internal class TableOfContentsDto
 {
-	[YamlMember(Alias = "project")]
+	[YamlPropertyName("project")]
 	public string? Project { get; set; }
 
-	[YamlMember(Alias = "toc")]
-	internal TocEntryListDto TocEntries { get; set; } = [];
+	[YamlPropertyName("toc")]
+	public TocEntryListDto TocEntries { get; set; } = [];
 
 	/// <summary>
 	/// When <c>true</c>, this table of contents is rendered as an island in the navigation tree.
 	/// In isolated builds the root docset is never an island (it has no parent); in assembled builds
 	/// the node is re-parented under <c>SiteNavigation</c> and the flag takes effect.
 	/// </summary>
-	[YamlMember(Alias = "island")]
+	[YamlPropertyName("island")]
 	public bool Island { get; set; }
 
 	/// <summary>
 	/// Set of diagnostic hint types to suppress. Deserialized directly from YAML list of strings.
 	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch"
 	/// </summary>
-	[YamlMember(Alias = "suppress")]
+	[YamlPropertyName("suppress")]
 	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
 
 	/// <summary>
@@ -36,9 +35,15 @@ internal class TableOfContentsDto
 	/// listed in this navigation file unless the page selects one explicitly via frontmatter.
 	/// Nested <c>toc.yml</c> files may override the value inherited from a parent navigation file.
 	/// </summary>
-	[YamlMember(Alias = "default_cta")]
+	[YamlPropertyName("default_cta")]
 	public string? DefaultCta { get; set; }
 
-	public static TableOfContentsDto Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsDto>(json);
+	public static TableOfContentsDto Deserialize(string json) => ConfigurationFileProvider.Deserialize<TableOfContentsDto>(json);
+
+	/// <summary>
+	/// Deserializes a <c>toc.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
+	/// silently skipping them.
+	/// </summary>
+	public static TableOfContentsDto Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<TableOfContentsDto>(json, collector, sourceName);
 }

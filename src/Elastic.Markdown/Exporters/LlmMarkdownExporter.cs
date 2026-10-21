@@ -10,8 +10,8 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 using Markdig.Syntax;
 

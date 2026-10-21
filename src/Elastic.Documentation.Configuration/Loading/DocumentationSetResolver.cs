@@ -267,7 +267,8 @@ internal static class DocumentationSetResolver
 				: Valid(branding.Favicon, "branding.favicon"),
 			AppleTouchIcon = string.IsNullOrEmpty(branding.AppleTouchIcon)
 				? DiscoverBrandingFile(["apple-touch-icon.png"], docset)
-				: Valid(branding.AppleTouchIcon, "branding.apple-touch-icon")
+				: Valid(branding.AppleTouchIcon, "branding.apple-touch-icon"),
+			Copyright = branding.Copyright
 		};
 	}
 

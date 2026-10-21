@@ -2,13 +2,19 @@
  * Examples rail on API operation pages: example chips pick a scenario, each scenario shows a
  * scroll-snap carousel with one card per language. Console is the default language; an explicit pick is remembered across pages.
  */
+import {
+    ChipRowParts,
+    fitChipRow,
+    observeChipRow,
+    registerChipRows,
+} from './chip-row'
 import { iconCheckEui, iconCopyEui, temporarilyChangeIcon } from './copybutton'
 import { closeIcon, fullscreenIcon } from './icons'
 import { prefersReducedMotion } from './motion'
 import { lockPageScroll } from './scroll-lock'
 import { flashTooltip, initTooltips } from './tooltip'
-import Fuse from 'fuse.js'
-import type { Instance } from 'tippy.js'
+
+export { packChips } from './chip-row'
 
 export const apiLanguageStorageKey = 'api-language'
 const defaultLanguage = 'Console'
@@ -50,7 +56,12 @@ function writeDeepLink(lang: string | undefined, example: string | undefined) {
     const params = new URLSearchParams()
     if (example) params.set('example', example.toLowerCase())
     if (lang) params.set('lang', lang.toLowerCase())
-    window.history.replaceState(null, '', `#${params.toString()}`)
+    // Keep htmx's history state, or Back/Forward can't restore this page.
+    window.history.replaceState(
+        window.history.state,
+        '',
+        `#${params.toString()}`
+    )
 }
 
 function sameLanguage(a: string | undefined, b: string | undefined) {
@@ -86,20 +97,27 @@ function syncStripHeight(carousel: HTMLElement) {
     if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
 }
 
-/** Offers "Show more" only when the description is cut off by its three-line clamp. */
-function syncDescription(examples: HTMLElement) {
-    const description = visiblePanel(examples)?.querySelector<HTMLElement>(
-        '[data-example-description]'
-    )
-    const text = description?.querySelector<HTMLElement>(
-        '.api-example-description-text'
-    )
-    const toggle = description?.querySelector<HTMLElement>(
-        '[data-description-toggle]'
-    )
-    if (!description || !text || !toggle) return
-    const open = description.classList.contains('is-open')
-    toggle.hidden = !open && text.scrollHeight <= text.clientHeight + 1
+/** Offers "Show more" only on captions cut off by their three-line clamp. A hidden one measures zero, so it waits until shown. */
+export function syncDescriptions(root: HTMLElement) {
+    const clipped = Array.from(
+        root.querySelectorAll<HTMLElement>('[data-example-description]')
+    ).flatMap((description) => {
+        const text = description.querySelector<HTMLElement>(
+            '.api-example-caption-text'
+        )
+        const toggle = description.querySelector<HTMLElement>(
+            '[data-description-toggle]'
+        )
+        if (!text || !toggle || text.clientHeight === 0) return []
+        const open = description.classList.contains('is-open')
+        return [
+            {
+                toggle,
+                hidden: !open && text.scrollHeight <= text.clientHeight + 1,
+            },
+        ]
+    })
+    clipped.forEach(({ toggle, hidden }) => (toggle.hidden = hidden))
 }
 
 function toggleDescription(button: HTMLElement) {
@@ -279,7 +297,7 @@ function showScenario(examples: HTMLElement, scenarioId: string): void {
         })
     const carousel = visibleCarousel(examples)
     if (carousel) syncStripHeight(carousel)
-    syncDescription(examples)
+    syncDescriptions(visiblePanel(examples) ?? examples)
     fitChips(examples)
 }
 
@@ -287,291 +305,27 @@ function currentScenario(examples: HTMLElement): string | undefined {
     return visiblePanel(examples)?.dataset.scenario
 }
 
-const maxChipRows = 2
-
-/** Lines a run of items wraps into, the way flex-wrap lays them out. */
-function lineCount(widths: number[], rowWidth: number, gap: number): number {
-    let lines = 1
-    let x = 0
-    for (const width of widths.map((w) => Math.min(w, rowWidth))) {
-        if (x > 0 && x + gap + width > rowWidth) {
-            lines++
-            x = width
-        } else x = x > 0 ? x + gap + width : width
-    }
-    return lines
+const exampleChips: ChipRowParts = {
+    row: '[data-example-chips]',
+    chip: '.api-example-chip[data-scenario]',
+    chipTitle: '.api-example-chip-title',
+    more: '[data-example-more]',
+    moreLabel: '[data-example-more-label]',
+    menu: '[data-example-menu]',
+    item: '[data-scenario]',
+    itemTitle: '.api-example-menu-item-title',
+    filter: '[data-example-filter]',
+    idAttribute: 'data-scenario',
 }
 
-/**
- * Which chips stay in the row: all of them when they fit in `maxRows` lines, otherwise as many from the start as
- * fit next to the "more" button. The active chip always stays, taking the place of the last one that fits.
- */
-export function packChips(
-    widths: number[],
-    rowWidth: number,
-    gap: number,
-    moreWidth: number,
-    maxRows: number,
-    activeIndex: number
-): number[] {
-    const all = widths.map((_, i) => i)
-    if (lineCount(widths, rowWidth, gap) <= maxRows) return all
-
-    const fits = (indexes: number[]) =>
-        lineCount(
-            [...indexes.map((i) => widths[i]), moreWidth],
-            rowWidth,
-            gap
-        ) <= maxRows
-    for (let keep = widths.length - 1; keep > 0; keep--) {
-        const candidate = all.slice(0, keep)
-        if (activeIndex >= keep) candidate[keep - 1] = activeIndex
-        if (fits(candidate)) return candidate
-    }
-    return activeIndex >= 0 ? [activeIndex] : []
-}
-
-function chipMenuSupported(menu: HTMLElement | null): menu is HTMLElement {
-    return !!menu && typeof menu.hidePopover === 'function'
-}
-
-/** Removes the tooltip text and the tippy instance already made from it, which keeps the old text. */
-function clearChipTooltip(chip: HTMLElement) {
-    delete chip.dataset.tippyContent
-    ;(chip as HTMLElement & { _tippy?: Instance })._tippy?.destroy()
-}
-
-function setMoreLabel(more: HTMLElement, count: number) {
-    more.querySelector('[data-example-more-label]')!.textContent =
-        `+${count} more`
-}
-
-/** Moves the chips that do not fit in two lines into the "more" menu. Without popover support every chip stays. */
 function fitChips(examples: HTMLElement) {
-    const row = examples.querySelector<HTMLElement>('[data-example-chips]')
-    // Until the first fit the row is clipped to two lines (api-docs.css), so the page does not jump when chips move into the menu.
-    row?.classList.add('is-fitted')
-    const more = row?.querySelector<HTMLElement>('[data-example-more]')
-    const menu = row?.querySelector<HTMLElement>('[data-example-menu]') ?? null
-    if (!row || !more || !chipMenuSupported(menu)) return
-
-    const chips = Array.from(
-        row.querySelectorAll<HTMLElement>('.api-example-chip[data-scenario]')
-    )
-    chips.forEach((chip) => (chip.hidden = false))
-    more.hidden = false
-    // Measured with the longest label it can get, so the room kept for it is enough.
-    setMoreLabel(more, chips.length)
-    const rowWidth = row.clientWidth
-    // Unmeasurable (display: none, or no layout): leave every chip in place.
-    if (rowWidth === 0) {
-        more.hidden = true
-        return
-    }
-
-    // Everything is measured before anything is written, so the fit costs one layout pass.
-    const gap = parseFloat(getComputedStyle(row).columnGap) || 6
-    // +1 because offsetWidth rounds down, and a chip a fraction too wide would wrap onto a third line.
-    const widths = chips.map((chip) => chip.offsetWidth + 1)
-    const titles = chips.map((chip) =>
-        chip.querySelector<HTMLElement>('.api-example-chip-title')
-    )
-    const truncated = titles.map((t) => !!t && t.scrollWidth > t.clientWidth)
-    const visible = new Set(
-        packChips(
-            widths,
-            rowWidth,
-            gap,
-            more.offsetWidth + 1,
-            maxChipRows,
-            chips.findIndex((chip) => chip.classList.contains('is-active'))
-        )
-    )
-
-    const hiddenCount = chips.length - visible.size
-    const overflow = new Set<string | undefined>()
-    chips.forEach((chip, i) => {
-        chip.hidden = !visible.has(i)
-        if (chip.hidden) overflow.add(chip.dataset.scenario)
-        // A title cut off by the chip's width gets a tooltip with the whole of it; one that fits again loses it.
-        else if (truncated[i])
-            chip.dataset.tippyContent = titles[i]?.textContent?.trim() ?? ''
-        else clearChipTooltip(chip)
-    })
-    menu.querySelectorAll<HTMLElement>('[data-scenario]').forEach((item) => {
-        item.hidden = !overflow.has(item.dataset.scenario)
-    })
-    more.hidden = hiddenCount === 0
-    setMoreLabel(more, hiddenCount)
-    if (hiddenCount === 0) menu.hidePopover()
-}
-
-/** Refits when the rail changes width, since chip titles wrap differently. */
-function observeChips(examples: HTMLElement) {
-    const row = examples.querySelector<HTMLElement>('[data-example-chips]')
-    if (
-        !row ||
-        row.dataset.chipsObserved ||
-        typeof ResizeObserver === 'undefined'
-    )
-        return
-    row.dataset.chipsObserved = 'true'
-    let width = row.clientWidth
-    new ResizeObserver(() => {
-        // Only a change of width: refitting changes the row's height, which must not trigger another round.
-        if (row.clientWidth === width) return
-        width = row.clientWidth
-        fitChips(examples)
-    }).observe(row)
-}
-
-let openMenu: { menu: HTMLElement; more: HTMLElement } | null = null
-let followQueued = false
-
-/** Keeps the open menu with its button as the page scrolls or resizes, at most once a frame. */
-function followOpenMenu() {
-    if (!openMenu || followQueued) return
-    followQueued = true
-    requestAnimationFrame(() => {
-        followQueued = false
-        if (openMenu) positionMenu(openMenu.menu, openMenu.more)
-    })
-}
-
-/** Under the "more" button, or above it when there is no room below. Run again on scroll, so the menu stays with its button. */
-function positionMenu(menu: HTMLElement, more: HTMLElement) {
-    const anchor = more.getBoundingClientRect()
-    const size = menu.getBoundingClientRect()
-    const margin = 8
-    const left = Math.max(
-        margin,
-        Math.min(anchor.left, window.innerWidth - size.width - margin)
-    )
-    const below = anchor.bottom + 4
-    const top =
-        below + size.height > window.innerHeight - margin &&
-        anchor.top - 4 - size.height > margin
-            ? anchor.top - 4 - size.height
-            : below
-    menu.style.left = `${left}px`
-    menu.style.top = `${top}px`
-}
-
-/** Opens under the "more" button, or above it when there is no room below, and keeps the button's state in step. */
-function onMenuToggle(event: Event) {
-    const menu = event.target as HTMLElement | null
-    if (!menu?.matches('[data-example-menu]')) return
-    const more = menu
-        .closest<HTMLElement>('[data-example-chips]')
-        ?.querySelector<HTMLElement>('[data-example-more]')
-    const open = (event as ToggleEvent).newState === 'open'
-    more?.setAttribute('aria-expanded', open ? 'true' : 'false')
-    const filter = menu.querySelector<HTMLInputElement>('[data-example-filter]')
-    openMenu = open && more ? { menu, more } : null
-    if (!open && filter?.value) {
-        filter.value = ''
-        filterMenu(filter)
-    }
-    if (!open || !more) return
-
-    positionMenu(menu, more)
-    if (filter) filter.focus()
-    else menuItems(menu)[0]?.focus()
-}
-
-function menuItems(menu: HTMLElement): HTMLElement[] {
-    return Array.from(
-        menu.querySelectorAll<HTMLElement>('[role="menuitem"]:not([hidden])')
-    )
-}
-
-interface MenuSearch {
-    fuse: Fuse<{ item: HTMLElement; title: string }>
-    all: HTMLElement[]
-}
-
-const menuSearches = new WeakMap<HTMLElement, MenuSearch>()
-
-function menuSearch(menu: HTMLElement): MenuSearch {
-    let search = menuSearches.get(menu)
-    if (!search) {
-        const all = Array.from(
-            menu.querySelectorAll<HTMLElement>('[role="menuitem"]')
-        )
-        const entries = all.map((item) => ({
-            item,
-            title:
-                item
-                    .querySelector('.api-example-menu-item-title')
-                    ?.textContent?.trim() ??
-                item.textContent?.trim() ??
-                '',
-        }))
-        // Titles are long sentences: a match anywhere in them counts, and a typo or two is forgiven.
-        search = {
-            fuse: new Fuse(entries, {
-                keys: ['title'],
-                ignoreLocation: true,
-                threshold: 0.35,
-            }),
-            all,
-        }
-        menuSearches.set(menu, search)
-    }
-    return search
-}
-
-/** Every word must match (fuzzily) somewhere in the title; the best combined score ranks first. */
-function searchWords(fuse: MenuSearch['fuse'], query: string): HTMLElement[] {
-    const scores = new Map<HTMLElement, number>()
-    query
-        .split(/\s+/)
-        .filter(Boolean)
-        .forEach((word, i) => {
-            const found = new Map(
-                fuse.search(word).map((r) => [r.item.item, r.score ?? 0])
-            )
-            if (i === 0) found.forEach((score, item) => scores.set(item, score))
-            else
-                scores.forEach((score, item) => {
-                    const next = found.get(item)
-                    if (next === undefined) scores.delete(item)
-                    else scores.set(item, score + next)
-                })
-        })
-    return [...scores.entries()]
-        .sort((x, y) => x[1] - y[1])
-        .map(([item]) => item)
-}
-
-/** Fuzzy filter: shows the examples that are not in the row and match, best match first. */
-function filterMenu(input: HTMLInputElement) {
-    const menu = input.closest<HTMLElement>('[data-example-menu]')
-    const examples = input.closest<HTMLElement>('[data-api-examples]')
-    if (!menu || !examples) return
-    const inRow = new Set(
-        Array.from(examples.querySelectorAll<HTMLElement>('.api-example-chip'))
-            .filter((chip) => !chip.hidden)
-            .map((chip) => chip.dataset.scenario)
-    )
-    const { fuse, all } = menuSearch(menu)
-    const query = input.value.trim()
-    const matches = query ? searchWords(fuse, query) : all
-    const shown = matches.filter((item) => !inRow.has(item.dataset.scenario))
-    const shownSet = new Set(shown)
-    const parent = shown[0]?.parentElement ?? all[0]?.parentElement
-    // Matches first, in rank order; the rest follow hidden. Without a query, the original order comes back.
-    const order = [...shown, ...all.filter((item) => !shownSet.has(item))]
-    order.forEach((item) => {
-        item.hidden = !shownSet.has(item)
-        parent?.appendChild(item)
-    })
+    const row = examples.querySelector<HTMLElement>(exampleChips.row)
+    if (row) fitChipRow(row, exampleChips)
 }
 
 function selectScenario(examples: HTMLElement, scenarioId: string) {
-    const language = activeLanguage(visibleCarousel(examples) ?? examples)
     showScenario(examples, scenarioId)
-    applyPreferredLanguage(examples, language)
+    applyPreferredLanguage(examples)
     writeDeepLink(
         activeLanguage(visibleCarousel(examples) ?? examples),
         scenarioId
@@ -587,6 +341,7 @@ function applyPreferredLanguage(examples: HTMLElement, preferred?: string) {
     const carousel = visibleCarousel(examples)
     if (!carousel) return
     carousel.classList.add('is-settling')
+    lastSettled.set(carousel, Date.now())
     const picked = [preferred, savedApiLanguage(), defaultLanguage].some(
         (language) => !!language && showLanguage(carousel, language, false)
     )
@@ -602,7 +357,24 @@ function pickLanguage(examples: HTMLElement, language: string) {
     writeDeepLink(language, currentScenario(examples))
 }
 
-/** Follows swipes and free scrolls: the card that settles into view becomes the pick, like a dot click would. */
+const settleWindowMs = 1000
+const lastSettled = new WeakMap<HTMLElement, number>()
+
+/**
+ * Right after the page applies a language itself, the strip reports cards on the way: those are not picks.
+ * Not the data-scrolling hold: that one only covers smooth glides, and this apply jumps without animation.
+ */
+function recentlySettled(carousel: HTMLElement): boolean {
+    return (
+        Date.now() - (lastSettled.get(carousel) ?? -Infinity) < settleWindowMs
+    )
+}
+
+/**
+ * Follows swipes, free scrolls and find-in-page: the card that settles into view becomes the pick, like a dot
+ * click would. Right after the page applies the remembered language itself, the card still follows the strip but is
+ * not saved: a fallback card settling into view on its own must not replace the saved language.
+ */
 function observeStrip(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
     const examples = carousel.closest<HTMLElement>('[data-api-examples]')
@@ -612,16 +384,17 @@ function observeStrip(carousel: HTMLElement) {
 
     const observer = new IntersectionObserver(
         (entries) => {
+            if (carousel.dataset.scrolling) return
             const best = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
             const language = (best?.target as HTMLElement | undefined)?.dataset
                 .lang
-            if (carousel.dataset.scrolling) return
             if (!best || best.intersectionRatio < 0.6 || !language) return
             // Only a change counts: the first callback after load reports the card that is already active.
             if (sameLanguage(language, activeLanguage(carousel))) return
-            if (setActive(carousel, language)) pickLanguage(examples, language)
+            if (!setActive(carousel, language)) return
+            if (!recentlySettled(carousel)) pickLanguage(examples, language)
         },
         { root: strip, threshold: [0.6, 0.9] }
     )
@@ -851,32 +624,9 @@ function onClick(event: MouseEvent) {
     }
 }
 
-/** Arrow keys, Home and End move focus through the visible menu items. Returns whether the key was handled. */
-function moveInMenu(menu: HTMLElement, from: HTMLElement, key: string) {
-    const items = menuItems(menu)
-    const index = items.indexOf(from)
-    const next: Record<string, number> = {
-        ArrowDown: Math.min(items.length - 1, index + 1),
-        ArrowUp: index <= 0 ? 0 : index - 1,
-        Home: 0,
-        End: items.length - 1,
-    }
-    if (!(key in next) || items.length === 0) return false
-    // In the filter field, Home and End move the caret.
-    if (index < 0 && (key === 'Home' || key === 'End')) return false
-    items[next[key]].focus()
-    return true
-}
-
 function onKeydown(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null
     if (!target || event.metaKey || event.ctrlKey || event.altKey) return
-
-    const menu = target.closest<HTMLElement>('[data-example-menu]')
-    if (menu && moveInMenu(menu, target, event.key)) {
-        event.preventDefault()
-        return
-    }
 
     const strip = target.closest<HTMLElement>('[data-carousel-strip]')
     if (strip && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
@@ -896,19 +646,8 @@ export function initApiExamples(root: ParentNode = document): void {
         delegated = true
         document.addEventListener('click', onClick)
         document.addEventListener('keydown', onKeydown)
-        // toggle does not bubble, so it is caught on the way down.
-        document.addEventListener('toggle', onMenuToggle, true)
-        window.addEventListener('scroll', followOpenMenu, {
-            capture: true,
-            passive: true,
-        })
-        window.addEventListener('resize', followOpenMenu)
-        document.addEventListener('input', (event) => {
-            const input = event.target as HTMLElement | null
-            if (input?.matches('[data-example-filter]'))
-                filterMenu(input as HTMLInputElement)
-        })
     }
+    registerChipRows(exampleChips)
     initTooltips()
 
     const link = readDeepLink()
@@ -928,9 +667,10 @@ export function initApiExamples(root: ParentNode = document): void {
                 .querySelectorAll<HTMLElement>('[data-api-carousel]')
                 .forEach(observeStrip)
             applyPreferredLanguage(examples, link.lang)
-            if (!link.example) syncDescription(examples)
+            if (!link.example) syncDescriptions(examples)
             fitChips(examples)
-            observeChips(examples)
+            const row = examples.querySelector<HTMLElement>(exampleChips.row)
+            if (row) observeChipRow(row, exampleChips)
             // Web fonts change the chips' widths once they load.
             if (document.fonts && document.fonts.status !== 'loaded')
                 void document.fonts.ready.then(() => fitChips(examples))

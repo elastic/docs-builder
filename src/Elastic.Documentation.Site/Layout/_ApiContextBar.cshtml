@@ -1,0 +1,19 @@
+@inherits RazorSlice<Elastic.Documentation.Site.ApiContextBar>
+@* Which API this is: product and version together on the left, the spec download on the right. The breadcrumb is the
+   page's own. The catalog has no API, so the layout does not render a bar there.
+   Rendered inside #main-container by the API layout, so a boosted page swap refreshes it with the page.
+   Own ids: the docs bar's #secondary-nav-host / #secondary-nav carry scripts and styles that must not apply here.
+   The bar is the same in both navigation-preview states, so its styles are not scoped to that flag. *@
+<div id="api-context-bar-host" class="api-context-bar-host relative w-full md:sticky md:top-0 md:z-30 bg-white">
+	<nav id="api-context-bar" class="api-context-bar" aria-label="API">
+		<div class="api-context-bar__inner">
+			<div class="api-context-switcher">
+				@await RenderPartialAsync(_ApiProductSwitcher.Create(Model))
+				@await RenderPartialAsync(_ApiVersion.Create(Model))
+			</div>
+			<div class="api-context-actions">
+				@await RenderPartialAsync(_ApiDownloadSource.Create(Model.Spec))
+			</div>
+		</div>
+	</nav>
+</div>

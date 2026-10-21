@@ -4,9 +4,11 @@
  * for both OperationView and SchemaView pages.
  */
 import { decorateApiCodeTokens } from './api-code-tokens'
-import { initApiExamples } from './api-examples-carousel'
-import { applyParamSummaryFit } from './api-param-summary'
+import { initApiExamples, syncDescriptions } from './api-examples-carousel'
+import { fitParamSummaries } from './api-param-summary'
+import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
 // Check if hidden="until-found" is supported (for find-in-page in collapsed sections)
@@ -15,14 +17,15 @@ const supportsHiddenUntilFound = 'onbeforematch' in document.body
 function setDisclosureToggle(
     toggleBtn: Element | null,
     expanded: boolean,
-    noun: string
+    noun?: string
 ): void {
     if (!toggleBtn) return
     toggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false')
     const icon = toggleBtn.querySelector('.toggle-icon')
     const label = toggleBtn.querySelector('.toggle-label')
     if (icon) icon.textContent = expanded ? '−' : '+'
-    if (label) label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
+    if (label && noun)
+        label.textContent = `${expanded ? 'hide' : 'show'} ${noun}`
 }
 
 function setUntilFoundHidden(
@@ -55,419 +58,280 @@ function setEnumValuesExpanded(
     )
 }
 
-function expandResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        'button.response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('collapsed')
-    panel.classList.add('expanded')
-    toggleBtn?.setAttribute('aria-expanded', 'true')
-    setUntilFoundHidden(body, false)
+interface Disclosure {
+    container: string
+    toggle: string
+    body: string
+    trigger: string
+    noun?: string
 }
 
-function collapseResponsePanel(panel: HTMLElement): void {
-    const toggleBtn = panel.querySelector<HTMLButtonElement>(
-        'button.response-status-toggle'
-    )
-    const body = panel.querySelector<HTMLElement>(
-        ':scope > .response-panel-body'
-    )
-
-    panel.classList.remove('expanded')
-    panel.classList.add('collapsed')
-    toggleBtn?.setAttribute('aria-expanded', 'false')
-    setUntilFoundHidden(body, true)
+const RESPONSE_DISCLOSURE: Disclosure = {
+    container: '.response-panel',
+    toggle: ':scope > .response-summary .response-status-toggle',
+    body: ':scope > .response-panel-body',
+    trigger: '.response-summary',
 }
 
-/**
- * Expand a property item and all its ancestors
- */
-function expandPropertyItem(propertyItem: HTMLElement): void {
-    if (!propertyItem) return
+// Order matters where a row can match more than one entry: variants before properties.
+const DISCLOSURES: Disclosure[] = [
+    {
+        container: '.union-variant-item',
+        toggle: ':scope > .union-expand-toggle > .expand-toggle',
+        body: ':scope > .nested-properties',
+        trigger: '.union-expand-toggle > .expand-toggle',
+        noun: 'properties',
+    },
+    {
+        container: '.property-item',
+        toggle: ':scope > .expand-toggle-row > .expand-toggle',
+        body: ':scope > .nested-properties',
+        trigger: '.expand-toggle-row > .expand-toggle',
+        noun: 'properties',
+    },
+    {
+        container: '[data-param-section]',
+        toggle: ':scope > .api-param-section-header > .api-param-section-toggle',
+        body: ':scope > .api-param-section-body',
+        trigger:
+            '.api-param-section-header > .headerlink, .api-param-section-toggle',
+    },
+    RESPONSE_DISCLOSURE,
+]
 
-    const toggleBtn = propertyItem.querySelector<HTMLButtonElement>(
-        ':scope > .expand-toggle-row > .expand-toggle'
-    )
-    const nestedProps = propertyItem.querySelector<HTMLElement>(
-        ':scope > .nested-properties'
-    )
-
-    propertyItem.classList.remove('collapsed')
-    propertyItem.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'properties')
-
-    if (nestedProps) {
-        nestedProps.removeAttribute('hidden')
-    }
-
-    // Recursively expand parent property items
-    const parentItem = propertyItem.parentElement?.closest<HTMLElement>(
-        '.property-item, .union-variant-item'
-    )
-    if (parentItem) {
-        if (parentItem.classList.contains('union-variant-item')) {
-            expandUnionVariantItem(parentItem)
-        } else {
-            expandPropertyItem(parentItem)
-        }
-    }
-
-    const responsePanel = propertyItem.closest<HTMLElement>('.response-panel')
-    if (responsePanel) expandResponsePanel(responsePanel)
+function disclosureFor(el: Element): Disclosure | undefined {
+    return DISCLOSURES.find((d) => el.matches(d.container))
 }
 
-/**
- * Expand a union variant item and all its ancestors
- */
-function expandUnionVariantItem(variantItem: HTMLElement): void {
-    if (!variantItem) return
+function setDisclosureExpanded(
+    container: HTMLElement,
+    d: Disclosure,
+    expanded: boolean
+): void {
+    container.classList.toggle('expanded', expanded)
+    container.classList.toggle('collapsed', !expanded)
+    setDisclosureToggle(container.querySelector(d.toggle), expanded, d.noun)
+    setUntilFoundHidden(container.querySelector<HTMLElement>(d.body), !expanded)
+    if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
+}
 
-    const toggleBtn = variantItem.querySelector<HTMLButtonElement>(
-        ':scope > .union-expand-toggle > .expand-toggle'
+/** Responses behave as an accordion and keep the examples rail on the same status code. */
+function onResponseOpened(panel: HTMLElement): void {
+    panel
+        .closest('[data-api-responses]')
+        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
+        .forEach((other) => {
+            if (other !== panel)
+                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
+        })
+    const status = panel.dataset.status
+    if (!status) return
+    document
+        .querySelectorAll<HTMLElement>('[data-api-response-samples]')
+        .forEach((widget) => {
+            // applyApiResponseStatus falls back to the first tab, so skip rails without this status
+            if (
+                widget.querySelector(
+                    `.example-response-tab[data-status="${status}"]`
+                )
+            )
+                applyApiResponseStatus(widget, status)
+        })
+}
+
+function openMainResponse(status: string): void {
+    const panel = document.querySelector<HTMLElement>(
+        `[data-api-responses] .response-panel:not(.response-panel--static)[data-status="${status}"]`
     )
-    const nestedProps = variantItem.querySelector<HTMLElement>(
-        ':scope > .nested-properties'
-    )
-
-    variantItem.classList.remove('collapsed')
-    variantItem.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'properties')
-
-    if (nestedProps) {
-        nestedProps.removeAttribute('hidden')
-    }
-
-    // Recursively expand parent items
-    const parentItem = variantItem.parentElement?.closest<HTMLElement>(
-        '.property-item, .union-variant-item'
-    )
-    if (parentItem) {
-        if (parentItem.classList.contains('union-variant-item')) {
-            expandUnionVariantItem(parentItem)
-        } else {
-            expandPropertyItem(parentItem)
-        }
-    }
+    if (panel) setDisclosureExpanded(panel, RESPONSE_DISCLOSURE, true)
 }
 
 /**
- * Expand a union variants container and all its ancestors
+ * Opens every collapsed disclosure whose body holds a link or find-in-page target, and switches
+ * every variant chip list on the way to the variant that holds it, so the target lands on visible
+ * content in every browser, including those without hidden="until-found". A row that only holds
+ * the target in its own header stays as it was.
  */
-function expandUnionContainer(container: HTMLElement): void {
-    if (!container) return
-
-    const toggleBtn = container.querySelector<HTMLButtonElement>(
-        ':scope > .union-collapse-toggle > .union-group-toggle'
-    )
-    const variantsContent = container.querySelector<HTMLElement>(
-        ':scope > .union-variants-content'
-    )
-
-    container.classList.remove('collapsed')
-    container.classList.add('expanded')
-    setDisclosureToggle(toggleBtn, true, 'type options')
-
-    if (variantsContent) {
-        variantsContent.removeAttribute('hidden')
+export function revealCollapsedAncestors(target: HTMLElement): boolean {
+    let revealed = revealVariantsAround(target)
+    for (let el = target.parentElement; el; el = el.parentElement) {
+        if (!el.classList.contains('collapsed')) continue
+        const d = disclosureFor(el)
+        if (!d || !el.querySelector(d.body)?.contains(target)) continue
+        setDisclosureExpanded(el, d, true)
+        revealed = true
     }
-
-    // Recursively expand parent items
-    const parentItem = container.parentElement?.closest<HTMLElement>(
-        '.property-item, .union-variant-item'
-    )
-    if (parentItem) {
-        if (parentItem.classList.contains('union-variant-item')) {
-            expandUnionVariantItem(parentItem)
-        } else {
-            expandPropertyItem(parentItem)
-        }
-    }
-}
-
-function paramSectionBody(section: HTMLElement): HTMLElement | null {
-    return section.querySelector<HTMLElement>(
-        ':scope > .api-param-section-body'
-    )
-}
-
-function expandParamSection(section: HTMLElement): void {
-    const toggle = section.querySelector<HTMLButtonElement>(
-        ':scope > .api-param-section-header > .api-param-section-toggle'
-    )
-    const body = paramSectionBody(section)
-
-    section.classList.remove('collapsed')
-    section.classList.add('expanded')
-    toggle?.setAttribute('aria-expanded', 'true')
-    body?.removeAttribute('hidden')
-}
-
-function collapseParamSection(section: HTMLElement): void {
-    const toggle = section.querySelector<HTMLButtonElement>(
-        ':scope > .api-param-section-header > .api-param-section-toggle'
-    )
-    const body = paramSectionBody(section)
-    const summary = section.querySelector<HTMLElement>('[data-param-summary]')
-
-    section.classList.remove('expanded')
-    section.classList.add('collapsed')
-    toggle?.setAttribute('aria-expanded', 'false')
-    if (body && supportsHiddenUntilFound)
-        body.setAttribute('hidden', 'until-found')
-    else body?.setAttribute('hidden', '')
-
-    if (summary) requestAnimationFrame(() => applyParamSummaryFit(summary))
+    return revealed
 }
 
 let paramSummaryObserver: ResizeObserver | null = null
 let paramHashListenerBound = false
 
+function fitAllParamSummaries(): void {
+    fitParamSummaries(
+        document.querySelectorAll<HTMLElement>('[data-param-summary]')
+    )
+}
+
 function initParamSummaries(): void {
     paramSummaryObserver?.disconnect()
-    paramSummaryObserver = new ResizeObserver((entries) => {
-        for (const entry of entries)
-            applyParamSummaryFit(entry.target as HTMLElement)
-    })
+    // The observer reports every summary once on observe(), which does the first fit
+    paramSummaryObserver = new ResizeObserver((entries) =>
+        fitParamSummaries(entries.map((entry) => entry.target as HTMLElement))
+    )
 
     document
         .querySelectorAll<HTMLElement>('[data-param-summary]')
-        .forEach((summary) => {
-            applyParamSummaryFit(summary)
-            paramSummaryObserver?.observe(summary)
-        })
+        .forEach((summary) => paramSummaryObserver?.observe(summary))
+
+    // A web font landing changes the name widths but not the summary's size
+    if (document.fonts && document.fonts.status !== 'loaded')
+        void document.fonts.ready.then(fitAllParamSummaries)
 
     if (!paramHashListenerBound) {
         paramHashListenerBound = true
-        window.addEventListener('hashchange', expandParamSectionForHash)
+        window.addEventListener('hashchange', onHashChange)
     }
-}
-
-function expandParamSectionForHash(): void {
-    const id = window.location.hash.slice(1)
-    if (!id) return
-    const target = document.getElementById(id)
-    const section = target?.closest<HTMLElement>('[data-param-section]')
-    if (section) expandParamSection(section)
-    const panel = target?.closest<HTMLElement>('.response-panel')
-    if (panel) expandResponsePanel(panel)
-    if (target && revealCollapsedAncestors(target)) target.scrollIntoView()
 }
 
 /**
- * Opens every collapsed property, variant and "type options" list around a link target, so a
- * "Same fields as" link or a shared URL lands on visible content in every browser, including
- * those without hidden="until-found". The target's own row stays as it was.
+ * Opens what hides a link target the way find-in-page does: each hidden="until-found" ancestor
+ * gets a beforematch event, so a widget such as the authentication tabs can select the panel
+ * that holds the target before it is shown.
  */
-export function revealCollapsedAncestors(target: HTMLElement): boolean {
-    const ownRow = target.closest<HTMLElement>('.property-item')
-    const start =
-        ownRow && ownRow.contains(target) && target.tagName === 'DT'
-            ? ownRow.parentElement
-            : target.parentElement
+export function revealHiddenAncestors(target: HTMLElement): boolean {
     let revealed = false
-    for (let el = start; el; el = el.parentElement) {
-        if (!el.classList.contains('collapsed')) continue
-        if (el.classList.contains('union-variants-container')) {
-            expandUnionContainer(el)
-            revealed = true
-        } else if (el.classList.contains('union-variant-item')) {
-            expandUnionVariantItem(el)
-            revealed = true
-        } else if (el.classList.contains('property-item')) {
-            expandPropertyItem(el)
-            revealed = true
-        }
+    for (let el = target.parentElement; el; el = el.parentElement) {
+        if (el.getAttribute('hidden') !== 'until-found') continue
+        el.dispatchEvent(new Event('beforematch', { bubbles: true }))
+        setUntilFoundHidden(el, false)
+        revealed = true
     }
     return revealed
+}
+
+function hashTarget(): HTMLElement | null {
+    let id = window.location.hash.slice(1)
+    try {
+        id = decodeURIComponent(id)
+    } catch {
+        // A malformed escape is looked up as written
+    }
+    return id ? document.getElementById(id) : null
+}
+
+function revealHashTarget(): void {
+    const target = hashTarget()
+    if (!target) return
+    // Not short-circuited: a section can already be open while a tab inside it is not
+    const collapsed = revealCollapsedAncestors(target)
+    const hidden = revealHiddenAncestors(target)
+    if (collapsed || hidden) target.scrollIntoView()
+}
+
+const FLASH_CLASS = 'api-link-target-flash'
+const FLASH_FALLBACK_MS = 3200
+const FLASH_SETTLE_MS = 200
+const FLASH_GIVE_UP_MS = 10000
+let initialHashFlashDone = false
+
+const flashCleanups = new WeakMap<HTMLElement, () => void>()
+
+function playFlash(el: HTMLElement): void {
+    // A flash still running on this element must not clear the new one early
+    flashCleanups.get(el)?.()
+    el.classList.remove(FLASH_CLASS)
+    // Reflow so a class re-added in the same frame restarts the animation
+    void el.offsetWidth
+    el.classList.add(FLASH_CLASS)
+    const clear = () => {
+        window.clearTimeout(fallback)
+        el.removeEventListener('animationend', clear)
+        el.classList.remove(FLASH_CLASS)
+        flashCleanups.delete(el)
+    }
+    const fallback = window.setTimeout(clear, FLASH_FALLBACK_MS)
+    el.addEventListener('animationend', clear)
+    flashCleanups.set(el, clear)
+}
+
+/**
+ * Waits until the element has stayed on screen for a moment, so a scroll still in flight doesn't
+ * spend the flash before the reader arrives. Without IntersectionObserver it flashes at once.
+ */
+function playFlashWhenSettled(el: HTMLElement): void {
+    if (typeof IntersectionObserver === 'undefined') {
+        playFlash(el)
+        return
+    }
+    let settle: number | undefined
+    const observer = new IntersectionObserver((entries) => {
+        window.clearTimeout(settle)
+        if (!entries[entries.length - 1]?.isIntersecting) return
+        settle = window.setTimeout(() => {
+            stop()
+            playFlash(el)
+        }, FLASH_SETTLE_MS)
+    })
+    const giveUp = window.setTimeout(() => stop(), FLASH_GIVE_UP_MS)
+    function stop() {
+        window.clearTimeout(settle)
+        window.clearTimeout(giveUp)
+        observer.disconnect()
+    }
+    observer.observe(el)
+}
+
+/**
+ * Pulses what a link points at so the reader can find it. A property row pulses on its name, a
+ * heading keeps the browser's plain jump, and anything else pulses as a whole.
+ */
+function flashTarget(target: HTMLElement): void {
+    if (target.matches('h1, h2, h3, h4, h5, h6')) return
+    const name = target.matches('dt')
+        ? target.querySelector<HTMLElement>(':scope > code')
+        : null
+    playFlashWhenSettled(name ?? target)
+}
+
+function onHashChange(): void {
+    revealHashTarget()
+    const target = hashTarget()
+    if (target) flashTarget(target)
 }
 
 /**
  * Initialize API docs for OperationView pages
  */
-function initOperationView(section: HTMLElement): void {
-    // Add beforematch event listeners for hidden="until-found" elements
-    // When find-in-page matches content inside collapsed sections, expand them
-    if (supportsHiddenUntilFound) {
-        section
-            .querySelectorAll<HTMLElement>(
-                '.nested-properties[hidden="until-found"]'
-            )
-            .forEach((nestedProps) => {
-                nestedProps.addEventListener('beforematch', function () {
-                    const parentItem = nestedProps.parentElement
-                    if (parentItem?.classList.contains('union-variant-item')) {
-                        expandUnionVariantItem(parentItem)
-                    } else if (
-                        parentItem?.classList.contains('property-item')
-                    ) {
-                        expandPropertyItem(parentItem)
-                    }
-                })
-            })
+let examplesScrollBound = false
 
-        // Add beforematch event listeners for union variants content
-        section
-            .querySelectorAll<HTMLElement>(
-                '.union-variants-content[hidden="until-found"]'
-            )
-            .forEach((variantsContent) => {
-                variantsContent.addEventListener('beforematch', function () {
-                    const container = variantsContent.parentElement
-                    if (
-                        container?.classList.contains(
-                            'union-variants-container'
-                        )
-                    ) {
-                        expandUnionContainer(container)
-                    }
-                })
-            })
-
-        section
-            .querySelectorAll<HTMLElement>(
-                '.response-panel-body[hidden="until-found"]'
-            )
-            .forEach((panelBody) => {
-                panelBody.addEventListener('beforematch', function () {
-                    const panel = panelBody.parentElement
-                    if (panel?.classList.contains('response-panel')) {
-                        expandResponsePanel(panel)
-                    }
-                })
-            })
-
-        section
-            .querySelectorAll<HTMLElement>(
-                '.api-param-section-body[hidden="until-found"]'
-            )
-            .forEach((body) => {
-                body.addEventListener('beforematch', function () {
-                    const container = body.closest<HTMLElement>(
-                        '[data-param-section]'
-                    )
-                    if (container) expandParamSection(container)
-                })
-            })
-    }
-
-    // Examples jump button visibility
+/** Shows the "jump to examples" button while the examples are still below the fold. */
+function updateExamplesButtonVisibility(): void {
     const examplesBtn = document.getElementById('examples-jump-btn')
-    const examplesSection = section.querySelector(
-        'h3[data-section="request-examples"], h3[data-section="response-examples"]'
+    const examplesSection = document.querySelector(
+        '#elastic-api-v3 h3[data-section="request-examples"], #elastic-api-v3 h3[data-section="response-examples"]'
     )
+    if (!examplesBtn || !examplesSection) return
+    const belowFold =
+        examplesSection.getBoundingClientRect().top > window.innerHeight
+    examplesBtn.classList.toggle('visible', belowFold)
+}
 
-    function updateExamplesButtonVisibility(): void {
-        if (!examplesBtn || !examplesSection) return
-
-        const examplesTop = examplesSection.getBoundingClientRect().top
-        const viewportHeight = window.innerHeight
-
-        // Show button when examples are below the fold (not visible yet)
-        if (examplesTop > viewportHeight) {
-            examplesBtn.classList.add('visible')
-        } else {
-            examplesBtn.classList.remove('visible')
-        }
-    }
-
-    // Throttled scroll handler
-    let ticking = false
-    window.addEventListener('scroll', function () {
-        if (!ticking) {
-            window.requestAnimationFrame(function () {
+function initOperationView(): void {
+    // Bound once: htmx swaps the section, so the handler looks the elements up each time
+    if (!examplesScrollBound) {
+        examplesScrollBound = true
+        let ticking = false
+        window.addEventListener('scroll', () => {
+            if (ticking) return
+            ticking = true
+            window.requestAnimationFrame(() => {
                 updateExamplesButtonVisibility()
                 ticking = false
             })
-            ticking = true
-        }
-    })
-
-    // Initial check
+        })
+    }
     updateExamplesButtonVisibility()
-
-    // Click handler for OperationView-specific elements
-    section.addEventListener('click', function (e) {
-        const target = e.target as HTMLElement
-
-        // Handle union group toggle buttons (collapse/expand all union options)
-        const unionGroupToggle = target.closest<HTMLButtonElement>(
-            '.union-group-toggle'
-        )
-        if (unionGroupToggle) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const container = unionGroupToggle.closest<HTMLElement>(
-                '.union-variants-container'
-            )
-            if (!container) return
-
-            const isExpanded = container.classList.contains('expanded')
-            const variantsContent = container.querySelector<HTMLElement>(
-                ':scope > .union-variants-content'
-            )
-
-            if (isExpanded) {
-                container.classList.remove('expanded')
-                container.classList.add('collapsed')
-                setDisclosureToggle(unionGroupToggle, false, 'type options')
-                if (variantsContent && supportsHiddenUntilFound) {
-                    variantsContent.setAttribute('hidden', 'until-found')
-                }
-            } else {
-                container.classList.remove('collapsed')
-                container.classList.add('expanded')
-                setDisclosureToggle(unionGroupToggle, true, 'type options')
-                if (variantsContent) {
-                    variantsContent.removeAttribute('hidden')
-                }
-            }
-            return
-        }
-
-        // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>(
-            'button.expand-toggle'
-        )
-        if (toggleBtn) {
-            const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
-            if (unionToggleRow) {
-                e.preventDefault()
-                e.stopPropagation()
-
-                const unionVariantItem = toggleBtn.closest<HTMLElement>(
-                    '.union-variant-item'
-                )
-                if (!unionVariantItem) return
-
-                const isExpanded =
-                    unionVariantItem.classList.contains('expanded')
-                const nestedProps = unionVariantItem.querySelector<HTMLElement>(
-                    ':scope > .nested-properties'
-                )
-
-                if (isExpanded) {
-                    unionVariantItem.classList.remove('expanded')
-                    unionVariantItem.classList.add('collapsed')
-                    setDisclosureToggle(toggleBtn, false, 'properties')
-                    if (nestedProps && supportsHiddenUntilFound) {
-                        nestedProps.setAttribute('hidden', 'until-found')
-                    }
-                } else {
-                    unionVariantItem.classList.remove('collapsed')
-                    unionVariantItem.classList.add('expanded')
-                    setDisclosureToggle(toggleBtn, true, 'properties')
-                    if (nestedProps) {
-                        nestedProps.removeAttribute('hidden')
-                    }
-                }
-            }
-        }
-    })
 }
 
 // Track if global handlers have been initialized
@@ -481,22 +345,24 @@ function initGlobalClickHandlers(): void {
     if (globalHandlersInitialized) return
     globalHandlersInitialized = true
 
-    // Find-in-page matched a folded enum literal: unfold the row so the match is visible
+    // Find-in-page matched hidden content: unfold the enum row or open the disclosures around it
     document.addEventListener('beforematch', function (e) {
-        const folded = (e.target as HTMLElement).closest('.enum-values-folded')
+        const target = e.target as HTMLElement
+        const folded = target.closest('.enum-values-folded')
         const toggleBtn =
             folded?.parentElement?.querySelector<HTMLButtonElement>(
                 ':scope > .enum-values-toggle'
             )
         if (toggleBtn) setEnumValuesExpanded(toggleBtn, true)
+        else revealCollapsedAncestors(target)
     })
 
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Only handle clicks within API doc sections
+        // Only handle clicks within API doc sections; the path list sits in the header, outside them
         const apiSection = target.closest(
-            '#elastic-api-v3, #schema-definition'
+            '#elastic-api-v3, #schema-definition, #paths'
         ) as HTMLElement
         if (!apiSection) return
 
@@ -514,175 +380,69 @@ function initGlobalClickHandlers(): void {
             return
         }
 
-        // The title toggles like the rest of the row. pushState sets the hash without
-        // a hashchange, which would otherwise re-expand a section the click just collapsed.
-        const paramSectionTitle = target.closest<HTMLAnchorElement>(
-            '.api-param-section-header > .headerlink'
-        )
-        if (paramSectionTitle) {
-            // Modified clicks keep normal link behaviour (new tab, new window)
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
-            e.preventDefault()
-            const section = paramSectionTitle.closest<HTMLElement>(
-                '[data-param-section]'
-            )
-            if (!section) return
-            if (section.classList.contains('expanded'))
-                collapseParamSection(section)
-            else expandParamSection(section)
-            if (window.location.hash !== paramSectionTitle.hash)
-                history.pushState(null, '', paramSectionTitle.hash)
-            return
-        }
+        for (const d of DISCLOSURES) {
+            const trigger = target.closest<HTMLElement>(d.trigger)
+            const container = trigger?.closest<HTMLElement>(d.container)
+            if (!trigger || !container) continue
+            if (!shouldToggleOnClick(e, trigger)) return
 
-        const paramSectionToggle = target.closest<HTMLButtonElement>(
-            '.api-param-section-toggle'
-        )
-        if (paramSectionToggle) {
             e.preventDefault()
             e.stopPropagation()
-            const section = paramSectionToggle.closest<HTMLElement>(
-                '[data-param-section]'
+            setDisclosureExpanded(
+                container,
+                d,
+                !container.classList.contains('expanded')
             )
-            if (!section) return
-            if (section.classList.contains('expanded'))
-                collapseParamSection(section)
-            else expandParamSection(section)
-            return
-        }
-
-        const responseSummary = target.closest<HTMLElement>('.response-summary')
-        const responsePanel =
-            responseSummary?.closest<HTMLElement>('.response-panel')
-        if (responseSummary && responsePanel) {
-            // Links in the description navigate, and finishing a text selection must not toggle.
-            if (target.closest('.response-description a')) return
-            const selection = window.getSelection()
+            // pushState sets the hash without a hashchange, so the page doesn't jump to the
+            // title and the section the click just collapsed isn't re-opened.
             if (
-                selection &&
-                !selection.isCollapsed &&
-                (responseSummary.contains(selection.anchorNode) ||
-                    responseSummary.contains(selection.focusNode))
+                trigger instanceof HTMLAnchorElement &&
+                window.location.hash !== trigger.hash
             )
-                return
-
-            e.preventDefault()
-            e.stopPropagation()
-
-            if (responsePanel.classList.contains('expanded'))
-                collapseResponsePanel(responsePanel)
-            else expandResponsePanel(responsePanel)
+                history.pushState(null, '', trigger.hash)
             return
         }
 
-        // Handle union group toggle buttons (collapse/expand all union options)
-        const unionGroupToggle = target.closest<HTMLButtonElement>(
-            '.union-group-toggle'
-        )
-        if (unionGroupToggle) {
-            e.preventDefault()
-            e.stopPropagation()
-
-            const container = unionGroupToggle.closest<HTMLElement>(
-                '.union-variants-container'
-            )
-            if (!container) return
-
-            const isExpanded = container.classList.contains('expanded')
-            const variantsContent = container.querySelector<HTMLElement>(
-                ':scope > .union-variants-content'
-            )
-
-            if (isExpanded) {
-                container.classList.remove('expanded')
-                container.classList.add('collapsed')
-                setDisclosureToggle(unionGroupToggle, false, 'type options')
-                if (variantsContent && supportsHiddenUntilFound) {
-                    variantsContent.setAttribute('hidden', 'until-found')
-                }
-            } else {
-                container.classList.remove('collapsed')
-                container.classList.add('expanded')
-                setDisclosureToggle(unionGroupToggle, true, 'type options')
-                if (variantsContent) {
-                    variantsContent.removeAttribute('hidden')
-                }
-            }
-            return
-        }
-
-        // Handle union variant expand/collapse
-        const toggleBtn = target.closest<HTMLButtonElement>(
-            'button.expand-toggle'
-        )
-        if (toggleBtn) {
-            const unionToggleRow = toggleBtn.closest('.union-expand-toggle')
-            if (unionToggleRow) {
-                e.preventDefault()
-                e.stopPropagation()
-
-                const unionVariantItem = toggleBtn.closest<HTMLElement>(
-                    '.union-variant-item'
-                )
-                if (!unionVariantItem) return
-
-                const isExpanded =
-                    unionVariantItem.classList.contains('expanded')
-                const nestedProps = unionVariantItem.querySelector<HTMLElement>(
-                    ':scope > .nested-properties'
-                )
-
-                if (isExpanded) {
-                    unionVariantItem.classList.remove('expanded')
-                    unionVariantItem.classList.add('collapsed')
-                    setDisclosureToggle(toggleBtn, false, 'properties')
-                    if (nestedProps && supportsHiddenUntilFound) {
-                        nestedProps.setAttribute('hidden', 'until-found')
-                    }
-                } else {
-                    unionVariantItem.classList.remove('collapsed')
-                    unionVariantItem.classList.add('expanded')
-                    setDisclosureToggle(toggleBtn, true, 'properties')
-                    if (nestedProps) {
-                        nestedProps.removeAttribute('hidden')
-                    }
-                }
-                return
-            }
-
-            // Handle property item expand/collapse toggle buttons
-            // Skip if this is a union toggle (already handled above)
-            if (toggleBtn.closest('.union-group-toggle')) return
-
-            e.preventDefault()
-            e.stopPropagation()
-
-            const propertyItem =
-                toggleBtn.closest<HTMLElement>('.property-item')
-            if (!propertyItem) return
-
-            const isExpanded = propertyItem.classList.contains('expanded')
-            const nestedProps = propertyItem.querySelector<HTMLElement>(
-                ':scope > .nested-properties'
-            )
-
-            if (isExpanded) {
-                propertyItem.classList.remove('expanded')
-                propertyItem.classList.add('collapsed')
-                setDisclosureToggle(toggleBtn, false, 'properties')
-                if (nestedProps && supportsHiddenUntilFound) {
-                    nestedProps.setAttribute('hidden', 'until-found')
-                }
-            } else {
-                propertyItem.classList.remove('collapsed')
-                propertyItem.classList.add('expanded')
-                setDisclosureToggle(toggleBtn, true, 'properties')
-                if (nestedProps) {
-                    nestedProps.removeAttribute('hidden')
-                }
-            }
-        }
+        const link = target.closest<HTMLAnchorElement>('a[href^="#"]')
+        if (link) scrollToLinkTarget(e, link)
     })
+}
+
+/**
+ * Opens the rows around an in-page link's target, then scrolls to it smoothly. The browser's own
+ * jump would skip the smooth scroll, and pushState fires no hashchange to open the rows.
+ */
+function scrollToLinkTarget(e: MouseEvent, link: HTMLAnchorElement): void {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
+        return
+    const href = link.getAttribute('href')!
+    const target = document.getElementById(href.slice(1))
+    if (!target) return
+
+    e.preventDefault()
+    revealCollapsedAncestors(target)
+    revealHiddenAncestors(target)
+    target.scrollIntoView({ behavior: 'smooth' })
+    if (window.location.hash !== href) history.pushState(null, '', href)
+    flashTarget(target)
+}
+
+/**
+ * Links inside a trigger navigate, modified clicks on a trigger link keep normal link
+ * behaviour, and finishing a text selection inside a trigger must not toggle.
+ */
+function shouldToggleOnClick(e: MouseEvent, trigger: HTMLElement): boolean {
+    const link = (e.target as HTMLElement).closest('a')
+    if (link && link !== trigger && trigger.contains(link)) return false
+    if (trigger instanceof HTMLAnchorElement)
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return false
+    const selection = window.getSelection()
+    return !(
+        selection &&
+        !selection.isCollapsed &&
+        (trigger.contains(selection.anchorNode) ||
+            trigger.contains(selection.focusNode))
+    )
 }
 
 /** Show only the header copy button that belongs to the active panel. */
@@ -718,7 +478,18 @@ function applyApiResponseStatus(widget: HTMLElement, statusCode: string): void {
             panel.toggleAttribute('hidden', panel.dataset.status !== effective)
         })
 
+    const rail = widget.closest<HTMLElement>('.api-rail-response') ?? widget
+    rail.querySelectorAll<HTMLElement>('[data-caption-status]').forEach(
+        (caption) => {
+            caption.toggleAttribute(
+                'hidden',
+                caption.dataset.captionStatus !== effective
+            )
+        }
+    )
+
     syncCopyButtons(widget, effective)
+    syncDescriptions(rail)
 }
 
 let apiResponseStatusTabsDelegated = false
@@ -733,12 +504,15 @@ function initApiResponseStatusTabs(): void {
         )
         if (!(tab instanceof HTMLElement) || !tab.dataset.status) return
         const widget = tab.closest<HTMLElement>('[data-api-response-samples]')
-        if (widget) applyApiResponseStatus(widget, tab.dataset.status)
+        if (!widget) return
+        applyApiResponseStatus(widget, tab.dataset.status)
+        openMainResponse(tab.dataset.status)
     })
 }
 
 let apiEndpointCopyInitialized = false
 let apiPageActionsInitialized = false
+let apiPropertyAnchorCopyInitialized = false
 
 function closestEndpointCopyButton(
     target: EventTarget | null
@@ -796,6 +570,30 @@ function initApiEndpointCopy(): void {
     )
 }
 
+function initApiPropertyAnchorCopy(): void {
+    if (apiPropertyAnchorCopyInitialized) return
+    apiPropertyAnchorCopyInitialized = true
+
+    // The link icon still moves the page to the property (the click is not
+    // cancelled); it also copies the full URL so the link can be shared.
+    document.addEventListener('click', (e) => {
+        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
+            return
+        if (!(e.target instanceof Element)) return
+        const icon = e.target.closest<HTMLElement>('.property-anchor-icon')
+        const href = icon
+            ?.closest<HTMLAnchorElement>('a.property-anchor')
+            ?.getAttribute('href')
+        if (!icon || !href) return
+
+        const url = new URL(href, window.location.href).href
+        void navigator.clipboard?.writeText(url).then(
+            () => flashTooltip(icon, 'Copied!'),
+            (error) => console.error(error)
+        )
+    })
+}
+
 function closestCopyPageTrigger(
     target: EventTarget | null
 ): HTMLElement | null {
@@ -841,6 +639,52 @@ export function initApiPageActions(): void {
     })
 }
 
+let examplesRailSteadyInitialized = false
+let examplesRailSlide: Animation | undefined
+
+/**
+ * Expanding or collapsing a section flips the sticky examples rail between stuck and
+ * bottom-pinned, which moved it hundreds of px in one frame. Slide it there instead.
+ */
+export function initExamplesRailSteadying(): void {
+    if (examplesRailSteadyInitialized) return
+    examplesRailSteadyInitialized = true
+    // Capture: some toggle handlers stopPropagation, and we must measure before they mutate
+    document.addEventListener(
+        'click',
+        (e) => {
+            if (!(e.target instanceof Element)) return
+            if (!e.target.closest('#elastic-api-v3')) return
+            // The rail is only sticky from 1024px up; below that it moves with the page
+            if (!window.matchMedia?.('(min-width: 1024px)').matches) return
+            if (prefersReducedMotion()) return
+            const rail = document.getElementById('api-examples-panel')
+            if (!rail) return
+            // The in-flight slide's transform shows up in the rect. Keep that visual
+            // position, cancel the slide, then measure the untransformed layout.
+            const visualTop = rail.getBoundingClientRect().top
+            // Cancel only our own slide: getAnimations() would also cancel the rail's CSS transitions.
+            examplesRailSlide?.cancel()
+            const before = rail.getBoundingClientRect().top
+            const inFlight = visualTop - before
+            // Runs after the click handlers change the DOM, before the next paint
+            requestAnimationFrame(() => {
+                const offset =
+                    inFlight - (rail.getBoundingClientRect().top - before)
+                if (Math.abs(offset) < 1) return
+                examplesRailSlide = rail.animate(
+                    [
+                        { transform: `translateY(${offset}px)` },
+                        { transform: 'none' },
+                    ],
+                    { duration: 200, easing: 'ease-out' }
+                )
+            })
+        },
+        true
+    )
+}
+
 /**
  * Initialize API documentation interactivity
  * Call this after page load or HTMX content swap
@@ -850,9 +694,12 @@ export function initApiDocs(): void {
     initGlobalClickHandlers()
     initTooltips()
     initApiEndpointCopy()
+    initApiPropertyAnchorCopy()
     initApiResponseStatusTabs()
     initApiExamples()
+    initUnionChips()
     initApiPageActions()
+    initExamplesRailSteadying()
     // After initHighlight — gutters need final textContent line counts
     decorateApiCodeTokens()
 
@@ -860,8 +707,13 @@ export function initApiDocs(): void {
     initParamSummaries()
 
     const operationSection = document.getElementById('elastic-api-v3')
-    if (operationSection) {
-        initOperationView(operationSection)
-        expandParamSectionForHash()
+    if (operationSection) initOperationView()
+    // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
+    revealHashTarget()
+    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
+    if (!initialHashFlashDone) {
+        initialHashFlashDone = true
+        const target = hashTarget()
+        if (target) flashTarget(target)
     }
 }

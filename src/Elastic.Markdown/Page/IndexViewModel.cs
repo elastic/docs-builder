@@ -14,9 +14,9 @@ using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Components;
 
 namespace Elastic.Markdown.Page;
 
@@ -26,6 +26,7 @@ public class IndexViewModel
 	public required string SiteName { get; init; }
 	public required string DocSetName { get; init; }
 	public required string Title { get; init; }
+	public string PageTitle => PageTitleResolver.Resolve(Title, CurrentDocument.MetaTitle, SiteName);
 	public required string Description { get; init; }
 	public required string TitleRaw { get; init; }
 	public required string MarkdownHtml { get; init; }
@@ -175,5 +176,4 @@ public class VersionDropDownItemViewModel
 }
 
 [JsonSerializable(typeof(VersionDropDownItemViewModel[]))]
-[JsonSerializable(typeof(ApplicabilityRenderer.PopoverData))]
 public partial class ViewModelSerializerContext : JsonSerializerContext;

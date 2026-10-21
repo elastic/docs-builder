@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
@@ -28,7 +29,7 @@ public class TableOfContentsLoadingTests
 		               hidden: true
 		           """;
 
-		var docset = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(yaml);
+		var docset = ConfigurationDocument.Read<DocumentationSetDto>(yaml);
 
 		var crossLink = docset.TocEntries.Should().ContainSingle().Which.Should().BeOfType<CrossLinkEntryDto>().Subject;
 		crossLink.Hidden.Should().BeTrue();

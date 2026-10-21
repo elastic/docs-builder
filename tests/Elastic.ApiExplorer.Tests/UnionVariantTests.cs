@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Tests;
 public class UnionVariantTests
 {
 	[Test]
-	public async Task BuildPropertyList_UnionWithOwnProperties_KeepsListingTheSharedProperties()
+	public async Task BuildPropertyList_UnionWithOwnProperties_ListsTheSharedPropertiesThenTheVariants()
 	{
 		var json =
 			"""
@@ -50,6 +50,168 @@ public class UnionVariantTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
+
+	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public async Task BuildPropertyList_VariantSelectedByProperty_ListsThatPropertyFirst(bool declared)
+	{
+		var discriminator = declared ? "\"discriminator\": { \"propertyName\": \"type\" }," : "";
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            {{discriminator}}
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
+		variants.Select(v => v.Properties!.Items.Select(p => p.Name).First()).Should().Equal("type", "type");
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("type", "lives");
+	}
+
+	[Test]
+	[Arguments("""{ "type": "string" }""", "pet")]
+	[Arguments("""{ "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }""", "pet")]
+	public async Task BuildPropertyList_UnionOfObjectsWithOtherForms_ListsTheSelectingPropertyFirst(string extra, string property)
+	{
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" }, {{extra}} ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == property).Children.Variants!.Variants;
+		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items.First().Name == "type");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionOfObjectArrays_ListsTheSelectingPropertyFirst()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pets": {
+			            "oneOf": [
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pets").Children.Variants!.Variants;
+		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items.First().Name == "type");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_AnyOfRequiredOnlyMembers_SaysWhichFieldsAreRequired()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "WindowRequired": { "required": ["window"] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "incident": {
+			            "type": "object",
+			            "anyOf": [ { "required": ["correlation_id"] }, { "required": ["externalId"] } ],
+			            "properties": { "correlation_id": { "type": "string" }, "externalId": { "type": "string" } }
+			          },
+			          "range": {
+			            "type": "object",
+			            "oneOf": [ { "type": "object", "required": ["from", "to"] }, { "$ref": "#/components/schemas/WindowRequired" } ],
+			            "properties": { "from": { "type": "string" }, "to": { "type": "string" }, "window": { "type": "string" } }
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var incident = list.Items.Single(p => p.Name == "incident");
+		incident.Type.Text.Should().Be("object", "required-only members offer no shapes to choose between");
+		incident.Union.Should().BeNull();
+		incident.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires at least one of:", ["correlation_id", "externalId"]));
+		incident.Children.Properties!.Items.Select(p => p.Name).Should().Equal("correlation_id", "externalId");
+		list.Items.Single(p => p.Name == "range").Requires!.Options.Should().Equal("from + to", "window");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
+		markdown
+			.ToString()
+			.Should()
+			.Contain("Requires at least one of: `correlation_id` or `externalId`")
+			.And
+			.Contain("Requires exactly one of: `from + to` or `window`");
 	}
 
 	[Test]
@@ -121,9 +283,12 @@ public class UnionVariantTests
 		Labels("composed").Should().Equal("kind: feline", "kind: canine");
 		list!.Items.Single(p => p.Name == "composed").Union!.DiscriminatorProperty.Should().Be("kind");
 
-		var holder = new OpenApiSchemaReference("Pet", document);
-		var pet = document.Components!.Schemas!["Pet"];
-		var topLevel = builder.BuildUnionVariantsForSchemas(pet.OneOf!, new PropertyTreeScope { Prefix = "oneof" }, holder.Discriminator);
+		var topLevel = ApiBodyContent.BuildUnionVariants(
+			document.Components!.Schemas!["Pet"],
+			new PropertyTreeScope { Prefix = "oneof" },
+			new SchemaAnalyzer(document),
+			builder
+		);
 		topLevel!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: tomcat", "kind: dog");
 	}
 
@@ -391,6 +556,343 @@ public class UnionVariantTests
 	}
 
 	[Test]
+	public async Task BuildPropertyList_UnionOfLiteralsAndAnObject_ListsTheLiteralsAsOptionsBesideTheVariant()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "SortObject": { "type": "object", "properties": { "order": { "type": "string" }, "missing": { "type": "string" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "sort": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "$ref": "#/components/schemas/SortObject" } ] },
+			          "order": { "oneOf": [ { "type": "string", "enum": ["asc", "desc"] }, { "type": "integer" } ] },
+			          "rank": {
+			            "oneOf": [
+			              { "type": "string", "enum": ["asc", "desc"] },
+			              { "type": "integer" },
+			              { "$ref": "#/components/schemas/SortObject" }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var sort = list.Items.Single(p => p.Name == "sort");
+		sort.EnumValues.Should().BeEmpty("the literals move into the One of row");
+		sort.Union!.Badges.Select(b => b.Text).Should().Equal("asc", "desc");
+		sort.Union.MoreOptions.Should().Be("or an object listed below");
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
+
+		var order = list.Items.Single(p => p.Name == "order");
+		order.EnumValues.Should().Equal(["asc", "desc"], "with no object variant the literals keep their Values row");
+		order.Union.Should().BeNull();
+
+		var rank = list.Items.Single(p => p.Name == "rank");
+		rank.Union!.MoreOptions.Should().Be("or a type listed below", "the list below holds integer as well as the object");
+		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "SortObject");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_SingleOrArrayRowListingFields_SaysAnArrayIsAccepted()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Rescore": { "type": "object", "properties": { "window_size": { "type": "integer" }, "query": { "type": "string" } } },
+			      "Field": { "type": "object", "properties": { "type": { "type": "string" }, "order": { "type": "string" } } },
+			      "NodeIds": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "rescore": { "oneOf": [ { "$ref": "#/components/schemas/Rescore" }, { "type": "array", "items": { "$ref": "#/components/schemas/Rescore" } } ] },
+			          "fields": {
+			            "oneOf": [
+			              { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } },
+			              { "type": "array", "items": { "type": "object", "additionalProperties": { "$ref": "#/components/schemas/Field" } } }
+			            ]
+			          },
+			          "nodes": { "$ref": "#/components/schemas/NodeIds" }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiProperty Row(string name) => list.Items.Single(p => p.Name == name);
+
+		Row("rescore")
+			.SingleOrArray
+			.Should()
+			.Be(new SingleOrArray("object", "object[]"), "the row lists the object's fields and its type reads only union oneOf");
+		Row("rescore").Children.Properties!.Items.Select(p => p.Name).Should().Equal("window_size", "query");
+		Row("fields")
+			.SingleOrArray
+			.Should()
+			.Be(
+				new SingleOrArray("map string to string", "[] map string to string"),
+				"map string to string[] would read as a map of arrays"
+			);
+		Row("nodes").SingleOrArray.Should().BeNull("a primitive X lists no fields, so the options row still names both shapes");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([Row("rescore")]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("`object` or `object[]`");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayUnionOfAUnion_LabelsTheVariantsWithTheInnerType()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "LikeDocument": { "type": "object", "properties": { "kind": { "type": "string" }, "_id": { "type": "string" } } },
+			      "LikeText": { "type": "object", "properties": { "kind": { "type": "string" }, "text": { "type": "string" } } },
+			      "Like": {
+			        "anyOf": [ { "$ref": "#/components/schemas/LikeDocument" }, { "$ref": "#/components/schemas/LikeText" } ],
+			        "discriminator": { "propertyName": "kind", "mapping": { "doc": "#/components/schemas/LikeDocument" } }
+			      },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "like": { "oneOf": [ { "$ref": "#/components/schemas/Like" }, { "type": "array", "items": { "$ref": "#/components/schemas/Like" } } ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var like = BuilderFor(document).BuildPropertyList(
+			document.Components!.Schemas!["Holder"],
+			new PropertyTreeScope { Prefix = "" }
+		)!.Items.Single();
+
+		like.Union.Should().BeNull("the type already reads Like | Like[]");
+		like.SingleOrArray.Should().BeNull("the variant list's label already names both shapes");
+		like.Children.Variants!.Label.Should().Be("A value or an array; each item is any of:");
+		like.Children.Variants.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: doc", "kind: LikeText");
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([like]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("A value or an array; each item is any of:");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_ArrayAndPlainPairBehindChips_BothShowTheFields()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "description": "A cat.", "properties": { "lives": { "type": "integer" } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "chips": {
+			            "oneOf": [
+			              { "$ref": "#/components/schemas/Cat" },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			              { "$ref": "#/components/schemas/Dog" }
+			            ]
+			          }
+			        }
+			      },
+			      "Pair": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		ApiUnionVariant ArrayVariant(string name) =>
+			list.Items.Single(p => p.Name == name).Children.Variants!.Variants.Single(v => v.IsArrayVariant);
+
+		var chipArray = ArrayVariant("chips");
+		chipArray.ShowProperties.Should().BeTrue("behind chips the Cat[] panel shows alone, so it needs the fields");
+		chipArray.Properties!.Items.Select(p => p.Name).Should().Equal("lives");
+		chipArray.DescriptionMarkdown.Should().Be("A cat.");
+
+		var listed =
+			ApiBodyContent.BuildUnionVariants(
+				document.Components!.Schemas!["Pair"],
+				new PropertyTreeScope { Prefix = "req" },
+				new SchemaAnalyzer(document),
+				BuilderFor(document)
+			)!;
+		listed
+			.Variants
+			.Single(v => v.IsArrayVariant)
+			.ShowProperties
+			.Should()
+			.BeTrue("an X[] / X pair is two object variants, so it shows behind chips too");
+	}
+
+	[Test]
+	public async Task BuildUnionVariants_ArrayAndPlainPairSharingALargeField_PlainVariantKeepsTheListing()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Big": { "type": "object", "properties": { "f0": { "type": "string" }, "f1": { "type": "string" }, "f2": { "type": "string" }, "f3": { "type": "string" }, "f4": { "type": "string" }, "f5": { "type": "string" }, "f6": { "type": "string" }, "f7": { "type": "string" }, "f8": { "type": "string" }, "f9": { "type": "string" }, "f10": { "type": "string" }, "f11": { "type": "string" } } },
+			      "Cat": { "type": "object", "properties": { "owner": { "$ref": "#/components/schemas/Big" } } },
+			      "Pair": { "oneOf": [ { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }, { "$ref": "#/components/schemas/Cat" } ] }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var variants = ApiBodyContent.BuildUnionVariants(
+			document.Components!.Schemas!["Pair"],
+			new PropertyTreeScope { Prefix = "req" },
+			new SchemaAnalyzer(document),
+			BuilderFor(document)
+		)!.Variants;
+
+		ApiProperty Owner(bool array) => variants.Single(v => v.IsArrayVariant == array).Properties!.Items.Single();
+
+		variants.Select(v => v.AnchorId).Should().Equal("req-variant-cat-array", "req-variant-cat");
+		Owner(array: false).Repeats.Should().BeNull("links into Cat's fields expect the plain variant to list them");
+		Owner(array: false).Children.Properties!.Items.Should().HaveCount(12);
+		Owner(array: true).Repeats!.AnchorId.Should().Be("req-variant-cat-owner");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_OptionWithItsOwnPage_LinksToThatPage()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "_types.query_dsl.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			      "local.QueryContainer": { "type": "object", "properties": { "term": { "type": "object" } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "filter": {
+			            "oneOf": [
+			              { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/_types.query_dsl.QueryContainer" } }
+			            ]
+			          },
+			          "local": { "$ref": "#/components/schemas/local.QueryContainer" }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var filter = list.Items.Single(p => p.Name == "filter");
+		filter.Union!
+			.Badges
+			.Select(b => (b.LinkText, b.AfterLink, b.Url))
+			.Should()
+			.Equal(
+				("Query", "[]", "/api/doc/fixture/types/_types-query_dsl-querycontainer"),
+				("Query", "", "/api/doc/fixture/types/_types-query_dsl-querycontainer")
+			);
+		var markdown = new System.Text.StringBuilder();
+		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([filter]), "/api/doc/fixture");
+		markdown.ToString().Should().Contain("One of: [`Query[]`](/api/doc/fixture/types/_types-query_dsl-querycontainer) or ");
+
+		var local = list.Items.Single(p => p.Name == "local");
+		local.TypeLink.Should().BeNull("only the schema with the page's id links there, not another one sharing its short name");
+		local.Children.Properties!.Items.Select(p => p.Name).Should().Equal("term");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_SameNameInAnotherNamespace_IsNotARecursion()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "ml.Settings": { "type": "object", "properties": { "inner": { "$ref": "#/components/schemas/indices.Settings" } } },
+			      "indices.Settings": { "type": "object", "properties": { "shards": { "type": "integer" } } },
+			      "Node": {
+			        "type": "object",
+			        "properties": {
+			          "child": { "oneOf": [ { "$ref": "#/components/schemas/Node" }, { "type": "string" } ] },
+			          "children": { "type": "array", "items": { "$ref": "#/components/schemas/Node" } }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var ml =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["ml.Settings"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "ml.Settings" } }
+			)!;
+		var inner = ml.Items.Single();
+		inner.IsRecursive.Should().BeFalse("indices.Settings only shares the short name Settings with its parent");
+		inner.Children.Properties!.Items.Select(p => p.Name).Should().Equal("shards");
+
+		var node =
+			builder.BuildPropertyList(
+				document.Components!.Schemas!["Node"],
+				new PropertyTreeScope { Prefix = "", AncestorRefs = new HashSet<string> { "Node" } }
+			)!;
+		node.Items.Should().OnlyContain(p => p.IsRecursive, "a union option and an array item that refer to Node both point back up");
+	}
+
+	[Test]
 	public async Task BuildPropertyList_InlineRecursiveUnion_ExpandsOnceAndPointsBackToTheParent()
 	{
 		var condition = """{ "type": "object", "properties": { "field": { "type": "string" }, "eq": { "type": "string" } } }""";
@@ -483,7 +985,7 @@ public class UnionVariantTests
 		)!.Items.Single();
 
 		var variants = query.Children.Variants!.Variants;
-		var container = variants.Single(v => v.DisplayName == "QueryContainer");
+		var container = variants.Single(v => v.DisplayName == "Query");
 		container.PageUrl.Should().NotBeNullOrEmpty();
 		container.Properties.Should().BeNull("QueryContainer has its own page");
 		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");

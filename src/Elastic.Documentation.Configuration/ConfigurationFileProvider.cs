@@ -8,12 +8,12 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -23,18 +23,71 @@ public class ConfigurationFileProvider
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
-	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.IgnoreUnmatchedProperties()
-		.WithTypeConverter(new HintTypeSetConverter())
-		.WithTypeConverter(new DurationYamlConverter())
-		.WithTypeConverter(new ApplicableToYamlConverter([]))
-		.WithTypeConverter(new TocItemCollectionYamlConverter())
-		.WithTypeConverter(new TocItemYamlConverter())
-		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
-		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
-		.WithTypeConverter(new ApiConfigurationConverter())
-		.Build();
+	public static YamlSerializerOptions DeserializerOptions { get; } = YamlStaticContext.Default.CreateOptions(
+		o => (o with
+		{
+			Converters =
+			[
+				new HintTypeSetConverter(),
+				new DurationYamlConverter(),
+				new ApplicableToYamlConverter([]),
+				new TocItemYamlConverter(new ApplicableToYamlConverter([])),
+				new TocItemCollectionYamlConverter(new TocItemYamlConverter(new ApplicableToYamlConverter([]))),
+				new SiteTableOfContentsRefYamlConverter(),
+				new SiteTableOfContentsCollectionYamlConverter(new SiteTableOfContentsRefYamlConverter()),
+				new ApiProductEntryConverter(),
+				new ApiProductSequenceConverter(new ApiProductEntryConverter())
+			],
+			// config/*.yml (assembler.yml, versions.yml, legacy-url-mappings.yml) use YAML anchors/aliases
+			// (e.g. `stack: &stack ... / beats: *stack`) to avoid repetition. Without this, the generated
+			// reader throws when it encounters an alias token for an object-typed member. Read-only options,
+			// so the write-side anchor-emission behavior this also enables never applies here.
+			ReferenceHandling = YamlReferenceHandling.Preserve
+		}).WithUnmappedKeysThrowing()
+	);
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>.
+	/// </summary>
+	public static T Deserialize<T>(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<T>(yaml, OptionsFor(sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>, reporting
+	/// unknown keys to <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	public static T Deserialize<T>(string yaml, IDiagnosticsCollector collector, string sourceName) =>
+		YamlSerializer.Deserialize<T>(yaml, OptionsWithDiagnostics(collector, sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>.
+	/// </summary>
+	public static T Deserialize<T>(TextReader reader, string? sourceName = null) =>
+		YamlSerializer.Deserialize<T>(reader, OptionsFor(sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>, reporting
+	/// unknown keys to <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	public static T Deserialize<T>(TextReader reader, IDiagnosticsCollector collector, string sourceName) =>
+		YamlSerializer.Deserialize<T>(reader, OptionsWithDiagnostics(collector, sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	// DeserializerOptions throws on unknown keys; only the file name needs adding for a useful message.
+	private static YamlSerializerOptions OptionsFor(string? sourceName) =>
+		sourceName is null ? DeserializerOptions : DeserializerOptions with { SourceName = sourceName };
+
+	/// <summary>
+	/// Clones <see cref="DeserializerOptions"/> with <see cref="YamlSerializerOptions.SourceName"/> and
+	/// <see cref="YamlSerializerOptions.UnmappedMemberCallback"/> set for a single call, so unknown keys
+	/// surface as file-qualified errors instead of failing the whole deserialization. See
+	/// <see cref="YamlUnmappedMemberDiagnostics"/>.
+	/// </summary>
+	private static YamlSerializerOptions OptionsWithDiagnostics(IDiagnosticsCollector collector, string sourceName) =>
+		DeserializerOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, sourceName));
 
 	public ConfigurationSource ConfigurationSource { get; }
 

@@ -47,6 +47,111 @@ public class CardGroupStandalone : MarkdownTest
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
 
+public class CardGroupWithLinksInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Components
+		:id: components
+		:intro: They power [solutions](#solutions) and have several ways to [deploy](#deploy).
+
+		:::{link-card}
+		title: Elasticsearch
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("renders inline links in the intro")]
+	public async Task RendersInlineLinksInTheIntro() => await Docs.ConvertsToContainingRawHtml("""<a href="#solutions">solutions</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithAMarkdownLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:id: deploy
+		:intro: Choose where to run it. [Compare options](/index.md).
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("turns the markdown path into a page link")]
+	public async Task TurnsMarkdownPathIntoPageLink() => await Docs.ConvertsToContainingRawHtml("""<a href="/">Compare options</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithATitledLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: Choose where to run it. [Compare options](/index.md "Deployment comparison").
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("resolves the link and keeps its title")]
+	public async Task ResolvesLinkAndKeepsTitle() =>
+		await Docs.ConvertsToContainingRawHtml("""<a href="/" title="Deployment comparison">Compare options</a>""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithLinkSyntaxInCodeInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: Write links as `[guide](/does-not-exist.md)` in your text.
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("keeps the code span as written")]
+	public async Task KeepsCodeSpan() => await Docs.ConvertsToContainingRawHtml("<code>[guide](/does-not-exist.md)</code>");
+
+	[Test, DisplayName("does not report a link inside code")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class CardGroupWithABrokenLinkInTheIntro : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		::::{card-group}
+		:title: Deploy
+		:intro: See [the guide](/does-not-exist.md).
+
+		:::{link-card}
+		title: Serverless
+		:::
+		::::
+		""";
+
+	[Test, DisplayName("reports a link to a page that does not exist")]
+	public async Task ReportsMissingPage() => await Docs.HasError("does-not-exist");
+}
+
 public class CardGroupWithSolutionsVariant : MarkdownTest
 {
 	protected override string Markdown =>
@@ -652,4 +757,19 @@ public class ExploreWithInvalidLevel : MarkdownTest
 		</div>
 		"""
 		);
+}
+
+// A body that is only a YAML comment is not null, so it reaches the deserializer rather than the
+// "requires a YAML body" check. SharpYaml deserializes it to null, which must still fall back to
+// LinkCardData.Empty and report the usual missing-title error, not throw.
+public class LinkCardWithACommentOnlyBody : MarkdownTest
+{
+	protected override string Markdown => """
+		:::{link-card}
+		# title: Writing content
+		:::
+		""";
+
+	[Test, DisplayName("errors on the missing title instead of throwing")]
+	public async Task ErrorsOnMissingTitle() => await Docs.HasError("requires a `title` field");
 }

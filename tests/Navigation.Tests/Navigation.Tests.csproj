@@ -25,7 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AngleSharp" />
     <PackageReference Include="CsCheck" />
+    <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
   </ItemGroup>

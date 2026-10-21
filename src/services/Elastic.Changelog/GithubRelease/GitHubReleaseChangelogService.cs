@@ -44,7 +44,7 @@ public record GitHubReleaseResult(bool Success, string? BundlePath)
 public record CreateChangelogsFromReleaseArguments
 {
 	/// <summary>
-	/// RepositoryDto in owner/repo format (e.g., "elastic/elasticsearch")
+	/// Repository in owner/repo format (e.g., "elastic/elasticsearch")
 	/// </summary>
 	public required string Repository { get; init; }
 
@@ -108,6 +108,7 @@ public class GitHubReleaseChangelogService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logFactory.CreateLogger<GitHubReleaseChangelogService>());
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
@@ -427,7 +428,7 @@ public class GitHubReleaseChangelogService(
 		}
 
 		// Check rules.create — skip PRs with blocking labels
-		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), context.ProductInfo, config, collector, pr.Url))
+		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), context.ProductInfo, config, pr.Url))
 		{
 			_logger.LogInformation("PR #{PrNumber}: excluded — matched label block rule", pr.Number);
 			return false;
@@ -460,14 +461,14 @@ public class GitHubReleaseChangelogService(
 
 		var title = prInfo?.Title ?? $"PR #{pr.Number}";
 		if (context.StripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
 		string? description = null;
 		if (config.Extract.ReleaseNotes)
 		{
 			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo?.Body);
 			description = extraction.Content;
-			ReleaseNoteExtractionDiagnostics.EmitHint(collector, pr.Url, pr.Number, extraction);
+			ReleaseNoteExtractionDiagnostics.Record(_decisions, pr.Number, extraction);
 		}
 		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
@@ -628,13 +629,7 @@ public class GitHubReleaseChangelogService(
 		return areas.ToList();
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
-		string[] prLabels,
-		ProductArgument productInfo,
-		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl
-	)
+	private bool ShouldSkipPrDueToLabelBlockers(string[] prLabels, ProductArgument productInfo, ChangelogConfiguration config, string prUrl)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
@@ -644,27 +639,19 @@ public class GitHubReleaseChangelogService(
 
 		// Check product-specific overrides first
 		if (createRules.ByProduct is { Count: > 0 } && createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
-			return ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, productInfo.Product);
+			return ShouldSkipByCreateRules(prLabels, productRules, prUrl, _decisions);
 
 		// Fall back to global rules
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, _decisions);
 	}
 
-	private static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext
-	)
+	private static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
@@ -673,10 +660,7 @@ public class GitHubReleaseChangelogService(
 			);
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(
-					prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -685,11 +669,7 @@ public class GitHubReleaseChangelogService(
 			var hasMatch = prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(
-					prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}

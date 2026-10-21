@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Microsoft.AspNetCore.Html;
 
@@ -14,21 +15,32 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 
-/// <summary>
-/// Collapsible Parameters / Query Parameters heading with a one-line name summary. <paramref name="NamesAreVariants"/>
-/// marks a body that is a union, whose summary lists alternatives rather than fields.
-/// </summary>
-public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, bool NamesAreVariants = false)
+/// <summary>How a section's one-line name summary is written, so its punctuation says what the names are.</summary>
+public enum SummaryStyle
 {
-	public static bool ShouldCollapse(int count) => count > 1;
+	/// <summary>The fields of a JSON object: <c>{ a, b }</c>.</summary>
+	Fields,
 
-	public static HtmlString WrapAttributes(bool collapse) =>
-		collapse ? new HtmlString("class=\"api-param-section collapsed\" data-param-section") : new HtmlString("class=\"api-list-block\"");
+	/// <summary>The fields of each object in a JSON array: <c>[{ a, b }]</c>.</summary>
+	ArrayOfFields,
 
-	public static HtmlString BodyAttributes(bool collapse, string listId) =>
-		collapse
-			? new HtmlString($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"")
-			: new HtmlString("class=\"api-list-block-body\"");
+	/// <summary>Alternatives, as when a body is a union: <c>A | B</c>.</summary>
+	Variants,
+
+	/// <summary>Names that are all needed together, such as required privileges: <c>a + b</c>, as the credentials of one requirement are.</summary>
+	All,
+
+	/// <summary>Names that are neither an object's fields nor alternatives, such as parameters or the fields of a form: <c>a, b</c>.</summary>
+	List
+}
+
+/// <summary>Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.</summary>
+public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, SummaryStyle Style = SummaryStyle.Fields)
+{
+	public static HtmlString WrapAttributes() => new("class=\"api-param-section collapsed\" data-param-section");
+
+	public static HtmlString BodyAttributes(string listId) =>
+		new($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"");
 }
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
@@ -37,10 +49,12 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
 			"paths",
-			"prerequisites",
-			"authorization",
+			"required-authorization",
+			"authentication",
 			"description",
+			"path-params",
 			"query-params",
+			"header-params",
 			"request-body",
 			"response",
 			"responses",

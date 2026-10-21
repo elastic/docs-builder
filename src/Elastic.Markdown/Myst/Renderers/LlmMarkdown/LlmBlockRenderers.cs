@@ -25,7 +25,7 @@ using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using YamlDotNet.Core;
+using SharpYaml;
 using CodeBlock = Markdig.Syntax.CodeBlock;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;

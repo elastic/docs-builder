@@ -1451,6 +1451,90 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_ParsesAndNormalizes()
+	{
+		var config = await LoadConfig(
+			"""
+			products:
+			  implies:
+			    security: [kibana, cloud_serverless, kibana, security]
+			    Cloud-Hosted: cloud-serverless
+			"""
+		);
+
+		Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message).Should().BeEmpty();
+		config.Should().NotBeNull();
+		var implies = config!.ProductsConfiguration!.Implies!;
+		implies["security"].Should().Equal("kibana", "cloud-serverless");
+		implies["cloud-hosted"].Should().Equal("cloud-serverless");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_WarnsWhenNoLabelMapsToTheKey()
+	{
+		var config = await LoadConfig(
+			"""
+			products:
+			  implies:
+			    security: [kibana]
+			    cloud-hosted: [cloud-serverless]
+			pivot:
+			  products:
+			    security: "Team:SecuritySolution"
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config.Should().NotBeNull();
+		Collector
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Warning)
+			.Select(d => d.Message)
+			.Should()
+			.ContainSingle(m => m.Contains("'cloud-hosted' in products_config.implies has no label in pivot.products"));
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_UnknownProduct_ReturnsError()
+	{
+		_ = await LoadConfig("""
+			products:
+			  implies:
+			    not-a-real-product: [kibana]
+			""");
+
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"'not-a-real-product' in products_config.implies is not in the list of available products"
+				)
+			);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_WithProductsImplies_UnknownImpliedProduct_ReturnsError()
+	{
+		_ = await LoadConfig("""
+			products:
+			  implies:
+			    kibana: [not-a-real-product]
+			""");
+
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"'not-a-real-product' implied by 'kibana' in products_config.implies"
+				)
+			);
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_WithRulesBundle_UnknownProductId_ReturnsError()
 	{
 		// Arrange
@@ -1867,5 +1951,107 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
 		config.Bundle!.UseLocalChangelogs.Should().BeTrue();
+	}
+
+	private async Task<ChangelogConfiguration?> LoadBundleConfig(string bundleYaml)
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, bundleYaml, TestContext.Current!.Execution.CancellationToken);
+		return (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_ParsesTheList()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: [backport, auto-backport]
+			"""
+		);
+
+		config.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		config.Bundle!.Backports!.Labels.Should().Equal("backport", "auto-backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_AcceptsASingleLabel()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: backport
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports!.Labels.Should().Equal("backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_BackportLabels_TrimsAndDropsDuplicatesIgnoringCase()
+	{
+		var config = await LoadBundleConfig(
+			"""
+			bundle:
+			  backports:
+			    labels: ['backport ', Backport, auto-backport]
+			"""
+		);
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports!.Labels.Should().Equal("backport", "auto-backport");
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_NoBackports_LeavesTracingOff()
+	{
+		var config = await LoadBundleConfig("""
+			bundle:
+			  directory: docs/changelog
+			""");
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports.Should().BeNull();
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_EmptyBackportLabels_LeavesTracingOff()
+	{
+		var config = await LoadBundleConfig("""
+			bundle:
+			  backports:
+			    labels: []
+			""");
+
+		Collector.Errors.Should().Be(0);
+		config!.Bundle!.Backports.Should().BeNull();
+	}
+
+	[Test]
+	[Arguments("backport*")]
+	[Arguments("backport-?")]
+	public async Task LoadChangelogConfiguration_BackportLabelWithAGlob_IsAnError(string label)
+	{
+		var config = await LoadBundleConfig(
+			$$"""
+			bundle:
+			  backports:
+			    labels: ['{{label}}']
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("bundle.backports.labels") && d.Message.Contains("exact label name")
+			);
 	}
 }

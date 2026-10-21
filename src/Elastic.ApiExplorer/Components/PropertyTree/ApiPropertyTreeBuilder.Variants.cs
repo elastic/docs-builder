@@ -12,17 +12,6 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 public partial class ApiPropertyTreeBuilder
 {
-	/// <summary>Builds the expanded variants for a top-level oneOf/anyOf union (schema pages).</summary>
-	public ApiUnionVariants? BuildUnionVariantsForSchemas(
-		IList<IOpenApiSchema> unionSchemas,
-		PropertyTreeScope scope,
-		OpenApiDiscriminator? discriminator = null
-	)
-	{
-		var unionOptions = _analyzer.GetUnionOptions(unionSchemas.Where(static s => s is not null));
-		return BuildUnionVariants(unionOptions, scope, discriminator);
-	}
-
 	private const string DictionaryKeyName = "<string>";
 
 	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>
@@ -43,37 +32,50 @@ public partial class ApiPropertyTreeBuilder
 		var childBuilder = new ApiPropertyTreeBuilder(
 			document,
 			options with { ShowDeprecated = true, ShowVersionInfo = true, ShowExternalDocs = true },
-			currentPageType,
+			currentPageSchemaId,
 			_shapes
 		);
 
-		var variants = new List<ApiUnionVariant>(variantsToRender.Count);
+		var selector = discriminator?.PropertyName is { Length: > 0 } declared
+			? declared
+			: _analyzer.GetSelectingProperty(
+				// One schema per object shape, as LabelObjects counts them: X and X[] share one, a scalar has none.
+				variantsToRender
+					.Where(v => v is { IsObject: true, Props: not null })
+					.Select(v => v.Schema)
+					.Distinct(ReferenceEqualityComparer.Instance)
+					.Cast<IOpenApiSchema?>()
+			);
 		var usedIds = new HashSet<string>(StringComparer.Ordinal);
-		foreach (var variant in variantsToRender)
+		var optionIds = variantsToRender.Select(
+			v => UniqueId($"{scope.Prefix}-variant-{v.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}", usedIds)
+		).ToArray();
+		// The plain variant of an X[] | X pair is built first, so it keeps the full listing of the fields both share and the
+		// array side links to it, as links into X's fields expect.
+		var variants = new ApiUnionVariant[variantsToRender.Count];
+		foreach (var index in Enumerable.Range(0, variantsToRender.Count).OrderBy(i => variantsToRender[i].IsArray))
 		{
+			var variant = variantsToRender[index];
+			var optionId = optionIds[index];
 			var dictionaryValue = variant.PageUrl is null ? _analyzer.GetExpandableDictionaryValue(variant.Schema) : null;
 			var hasProperties = variant.Props is { Count: > 0 } || dictionaryValue is not null;
-			var optionId = UniqueId(
-				$"{scope.Prefix}-variant-{variant.Name.ToLowerInvariant().Replace(" ", "-").Replace("[]", "-array")}",
-				usedIds
-			);
-			var hasBothVariants = variantsToRender.Count(v => v.BaseName == variant.BaseName) > 1;
-			var showProperties = hasProperties && (!variant.IsArray || !hasBothVariants);
+			// Each variant carries its own fields, an X[] one too: a pair is two variants, so it shows behind chips, one at a time.
+			var showProperties = hasProperties;
 
-			var newAncestors = scope.Ancestors is not null ? new HashSet<string>(scope.Ancestors) : [];
-			if (!string.IsNullOrEmpty(variant.BaseName))
-				_ = newAncestors.Add(variant.BaseName);
+			var newAncestors = scope.AncestorRefs is not null ? new HashSet<string>(scope.AncestorRefs) : [];
+			// An inline map takes its value's $ref, but the value type is listed below under the key row, not above it.
+			if (!string.IsNullOrEmpty(variant.Ref) && !_analyzer.GetTypeInfo(variant.Schema).IsDictionary)
+				_ = newAncestors.Add(variant.Ref);
 
 			var nestedCount = (variant.Props?.Count ?? 0) + (dictionaryValue is null ? 0 : 1);
 			var isCollapsible = showProperties && nestedCount > 0;
 			var defaultExpanded = ComputeDefaultExpanded();
 
-			// An X[] / X pair describes the same schema twice, so only the plain variant carries the text.
-			var description = !variant.IsArray || !hasBothVariants ? FirstParagraph(variant.Schema?.Description) : null;
+			var description = FirstParagraph(variant.Schema?.Description);
 
-			variants.Add(new ApiUnionVariant
+			variants[index] = new ApiUnionVariant
 			{
-				DisplayName = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName),
+				DisplayName = VariantDisplayName(variant),
 				PageUrl = variant.PageUrl,
 				IsArrayVariant = variant.IsArray,
 				IsObjectType = variant.IsObject,
@@ -85,38 +87,36 @@ public partial class ApiPropertyTreeBuilder
 				UseHidden = options.UseHiddenUntilFound && isCollapsible && !defaultExpanded,
 				Properties = showProperties && variant.Schema is not null
 					? childBuilder.BuildPropertyList(
-						dictionaryValue is null ? variant.Schema : WithDictionaryKeyRow(variant.Schema, variant.Props, dictionaryValue),
+						dictionaryValue is null
+							? variant.Schema
+							: WithDictionaryKeyRow(_analyzer.Flatten(variant.Schema).Required, variant.Props, dictionaryValue),
 						scope with
 						{
 							Prefix = optionId,
 							Depth = scope.Depth + 1,
-							Ancestors = newAncestors,
+							AncestorRefs = newAncestors,
 							RequiredProperties = null,
-							Owner = variant.Label ?? SchemaHelpers.ReadableSchemaName(variant.BaseName)
-						}
-					) ?? new ApiPropertyList([])
+							Owner = VariantDisplayName(variant)
+						},
+						selector
+					)
+						?? new ApiPropertyList([])
 					: null,
 				DescriptionHtml = description is null ? HtmlString.Empty : options.RenderMarkdown(description),
 				DescriptionMarkdown = description,
 				DiscriminatorLabel = variant.IsArray ? null : BuildDiscriminatorLabel(discriminator, variant)
-			});
+			};
 		}
 
-		return new ApiUnionVariants
-		{
-			Variants = variants,
-			ShouldCollapse = variantsToRender.Count > 2,
-			ContainerId = $"{scope.Prefix}-union-options",
-			UseHiddenUntilFound = options.UseHiddenUntilFound
-		};
+		return new ApiUnionVariants { Variants = variants, ContainerId = $"{scope.Prefix}-union-options" };
 	}
 
 	/// <summary>
 	/// The variant's properties plus a <c>&lt;string&gt;</c> key row for its map values, the way a plain dictionary property
 	/// lists them. A pure map has no properties, so it shows the key row alone.
 	/// </summary>
-	private static OpenApiSchema WithDictionaryKeyRow(
-		IOpenApiSchema schema,
+	internal static OpenApiSchema WithDictionaryKeyRow(
+		ISet<string> required,
 		IDictionary<string, IOpenApiSchema>? properties,
 		IOpenApiSchema value
 	) =>
@@ -127,8 +127,18 @@ public partial class ApiPropertyTreeBuilder
 			{
 				[DictionaryKeyName] = value
 			},
-			Required = schema.Required
+			Required = new HashSet<string>(required)
 		};
+
+	/// <summary>
+	/// What a variant's tab reads: its label (a title or the fields it is told apart by), its shown name when that says
+	/// something (a page title, a primitive), and as a last resort the shortened name of the schema it refers to.
+	/// </summary>
+	private static string VariantDisplayName(VariantCandidate variant) =>
+		variant.Label
+			?? (variant is { IsObject: true, Ref.Length: > 0 } && !TypePages.TryGet(variant.Ref, out _)
+				? SchemaHelpers.ReadableSchemaName(variant.BaseName)
+				: variant.ShownBase);
 
 	/// <summary>Two variants with the same name (two inline <c>object</c> members) still need distinct anchors.</summary>
 	private static string UniqueId(string id, HashSet<string> used)
@@ -174,6 +184,7 @@ public partial class ApiPropertyTreeBuilder
 		bool IsObject,
 		IOpenApiSchema? Schema,
 		IDictionary<string, IOpenApiSchema>? Props,
+		string ShownBase,
 		string? PageUrl = null,
 		string? Label = null
 	);
@@ -201,9 +212,7 @@ public partial class ApiPropertyTreeBuilder
 			if (primaryOption.IsArray && schemaToRender?.Items is { } items)
 				schemaToRender = items;
 			// A type with its own page (QueryContainer, …) links there instead of listing its fields again, as property rows do.
-			var pageUrl = schemaToRender is not null && _analyzer.GetTypeInfo(schemaToRender).HasLink
-				? SchemaHelpers.GetContainerPageUrl(options.ApiRootUrl, baseName)
-				: null;
+			var pageUrl = schemaToRender is null ? null : PageUrl(_analyzer.GetTypeInfo(schemaToRender).LinkedSchemaId);
 			var optionProps = primaryOption.IsObject && schemaToRender is not null && pageUrl is null
 				? _analyzer.GetSchemaProperties(schemaToRender)
 				: null;
@@ -217,6 +226,7 @@ public partial class ApiPropertyTreeBuilder
 					primaryOption.IsObject,
 					schemaToRender,
 					optionProps,
+					primaryOption.ShownBase,
 					pageUrl,
 					primaryOption.Label
 				);

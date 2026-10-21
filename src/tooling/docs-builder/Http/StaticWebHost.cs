@@ -192,8 +192,7 @@ public class StaticWebHost
 				".map" => "application/json",
 				".txt" => "text/plain",
 				".xml" => "text/xml",
-				".yml" => "text/yaml",
-				".yaml" => "text/yaml",
+				".yml" or ".yaml" => "text/plain; charset=utf-8",
 				".md" => "text/markdown; charset=utf-8",
 				_ => "text/html"
 			};

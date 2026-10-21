@@ -5,7 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Publishing;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
@@ -14,12 +14,16 @@ internal static class ProductExtensions
 	public static ProductCatalog CreateProducts(this ConfigurationFileProvider provider, VersioningSystemCatalog versionsConfiguration)
 	{
 		using var reader = provider.ProductsFile.OpenText();
-		return CreateProducts(reader, versionsConfiguration);
+		return CreateProducts(reader, versionsConfiguration, provider.ProductsFile.FullName);
 	}
 
-	internal static ProductCatalog CreateProducts(TextReader reader, VersioningSystemCatalog versionsConfiguration)
+	internal static ProductCatalog CreateProducts(
+		TextReader reader,
+		VersioningSystemCatalog versionsConfiguration,
+		string? sourceName = null
+	)
 	{
-		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
+		var productsDto = ConfigurationFileProvider.Deserialize<ProductConfigDto>(reader, sourceName);
 
 		var products = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp =>
 		{
@@ -125,18 +129,18 @@ internal static class ProductExtensions
 
 // Private DTOs for deserialization. These match the YAML structure directly.
 
-internal sealed record ProductConfigDto
+public sealed record ProductConfigDto
 {
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public Dictionary<string, ProductDto> Products { get; set; } = [];
 }
 
-internal sealed record ProductDto
+public sealed record ProductDto
 {
-	[YamlMember(Alias = "display")]
+	[YamlPropertyName("display")]
 	public string Display { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "versioning")]
+	[YamlPropertyName("versioning")]
 	public string? Versioning { get; set; }
 
 	public string? Repository { get; set; }
@@ -152,6 +156,6 @@ internal sealed record ProductDto
 	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and
 	/// the <c>dra</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
 	/// </summary>
-	[YamlMember(Alias = "features")]
+	[YamlPropertyName("features")]
 	public Dictionary<string, string>? Features { get; set; }
 }

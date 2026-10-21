@@ -7,27 +7,62 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
-/// <summary>What a request or response body lists: its properties, or the variants of a body that is itself a union.</summary>
-internal static class ApiBodyContent
+/// <summary>What a request or response body lists: its properties, the variants of a union body, or both.</summary>
+/// <param name="Requires">Which of the body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</param>
+/// <param name="IsArray">
+/// Whether the body is an array of objects. <paramref name="Properties"/> then lists the fields of each item, one level down,
+/// so they sit under a row for the array.
+/// </param>
+internal sealed record ApiBodyContent(
+	ApiPropertyList? Properties,
+	ApiUnionVariants? UnionVariants,
+	RequiredAlternatives? Requires,
+	bool IsArray = false
+)
 {
+	/// <summary>Says in prose what the tree shows under an array body's row, for output that has no tree.</summary>
+	public const string ArrayItemsLabel = "An array; each item has these fields:";
+
 	/// <summary>
-	/// The property list or the variant list of a request or response body. A union whose properties come only from an
-	/// <c>allOf</c> lists its variants, which already carry those shared properties. A union that declares properties
-	/// itself keeps listing them, as property rows do.
+	/// The content of a request or response body, as property rows list it: a union that declares properties lists them
+	/// above its variants (see <see cref="SchemaAnalyzer.DeclaresProperties"/>).
 	/// </summary>
-	public static (ApiPropertyList? Properties, ApiUnionVariants? UnionVariants) Build(
+	public static ApiBodyContent Build(
 		IOpenApiSchema schema,
 		PropertyTreeScope scope,
 		SchemaAnalyzer analyzer,
 		ApiPropertyTreeBuilder builder
 	)
 	{
-		var declaresProperties = (analyzer.ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
-		var variants = analyzer.GetTypeInfo(schema).IsUnion && !declaresProperties
-			? BuildUnionVariants(schema, scope, analyzer, builder)
-			: null;
-		return variants is not null ? (null, variants) : (builder.BuildPropertyList(schema, scope), null);
+		var typeInfo = analyzer.GetTypeInfo(schema);
+		var variants = typeInfo.IsUnion ? BuildUnionVariants(schema, scope, analyzer, builder) : null;
+		if (variants is null && typeInfo.IsArray && ArrayItemSchema(schema, analyzer) is { } itemSchema)
+		{
+			var itemProperties = builder.BuildPropertyList(itemSchema, scope with { Depth = scope.Depth + 1 });
+			if (itemProperties is not null)
+				return new ApiBodyContent(itemProperties, null, null, IsArray: true);
+		}
+		var listed = ListedProperties(schema, variants, analyzer);
+		// A map has no fields of its own, so its values' fields list under a <string> key row, as a nested map's do.
+		if (variants is null && analyzer.GetExpandableDictionaryValue(schema) is { } mapValue)
+			listed = ApiPropertyTreeBuilder.WithDictionaryKeyRow(
+				analyzer.Flatten(schema).Required,
+				analyzer.GetSchemaProperties(schema),
+				mapValue
+			);
+		var properties = listed is null ? null : builder.BuildPropertyList(listed, scope);
+		return new ApiBodyContent(properties, variants, builder.DescribeRequiredAlternatives(schema));
 	}
+
+	private static IOpenApiSchema? ArrayItemSchema(IOpenApiSchema schema, SchemaAnalyzer analyzer) =>
+		schema.Items ?? (schema is OpenApiSchemaReference ? analyzer.ResolveSchema(schema)?.Items : null);
+
+	/// <summary>
+	/// The schema whose properties a body or schema page lists, or null when it lists only variants. A union that
+	/// declares properties lists them above its variants (see <see cref="SchemaAnalyzer.SharedProperties"/>).
+	/// </summary>
+	public static IOpenApiSchema? ListedProperties(IOpenApiSchema schema, ApiUnionVariants? variants, SchemaAnalyzer analyzer) =>
+		variants is null ? schema : analyzer.DeclaresProperties(schema) ? analyzer.SharedProperties(schema) : null;
 
 	/// <summary>The variants of a body that is itself a union, under a label that says what they describe.</summary>
 	public static ApiUnionVariants? BuildUnionVariants(
@@ -57,6 +92,5 @@ internal static class ApiBodyContent
 	}
 
 	/// <summary>Names a collapsed section header lists; an array variant keeps its <c>[]</c> so it stays apart from the plain one.</summary>
-	public static IEnumerable<string> VariantNames(ApiUnionVariants? variants) =>
-		(variants?.Variants ?? []).Select(static v => v.IsArrayVariant ? $"{v.DisplayName}[]" : v.DisplayName);
+	public static IEnumerable<string> VariantNames(ApiUnionVariants? variants) => (variants?.Variants ?? []).Select(static v => v.ChipName);
 }

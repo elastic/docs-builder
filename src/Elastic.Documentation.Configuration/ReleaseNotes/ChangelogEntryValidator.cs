@@ -5,7 +5,7 @@
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.ReleaseNotes;
 using Nullean.Entities;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -50,7 +50,7 @@ public static class ChangelogEntryValidator
 	{
 		try
 		{
-			var dto = ReleaseNotesSerialization.ParseEntryDto(yaml);
+			var dto = ReleaseNotesSerialization.ParseEntryDto(yaml, filePath);
 			if (dto is null)
 				return new EntryFileValidation([], []);
 			var findings = Validate(filePath, dto, config, labelDerivedType, knownProducts, filenamePrNumber);
@@ -105,7 +105,7 @@ public static class ChangelogEntryValidator
 	) =>
 		Validate(
 			filePath,
-			ReleaseNotesSerialization.ParseEntryDto(yaml) ?? new ChangelogEntryDto(),
+			ReleaseNotesSerialization.ParseEntryDto(yaml, filePath) ?? new ChangelogEntryDto(),
 			config,
 			labelDerivedType,
 			knownProducts,

@@ -11,7 +11,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 public static partial class ChangelogTextUtilities
 {
-	[GeneratedRegex(@"\d+$", RegexOptions.None)]
+	[GeneratedRegex(@"\d+$", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex TrailingNumberRegex();
 
 	/// <summary>
@@ -132,6 +132,53 @@ public static partial class ChangelogTextUtilities
 
 		return span.ToString();
 	}
+
+	[GeneratedRegex(@"^(?:feat|fix|docs|chore|refactor|perf|test|style|build|ci|revert)(?:\([^)\s]*\))?!?:\s+", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
+	private static partial Regex ConventionalCommitPrefixRegex();
+
+	/// <summary>
+	/// Strips a leading conventional-commit prefix such as <c>fix:</c>, <c>feat(cases):</c> or <c>fix(apm)!:</c>.
+	/// The prefix is removed only when text follows it. The type is already captured by the changelog entry type.
+	/// </summary>
+	public static string StripConventionalCommitPrefix(string title)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return title;
+
+		var match = ConventionalCommitPrefixRegex().Match(title);
+		if (!match.Success)
+			return title;
+
+		var rest = title[match.Length..].TrimStart();
+		return rest.Length == 0 ? title : rest;
+	}
+
+	/// <summary>
+	/// Uppercases the first letter of a title. Titles that start with a code-like token (containing digits,
+	/// underscores, dots, backticks, or inner capitals such as <c>kibana.alert</c> or <c>inputsForVersions</c>)
+	/// are left unchanged so identifiers keep their exact casing.
+	/// Hyphens and apostrophes are allowed in prose words (for example <c>don't</c>).
+	/// </summary>
+	public static string CapitalizeFirstLetter(string title)
+	{
+		if (string.IsNullOrEmpty(title) || !char.IsLower(title[0]))
+			return title;
+
+		var firstWordEnd = title.IndexOfAny([' ', '\t']);
+		var firstWord = firstWordEnd < 0 ? title : title[..firstWordEnd];
+		if (firstWord.Any(c => !char.IsLetter(c) && c is not ('-' or '\'' or '\u2019')) || firstWord.Skip(1).Any(char.IsUpper))
+			return title;
+
+		return char.ToUpperInvariant(title[0]) + title[1..];
+	}
+
+	/// <summary>
+	/// Applies the <c>extract.strip_title_prefix</c> cleanup: square-bracket prefixes, then conventional-commit
+	/// prefixes, then first-letter capitalization.
+	/// </summary>
+	public static string StripTitlePrefix(string title) =>
+		CapitalizeFirstLetter(StripConventionalCommitPrefix(StripSquareBracketPrefix(title)));
 
 	/// <summary>
 	/// Whether a changelog title should be emitted as an explicitly quoted YAML scalar so unambiguous
@@ -561,7 +608,7 @@ public static partial class ChangelogTextUtilities
 		return parts.Length >= 2 ? (parts[0], parts[1]) : (null, parts[0]);
 	}
 
-	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex NonAlphanumericRegex();
 
 	/// <summary>

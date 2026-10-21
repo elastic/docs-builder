@@ -7,13 +7,12 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
 using Nullean.Entities;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.EventEmitters;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -30,30 +29,38 @@ internal static partial class ReleaseNotesSerialization
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	public static partial Regex VersionToTargetRegex();
 
-	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.Build();
+	private static readonly YamlSerializerOptions DeserializerOptions = YamlStaticContext.Default.Options.WithUnmappedKeysThrowing();
 
-	private static readonly ISerializer YamlSerializer = new StaticSerializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-		.WithQuotingNecessaryStrings()
-		.DisableAliases()
-		.WithEventEmitter(inner => new MultilineLiteralEventEmitter(inner))
-		.Build();
+	private static readonly YamlSerializerOptions SerializerOptions = YamlStaticContext.Default.CreateOptions(
+		o =>
+			o with
+			{
+				DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingDefault,
+				ScalarStylePreferences = new YamlScalarStylePreferences { MultilineStringStyle = ScalarStyle.Literal }
+			}
+	);
 
 	/// <summary>
 	/// Parses an entry file's (normalized) text to its DTO, null for an empty file. Only the loader's own validator reads the shape; everything else gets a record.
+	/// <paramref name="sourceName"/> is the file name unknown keys are reported at.
 	/// </summary>
-	internal static ChangelogEntryDto? ParseEntryDto(string yaml) => YamlDeserializer.Deserialize<ChangelogEntryDto>(NormalizeYaml(yaml));
+	internal static ChangelogEntryDto? ParseEntryDto(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<ChangelogEntryDto>(NormalizeYaml(yaml), GetEntryDeserializerOptions(sourceName));
+
+	/// <summary>
+	/// Gets the raw YAML deserializer options for changelog entry DTOs.
+	/// Used by bundling service for direct deserialization with error handling.
+	/// </summary>
+	public static YamlSerializerOptions GetEntryDeserializerOptions(string? sourceName = null) =>
+		sourceName is null ? DeserializerOptions : DeserializerOptions.WithUnmappedKeysThrowing(sourceName);
 
 	/// <summary>
 	/// Deserializes a changelog entry YAML content to domain type.
 	/// </summary>
-	public static ChangelogEntry DeserializeEntry(string yaml)
+	public static ChangelogEntry DeserializeEntry(string yaml, string? sourceName = null)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml)
+		var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(yaml, GetEntryDeserializerOptions(sourceName))
 			?? throw new InvalidDataException("The changelog entry has no content.");
 		return ToEntry(yamlDto);
 	}
@@ -73,10 +80,10 @@ internal static partial class ReleaseNotesSerialization
 	/// <summary>
 	/// Deserializes bundled changelog data YAML content to domain type.
 	/// </summary>
-	public static Bundle DeserializeBundle(string yaml)
+	public static Bundle DeserializeBundle(string yaml, string? sourceName = null)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml)
+		var yamlDto = YamlSerializer.Deserialize<BundleDto>(yaml, GetEntryDeserializerOptions(sourceName))
 			?? throw new InvalidDataException("The changelog bundle has no content.");
 		return ToBundle(yamlDto);
 	}
@@ -87,7 +94,7 @@ internal static partial class ReleaseNotesSerialization
 	public static string SerializeEntry(ChangelogEntry entry)
 	{
 		var dto = ToDto(entry);
-		var yaml = YamlSerializer.Serialize(dto);
+		var yaml = YamlSerializer.Serialize(dto, SerializerOptions);
 		return ApplyDefensiveTitleQuotingIfNeeded(yaml, entry.Title);
 	}
 
@@ -97,7 +104,7 @@ internal static partial class ReleaseNotesSerialization
 	public static string SerializeBundle(Bundle bundle)
 	{
 		var dto = ToDto(bundle);
-		return YamlSerializer.Serialize(dto);
+		return YamlSerializer.Serialize(dto, SerializerOptions);
 	}
 
 	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
@@ -313,7 +320,8 @@ internal static partial class ReleaseNotesSerialization
 			Subtype = EntrySubtypeToString(entry.Subtype),
 			Products = entry.Products?.Select(ToDto).ToList(),
 			Areas = entry.Areas?.ToList(),
-			// serialization shaping, not the domain: a blank title is absent from the file (a CLI writing an entry whose title is still to be added comments it out)
+			// Serialization shaping, not the domain: a blank title is absent from the file (a CLI writing an entry whose title is still to be added comments it out).
+			// Empty must round-trip to the DTO's null so DefaultIgnoreCondition.WhenWritingDefault omits it — that condition compares against null, not "".
 			Title = string.IsNullOrEmpty(entry.Title) ? null : entry.Title,
 			Description = entry.Description,
 			Impact = entry.Impact,
@@ -406,7 +414,8 @@ internal static partial class ReleaseNotesSerialization
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
 
 		// Normalize version to target
-		return VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+		var normalized = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+		return normalized;
 	}
 
 	/// <summary>
@@ -451,42 +460,6 @@ internal static partial class ReleaseNotesSerialization
 		"conjunction" => MatchMode.Conjunction,
 		_ => null
 	};
-
-	/// <summary>
-	/// Emits multiline strings as YAML literal block scalars (<c>|</c>) so lists and paragraphs
-	/// keep their newlines instead of being folded (<c>&gt;</c>).
-	/// </summary>
-	private sealed class MultilineLiteralEventEmitter(IEventEmitter nextEmitter) : ChainedEventEmitter(nextEmitter)
-	{
-		public override void Emit(ScalarEventInfo eventInfo, IEmitter emitter)
-		{
-			if (eventInfo.Source.Value is string value)
-			{
-				if (!IsBlockSafe(value))
-					eventInfo.Style = ScalarStyle.DoubleQuoted;
-				else if (value.Contains('\n'))
-					eventInfo.Style = ScalarStyle.Literal;
-			}
-
-			base.Emit(eventInfo, emitter);
-		}
-
-		/// <summary>
-		/// Both block styles write their content raw, so a control character that is not a line break or a
-		/// tab lands in the file unescaped and the document no longer parses. Those values take the
-		/// double-quoted style instead, which escapes the character.
-		/// </summary>
-		private static bool IsBlockSafe(string value)
-		{
-			foreach (var c in value)
-			{
-				if (c is < ' ' and not ('\n' or '\r' or '\t'))
-					return false;
-			}
-
-			return true;
-		}
-	}
 }
 
 /// <summary>

@@ -9,9 +9,9 @@ using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.Components;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Exporters;

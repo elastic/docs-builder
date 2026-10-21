@@ -70,6 +70,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
+			siteTopNav: null,
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -105,6 +106,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
+			siteTopNav: null,
 			TestContext.Current!.Execution.CancellationToken
 		);
 

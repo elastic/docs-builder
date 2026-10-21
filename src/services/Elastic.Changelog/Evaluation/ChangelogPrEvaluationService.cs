@@ -11,6 +11,7 @@ using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
@@ -63,6 +64,25 @@ public class ChangelogPrEvaluationService(
 		var existingFilename = FindExistingChangelog(changelogDir, input.PrNumber);
 		var changelogFilePath = existingFilename != null ? $"{changelogDir}/{existingFilename}" : null;
 
+		// An entry file on the PR outranks the description for Impact and Action. Any author's file is checked the same way.
+		var breakingEntry = changelogFilePath != null && TryReadEntry(changelogFilePath) is { Type: ChangelogEntryType.BreakingChange } e
+			? e
+			: null;
+		if (
+			breakingEntry != null
+			&& await EvaluateEntryImpactAction(
+				collector,
+				input,
+				breakingEntry,
+				changelogFilePath!,
+				changelogDir,
+				existingFilename!,
+				defaultBranch,
+				ctx
+			)
+		)
+			return false;
+
 		// Manual edit detection (only if a file exists)
 		if (changelogFilePath != null)
 		{
@@ -76,6 +96,16 @@ public class ChangelogPrEvaluationService(
 			if (!string.IsNullOrEmpty(fileAuthor) && !string.Equals(fileAuthor, input.BotName, StringComparison.OrdinalIgnoreCase))
 			{
 				_logger.LogInformation("Skipping: changelog file {File} manually edited by {Author}", changelogFilePath, fileAuthor);
+				// The Impact/Action rules passed above. Record a terminal decision so the comment step clears any earlier failure comment.
+				if (breakingEntry != null)
+					await WriteDecisionMetadataAsync(
+						input,
+						PrEvaluationResult.ManuallyEdited.ToStringFast(true),
+						changelogDir: changelogDir,
+						changelogFilename: existingFilename,
+						defaultBranch: defaultBranch,
+						ctx: ctx
+					);
 				return await SetOutputs(PrEvaluationResult.ManuallyEdited);
 			}
 		}
@@ -91,7 +121,7 @@ public class ChangelogPrEvaluationService(
 		// Resolve title from PR title only (release note text is never used as title)
 		var prTitle = input.PrTitle;
 		if (input.StripTitlePrefix)
-			prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+			prTitle = ChangelogTextUtilities.StripTitlePrefix(prTitle);
 
 		string? description = null;
 		if (config.Extract.ReleaseNotes && !string.IsNullOrWhiteSpace(input.PrBody))
@@ -102,6 +132,15 @@ public class ChangelogPrEvaluationService(
 				description = releaseNote;
 				_logger.LogInformation("Using extracted release note as description (length: {Length} characters)", description.Length);
 			}
+		}
+
+		// Impact/Action are always parsed when the gate is on, regardless of the release-note extraction toggle.
+		string? impact = null;
+		string? action = null;
+		if ((config.Extract.ReleaseNotes || input.RequireImpactAction) && !string.IsNullOrWhiteSpace(input.PrBody))
+		{
+			impact = ReleaseNotesExtractor.FindImpact(input.PrBody);
+			action = ReleaseNotesExtractor.FindAction(input.PrBody);
 		}
 
 		var title = prTitle;
@@ -147,7 +186,7 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null;
 		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
+			var products = ProductResolution.FromLabels(input.PrLabels, config);
 			if (products.Count > 0)
 			{
 				resolvedProducts = ProductArgument.FormatProductSpecs(products);
@@ -202,7 +241,7 @@ public class ChangelogPrEvaluationService(
 		// available to fill in via inference at 'changelog add' time. Surface this as a
 		// missing-label failure so the contributor sees an actionable hint instead of a hard
 		// error later in the workflow.
-		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
 		{
 			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
 			var productLabels = config.LabelToProducts is { Count: > 0 }
@@ -228,6 +267,46 @@ public class ChangelogPrEvaluationService(
 				ctx: ctx
 			);
 			return false;
+		}
+
+		// Impact/Action gate: breaking changes must describe who is affected and what to do about it.
+		// An entry file already covered Impact and Action above, so the description is only checked when there is none.
+		if (input.RequireImpactAction && breakingEntry == null && resolvedType == ChangelogEntryType.BreakingChange.ToStringFast(true))
+		{
+			var missing = new List<string>();
+			if (string.IsNullOrWhiteSpace(impact))
+				missing.Add("impact");
+			if (string.IsNullOrWhiteSpace(action))
+				missing.Add("action");
+
+			if (missing.Count > 0)
+			{
+				var missingSections = string.Join(",", missing);
+				var missingHeadings = string.Join(" and ", missing.Select(m => $"`## {(m == "impact" ? "Impact" : "Action")}`"));
+				_logger.LogInformation("Breaking-change PR #{PrNumber} is missing sections: {Sections}", input.PrNumber, missingSections);
+				collector.EmitError(
+					string.Empty,
+					$"Breaking-change PR #{input.PrNumber} is missing {missingHeadings} in the PR description. " +
+						"Add the section(s) so the release notes can tell users who is affected and what to do."
+				);
+				_ = await SetOutputs(
+					PrEvaluationResult.MissingImpactAction,
+					title,
+					resolvedType,
+					resolvedDescription: description,
+					resolvedProducts: resolvedProducts,
+					resolvedImpact: impact,
+					resolvedAction: action
+				);
+				await WriteDecisionMetadataAsync(
+					input,
+					"missing-impact-action",
+					missingSections: missingSections,
+					defaultBranch: defaultBranch,
+					ctx: ctx
+				);
+				return false;
+			}
 		}
 
 		// Entry-required gate: fail when the flag is set and no file exists for this PR
@@ -269,6 +348,10 @@ public class ChangelogPrEvaluationService(
 			changelogFilename: existingFilename,
 			skipLabels: skipLabels,
 			defaultBranch: defaultBranch,
+			resolvedType: resolvedType,
+			// Only values scraped from the description are echoed. With an entry file, the file is the source.
+			impact: existingFilename == null ? impact : null,
+			action: existingFilename == null ? action : null,
 			ctx: ctx
 		);
 		return await SetOutputs(
@@ -279,8 +362,129 @@ public class ChangelogPrEvaluationService(
 			resolvedProducts: resolvedProducts,
 			productLabelTable: productLabelTable,
 			changelogDir: changelogDir,
-			existingFilename: existingFilename
+			existingFilename: existingFilename,
+			resolvedImpact: impact,
+			resolvedAction: action,
+			// Kept apart from the description-derived values: changelog add discards those when extraction is disabled,
+			// but must never lose what the entry file already holds.
+			resolvedEntryImpact: breakingEntry?.Impact,
+			resolvedEntryAction: breakingEntry?.Action
 		);
+	}
+
+	/// <summary>
+	/// Applies the Impact/Action rules when the PR has a breaking-change changelog entry file. The file outranks the description:
+	/// a section in the description must match the file's field exactly, otherwise the PR has two sources and fails.
+	/// <see cref="EvaluatePrArguments.RequireImpactAction"/> then enforces that the file sets both fields.
+	/// Returns <c>true</c> when the evaluation failed and outputs are already set.
+	/// </summary>
+	private async Task<bool> EvaluateEntryImpactAction(
+		IDiagnosticsCollector collector,
+		EvaluatePrArguments input,
+		ChangelogEntry entry,
+		string entryPath,
+		string changelogDir,
+		string entryFilename,
+		string defaultBranch,
+		Cancel ctx
+	)
+	{
+		var breaking = ChangelogEntryType.BreakingChange.ToStringFast(true);
+		var bodyImpact = ReleaseNotesExtractor.FindImpact(input.PrBody);
+		var bodyAction = ReleaseNotesExtractor.FindAction(input.PrBody);
+
+		var conflicting = new List<string>();
+		if (bodyImpact != null && !SameText(bodyImpact, entry.Impact))
+			conflicting.Add("impact");
+		if (bodyAction != null && !SameText(bodyAction, entry.Action))
+			conflicting.Add("action");
+
+		if (conflicting.Count > 0)
+		{
+			var conflictingSections = string.Join(",", conflicting);
+			_logger.LogInformation(
+				"PR #{PrNumber}: {Sections} in the description differ from entry file {File}",
+				input.PrNumber,
+				conflictingSections,
+				entryFilename
+			);
+			var headings = string.Join(" and ", conflicting.Select(c => $"`## {(c == "impact" ? "Impact" : "Action")}`"));
+			collector.EmitError(
+				string.Empty,
+				$"Breaking-change PR #{input.PrNumber} has {headings} in the PR description that differ from the changelog entry file ({entryPath}). " +
+					"Keep Impact and Action in one place, or make the description match the entry file exactly."
+			);
+			_ = await SetOutputs(
+				PrEvaluationResult.ConflictingImpactAction,
+				resolvedType: breaking,
+				changelogDir: changelogDir,
+				existingFilename: entryFilename
+			);
+			await WriteDecisionMetadataAsync(
+				input,
+				"conflicting-impact-action",
+				changelogDir: changelogDir,
+				changelogFilename: entryFilename,
+				defaultBranch: defaultBranch,
+				conflictingSections: conflictingSections,
+				ctx: ctx
+			);
+			return true;
+		}
+
+		var missing = new List<string>();
+		if (string.IsNullOrWhiteSpace(entry.Impact))
+			missing.Add("impact");
+		if (string.IsNullOrWhiteSpace(entry.Action))
+			missing.Add("action");
+
+		if (!input.RequireImpactAction || missing.Count == 0)
+			return false;
+
+		var missingSections = string.Join(",", missing);
+		_logger.LogInformation("Entry file {File} is missing sections: {Sections}", entryFilename, missingSections);
+		collector.EmitError(
+			string.Empty,
+			$"Breaking-change changelog entry file {entryPath} is missing {string.Join(" and ", missing.Select(m => $"`{m}:`"))}. " +
+				"Add the field(s) so the release notes can tell users who is affected and what to do."
+		);
+		_ = await SetOutputs(
+			PrEvaluationResult.MissingImpactAction,
+			resolvedType: breaking,
+			changelogDir: changelogDir,
+			existingFilename: entryFilename
+		);
+		await WriteDecisionMetadataAsync(
+			input,
+			"missing-impact-action",
+			changelogDir: changelogDir,
+			changelogFilename: entryFilename,
+			defaultBranch: defaultBranch,
+			missingSections: missingSections,
+			ctx: ctx
+		);
+		return true;
+	}
+
+	private static bool SameText(string? a, string? b) => string.Equals(Normalize(a), Normalize(b), StringComparison.Ordinal);
+
+	private static string Normalize(string? value) => (value ?? string.Empty).Replace("\r\n", "\n").Trim();
+
+	private ChangelogEntry? TryReadEntry(string entryPath)
+	{
+		try
+		{
+			// a rule the entry breaks does not stop it being read here: only YAML that does not parse leaves no entry
+			var entry = ReleaseNotesLoader.LoadEntry(_fileSystem.File.ReadAllText(entryPath), entryPath, entryPath).Value;
+			if (entry is null)
+				_logger.LogWarning("Could not parse changelog entry file {File}", entryPath);
+			return entry;
+		}
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+		{
+			_logger.LogWarning(ex, "Could not read changelog entry file {File}", entryPath);
+			return null;
+		}
 	}
 
 	/// <summary>The evaluate-pr output value when evaluation succeeds and generation should proceed.</summary>
@@ -302,7 +506,12 @@ public class ChangelogPrEvaluationService(
 		string? changelogFilename = null,
 		string? ambiguousTypeLabels = null,
 		string? defaultBranch = null,
-		string? resolvedProducts = null
+		string? resolvedProducts = null,
+		string? missingSections = null,
+		string? conflictingSections = null,
+		string? resolvedType = null,
+		string? impact = null,
+		string? action = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -326,7 +535,12 @@ public class ChangelogPrEvaluationService(
 			ChangelogFilename = changelogFilename,
 			AmbiguousTypeLabels = ambiguousTypeLabels,
 			DefaultBranch = defaultBranch,
-			ResolvedProducts = resolvedProducts
+			ResolvedProducts = resolvedProducts,
+			MissingSections = missingSections,
+			ConflictingSections = conflictingSections,
+			ResolvedType = resolvedType,
+			Impact = impact,
+			Action = action
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}
@@ -352,7 +566,11 @@ public class ChangelogPrEvaluationService(
 		string? productLabelTable = null,
 		string? changelogDir = null,
 		string? existingFilename = null,
-		string? skipLabels = null
+		string? skipLabels = null,
+		string? resolvedImpact = null,
+		string? resolvedAction = null,
+		string? resolvedEntryImpact = null,
+		string? resolvedEntryAction = null
 	)
 	{
 		var statusString = status == PrEvaluationResult.Success ? ProceedStatus : status.ToStringFast(true);
@@ -371,6 +589,26 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync(
 				"description",
 				OutputSanitizer.SanitizeForOutput(resolvedDescription, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (resolvedImpact != null)
+			await coreService.SetOutputAsync(
+				"impact",
+				OutputSanitizer.SanitizeForOutput(resolvedImpact, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (resolvedAction != null)
+			await coreService.SetOutputAsync(
+				"action",
+				OutputSanitizer.SanitizeForOutput(resolvedAction, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (!string.IsNullOrWhiteSpace(resolvedEntryImpact))
+			await coreService.SetOutputAsync(
+				"entry-impact",
+				OutputSanitizer.SanitizeForOutput(resolvedEntryImpact, OutputSanitizer.DescriptionMaxLength)
+			);
+		if (!string.IsNullOrWhiteSpace(resolvedEntryAction))
+			await coreService.SetOutputAsync(
+				"entry-action",
+				OutputSanitizer.SanitizeForOutput(resolvedEntryAction, OutputSanitizer.DescriptionMaxLength)
 			);
 		if (resolvedType != null)
 			await coreService.SetOutputAsync("type", OutputSanitizer.SanitizeForOutput(resolvedType, OutputSanitizer.TypeMaxLength));

@@ -2,90 +2,124 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.FrontMatter;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst;
 
 public static class YamlSerialization
 {
-	public static T Deserialize<T>(string yaml, ProductCatalog products)
+	public static T Deserialize<T>(string yaml, ProductCatalog products) => Deserialize<T>(yaml, products, o => o);
+
+	/// <summary>
+	/// Deserializes YAML content (e.g. front matter or a directive body), reporting unknown keys as errors
+	/// through <paramref name="reporting"/> instead of silently skipping them.
+	/// </summary>
+	public static T Deserialize<T>(string yaml, ProductCatalog products, YamlUnmappedMemberReporting reporting) =>
+		Deserialize<T>(yaml, products, o => o.WithUnmappedReporting(reporting));
+
+	private static T Deserialize<T>(string yaml, ProductCatalog products, Func<YamlSerializerOptions, YamlSerializerOptions> configure)
 	{
-		var input = new StringReader(yaml);
+		var context = DocsBuilderYamlStaticContext.Default;
+		var options = context.CreateOptions(
+			o => configure(o with
+			{
+				Converters =
+				[
+					new SemVersionConverter(),
+					new MarkdownPageLayoutConverter(),
+					new SettingMutabilityConverter(),
+					new ProductConverter(products),
+					new ApplicableToYamlConverter(products.PublicReferenceProducts.Keys),
+					new ListingFrontMatterConverter()
+				],
+				// Settings YAML anchors/aliases a setting shared across groups (e.g. `&common ... *common`).
+				// Without this the generated reader throws when it hits the alias token. See the matching
+				// comment on ConfigurationFileProvider.DeserializerOptions.
+				ReferenceHandling = YamlReferenceHandling.Preserve
+			})
+		);
 
-		var deserializer = new StaticDeserializerBuilder(new DocsBuilderYamlStaticContext())
-			.IgnoreUnmatchedProperties()
-			.WithEnumNamingConvention(HyphenatedNamingConvention.Instance)
-			.WithTypeConverter(new SemVersionConverter())
-			.WithTypeConverter(new ProductConverter(products))
-			.WithTypeConverter(new ApplicableToYamlConverter(products.PublicReferenceProducts.Keys))
-			.WithTypeConverter(new ListingFrontMatterConverter())
-			.Build();
-
-		var frontMatter = deserializer.Deserialize<T>(input);
-		return frontMatter;
+		// A null or comment-only YAML document deserializes to null rather than throwing. Preserve that
+		// nullable result instead of raising: hub directives (e.g. {get-started}, {link-card}) fall back to
+		// an empty data record via `?? ...Empty` and continue validating, same as the pre-migration behavior.
+		return YamlSerializer.Deserialize<T>(yaml, options)!;
 	}
 }
 
 /// <summary>
 /// Handles both <c>listing: group-name</c> (scalar shorthand) and <c>listing: {group: name}</c> (mapping).
 /// </summary>
-internal class ListingFrontMatterConverter : IYamlTypeConverter
+internal class ListingFrontMatterConverter : YamlConverter<ListingFrontMatter>
 {
-	public bool Accepts(Type type) => type == typeof(ListingFrontMatter);
+	private static readonly string[] KnownKeys = ["group"];
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override ListingFrontMatter? Read(YamlReader reader)
 	{
-		if (parser.TryConsume<Scalar>(out var scalar))
-			return new ListingFrontMatter { Group = string.IsNullOrWhiteSpace(scalar.Value) ? null : scalar.Value };
-
-		if (!parser.TryConsume<MappingStart>(out _))
-			return null;
-
-		var result = new ListingFrontMatter();
-		while (!parser.TryConsume<MappingEnd>(out _))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
-			if (!parser.TryConsume<Scalar>(out var key))
+			var scalarValue = reader.ScalarValue;
+			_ = reader.Read();
+			return new ListingFrontMatter { Group = string.IsNullOrWhiteSpace(scalarValue) ? null : scalarValue };
+		}
+
+		if (reader.TokenType != YamlTokenType.StartMapping)
+		{
+			reader.Skip();
+			return null;
+		}
+
+		_ = reader.Read(); // consume StartMapping
+		var result = new ListingFrontMatter();
+		while (reader.TokenType != YamlTokenType.EndMapping)
+		{
+			if (reader.TokenType != YamlTokenType.Scalar)
 			{
-				parser.SkipThisAndNestedEvents();
+				reader.Skip();
 				continue;
 			}
-			if (key.Value == "group" && parser.TryConsume<Scalar>(out var val))
-				result.Group = string.IsNullOrWhiteSpace(val.Value) ? null : val.Value;
+			var key = reader.ScalarValue;
+			_ = reader.Read();
+			if (key == "group" && reader.TokenType == YamlTokenType.Scalar)
+			{
+				var value = reader.ScalarValue;
+				_ = reader.Read();
+				result.Group = string.IsNullOrWhiteSpace(value) ? null : value;
+			}
+			else if (key != "group")
+				reader.SkipOrReportUnmapped(typeof(ListingFrontMatter), KnownKeys, key!, result);
 			else
-				parser.SkipThisAndNestedEvents();
+				reader.Skip();
 		}
+		_ = reader.Read(); // consume EndMapping
+
 		return result;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, ListingFrontMatter value) =>
+		throw new NotSupportedException("ListingFrontMatter YAML serialization is not supported; it is only ever read from YAML.");
 }
 
-[YamlStaticContext]
 [YamlSerializable(typeof(YamlSettings))]
-[YamlSerializable(typeof(SettingsGrouping))]
-[YamlSerializable(typeof(Setting))]
-[YamlSerializable(typeof(AllowedValue))]
-[YamlSerializable(typeof(SettingMutability))]
-[YamlSerializable(typeof(ContributorEntry))]
+[YamlSerializable(typeof(List<ContributorEntry>))]
 [YamlSerializable(typeof(ChangelogDirectiveConfigYaml))]
 [YamlSerializable(typeof(ChangelogDirectiveBundleConfigYaml))]
-[YamlSerializable(typeof(ListingFrontMatter))]
+[YamlSerializable(typeof(ApplicableTo))]
+[YamlSerializable(typeof(YamlFrontMatter))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardData))]
-[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardLink))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedData))]
-[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedStep))]
-[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedStepOption))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]
-[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewItem))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewConfig))]
-public partial class DocsBuilderYamlStaticContext;
+// Product is a domain record read by ProductConverter (which needs the product catalog, so it is registered with a real instance at runtime above);
+// the generator is told it is handled so it does not generate metadata for the domain types a Product holds.
+[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, Converters = [typeof(ProductConverter)])]
+public partial class DocsBuilderYamlStaticContext : YamlSerializerContext;

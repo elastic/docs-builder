@@ -12,6 +12,28 @@
 		return Task.CompletedTask;
 	}
 }
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	if (Model.BuildType == BuildType.Assembler)
+	{
+		@await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model))
+	}
+	else
+	{
+		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
+	}
+		<div id="main-container" class="api-catalog-shell">
+		@await RenderSectionAsync(ApiCatalog.HeroSection)
+		<main id="content-container" class="layout layout--single api-catalog">
+			<div class="api-page-toolbar">
+				@await RenderPartialAsync(_DesignSystemApiBreadcrumbs.Create(Model))
+			</div>
+			@await RenderBodyAsync()
+		</main>
+	</div>
+	@await RenderPartialAsync(_DesignSystemFooter.Create(Model))
+	return;
+}
 @if (Model.BuildType == BuildType.Assembler)
 {
 	@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
@@ -25,10 +47,7 @@ else
 	@* The catalog's hero, outside the container below so a band behind it can span the screen. *@
 	@await RenderSectionAsync(ApiCatalog.HeroSection)
 	<div class="max-w-(--max-layout-width) w-full px-6">
-		<main id="content-container" class="w-full pb-12">
-			<div class="api-page-toolbar">
-				@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
-			</div>
+		<main id="content-container" class="w-full pt-8 pb-12">
 			@await RenderBodyAsync()
 		</main>
 	</div>

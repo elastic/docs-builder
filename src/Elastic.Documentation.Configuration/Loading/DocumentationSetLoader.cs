@@ -175,7 +175,9 @@ public static class DocumentationSetLoader
 			Api = [.. (dto.Api ?? []).Select(kv => ToApi(kv.Key, kv.Value))],
 			Products = [.. (dto.Products ?? []).Select(p => p.Id)],
 			CodexGroup = dto.Codex?.Group,
-			Branding = dto.Branding is { } b ? new BrandingDeclaration(b.Icon, b.HeaderBg, b.OgImage, b.Favicon, b.AppleTouchIcon) : null,
+			Branding = dto.Branding is { } b
+				? new BrandingDeclaration(b.Icon, b.HeaderBg, b.OgImage, b.Favicon, b.AppleTouchIcon, b.Copyright)
+				: null,
 			HasStorybook = dto.Storybook is not null,
 			StorybookRegistry = dto.Storybook?.Registry,
 			Ctas =

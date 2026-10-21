@@ -29,6 +29,9 @@ public record PropertyDisplayOptions
 	public int MaxDepth { get; init; } = SchemaHelpers.MaxDepth;
 	public VersioningSystemCatalog? VersionsConfiguration { get; init; }
 
+	/// <summary>Whether the availability badges render as the design-system component instead of the custom element.</summary>
+	public bool DesignSystem { get; init; }
+
 	/// <summary>
 	/// Optional cross-page cache for <c>$ref</c> → resolved schema lookups, shared across all pages
 	/// in one generation unit.  When set, <see cref="ApiPropertyTreeBuilder"/> forwards it to each

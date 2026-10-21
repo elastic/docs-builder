@@ -16,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging"/>
     <PackageReference Include="NetEscapades.EnumGenerators"/>
     <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="SharpYaml" />
   </ItemGroup>
 
   <ItemGroup>

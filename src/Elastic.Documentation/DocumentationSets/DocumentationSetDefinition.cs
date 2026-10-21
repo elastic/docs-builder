@@ -202,7 +202,8 @@ public sealed record BrandingDeclaration
 		string? headerBg = null,
 		string? ogImage = null,
 		string? favicon = null,
-		string? appleTouchIcon = null
+		string? appleTouchIcon = null,
+		string? copyright = null
 	)
 	{
 		Icon = icon;
@@ -210,6 +211,7 @@ public sealed record BrandingDeclaration
 		OgImage = ogImage;
 		Favicon = favicon;
 		AppleTouchIcon = appleTouchIcon;
+		Copyright = copyright;
 	}
 
 	public string? Icon { get; internal init; }
@@ -222,13 +224,23 @@ public sealed record BrandingDeclaration
 
 	public string? AppleTouchIcon { get; internal init; }
 
-	public void Deconstruct(out string? icon, out string? headerBg, out string? ogImage, out string? favicon, out string? appleTouchIcon)
+	public string? Copyright { get; internal init; }
+
+	public void Deconstruct(
+		out string? icon,
+		out string? headerBg,
+		out string? ogImage,
+		out string? favicon,
+		out string? appleTouchIcon,
+		out string? copyright
+	)
 	{
 		icon = Icon;
 		headerBg = HeaderBg;
 		ogImage = OgImage;
 		favicon = Favicon;
 		appleTouchIcon = AppleTouchIcon;
+		copyright = Copyright;
 	}
 }
 

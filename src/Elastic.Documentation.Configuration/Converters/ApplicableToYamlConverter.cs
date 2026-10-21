@@ -5,16 +5,19 @@
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Versions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 // ReSharper disable once CheckNamespace — namespace matches ApplicableTo, not the physical folder
 #pragma warning disable IDE0130
 namespace Elastic.Documentation.AppliesTo;
 
-public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) : IYamlTypeConverter
+public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) : YamlConverter<ApplicableTo>
 {
+	// Parameterless constructor required by the SharpYaml source generator for its static converter
+	// fallback field. Never actually used at runtime: callers always supply a real instance (with the
+	// resolved product keys) via YamlSerializerOptions.Converters, which the generator consults first.
+	public ApplicableToYamlConverter() : this([]) { }
+
 	private readonly string[] _knownKeys =
 	[
 		ApplicabilityKeys.Stack,
@@ -33,33 +36,40 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		.. productKeys
 	];
 
-	public bool Accepts(Type type) => type == typeof(ApplicableTo);
+	// Reads the current node as an untyped value (string, List<object?>, or Dictionary<string, object?>).
+	// This resolves to SharpYaml's reflection-free built-in `object` converter, so it stays AOT-safe.
+	private static object? ReadUntyped(YamlReader reader) => reader.GetConverter(typeof(object)).Read(reader, typeof(object));
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override ApplicableTo? Read(YamlReader reader)
 	{
 		var diagnostics = new List<ApplicabilityDiagnostic>();
 
-		if (parser.TryConsume<Scalar>(out var value))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
-			if (string.IsNullOrWhiteSpace(value.Value))
+			var scalarValue = reader.ScalarValue;
+			_ = reader.Read();
+
+			if (string.IsNullOrWhiteSpace(scalarValue))
 			{
 				diagnostics.Add((Severity.Warning, "The 'applies_to' field is present but empty. No applicability will be assumed."));
 				return null;
 			}
 
-			if (string.Equals(value.Value, "all", StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(scalarValue, "all", StringComparison.OrdinalIgnoreCase))
 				return ApplicableTo.All;
+
+			return null;
 		}
 
-		if (parser.TryConsume<SequenceStart>(out _))
+		if (reader.TokenType == YamlTokenType.StartSequence)
 		{
-			var merged = new Dictionary<object, object?>();
-			while (!parser.TryConsume<SequenceEnd>(out _))
+			_ = reader.Read();
+			var merged = new Dictionary<string, object?>();
+			while (reader.TokenType != YamlTokenType.EndSequence)
 			{
-				if (parser.Current is MappingStart)
+				if (reader.TokenType == YamlTokenType.StartMapping)
 				{
-					var item = rootDeserializer.Invoke(typeof(Dictionary<object, object?>)) as Dictionary<object, object?>;
-					if (item is not null)
+					if (ReadUntyped(reader) is Dictionary<string, object?> item)
 					{
 						foreach (var kv in item)
 							merged[kv.Key] = merged.TryGetValue(kv.Key, out var existing)
@@ -67,21 +77,30 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 								: kv.Value;
 					}
 				}
-				else if (parser.TryConsume<Scalar>(out var row))
-					MergeAppliesToListScalarLine(merged, row.Value, diagnostics);
+				else if (reader.TokenType == YamlTokenType.Scalar)
+				{
+					var row = reader.ScalarValue ?? string.Empty;
+					_ = reader.Read();
+					MergeAppliesToListScalarLine(merged, row, diagnostics);
+				}
 				else
-					_ = parser.MoveNext();
+					reader.Skip();
 			}
+			_ = reader.Read(); // consume EndSequence
 
 			return merged.Count > 0 ? FinalizeApplicableTo(merged, diagnostics) : null;
 		}
 
-		var deserialized = rootDeserializer.Invoke(typeof(Dictionary<object, object?>));
-		if (deserialized is not Dictionary<object, object?> { Count: > 0 } dictionary)
+		if (ReadUntyped(reader) is not Dictionary<string, object?> { Count: > 0 } dictionary)
 			return null;
 
 		return FinalizeApplicableTo(dictionary, diagnostics);
 	}
+
+	public override void Write(YamlWriter writer, ApplicableTo value) =>
+		throw new NotSupportedException(
+			"ApplicableTo YAML serialization is not supported; applies_to is only ever read from YAML. See ApplicableToJsonConverter for JSON output."
+		);
 
 	private static bool ParseCollection(string? value, List<ApplicabilityDiagnostic> diagnostics, out AppliesCollection? availability)
 	{
@@ -93,10 +112,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
 	{
-		if (incoming is not Dictionary<object, object?> incomingDict)
+		if (incoming is not Dictionary<string, object?> incomingDict)
 			return incoming;
 
-		if (existing is Dictionary<object, object?> existingDict)
+		if (existing is Dictionary<string, object?> existingDict)
 		{
 			foreach (var kv in incomingDict)
 				existingDict[kv.Key] = existingDict.TryGetValue(kv.Key, out var childExisting)
@@ -110,7 +129,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static void MergeAppliesToListScalarLine(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		string line,
 		List<ApplicabilityDiagnostic> diagnostics
 	)
@@ -128,17 +147,22 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
 	}
 
-	private ApplicableTo FinalizeApplicableTo(Dictionary<object, object?> dictionary, List<ApplicabilityDiagnostic> diagnostics)
+	private ApplicableTo FinalizeApplicableTo(Dictionary<string, object?> dictionary, List<ApplicabilityDiagnostic> diagnostics)
 	{
 		var applicableTo = new ApplicableTo();
 
-		var keys = dictionary.Keys.OfType<string>().Select(x => x.Replace('_', '-')).ToArray();
+		var keys = dictionary.Keys.Select(x => x.Replace('_', '-')).ToArray();
 		var oldStyleKeys = keys.Where(k => k.StartsWith(':')).ToList();
 		if (oldStyleKeys.Count > 0)
 			diagnostics.Add((Severity.Warning, $"Applies block does not use valid yaml keys: {string.Join(", ", oldStyleKeys)}"));
 		var unknownKeys = keys.Except(_knownKeys).Except(oldStyleKeys).ToList();
-		if (unknownKeys.Count > 0)
-			diagnostics.Add((Severity.Warning, $"Applies block does not support the following keys: {string.Join(", ", unknownKeys)}"));
+		foreach (var unknownKey in unknownKeys)
+		{
+			var suggestion = YamlUnmappedMemberDiagnostics.Suggest(unknownKey, _knownKeys);
+			diagnostics.Add(
+				(Severity.Error, YamlUnmappedMemberDiagnostics.FormatMessage("applies_to", unknownKey, suggestion, _knownKeys))
+			);
+		}
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
 			applicableTo = applicableTo with { Stack = stackAvailability };
@@ -218,7 +242,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	/// (and top-level keys that pass the known-key check but are not the exact key a reader maps, like <c>apm-agent-java</c>), and keys whose
 	/// value is not text. The top-level unknown and old-style keys are reported by <c>Diagnostics</c> and are not repeated here.
 	/// </summary>
-	private (IReadOnlyList<string> Unknown, IReadOnlyList<string> Ignored) RecordDropped(Dictionary<object, object?> dictionary)
+	private (IReadOnlyList<string> Unknown, IReadOnlyList<string> Ignored) RecordDropped(Dictionary<string, object?> dictionary)
 	{
 		var unknown = new List<string>();
 		var ignored = new List<string>();
@@ -232,10 +256,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			.. ProjectKeys,
 			.. ProductMappingKeys
 		];
-		foreach (var (k, value) in dictionary)
+		foreach (var (key, value) in dictionary)
 		{
-			if (k is not string key)
-				continue;
 			if (!topRead.Contains(key, StringComparer.Ordinal))
 			{
 				if (_knownKeys.Contains(key.Replace('_', '-'), StringComparer.Ordinal))
@@ -252,7 +274,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 					RecordContainer(key, value, ProjectKeys, unknown, ignored);
 					break;
 				case ApplicabilityKeys.Product:
-					if (value is Dictionary<object, object?>)
+					if (value is Dictionary<string, object?>)
 						RecordContainer(key, value, ProductMappingKeys, unknown, ignored);
 					else if (!IsText(value))
 						ignored.Add(key);
@@ -269,12 +291,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static void RecordContainer(string name, object? value, string[] read, List<string> unknown, List<string> ignored)
 	{
-		if (value is Dictionary<object, object?> nested)
+		if (value is Dictionary<string, object?> nested)
 		{
-			foreach (var (k, v) in nested)
+			foreach (var (key, v) in nested)
 			{
-				if (k is not string key)
-					continue;
 				if (!read.Contains(key, StringComparer.Ordinal))
 					unknown.Add($"{name}.{key}");
 				else if (!IsText(v))
@@ -300,7 +320,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		};
 
 	private static void AssignDeploymentType(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		ref ApplicableTo applicableTo,
 		List<ApplicabilityDiagnostic> diagnostics
 	)
@@ -320,7 +340,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 				Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies }
 			};
 		}
-		else if (deploymentType is Dictionary<object, object?> deploymentDictionary)
+		else if (deploymentType is Dictionary<string, object?> deploymentDictionary)
 		{
 			if (TryGetDeployment(deploymentDictionary, diagnostics, out var applicability))
 				applicableTo = applicableTo with { Deployment = applicability };
@@ -328,7 +348,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static void AssignProduct(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		ref ApplicableTo applicableTo,
 		List<ApplicabilityDiagnostic> diagnostics
 	)
@@ -337,7 +357,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			return;
 
 		// This handles string, null, and empty string cases.
-		if (productValue is not Dictionary<object, object?> productDictionary)
+		if (productValue is not Dictionary<string, object?> productDictionary)
 		{
 			if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Product, diagnostics, out var productAvailability))
 				applicableTo = applicableTo with { Product = productAvailability };
@@ -350,7 +370,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static void AssignServerless(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		ref ApplicableTo applicableTo,
 		List<ApplicabilityDiagnostic> diagnostics
 	)
@@ -376,7 +396,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 				}
 			};
 		}
-		else if (serverless is Dictionary<object, object?> serverlessDictionary)
+		else if (serverless is Dictionary<string, object?> serverlessDictionary)
 		{
 			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
 				applicableTo = applicableTo with { Serverless = applicability };
@@ -384,7 +404,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static bool TryGetDeployment(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out DeploymentApplicability? applicability
 	)
@@ -424,7 +444,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static bool TryGetProjectApplicability(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
 	)
@@ -456,7 +476,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	}
 
 	private static bool TryGetProductApplicability(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ProductApplicability? applicability
 	)
@@ -519,7 +539,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	];
 
 	private static bool TryGetApplicabilityOverTime(
-		Dictionary<object, object?> dictionary,
+		Dictionary<string, object?> dictionary,
 		string key,
 		List<ApplicabilityDiagnostic> diagnostics,
 		out AppliesCollection? availability
@@ -679,6 +699,4 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		VersionSpecKind.GreaterThanOrEqual => (spec.Min, null),
 		_ => throw new ArgumentOutOfRangeException(nameof(spec), spec.Kind, "Unknown VersionSpecKind")
 	};
-
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
 }

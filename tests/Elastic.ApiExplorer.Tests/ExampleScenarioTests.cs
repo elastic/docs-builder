@@ -21,6 +21,8 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ExampleScenarioTests
 {
+	private const string IndexBody = /*lang=json,strict*/  """{"message":"GET /search HTTP/1.1 200 1070000"}""";
+
 	[Test]
 	public void BuildExampleScenarios_MergesRequestAndResponseByTitle()
 	{
@@ -231,6 +233,62 @@ public class ExampleScenarioTests
 		withTabs[0].Responses[0].HasExampleBody.Should().BeFalse();
 		withTabs[0].Responses[1].IsNoBody.Should().BeFalse();
 		withTabs[0].ShowResponse.Should().BeTrue();
+		withTabs[0].Responses.Select(r => r.StatusDescription).Should().Equal("deleted", "not found");
+	}
+
+	[Test]
+	public void EnsureResponseTabs_StatusDescriptionWithInlineCode_DropsTheBackticksForTheTooltip()
+	{
+		var samples = new[] { new CodeSample("Console", "GET /_cat/master", "language-console") };
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [], samples);
+		var responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "Run `GET /_cat/master?v=true` to see" } };
+
+		var withTabs = OperationPageModel.EnsureResponseTabs(scenarios, responses);
+
+		withTabs[0].Responses[0].StatusDescription.Should().Be("Run GET /_cat/master?v=true to see");
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ResponseOnlyDescription_StaysOnTheResponse()
+	{
+		var response = new ExampleDisplay("Get response", new HtmlString("<p>A successful response.</p>"), "{}", null, "200");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [response], []);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].RequestDescriptionHtml.Should().BeNull();
+		scenarios[0].Responses.Should().ContainSingle().Which.DescriptionHtml!.Value.ToString().Should().Contain("A successful response.");
+	}
+
+	[Test]
+	public void BuildExampleScenarios_RequestAndResponseOfOneExample_KeepTheirOwnDescriptions()
+	{
+		var request = new ExampleDisplay("Term", new HtmlString("<p>Searches by term.</p>"), "{}", null);
+		var ok = new ExampleDisplay("Term", new HtmlString("<p>Returns the hit.</p>"), "{}", null, "200");
+		var missing = new ExampleDisplay("Not found", new HtmlString("<p>No such index.</p>"), "{}", null, "404");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([request], [ok, missing], []);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].RequestDescriptionHtml!.Value.ToString().Should().Contain("Searches by term.");
+		scenarios[0]
+			.Responses
+			.Select(r => r.DescriptionHtml!.Value.ToString())
+			.Should()
+			.Equal("<p>Returns the hit.</p>", "<p>No such index.</p>");
+	}
+
+	[Test]
+	public async Task Create_ResponseExampleAndStatusDescriptions_LandOnTheirResponse()
+	{
+		var page = await CreatePage(ResponseDescriptionsSpec);
+
+		var scenario = page.Scenarios.Should().ContainSingle().Which;
+		scenario.RequestDescriptionHtml.Should().BeNull();
+		var ok = scenario.Responses.Single(static r => r.StatusCode == "200");
+		ok.DescriptionHtml!.Value.ToString().Should().Contain("A successful response from");
+		ok.StatusDescription.Should().Be("Analytics collection found");
+		scenario.Responses.Single(static r => r.StatusCode == "404").StatusDescription.Should().Be("No such collection");
 	}
 
 	[Test]
@@ -260,7 +318,7 @@ public class ExampleScenarioTests
 		var scenarios = OperationPageModel.BuildExampleScenarios([a, b], [], []);
 
 		scenarios.Select(s => s.Title).Should().Equal("Alpha", "Beta");
-		scenarios[0].DescriptionHtml.Should().NotBeNull();
+		scenarios[0].RequestDescriptionHtml.Should().NotBeNull();
 	}
 
 	[Test]
@@ -308,9 +366,9 @@ public class ExampleScenarioTests
 		var term = page.Scenarios.Single(static s => s.Title == "A simple term search");
 		var lead = page.Scenarios.Single(static s => s.Title == "A lead-in");
 		// The test renderer leaves backticks alone; on the site they become <code>. The words must all be there.
-		var termText = term.DescriptionHtml!.Value.ToString();
+		var termText = term.RequestDescriptionHtml!.Value.ToString();
 		termText.Should().Contain("Run ").And.Contain("GET /my-index-000001/_search?from=40&amp;size=20").And.Contain("to run a search.");
-		var leadText = lead.DescriptionHtml!.Value.ToString();
+		var leadText = lead.RequestDescriptionHtml!.Value.ToString();
 		leadText.Should().Contain("A successful response from ").And.Contain("POST /x");
 	}
 
@@ -336,6 +394,60 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_IdenticalBodies_PicksExampleWhoseRequestLineMatchesConsole()
+	{
+		var automatic = new ExampleDisplay("Automate document IDs", null, IndexBody, null) { RequestLine = ("POST", "my-index/_doc/") };
+		var defined = new ExampleDisplay("Define document IDs", null, IndexBody, null) { RequestLine = ("PUT", "my-index/_doc/1") };
+		var console = new CodeSample("Console", $"PUT my-index/_doc/1\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([automatic, defined], [], [console]);
+
+		scenarios.Select(static s => s.Title).Should().Equal("Automate document IDs", "Define document IDs");
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+		scenarios[1].ShowRequest.Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_IdenticalBodiesWithoutRequestLines_KeepsFirst()
+	{
+		var automatic = new ExampleDisplay("Automate document IDs", null, IndexBody, null);
+		var defined = new ExampleDisplay("Define document IDs", null, IndexBody, null);
+		var console = new CodeSample("Console", $"PUT my-index/_doc/1\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([automatic, defined], [], [console]);
+
+		scenarios[0].CodeSamples.Should().ContainSingle();
+		scenarios[1].CodeSamples.Should().BeEmpty();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_IdenticalBodiesAndRoutes_TellsExamplesApartByQuery()
+	{
+		var ten = new ExampleDisplay("Ten hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=10") };
+		var hundred = new ExampleDisplay("Hundred hits", null, IndexBody, null) { RequestLine = ("GET", "/_search?size=100") };
+		var console = new CodeSample("Console", $"GET /_search?size=100\n{IndexBody}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([ten, hundred], [], [console]);
+
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ExactBodyBeatsEarlierContainedBody()
+	{
+		var inner = new ExampleDisplay("Inner", null, /*lang=json,strict*/  """{"a":1}""", null);
+		var outer = new ExampleDisplay("Outer", null, /*lang=json,strict*/  """{"x":{"a":1}}""", null);
+		var console = new CodeSample("Console", "POST /_things\n{\"x\":{\"a\":1}}", "language-console");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([inner, outer], [], [console]);
+
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_JsonOnlyExample_GetsConsoleAndCurl()
 	{
 		var slicing = new ExampleScenario
@@ -350,7 +462,7 @@ public class ExampleScenarioTests
 			new CodeSample("Console", "GET /my-index/_search\n{}", "language-console"),
 			new CodeSample(
 				"curl",
-				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"$ELASTICSEARCH_URL/my-index/_search\"",
+				"curl -X GET -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{}' \"${ELASTICSEARCH_URL}/my-index/_search\"",
 				"language-curl"
 			)
 		};
@@ -360,7 +472,7 @@ public class ExampleScenarioTests
 			"/_search"
 		);
 
-		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint);
+		var filled = GeneratedCodeSamples.Fill([slicing], spec, endpoint, "");
 
 		var samples = filled.Single().CodeSamples;
 		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
@@ -369,7 +481,7 @@ public class ExampleScenarioTests
 		samples[1]
 			.Source
 			.Should()
-			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"$ELASTICSEARCH_URL/_search\"");
+			.Be("curl -X POST -H \"Authorization: ApiKey $ELASTIC_API_KEY\" -d '{\"slice\":{\"id\":0}}' \"${ELASTICSEARCH_URL}/_search\"");
 		filled.Single().CodeSamplesIncludeRequest.Should().BeTrue();
 	}
 
@@ -387,7 +499,7 @@ public class ExampleScenarioTests
 		};
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint).Single().CodeSamples.Single(static s => s.IsCurl);
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples.Single(static s => s.IsCurl);
 
 		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
 	}
@@ -398,9 +510,121 @@ public class ExampleScenarioTests
 		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };
 		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_search")], "/_search");
 
-		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([slicing], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("GET /_search\n");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsItsQueryCredential()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlNamesAPlaceholderAfterItsParameter()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/{id}") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/${ID}\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsAFilledRoute()
+	{
+		var scenario = new ExampleScenario { Title = "One", TabId = "one", RequestJson = "{}", RequestLine = ("PUT", "/things/1") };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST \"https://api.example.test/things\" -d '{\"a\":1}'", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("put", "/things/{id}")], "/things/{id}");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().StartWith("curl -X PUT \"https://api.example.test/things/1\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlKeepsAnUnbracedQueryCredential()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?key=$API_KEY\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=$API_KEY\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_CopiedCurlLeavesItsOtherQueryVariablesBehind()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Other",
+			TabId = "other",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/things?size=1")
+		};
+		var spec = new List<CodeSample>
+		{
+			new("curl", "curl -X POST \"https://api.example.test/things?size=$SIZE&key=${API_KEY}\" -d '{\"a\":1}'", "language-curl")
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples.Single();
+
+		curl.Source.Should().Contain("\"https://api.example.test/things?size=1&key=${API_KEY}\"");
+		curl.Source.Should().NotContain("$SIZE");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRun_KeepsTheCurlOnly()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var spec = new List<CodeSample> { new("curl", "curl -X POST -d '{\"a\":1}' \"https://api.example.test/things\"", "language-curl") };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, productConsolePrefix: null).Single().CodeSamples;
+
+		samples.Should().ContainSingle().Which.IsCurl.Should().BeTrue();
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_WhereConsoleCannotRunAndNoCurl_LeavesTheRequestInItsOwnBlock()
+	{
+		var scenario = new ExampleScenario { Title = "Index", TabId = "index", RequestJson = "{}" };
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/things")], "/things");
+
+		var filled = GeneratedCodeSamples.Fill([scenario], [], endpoint, productConsolePrefix: null).Single();
+
+		filled.CodeSamples.Should().BeEmpty();
+		filled.ShowRequest.Should().BeTrue();
 	}
 
 	[Test]
@@ -422,7 +646,7 @@ public class ExampleScenarioTests
 			"/{index}/_search"
 		);
 
-		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([scenario], [], endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST /my-index-000001/_search?from=40\n");
 	}
@@ -440,7 +664,7 @@ public class ExampleScenarioTests
 			"/api/agent_builder/tools/_execute"
 		);
 
-		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint).Single().CodeSamples.Single();
+		var console = GeneratedCodeSamples.Fill([esql], spec, endpoint, "").Single().CodeSamples.Single();
 
 		console.Source.Should().StartWith("POST kbn:/api/agent_builder/tools/_execute\n");
 	}
@@ -516,6 +740,46 @@ public class ExampleScenarioTests
 		            }
 		          },
 		          "400": { "description": "Invalid request" }
+		        }
+		      }
+		    }
+		  }
+		}
+		""";
+
+	private const string ResponseDescriptionsSpec =
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Analytics", "version": "1" },
+		  "paths": {
+		    "/api/v1/billing/organization/{organization_id}/budget": {
+		      "post": {
+		        "operationId": "describedResponses",
+		        "summary": "Get a behavioral analytics collection.",
+		        "responses": {
+		          "200": {
+		            "description": "Analytics collection found",
+		            "content": {
+		              "application/json": {
+		                "examples": {
+		                  "GetResponseExample1": {
+		                    "summary": "Get response",
+		                    "description": "A successful response from `GET _application/analytics/my_analytics`.",
+		                    "value": { "my_analytics": {} }
+		                  }
+		                }
+		              }
+		            }
+		          },
+		          "404": {
+		            "description": "No such collection",
+		            "content": {
+		              "application/json": {
+		                "examples": { "NotFoundExample": { "value": { "error": "missing" } } }
+		              }
+		            }
+		          }
 		        }
 		      }
 		    }

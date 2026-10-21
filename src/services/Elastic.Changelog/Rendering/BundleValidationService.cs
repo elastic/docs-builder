@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Rendering;
 

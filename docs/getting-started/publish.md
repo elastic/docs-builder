@@ -73,6 +73,7 @@ branding:
   og-image: images/social-card.png
   favicon: favicon.ico
   apple-touch-icon: apple-touch-icon.png
+  copyright: "© 2026 Acme Inc."
 ```
 
 | Key | Description |
@@ -82,6 +83,7 @@ branding:
 | `og-image` | Open Graph image for social sharing. Path relative to your docs folder. |
 | `favicon` | Browser favicon. Auto-discovered from `favicon.ico`, `favicon.png`, or `favicon.svg` if not set. |
 | `apple-touch-icon` | Apple touch icon. Auto-discovered from `apple-touch-icon.png` if not set. |
+| `copyright` | Copyright line shown in the footer, next to the site icon. Without it a branded site has no footer. |
 
 When `branding:` is present, all Elastic-specific chrome is suppressed — the site is fully white-labelled.
 

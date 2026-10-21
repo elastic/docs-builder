@@ -6,7 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Publishing;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

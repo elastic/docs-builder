@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Publishing;
@@ -32,7 +33,7 @@ public static class AssemblyLoader
 		var findings = new List<Diagnostic>();
 		return LoaderPipeline.Run(
 			sourceFile,
-			parse: () => Parse(yaml),
+			parse: () => Parse(yaml, sourceFile),
 			map: dto => Map(dto, sourceFile, skipPrivateRepositories, environment, findings),
 			rules: AssemblyConstraints.All,
 			extra: findings
@@ -62,7 +63,7 @@ public static class AssemblyLoader
 		// A document the parser rejects throws its own exception here (LoadYaml reports it as a diagnostic instead); the rules are checked once.
 		var findings = new List<Diagnostic>();
 		var configuration = Map(
-			Parse(yaml),
+			Parse(yaml, sourceName: null),
 			string.Empty,
 			skipPrivateRepositories,
 			environment ?? SystemEnvironmentVariables.Instance,
@@ -71,11 +72,8 @@ public static class AssemblyLoader
 		return LoaderPipeline.Check(configuration, string.Empty, AssemblyConstraints.All, findings).OrThrow();
 	}
 
-	private static AssemblyConfigurationDto Parse(string yaml)
-	{
-		using var input = new StringReader(yaml);
-		return ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfigurationDto>(input) ?? new AssemblyConfigurationDto();
-	}
+	private static AssemblyConfigurationDto Parse(string yaml, string? sourceName) =>
+		ConfigurationDocument.Read<AssemblyConfigurationDto>(yaml, sourceName);
 
 	private static AssemblyConfiguration Map(
 		AssemblyConfigurationDto dto,

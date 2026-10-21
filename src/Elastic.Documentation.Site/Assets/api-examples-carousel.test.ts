@@ -2,6 +2,7 @@ import {
     apiLanguageStorageKey,
     initApiExamples,
     packChips,
+    syncDescriptions,
 } from './api-examples-carousel'
 
 // Java is the only long sample: 20 lines, past the 16-line cap.
@@ -32,7 +33,7 @@ function carousel(langs: string[]): string {
             <button data-carousel-step="-1"></button>
             <button data-carousel-step="1"></button>
             <div data-example-description>
-                <div class="api-example-description-text">A description.</div>
+                <div class="api-example-caption-text">A description.</div>
                 <button data-description-toggle aria-expanded="false" hidden>Show more</button>
             </div>
             <div class="api-code-carousel-strip" data-carousel-strip tabindex="0">${langs.map(card).join('')}</div>
@@ -101,6 +102,40 @@ describe('API examples carousel', () => {
         ).toBe('Console')
     })
 
+    describe('when the page has no Console card', () => {
+        beforeEach(() => {
+            document.body.innerHTML = `
+                <div data-api-examples>
+                    <div class="api-examples-scenario-panel" data-scenario="term">${carousel(['curl', 'Python'])}</div>
+                </div>`
+        })
+
+        it('opens on the first card', () => {
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+        })
+
+        it('keeps a saved Console preference for the pages that have it', () => {
+            window.localStorage.setItem(apiLanguageStorageKey, 'Console')
+
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+            expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe(
+                'Console'
+            )
+        })
+
+        it('opens on the first card when a link asks for Console', () => {
+            window.history.replaceState(null, '', '#lang=Console')
+
+            initApiExamples()
+
+            expect(activeLang('term')).toBe('curl')
+        })
+    })
+
     it('never hides language cards, so find-in-page reaches them', () => {
         initApiExamples()
 
@@ -122,7 +157,7 @@ describe('API examples carousel', () => {
         expect(activeLang('term')).toBe('Java')
     })
 
-    it('treats a swipe to another card as a pick: link and preference follow', () => {
+    it('treats a scroll to another card as a pick: link and preference follow', () => {
         type Callback = (entries: Partial<IntersectionObserverEntry>[]) => void
         const callbacks: Callback[] = []
         const Original = window.IntersectionObserver
@@ -155,7 +190,19 @@ describe('API examples carousel', () => {
                 window.localStorage.getItem(apiLanguageStorageKey)
             ).toBeNull()
 
+            // While the page applies the remembered language, a card settling on the way shows but is not a pick.
+            settle('curl')
+            expect(activeLang('term')).toBe('curl')
+            expect(window.location.hash).toBe('')
+            expect(
+                window.localStorage.getItem(apiLanguageStorageKey)
+            ).toBeNull()
+
+            // Later, any scroll that settles on another card is a pick, whether a swipe or find-in-page.
+            const now = Date.now()
+            const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 5000)
             settle('Python')
+            clock.mockRestore()
 
             expect(activeLang('term')).toBe('Python')
             expect(window.location.hash).toBe('#example=term&lang=python')
@@ -165,6 +212,29 @@ describe('API examples carousel', () => {
         } finally {
             window.IntersectionObserver = Original
         }
+    })
+
+    it('keeps the saved language when an example lacks it', () => {
+        window.localStorage.setItem(apiLanguageStorageKey, 'Java')
+        window.history.replaceState(null, '', '#example=slicing')
+        initApiExamples()
+
+        expect(activeLang('slicing')).toBe('Console')
+        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe('Java')
+
+        click('.api-example-chip[data-scenario="term"]')
+
+        expect(activeLang('term')).toBe('Java')
+    })
+
+    it('falls back to Console, not the current language, on example switch', () => {
+        window.history.replaceState(null, '', '#lang=curl')
+        initApiExamples()
+        expect(activeLang('term')).toBe('curl')
+
+        click('.api-example-chip[data-scenario="slicing"]')
+
+        expect(activeLang('slicing')).toBe('Console')
     })
 
     it('restores example and language from the deep link', () => {
@@ -180,6 +250,16 @@ describe('API examples carousel', () => {
                 ?.hasAttribute('hidden')
         ).toBe(false)
         expect(activeLang('slicing')).toBe('curl')
+    })
+
+    it('keeps the htmx history state when writing the link', () => {
+        window.history.replaceState({ htmx: true }, '')
+        initApiExamples()
+
+        click('[data-scenario="term"] [data-carousel-dot="Java"]')
+
+        expect(window.location.hash).toBe('#example=term&lang=java')
+        expect(window.history.state).toEqual({ htmx: true })
     })
 
     it('writes the link in lowercase and reads it in any case', () => {
@@ -498,6 +578,48 @@ describe('API examples carousel', () => {
 
         expect(description.classList.contains('is-open')).toBe(false)
         expect(toggle.textContent).toBe('Show more')
+    })
+})
+
+describe('syncDescriptions', () => {
+    function caption(clientHeight: number, scrollHeight: number): string {
+        return `
+            <div data-example-description>
+                <div class="api-example-caption-text" data-client="${clientHeight}" data-scroll="${scrollHeight}">Text.</div>
+                <button data-description-toggle hidden>Show more</button>
+            </div>`
+    }
+
+    function measured(root: HTMLElement) {
+        root.querySelectorAll<HTMLElement>('.api-example-caption-text').forEach(
+            (text) => {
+                Object.defineProperty(text, 'clientHeight', {
+                    configurable: true,
+                    value: Number(text.dataset.client),
+                })
+                Object.defineProperty(text, 'scrollHeight', {
+                    configurable: true,
+                    value: Number(text.dataset.scroll),
+                })
+            }
+        )
+    }
+
+    it('offers the toggle only on captions that are cut off, and skips hidden ones', () => {
+        const root = document.createElement('div')
+        root.innerHTML = caption(60, 120) + caption(40, 40) + caption(0, 0)
+        measured(root)
+
+        syncDescriptions(root)
+
+        const toggles = Array.from(
+            root.querySelectorAll<HTMLElement>('[data-description-toggle]')
+        )
+        expect(toggles.map((toggle) => toggle.hidden)).toEqual([
+            false,
+            true,
+            true,
+        ])
     })
 })
 

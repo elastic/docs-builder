@@ -6,7 +6,6 @@ import {
     useSearchActions,
     useSelectedIndex,
 } from './navigationSearch.store'
-import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import {
@@ -14,6 +13,7 @@ import {
     type TypeFilter,
 } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
+import { useSlashToFocus } from './useSlashToFocus'
 import {
     EuiInputPopover,
     useEuiTheme,
@@ -74,6 +74,11 @@ export const NavigationSearch = ({
         typeFilter,
     })
 
+    const isApi = typeFilter === 'api'
+    // The sidebar is off-canvas on small screens, so there is nothing to focus.
+    const slashFocusEnabled = isApi && !isMobile
+    useSlashToFocus({ enabled: slashFocusEnabled, inputRef })
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         setSearchTerm(value)
@@ -91,6 +96,10 @@ export const NavigationSearch = ({
             })
             setSearchTerm('')
             setIsPopoverOpen(false)
+            // After the re-render, so handleBlur doesn't log a second close for the same Escape.
+            if (isApi) {
+                queueMicrotask(() => inputRef.current?.blur())
+            }
             return
         }
         handleInputKeyDown(e)
@@ -116,12 +125,6 @@ export const NavigationSearch = ({
         }
         setIsPopoverOpen(false)
     }
-
-    useGlobalKeyboardShortcut('k', () => {
-        trackOpened('keyboard_shortcut')
-        inputRef.current?.focus()
-        inputRef.current?.select()
-    })
 
     // Close popover and blur input when htmx navigation starts from a search result
     useEffect(() => {
@@ -185,6 +188,7 @@ export const NavigationSearch = ({
                         onKeyDown={handleKeyDown}
                         disabled={isSearchCooldownActive}
                         isLoading={isSearching}
+                        keyShortcuts={slashFocusEnabled ? '/' : undefined}
                     />
                 </>
             }

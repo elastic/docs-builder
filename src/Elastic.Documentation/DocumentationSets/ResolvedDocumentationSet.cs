@@ -241,6 +241,7 @@ public sealed record Branding
 	public string? OgImage { get; internal init; }
 	public string? Favicon { get; internal init; }
 	public string? AppleTouchIcon { get; internal init; }
+	public string? Copyright { get; internal init; }
 }
 
 /// <summary>A right-gutter call-to-action template.</summary>

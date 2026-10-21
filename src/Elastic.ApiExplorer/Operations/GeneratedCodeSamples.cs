@@ -11,18 +11,36 @@ namespace Elastic.ApiExplorer.Operations;
 /// Console and curl samples for example scenarios that only ship a JSON body, so Console (the default
 /// language, runnable in Kibana Dev Tools) exists for every example.
 /// </summary>
+/// <summary>Where a product's generated samples go: Console's route prefix (null when Console can't call the API) and the curl's host variable.</summary>
+public sealed record SampleTarget(string? ConsolePrefix, string HostVariable);
+
 public static partial class GeneratedCodeSamples
 {
+	/// <summary>
+	/// What a product's generated samples address: what Console puts before the route (empty for Elasticsearch, <c>kbn:</c> for
+	/// Kibana, null where Console can't call the API), and the host variable the product's own curl samples use for a spec
+	/// that names no server. A spec without a product keeps Console.
+	/// </summary>
+	public static SampleTarget SampleTargetFor(string? productId) => productId switch
+	{
+		null => new SampleTarget("", "${API_URL}"),
+		"elasticsearch" or "serverless-elasticsearch" => new SampleTarget("", "${ELASTICSEARCH_URL}"),
+		"kibana" => new SampleTarget("kbn:", "${KIBANA_URL}"),
+		"logstash" => new SampleTarget(null, "${LOGSTASH_URL}"),
+		_ => new SampleTarget(null, "${API_URL}")
+	};
+
 	/// <summary>Adds generated samples to every scenario that has a request body but no code samples.</summary>
 	public static IReadOnlyList<ExampleScenario> Fill(
 		IReadOnlyList<ExampleScenario> scenarios,
 		IReadOnlyList<CodeSample> specSamples,
-		OperationEndpoint endpoint
+		OperationEndpoint endpoint,
+		string? productConsolePrefix
 	)
 	{
 		var console = specSamples.FirstOrDefault(static s => s.IsConsole);
 		var curl = specSamples.FirstOrDefault(static s => s.IsCurl);
-		var prefix = ConsolePrefix(console?.Source);
+		var prefix = console is not null ? ConsolePrefix(console.Source) : productConsolePrefix;
 		var fallbackMethod = endpoint.Rows.First(r => r.Route == endpoint.ShortestRoute).Method.ToUpperInvariant();
 
 		return [
@@ -33,17 +51,19 @@ public static partial class GeneratedCodeSamples
 
 				var (method, path) = scenario.RequestLine is { } line ? line : (fallbackMethod, endpoint.ShortestRoute);
 				method = SampleMethods.Dominant(method, path, endpoint) ?? method;
-				var samples = new List<CodeSample>
+				var samples = new List<CodeSample>();
+				if (prefix is not null)
 				{
-					new("Console", $"{method} {prefix}{path}\n{scenario.RequestJson.Trim()}", CodeSample.GetHighlightClass("Console"))
-					{
-						Generated = true
-					}
-				};
-				if (Curl(curl?.Source, method, path, scenario.RequestJson) is { } curlSource)
-					samples.Add(new CodeSample("curl", curlSource, CodeSample.GetHighlightClass("curl")) { Generated = true });
+					var consolePath = SyntheticCodeSamples.NamePlaceholders(path, forShell: false);
+					samples.Add(CodeSample.Generate("Console", $"{method} {prefix}{consolePath}\n{scenario.RequestJson.Trim()}"));
+				}
 
-				return scenario with { CodeSamples = samples, CodeSamplesIncludeRequest = true };
+				var shellPath = SyntheticCodeSamples.NamePlaceholders(path, forShell: true);
+				if (Curl(curl?.Source, method, shellPath, scenario.RequestJson) is { } curlSource)
+					samples.Add(CodeSample.Generate("curl", curlSource));
+
+				// Nothing runnable to show, so the request stays in the rail's own block.
+				return samples.Count == 0 ? scenario : scenario with { CodeSamples = samples, CodeSamplesIncludeRequest = true };
 			})
 		];
 	}
@@ -56,12 +76,19 @@ public static partial class GeneratedCodeSamples
 		return (match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value.Trim());
 	}
 
+	/// <summary>The request line a Console sample opens with, e.g. <c>PUT my-index/_doc/1</c>, and the body that follows it.</summary>
+	internal static ((string Method, string Path) Line, string Body)? SplitConsole(string? consoleSource)
+	{
+		if (string.IsNullOrWhiteSpace(consoleSource) || ConsoleRequestLine().Match(consoleSource) is not { Success: true } match)
+			return null;
+		return ((match.Groups[1].Value.ToUpperInvariant(), match.Groups[2].Value), consoleSource[(match.Index + match.Length)..]);
+	}
+
 	/// <summary>The target prefix Console samples put before the route, e.g. <c>kbn:</c> for Kibana. Empty for Elasticsearch.</summary>
 	private static string ConsolePrefix(string? consoleSource)
 	{
-		if (string.IsNullOrWhiteSpace(consoleSource) || ConsoleRequestLine().Match(consoleSource) is not { Success: true } match)
+		if (SplitConsole(consoleSource) is not { Line.Path: var target })
 			return "";
-		var target = match.Groups[1].Value;
 		var colon = target.IndexOf(':');
 		return colon < 0 ? "" : target[..(colon + 1)];
 	}
@@ -72,17 +99,36 @@ public static partial class GeneratedCodeSamples
 		if (string.IsNullOrWhiteSpace(curlSource) || !CurlBody().IsMatch(curlSource) || !CurlHostPath().IsMatch(curlSource))
 			return null;
 
-		var escapedBody = body.Trim().Replace("'", "'\\''", StringComparison.Ordinal);
-		var withBody = CurlBody().Replace(curlSource, _ => $"-d '{escapedBody}'", 1);
+		var withBody = CurlBody().Replace(curlSource, _ => SyntheticCodeSamples.SingleQuotedBody(body), 1);
 		var withMethod = CurlMethod().Replace(withBody, $"-X {method}", 1);
 		var route = path.StartsWith('/') ? path : "/" + path;
-		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + route, 1);
+		return CurlHostPath().Replace(withMethod, match => match.Groups[1].Value + WithCredentials(route, match.Value), 1);
 	}
+
+	/// <summary>
+	/// A query parameter of the copied URL that carries the API key is a credential, so it follows the sample to the new route,
+	/// whether the sample writes it <c>$API_KEY</c> or <c>${API_KEY}</c>. Other variables are the sample's own options and stay behind.
+	/// </summary>
+	private static string WithCredentials(string route, string originalUrl)
+	{
+		var at = originalUrl.IndexOf('?', StringComparison.Ordinal);
+		if (at < 0)
+			return route;
+
+		var credentials = originalUrl[(at + 1)..]
+			.Split('&', StringSplitOptions.RemoveEmptyEntries)
+			.Where(pair => ApiKeyPair().IsMatch(pair) && !route.Contains(pair, StringComparison.Ordinal))
+			.ToArray();
+		return SyntheticCodeSamples.AppendQuery(route, credentials);
+	}
+
+	[GeneratedRegex(@"=\$\{?API_KEY\}?$", RegexOptions.CultureInvariant)]
+	private static partial Regex ApiKeyPair();
 
 	[GeneratedRegex(@"^Run\s+`(GET|POST|PUT|PATCH|DELETE|HEAD)\s+([^`]+)`", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex RunRequestLine();
 
-	[GeneratedRegex(@"^\s*(?:GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+	[GeneratedRegex(@"^\s*(GET|POST|PUT|PATCH|DELETE|HEAD)\s+(\S+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
 	private static partial Regex ConsoleRequestLine();
 
 	[GeneratedRegex(@"-d\s+'(?:[^']|'\\'')*'", RegexOptions.CultureInvariant)]

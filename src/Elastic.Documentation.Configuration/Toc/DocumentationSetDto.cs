@@ -14,21 +14,20 @@ using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-[YamlSerializable]
 internal class DocumentationSetDto : TableOfContentsDto
 {
-	[YamlMember(Alias = "max_toc_depth")]
+	[YamlPropertyName("max_toc_depth")]
 	public int MaxTocDepth { get; set; } = 2;
 
-	[YamlMember(Alias = "dev_docs")]
+	[YamlPropertyName("dev_docs")]
 	public bool DevDocs { get; set; }
 
-	[YamlMember(Alias = "cross_links")]
+	[YamlPropertyName("cross_links")]
 	public List<string> CrossLinks { get; set; } = [];
 
 	/// <summary>
@@ -36,68 +35,75 @@ internal class DocumentationSetDto : TableOfContentsDto
 	/// docs-builder prefetch its bundles at startup (consumed by the <c>{changelog}</c> <c>:cdn:</c> mode)
 	/// and lets <c>changelog bundle</c> source that product's entries from the CDN.
 	/// </summary>
-	[YamlMember(Alias = "release_notes")]
+	[YamlPropertyName("release_notes")]
 	public List<ReleaseNotesProductDto> ReleaseNotes { get; set; } = [];
 
-	[YamlMember(Alias = "exclude")]
+	[YamlPropertyName("exclude")]
 	public List<string> Exclude { get; set; } = [];
 
-	[YamlMember(Alias = "extensions")]
+	[YamlPropertyName("extensions")]
 	public List<string> Extensions { get; set; } = [];
 
-	[YamlMember(Alias = "subs")]
+	[YamlPropertyName("subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
 	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "display_name")]
+	[YamlPropertyName("display_name")]
 	public string? DisplayName { get; set; }
 
 	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
-	[YamlMember(Alias = "registry")]
+	[YamlPropertyName("registry")]
 	public string? Registry { get; set; }
 
-	[YamlMember(Alias = "features")]
+	[YamlPropertyName("features")]
 	public DocumentationSetFeaturesDto Features { get; set; } = new();
 
-	[YamlMember(Alias = "api")]
+	[YamlPropertyName("api")]
 	public Dictionary<string, ApiProductSequenceDto> Api { get; set; } = [];
 
 	/// <summary>
 	/// Default products for this documentation set. These are merged with page-level frontmatter products.
 	/// </summary>
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public List<ProductLinkDto> Products { get; set; } = [];
 
 	/// <summary>
 	/// Optional codex-specific metadata. Only contains <c>group</c> for codex navigation grouping.
 	/// </summary>
-	[YamlMember(Alias = "codex")]
+	[YamlPropertyName("codex")]
 	public CodexMembershipDto? Codex { get; set; }
 
 	/// <summary>
 	/// Optional white-label branding overrides. When present, all Elastic-specific chrome is suppressed.
 	/// </summary>
-	[YamlMember(Alias = "branding")]
+	[YamlPropertyName("branding")]
 	public BrandingDto? Branding { get; set; }
 
-	[YamlMember(Alias = "storybook")]
+	[YamlPropertyName("storybook")]
 	public StorybookDto? Storybook { get; set; }
 
 	/// <summary>
 	/// Named, reusable right-gutter CTA templates. Selected per-page via frontmatter <c>cta: &lt;name&gt;</c>;
 	/// pages that omit it fall back to the built-in <c>trial</c> default.
 	/// </summary>
-	[YamlMember(Alias = "cta")]
+	[YamlPropertyName("cta")]
 	public Dictionary<string, CtaDto> Cta { get; set; } = [];
 
-	private static new DocumentationSetDto Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetDto>(json);
+	private static DocumentationSetDto Deserialize(string json, string? sourceName = null) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetDto>(json, sourceName);
+
+	/// <summary>
+	/// Deserializes a <c>docset.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
+	/// silently skipping them.
+	/// </summary>
+	private static new DocumentationSetDto Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetDto>(json, collector, sourceName);
 
 	/// <summary>
 	/// Loads a DocumentationSetDto from a file for reading metadata only (e.g. codex section).
@@ -106,7 +112,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 	public static DocumentationSetDto LoadMetadata(IFileInfo file)
 	{
 		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-		return Deserialize(yaml);
+		return Deserialize(yaml, file.FullName);
 	}
 
 	/// <summary>
@@ -169,7 +175,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
 		var authoring = new List<TocEntryAuthoring>();
 		using var authoringScope = TocAuthoringSink.Begin(authoring, docsetPath);
-		var docSet = Deserialize(yaml);
+		var docSet = Deserialize(yaml, collector, docsetPath);
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(
 			collector,
@@ -396,7 +402,7 @@ internal class DocumentationSetDto : TableOfContentsDto
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		TableOfContentsDto nestedTocFile;
 		using (TocAuthoringSink.InFile(tocFilePath.OptionalWindowsReplace()))
-			nestedTocFile = TableOfContentsDto.Deserialize(tocYaml);
+			nestedTocFile = TableOfContentsDto.Deserialize(tocYaml, collector, tocFilePath);
 
 		// this is temporary after this lands in main we can update these files to include
 		// suppress:
@@ -1378,41 +1384,37 @@ internal class DocumentationSetDto : TableOfContentsDto
 	}
 }
 
-[YamlSerializable]
 internal class DocumentationSetFeaturesDto
 {
-	[YamlMember(Alias = "primary-nav", ApplyNamingConventions = false)]
+	[YamlPropertyName("primary-nav")]
 	public bool? PrimaryNav { get; set; }
-	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
+	[YamlPropertyName("disable-github-edit-link")]
 	public bool? DisableGithubEditLink { get; set; }
-	[YamlMember(Alias = "guide-nav", ApplyNamingConventions = false)]
+	[YamlPropertyName("guide-nav")]
 	public bool? GuideNav { get; set; }
 }
 
-[YamlSerializable]
 internal class StorybookDto
 {
-	[YamlMember(Alias = "registry")]
+	[YamlPropertyName("registry")]
 	public string? Registry { get; set; }
 }
 
 /// <summary>
 /// A single <c>release_notes</c> entry declaring a product whose changelog content is CDN-backed.
 /// </summary>
-[YamlSerializable]
 internal record ReleaseNotesProductDto
 {
-	[YamlMember(Alias = "product")]
+	[YamlPropertyName("product")]
 	public string Product { get; set; } = string.Empty;
 }
 
 /// <summary>
 /// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
 /// </summary>
-[YamlSerializable]
 internal class CodexMembershipDto
 {
-	[YamlMember(Alias = "group")]
+	[YamlPropertyName("group")]
 	public string? Group { get; set; }
 }
 
@@ -1420,58 +1422,62 @@ internal class CodexMembershipDto
 /// White-label branding overrides for isolated builds. Presence of this section removes all Elastic-specific chrome.
 /// All image paths are relative to the directory containing <c>docset.yml</c>.
 /// </summary>
-[YamlSerializable]
 internal class BrandingDto
 {
 	/// <summary>Path to the site icon image, relative to the docs source directory.</summary>
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
 	/// <summary>CSS colour value for the header background. Defaults to <c>#000000</c> when not specified.</summary>
-	[YamlMember(Alias = "header-bg", ApplyNamingConventions = false)]
+	[YamlPropertyName("header-bg")]
 	public string? HeaderBg { get; set; }
 
 	/// <summary>Path to the Open Graph image, relative to the docs source directory.</summary>
-	[YamlMember(Alias = "og-image", ApplyNamingConventions = false)]
+	[YamlPropertyName("og-image")]
 	public string? OgImage { get; set; }
 
 	/// <summary>
 	/// Path to the browser favicon, relative to the docs source directory.
 	/// When not set, auto-discovered from well-known filenames (favicon.ico, favicon.png, favicon.svg).
 	/// </summary>
-	[YamlMember(Alias = "favicon", ApplyNamingConventions = false)]
+	[YamlPropertyName("favicon")]
 	public string? Favicon { get; set; }
 
 	/// <summary>
 	/// Path to the Apple touch icon, relative to the docs source directory.
 	/// When not set, auto-discovered from apple-touch-icon.png if present.
 	/// </summary>
-	[YamlMember(Alias = "apple-touch-icon", ApplyNamingConventions = false)]
+	[YamlPropertyName("apple-touch-icon")]
 	public string? AppleTouchIcon { get; set; }
+
+	/// <summary>
+	/// The copyright line shown in the footer, for example <c>© 2026 Acme Inc.</c>.
+	/// When not set, branded builds have no footer.
+	/// </summary>
+	[YamlPropertyName("copyright")]
+	public string? Copyright { get; set; }
 }
 
 /// <summary>
 /// A single named right-gutter CTA template, as declared under <c>docset.yml</c>'s <c>cta</c> map.
 /// </summary>
-[YamlSerializable]
 internal class CtaDto
 {
-	[YamlMember(Alias = "button")]
+	[YamlPropertyName("button")]
 	public CtaButtonDto? Button { get; set; }
 
-	[YamlMember(Alias = "benefits")]
+	[YamlPropertyName("benefits")]
 	public List<string> Benefits { get; set; } = [];
 }
 
 /// <summary>
 /// The clickable button portion of a <see cref="CtaDto"/>.
 /// </summary>
-[YamlSerializable]
 internal class CtaButtonDto
 {
-	[YamlMember(Alias = "label")]
+	[YamlPropertyName("label")]
 	public string? Label { get; set; }
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string? Url { get; set; }
 }

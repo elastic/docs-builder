@@ -24,11 +24,24 @@ public static class OpenApiExtensionReader
 {
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
-		extensions?.TryGetValue(key, out var value) == true && value is JsonNodeExtension json ? json.Node.GetValue<string>() : null;
+		extensions?.TryGetValue(key, out var value) == true
+			&& value is JsonNodeExtension { Node: JsonValue jsonValue }
+			&& jsonValue.TryGetValue<string>(out var text) ? text : null;
+
+	/// <summary>
+	/// Reads the raw <c>x-state</c> label (for example "Generally available; Added in 7.7.0") of an operation, a parameter or
+	/// a schema; null when absent or blank.
+	/// </summary>
+	public static string? GetState(IDictionary<string, IOpenApiExtension>? extensions) =>
+		TryGetString(extensions, "x-state") is { } state && !string.IsNullOrWhiteSpace(state) ? state.Trim() : null;
 
 	/// <summary>The <c>x-namespace</c> and <c>x-api-name</c> pair used to group operations into endpoints.</summary>
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>
 		(TryGetString(operation.Extensions, "x-namespace"), TryGetString(operation.Extensions, "x-api-name"));
+
+	/// <summary>The operation summary, trimmed; null when absent or blank (specs sometimes emit <c>summary: ''</c>).</summary>
+	public static string? GetSummary(OpenApiOperation operation) =>
+		string.IsNullOrWhiteSpace(operation.Summary) ? null : operation.Summary.Trim();
 
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>

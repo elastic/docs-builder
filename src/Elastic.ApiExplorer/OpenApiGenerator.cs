@@ -58,6 +58,9 @@ public class OpenApiGenerator(
 	IOpenApiSpecificationReader? openApiReader = null
 )
 {
+	/// <summary>The site's top navigation in an assembler build, shown in the docs bar of every API page.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	private readonly ILogger _logger = logFactory.CreateLogger<OpenApiGenerator>();
 	private readonly IFileSystem _writeFileSystem = context.WriteFileSystem;
 	private readonly StaticFileContentHashProvider _contentHashProvider = new(new EmbeddedOrPhysicalFileProvider(context));
@@ -363,12 +366,13 @@ public class OpenApiGenerator(
 
 	private async Task GenerateApiCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx)
 	{
-		var catalogUrl = $"{ApiUrlBuilder.ApiRoot(context.UrlPathPrefix)}/";
+		var catalogUrl = ApiUrlBuilder.ApiRoot(context.UrlPathPrefix);
 		var navigation = new ApiCatalogNavigationItem(catalogUrl, entries);
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(context, navigation, suppressNavigationDropdown: true);
 
 		var renderContext = new ApiRenderContext(context, CatalogDocument, _contentHashProvider)
 		{
+			SiteTopNav = SiteTopNav,
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation.Index,
 			MarkdownRenderer = markdownStringRenderer,
@@ -431,6 +435,7 @@ public class OpenApiGenerator(
 
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
+			SiteTopNav = SiteTopNav,
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
 			MarkdownRenderer = markdownStringRenderer,

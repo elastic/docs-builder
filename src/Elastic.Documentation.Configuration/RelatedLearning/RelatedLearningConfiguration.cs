@@ -5,40 +5,37 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.RelatedLearning;
 
-[YamlSerializable]
 internal sealed class RelatedLearningConfigDto
 {
-	[YamlMember(Alias = "links")]
+	[YamlPropertyName("links")]
 	public Dictionary<string, RelatedLearningLinkDto> Links { get; set; } = [];
 }
 
-[YamlSerializable]
 internal sealed class RelatedLearningLinkDto
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string Title { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string Url { get; set; } = string.Empty;
 }
 
 internal static class RelatedLearningConfigurationExtensions
 {
 	/// <summary>Parses a <c>related-learning.yml</c> document and throws a <see cref="ConfigurationException"/> listing every <see cref="RelatedLearningConstraints"/> error.</summary>
-	public static RelatedLearningCatalog Parse(string yaml) =>
-		Result.From(RelatedLearningConstraints.All.Report(ParseUnchecked(yaml)), "related-learning.yml").OrThrow();
+	public static RelatedLearningCatalog Parse(string yaml, string? sourceName = null) =>
+		Result.From(RelatedLearningConstraints.All.Report(ParseUnchecked(yaml, sourceName)), "related-learning.yml").OrThrow();
 
 	/// <summary>Parses a <c>related-learning.yml</c> document without checking it. Throws only on YAML it cannot read.</summary>
-	internal static RelatedLearningCatalog ParseUnchecked(string yaml)
-	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
-			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
-		return FromDto(dto);
-	}
+	internal static RelatedLearningCatalog ParseUnchecked(string yaml) => ParseUnchecked(yaml, null);
+
+	/// <summary>Parses a <c>related-learning.yml</c> document without checking it, naming <paramref name="sourceName"/> in unknown-key errors.</summary>
+	internal static RelatedLearningCatalog ParseUnchecked(string yaml, string? sourceName) =>
+		FromDto(ConfigurationFileProvider.Deserialize<RelatedLearningConfigDto>(yaml, sourceName));
 
 	internal static RelatedLearningCatalog FromDto(RelatedLearningConfigDto dto)
 	{

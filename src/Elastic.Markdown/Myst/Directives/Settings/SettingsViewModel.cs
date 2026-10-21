@@ -4,9 +4,9 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Helpers;
-using Elastic.Markdown.Myst.Components;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 using RazorSlices;
 
@@ -19,6 +19,9 @@ public class SettingsViewModel
 	public required Func<string, string> RenderMarkdown { get; init; }
 
 	public required VersioningSystemCatalog VersionsConfig { get; init; }
+
+	/// <summary>Renders applies-to badges with the design system. Set when NAVIGATION_PREVIEW is on.</summary>
+	public bool DesignSystem { get; init; }
 
 	/// <summary>Markdown heading level for each group section (1–6).</summary>
 	public required int GroupHeadingLevel { get; init; }
@@ -83,6 +86,7 @@ public class SettingsViewModel
 			AppliesTo = appliesTo,
 			Inline = true,
 			VersionsConfig = VersionsConfig,
+			DesignSystem = DesignSystem,
 			BadgePlacement = placement
 		};
 

@@ -53,7 +53,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
 		};
 		var context = CreateContext(collector, versionless, products);
-		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
+		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(expectedDocument);

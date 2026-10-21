@@ -44,7 +44,7 @@ internal static class SearchConfigurationExtensions
 		if (!searchFile.Exists)
 			return SearchTuning.None;
 
-		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
+		var searchDto = ConfigurationFileProvider.Deserialize<SearchConfigDto>(searchFile.OpenText(), searchFile.FullName);
 		var synonyms = searchDto
 			.Synonyms
 			.Where(s => s.Count > 1)

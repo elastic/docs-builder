@@ -5,20 +5,19 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Publishing;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
 /// <summary>
 /// A single declared child page under <c>api/&lt;key&gt;/</c>, referenced by <c>children:</c>.
 /// </summary>
-[YamlSerializable]
 internal class ApiEntryChildDto
 {
 	/// <summary>
 	/// Path to a Markdown file, relative to <c>api/&lt;key&gt;/</c>.
 	/// </summary>
-	[YamlMember(Alias = "file")]
+	[YamlPropertyName("file")]
 	public string? File { get; set; }
 }
 
@@ -39,21 +38,20 @@ internal class ApiEntryChildDto
 /// segment looked up in the root version index. <c>repository</c> is optional and only needed when
 /// the spec-publishing repository differs from the current checkout's own GitHub remote.
 /// </summary>
-[YamlSerializable]
 internal class ApiProductEntryDto
 {
 	/// <summary>
 	/// Path to an OpenAPI specification file, relative to the docset. Required: its basename is
 	/// used to resolve the remote version index even when no file exists at this path locally.
 	/// </summary>
-	[YamlMember(Alias = "spec")]
+	[YamlPropertyName("spec")]
 	public string? Spec { get; set; }
 
 	/// <summary>
 	/// Required product id. Must match a key in <c>products.yml</c> and binds this API to that
 	/// product's versioning system.
 	/// </summary>
-	[YamlMember(Alias = "product")]
+	[YamlPropertyName("product")]
 	public string? Product { get; set; }
 
 	/// <summary>
@@ -63,23 +61,23 @@ internal class ApiProductEntryDto
 	/// OpenAPI spec is published from <c>elastic/elasticsearch-specification</c>). When omitted, the
 	/// current checkout's GitHub remote is used instead.
 	/// </summary>
-	[YamlMember(Alias = "repository")]
+	[YamlPropertyName("repository")]
 	public string? Repository { get; set; }
 
 	/// <summary>
 	/// Explicit child pages rendered under <c>api/&lt;key&gt;/</c>, in declared order.
 	/// </summary>
-	[YamlMember(Alias = "children")]
+	[YamlPropertyName("children")]
 	public List<ApiEntryChildDto> Children { get; set; } = [];
 
 	/// <summary>
 	/// Optional catalog grouping. Categories identify filter chips only; they do not
 	/// claim versioned availability.
 	/// </summary>
-	[YamlMember(Alias = "catalog")]
+	[YamlPropertyName("catalog")]
 	public ApiCatalogDto? Catalog { get; set; }
 
-	/// <summary>The keys of the entry that <see cref="ApiConfigurationConverter"/> does not read; it skips them rather than failing.</summary>
+	/// <summary>The keys of the entry that <see cref="ApiProductEntryConverter"/> does not read; it skips them rather than failing.</summary>
 	[YamlIgnore]
 	public IReadOnlyList<string> UnknownKeys { get; set; } = [];
 
@@ -135,10 +133,9 @@ internal class ApiProductEntryDto
 /// <summary>
 /// Category-only catalog metadata under <c>catalog:</c> on an API entry.
 /// </summary>
-[YamlSerializable]
 internal class ApiCatalogDto
 {
-	[YamlMember(Alias = "categories")]
+	[YamlPropertyName("categories")]
 	public List<string> Categories { get; set; } = [];
 
 	[YamlIgnore]
@@ -152,7 +149,6 @@ internal class ApiCatalogDto
 /// The YAML sequence bound to each <c>api: &lt;key&gt;</c> entry. The RFC schema always contains
 /// exactly one <see cref="ApiProductEntryDto"/>; the sequence wrapper mirrors the wire format.
 /// </summary>
-[YamlSerializable]
 internal class ApiProductSequenceDto
 {
 	public List<ApiProductEntryDto> Entries { get; set; } = [];

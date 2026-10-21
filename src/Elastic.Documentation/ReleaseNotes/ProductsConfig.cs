@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Equality;
 using Generator.Equals;
 
 namespace Elastic.Documentation.ReleaseNotes;
@@ -29,6 +30,13 @@ public partial record ProductsConfig
 	/// </summary>
 	[OrderedEquality]
 	public IReadOnlyList<DefaultProduct>? Default { get; internal init; }
+
+	/// <summary>
+	/// Products that a label-derived product implies, keyed by product ID. When a label maps an entry to a
+	/// product, the entry also gets the products listed here for it. Keys compare case-insensitively.
+	/// </summary>
+	[UnorderedEquality(typeof(StringListEntryComparer))]
+	public IReadOnlyDictionary<string, IReadOnlyList<string>>? Implies { get; internal init; }
 }
 
 /// <summary>

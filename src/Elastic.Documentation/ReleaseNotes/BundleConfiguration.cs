@@ -6,6 +6,18 @@ using Generator.Equals;
 
 namespace Elastic.Documentation.ReleaseNotes;
 
+/// <summary>Which pull requests are backports of an earlier pull request.</summary>
+[Equatable]
+public sealed partial record BackportsConfiguration
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport. Globs are not supported: a pattern such as
+	/// <c>backport*</c> would also match opt-out labels like <c>backport-skip</c>.
+	/// </summary>
+	[OrderedEquality]
+	public required IReadOnlyList<string> Labels { get; init; }
+}
+
 /// <summary>
 /// Configuration for bundle operations
 /// </summary>
@@ -81,6 +93,12 @@ public partial record BundleConfiguration
 	/// When true, auto-populate release date in bundle output. Defaults to true when omitted.
 	/// </summary>
 	public bool? ReleaseDates { get; internal init; }
+
+	/// <summary>
+	/// Which pull requests are backports. When set, a commit-range bundle replaces a pull request that has one of
+	/// these labels with the original pull request it was backported from. <c>null</c> leaves tracing off.
+	/// </summary>
+	public BackportsConfiguration? Backports { get; init; }
 
 	/// <summary>
 	/// Named bundle profiles for different release scenarios.

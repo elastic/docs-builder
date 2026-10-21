@@ -4,7 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.AppliesTo;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -12,7 +13,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 public class ApplicableToAuthoringTests
 {
 	private static ApplicableTo Read(string yaml) =>
-		new DeserializerBuilder().WithTypeConverter(new ApplicableToYamlConverter([])).Build().Deserialize<ApplicableTo>(yaml);
+		YamlSerializer.Deserialize<ApplicableTo>(yaml, new YamlSerializerOptions { Converters = [new ApplicableToYamlConverter([])] })!;
 
 	[Test]
 	public void NestedKeysNoReaderMaps_AreKept()

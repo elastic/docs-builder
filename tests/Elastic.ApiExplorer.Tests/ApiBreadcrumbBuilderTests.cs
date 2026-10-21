@@ -69,15 +69,14 @@ public class ApiBreadcrumbBuilderTests
 	}
 
 	[Test]
-	public void Landing_BreadcrumbIsTheCatalogLink()
+	public void Landing_BreadcrumbIsDocsThenTheCatalogLink()
 	{
 		var landing = new LandingNavigationItem("/api/doc/elasticsearch/");
 
-		var crumbs = ApiBreadcrumbs.Build(landing.Index, "/docs/api/", "Elasticsearch API", onCatalog: false);
+		var crumbs = ApiBreadcrumbs.Build(landing.Index, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Should().ContainSingle();
-		crumbs[0].NavigationTitle.Should().Be("APIs");
-		crumbs[0].Url.Should().Be("/docs/api/");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs");
+		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/");
 	}
 
 	[Test]
@@ -87,10 +86,10 @@ public class ApiBreadcrumbBuilderTests
 		var tag = Node("/api/doc/elasticsearch/group/search", "Search", landing);
 		var op = Leaf("/api/doc/elasticsearch/operation/search", "Run a search", tag);
 
-		var crumbs = ApiBreadcrumbs.Build(op, "/docs/api/", "Elasticsearch API", onCatalog: false);
+		var crumbs = ApiBreadcrumbs.Build(op, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Select(c => c.NavigationTitle).Should().Equal("APIs", "Elasticsearch API", "Search");
-		crumbs.Select(c => c.Url).Should().Equal("/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs", "Elasticsearch API", "Search");
+		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
 	[Test]
@@ -101,20 +100,20 @@ public class ApiBreadcrumbBuilderTests
 		var tag = Node("/api/doc/elasticsearch/group/search", "Search APIs", classification);
 		var op = Leaf("/api/doc/elasticsearch/operation/search", "Run a search", tag, landing);
 
-		var crumbs = ApiBreadcrumbs.Build(op, "/docs/api/", "Elasticsearch API", onCatalog: false);
+		var crumbs = ApiBreadcrumbs.Build(op, "/docs", "/docs/api/", "Elasticsearch API", onCatalog: false);
 
-		crumbs.Select(c => c.NavigationTitle).Should().Equal("APIs", "Elasticsearch API", "Search APIs");
-		crumbs.Select(c => c.Url).Should().Equal("/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs", "APIs", "Elasticsearch API", "Search APIs");
+		crumbs.Select(c => c.Url).Should().Equal("/docs", "/docs/api/", "/api/doc/elasticsearch/", "/api/doc/elasticsearch/group/search");
 	}
 
 	[Test]
-	public void Catalog_OmitsTheCatalogLink()
+	public void Catalog_ShowsOnlyDocs()
 	{
 		var landing = new LandingNavigationItem("/api/");
 
-		var crumbs = ApiBreadcrumbs.Build(landing.Index, "/api/", "API catalog", onCatalog: true);
+		var crumbs = ApiBreadcrumbs.Build(landing.Index, "/docs", "/api/", "API catalog", onCatalog: true);
 
-		crumbs.Should().BeEmpty();
+		crumbs.Select(c => c.NavigationTitle).Should().Equal("Docs");
 	}
 
 	private static INodeNavigationItem<INavigationModel, INavigationItem> Node(

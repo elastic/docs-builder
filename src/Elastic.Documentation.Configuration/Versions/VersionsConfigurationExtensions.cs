@@ -4,7 +4,7 @@
 
 using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Versions;
 
@@ -14,7 +14,7 @@ internal static class VersionsConfigurationExtensions
 	{
 		var versionFilePath = provider.VersionFile;
 
-		var versionsDto = ConfigurationFileProvider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
+		var versionsDto = ConfigurationFileProvider.Deserialize<VersionsConfigDto>(versionFilePath.OpenText(), versionFilePath.FullName);
 
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
@@ -54,15 +54,15 @@ internal static class VersionsConfigurationExtensions
 
 // Private DTOs for deserialization. These match the YAML structure directly.
 
-internal sealed record VersionsConfigDto
+public sealed record VersionsConfigDto
 {
 	public Dictionary<string, VersioningSystemDto> VersioningSystems { get; set; } = [];
 }
 
-internal sealed record VersioningSystemDto
+public sealed record VersioningSystemDto
 {
-	[YamlMember(Alias = "base")]
+	[YamlPropertyName("base")]
 	public string Base { get; set; } = string.Empty;
-	[YamlMember(Alias = "current")]
+	[YamlPropertyName("current")]
 	public string Current { get; set; } = string.Empty;
 }

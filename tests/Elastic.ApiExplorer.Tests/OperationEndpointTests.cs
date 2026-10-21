@@ -7,12 +7,27 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Navigation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class OperationEndpointTests
 {
+	[Test]
+	public void HttpMethod_ListingAddsDominantMethod_UsesDominant()
+	{
+		var withListing = Op(HttpMethod.Get, "/{index}/_mvt/{field}");
+		withListing = withListing with
+		{
+			Operation = new OpenApiOperation { Description = Bump(("POST", "/{index}/_mvt/{field}"), ("GET", "/{index}/_mvt/{field}")) }
+		};
+		var withoutListing = Op(HttpMethod.Get, "/_cluster/health");
+
+		((IHttpMethodNavigationModel)withListing).HttpMethod.Should().Be("post");
+		((IHttpMethodNavigationModel)withoutListing).HttpMethod.Should().Be("get");
+	}
+
 	private static ApiOperation Op(HttpMethod method, string route, string? operationId = null, params string[] queryParameters) =>
 		new(
 			method,

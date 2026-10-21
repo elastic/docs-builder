@@ -1,3 +1,4 @@
+import { logInfo } from '../../telemetry/logging'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
@@ -54,7 +55,9 @@ describe('NavigationSearchWrapper type attribute', () => {
     it('requests navigation-search with type=api when type is api', async () => {
         render(<NavigationSearchWrapper type="api" />)
 
-        const input = await screen.findByPlaceholderText('Jump to API')
+        const input = await screen.findByPlaceholderText(
+            'Press ❲/❳ to find API'
+        )
         await userEvent.type(input, '_bulk')
 
         await waitFor(() => {
@@ -62,6 +65,17 @@ describe('NavigationSearchWrapper type attribute', () => {
                 searchRequestUrls().some((url) => url.includes('type=api'))
             ).toBe(true)
         })
+    })
+
+    it('renders the sidebar variant without the sticky wrapper or divider', async () => {
+        const { container } = render(
+            <NavigationSearchWrapper type="api" variant="sidebar" />
+        )
+
+        await screen.findByPlaceholderText('Press ❲/❳ to find API')
+
+        expect(container.querySelector('.sticky')).toBeNull()
+        expect(container.querySelector('hr')).toBeNull()
     })
 
     it('filters the first query when a search term is already set', async () => {
@@ -88,4 +102,130 @@ describe('NavigationSearchWrapper type attribute', () => {
             expect(urls.every((url) => !url.includes('type='))).toBe(true)
         })
     })
+})
+
+describe('NavigationSearchWrapper slash shortcut', () => {
+    const apiPlaceholder = 'Press ❲/❳ to find API'
+
+    beforeEach(() => {
+        sharedQueryClient.clear()
+        navigationSearchStore.getState().actions.clearSearchTerm()
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve(emptySearch),
+        })
+    })
+
+    afterEach(() => {
+        document.body.innerHTML = ''
+        jest.restoreAllMocks()
+    })
+
+    it('focuses the api input on "/" without typing the slash', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.keyboard('/')
+
+        expect(input).toHaveFocus()
+        expect(input).toHaveValue('')
+    })
+
+    it('blurs the api input on Escape and logs one close', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+        await userEvent.click(input)
+        await userEvent.type(input, '_bulk')
+        jest.mocked(logInfo).mockClear()
+
+        await userEvent.keyboard('{Escape}')
+
+        await waitFor(() => expect(input).not.toHaveFocus())
+        const closes = jest
+            .mocked(logInfo)
+            .mock.calls.filter(([name]) => name === 'navigation_search_closed')
+        expect(closes).toHaveLength(1)
+    })
+
+    it('keeps focus on Escape when type is omitted', async () => {
+        render(<NavigationSearchWrapper />)
+        const input = await screen.findByPlaceholderText('Jump to page')
+        await userEvent.click(input)
+
+        await userEvent.keyboard('{Escape}')
+
+        expect(input).toHaveFocus()
+    })
+
+    it('exposes the shortcut on the api input', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        expect(input).toHaveAttribute('aria-keyshortcuts', '/')
+    })
+
+    it('leaves "/" alone while typing in another field', async () => {
+        render(
+            <>
+                <textarea aria-label="notes" />
+                <NavigationSearchWrapper type="api" />
+            </>
+        )
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+        const notes = screen.getByLabelText('notes')
+
+        await userEvent.click(notes)
+        await userEvent.keyboard('/')
+
+        expect(notes).toHaveFocus()
+        expect(notes).toHaveValue('/')
+        expect(input).not.toHaveFocus()
+    })
+
+    it.each(['{Control>}/{/Control}', '{Meta>}/{/Meta}', '{Alt>}/{/Alt}'])(
+        'ignores "/" with a modifier (%s)',
+        async (keys) => {
+            render(<NavigationSearchWrapper type="api" />)
+            const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+            await userEvent.keyboard(keys)
+
+            expect(input).not.toHaveFocus()
+        }
+    )
+
+    it('does not take over Ctrl+K', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.keyboard('{Control>}k{/Control}')
+
+        expect(input).not.toHaveFocus()
+    })
+
+    it('does nothing on a small screen', async () => {
+        const originalWidth = window.innerWidth
+        window.innerWidth = 500
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.keyboard('/')
+
+        expect(input).not.toHaveFocus()
+        expect(input).not.toHaveAttribute('aria-keyshortcuts')
+        window.innerWidth = originalWidth
+    })
+
+    it.each([undefined, 'docs', 'all'])(
+        'does nothing for type=%s',
+        async (type) => {
+            render(<NavigationSearchWrapper type={type} />)
+            const input = await screen.findByPlaceholderText('Jump to page')
+
+            await userEvent.keyboard('/')
+
+            expect(input).not.toHaveFocus()
+            expect(input).not.toHaveAttribute('aria-keyshortcuts')
+        }
+    )
 })

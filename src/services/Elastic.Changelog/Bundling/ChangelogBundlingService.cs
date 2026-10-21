@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Utilities;
@@ -27,6 +29,12 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record BundleChangelogsArguments
 {
+	/// <summary>
+	/// Called with a message when the CDN has no entry pool for the repository. When set, the bundle is skipped and
+	/// the run still succeeds; when <c>null</c> a missing pool is an error. Set for commit-range bundles only.
+	/// </summary>
+	public Action<string>? OnPoolMissing { get; init; }
+
 	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
@@ -201,15 +209,28 @@ public partial class ChangelogBundlingService(
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
 	IEnvironmentVariables? env = null,
-	ChangelogConfigurationLoader? configurationLoader = null
+	ChangelogConfigurationLoader? configurationLoader = null,
+	IGitHubBackportService? backportService = null,
+	DecisionLog? decisions = null,
+	IPullRequestSummaryProvider? summaries = null,
+	ChangelogCache? cache = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
-	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+
+	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
+	// Otherwise the pull requests of a range are read in batches.
+	private readonly IPullRequestSummaryProvider _summaries = summaries
+		?? (prService is not null
+			? new RestPullRequestSummaryProvider(prService)
+			: new GraphQlPullRequestSummaryProvider(logFactory, cache: cache));
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
+		?? new GitHubCommitRangeService(logFactory, cache: cache);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory, cache: cache);
+	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
 		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
@@ -799,9 +820,11 @@ public partial class ChangelogBundlingService(
 			All = false,
 			Output = outputPath,
 			OutputProducts = outputProducts,
-			Repo = repo,
-			Owner = owner,
-			Branch = branch,
+			// Profile and bundle settings win. The arguments fill what they leave unset, so a profile that only
+			// names a product still bundles for the repository the caller passed.
+			Repo = repo ?? input.Repo,
+			Owner = owner ?? input.Owner,
+			Branch = branch ?? input.Branch,
 			HideFeatures = mergedHideFeatures,
 			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
@@ -976,16 +999,50 @@ public partial class ChangelogBundlingService(
 		if (resolution == null)
 			return false;
 
+		var backportReport = string.Empty;
+		if (config?.Bundle?.Backports is { Labels.Count: > 0 } backports)
+		{
+			var trace = await BackportTracer.TraceAsync(
+				collector,
+				_backportService,
+				(owner, sourcing.Repo),
+				backports.Labels,
+				resolution,
+				ctx
+			);
+			if (trace == null)
+				return false;
+
+			resolution = trace.Resolution;
+			backportReport = trace.ToMarkdown();
+		}
+
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
+		// A repository without an entry pool is not onboarded. The caller may ask to skip it instead of failing.
+		var poolMissing = false;
+		var notifyPoolMissing = input.OnPoolMissing;
+		Action<string>? onPoolMissing = null;
+		if (notifyPoolMissing is not null)
+		{
+			onPoolMissing = message =>
+			{
+				poolMissing = true;
+				notifyPoolMissing(message);
+			};
+		}
+
 		var candidates = sourcing.UseCdn
-			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
+			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, onPoolMissing, ctx)
 			: await ReadLocalEntriesAsync(collector, directory, outputPath, ctx);
+		if (poolMissing)
+			return true;
+
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _logger);
+		var resolver = new GitRangeEntryResolver(_summaries, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -1002,8 +1059,20 @@ public partial class ChangelogBundlingService(
 			ctx
 		);
 
-		var report = result.Report.ToMarkdown();
-		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
+		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
+		// The full report has a row per pull request, hundreds for a patch and thousands for a minor. It is the product of a
+		// dry run. A normal run logs a summary, and the report at debug level.
+		var sources = result.Report.Rows.GroupBy(r => r.Source).ToDictionary(g => g.Key, g => g.Count());
+		_logger.LogInformation(
+			"Commit-range bundle: {Commits} commit(s), {PullRequests} pull request(s): {Pool} from the pool, {Inferred} inferred, {Excluded} excluded, {Missing} missing",
+			result.Report.TotalCommits,
+			result.Report.Rows.Count,
+			sources.GetValueOrDefault(GitRangePrSourceKind.Pool),
+			sources.GetValueOrDefault(GitRangePrSourceKind.InferredPrBody) + sources.GetValueOrDefault(GitRangePrSourceKind.InferredTitle),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Excluded) + sources.GetValueOrDefault(GitRangePrSourceKind.ExcludedBaseBranch),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Missing)
+		);
+		_logger.LogDebug("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)
 		{
@@ -1015,7 +1084,13 @@ public partial class ChangelogBundlingService(
 		if (!result.Success || collector.Errors > 0)
 			return false;
 
-		if (result.Entries.Count == 0)
+		// Notes authored for the target are not tied to a pull request, so the range never finds them.
+		// Merge them like the filter pipeline does, so a range bundle is not missing them.
+		var allEntries = await MergeNotesAsync(collector, result.Entries, sourcing.UseCdn, owner, sourcing.Repo, input, ctx);
+		if (allEntries == null)
+			return false;
+
+		if (allEntries.Count == 0)
 		{
 			collector.EmitError(
 				string.Empty,
@@ -1024,8 +1099,14 @@ public partial class ChangelogBundlingService(
 			return false;
 		}
 
-		return await BuildAndWriteBundle(collector, input, config, result.Entries, outputPath, ctx);
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 	}
+
+	/// <summary>
+	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
+	/// hundreds. Other runs keep the warning.
+	/// </summary>
+	private void ExcludeFromBundle(MatchedChangelogFile entry, string why) => _decisions.Record("bundle", "exclude", entry.FileName, why);
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> ReadLocalEntriesAsync(
@@ -1479,11 +1560,64 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
+	private readonly ConcurrentDictionary<string, Task<PoolFetch>> _pools = [];
+
+	/// <summary>What fetching a pool came to: its entries, or the message that the repository publishes none.</summary>
+	private sealed record PoolFetch(IReadOnlyList<(string FileName, string Content)>? Entries, string? PoolMissing);
+
+	/// <summary>
+	/// The entries of a pool. A run reads the same pool for every target it bundles, such as the patch and the minor release of
+	/// one product, so each pool is fetched once. What the pool held at the start of the run is what every target sees.
+	/// </summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
 		IDiagnosticsCollector collector,
 		string? org,
 		string? repo,
 		string? branch,
+		Action<string>? onPoolMissing,
+		Cancel ctx
+	)
+	{
+		// A pool that could not be read is fetched again by the next target, so only a pool that was read is kept.
+		var key = $"{org}/{repo}/{branch}".ToLowerInvariant();
+		if (_pools.TryGetValue(key, out var known))
+		{
+			var kept = await known.ConfigureAwait(false);
+			if (kept.PoolMissing is not null)
+				onPoolMissing?.Invoke(kept.PoolMissing);
+
+			if (kept.Entries is not null || kept.PoolMissing is not null)
+				return kept.Entries;
+		}
+
+		string? poolMissing = null;
+
+		void Remember(string message)
+		{
+			poolMissing = message;
+			onPoolMissing?.Invoke(message);
+		}
+
+		var entries = await FetchCdnEntriesCoreAsync(
+			collector,
+			org,
+			repo,
+			branch,
+			onPoolMissing is null ? null : Remember,
+			ctx
+		).ConfigureAwait(false);
+		if (entries is not null || poolMissing is not null)
+			_pools[key] = Task.FromResult(new PoolFetch(entries, poolMissing));
+
+		return entries;
+	}
+
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesCoreAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		Action<string>? onPoolMissing,
 		Cancel ctx
 	)
 	{
@@ -1525,7 +1659,8 @@ public partial class ChangelogBundlingService(
 				collector.EmitError(string.Empty, msg);
 			},
 			msg => collector.EmitWarning(string.Empty, msg),
-			ctx
+			ctx,
+			onPoolMissing
 		);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
@@ -2227,7 +2362,7 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules
@@ -2258,10 +2393,7 @@ public partial class ChangelogBundlingService(
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-					);
+					ExcludeFromBundle(entry, "global type/area filter");
 					continue;
 				}
 
@@ -2271,19 +2403,13 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter)."
-				);
+				ExcludeFromBundle(entry, $"global product filter, {productReason}");
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-				);
+				ExcludeFromBundle(entry, "global type/area filter");
 				continue;
 			}
 
@@ -2293,7 +2419,7 @@ public partial class ChangelogBundlingService(
 		return filtered;
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
@@ -2332,18 +2458,12 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared)."
-					);
+					ExcludeFromBundle(entry, "no products declared");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(
-						entry.FilePath,
-						$"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}')."
-					);
+					ExcludeFromBundle(entry, $"disjoint from rule context '{ruleContextProduct}'");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
@@ -2374,20 +2494,14 @@ public partial class ChangelogBundlingService(
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter)."
-						);
+						ExcludeFromBundle(entry, $"per-product filter, {productReason}");
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter)."
-						);
+						ExcludeFromBundle(entry, "per-product type/area filter");
 						continue;
 					}
 					break;

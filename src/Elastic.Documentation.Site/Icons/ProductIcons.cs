@@ -61,6 +61,27 @@ public static class ProductIcons
 				</g>
 			</svg>
 			""",
+		["beats"] =
+			"""
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+				<g transform="translate(4)">
+					<path fill="#0080D5" d="M11,20 L0,20 L0,0 L11,0 C16.522,0 21,4.478 21,10 C21,15.522 16.522,20 11,20"/>
+					<path fill="#00C2B3" d="M22.7021,15.624 C20.6001,19.979 16.1521,23 11.0001,23 L0.0001,23 L0.0001,32 L15.0001,32 C20.5221,32 25.0001,27.522 25.0001,22 C25.0001,19.576 24.1371,17.354 22.7021,15.624"/>
+					<path class="euiIcon__fillNegative" d="M20.3379,13.5537 C18.7919,12.5747 16.9649,11.9997 14.9999,11.9997 L-0.0001,11.9997 L-0.0001,19.9997 L10.9999,19.9997 C15.2699,19.9997 18.9029,17.3197 20.3379,13.5537"/>
+				</g>
+			</svg>
+			""",
+		// The official Elastic Agent mark, cropped to its glyph like the other marks. Its outline is a fixed
+		// navy (#101C3F), so it reads on a light surface only.
+		["elastic-agent"] =
+			"""
+			<svg aria-hidden="true" viewBox="2 0 28 31.2" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path fill-rule="evenodd" clip-rule="evenodd" d="M16 11.1674L12.0769 13.4028V17.8282L16 20.0636L19.9231 17.8282V13.4028L16 11.1674ZM21.9231 12.2405L16 8.86548L10.0769 12.2405V18.9905L16 22.3655L21.9231 18.9905V12.2405Z" fill="#0B64DD"/>
+				<path d="M21 2.81994L16 0.0383301L11 2.81991V5.10857L16 2.32699L21 5.1086V2.81994Z" fill="#0B64DD"/>
+				<path d="M21 7.28161L16 4.5L11 7.28158V9.57024L16 6.78866L21 9.57027V7.28161Z" fill="#0B64DD"/>
+				<path d="M7 5.04541L2 7.82701V23.4039L16 31.1924L30 23.4039V7.82701L25 5.04543V7.33408L28 9.00304V22.2279L16 28.9037L4 22.2279V9.00303L7 7.33407V5.04541Z" fill="#101C3F"/>
+			</svg>
+			""",
 		["elastic-stack"] =
 			"""
 			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">

@@ -32,6 +32,7 @@ public class ProductIconsTests
 	[Arguments("observability")]
 	[Arguments("security")]
 	[Arguments("logstash")]
+	[Arguments("beats")]
 	[Arguments("ess")]
 	[Arguments("cloud-enterprise")]
 	public void Get_LogoWithNegativeSpace_UsesEuiNegativeFillNotFixedWhite(string key)
@@ -48,6 +49,7 @@ public class ProductIconsTests
 	[Arguments("observability")]
 	[Arguments("security")]
 	[Arguments("logstash")]
+	[Arguments("beats")]
 	[Arguments("elastic-stack")]
 	[Arguments("ess")]
 	[Arguments("cloud-enterprise")]
@@ -65,6 +67,20 @@ public class ProductIconsTests
 
 		svg.Should().Contain("<svg");
 		svg.Should().NotBe(ProductIcons.Get("ess"));
+	}
+
+	[Test]
+	public void Get_Beats_ReturnsOfficialMark() => ProductIcons.Get("beats").Should().Contain("<svg");
+
+	[Test]
+	public void Get_ElasticAgent_ReturnsOfficialMark()
+	{
+		var svg = ProductIcons.Get("elastic-agent");
+
+		svg.Should().Contain("<svg");
+		svg.Should().NotContain("<rect", "the official mark is a glyph, not a letter on a tile");
+		svg.Should().Contain("#101C3F", "the official mark keeps its navy outline");
+		svg.Should().NotBe(ProductIcons.Get("elastic-stack"));
 	}
 
 	[Test]

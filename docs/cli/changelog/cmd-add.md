@@ -81,8 +81,9 @@ For example:
 The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
-1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied. Products listed in `products.implies` for a matched product are added.
 1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `products.default` is not defined and `pivot.products` maps two or more distinct products, a PR or issue with no matching label is an error. The error names the PR or issue and lists the labels to add.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
 
 The same order applies when using `--report` (after PR URLs are resolved from the promotion report), and when using batch `--prs` with multiple pull requests.
@@ -146,6 +147,10 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
 | `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
+| `CHANGELOG_IMPACT` | `--impact` | `steps.evaluate.outputs.impact` |
+| `CHANGELOG_ACTION` | `--action` | `steps.evaluate.outputs.action` |
+| `CHANGELOG_ENTRY_IMPACT` | `--impact` | `steps.evaluate.outputs.entry-impact` |
+| `CHANGELOG_ENTRY_ACTION` | `--action` | `steps.evaluate.outputs.entry-action` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
@@ -158,6 +163,8 @@ Explicit CLI arguments always take priority over environment variables.
 - If `--description` is provided on the command line, it always wins.
 - If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored.
 - Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
+
+`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. `CHANGELOG_ENTRY_IMPACT` and `CHANGELOG_ENTRY_ACTION` carry what the PR's existing entry file already holds, so they apply even when extraction is disabled and fill `--impact` and `--action` only when the other sources are empty. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description. For a `breaking-change` entry with extraction enabled, it fetches the PR for this even when the title, type, and products are already set. Disabling extraction, on the command line or with `extract.release_notes: false`, also drops the CI-provided values.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +22,8 @@ namespace Elastic.Changelog.Evaluation;
 ///   <item><term>Status success and <c>!CanCommit</c></term><description>Comment-only body (fork / comment-only strategy).</description></item>
 ///   <item><term>Status no-label</term><description>Labels-needed body with label tables.</description></item>
 ///   <item><term>Status skipped</term><description>Skipped body (hidden as 'resolved') to clear stale failure comment.</description></item>
+///   <item><term>Status missing-impact-action</term><description>Missing-sections body with a copy-pasteable Impact/Action template.</description></item>
+///   <item><term>Status success, breaking-change entry</term><description>Keeps the sticky comment and echoes the captured Impact and Action in a collapsible block.</description></item>
 ///   <item><term>Status success, no staged file</term><description>Deletes the sticky comment — no need to litter once labels are validated.</description></item>
 /// </list>
 /// </summary>
@@ -53,7 +57,7 @@ public class ChangelogGithubCommentService(
 		var body = SelectBody(metadata, input.MetadataDir, owner, repo);
 		if (body is null)
 		{
-			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
+			if (IsSuccess(metadata.Status) || IsSkipped(metadata.Status) || IsManuallyEdited(metadata.Status))
 			{
 				_logger.LogInformation(
 					"PR #{PrNumber} is {Status} — deleting stale failure comment if present",
@@ -76,6 +80,81 @@ public class ChangelogGithubCommentService(
 
 	private string? SelectBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
 	{
+		var body = SelectBaseBody(metadata, metadataDir, owner, repo);
+
+		// Breaking changes keep their comment on success and echo what was scraped from the PR description, so there are no surprises at bundling time.
+		var generated = metadata.Gate is not ValidationGate.Entries && (IsSuccess(metadata.Status) || metadata.CommitOutcome is not null);
+		if (!generated)
+			return body;
+
+		// The staged entry is what bundling will use, so it wins when it is available (changelog add runs).
+		var entry = TryReadStagedEntry(metadataDir);
+		if (entry != null)
+		{
+			if (entry is not { Type: ChangelogEntryType.BreakingChange } || (entry.Impact is null && entry.Action is null))
+				return body;
+
+			_logger.LogInformation("Echoing staged Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+			return body is null
+				? ChangelogCommentRenderer.RenderBreakingChangeResolved(entry.Impact, entry.Action, entryGenerated: true)
+				: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, entry.Impact, entry.Action);
+		}
+
+		// Nothing is staged (an evaluate-pr gate run): fall back to the sections it scraped from the PR description.
+		var breakingTypeName = ChangelogEntryType.BreakingChange.ToStringFast(true);
+		if (
+			!string.Equals(metadata.ResolvedType, breakingTypeName, StringComparison.OrdinalIgnoreCase)
+			|| (metadata.Impact is null && metadata.Action is null)
+		)
+			return body;
+
+		_logger.LogInformation("Echoing scraped Impact/Action for breaking change in PR #{PrNumber}", metadata.PrNumber);
+		// After a commit attempt the body already carries the commit result, so append. Otherwise the generic comment-only body
+		// would only warn that the entry could not be read, so replace it.
+		return body is null || metadata.CommitOutcome is null
+			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action, entryGenerated: false)
+			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
+	}
+
+	private ChangelogEntry? TryReadStagedEntry(string metadataDir)
+	{
+		var (yaml, _) = ReadStagedYaml(metadataDir);
+		if (string.IsNullOrWhiteSpace(yaml))
+			return null;
+
+		// a rule the entry breaks does not stop it being read here: only YAML that does not parse leaves no entry
+		var entry = ReleaseNotesLoader.LoadEntry(yaml, metadataDir).Value;
+		if (entry is null)
+			_logger.LogWarning("Could not parse staged changelog YAML from {Dir}", metadataDir);
+		return entry;
+	}
+
+	private string? SelectBaseBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)
+	{
+		// Gate failure: breaking-change PR lacks Impact and/or Action sections.
+		if (
+			metadata.Gate == ValidationGate.File
+			&& string.Equals(metadata.Status, "missing-impact-action", StringComparison.OrdinalIgnoreCase)
+		)
+		{
+			_logger.LogInformation("Rendering missing-impact-action body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderMissingImpactAction(metadata.MissingSections, metadata.PrNumber, EntryPath(metadata));
+		}
+
+		// Gate failure: a human-authored entry file and the PR description both provide Impact/Action.
+		if (
+			metadata.Gate == ValidationGate.File
+			&& string.Equals(metadata.Status, "conflicting-impact-action", StringComparison.OrdinalIgnoreCase)
+		)
+		{
+			_logger.LogInformation("Rendering conflicting-impact-action body for PR #{PrNumber}", metadata.PrNumber);
+			return ChangelogCommentRenderer.RenderConflictingImpactAction(
+				EntryPath(metadata),
+				metadata.ConflictingSections,
+				metadata.PrNumber
+			);
+		}
+
 		// Committed: entry-committed body with blob + edit links.
 		if (metadata.CommitOutcome == CommitOutcome.Committed && !string.IsNullOrWhiteSpace(metadata.CommittedFile))
 		{
@@ -106,8 +185,9 @@ public class ChangelogGithubCommentService(
 		var isNoLabel = IsNoLabel(metadata.Status);
 
 		// Success but cannot commit (fork or comment-only strategy): comment-only informational body.
-		// The Entries gate never stages a YAML file, so CanCommit is irrelevant there.
-		if (isSuccess && !metadata.CanCommit && metadata.Gate is not ValidationGate.Entries)
+		// The Entries and File gates only validate. They never generate or stage an entry, so there is no entry to describe
+		// and CanCommit is irrelevant there.
+		if (isSuccess && !metadata.CanCommit && metadata.Gate is not (ValidationGate.Entries or ValidationGate.File))
 		{
 			_logger.LogInformation("Rendering comment-only/no-commit body for PR #{PrNumber}", metadata.PrNumber);
 			var (yamlContent, yamlFilename) = ReadStagedYaml(metadataDir);
@@ -197,7 +277,16 @@ public class ChangelogGithubCommentService(
 			|| string.Equals(status, "proceed", StringComparison.OrdinalIgnoreCase)
 			|| string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase);
 
+	private static string? EntryPath(GithubDecisionMetadata metadata) =>
+		string.IsNullOrWhiteSpace(metadata.ChangelogFilename)
+			? null
+			: string.IsNullOrWhiteSpace(metadata.ChangelogDir)
+				? metadata.ChangelogFilename
+				: metadata.ChangelogDir + "/" + metadata.ChangelogFilename;
+
 	private static bool IsNoLabel(string status) => string.Equals(status, "no-label", StringComparison.OrdinalIgnoreCase);
+	private static bool IsManuallyEdited(string status) => string.Equals(status, "manually-edited", StringComparison.OrdinalIgnoreCase);
+
 	private static bool IsSkipped(string status) => string.Equals(status, "skipped", StringComparison.OrdinalIgnoreCase);
 }
 
