@@ -3208,6 +3208,16 @@ button.example-response-tab:focus-visible {
 	text-align: left;
 }
 
+.api-catalog-finder navigation-search {
+	display: block;
+	width: 100%;
+}
+
+/* The navigation-preview hero is left-aligned, so the finder lines up with its title and lede. */
+.landing__hero-text .api-catalog-finder {
+	margin-inline: 0;
+}
+
 @media (max-width: 640px) {
 	.api-catalog .hub-hero.api-catalog-hero {
 		padding: 36px 0 32px;
