@@ -81,23 +81,6 @@ public class ChangelogTextUtilitiesTests
 	}
 
 	[Test]
-	[Arguments("fix create visualization", "Fix create visualization")]
-	[Arguments("bulk delete observables", "Bulk delete observables")]
-	[Arguments("Already capitalized", "Already capitalized")]
-	[Arguments("don't return an empty response", "Don't return an empty response")]
-	[Arguments("don\u2019t return an empty response", "Don\u2019t return an empty response")]
-	[Arguments("kibana.alert.rule is renamed", "kibana.alert.rule is renamed")]
-	[Arguments("inputsForVersions is refreshed", "inputsForVersions is refreshed")]
-	[Arguments("snake_case_field is renamed", "snake_case_field is renamed")]
-	[Arguments("`code` first", "`code` first")]
-	[Arguments("", "")]
-	public void CapitalizeFirstLetter_CapitalizesPlainWords(string input, string expected)
-	{
-		var result = ChangelogTextUtilities.CapitalizeFirstLetter(input);
-		result.Should().Be(expected);
-	}
-
-	[Test]
 	[Arguments("[Cases] feat(cases): bulk delete observables", "Bulk delete observables")]
 	[Arguments("fix(apm): apply environment filter", "Apply environment filter")]
 	[Arguments("fix: don't return an empty response", "Don't return an empty response")]

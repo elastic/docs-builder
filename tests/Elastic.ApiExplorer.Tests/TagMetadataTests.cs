@@ -156,8 +156,45 @@ public class TagMetadataTests
 		var tagNavItem = FindTagNavigationItem(navigation, "transform");
 		tagNavItem.Should().NotBeNull();
 
-		// Should fallback to canonical name when no x-displayName
-		tagNavItem.NavigationTitle.Should().Be("transform");
+		// Should fallback to the canonical name, capitalized, when no x-displayName
+		tagNavItem.NavigationTitle.Should().Be("Transform");
+	}
+
+	[Test]
+	public async Task ParseTagMetadata_WithoutXDisplayName_CapitalizesPlainWordsAndKeepsCodeLikeNames()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Test API", "version": "1.0.0" },
+		  "paths": {},
+		  "tags": [
+		    { "name": "elasticsearch projects" },
+		    { "name": "capabilities" },
+		    { "name": "BillingCostsAnalysis" },
+		    { "name": "ml_anomaly" },
+		    { "name": "v2 search" },
+		    { "name": "search v2" },
+		    { "name": "search APIs" },
+		    { "name": "tasks", "x-displayName": "Task management" }
+		  ]
+		}
+		""";
+
+		var (_, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		var tags = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
+
+		tags["elasticsearch projects"].DisplayName.Should().Be("Elasticsearch projects");
+		tags["capabilities"].DisplayName.Should().Be("Capabilities");
+		tags["BillingCostsAnalysis"].DisplayName.Should().Be("BillingCostsAnalysis");
+		tags["ml_anomaly"].DisplayName.Should().Be("ml_anomaly");
+		tags["v2 search"].DisplayName.Should().Be("v2 search");
+		// Only the first word decides: later digits or capitals do not block capitalization
+		tags["search v2"].DisplayName.Should().Be("Search v2");
+		tags["search APIs"].DisplayName.Should().Be("Search APIs");
+		tags["tasks"].DisplayName.Should().Be("Task management");
 	}
 
 	[Test]
@@ -404,13 +441,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
+		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "Charlie", "Fruit Store"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
 		// Verify sorted order
 		tagItems[0].NavigationTitle.Should().Be("Animal Zoo", "First tag should be 'Animal Zoo' (zebra with x-displayName)");
-		tagItems[1].NavigationTitle.Should().Be("charlie", "Second tag should be 'charlie' (canonical name, no x-displayName)");
+		tagItems[1].NavigationTitle.Should().Be("Charlie", "Second tag should be 'Charlie' (capitalized canonical name, no x-displayName)");
 		tagItems[2].NavigationTitle.Should().Be("Fruit Store", "Third tag should be 'Fruit Store' (apple with x-displayName)");
 	}
 
@@ -525,13 +562,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by canonical name: "alpha", "mike", "zebra"
+		// Assert - should be sorted alphabetically by canonical name: "Alpha", "Mike", "Zebra"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
-		tagItems[0].NavigationTitle.Should().Be("alpha", "Should sort by canonical name");
-		tagItems[1].NavigationTitle.Should().Be("mike", "Should sort by canonical name");
-		tagItems[2].NavigationTitle.Should().Be("zebra", "Should sort by canonical name");
+		tagItems[0].NavigationTitle.Should().Be("Alpha", "Should sort by canonical name");
+		tagItems[1].NavigationTitle.Should().Be("Mike", "Should sort by canonical name");
+		tagItems[2].NavigationTitle.Should().Be("Zebra", "Should sort by canonical name");
 	}
 
 	[Test]
