@@ -102,7 +102,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				}
 				var tagName = tagGroup.Key ?? "unknown";
 				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
-					tagMeta = new OpenApiTagMetadata(tagName, string.Empty, null);
+					tagMeta = new OpenApiTagMetadata(OpenApiExtensionReader.FallbackTagDisplayName(tagName), string.Empty, null);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
 					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
 

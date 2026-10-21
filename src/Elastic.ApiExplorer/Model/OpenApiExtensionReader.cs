@@ -99,6 +99,19 @@ public static class OpenApiExtensionReader
 	}
 
 	/// <summary>
+	/// The label for a tag that has no <c>x-displayName</c>: the canonical tag name, with its first letter capitalized
+	/// when the name is plain lowercase words (for example <c>elasticsearch projects</c> becomes <c>Elasticsearch projects</c>).
+	/// Names with uppercase letters, digits, or separators such as <c>_</c> are left as written.
+	/// </summary>
+	public static string FallbackTagDisplayName(string tagName)
+	{
+		if (tagName.Length == 0 || !char.IsAsciiLetterLower(tagName[0]) || !tagName.All(c => char.IsAsciiLetterLower(c) || c == ' '))
+			return tagName;
+
+		return string.Concat(char.ToUpperInvariant(tagName[0]).ToString(), tagName.AsSpan(1));
+	}
+
+	/// <summary>
 	/// Parses global OpenAPI tag objects: description, <c>externalDocs</c>, and <c>x-displayName</c>.
 	/// </summary>
 	public static Dictionary<string, OpenApiTagMetadata> ParseTagMetadata(OpenApiDocument openApiDocument)
@@ -114,7 +127,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName;
+			var displayName = FallbackTagDisplayName(tagName);
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;

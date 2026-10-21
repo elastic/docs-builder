@@ -156,9 +156,21 @@ public class TagMetadataTests
 		var tagNavItem = FindTagNavigationItem(navigation, "transform");
 		tagNavItem.Should().NotBeNull();
 
-		// Should fallback to canonical name when no x-displayName
-		tagNavItem.NavigationTitle.Should().Be("transform");
+		// Should fallback to the canonical name, capitalized, when no x-displayName
+		tagNavItem.NavigationTitle.Should().Be("Transform");
 	}
+
+	[Test]
+	[Arguments("elasticsearch projects", "Elasticsearch projects")]
+	[Arguments("capabilities", "Capabilities")]
+	[Arguments("traffic filters", "Traffic filters")]
+	[Arguments("Already Capitalized", "Already Capitalized")]
+	[Arguments("BillingCostsAnalysis", "BillingCostsAnalysis")]
+	[Arguments("ml_anomaly", "ml_anomaly")]
+	[Arguments("v2 search", "v2 search")]
+	[Arguments("", "")]
+	public void FallbackTagDisplayName_CapitalizesOnlyPlainLowercaseNames(string tagName, string expected) =>
+		OpenApiExtensionReader.FallbackTagDisplayName(tagName).Should().Be(expected);
 
 	[Test]
 	public async Task ApiTag_WithMultipleTagsAndDisplayNames_ParsesCorrectly()
@@ -404,13 +416,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
+		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "Charlie", "Fruit Store"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
 		// Verify sorted order
 		tagItems[0].NavigationTitle.Should().Be("Animal Zoo", "First tag should be 'Animal Zoo' (zebra with x-displayName)");
-		tagItems[1].NavigationTitle.Should().Be("charlie", "Second tag should be 'charlie' (canonical name, no x-displayName)");
+		tagItems[1].NavigationTitle.Should().Be("Charlie", "Second tag should be 'Charlie' (capitalized canonical name, no x-displayName)");
 		tagItems[2].NavigationTitle.Should().Be("Fruit Store", "Third tag should be 'Fruit Store' (apple with x-displayName)");
 	}
 
@@ -525,13 +537,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by canonical name: "alpha", "mike", "zebra"
+		// Assert - should be sorted alphabetically by canonical name: "Alpha", "Mike", "Zebra"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
-		tagItems[0].NavigationTitle.Should().Be("alpha", "Should sort by canonical name");
-		tagItems[1].NavigationTitle.Should().Be("mike", "Should sort by canonical name");
-		tagItems[2].NavigationTitle.Should().Be("zebra", "Should sort by canonical name");
+		tagItems[0].NavigationTitle.Should().Be("Alpha", "Should sort by canonical name");
+		tagItems[1].NavigationTitle.Should().Be("Mike", "Should sort by canonical name");
+		tagItems[2].NavigationTitle.Should().Be("Zebra", "Should sort by canonical name");
 	}
 
 	[Test]
