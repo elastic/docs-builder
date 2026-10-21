@@ -490,30 +490,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Products,
 			Collector,
 			FilePath,
-			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterLegacyKeys())
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterUnknownKeys())
 		);
 
-	// Built fresh per document: each policy closes over a "reported" set that must only suppress a
-	// repeated hint within one document, not across every document the process ever parses.
-	// internal: exercised directly by tests that assert the curator override without a full page parse.
-	internal static YamlUnknownKeyPolicy FrontMatterLegacyKeys()
-	{
-		// `type` and `comment` appear in the frontmatter of pages in the content repositories but are not
-		// supported keys, so they are tolerated as hints for now. TODO: make them errors once the
-		// repositories drop them, see https://github.com/elastic/docs-eng-team/issues/1076.
-		var legacyKeys = YamlUnknownKeyPolicies.ToleratedAsHint("frontmatter", "type", "comment");
-
-		// `curator/docs/reference/ex_reindex.md` has `navigation_tite` (a typo for `navigation_title`).
-		// The previous YAML parser silently dropped unknown keys, so this went unnoticed until unmapped
-		// keys became errors. TODO: remove once https://github.com/elastic/curator/pull/1798 merges.
-		var curatorNavigationTitleTypo = YamlUnknownKeyPolicies.ToleratedAsHintForSource(
-			"curator/docs/reference/ex_reindex.md",
-			"navigation_tite",
-			"'navigation_tite' is a typo for 'navigation_title'; fix pending in https://github.com/elastic/curator/pull/1798."
-		);
-
-		return member => legacyKeys(member) ?? curatorNavigationTitleTypo(member);
-	}
+	// Content repositories carry many frontmatter keys we don't model (slug, status, last_updated, ...), so
+	// an unknown key is a hint with the usual message, not an error, until those repositories are cleaned up.
+	// internal: exercised directly by tests without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterUnknownKeys() =>
+		member => new YamlUnknownKeyOverride(Severity.Hint, $"{YamlUnmappedMemberDiagnostics.FormatMessage(member)} It is ignored.");
 
 	// reporting is null when the same front matter is only being read for its titles, so unknown keys
 	// are reported once, by the full page parse.
