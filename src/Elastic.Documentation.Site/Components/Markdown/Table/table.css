@@ -74,9 +74,9 @@
 	border-bottom: var(--border-width) solid var(--color-border);
 }
 
+/* A translucent tint of the text colour darkens a light row and lightens a dark one, and leaves the row's text alone. */
 .table-wrapper tbody tr:hover {
-	background: var(--color-surface-sunken);
-	mix-blend-mode: multiply;
+	background: color-mix(in oklab, var(--color-text-muted) 12%, transparent);
 }
 
 /* Matrix tables (opt-in) highlight the row and the column under the pointer, like a lookup table. */
