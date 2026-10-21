@@ -1324,7 +1324,7 @@ public class BrandingConfiguration
 	/// The copyright line shown in the footer, for example <c>© 2026 Acme Inc.</c>.
 	/// When not set, branded builds have no footer.
 	/// </summary>
-	[YamlMember(Alias = "copyright")]
+	[YamlPropertyName("copyright")]
 	public string? Copyright { get; set; }
 }
 

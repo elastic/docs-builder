@@ -5,7 +5,6 @@ import { initApiDocs } from '../api-docs'
 import { initAppliesSwitch } from '../applies-switch'
 import { config } from '../config'
 import { initCopyButton } from '../copybutton'
-import { initGetStarted } from '../get-started'
 import { initHighlight, preloadHighlight } from '../hljs'
 import { initMermaid } from '../mermaid'
 import { openDetailsWithAnchor } from '../open-details-with-anchor'
@@ -196,7 +195,6 @@ document.addEventListener('DOMContentLoaded', function () {
         ['initMath', initMath],
         ['initMermaid', initMermaid],
         ['initCtaImpressions', initCtaImpressions],
-        ['initGetStarted', initGetStarted],
     ])
 })
 
@@ -211,7 +209,6 @@ document.addEventListener('htmx:load', function () {
         ['initMermaid', initMermaid],
         ['initSmoothScroll', initSmoothScroll],
         ['openDetailsWithAnchor', openDetailsWithAnchor],
-        ['initGetStarted', initGetStarted],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
         ['applyEditParam', applyEditParam],
