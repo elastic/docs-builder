@@ -89,7 +89,6 @@ else
 						<article id="markdown-content" class="content-container markdown-content">
 							@await RenderBodyAsync()
 						</article>
-						@await RenderPartialAsync(_PageFeedback.Create(Model))
 					</main>
 					<div class="api-page-rail">
 						@if (Model.ShowPageActions)
@@ -98,6 +97,7 @@ else
 						}
 						@await RenderSectionAsync(ApiPageSections.Rail)
 					</div>
+					@await RenderPartialAsync(_PageFeedback.Create(Model))
 				</div>
 			</div>
 			@await RenderPartialAsync(_ApiPagesNav.Create(Model))

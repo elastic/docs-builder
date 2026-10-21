@@ -205,7 +205,7 @@ internal static class StructuralCommonMark
 
 		foreach (var server in page.Servers)
 		{
-			var line = $"`{server.Url}`";
+			var line = ApiCommonMark.CodeSpan(server.Url);
 			if (!string.IsNullOrEmpty(server.Description))
 				line += $" ({server.Description})";
 			_ = markdown.AppendLine($"- {line}");

@@ -166,7 +166,7 @@ public class ChangelogRemoveService(
 			}
 
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{

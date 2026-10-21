@@ -16,9 +16,9 @@
 			</svg>
 		</summary>
 		<div class="hub-accordion-body">
-			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
 			{
-				<p class="hub-accordion-intro">@Model.Intro</p>
+				<p class="hub-accordion-intro">@(new HtmlString(Model.IntroHtml))</p>
 			}
 			<ul class="hub-explore-cols">
 				@Model.RenderBlock()
@@ -32,9 +32,9 @@ else
 	{
 		<div class="hub-zone" id="@Model.Anchor">
 			<h2 class="hub-zone-title">@Model.Title</h2>
-			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
 			{
-				<p class="hub-zone-intro">@Model.Intro</p>
+				<p class="hub-zone-intro">@(new HtmlString(Model.IntroHtml))</p>
 			}
 		</div>
 	}

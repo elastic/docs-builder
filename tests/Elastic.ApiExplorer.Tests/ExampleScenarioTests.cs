@@ -233,6 +233,62 @@ public class ExampleScenarioTests
 		withTabs[0].Responses[0].HasExampleBody.Should().BeFalse();
 		withTabs[0].Responses[1].IsNoBody.Should().BeFalse();
 		withTabs[0].ShowResponse.Should().BeTrue();
+		withTabs[0].Responses.Select(r => r.StatusDescription).Should().Equal("deleted", "not found");
+	}
+
+	[Test]
+	public void EnsureResponseTabs_StatusDescriptionWithInlineCode_DropsTheBackticksForTheTooltip()
+	{
+		var samples = new[] { new CodeSample("Console", "GET /_cat/master", "language-console") };
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [], samples);
+		var responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "Run `GET /_cat/master?v=true` to see" } };
+
+		var withTabs = OperationPageModel.EnsureResponseTabs(scenarios, responses);
+
+		withTabs[0].Responses[0].StatusDescription.Should().Be("Run GET /_cat/master?v=true to see");
+	}
+
+	[Test]
+	public void BuildExampleScenarios_ResponseOnlyDescription_StaysOnTheResponse()
+	{
+		var response = new ExampleDisplay("Get response", new HtmlString("<p>A successful response.</p>"), "{}", null, "200");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [response], []);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].RequestDescriptionHtml.Should().BeNull();
+		scenarios[0].Responses.Should().ContainSingle().Which.DescriptionHtml!.Value.ToString().Should().Contain("A successful response.");
+	}
+
+	[Test]
+	public void BuildExampleScenarios_RequestAndResponseOfOneExample_KeepTheirOwnDescriptions()
+	{
+		var request = new ExampleDisplay("Term", new HtmlString("<p>Searches by term.</p>"), "{}", null);
+		var ok = new ExampleDisplay("Term", new HtmlString("<p>Returns the hit.</p>"), "{}", null, "200");
+		var missing = new ExampleDisplay("Not found", new HtmlString("<p>No such index.</p>"), "{}", null, "404");
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([request], [ok, missing], []);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].RequestDescriptionHtml!.Value.ToString().Should().Contain("Searches by term.");
+		scenarios[0]
+			.Responses
+			.Select(r => r.DescriptionHtml!.Value.ToString())
+			.Should()
+			.Equal("<p>Returns the hit.</p>", "<p>No such index.</p>");
+	}
+
+	[Test]
+	public async Task Create_ResponseExampleAndStatusDescriptions_LandOnTheirResponse()
+	{
+		var page = await CreatePage(ResponseDescriptionsSpec);
+
+		var scenario = page.Scenarios.Should().ContainSingle().Which;
+		scenario.RequestDescriptionHtml.Should().BeNull();
+		var ok = scenario.Responses.Single(static r => r.StatusCode == "200");
+		ok.DescriptionHtml!.Value.ToString().Should().Contain("A successful response from");
+		ok.StatusDescription.Should().Be("Analytics collection found");
+		scenario.Responses.Single(static r => r.StatusCode == "404").StatusDescription.Should().Be("No such collection");
 	}
 
 	[Test]
@@ -262,7 +318,7 @@ public class ExampleScenarioTests
 		var scenarios = OperationPageModel.BuildExampleScenarios([a, b], [], []);
 
 		scenarios.Select(s => s.Title).Should().Equal("Alpha", "Beta");
-		scenarios[0].DescriptionHtml.Should().NotBeNull();
+		scenarios[0].RequestDescriptionHtml.Should().NotBeNull();
 	}
 
 	[Test]
@@ -310,9 +366,9 @@ public class ExampleScenarioTests
 		var term = page.Scenarios.Single(static s => s.Title == "A simple term search");
 		var lead = page.Scenarios.Single(static s => s.Title == "A lead-in");
 		// The test renderer leaves backticks alone; on the site they become <code>. The words must all be there.
-		var termText = term.DescriptionHtml!.Value.ToString();
+		var termText = term.RequestDescriptionHtml!.Value.ToString();
 		termText.Should().Contain("Run ").And.Contain("GET /my-index-000001/_search?from=40&amp;size=20").And.Contain("to run a search.");
-		var leadText = lead.DescriptionHtml!.Value.ToString();
+		var leadText = lead.RequestDescriptionHtml!.Value.ToString();
 		leadText.Should().Contain("A successful response from ").And.Contain("POST /x");
 	}
 
@@ -684,6 +740,46 @@ public class ExampleScenarioTests
 		            }
 		          },
 		          "400": { "description": "Invalid request" }
+		        }
+		      }
+		    }
+		  }
+		}
+		""";
+
+	private const string ResponseDescriptionsSpec =
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Analytics", "version": "1" },
+		  "paths": {
+		    "/api/v1/billing/organization/{organization_id}/budget": {
+		      "post": {
+		        "operationId": "describedResponses",
+		        "summary": "Get a behavioral analytics collection.",
+		        "responses": {
+		          "200": {
+		            "description": "Analytics collection found",
+		            "content": {
+		              "application/json": {
+		                "examples": {
+		                  "GetResponseExample1": {
+		                    "summary": "Get response",
+		                    "description": "A successful response from `GET _application/analytics/my_analytics`.",
+		                    "value": { "my_analytics": {} }
+		                  }
+		                }
+		              }
+		            }
+		          },
+		          "404": {
+		            "description": "No such collection",
+		            "content": {
+		              "application/json": {
+		                "examples": { "NotFoundExample": { "value": { "error": "missing" } } }
+		              }
+		            }
+		          }
 		        }
 		      }
 		    }

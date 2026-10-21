@@ -81,8 +81,9 @@ For example:
 The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
-1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
+1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied. Products listed in `products.implies` for a matched product are added.
 1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `products.default` is not defined and `pivot.products` maps two or more distinct products, a PR or issue with no matching label is an error. The error names the PR or issue and lists the labels to add.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
 
 The same order applies when using `--report` (after PR URLs are resolved from the promotion report), and when using batch `--prs` with multiple pull requests.

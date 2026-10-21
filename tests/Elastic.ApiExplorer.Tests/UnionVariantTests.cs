@@ -50,7 +50,117 @@ public class UnionVariantTests
 		var pet = list!.Items.Single(p => p.Name == "pet");
 		pet.Children.Kind.Should().Be(ChildKind.PropertyList);
 		pet.Children.Properties!.Items.Select(p => p.Name).Should().Equal("kind");
-		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ lives }", "{ barks }");
+		pet.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("Cat", "Dog");
+	}
+
+	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public async Task BuildPropertyList_VariantSelectedByProperty_ListsThatPropertyFirst(bool declared)
+	{
+		var discriminator = declared ? "\"discriminator\": { \"propertyName\": \"type\" }," : "";
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": {
+			            {{discriminator}}
+			            "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" } ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pet").Children.Variants!.Variants;
+		variants.Select(v => v.Properties!.Items.Select(p => p.Name).First()).Should().Equal("type", "type");
+		variants[0].Properties!.Items.Select(p => p.Name).Should().Equal("type", "lives");
+	}
+
+	[Test]
+	[Arguments("""{ "type": "string" }""", "pet")]
+	[Arguments("""{ "type": "array", "items": { "$ref": "#/components/schemas/Cat" } }""", "pet")]
+	public async Task BuildPropertyList_UnionOfObjectsWithOtherForms_ListsTheSelectingPropertyFirst(string extra, string property)
+	{
+		var json =
+			$$"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pet": { "oneOf": [ { "$ref": "#/components/schemas/Cat" }, { "$ref": "#/components/schemas/Dog" }, {{extra}} ] }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == property).Children.Variants!.Variants;
+		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items.First().Name == "type");
+	}
+
+	[Test]
+	public async Task BuildPropertyList_UnionOfObjectArrays_ListsTheSelectingPropertyFirst()
+	{
+		var json =
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "t", "version": "1" },
+			  "paths": {},
+			  "components": {
+			    "schemas": {
+			      "Cat": { "type": "object", "properties": { "lives": { "type": "integer" }, "type": { "type": "string", "enum": ["cat"] } } },
+			      "Dog": { "type": "object", "properties": { "barks": { "type": "boolean" }, "type": { "type": "string", "enum": ["dog"] } } },
+			      "Holder": {
+			        "type": "object",
+			        "properties": {
+			          "pets": {
+			            "oneOf": [
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Cat" } },
+			              { "type": "array", "items": { "$ref": "#/components/schemas/Dog" } }
+			            ]
+			          }
+			        }
+			      }
+			    }
+			  }
+			}
+			""";
+		var document = await LoadSpecAsync(json);
+		var builder = BuilderFor(document);
+
+		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
+
+		var variants = list!.Items.Single(p => p.Name == "pets").Children.Variants!.Variants;
+		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items.First().Name == "type");
 	}
 
 	[Test]
@@ -298,7 +408,7 @@ public class UnionVariantTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == "policies").Children.Variants!.Variants;
-		var policy = variants.Single(v => v.DisplayName == "{ name, inputs }");
+		var policy = variants.Single(v => v.DisplayName == "Policy");
 		policy.IsArrayVariant.Should().BeTrue();
 		policy.ShowProperties.Should().BeTrue("an array-only variant lists the properties of its items");
 		policy.Properties!.Items.Select(p => p.Name).Should().Equal("name", "inputs");
@@ -483,7 +593,7 @@ public class UnionVariantTests
 		sort.EnumValues.Should().BeEmpty("the literals move into the One of row");
 		sort.Union!.Badges.Select(b => b.Text).Should().Equal("asc", "desc");
 		sort.Union.MoreOptions.Should().Be("or an object listed below");
-		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("{ order, missing }");
+		sort.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("SortObject");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, new ApiPropertyList([sort]), "/api/doc/fixture");
 		markdown.ToString().Should().Contain("One of: `asc` or `desc` or an object listed below").And.NotContain("Values:");
@@ -494,7 +604,7 @@ public class UnionVariantTests
 
 		var rank = list.Items.Single(p => p.Name == "rank");
 		rank.Union!.MoreOptions.Should().Be("or a type listed below", "the list below holds integer as well as the object");
-		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "{ order, missing }");
+		rank.Children.Variants!.Variants.Select(v => v.DisplayName).Should().Equal("integer", "SortObject");
 	}
 
 	[Test]
@@ -878,7 +988,7 @@ public class UnionVariantTests
 		var container = variants.Single(v => v.DisplayName == "Query");
 		container.PageUrl.Should().NotBeNullOrEmpty();
 		container.Properties.Should().BeNull("QueryContainer has its own page");
-		variants.Single(v => v.DisplayName == "{ template }").Properties!.Items.Select(p => p.Name).Should().Equal("template");
+		variants.Single(v => v.DisplayName == "RoleTemplateQuery").Properties!.Items.Select(p => p.Name).Should().Equal("template");
 	}
 
 	[Test]

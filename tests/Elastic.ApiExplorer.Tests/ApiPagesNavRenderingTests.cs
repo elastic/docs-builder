@@ -291,8 +291,13 @@ public partial class ApiPagesNavRenderingTests
 			"Elasticsearch API",
 			IconSvg: null,
 			[
-				new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true, IconSvg: null),
-				new("Kibana", "/api/doc/kibana/", Selected: false, IconSvg: null)
+				new(
+					Title: null,
+					[
+						new("Elasticsearch", "/api/doc/elasticsearch/", Selected: true, IconSvg: null),
+						new("Kibana", "/api/doc/kibana/", Selected: false, IconSvg: null)
+					]
+				)
 			],
 			HubUrl: "/api/",
 			versions ?? [],

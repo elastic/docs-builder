@@ -86,7 +86,7 @@ public class WarnsOnOldSyntax : MarkdownTest
 	public async Task WarnsOnBadSyntax() => await Docs.HasWarning("Applies block does not use valid yaml keys: :hosted");
 }
 
-public class WarnsOnInvalidKeys : MarkdownTest
+public class ErrorsOnInvalidKeys : MarkdownTest
 {
 	protected override string Markdown => """
 		```{applies_to}
@@ -94,9 +94,6 @@ public class WarnsOnInvalidKeys : MarkdownTest
 		```
 		""";
 
-	[Test, DisplayName("has no errors")]
-	public async Task HasNoErrors() => await Docs.HasNoErrors();
-
-	[Test, DisplayName("warns on bad syntax")]
-	public async Task WarnsOnBadSyntax() => await Docs.HasWarning("Applies block does not support the following keys: hosted");
+	[Test, DisplayName("errors on unknown key")]
+	public async Task ErrorsOnUnknownKey() => await Docs.HasError("Unknown key 'hosted' in applies_to.");
 }

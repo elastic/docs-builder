@@ -525,6 +525,25 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		ChangelogPrEvaluationService.ContentReferencesPr(content, "42").Should().Be(expected);
 
 	[Test]
+	public async Task EvaluatePr_WithImpliedProducts_OutputsTheImpliedProductsToo()
+	{
+		await WriteMinimalConfig(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			ConfigWithProducts + "\nproducts:\n  implies:\n    cloud-hosted: [cloud-serverless]\n"
+		);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prLabels: [">enhancement", "@Product:ECH"],
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("products", "cloud-hosted, cloud-serverless");
+	}
+
+	[Test]
 	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);

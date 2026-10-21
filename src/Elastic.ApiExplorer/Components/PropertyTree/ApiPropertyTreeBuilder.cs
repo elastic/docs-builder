@@ -70,15 +70,20 @@ public partial class ApiPropertyTreeBuilder(
 		ApplicableTo? AppliesTo,
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null,
-		string? OptionalRoute = null
+		string? OptionalRoute = null,
+		string? Example = null
 	);
 
-	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
-	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
+	/// <summary>Builds the property rows for a schema, <paramref name="leadingProperty"/> first; null when it has no renderable properties.</summary>
+	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope, string? leadingProperty = null)
 	{
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
-		var propArray = properties.Where(p => p.Value is not null && IsListed(p.Value, scope)).ToArray();
+		// A union variant lists the property that selects it first, so the choice is the first thing its fields say.
+		var propArray = properties
+			.Where(p => p.Value is not null && IsListed(p.Value, scope))
+			.OrderBy(p => p.Key != leadingProperty)
+			.ToArray();
 		if (propArray.Length == 0)
 			return null;
 
@@ -120,7 +125,8 @@ public partial class ApiPropertyTreeBuilder(
 				Description = description,
 				IsDeprecated = parameter.Deprecated,
 				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
-				OptionalRoute = routeWithout
+				OptionalRoute = routeWithout,
+				Example = ParameterExample.Pick(parameter, _analyzer.ResolveSchema(schema) ?? schema, _analyzer.GetEnumValues(schema))
 			};
 			items.Add(BuildProperty(row, scope));
 		}
@@ -129,16 +135,13 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>
-	/// The schema a parameter's row describes. A path parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
-	/// resolved union, so its type reads <c>X | X[]</c>; query and body rows keep the wrapper's name.
+	/// The schema a parameter's row describes. A parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
+	/// resolved union, so its type reads <c>X | X[]</c> instead of the wrapper's name.
 	/// </summary>
 	private IOpenApiSchema RowSchema(IOpenApiParameter parameter)
 	{
 		if (parameter.Schema is not { } schema)
 			return new OpenApiSchema();
-		if (parameter.In != ParameterLocation.Path)
-			return schema;
-
 		var resolved = _analyzer.ResolveSchema(schema);
 		return resolved is not null
 			&& !ReferenceEquals(resolved, schema)
@@ -224,7 +227,7 @@ public partial class ApiPropertyTreeBuilder(
 		return constraints;
 	}
 
-	private static string? Format(IOpenApiSchema schema)
+	internal static string? Format(IOpenApiSchema schema)
 	{
 		if (!string.IsNullOrWhiteSpace(schema.Format))
 			return schema.Format;
@@ -305,6 +308,7 @@ public partial class ApiPropertyTreeBuilder(
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			OptionalRoute = row.OptionalRoute,
+			Example = row.Example,
 			Requires = DescribeRequiredAlternatives(propSchema),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.

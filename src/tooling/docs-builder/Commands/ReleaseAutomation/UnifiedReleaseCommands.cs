@@ -5,11 +5,14 @@
 using System.IO.Abstractions;
 using System.Text.Json;
 using Actions.Core.Services;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.ReleaseSchedule;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -18,7 +21,7 @@ using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
@@ -80,6 +83,15 @@ internal sealed class UnifiedReleaseCommands(
 	/// Limit the run to these products (repeatable). Every product with <c>release-notes: dra</c> is bundled by default.
 	/// Use it to bundle only the products that have a changelog entry pool, or to try one product.
 	/// </param>
+	/// <param name="strict">
+	/// Fail when a product is not onboarded. By default a product without a <c>changelog.yml</c>, a bundle profile,
+	/// or a changelog entry pool is skipped with a warning. A product named with <c>--products</c> always fails.
+	/// </param>
+	/// <param name="cacheDir">
+	/// Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the
+	/// application data of docs-builder. Anything unused for 30 days is dropped.
+	/// </param>
+	/// <param name="noCache">Do not read or write the cache of commit ranges.</param>
 	/// <param name="changelogConfigs">
 	/// Optional directory of prototype <c>&lt;product-id&gt;.changelog.yml</c> files. When present,
 	/// a product's local file takes precedence over the file fetched from GitHub, allowing teams to
@@ -92,6 +104,9 @@ internal sealed class UnifiedReleaseCommands(
 		[ExpandUserProfile] DirectoryInfo? outputDir = null,
 		[ExpandUserProfile] DirectoryInfo? changelogConfigs = null,
 		string[]? products = null,
+		bool strict = false,
+		[ExpandUserProfile] DirectoryInfo? cacheDir = null,
+		bool noCache = false,
 		CancellationToken ctx = default
 	)
 	{
@@ -143,7 +158,16 @@ internal sealed class UnifiedReleaseCommands(
 		using var http = new HttpClient();
 		http.DefaultRequestHeaders.UserAgent.ParseAdd("docs-builder/1.0");
 
-		var bundleService = new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
+		// A range holds hundreds of pull requests. Their decisions are logged in batches, not one line each.
+		using var decisions = new DecisionLog(_logger);
+		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
+		var productBundler = new UnifiedProductBundler(
+			new ChangelogBundlingService(logFactory, fileSystem, configurationContext, decisions: decisions, cache: cache),
+			http,
+			new FileSystem(),
+			_logger,
+			collector
+		);
 
 		var targets = await ResolveTargetsAsync(http, versionOrKeyword, ctx);
 		if (targets is null)
@@ -206,6 +230,7 @@ internal sealed class UnifiedReleaseCommands(
 			return 1;
 		}
 
+		var skipped = new List<string>();
 		foreach (var (target, previous, plan) in planned)
 		{
 			foreach (var id in plan.Unchanged)
@@ -229,13 +254,30 @@ internal sealed class UnifiedReleaseCommands(
 				var productOutput = Path.Combine(rootOutput.FullName, range.ProductId);
 				_ = Directory.CreateDirectory(productOutput);
 
-				var result = await BundleProductAsync(http, bundleService, range, productOutput, changelogConfigs?.FullName, ctx);
-				if (result != 0)
-					return result;
+				var requested = products?.Contains(range.ProductId, StringComparer.OrdinalIgnoreCase) ?? false;
+				var outcome = await productBundler.BundleAsync(range, productOutput, changelogConfigs?.FullName, strict || requested, ctx);
+				decisions.Flush();
+				if (cache is not null)
+					await cache.SaveAsync(ctx);
+				if (outcome == ProductBundleOutcome.Failed)
+					return 1;
+
+				if (outcome == ProductBundleOutcome.Skipped)
+				{
+					skipped.Add($"{range.ProductId}@{target.Version}");
+					continue;
+				}
 
 				_logger.LogInformation("Bundled '{Product}' @ {Version} successfully.", range.ProductId, target.Version);
 			}
 		}
+
+		if (skipped.Count > 0)
+			_logger.LogWarning(
+				"{Count} product(s) are not onboarded to changelogs and were skipped: {Products}",
+				skipped.Count,
+				string.Join(", ", skipped)
+			);
 
 		return 0;
 	}
@@ -246,8 +288,9 @@ internal sealed class UnifiedReleaseCommands(
 	/// <remarks>
 	/// <para>
 	/// The docset is created in memory from <c>products.yml</c>. Every product with
-	/// <c>features.release-notes: dra</c> gets a release notes, known issues, breaking changes and
-	/// deprecations page. No documentation folder is needed.
+	/// <c>features.release-notes: dra</c> gets a page per version at <c>/{product}/{version}</c>,
+	/// with known issues, breaking changes, and deprecations nested under that version.
+	/// No documentation folder is needed.
 	/// </para>
 	/// <para>
 	/// The command resolves the argument like <c>release unified bundle</c>. A product without bundles is left
@@ -418,78 +461,6 @@ internal sealed class UnifiedReleaseCommands(
 					+ $"so the range of the release notes for {target.Version} has no start.";
 			_logger.LogError("{Message}", message);
 			collector.EmitError(string.Empty, message);
-		}
-	}
-
-	private async Task<int> BundleProductAsync(
-		HttpClient http,
-		ChangelogBundlingService bundleService,
-		ProductBundleRange range,
-		string outputDirectory,
-		string? changelogConfigsDir,
-		CancellationToken ctx
-	)
-	{
-		var (productId, repoKey, _, _, commitHash) = range;
-		var resolver = new ChangelogConfigResolver(http, new FileSystem(), _logger, collector);
-		var config = await resolver.ResolveAsync(productId, repoKey, commitHash, changelogConfigsDir, ctx);
-		if (config.Failed)
-			return 1;
-
-		var changelogYaml = config.Content;
-		if (changelogYaml is null)
-		{
-			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) has no changelog.yml — "
-				+ "add docs/changelog.yml or changelog.yml to the repository, or provide a prototype in --changelog-configs.";
-			_logger.LogError("{Message}", msg);
-			collector.EmitError(string.Empty, msg);
-			return 1;
-		}
-
-		IReadOnlyList<string> profiles;
-		try
-		{
-			profiles = ChangelogConfigurationLoader.ReadBundleProfileNames(changelogYaml);
-		}
-		catch (YamlException ex)
-		{
-			var msg = $"Product '{productId}' changelog.yml is not valid YAML: {ex.Message}";
-			_logger.LogError("{Message}", msg);
-			collector.EmitError(string.Empty, msg);
-			return 1;
-		}
-
-		if (profiles.Count == 0)
-		{
-			var msg = $"Product '{productId}' (repo: elastic/{repoKey}@{commitHash[..8]}) changelog.yml has no bundle.profiles section. "
-				+ "Add a bundle profile to the changelog.yml to opt into DRA bundling.";
-			_logger.LogError("{Message}", msg);
-			collector.EmitError(string.Empty, msg);
-			return 1;
-		}
-
-		var profileName = profiles[0];
-		if (profiles.Count > 1)
-			_logger.LogWarning(
-				"'{Product}' changelog.yml has {Count} profiles; using the first: '{Profile}'",
-				productId,
-				profiles.Count,
-				profileName
-			);
-
-		var tempConfig = Path.Combine(outputDirectory, $"changelog-config-{repoKey}-{commitHash[..8]}.yml");
-		await File.WriteAllTextAsync(tempConfig, changelogYaml, ctx);
-
-		try
-		{
-			var arguments = UnifiedBundleArguments.Create(range, profileName, tempConfig, outputDirectory);
-
-			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
-			return success ? 0 : 1;
-		}
-		finally
-		{
-			File.Delete(tempConfig);
 		}
 	}
 

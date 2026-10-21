@@ -154,7 +154,7 @@ specs per product are not currently supported.
 
 On assembler builds a bar under the site header says which API you are reading: `[logo] Elasticsearch API ⇅ [main ▾]`. The API name opens a switcher that lists every API whose spec loaded (each with its logo, plus an **All APIs** link back to the catalog), and the version picker sits right beside it. Each switcher row uses that spec's title (`info.title`), the same text as the landing page heading. On the right, the **Download OpenAPI spec** button downloads the whole spec as JSON or YAML; on narrow screens it shows only its icon. The page itself starts with the full breadcrumb, which begins at Docs. The bar looks the same whether or not `navigation-preview` is on. The catalog page has no API, so it has no bar.
 
-The left navigation starts with a **Find in all APIs** box. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
+The left navigation starts with a finder, labelled **Press ❲/❳ to find API**. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Press <kbd>/</kbd> anywhere on the page, outside a text field, to jump to the box, as on GitHub. The shortcut is off on narrow screens, where the navigation sits in a drawer. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
 
 ## Remote spec resolution
 
@@ -305,7 +305,22 @@ A map (`additionalProperties`) reads as `map string to X`, whether it's inline o
 
 A request body leaves out `readOnly` fields, because only the server sets them, and a response leaves out `writeOnly` fields, because only the client sends them. Schema type pages list both.
 
+A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
+
+Each section is a collapsible heading, folded by default. Its summary punctuation says what the names are:
+
+| Summary | Meaning |
+|---|---|
+| `{ a, b }` | The fields of a JSON request body |
+| `A \| B` | Alternatives, such as the variants of a `oneOf` or the credentials of **Authentication** |
+| `A + B` | Needed together, such as the privileges in **Required authorization** |
+| `a, b` | Anything else, such as parameters or the fields of a form |
+
+The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the folded section, which then opens. This relies on `hidden="until-found"`: in a browser without it, the folded sections can't be searched.
+
 Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
+
+A parameter row shows an **Example** line when its `example`, its `examples` or its schema's `example` says something the type doesn't. The line is left out when the example is a boolean (including `"true"` as text), a bare number, a value the **Values** row already lists, the default, or longer than 60 characters. The picked example is the first of `example`, `examples` and the schema's `example` that passes those checks.
 
 The variants of a `oneOf` or `anyOf` are labelled by the first of these that applies:
 
@@ -383,7 +398,7 @@ The paths come from either of two sources, and both produce the same rows:
 
 ### Required authorization [x-req-auth]
 
-The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. The section is never collapsed.
+The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is folded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
 
 Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 

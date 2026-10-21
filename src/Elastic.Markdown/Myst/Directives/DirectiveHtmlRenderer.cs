@@ -41,7 +41,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -272,7 +272,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
-			Intro = block.Intro,
+			IntroHtml = RenderInlineMarkdown(block.Intro),
 			Anchor = block.Anchor,
 			Variant = block.Variant,
 			IsAccordion = explore is not null,
