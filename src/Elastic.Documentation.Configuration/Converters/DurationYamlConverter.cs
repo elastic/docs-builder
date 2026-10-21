@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Converters;
 
@@ -18,20 +17,20 @@ namespace Elastic.Documentation.Configuration.Converters;
 /// This converter is intentionally restrictive: minutes is the largest unit to keep operator intent
 /// clear and to prevent accidentally setting very long timeouts.
 /// </remarks>
-public class DurationYamlConverter : IYamlTypeConverter
+public class DurationYamlConverter : YamlConverter<TimeSpan?>
 {
-	public bool Accepts(Type type) => type == typeof(TimeSpan?) || type == typeof(TimeSpan);
-
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override TimeSpan? Read(YamlReader reader)
 	{
-		if (parser.Current is not Scalar scalar)
+		if (reader.TokenType != YamlTokenType.Scalar)
 		{
-			_ = parser.MoveNext();
+			reader.Skip();
 			return null;
 		}
 
-		var value = scalar.Value;
-		_ = parser.MoveNext();
+		var value = reader.ScalarValue;
+		var start = reader.Start;
+		var end = reader.End;
+		_ = reader.Read();
 
 		if (string.IsNullOrWhiteSpace(value))
 			return null;
@@ -43,20 +42,21 @@ public class DurationYamlConverter : IYamlTypeConverter
 			return TimeSpan.FromSeconds(seconds);
 
 		throw new YamlException(
-			scalar.Start,
-			scalar.End,
+			reader.SourceName,
+			start,
+			end,
 			$"Invalid duration '{value}'. Expected a positive integer followed by 's' (seconds) or 'm' (minutes), e.g. '30s' or '15m'."
 		);
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+	public override void Write(YamlWriter writer, TimeSpan? value)
 	{
-		if (value is TimeSpan ts)
+		if (value is { } ts)
 		{
 			var text = ts.TotalMinutes >= 1 && ts.TotalMinutes % 1 == 0 ? $"{(int)ts.TotalMinutes}m" : $"{(int)ts.TotalSeconds}s";
-			emitter.Emit(new Scalar(text));
+			writer.WriteScalar(text);
 		}
 		else
-			emitter.Emit(new Scalar(""));
+			writer.WriteScalar("");
 	}
 }

@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.Codex.Group.GroupLandingViewModel>
+@using System.Linq
+@using Elastic.Codex.Landing
+@using Elastic.Codex.Navigation
+@implements IUsesLayout<Elastic.Codex._GroupLayout, GlobalLayoutViewModel>
+@functions {
+	public GlobalLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel(
+		codexBreadcrumbs: [new CodexBreadcrumb("Home", Model.BuildContext.SiteRootPath ?? "/"), new CodexBreadcrumb(Model.Group.DisplayTitle, Model.Group.Url)]);
+}
+@await RenderPartialAsync(_DesignSystemCodexGroupBody.Create(new CodexGroupContent(
+	Model.Group.DisplayTitle,
+	Model.Group.Description,
+	[.. Model.DocumentationSets.OrderBy(ds => ds.Title).Select(CodexCardModel.FromDocumentationSet)])))

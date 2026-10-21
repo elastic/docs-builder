@@ -135,16 +135,13 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>
-	/// The schema a parameter's row describes. A path parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
-	/// resolved union, so its type reads <c>X | X[]</c>; query and body rows keep the wrapper's name.
+	/// The schema a parameter's row describes. A parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
+	/// resolved union, so its type reads <c>X | X[]</c> instead of the wrapper's name.
 	/// </summary>
 	private IOpenApiSchema RowSchema(IOpenApiParameter parameter)
 	{
 		if (parameter.Schema is not { } schema)
 			return new OpenApiSchema();
-		if (parameter.In != ParameterLocation.Path)
-			return schema;
-
 		var resolved = _analyzer.ResolveSchema(schema);
 		return resolved is not null
 			&& !ReferenceEquals(resolved, schema)
@@ -298,7 +295,9 @@ public partial class ApiPropertyTreeBuilder(
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && row.IsDeprecated,
-			Availability = options.ShowVersionInfo ? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration) : null,
+			Availability = options.ShowVersionInfo
+				? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration, designSystem: options.DesignSystem)
+				: null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.

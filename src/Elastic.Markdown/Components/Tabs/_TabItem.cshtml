@@ -1,0 +1,4 @@
+@inherits RazorSlice<Elastic.Markdown.Components.Tabs.TabItemModel>
+<input class="tab-set__input" type="radio" id="@Model.Id" name="tabs-set-@Model.SetIndex"@(Model.Index == 0 ? new HtmlString(" checked") : HtmlString.Empty)>
+<label class="tab-set__tab" for="@Model.Id"@(Model.SyncKey is { Length: > 0 } key && Model.SyncGroup is { Length: > 0 } group ? new HtmlString($" data-tab-sync-key=\"{System.Net.WebUtility.HtmlEncode(key)}\" data-tab-sync-group=\"{System.Net.WebUtility.HtmlEncode(group)}\"") : HtmlString.Empty)>@Model.Title</label>
+<div class="tab-set__panel" tabindex="0">@Model.Body</div>

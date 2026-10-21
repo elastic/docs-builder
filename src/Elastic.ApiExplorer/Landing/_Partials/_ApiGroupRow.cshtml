@@ -5,7 +5,22 @@
 }
 <li>
 	<a class="api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
-		<span class="api-overview-title">@row.Title</span>
+		<span class="api-group-heading">
+			<span class="api-overview-title">@row.Title</span>
+			@if (row.Availability is not null || row.Deprecated)
+			{
+				<span class="api-title-badges">
+					@if (row.Availability is { } availability)
+					{
+						<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
+					}
+					@if (row.Deprecated)
+					{
+						<span class="deprecated-badge type-status">deprecated</span>
+					}
+				</span>
+			}
+		</span>
 		<div class="api-group-routes">
 			@switch (row.Kind)
 			{

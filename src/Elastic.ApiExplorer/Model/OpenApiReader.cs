@@ -8,8 +8,8 @@ using System.Text.Json;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
-using YamlDotNet.Core;
-using YamlDotNet.RepresentationModel;
+using SharpYaml;
+using SharpYaml.Model;
 
 namespace Elastic.ApiExplorer.Model;
 
@@ -22,9 +22,9 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	private OpenApiReader() { }
 
 	private static bool SupportsSpecFileName(string specFileName) =>
-		Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
+		System.IO.Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
 
-	private static bool IsJsonFileName(string specFileName) => Path.GetExtension(specFileName).ToLowerInvariant() is ".json";
+	private static bool IsJsonFileName(string specFileName) => System.IO.Path.GetExtension(specFileName).ToLowerInvariant() is ".json";
 
 	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification, IDiagnosticsCollector? collector = null)
 	{
@@ -44,7 +44,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	/// </summary>
 	/// <remarks>
 	/// JSON specs are passed directly to Microsoft.OpenApi. YAML specs (.yaml / .yml) are first parsed
-	/// by YamlDotNet and re-serialized to JSON because Microsoft.OpenApi accepts JSON only.
+	/// by SharpYaml and re-serialized to JSON because Microsoft.OpenApi accepts JSON only.
 	/// Microsoft.OpenApi auto-detects the spec version from the root <c>openapi</c> / <c>swagger</c>
 	/// property, so both OpenAPI 3.x and Swagger 2.0 documents are supported.
 	/// </remarks>
@@ -122,10 +122,9 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	private static async Task<MemoryStream> ParseYamlToJsonStreamAsync(Stream specStream)
 	{
 		using var reader = new StreamReader(specStream, leaveOpen: false);
-		var yaml = new YamlStream();
-		yaml.Load(reader);
+		var yaml = YamlStream.Load(reader);
 
-		var root = yaml.Documents[0].RootNode ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
+		var root = yaml[0].Contents ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
 
 		var jsonStream = new MemoryStream();
 		await using (var jsonWriter = new Utf8JsonWriter(jsonStream))
@@ -135,24 +134,24 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		return jsonStream;
 	}
 
-	private static void WriteYamlNode(Utf8JsonWriter writer, YamlNode node)
+	private static void WriteYamlNode(Utf8JsonWriter writer, YamlElement? node)
 	{
 		switch (node)
 		{
-			case YamlScalarNode scalar:
+			case YamlValue scalar:
 				WriteScalar(writer, scalar);
 				break;
-			case YamlSequenceNode sequence:
+			case YamlSequence sequence:
 				writer.WriteStartArray();
-				foreach (var child in sequence.Children)
+				foreach (var child in sequence)
 					WriteYamlNode(writer, child);
 				writer.WriteEndArray();
 				break;
-			case YamlMappingNode mapping:
+			case YamlMapping mapping:
 				writer.WriteStartObject();
-				foreach (var (keyNode, valueNode) in mapping.Children)
+				foreach (var (keyNode, valueNode) in mapping)
 				{
-					writer.WritePropertyName(keyNode.ToString());
+					writer.WritePropertyName(keyNode is YamlValue keyScalar ? keyScalar.Value ?? string.Empty : keyNode.ToString());
 					WriteYamlNode(writer, valueNode);
 				}
 				writer.WriteEndObject();
@@ -163,7 +162,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		}
 	}
 
-	private static void WriteScalar(Utf8JsonWriter writer, YamlScalarNode scalar)
+	private static void WriteScalar(Utf8JsonWriter writer, YamlValue scalar)
 	{
 		var value = scalar.Value;
 		if (value is null)
