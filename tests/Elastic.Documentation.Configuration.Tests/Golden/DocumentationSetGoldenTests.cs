@@ -77,11 +77,23 @@ public class DocumentationSetGoldenTests
 	private static Diagnostic NormalizeDocsRoot(Diagnostic d) =>
 		d with
 		{
-			File = d.File.Replace(DocsRoot, "<docs>", StringComparison.Ordinal),
-			Message = d.Message.Replace(DocsRoot + "/", "<docs>/", StringComparison.Ordinal)
+			File = Rel(d.File),
+			Message = System
+				.Text
+				.RegularExpressions
+				.Regex
+				.Replace(d.Message.Replace('\\', '/'), "[A-Za-z]:(?=" + DocsRoot + "/)", "")
+				.Replace(DocsRoot + "/", "<docs>/", StringComparison.Ordinal)
 		};
 
-	private static string Rel(string path) => path.Replace(DocsRoot, "<docs>", StringComparison.Ordinal);
+	// the mock file system roots '/docs' at a drive on Windows ('C:/docs'): the snapshot is the same on every platform
+	private static string Rel(string path) =>
+		System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Replace(path.Replace('\\', '/'), "^[A-Za-z]:(?=/)", "")
+			.Replace(DocsRoot, "<docs>", StringComparison.Ordinal);
 
 	// ── docset.yml + toc.yml tree ────────────────────────────────────────────
 
