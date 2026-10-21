@@ -5,7 +5,7 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -115,7 +115,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = ChangelogTextUtilities.CapitalizeFirstLetter(tagName);
+			var displayName = tagName.CapitalizeFirstLetter();
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;

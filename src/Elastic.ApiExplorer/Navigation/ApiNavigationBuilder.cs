@@ -12,8 +12,8 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
-using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi;
 
@@ -103,7 +103,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 				}
 				var tagName = tagGroup.Key ?? "unknown";
 				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
-					tagMeta = new OpenApiTagMetadata(ChangelogTextUtilities.CapitalizeFirstLetter(tagName), string.Empty, null);
+					tagMeta = new OpenApiTagMetadata(tagName.CapitalizeFirstLetter(), string.Empty, null);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
 					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
 
