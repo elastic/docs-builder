@@ -104,6 +104,23 @@ public class ReaderTests
 	}
 
 	[Test]
+	public async Task ReadsYamlSpec_WithQuotedPathKeys()
+	{
+		// Quoted mapping keys ('/path/{id}') must reach Microsoft.OpenApi as the bare path, not as the
+		// quoted YAML representation, otherwise every path is rejected as "not a valid property".
+		const string yaml =
+			"openapi: 3.0.3\ninfo:\n  title: Quoted\n  version: '1'\npaths:\n  '/items/{item_id}':\n    get:\n      responses:\n        '200':\n          description: ok\n";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml", collector);
+
+		document.Should().NotBeNull();
+		document!.Paths.Should().ContainKey("/items/{item_id}");
+		collector.Errors.Should().Be(0);
+	}
+
+	[Test]
 	[Arguments("ece-template-host.json")]
 	[Arguments("ece-template-host.yaml")]
 	public async Task ReadsSwagger20WithTemplateHost_EmitsHintNotError(string fixture)

@@ -33,7 +33,7 @@ public class MarkerResolutionTests
 		""";
 
 	private static ChangelogEntryMatcher BuildMatcher() =>
-		new(new MockFileSystem(), ReleaseNotesSerialization.GetEntryDeserializer(), NullLogger.Instance);
+		new(new MockFileSystem(), ReleaseNotesSerialization.GetEntryDeserializerOptions(), NullLogger.Instance);
 
 	private static ChangelogFilterCriteria AllEntries() =>
 		new() { IncludeAll = true, ProductFilters = [], PrsToMatch = [], IssuesToMatch = [] };

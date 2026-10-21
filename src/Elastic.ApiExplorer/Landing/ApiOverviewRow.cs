@@ -2,11 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 
 namespace Elastic.ApiExplorer.Landing;
 
@@ -29,6 +32,11 @@ public record ApiOverviewRow
 	/// <summary>Merged method and route rows of an operation row.</summary>
 	public OperationEndpoint? Endpoint { get; init; }
 
+	/// <summary>The lifecycle badge of an operation row (beta, preview, ...) without its popover: the row is a link, and a tap on the badge must follow it.</summary>
+	public ApplicableToViewModel? Availability { get; init; }
+
+	public bool Deprecated { get; init; }
+
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
 }
@@ -43,10 +51,10 @@ public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyLi
 public static class ApiOverviewBuilder
 {
 	/// <summary>Rows for the product landing page: the full navigation tree.</summary>
-	public static IReadOnlyList<ApiOverviewRow> Build(INavigationItem root)
+	public static IReadOnlyList<ApiOverviewRow> Build(INavigationItem root, VersionsConfiguration? versionsConfig)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddProductRows(root, rows);
+		AddProductRows(root, rows, versionsConfig);
 		return rows;
 	}
 
@@ -105,14 +113,14 @@ public static class ApiOverviewBuilder
 		row.Kind is OverviewRowKind.ClassificationHeading or OverviewRowKind.TagHeading or OverviewRowKind.SchemaCategoryHeading;
 
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
-	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(INavigationItem tagItem)
+	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(INavigationItem tagItem, VersionsConfiguration? versionsConfig)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddTagRows(tagItem, rows);
+		AddTagRows(tagItem, rows, versionsConfig);
 		return rows;
 	}
 
-	private static void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows)
+	private static void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows, VersionsConfiguration? versionsConfig)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
@@ -123,18 +131,18 @@ public static class ApiOverviewBuilder
 			{
 				case ClassificationNavigationItem classification:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.ClassificationHeading, Title = classification.NavigationTitle });
-					AddProductRows(classification, rows);
+					AddProductRows(classification, rows, versionsConfig);
 					break;
 				case TagNavigationItem tag:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
-					AddProductRows(tag, rows);
+					AddProductRows(tag, rows, versionsConfig);
 					break;
 				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation));
+					rows.Add(OperationRow(operation, versionsConfig));
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
-					AddProductRows(schemaCategory, rows);
+					AddProductRows(schemaCategory, rows, versionsConfig);
 					break;
 				case SchemaNavigationItem schemaItem:
 					rows.Add(new ApiOverviewRow
@@ -170,7 +178,7 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static void AddTagRows(INavigationItem item, List<ApiOverviewRow> rows)
+	private static void AddTagRows(INavigationItem item, List<ApiOverviewRow> rows, VersionsConfiguration? versionsConfig)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
@@ -180,7 +188,7 @@ public static class ApiOverviewBuilder
 			switch (navigationItem)
 			{
 				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation));
+					rows.Add(OperationRow(operation, versionsConfig));
 					break;
 				case IntroHeadingNavigationItem:
 					break;
@@ -190,12 +198,14 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static ApiOverviewRow OperationRow(OperationNavigationItem operation) =>
+	private static ApiOverviewRow OperationRow(OperationNavigationItem operation, VersionsConfiguration? versionsConfig) =>
 		new()
 		{
 			Kind = OverviewRowKind.Operation,
 			Title = operation.NavigationTitle,
 			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
-			Url = operation.Url
+			Url = operation.Url,
+			Availability = AvailabilityBadge.FromOperation(operation.Model.Operation, versionsConfig, showTooltip: false),
+			Deprecated = operation.Model.Operation.Deprecated
 		};
 }

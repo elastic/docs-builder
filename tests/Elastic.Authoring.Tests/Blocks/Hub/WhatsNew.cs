@@ -214,3 +214,38 @@ public class WhatsNewFromCentralConfigOnTwoPages : GeneratorTest
 	[Test, DisplayName("resolves the substitution again on the second page")]
 	public async Task SecondPage() => await Docs.Converts("second.md").ContainsRawHtml("2.0 &#xB7; Serverless");
 }
+
+// Every documentation set in these tests reads hub-whats-new.yml from the same path, and the parse is
+// cached per path across builds (e.g. --watch). The cache is keyed by the file's content, so a file
+// that changed, here one that differs from the file in the test above, is parsed again instead of
+// replaying the earlier result.
+public class WhatsNewFromCentralConfigThatChanged : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			new TestFile(
+				"hub-whats-new.yml",
+				"""
+				products:
+				  demo:
+				    title: Changed panel
+				    items:
+				      - title: Card
+				        description: A card.
+				"""
+			),
+			Index("""
+				# First
+
+				:::{whats-new}
+				:product: demo
+				:::
+				""")
+		];
+
+	[Test, DisplayName("renders the current content of the file")]
+	public async Task RendersCurrentContent() => await Docs.Converts("index.md").ContainsRawHtml(">Changed panel</h2>");
+
+	[Test]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}

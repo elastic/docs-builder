@@ -11,7 +11,7 @@ using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig.Helpers;
 using Markdig.Parsers;
 using Markdig.Syntax;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.CodeBlocks;
 
@@ -139,7 +139,11 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		try
 		{
-			var entries = YamlSerialization.Deserialize<List<ContributorEntry>>(yaml, contributorsBlock.Build.ProductsConfiguration);
+			var entries = YamlSerialization.Deserialize<List<ContributorEntry>>(
+				yaml,
+				contributorsBlock.Build.ProductsConfiguration,
+				contributorsBlock.YamlReporting()
+			);
 			contributorsBlock.ResolveContributors(entries, context);
 		}
 		catch (YamlException e)

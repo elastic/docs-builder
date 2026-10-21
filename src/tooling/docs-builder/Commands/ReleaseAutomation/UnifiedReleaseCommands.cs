@@ -21,7 +21,7 @@ using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 

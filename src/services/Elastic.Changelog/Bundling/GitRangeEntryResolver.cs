@@ -12,7 +12,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -38,12 +38,6 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
-
-	/// <summary>
-	/// Products applied to every entry synthesized from PR metadata, replacing label-derived and
-	/// <see cref="FallbackProducts"/> products. Label-derived products still drive label blockers.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -279,7 +273,11 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
 			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				normalized,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),
@@ -345,14 +343,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 
-			// Two or more mapped products and no default: the pull request must name its product with a label,
-			// unless the caller sets the entry products itself.
-			if (
-				labelProducts.Count == 0
-				&& options.EntryProducts is not { Count: > 0 }
-				&& ProductResolution.Defaults(config).Count == 0
-				&& ProductResolution.RequiresProductLabel(config)
-			)
+			// Two or more mapped products and no default: the pull request must name its product with a label.
+			if (labelProducts.Count == 0 && ProductResolution.Defaults(config).Count == 0 && ProductResolution.RequiresProductLabel(config))
 			{
 				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
 				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
@@ -380,7 +372,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			allowMatchingMetadataAttribute: true
 		) ? parsedType : ChangelogEntryType.Other;
 
-		var products = ResolveProducts(collector, pr, resolvedProducts, options);
+		var products = ResolveProducts(collector, pr, resolvedProducts);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
@@ -453,19 +445,15 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: the explicit entry products when set; otherwise the products resolved from the
-	/// configuration. Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
+	/// Products for a synthesized entry: the products resolved from the configuration. Returns null after emitting an
+	/// error when none applies — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
-		IReadOnlyList<ProductArgument> resolvedProducts,
-		GitRangeEntryResolutionOptions options
+		IReadOnlyList<ProductArgument> resolvedProducts
 	)
 	{
-		if (options.EntryProducts is { Count: > 0 })
-			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
-
 		if (resolvedProducts.Count == 0)
 		{
 			collector.EmitError(

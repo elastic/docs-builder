@@ -475,8 +475,23 @@
 	text-underline-offset: 2px;
 }
 
-.api-group-row .api-overview-title {
+.api-group-heading {
 	grid-area: title;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 8px;
+	row-gap: 4px;
+	min-width: 0;
+}
+
+.api-group-heading .api-title-badges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.api-group-row .api-overview-title {
 	color: inherit;
 	font-size: 16px;
 	font-weight: 600;
@@ -1999,13 +2014,6 @@ a.docs-reference-btn::after {
 	font-size: 0.85em;
 }
 
-/* Dictionary/map type icon - same color as object icon */
-.dict-icon {
-	@apply text-grey-60 font-normal;
-	font-size: 1.2em;
-	font-variant: small-caps;
-}
-
 /* Enum type icon - purple to match enum values */
 .enum-icon {
 	@apply text-purple-70 font-normal;
@@ -2351,7 +2359,7 @@ a.docs-reference-btn::after {
 	code:not(pre > code):not(.enum-value):not(.schema-type):not(
 		.union-type-option
 	),
-.example-description :not(pre) > code,
+.api-example-caption :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -2867,13 +2875,19 @@ button.example-response-tab:focus-visible {
 
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto auto;
+	}
+
+	/* Feedback spans both columns so it ends the page, below the article and the examples rail. */
+	.api-page-grid > page-feedback {
+		grid-column: 1 / -1;
+		grid-row: 2;
 	}
 
 	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
 	.api-page-rail {
 		grid-column: 2;
-		grid-row: 1 / span 2;
+		grid-row: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
@@ -3076,18 +3090,6 @@ button.example-response-tab:focus-visible {
 
 .api-code-sample-body {
 	min-width: 0;
-}
-
-/* Example description - smaller font like property descriptions */
-.example-description {
-	@apply text-grey-80;
-	font-size: 0.9em;
-	line-height: 1.5;
-	margin-bottom: 0.75rem;
-
-	p {
-		margin: 0;
-	}
 }
 
 /* Sticky Examples button - bottom right of content area */
@@ -3307,6 +3309,21 @@ button.example-response-tab:focus-visible {
 	display: flex;
 	align-items: center;
 	column-gap: 14px;
+}
+
+/* The description's section headings sit under the 36px title, so they step down from it instead of matching it. */
+.api-landing .docs-measure h2 {
+	margin-top: 32px;
+	font-size: var(--text-2xl);
+}
+
+.api-landing .docs-measure h3 {
+	font-size: var(--text-xl);
+}
+
+/* The index starts after the intro with the same 32px that separates its groups. */
+.api-landing .api-overview {
+	margin-top: 32px;
 }
 
 .api-landing-icon,
@@ -3605,10 +3622,6 @@ html:has(.api-page-shell) {
 
 .api-example-caption p + p {
 	margin-top: 6px;
-}
-
-.api-example-caption :not(pre) > code {
-	font-size: 12px;
 }
 
 .api-example-caption-toggle {

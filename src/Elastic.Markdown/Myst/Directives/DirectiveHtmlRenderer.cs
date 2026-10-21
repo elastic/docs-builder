@@ -41,7 +41,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.Directives;
 

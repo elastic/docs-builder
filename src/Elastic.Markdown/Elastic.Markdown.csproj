@@ -23,10 +23,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Sep" />
+    <PackageReference Include="SharpYaml" />
     <PackageReference Include="Slugify.Core" />
     <PackageReference Include="Utf8StreamReader" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
-    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Pagefind.Net" />
