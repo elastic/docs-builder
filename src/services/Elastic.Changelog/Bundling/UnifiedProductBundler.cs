@@ -18,6 +18,9 @@ public enum ProductBundleOutcome
 
 	/// <summary>The product is not onboarded to changelogs. A warning says why, and the run goes on.</summary>
 	Skipped,
+
+	/// <summary>The commit range has no changelog entries. The product released with no notes, and the run goes on.</summary>
+	Empty,
 	Failed
 }
 
@@ -46,9 +49,9 @@ public sealed class UnifiedProductBundler(
 	{
 		var outcome = await BundleCoreAsync(range, outputDirectory, changelogConfigsDir, failWhenNotOnboarded, ctx);
 
-		// A skipped product leaves no folder behind.
+		// A product that wrote nothing leaves no folder behind.
 		if (
-			outcome == ProductBundleOutcome.Skipped
+			outcome is ProductBundleOutcome.Skipped or ProductBundleOutcome.Empty
 			&& fileSystem.Directory.Exists(outputDirectory)
 			&& !fileSystem.Directory.EnumerateFileSystemEntries(outputDirectory).Any()
 		)
@@ -114,9 +117,11 @@ public sealed class UnifiedProductBundler(
 		try
 		{
 			string? poolMissing = null;
+			var emptyRange = false;
 			var arguments = UnifiedBundleArguments.Create(range, profileName, tempConfig, outputDirectory) with
 			{
-				OnPoolMissing = failWhenNotOnboarded ? null : message => poolMissing = message
+				OnPoolMissing = failWhenNotOnboarded ? null : message => poolMissing = message,
+				OnEmptyRange = () => emptyRange = true
 			};
 
 			var success = await bundleService.BundleChangelogs(collector, arguments, ctx);
@@ -125,6 +130,9 @@ public sealed class UnifiedProductBundler(
 					$"Product '{productId}' (repo: elastic/{repoKey}): {poolMissing} Onboard the repository to the changelog workflow so its entries are uploaded.",
 					fail: false
 				);
+
+			if (emptyRange)
+				return ProductBundleOutcome.Empty;
 
 			return success ? ProductBundleOutcome.Bundled : ProductBundleOutcome.Failed;
 		}

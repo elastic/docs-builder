@@ -67,6 +67,8 @@ internal sealed class UnifiedReleaseCommands(
 	/// commit in the manifest of the target. The start is its commit in the manifest of the previous release:
 	/// the previous patch of the same minor, or the previous minor's <c>.0</c> for a <c>x.y.0</c> release.
 	/// A product whose commit is the same in both manifests has no changes and gets no bundle.
+	/// A range that resolves no changelog entries, because it has no pull requests or every pull request was excluded,
+	/// also gets no bundle. DRA products often ship a version with no user-facing changes.
 	/// The pull requests in that range come from the GitHub GraphQL API, so <c>GITHUB_TOKEN</c> must be set.
 	/// The first profile of each product's <c>changelog.yml</c> shapes the bundle and must use <c>product:</c>
 	/// or <c>output_products:</c>. A <c>products:</c> pattern cannot be combined with a commit range.
@@ -265,6 +267,16 @@ internal sealed class UnifiedReleaseCommands(
 				if (outcome == ProductBundleOutcome.Skipped)
 				{
 					skipped.Add($"{range.ProductId}@{target.Version}");
+					continue;
+				}
+
+				if (outcome == ProductBundleOutcome.Empty)
+				{
+					_logger.LogInformation(
+						"'{Product}' @ {Version} has no changelog entries in this range. The release has no notes.",
+						range.ProductId,
+						target.Version
+					);
 					continue;
 				}
 

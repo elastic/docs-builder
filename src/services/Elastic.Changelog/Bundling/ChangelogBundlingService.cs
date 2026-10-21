@@ -36,6 +36,14 @@ public record BundleChangelogsArguments
 	public Action<string>? OnPoolMissing { get; init; }
 
 	/// <summary>
+	/// Called when a commit range resolves no changelog entries because it has no pull requests, or every pull request
+	/// was excluded. When set, that range succeeds and writes no bundle. When <c>null</c>, the range is an error.
+	/// A pull request whose metadata could not be read is still an error. Set for DRA products, which often ship a
+	/// version with no user-facing changes.
+	/// </summary>
+	public Action? OnEmptyRange { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -1093,16 +1101,43 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		if (allEntries.Count == 0)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."
-			);
-			return false;
-		}
+			return FinishEmptyRange(collector, input, result, $"{owner}/{sourcing.Repo}");
 
 		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 	}
+
+	/// <summary>
+	/// A range with nothing to publish. DRA bundling allows it: the product shipped with no user-facing changes.
+	/// A pull request whose metadata could not be read is still an error, so a failed fetch is not reported as an empty release.
+	/// </summary>
+	private bool FinishEmptyRange(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		GitRangeEntryResolutionResult result,
+		string repository
+	)
+	{
+		if (input.OnEmptyRange is not null && RangeHasNoNotes(result))
+		{
+			_logger.LogInformation(
+				"No changelog entries in commit range {Start}..{End} of {Repository}. The release has no notes.",
+				input.StartGitRef,
+				input.EndGitRef,
+				repository
+			);
+			input.OnEmptyRange();
+			return true;
+		}
+
+		collector.EmitError(
+			string.Empty,
+			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {repository}."
+		);
+		return false;
+	}
+
+	private static bool RangeHasNoNotes(GitRangeEntryResolutionResult result) =>
+		result.Report.Rows.All(row => row.Source is GitRangePrSourceKind.Excluded or GitRangePrSourceKind.ExcludedBaseBranch);
 
 	/// <summary>
 	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out

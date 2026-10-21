@@ -5,6 +5,7 @@
 using System.Net;
 using System.Text;
 using AwesomeAssertions;
+using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Configuration;
@@ -93,12 +94,8 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 	private static HttpResponseMessage Ok(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "text/plain") };
 
-	private UnifiedProductBundler Bundler(StubHandler cdn, HttpMessageHandler? repositoryHttp = null)
-	{
-		var range = A.Fake<IGitHubCommitRangeService>();
-		_ = A.CallTo(
-			() => range.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)
-		).Returns(new CommitRangeResolution
+	private static CommitRangeResolution OnePullRequest() =>
+		new()
 		{
 			TotalCommits = 1,
 			PullRequests =
@@ -106,7 +103,19 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 				new CommitRangePullRequest { Number = 100, Url = "https://github.com/elastic/widget/pull/100", CommitShas = ["sha-100"] }
 			],
 			CommitsWithoutPullRequest = []
-		});
+		};
+
+	private UnifiedProductBundler Bundler(
+		StubHandler cdn,
+		HttpMessageHandler? repositoryHttp = null,
+		CommitRangeResolution? resolution = null,
+		IPullRequestSummaryProvider? summaries = null
+	)
+	{
+		var range = A.Fake<IGitHubCommitRangeService>();
+		_ = A.CallTo(() => range.ResolvePullRequestsAsync(A<IDiagnosticsCollector>._, A<CommitRangeArguments>._, A<Cancel>._)).Returns(
+			resolution ?? OnePullRequest()
+		);
 
 		var fetcher = new CdnChangelogEntryFetcher(new TestLoggerFactory(), cdn, sleep: (_, _) => Task.CompletedTask);
 		var service = new ChangelogBundlingService(
@@ -115,7 +124,8 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 			ConfigurationContext,
 			fetcher,
 			A.Fake<IGitHubPrService>(),
-			range
+			range,
+			summaries: summaries
 		);
 		var http = new HttpClient(repositoryHttp ?? new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound)));
 		return new UnifiedProductBundler(service, http, FileSystem, LoggerFactory.CreateLogger("test"), Collector);
@@ -264,6 +274,99 @@ public class UnifiedProductBundlerTests() : ChangelogTestBase()
 
 		outcome.Should().Be(ProductBundleOutcome.Failed);
 		Collector.Errors.Should().BeGreaterThan(0);
+	}
+
+	[Test]
+	public async Task Bundle_EmptyRange_SucceedsWithoutABundle()
+	{
+		var entries = LocalChangelogDirectory();
+		await WriteConfig(ConfigWithProfile($"use_local_changelogs: true\n  directory: {entries}"));
+
+		var outcome = await BundleAsync(Bundler(
+			Cdn(),
+			resolution: new CommitRangeResolution { TotalCommits = 0, PullRequests = [], CommitsWithoutPullRequest = [] }
+		));
+
+		outcome.Should().Be(ProductBundleOutcome.Empty);
+		Collector.Errors.Should().Be(0);
+		BundleWritten().Should().BeFalse();
+		FileSystem.Directory.Exists(OutputDirectory).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task Bundle_ExcludedPullRequestsOnly_SucceedsWithoutABundle()
+	{
+		var entries = LocalChangelogDirectory();
+		await WriteConfig(
+			$$"""
+			{{Pivot}}
+			rules:
+			  create:
+			    exclude:
+			      - ">build"
+			bundle:
+			  owner: elastic
+			  repo: widget
+			  use_local_changelogs: true
+			  directory: {{entries}}
+			  profiles:
+			    promotion:
+			      output_products: "cloud-hosted {version}"
+			"""
+		);
+
+		var outcome = await BundleAsync(Bundler(Cdn(), resolution: OnePullRequest(), summaries: Summary("Bump the compiler", [">build"])));
+
+		outcome.Should().Be(ProductBundleOutcome.Empty, string.Join("; ", Collector.Diagnostics.Select(d => d.Message)));
+		Collector.Errors.Should().Be(0);
+		BundleWritten().Should().BeFalse();
+	}
+
+	[Test]
+	public async Task Bundle_UnreadablePullRequest_StillFails()
+	{
+		var entries = LocalChangelogDirectory();
+		await WriteConfig(ConfigWithProfile($"use_local_changelogs: true\n  directory: {entries}"));
+		var summaries = A.Fake<IPullRequestSummaryProvider>();
+		_ = A.CallTo(
+			() => summaries.GetAsync(
+				A<IDiagnosticsCollector>._,
+				A<string>._,
+				A<string>._,
+				A<IReadOnlyCollection<CommitRangePullRequest>>._,
+				A<Cancel>._
+			)
+		).Returns(new Dictionary<int, PullRequestSummary?> { [100] = null });
+
+		var outcome = await BundleAsync(Bundler(Cdn(), resolution: OnePullRequest(), summaries: summaries));
+
+		outcome.Should().Be(ProductBundleOutcome.Failed);
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could be resolved"));
+	}
+
+	private string LocalChangelogDirectory()
+	{
+		var entries = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "changelog");
+		FileSystem.Directory.CreateDirectory(entries);
+		return entries;
+	}
+
+	private static IPullRequestSummaryProvider Summary(string title, IReadOnlyList<string> labels)
+	{
+		var summaries = A.Fake<IPullRequestSummaryProvider>();
+		_ = A.CallTo(
+			() => summaries.GetAsync(
+				A<IDiagnosticsCollector>._,
+				A<string>._,
+				A<string>._,
+				A<IReadOnlyCollection<CommitRangePullRequest>>._,
+				A<Cancel>._
+			)
+		).Returns(new Dictionary<int, PullRequestSummary?>
+		{
+			[100] = new PullRequestSummary(100, title, labels, new ReleaseNoteExtractionResult(null, false), [])
+		});
+		return summaries;
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
