@@ -474,7 +474,7 @@ Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legac
 **Behavior:**
 
 - When `x-displayName` is present, it's used for navigation titles, tag landing page titles, and section headings on the main API overview
-- When `x-displayName` is absent, the canonical tag `name` is used as a fallback. If the name is plain lowercase words (letters and spaces only, such as `elasticsearch projects`), its first letter is capitalized (`Elasticsearch projects`). Names with uppercase letters, digits, or separators such as `_` are shown as written
+- When `x-displayName` is absent, the canonical tag `name` is used as a fallback. If the name starts with a lowercase word (such as `elasticsearch projects`), its first letter is capitalized (`Elasticsearch projects`). Names that start with a code-like token, such as `ml_anomaly` or `v2`, or that already start with a capital letter are shown as written
 - Tag landing page URLs and tag URL segments are derived from the canonical tag `name`
 
 :::{note}

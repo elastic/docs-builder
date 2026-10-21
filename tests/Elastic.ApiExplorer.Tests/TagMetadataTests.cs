@@ -161,16 +161,36 @@ public class TagMetadataTests
 	}
 
 	[Test]
-	[Arguments("elasticsearch projects", "Elasticsearch projects")]
-	[Arguments("capabilities", "Capabilities")]
-	[Arguments("traffic filters", "Traffic filters")]
-	[Arguments("Already Capitalized", "Already Capitalized")]
-	[Arguments("BillingCostsAnalysis", "BillingCostsAnalysis")]
-	[Arguments("ml_anomaly", "ml_anomaly")]
-	[Arguments("v2 search", "v2 search")]
-	[Arguments("", "")]
-	public void FallbackTagDisplayName_CapitalizesOnlyPlainLowercaseNames(string tagName, string expected) =>
-		OpenApiExtensionReader.FallbackTagDisplayName(tagName).Should().Be(expected);
+	public async Task ParseTagMetadata_WithoutXDisplayName_CapitalizesPlainWordsAndKeepsCodeLikeNames()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Test API", "version": "1.0.0" },
+		  "paths": {},
+		  "tags": [
+		    { "name": "elasticsearch projects" },
+		    { "name": "capabilities" },
+		    { "name": "BillingCostsAnalysis" },
+		    { "name": "ml_anomaly" },
+		    { "name": "v2 search" },
+		    { "name": "tasks", "x-displayName": "Task management" }
+		  ]
+		}
+		""";
+
+		var (_, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		var tags = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
+
+		tags["elasticsearch projects"].DisplayName.Should().Be("Elasticsearch projects");
+		tags["capabilities"].DisplayName.Should().Be("Capabilities");
+		tags["BillingCostsAnalysis"].DisplayName.Should().Be("BillingCostsAnalysis");
+		tags["ml_anomaly"].DisplayName.Should().Be("ml_anomaly");
+		tags["v2 search"].DisplayName.Should().Be("v2 search");
+		tags["tasks"].DisplayName.Should().Be("Task management");
+	}
 
 	[Test]
 	public async Task ApiTag_WithMultipleTagsAndDisplayNames_ParsesCorrectly()
