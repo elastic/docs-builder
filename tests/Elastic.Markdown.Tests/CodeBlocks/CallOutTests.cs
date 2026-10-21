@@ -134,6 +134,14 @@ var x = 1;
 		Html.Should().Contain("<ol class=\"code-callouts\">").And.Contain("The first annotation").And.Contain("The last annotation");
 
 	[Test]
+	public void Render_ColumnZero_ProducesBothCalloutIcons() =>
+		Html
+			.Should()
+			.Contain("<span class=\"code-callout\" data-index=\"1\"></span>")
+			.And
+			.Contain("<span class=\"code-callout\" data-index=\"2\"></span>");
+
+	[Test]
 	public void Parse_ColumnZero_HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 

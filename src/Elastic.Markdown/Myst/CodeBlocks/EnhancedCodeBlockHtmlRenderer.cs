@@ -46,8 +46,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		{
 			var line = block.Lines.Lines[i];
 			var slice = line.Slice;
-			//ensure we never emit an empty line at beginning or start
-			if ((i == 0 || i == block.Lines.Count - 1) && line.Slice.IsEmptyOrWhitespace())
+			// Keep boundary lines that carry callouts after their marker text is removed.
+			if ((i == 0 || i == block.Lines.Count - 1) && line.Slice.IsEmptyOrWhitespace() && !FindCallouts(block.CallOuts, i + 1).Any())
 				continue;
 			var indent = CountIndentation(slice);
 			if (indent >= commonIndent)
