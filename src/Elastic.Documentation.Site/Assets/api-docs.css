@@ -3200,8 +3200,9 @@ button.example-response-tab:focus-visible {
 }
 
 /* The finder is the same box as the API sidebar's, so it looks up operations across every API. It sits
-   under the lede, as wide as the lede, and its results open below it. */
-.api-catalog .api-catalog-finder {
+   under the lede, as wide as the lede, and its results open below it. Both heroes use it, and the
+   navigation-preview one sits outside `.api-catalog`, so the rule stands alone. */
+.api-catalog-finder {
 	max-width: 36rem;
 	margin: 20px auto 0;
 	text-align: left;
