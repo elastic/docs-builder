@@ -60,7 +60,11 @@ public class AggregateEqualityTests
 	{
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
 		var docsetFile = fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml");
-		return DocumentationSetLoader.LoadAndResolve(new CapturingDiagnosticsCollector(), docsetFile).TableOfContents;
+		return DocumentationSetLoader.LoadAndResolve(
+			new CapturingDiagnosticsCollector(),
+			docsetFile,
+			new Nullean.ScopedFileSystem.ScopedFileSystem(fs, DocumentationSetGoldenTests.DocsRoot)
+		).TableOfContents;
 	}
 
 	[Test]
@@ -85,7 +89,12 @@ public class AggregateEqualityTests
 		var catalog = CatalogLoader.Load(BaselineProvider()).OrThrow();
 		var fs = DocumentationSetGoldenTests.CreateDocsTree();
 		var docsetFile = fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml");
-		var docSet = DocumentationSetLoader.ParseDefinition(docsetFile, docsetFile.Directory!, fs).OrThrowIfMissing();
+		var docSet = DocumentationSetLoader.ParseDefinition(
+			docsetFile,
+			docsetFile.Directory!,
+			fs,
+			new Nullean.ScopedFileSystem.ScopedFileSystem(fs, DocumentationSetGoldenTests.DocsRoot)
+		).OrThrowIfMissing();
 		return DocumentationSetResolver.Resolve(
 			docSet,
 			catalog.VersioningSystems,
@@ -109,7 +118,8 @@ public class AggregateEqualityTests
 			return DocumentationSetLoader.ParseDefinition(
 				fs.FileInfo.New($"{DocumentationSetGoldenTests.DocsRoot}/_docset.yml"),
 				fs.DirectoryInfo.New(DocumentationSetGoldenTests.DocsRoot),
-				fs
+				fs,
+				new Nullean.ScopedFileSystem.ScopedFileSystem(fs, DocumentationSetGoldenTests.DocsRoot)
 			).OrThrowIfMissing();
 		}
 

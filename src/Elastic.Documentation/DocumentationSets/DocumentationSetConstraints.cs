@@ -214,7 +214,7 @@ public static partial class DocumentationSetConstraints
 				$"Table of contents '{t.Toc.PathRelativeToDocumentationSet}' is nested {t.Depth} levels deep, beyond 'max_toc_depth: {m.Docset.MaxTocDepth}'. The setting is never read, so nothing limits the depth.",
 			at: t => new Located(t.Toc.Context)
 		)
-		.WithSeverity(Severity.Warning)
+		.WithSeverity(Severity.Hint)
 		.Describe("D11: nested tables of contents stay within max_toc_depth, which is otherwise never read.");
 
 	public static Constraint<DocumentationSetInCatalog> DevDocsHasNoEffect { get; } = Constraints<DocumentationSetInCatalog>

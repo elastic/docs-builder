@@ -60,7 +60,13 @@ public class DocumentationSetGoldenTests
 
 		var snapshot = Capture(() =>
 		{
-			var docSet = DocumentationSetLoader.ParseDefinition(docsetFile, docsetFile.Directory!, fs).EmitTo(collector)!;
+			var docSet =
+				DocumentationSetLoader.ParseDefinition(
+					docsetFile,
+					docsetFile.Directory!,
+					fs,
+					new Nullean.ScopedFileSystem.ScopedFileSystem(fs, DocsRoot)
+				).EmitTo(collector)!;
 			var configuration = DocumentationSetResolver.Resolve(docSet, versions, products, new EmptyEnvironment()).EmitTo(collector)!;
 			return Obj(("docset", ProjectDocumentationSetFile(docSet)), ("configuration", ProjectConfigurationFile(configuration)));
 		});
