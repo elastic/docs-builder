@@ -96,4 +96,36 @@ describe('flyout resize', () => {
                 .style.getPropertyValue('--flyout-width')
         ).toBe('320px')
     })
+
+    it('still resizes when browser storage is blocked', () => {
+        const blocked = () => {
+            throw new DOMException('blocked', 'SecurityError')
+        }
+        const get = jest
+            .spyOn(Storage.prototype, 'getItem')
+            .mockImplementation(blocked)
+        const set = jest
+            .spyOn(Storage.prototype, 'setItem')
+            .mockImplementation(blocked)
+        try {
+            expect(() => initFlyoutResize()).not.toThrow()
+            const dialog = document.querySelector<HTMLElement>('dialog')!
+            dialog.getBoundingClientRect = () => ({ width: 400 }) as DOMRect
+            document
+                .querySelector<HTMLElement>('[data-flyout-handle]')!
+                .dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'ArrowLeft',
+                        bubbles: true,
+                    })
+                )
+
+            expect(dialog.style.getPropertyValue('--flyout-width')).toBe(
+                '424px'
+            )
+        } finally {
+            get.mockRestore()
+            set.mockRestore()
+        }
+    })
 })

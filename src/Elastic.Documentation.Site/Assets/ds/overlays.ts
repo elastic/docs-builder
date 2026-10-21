@@ -41,6 +41,23 @@ const flyoutWidthKey = 'docs-flyout-width'
 const flyoutMinWidth = 320
 const flyoutKeyStep = 24
 
+// Storage can be blocked, and a throw here would stop every other initializer that runs after this one. The width then just is not kept.
+function readFlyoutWidth(): number {
+    try {
+        return Number(localStorage.getItem(flyoutWidthKey))
+    } catch {
+        return 0
+    }
+}
+
+function writeFlyoutWidth(width: number) {
+    try {
+        localStorage.setItem(flyoutWidthKey, String(width))
+    } catch {
+        // Resizing still works for this page.
+    }
+}
+
 function clampFlyoutWidth(width: number): number {
     return Math.min(Math.max(width, flyoutMinWidth), window.innerWidth)
 }
@@ -62,9 +79,9 @@ export function initFlyoutResize(scope: ParentNode = document) {
             const apply = (width: number) => {
                 const next = clampFlyoutWidth(width)
                 dialog.style.setProperty('--flyout-width', `${next}px`)
-                localStorage.setItem(flyoutWidthKey, String(next))
+                writeFlyoutWidth(next)
             }
-            const saved = Number(localStorage.getItem(flyoutWidthKey))
+            const saved = readFlyoutWidth()
             if (saved > 0) apply(saved)
 
             handle.addEventListener('pointerdown', (event) => {
