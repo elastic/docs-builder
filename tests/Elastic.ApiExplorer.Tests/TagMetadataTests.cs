@@ -175,6 +175,8 @@ public class TagMetadataTests
 		    { "name": "BillingCostsAnalysis" },
 		    { "name": "ml_anomaly" },
 		    { "name": "v2 search" },
+		    { "name": "search v2" },
+		    { "name": "search APIs" },
 		    { "name": "tasks", "x-displayName": "Task management" }
 		  ]
 		}
@@ -189,6 +191,9 @@ public class TagMetadataTests
 		tags["BillingCostsAnalysis"].DisplayName.Should().Be("BillingCostsAnalysis");
 		tags["ml_anomaly"].DisplayName.Should().Be("ml_anomaly");
 		tags["v2 search"].DisplayName.Should().Be("v2 search");
+		// Only the first word decides: later digits or capitals do not block capitalization
+		tags["search v2"].DisplayName.Should().Be("Search v2");
+		tags["search APIs"].DisplayName.Should().Be("Search APIs");
 		tags["tasks"].DisplayName.Should().Be("Task management");
 	}
 

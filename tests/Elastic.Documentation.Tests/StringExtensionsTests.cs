@@ -30,6 +30,8 @@ public class StringExtensionsTests
 	[Arguments("elasticsearch projects", "Elasticsearch projects")]
 	[Arguments("ml_anomaly", "ml_anomaly")]
 	[Arguments("v2 search", "v2 search")]
+	[Arguments("search v2", "Search v2")]
+	[Arguments("search APIs", "Search APIs")]
 	[Arguments("", "")]
 	public void CapitalizeFirstLetter_CapitalizesPlainWordsAndKeepsCodeLikeNames(string input, string expected) =>
 		input.CapitalizeFirstLetter().Should().Be(expected);
