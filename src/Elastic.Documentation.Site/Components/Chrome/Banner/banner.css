@@ -1,0 +1,50 @@
+.banner {
+	padding: var(--space-2) var(--layout-gutter);
+	background: var(--color-emphasis);
+	color: var(--color-on-emphasis);
+	font-size: var(--text-sm);
+	text-align: center;
+}
+
+.banner__message {
+	margin: 0;
+}
+
+.banner__link {
+	color: inherit;
+	font-weight: var(--weight-semibold);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.banner--info,
+.banner--warning,
+.banner--danger {
+	border-bottom: var(--border-width) solid var(--banner-accent);
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	background: var(--banner-surface);
+	color: var(--color-text);
+	text-align: left;
+}
+
+.banner__icon {
+	display: inline-flex;
+	color: var(--banner-accent);
+}
+
+.banner--info {
+	--banner-accent: var(--color-accent);
+	--banner-surface: var(--color-accent-surface);
+}
+
+.banner--warning {
+	--banner-accent: var(--color-warning);
+	--banner-surface: var(--color-warning-surface);
+}
+
+.banner--danger {
+	--banner-accent: var(--color-danger);
+	--banner-surface: var(--color-danger-surface);
+}
