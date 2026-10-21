@@ -50,6 +50,18 @@ public static partial class ReleaseNotesExtractor
 	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
 	private static partial Regex HeadingRegex();
 
+	// Blockquote markers at the start of a line: "> ", ">" or nested ">> " and "> > ", with the up to three
+	// spaces of indentation that markdown allows before them.
+	[GeneratedRegex(@"^[ \t]*(?:>[ \t]?)+", RegexOptions.Multiline)]
+	private static partial Regex BlockquoteMarkerRegex();
+
+	/// <summary>
+	/// Removes the blockquote markers from the start of every line. Authors write the release note as a quotation
+	/// under its heading (<c>&gt; Adds a page...</c>); the marker is their formatting, not part of the note, and a
+	/// description that keeps it renders as a quotation or shows a literal <c>&gt;</c>.
+	/// </summary>
+	private static string StripBlockquoteMarkers(string text) => BlockquoteMarkerRegex().Replace(text, string.Empty);
+
 	/// <summary>
 	/// Strips HTML comments from markdown text.
 	/// This handles both single-line and multi-line comments.
@@ -194,7 +206,7 @@ public static partial class ReleaseNotesExtractor
 				// Label sections stop at the first blank line once they have content.
 				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)
 					break;
-				content.Add(line);
+				content.Add(StripBlockquoteMarkers(line));
 			}
 
 			var text = string.Join('\n', content).Trim();
@@ -228,7 +240,7 @@ public static partial class ReleaseNotesExtractor
 
 		if (match.Success && match.Groups.Count > 1)
 		{
-			var releaseNote = match.Groups[1].Value.Trim();
+			var releaseNote = StripBlockquoteMarkers(match.Groups[1].Value).Trim();
 			var content = string.IsNullOrWhiteSpace(releaseNote) ? null : releaseNote;
 			var remainingContent = cleanedMarkdown[(match.Index + match.Length)..];
 			return new ReleaseNoteExtractionResult(content, content != null && !string.IsNullOrWhiteSpace(remainingContent));

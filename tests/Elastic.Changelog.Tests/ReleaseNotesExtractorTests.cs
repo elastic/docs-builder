@@ -9,6 +9,91 @@ namespace Elastic.Changelog.Tests;
 public class ReleaseNotesExtractorTests
 {
 	[Test]
+	public void ExtractReleaseNote_BlockquotedNote_StripsTheMarker()
+	{
+		// The shape of elastic/kibana#296878: the note is a blockquote under its heading, followed by more body.
+		// language=markdown
+		var prBody =
+			"""
+			## Summary
+
+			Classify alerts with a prompt.
+
+			### Release note
+
+			> The Alert analysis workflow can now classify alerts with a single prompt instead of an AI agent.
+
+			**Suggested label:** `release_note:enhancement`
+			""";
+
+		var result = ReleaseNotesExtractor.ExtractReleaseNote(prBody);
+
+		result.Content.Should().Be("The Alert analysis workflow can now classify alerts with a single prompt instead of an AI agent.");
+		result.WasTruncated.Should().BeTrue();
+	}
+
+	[Test]
+	public void FindReleaseNote_MultiLineBlockquote_StripsEveryMarker()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Release note
+			> Adds an Anonymization page under Stack Management.
+			> Requires an Enterprise license.
+			""";
+
+		ReleaseNotesExtractor
+			.FindReleaseNote(prBody)
+			.Should()
+			.Be("Adds an Anonymization page under Stack Management.\nRequires an Enterprise license.");
+	}
+
+	[Test]
+	public void FindReleaseNote_NestedBlockquote_StripsEveryMarker()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			Release note:
+			>> Nested quote.
+			> > Spaced nested quote.
+			  > Indented quote.
+			""";
+
+		ReleaseNotesExtractor.FindReleaseNote(prBody).Should().Be("Nested quote.\nSpaced nested quote.\nIndented quote.");
+	}
+
+	[Test]
+	public void FindReleaseNote_GreaterThanInsideTheText_IsKept()
+	{
+		// language=markdown
+		var prBody = """
+			Release note: Rejects values > 10 and keeps a -> b as written.
+			""";
+
+		ReleaseNotesExtractor.FindReleaseNote(prBody).Should().Be("Rejects values > 10 and keeps a -> b as written.");
+	}
+
+	[Test]
+	public void FindImpactAndAction_BlockquotedSections_StripTheMarkers()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			> Clients that send the old field break.
+			> Update them before you upgrade.
+
+			## Action
+			> Upgrade the client.
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Clients that send the old field break.\nUpdate them before you upgrade.");
+		ReleaseNotesExtractor.FindAction(prBody).Should().Be("Upgrade the client.");
+	}
+
+	[Test]
 	public void FindReleaseNote_WithReleaseNotesColon_ExtractsContent()
 	{
 		// Arrange
