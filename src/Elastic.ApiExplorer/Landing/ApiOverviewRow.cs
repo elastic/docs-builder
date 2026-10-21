@@ -51,10 +51,14 @@ public record ApiOverviewIndex(IReadOnlyList<ApiOverviewRow> Topics, IReadOnlyLi
 public static class ApiOverviewBuilder
 {
 	/// <summary>Rows for the product landing page: the full navigation tree.</summary>
-	public static IReadOnlyList<ApiOverviewRow> Build(INavigationItem root, VersionsConfiguration? versionsConfig)
+	public static IReadOnlyList<ApiOverviewRow> Build(
+		INavigationItem root,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem = false
+	)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddProductRows(root, rows, versionsConfig);
+		AddProductRows(root, rows, versionsConfig, designSystem);
 		return rows;
 	}
 
@@ -113,14 +117,23 @@ public static class ApiOverviewBuilder
 		row.Kind is OverviewRowKind.ClassificationHeading or OverviewRowKind.TagHeading or OverviewRowKind.SchemaCategoryHeading;
 
 	/// <summary>Rows for a tag landing page: endpoints and operations only.</summary>
-	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(INavigationItem tagItem, VersionsConfiguration? versionsConfig)
+	public static IReadOnlyList<ApiOverviewRow> BuildTagChildren(
+		INavigationItem tagItem,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem = false
+	)
 	{
 		var rows = new List<ApiOverviewRow>();
-		AddTagRows(tagItem, rows, versionsConfig);
+		AddTagRows(tagItem, rows, versionsConfig, designSystem);
 		return rows;
 	}
 
-	private static void AddProductRows(INavigationItem item, List<ApiOverviewRow> rows, VersionsConfiguration? versionsConfig)
+	private static void AddProductRows(
+		INavigationItem item,
+		List<ApiOverviewRow> rows,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem
+	)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
@@ -131,18 +144,18 @@ public static class ApiOverviewBuilder
 			{
 				case ClassificationNavigationItem classification:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.ClassificationHeading, Title = classification.NavigationTitle });
-					AddProductRows(classification, rows, versionsConfig);
+					AddProductRows(classification, rows, versionsConfig, designSystem);
 					break;
 				case TagNavigationItem tag:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.TagHeading, Title = tag.NavigationTitle, Url = tag.Url });
-					AddProductRows(tag, rows, versionsConfig);
+					AddProductRows(tag, rows, versionsConfig, designSystem);
 					break;
 				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation, versionsConfig));
+					rows.Add(OperationRow(operation, versionsConfig, designSystem));
 					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
-					AddProductRows(schemaCategory, rows, versionsConfig);
+					AddProductRows(schemaCategory, rows, versionsConfig, designSystem);
 					break;
 				case SchemaNavigationItem schemaItem:
 					rows.Add(new ApiOverviewRow
@@ -178,7 +191,12 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static void AddTagRows(INavigationItem item, List<ApiOverviewRow> rows, VersionsConfiguration? versionsConfig)
+	private static void AddTagRows(
+		INavigationItem item,
+		List<ApiOverviewRow> rows,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem
+	)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
@@ -188,7 +206,7 @@ public static class ApiOverviewBuilder
 			switch (navigationItem)
 			{
 				case OperationNavigationItem operation:
-					rows.Add(OperationRow(operation, versionsConfig));
+					rows.Add(OperationRow(operation, versionsConfig, designSystem));
 					break;
 				case IntroHeadingNavigationItem:
 					break;
@@ -198,14 +216,23 @@ public static class ApiOverviewBuilder
 		}
 	}
 
-	private static ApiOverviewRow OperationRow(OperationNavigationItem operation, VersionsConfiguration? versionsConfig) =>
+	private static ApiOverviewRow OperationRow(
+		OperationNavigationItem operation,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem
+	) =>
 		new()
 		{
 			Kind = OverviewRowKind.Operation,
 			Title = operation.NavigationTitle,
 			Endpoint = OperationEndpoint.Build(operation.Model, operation.Model.Operation.Description, operation.Siblings),
 			Url = operation.Url,
-			Availability = AvailabilityBadge.FromOperation(operation.Model.Operation, versionsConfig, showTooltip: false),
+			Availability = AvailabilityBadge.FromOperation(
+				operation.Model.Operation,
+				versionsConfig,
+				showTooltip: false,
+				designSystem: designSystem
+			),
 			Deprecated = operation.Model.Operation.Deprecated
 		};
 }

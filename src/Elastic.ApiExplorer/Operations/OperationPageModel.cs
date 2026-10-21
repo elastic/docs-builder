@@ -117,6 +117,7 @@ public partial record OperationPageModel
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
 			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			DesignSystem = context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
@@ -192,7 +193,11 @@ public partial record OperationPageModel
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadge.FromOperation(operation, context.BuildContext.VersionsConfiguration),
+			Availability = AvailabilityBadge.FromOperation(
+				operation,
+				context.BuildContext.VersionsConfiguration,
+				designSystem: context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			),
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
