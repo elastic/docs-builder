@@ -65,6 +65,39 @@ public class ReleaseNotesExtractorTests
 	}
 
 	[Test]
+	public void FindReleaseNote_FencedCodeInsideTheNote_KeepsItsLines()
+	{
+		// language=markdown
+		var prBody =
+			"""
+			## Release note
+			> Compare the exports:
+			```sh
+			sort a.txt
+			> output.log
+			```
+			""";
+
+		ReleaseNotesExtractor.FindReleaseNote(prBody).Should().Be("Compare the exports:\n```sh\nsort a.txt\n> output.log\n```");
+	}
+
+	[Test]
+	public void FindImpact_IndentedCodeLine_KeepsItsMarkerAndIndentation()
+	{
+		// Four spaces or a tab start an indented code block, so its ">" is content, not a blockquote marker.
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			> Redirect the log:
+			    > output.log
+				> prompt.log
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Redirect the log:\n    > output.log\n\t> prompt.log");
+	}
+
+	[Test]
 	public void FindReleaseNote_GreaterThanInsideTheText_IsKept()
 	{
 		// language=markdown
