@@ -119,8 +119,10 @@ Every page is one of a few named layouts, defined in `Assets/ds/patterns/layout.
 |---|---|---|
 | `layout layout--single` | One column inside the page box | Archive, search, 404, Codex sections |
 | `layout layout--bands` (+ `layout--wash`) | A stack of full-width `band`s, each with its content in `band__content`, which takes the same box as the header's content; `band--hero` for a hero | Hub pages and the landing page |
-| `layout layout--two` | Sidebar, content | API pages |
-| `layout layout--three` | Sidebar, content, right-hand rail | Documentation articles, Codex documentation |
+| `layout layout--two` | Sidebar, content | Pages that need no rail |
+| `layout layout--three` | Sidebar, content, right-hand rail | Documentation articles, Codex documentation, API pages |
+
+A page whose rail holds what it cannot do without, such as the API pages' request and response examples, adds `layout--rail-after`. On narrow screens the rail then sits under the content, instead of above it or hidden.
 
 There are two width modes. **Contained** is the default: the page box is `--layout-max` (84.5rem, 1352px) wide, centred, with a `--layout-gutter` (1rem) on each side, and it is the width of the elastic.co header, which follows the token; the assembler has to be contained. **Full width** is a mode of the page, not of one layout: `FullWidth` on the layout model adds `layout-full` to the body. The header bar is always the whole window, and its content shares `--layout-max` with the page, so in full width both widen together and the sidebar stays under the header's left edge. The sidebar anchors there and the content and rail are centred in the rest, up to `--layout-max-wide` (120rem), so a 4K window is not sparse.
 

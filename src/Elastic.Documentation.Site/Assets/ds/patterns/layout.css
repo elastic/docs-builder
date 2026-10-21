@@ -302,6 +302,31 @@
 }
 
 /*
+ * A page whose rail carries what it cannot do without, such as the API pages' request and response examples, keeps the rail on narrow
+ * screens. It sits under the content instead of above it, and it is not hidden at the drawer width.
+ */
+.layout--rail-after {
+	--layout-areas-contained-tablet: 'nav . content' 'nav . rail';
+	--layout-areas-full-tablet: 'nav . content .' 'nav . rail .';
+}
+
+.layout--rail-after .layout__rail > * {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
+@media (max-width: 860px) {
+	.layout--three.layout--rail-after,
+	.layout-full .layout--three.layout--rail-after {
+		--layout-areas: 'content' 'rail';
+	}
+
+	.layout--rail-after .layout__rail {
+		display: flex;
+	}
+}
+
+/*
  * Bands: a page that is a stack of full-width strips. Each strip is a band, and what is in it sits in band__content, which takes the
  * same box as the header's content, so a hero lines up with the header above it. Hub pages and the landing page are this layout.
  */

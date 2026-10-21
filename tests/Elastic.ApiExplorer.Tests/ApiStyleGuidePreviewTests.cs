@@ -44,6 +44,25 @@ public class ApiStyleGuidePreviewTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_KeepsItsExamplesInARailThatSurvivesNarrowScreens()
+	{
+		var html = await RenderAsync("api-operation");
+
+		// The rail has its own grid area, and the modifier keeps it on screen, under the content, where the drawer layout starts.
+		html.Should().Contain("layout layout--three layout--rail-after");
+		html.Should().Contain("<aside class=\"layout__rail api-page-rail\">");
+		html.Should().Contain("Lorem ipsum", "the examples are inside the page, and the CSS keeps the rail visible");
+	}
+
+	[Test]
+	public async Task Operation_ShowsThePageActionsInTheDesignSystemRail()
+	{
+		var html = await RenderAsync("api-operation");
+
+		html.Should().Contain("class=\"page-actions\"").And.Contain("View as Markdown");
+	}
+
+	[Test]
 	public async Task Operation_ShowsExamplesOnlyWhenTheSpecHasThem()
 	{
 		var withExamples = await RenderAsync("api-operation");
