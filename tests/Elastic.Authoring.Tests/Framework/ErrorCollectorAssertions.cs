@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -55,28 +56,34 @@ internal static class ErrorCollectorAssertions
 			);
 	}
 
+	// The shared docs-tests redirects fixture deliberately contains a self-redirect and a redirect with several 'many' targets,
+	// which the redirect constraints report as warnings in every scenario. They are not what these assertions are about.
+	private static bool IsFixtureRedirectWarning(Diagnostic d) =>
+		// the fixture has no git origin: the link-manifest rule that surfaces as a warning for now
+		d.RuleId
+			== LinkManifestConstraints.LinkManifestOriginNamed.Name
+			|| d.Message.StartsWith("Redirect 'testing/redirects/", StringComparison.Ordinal)
+				&& (d.Message.EndsWith("points to itself and is dropped.", StringComparison.Ordinal)
+					|| d.Message.EndsWith("only the first with a 'to' is used.", StringComparison.Ordinal));
+
+	private static List<Diagnostic> ScenarioWarnings(GeneratorResults results) =>
+		results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning && !IsFixtureRedirectWarning(d)).ToList();
+
 	[DebuggerStepThrough]
 	internal static void HasNoWarnings(GeneratorResults results)
 	{
-		var warnings = results.Context.Collector.Warnings;
-		if (warnings != 0)
+		var warnings = ScenarioWarnings(results);
+		if (warnings.Count != 0)
 			throw new AwesomeAssertions.Execution.AssertionFailedException(
-				$"Expected no warnings but found {warnings}: " + string.Join(
-					"; ",
-					results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).Select(d => d.Message)
-				)
+				$"Expected no warnings but found {warnings.Count}: " + string.Join("; ", warnings.Select(d => d.Message))
 			);
 	}
 
 	[DebuggerStepThrough]
 	internal static void HasWarning(string expected, GeneratorResults results)
 	{
-		var warnings = results.Context.Collector.Warnings;
-		if (warnings == 0)
-			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected warnings but no warnings were logged");
-
 		// Only the first warning — mirrors F# List.tryHead
-		var warningDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Warning).ToList();
+		var warningDiagnostics = ScenarioWarnings(results);
 
 		if (warningDiagnostics.Count == 0)
 			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected warnings but no warnings were logged");
@@ -89,6 +96,31 @@ internal static class ErrorCollectorAssertions
 	}
 
 	[DebuggerStepThrough]
+	internal static void HasRuleDiagnosticOnce(string? ruleId, Severity severity, string expected, GeneratorResults results)
+	{
+		var all = results.Context.Collector.Diagnostics;
+		var byRule = all.Where(d => d.RuleId == ruleId).ToList();
+		if (byRule.Count != 1)
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected exactly one diagnostic of rule '{ruleId}' but found {byRule.Count}. All: " + string.Join(
+					"; ",
+					all.Select(d => $"[{d.RuleId}] {d.Severity} {d.Message}")
+				)
+			);
+		var only = byRule[0];
+		if (only.Severity != severity || !only.Message.Contains(expected, StringComparison.Ordinal))
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"Expected a {severity} of rule '{ruleId}' containing '{expected}' but found {only.Severity}: {only.Message}"
+			);
+		// the same problem under another wording would be a second emitter: nothing else may carry the message's text
+		var echoes = all.Where(d => d.RuleId != ruleId && d.Message.Contains(expected, StringComparison.Ordinal)).ToList();
+		if (echoes.Count > 0)
+			throw new AwesomeAssertions.Execution.AssertionFailedException(
+				$"'{expected}' is also reported by another emitter: " + string.Join("; ", echoes.Select(d => $"[{d.RuleId}] {d.Message}"))
+			);
+	}
+
+	[DebuggerStepThrough]
 	internal static void HasHint(string expected, GeneratorResults results)
 	{
 		var hints = results.Context.Collector.Hints;
@@ -96,7 +128,12 @@ internal static class ErrorCollectorAssertions
 			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");
 
 		// Only the first hint — mirrors F# List.tryHead
-		var hintDiagnostics = results.Context.Collector.Diagnostics.Where(d => d.Severity == Severity.Hint).ToList();
+		var hintDiagnostics = results
+			.Context
+			.Collector
+			.Diagnostics
+			.Where(d => d.Severity == Severity.Hint && !IsFixtureRedirectWarning(d))
+			.ToList();
 
 		if (hintDiagnostics.Count == 0)
 			throw new AwesomeAssertions.Execution.AssertionFailedException("Expected hints but no hints were logged");

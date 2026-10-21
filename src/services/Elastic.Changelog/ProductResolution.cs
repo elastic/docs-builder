@@ -4,6 +4,7 @@
 
 using Elastic.Changelog.Creation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog;
 

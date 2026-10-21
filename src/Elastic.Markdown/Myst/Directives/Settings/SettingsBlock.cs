@@ -226,7 +226,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			_parsedSettings = PrepareSettingsForRendering(
 				YamlSerialization.Deserialize<YamlSettings>(
 					yaml,
-					Build.ProductsConfiguration,
+					Build.Catalog.Products,
 					new YamlUnmappedMemberReporting(Build.Collector, file.FullName, policy: UnsupportedSettingKeys())
 				),
 				Context

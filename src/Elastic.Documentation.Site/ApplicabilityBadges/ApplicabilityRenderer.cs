@@ -5,7 +5,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Versions;
 
 namespace Elastic.Documentation.Site.ApplicabilityBadges;
@@ -48,7 +48,7 @@ public static class ApplicabilityRenderer
 		VersioningSystem versioningSystem
 	)
 	{
-		var allApplications = new AppliesCollection([.. applicabilities]);
+		var allApplications = AppliesCollection.Of(applicabilities);
 
 		// Sort by version (highest first), then by lifecycle priority as tiebreaker
 		var sortedApplicabilities = applicabilities

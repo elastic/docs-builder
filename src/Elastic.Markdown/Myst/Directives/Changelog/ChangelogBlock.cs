@@ -6,8 +6,10 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown.Diagnostics;
@@ -541,22 +543,13 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	/// </summary>
 	private void LoadPrivateRepositories()
 	{
-		try
-		{
-			// Try to load assembler configuration to get private repositories.
-			// Use AllPrivateRepositoryNames rather than PrivateRepositories.Keys: PrivateRepositories
-			// excludes skip:true entries (because the cross-link fetcher has no link index for them),
-			// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
-			// (private:true, skip:true) must still have their links hidden at render time.
-			var assemblerConfig = AssemblyConfiguration.Create(Build.ConfigurationFileProvider);
-			foreach (var repoName in assemblerConfig.AllPrivateRepositoryNames)
-				_ = PrivateRepositories.Add(repoName);
-		}
-		catch
-		{
-			// If assembler.yml is not available (standalone builds), no repos are private
-			// This is expected behavior - we silently continue with empty private repos
-		}
+		// Use AllPrivateRepositoryNames rather than PrivateRepositories.Keys: PrivateRepositories
+		// excludes skip:true entries (because the cross-link fetcher has no link index for them),
+		// but skip:true means "does not publish docs", not "is public". Repos like kibana-team
+		// (private:true, skip:true) must still have their links hidden at render time.
+		// If assembler.yml is not available (standalone builds), no repos are private.
+		foreach (var repoName in Build.PrivateRepositoryNames)
+			_ = PrivateRepositories.Add(repoName);
 	}
 
 	private void LoadAndCacheBundles()
@@ -564,14 +557,14 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (BundlesFolderPath is null)
 			return;
 
-		var loader = new BundleLoader(Build.ReadFileSystem);
-
 		// Load bundles using the BundleLoader service
 		// Emit errors (not warnings) for missing file references so the build fails fast
 		// rather than silently omitting entries from the rendered output.
-		var loadedBundles = loader.LoadBundles(BundlesFolderPath, msg => this.EmitError(msg));
+		var loaded = Build.BundleLoader.LoadBundles(BundlesFolderPath);
+		foreach (var diagnostic in loaded.Diagnostics)
+			this.Emit(diagnostic.Severity, diagnostic.Message);
 
-		ApplyLoadedBundles(loadedBundles);
+		ApplyLoadedBundles(loaded.Value ?? []);
 	}
 
 	private void LoadCdnBundles(string product, bool isAutoInferred = false)
@@ -660,9 +653,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		if (CdnProduct is null || Build.ContentSource != ContentSource.Current)
 			return bundles;
 
-		var versioningSystem = Build.ProductsConfiguration.Products.TryGetValue(CdnProduct, out var product)
-			? product.VersioningSystem
-			: null;
+		var versioningSystem = Build.Catalog.Products.Products.TryGetValue(CdnProduct, out var product) ? product.VersioningSystem : null;
 		if (versioningSystem is null || versioningSystem.IsVersionless)
 			return bundles;
 
@@ -741,7 +732,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return null;
 
 		var repository = Build.Git.RepositoryName;
-		return Build.ProductsConfiguration.GetProductByRepositoryName(repository)?.Id ?? repository;
+		return Build.Catalog.Products.GetProductByRepositoryName(repository)?.Id ?? repository;
 	}
 
 	private IEnumerable<string> ComputeGeneratedAnchors()

@@ -4,11 +4,39 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
 public class SiteNavigationFileTests
 {
+	/// <summary>The loader reads a non-boolean island as false; the model keeps what was written (G56, G69). Keys it does not read are an error at the reader.</summary>
+	[Test]
+	public void KeepsANonBooleanIslandAsWritten()
+	{
+		// language=yaml
+		var yaml =
+			"""
+			toc:
+			  - toc: kibana://reference
+			    path_prefix: reference/kibana
+			    island: yes
+			    children:
+			      - toc: kibana://reference/extra
+			        path_prefix: reference/kibana/extra
+			""";
+
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
+
+		var kibana = siteNav.TableOfContents[0].Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
+		kibana.Island.Should().BeFalse();
+		kibana.IslandRaw.Should().Be("yes");
+		kibana.Children[0].IslandRaw.Should().BeNull();
+
+		var messages = SiteNavigationConstraints.All.Validate(siteNav).Select(v => v.Message).ToList();
+		messages.Should().Contain(m => m.Contains("island 'yes'"));
+	}
+
 	[Test]
 	public void DeserializesSiteNavigationFile()
 	{
@@ -27,7 +55,7 @@ public class SiteNavigationFileTests
 		               path_prefix: /serverless/security
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.Should().NotBeNull();
 		siteNav.Phantoms.Should().HaveCount(2);
@@ -36,16 +64,16 @@ public class SiteNavigationFileTests
 
 		siteNav.TableOfContents.Should().HaveCount(3);
 
-		var observability = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var observability = siteNav.TableOfContents.ElementAt(0).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		observability.Source.ToString().Should().Be("docs-content://serverless/observability");
 		observability.PathPrefix.Should().Be("/serverless/observability");
 		observability.Children.Should().BeEmpty();
 
-		var search = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var search = siteNav.TableOfContents.ElementAt(1).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		search.Source.ToString().Should().Be("docs-content://serverless/search");
 		search.PathPrefix.Should().Be("/serverless/search");
 
-		var security = siteNav.TableOfContents.ElementAt(2).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var security = siteNav.TableOfContents.ElementAt(2).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		security.Source.ToString().Should().Be("docs-content://serverless/security");
 		security.PathPrefix.Should().Be("/serverless/security");
 	}
@@ -66,11 +94,11 @@ public class SiteNavigationFileTests
 		                   path_prefix: /platform/cloud
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(1);
 
-		var platform = siteNav.TableOfContents.First().Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var platform = siteNav.TableOfContents.First().Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		platform.Source.ToString().Should().Be("docs-content://platform/");
 		platform.PathPrefix.Should().Be("/platform");
 		platform.Children.Should().HaveCount(2);
@@ -93,10 +121,10 @@ public class SiteNavigationFileTests
 		             - toc: elasticsearch/reference
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(1);
-		var ref1 = siteNav.TableOfContents.First().Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var ref1 = siteNav.TableOfContents.First().Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		ref1.Source.ToString().Should().Be("docs-content://elasticsearch/reference");
 		ref1.PathPrefix.Should().BeEmpty();
 	}
@@ -113,17 +141,17 @@ public class SiteNavigationFileTests
 		             - toc: serverless/observability
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(3);
 
-		var elasticsearch = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var elasticsearch = siteNav.TableOfContents.ElementAt(0).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		elasticsearch.Source.ToString().Should().Be("elasticsearch://reference/current");
 
-		var kibana = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var kibana = siteNav.TableOfContents.ElementAt(1).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		kibana.Source.ToString().Should().Be("kibana://reference/8.0");
 
-		var serverless = siteNav.TableOfContents.ElementAt(2).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var serverless = siteNav.TableOfContents.ElementAt(2).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		serverless.Source.ToString().Should().Be("docs-content://serverless/observability");
 	}
 
@@ -141,14 +169,14 @@ public class SiteNavigationFileTests
 		               path_prefix: security
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(2);
 
-		var observability = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var observability = siteNav.TableOfContents.ElementAt(0).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		observability.Island.Should().BeTrue("island: true must be captured on the SiteTableOfContentsRef");
 
-		var security = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var security = siteNav.TableOfContents.ElementAt(1).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		security.Island.Should().BeFalse("island defaults to false when omitted");
 	}
 
@@ -161,7 +189,7 @@ public class SiteNavigationFileTests
 		             - toc: ://invalid
 		           """;
 
-		var act = () => SiteNavigationFile.Deserialize(yaml);
+		var act = () => SiteNavigationLoader.Deserialize(yaml);
 
 		act
 			.Should()
@@ -180,7 +208,7 @@ public class SiteNavigationFileTests
 		           """;
 
 		// A typo (no 'toc:' or 'section:' key) must throw rather than silently drop the entry.
-		var act = () => SiteNavigationFile.Deserialize(yaml);
+		var act = () => SiteNavigationLoader.Deserialize(yaml);
 
 		act.Should().Throw<SharpYaml.YamlException>().WithMessage("*has no 'toc:' key*");
 	}
@@ -200,11 +228,11 @@ public class SiteNavigationFileTests
 		               path_prefix: reference
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(2);
 
-		var guides = siteNav.TableOfContents.ElementAt(0).Should().BeOfType<SiteSectionRef>().Which;
+		var guides = siteNav.TableOfContents.ElementAt(0).Value.Should().BeOfType<SiteSectionRef>().Which;
 		guides.Title.Should().Be("Guides");
 		guides.IsExternal.Should().BeFalse();
 		guides.ExternalUrl.Should().BeNull();
@@ -212,7 +240,7 @@ public class SiteNavigationFileTests
 		guides.Children.ElementAt(0).Source.ToString().Should().Be("docs-content://get-started/");
 		guides.Children.ElementAt(1).Source.ToString().Should().Be("docs-content://solutions/");
 
-		var reference = siteNav.TableOfContents.ElementAt(1).Should().BeOfType<SiteTableOfContentsRef>().Which;
+		var reference = siteNav.TableOfContents.ElementAt(1).Value.Should().BeOfType<SiteTableOfContentsRef>().Which;
 		reference.Source.ToString().Should().Be("docs-content://reference/");
 	}
 
@@ -227,11 +255,11 @@ public class SiteNavigationFileTests
 		               external: https://www.elastic.co/docs/api/
 		           """;
 
-		var siteNav = SiteNavigationFile.Deserialize(yaml);
+		var siteNav = SiteNavigationLoader.Deserialize(yaml);
 
 		siteNav.TableOfContents.Should().HaveCount(1);
 
-		var apis = siteNav.TableOfContents.First().Should().BeOfType<SiteSectionRef>().Which;
+		var apis = siteNav.TableOfContents.First().Value.Should().BeOfType<SiteSectionRef>().Which;
 		apis.Title.Should().Be("APIs");
 		apis.IsExternal.Should().BeTrue();
 		apis.ExternalUrl.Should().Be("https://www.elastic.co/docs/api/");
@@ -248,7 +276,7 @@ public class SiteNavigationFileTests
 		var path = Path.Combine(root.FullName, "config", "navigation.yml");
 		File.Exists(path).Should().BeTrue();
 
-		var siteNav = SiteNavigationFile.Deserialize(File.ReadAllText(path));
+		var siteNav = SiteNavigationLoader.Deserialize(File.ReadAllText(path));
 
 		siteNav.TableOfContents.Should().NotBeEmpty();
 		foreach (var entry in siteNav.TableOfContents)

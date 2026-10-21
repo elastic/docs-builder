@@ -117,7 +117,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 		if (!outputFile.Directory!.Exists)
 			outputFile.Directory.Create();
 
-		var slice = renderContext.BuildContext.Configuration.Features.NavigationPreviewEnabled
+		var slice = renderContext.BuildContext.Features.NavigationPreviewEnabled
 			? DesignSystemLandingView.Create(viewModel)
 			: LandingView.Create(viewModel);
 
@@ -144,7 +144,7 @@ public class CodexGenerator(ILoggerFactory logFactory, BuildContext context, IDi
 			outputFile.Directory.Create();
 
 		await using var stream = _writeFileSystem.FileStream.New(outputFile.FullName, FileMode.Create);
-		var slice = renderContext.BuildContext.Configuration.Features.NavigationPreviewEnabled
+		var slice = renderContext.BuildContext.Features.NavigationPreviewEnabled
 			? DesignSystemGroupLandingView.Create(viewModel)
 			: GroupLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);

@@ -42,7 +42,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	public override ApplicableTo? Read(YamlReader reader)
 	{
-		var diagnostics = new List<(Severity, string)>();
+		var diagnostics = new List<ApplicabilityDiagnostic>();
 
 		if (reader.TokenType == YamlTokenType.Scalar)
 		{
@@ -102,6 +102,14 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			"ApplicableTo YAML serialization is not supported; applies_to is only ever read from YAML. See ApplicableToJsonConverter for JSON output."
 		);
 
+	private static bool ParseCollection(string? value, List<ApplicabilityDiagnostic> diagnostics, out AppliesCollection? availability)
+	{
+		var parsed = new List<(Severity, string)>();
+		var ok = AppliesCollection.TryParse(value, parsed, out availability);
+		diagnostics.AddRange(parsed.Select(d => (ApplicabilityDiagnostic)d));
+		return ok;
+	}
+
 	private static object? DeepMergeAppliesToNode(object? existing, object? incoming)
 	{
 		if (incoming is not Dictionary<string, object?> incomingDict)
@@ -123,7 +131,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static void MergeAppliesToListScalarLine(
 		Dictionary<string, object?> dictionary,
 		string line,
-		List<(Severity, string)> diagnostics
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		var trimmed = line.Trim();
@@ -139,7 +147,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		dictionary[key] = string.IsNullOrEmpty(val) ? null : val;
 	}
 
-	private ApplicableTo FinalizeApplicableTo(Dictionary<string, object?> dictionary, List<(Severity, string)> diagnostics)
+	private ApplicableTo FinalizeApplicableTo(Dictionary<string, object?> dictionary, List<ApplicabilityDiagnostic> diagnostics)
 	{
 		var applicableTo = new ApplicableTo();
 
@@ -157,27 +165,147 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		}
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
-			applicableTo.Stack = stackAvailability;
+			applicableTo = applicableTo with { Stack = stackAvailability };
 
-		AssignProduct(dictionary, applicableTo, diagnostics);
-		AssignServerless(dictionary, applicableTo, diagnostics);
-		AssignDeploymentType(dictionary, applicableTo, diagnostics);
+		AssignProduct(dictionary, ref applicableTo, diagnostics);
+		AssignServerless(dictionary, ref applicableTo, diagnostics);
+		AssignDeploymentType(dictionary, ref applicableTo, diagnostics);
 
 		if (TryGetDeployment(dictionary, diagnostics, out var deployment))
-			applicableTo.Deployment = deployment;
+			applicableTo = applicableTo with { Deployment = deployment };
 
 		if (TryGetProjectApplicability(dictionary, diagnostics, out var serverless))
-			applicableTo.Serverless = applicableTo.Serverless is not null
-				? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
-				: serverless;
+			applicableTo = applicableTo with
+			{
+				Serverless = applicableTo.Serverless is not null
+					? MergeServerlessProjectApplicability(applicableTo.Serverless, serverless)
+					: serverless
+			};
 
 		if (TryGetProductApplicability(dictionary, diagnostics, out var product))
-			applicableTo.ProductApplicability = product;
+			applicableTo = applicableTo with { ProductApplicability = product };
 
 		if (diagnostics.Count > 0)
-			applicableTo.Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics);
-		return applicableTo;
+			applicableTo = applicableTo with { Diagnostics = new ApplicabilityDiagnosticsCollection(diagnostics) };
+
+		var (unknown, ignored) = RecordDropped(dictionary);
+		return applicableTo with { UnknownKeys = unknown, IgnoredValues = ignored };
 	}
+
+	private static readonly string[] DeploymentKeys =
+	[
+		ApplicabilityKeys.Ece,
+		ApplicabilityKeys.Eck,
+		ApplicabilityKeys.Ess,
+		ApplicabilityKeys.Ech,
+		ApplicabilityKeys.Self
+	];
+
+	private static readonly string[] ProjectKeys =
+	[
+		ApplicabilityKeys.Elasticsearch,
+		ApplicabilityKeys.Observability,
+		ApplicabilityKeys.Security,
+		ApplicabilityKeys.VectorDb
+	];
+
+	private static readonly string[] ProductMappingKeys =
+	[
+		"ecctl",
+		"curator",
+		"apm_agent_android",
+		"apm_agent_dotnet",
+		"apm_agent_go",
+		"apm_agent_ios",
+		"apm_agent_java",
+		"apm_agent_node",
+		"apm_agent_php",
+		"apm_agent_python",
+		"apm_agent_ruby",
+		"apm_agent_rum_js",
+		"edot_ios",
+		"edot_android",
+		"edot_collector",
+		"edot_dotnet",
+		"edot_java",
+		"edot_node",
+		"edot_browser",
+		"edot_php",
+		"edot_python",
+		"edot_cf_aws",
+		"edot_cf_azure",
+		"edot_cf_gcp"
+	];
+
+	/// <summary>
+	/// What the readers above never look at: keys written under <c>deployment</c>, <c>serverless</c> or <c>product</c> that no reader maps
+	/// (and top-level keys that pass the known-key check but are not the exact key a reader maps, like <c>apm-agent-java</c>), and keys whose
+	/// value is not text. The top-level unknown and old-style keys are reported by <c>Diagnostics</c> and are not repeated here.
+	/// </summary>
+	private (IReadOnlyList<string> Unknown, IReadOnlyList<string> Ignored) RecordDropped(Dictionary<string, object?> dictionary)
+	{
+		var unknown = new List<string>();
+		var ignored = new List<string>();
+		string[] topRead =
+		[
+			ApplicabilityKeys.Stack,
+			ApplicabilityKeys.Deployment,
+			ApplicabilityKeys.Serverless,
+			ApplicabilityKeys.Product,
+			.. DeploymentKeys,
+			.. ProjectKeys,
+			.. ProductMappingKeys
+		];
+		foreach (var (key, value) in dictionary)
+		{
+			if (!topRead.Contains(key, StringComparer.Ordinal))
+			{
+				if (_knownKeys.Contains(key.Replace('_', '-'), StringComparer.Ordinal))
+					unknown.Add(key);
+				continue;
+			}
+
+			switch (key)
+			{
+				case ApplicabilityKeys.Deployment:
+					RecordContainer(key, value, DeploymentKeys, unknown, ignored);
+					break;
+				case ApplicabilityKeys.Serverless:
+					RecordContainer(key, value, ProjectKeys, unknown, ignored);
+					break;
+				case ApplicabilityKeys.Product:
+					if (value is Dictionary<string, object?>)
+						RecordContainer(key, value, ProductMappingKeys, unknown, ignored);
+					else if (!IsText(value))
+						ignored.Add(key);
+					break;
+				default:
+					if (!IsText(value))
+						ignored.Add(key);
+					break;
+			}
+		}
+
+		return (unknown, ignored);
+	}
+
+	private static void RecordContainer(string name, object? value, string[] read, List<string> unknown, List<string> ignored)
+	{
+		if (value is Dictionary<string, object?> nested)
+		{
+			foreach (var (key, v) in nested)
+			{
+				if (!read.Contains(key, StringComparer.Ordinal))
+					unknown.Add($"{name}.{key}");
+				else if (!IsText(v))
+					ignored.Add($"{name}.{key}");
+			}
+		}
+		else if (!IsText(value))
+			ignored.Add(name);
+	}
+
+	private static bool IsText(object? value) => value is null or string;
 
 	private static ServerlessProjectApplicability MergeServerlessProjectApplicability(
 		ServerlessProjectApplicability target,
@@ -193,33 +321,36 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static void AssignDeploymentType(
 		Dictionary<string, object?> dictionary,
-		ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		ref ApplicableTo applicableTo,
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Deployment, out var deploymentType))
 			return;
 
 		if (deploymentType is null || (deploymentType is string s && string.IsNullOrWhiteSpace(s)))
-			applicableTo.Deployment = DeploymentApplicability.All;
+			applicableTo = applicableTo with { Deployment = DeploymentApplicability.All };
 		else if (deploymentType is string deploymentTypeString)
 		{
-			var applies = AppliesCollection.TryParse(deploymentTypeString, diagnostics, out var a) ? a : null;
+			var applies = ParseCollection(deploymentTypeString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Ess, applies, diagnostics);
-			applicableTo.Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies };
+			applicableTo = applicableTo with
+			{
+				Deployment = new DeploymentApplicability { Ece = applies, Eck = applies, Ess = applies, Self = applies }
+			};
 		}
 		else if (deploymentType is Dictionary<string, object?> deploymentDictionary)
 		{
 			if (TryGetDeployment(deploymentDictionary, diagnostics, out var applicability))
-				applicableTo.Deployment = applicability;
+				applicableTo = applicableTo with { Deployment = applicability };
 		}
 	}
 
 	private static void AssignProduct(
 		Dictionary<string, object?> dictionary,
-		ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		ref ApplicableTo applicableTo,
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Product, out var productValue))
@@ -229,49 +360,52 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (productValue is not Dictionary<string, object?> productDictionary)
 		{
 			if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Product, diagnostics, out var productAvailability))
-				applicableTo.Product = productAvailability;
+				applicableTo = applicableTo with { Product = productAvailability };
 			return;
 		}
 
 		// Handle dictionary case
 		if (TryGetProductApplicability(productDictionary, diagnostics, out var applicability))
-			applicableTo.ProductApplicability = applicability;
+			applicableTo = applicableTo with { ProductApplicability = applicability };
 	}
 
 	private static void AssignServerless(
 		Dictionary<string, object?> dictionary,
-		ApplicableTo applicableTo,
-		List<(Severity, string)> diagnostics
+		ref ApplicableTo applicableTo,
+		List<ApplicabilityDiagnostic> diagnostics
 	)
 	{
 		if (!dictionary.TryGetValue(ApplicabilityKeys.Serverless, out var serverless))
 			return;
 
 		if (serverless is null || (serverless is string s && string.IsNullOrWhiteSpace(s)))
-			applicableTo.Serverless = ServerlessProjectApplicability.All;
+			applicableTo = applicableTo with { Serverless = ServerlessProjectApplicability.All };
 		else if (serverless is string serverlessString)
 		{
-			var applies = AppliesCollection.TryParse(serverlessString, diagnostics, out var a) ? a : null;
+			var applies = ParseCollection(serverlessString, diagnostics, out var a) ? a : null;
 			if (applies is not null)
 				ValidateApplicabilityCollection(ApplicabilityKeys.Serverless, applies, diagnostics);
-			applicableTo.Serverless = new ServerlessProjectApplicability
+			applicableTo = applicableTo with
 			{
-				Elasticsearch = applies,
-				Observability = applies,
-				Security = applies,
-				VectorDatabase = applies
+				Serverless = new ServerlessProjectApplicability
+				{
+					Elasticsearch = applies,
+					Observability = applies,
+					Security = applies,
+					VectorDatabase = applies
+				}
 			};
 		}
 		else if (serverless is Dictionary<string, object?> serverlessDictionary)
 		{
 			if (TryGetProjectApplicability(serverlessDictionary, diagnostics, out var applicability))
-				applicableTo.Serverless = applicability;
+				applicableTo = applicableTo with { Serverless = applicability };
 		}
 	}
 
 	private static bool TryGetDeployment(
 		Dictionary<string, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out DeploymentApplicability? applicability
 	)
 	{
@@ -288,11 +422,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			{ ApplicabilityKeys.Ece, a => d.Ece = a },
-			{ ApplicabilityKeys.Eck, a => d.Eck = a },
-			{ ApplicabilityKeys.Ess, a => d.Ess = a },
-			{ ApplicabilityKeys.Ech, a => d.Ess = a },
-			{ ApplicabilityKeys.Self, a => d.Self = a }
+			{ ApplicabilityKeys.Ece, a => d = d with { Ece = a } },
+			{ ApplicabilityKeys.Eck, a => d = d with { Eck = a } },
+			{ ApplicabilityKeys.Ess, a => d = d with { Ess = a } },
+			{ ApplicabilityKeys.Ech, a => d = d with { Ess = a } },
+			{ ApplicabilityKeys.Self, a => d = d with { Self = a } }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -311,7 +445,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool TryGetProjectApplicability(
 		Dictionary<string, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ServerlessProjectApplicability? applicability
 	)
 	{
@@ -321,10 +455,10 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			[ApplicabilityKeys.Elasticsearch] = a => serverlessAvailability.Elasticsearch = a,
-			[ApplicabilityKeys.Observability] = a => serverlessAvailability.Observability = a,
-			[ApplicabilityKeys.Security] = a => serverlessAvailability.Security = a,
-			[ApplicabilityKeys.VectorDb] = a => serverlessAvailability.VectorDatabase = a
+			[ApplicabilityKeys.Elasticsearch] = a => serverlessAvailability = serverlessAvailability with { Elasticsearch = a },
+			[ApplicabilityKeys.Observability] = a => serverlessAvailability = serverlessAvailability with { Observability = a },
+			[ApplicabilityKeys.Security] = a => serverlessAvailability = serverlessAvailability with { Security = a },
+			[ApplicabilityKeys.VectorDb] = a => serverlessAvailability = serverlessAvailability with { VectorDatabase = a }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -343,7 +477,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 	private static bool TryGetProductApplicability(
 		Dictionary<string, object?> dictionary,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		[NotNullWhen(true)] out ProductApplicability? applicability
 	)
 	{
@@ -353,30 +487,30 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 
 		var mapping = new Dictionary<string, Action<AppliesCollection?>>
 		{
-			{ "ecctl", a => productAvailability.Ecctl = a },
-			{ "curator", a => productAvailability.Curator = a },
-			{ "apm_agent_android", a => productAvailability.ApmAgentAndroid = a },
-			{ "apm_agent_dotnet", a => productAvailability.ApmAgentDotnet = a },
-			{ "apm_agent_go", a => productAvailability.ApmAgentGo = a },
-			{ "apm_agent_ios", a => productAvailability.ApmAgentIos = a },
-			{ "apm_agent_java", a => productAvailability.ApmAgentJava = a },
-			{ "apm_agent_node", a => productAvailability.ApmAgentNode = a },
-			{ "apm_agent_php", a => productAvailability.ApmAgentPhp = a },
-			{ "apm_agent_python", a => productAvailability.ApmAgentPython = a },
-			{ "apm_agent_ruby", a => productAvailability.ApmAgentRuby = a },
-			{ "apm_agent_rum_js", a => productAvailability.ApmAgentRumJs = a },
-			{ "edot_ios", a => productAvailability.EdotIos = a },
-			{ "edot_android", a => productAvailability.EdotAndroid = a },
-			{ "edot_collector", a => productAvailability.EdotCollector = a },
-			{ "edot_dotnet", a => productAvailability.EdotDotnet = a },
-			{ "edot_java", a => productAvailability.EdotJava = a },
-			{ "edot_node", a => productAvailability.EdotNode = a },
-			{ "edot_browser", a => productAvailability.EdotBrowser = a },
-			{ "edot_php", a => productAvailability.EdotPhp = a },
-			{ "edot_python", a => productAvailability.EdotPython = a },
-			{ "edot_cf_aws", a => productAvailability.EdotCfAws = a },
-			{ "edot_cf_azure", a => productAvailability.EdotCfAzure = a },
-			{ "edot_cf_gcp", a => productAvailability.EdotCfGcp = a }
+			{ "ecctl", a => productAvailability = productAvailability with { Ecctl = a } },
+			{ "curator", a => productAvailability = productAvailability with { Curator = a } },
+			{ "apm_agent_android", a => productAvailability = productAvailability with { ApmAgentAndroid = a } },
+			{ "apm_agent_dotnet", a => productAvailability = productAvailability with { ApmAgentDotnet = a } },
+			{ "apm_agent_go", a => productAvailability = productAvailability with { ApmAgentGo = a } },
+			{ "apm_agent_ios", a => productAvailability = productAvailability with { ApmAgentIos = a } },
+			{ "apm_agent_java", a => productAvailability = productAvailability with { ApmAgentJava = a } },
+			{ "apm_agent_node", a => productAvailability = productAvailability with { ApmAgentNode = a } },
+			{ "apm_agent_php", a => productAvailability = productAvailability with { ApmAgentPhp = a } },
+			{ "apm_agent_python", a => productAvailability = productAvailability with { ApmAgentPython = a } },
+			{ "apm_agent_ruby", a => productAvailability = productAvailability with { ApmAgentRuby = a } },
+			{ "apm_agent_rum_js", a => productAvailability = productAvailability with { ApmAgentRumJs = a } },
+			{ "edot_ios", a => productAvailability = productAvailability with { EdotIos = a } },
+			{ "edot_android", a => productAvailability = productAvailability with { EdotAndroid = a } },
+			{ "edot_collector", a => productAvailability = productAvailability with { EdotCollector = a } },
+			{ "edot_dotnet", a => productAvailability = productAvailability with { EdotDotnet = a } },
+			{ "edot_java", a => productAvailability = productAvailability with { EdotJava = a } },
+			{ "edot_node", a => productAvailability = productAvailability with { EdotNode = a } },
+			{ "edot_browser", a => productAvailability = productAvailability with { EdotBrowser = a } },
+			{ "edot_php", a => productAvailability = productAvailability with { EdotPhp = a } },
+			{ "edot_python", a => productAvailability = productAvailability with { EdotPython = a } },
+			{ "edot_cf_aws", a => productAvailability = productAvailability with { EdotCfAws = a } },
+			{ "edot_cf_azure", a => productAvailability = productAvailability with { EdotCfAzure = a } },
+			{ "edot_cf_gcp", a => productAvailability = productAvailability with { EdotCfGcp = a } }
 		};
 
 		foreach (var (key, action) in mapping)
@@ -407,7 +541,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 	private static bool TryGetApplicabilityOverTime(
 		Dictionary<string, object?> dictionary,
 		string key,
-		List<(Severity, string)> diagnostics,
+		List<ApplicabilityDiagnostic> diagnostics,
 		out AppliesCollection? availability
 	)
 	{
@@ -419,7 +553,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			availability = AppliesCollection.GenerallyAvailable;
 		else if (target is string stackString)
 		{
-			availability = AppliesCollection.TryParse(stackString, diagnostics, out var a) ? a : null;
+			availability = ParseCollection(stackString, diagnostics, out var a) ? a : null;
 
 			if (availability is not null)
 				ValidateApplicabilityCollection(key, availability, diagnostics);
@@ -427,7 +561,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		return availability is not null;
 	}
 
-	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<(Severity, string)> diagnostics)
+	private static void ValidateApplicabilityCollection(string key, AppliesCollection collection, List<ApplicabilityDiagnostic> diagnostics)
 	{
 		var items = collection.ToList();
 
@@ -436,7 +570,11 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			if (items.Any(a => a.Version is not null && a.Version != AllVersionsSpec.Instance))
 				diagnostics.Add(
-					(Severity.Error, $"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.")
+					new ApplicabilityDiagnostic(
+						Severity.Error,
+						$"Can't specify a version for '{key}' because this product is not versioned. Remove the version, or use 'stack:' for version-specific requirements.",
+						ApplicableToConstraints.VersionlessKeysHaveNoVersion.Name
+					)
 				);
 			return;
 		}
@@ -452,8 +590,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -465,8 +607,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (greaterThanItems.Count > 1)
 		{
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -482,8 +628,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 					$"{item.Lifecycle} ({item.Version!.Min.Major}.{item.Version.Min.Minor}-{item.Version.Max!.Major}.{item.Version.Max.Minor})"
 			);
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 
@@ -503,8 +653,12 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		if (hasOverlaps)
 		{
 			diagnostics.Add(
-				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
+				new ApplicabilityDiagnostic(
+					Severity.Hint,
+					$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.",
+					ApplicableToConstraints.ApplicabilityVersionsConsistent.Name
+				) // Temporary downgrade to Hint until the currently available docs are adjusted
+
 			);
 		}
 	}

@@ -1,0 +1,190 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.ComponentModel.DataAnnotations;
+using Elastic.Documentation.Versions;
+using Generator.Equals;
+using NetEscapades.EnumGenerators;
+
+namespace Elastic.Documentation.Catalog;
+
+/// <summary>Every versioning system from <c>versions.yml</c>, keyed by id. Part of the <see cref="GlobalCatalog"/> aggregate.</summary>
+/// <remarks>
+/// Constructed through <c>GlobalCatalog</c>.
+/// </remarks>
+[Equatable]
+public sealed partial record VersioningSystemCatalog
+{
+	[UnorderedEquality]
+	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
+	public VersioningSystem GetVersioningSystem(VersioningSystemId versioningSystem)
+	{
+		if (!VersioningSystems.TryGetValue(versioningSystem, out var version))
+			throw new ArgumentException($"Unknown versioning system: {versioningSystem}");
+		return version;
+	}
+}
+
+[EnumExtensions]
+public enum VersioningSystemId
+{
+	[Display(Name = "stack")]
+	Stack,
+	[Display(Name = "all")]
+	All,
+	[Display(Name = "ece")]
+	Ece,
+	[Display(Name = "ech")]
+	Ech,
+	[Display(Name = "eck")]
+	Eck,
+	[Display(Name = "ess")]
+	Ess,
+	[Display(Name = "ecs")]
+	Ecs,
+	[Display(Name = "self")]
+	Self,
+	[Display(Name = "ecctl")]
+	Ecctl,
+	[Display(Name = "curator")]
+	Curator,
+	[Display(Name = "serverless")]
+	Serverless,
+	[Display(Name = "elasticsearch")]
+	ElasticsearchProject,
+	[Display(Name = "observability")]
+	ObservabilityProject,
+	[Display(Name = "security")]
+	SecurityProject,
+	[Display(Name = "apm-agent-android")]
+	ApmAgentAndroid,
+	[Display(Name = "apm-agent-ios")]
+	ApmAgentIos,
+	[Display(Name = "apm-agent-dotnet")]
+	ApmAgentDotnet,
+	[Display(Name = "apm-agent-go")]
+	ApmAgentGo,
+	[Display(Name = "apm-agent-java")]
+	ApmAgentJava,
+	[Display(Name = "apm-agent-node")]
+	ApmAgentNode,
+	[Display(Name = "apm-agent-php")]
+	ApmAgentPhp,
+	[Display(Name = "apm-agent-python")]
+	ApmAgentPython,
+	[Display(Name = "apm-agent-ruby")]
+	ApmAgentRuby,
+	[Display(Name = "apm-agent-rum-js")]
+	ApmAgentRumJs,
+	[Display(Name = "apm-attacher")]
+	ApmAttacher,
+	[Display(Name = "apm-lambda")]
+	ApmLambda,
+	[Display(Name = "ecs-logging-dotnet")]
+	EcsLoggingDotnet,
+	[Display(Name = "ecs-logging-go-logrus")]
+	EcsLoggingGoLogrus,
+	[Display(Name = "ecs-logging-go-zap")]
+	EcsLoggingGoZap,
+	[Display(Name = "ecs-logging-go-zerolog")]
+	EcsLoggingGoZerolog,
+	[Display(Name = "ecs-logging-java")]
+	EcsLoggingJava,
+	[Display(Name = "ecs-logging-nodejs")]
+	EcsLoggingNodeJs,
+	[Display(Name = "ecs-logging-php")]
+	EcsLoggingPhp,
+	[Display(Name = "ecs-logging-python")]
+	EcsLoggingPython,
+	[Display(Name = "ecs-logging-ruby")]
+	EcsLoggingRuby,
+	[Display(Name = "esf")]
+	Esf,
+	[Display(Name = "edot-ios")]
+	EdotIos,
+	[Display(Name = "edot-android")]
+	EdotAndroid,
+	[Display(Name = "edot-dotnet")]
+	EdotDotnet,
+	[Display(Name = "edot-java")]
+	EdotJava,
+	[Display(Name = "edot-node")]
+	EdotNode,
+	[Display(Name = "edot-browser")]
+	EdotBrowser,
+	[Display(Name = "edot-php")]
+	EdotPhp,
+	[Display(Name = "edot-python")]
+	EdotPython,
+	[Display(Name = "edot-cf-aws")]
+	EdotCfAws,
+	[Display(Name = "edot-cf-azure")]
+	EdotCfAzure,
+	[Display(Name = "edot-cf-gcp")]
+	EdotCfGcp,
+	[Display(Name = "terraform-google-edot-cf")]
+	TerraformGoogleEdotCf,
+	[Display(Name = "edot-collector")]
+	EdotCollector,
+	[Display(Name = "search-ui")]
+	SearchUI,
+	[Display(Name = "cloud-terraform")]
+	CloudTerraform,
+	[Display(Name = "elasticsearch-client-go")]
+	ElasticsearchClientGo,
+	[Display(Name = "elasticsearch-client-java")]
+	ElasticsearchClientJava,
+	[Display(Name = "elasticsearch-client-javascript")]
+	ElasticsearchClientJavascript,
+	[Display(Name = "elasticsearch-client-dotnet")]
+	ElasticsearchClientDotnet,
+	[Display(Name = "elasticsearch-client-php")]
+	ElasticsearchClientPhp,
+	[Display(Name = "elasticsearch-client-python")]
+	ElasticsearchClientPython,
+	[Display(Name = "elasticsearch-client-ruby")]
+	ElasticsearchClientRuby,
+	[Display(Name = "elasticsearch-client-rust")]
+	ElasticsearchClientRust,
+
+	[Display(Name = "none")]
+	None = -1,
+}
+
+/// <summary>A version line with a <c>base</c> (first version the docs cover) and a <c>current</c> (latest release).</summary>
+/// <remarks>
+/// Constructed through <c>VersioningSystemCatalog</c>.
+/// </remarks>
+public sealed record VersioningSystem
+{
+	/// <summary>
+	/// The sentinel major version value used for "versionless" products (serverless, cloud, etc.)
+	/// Products with this version should not display a version dropdown.
+	/// </summary>
+	public const int VersionlessSentinel = 99999;
+
+	/// <summary>
+	/// A versionless sentinel for products that have no versioning system at all
+	/// (e.g. release-notes-only products without public documentation).
+	/// </summary>
+	public static VersioningSystem None { get; } = new()
+	{
+		Id = VersioningSystemId.None,
+		Base = new SemVersion(VersionlessSentinel, 0, 0),
+		Current = new SemVersion(VersionlessSentinel, 0, 0)
+	};
+
+	public required VersioningSystemId Id { get; init; }
+
+	public required SemVersion Base { get; init; }
+
+	public required SemVersion Current { get; init; }
+
+	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;
+	/// <summary>
+	/// Returns true if this versioning system represents a "versionless" product
+	/// (e.g., serverless, cloud services) that should not display a version dropdown.
+	/// </summary>
+	public bool IsVersionless => Current.Major >= VersionlessSentinel;
+}

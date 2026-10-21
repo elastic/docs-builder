@@ -12,6 +12,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Navigation.Assembler;
 
@@ -34,7 +35,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 	private readonly string? _sitePrefix;
 
 	public SiteNavigation(
-		SiteNavigationFile siteNavigationFile,
+		SiteNavigationDefinition siteNavigationFile,
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix,
@@ -51,7 +52,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IsUsingNavigationDropdown = false;
 		Phantoms = siteNavigationFile.Phantoms;
 		DeclaredPhantoms = [.. siteNavigationFile.Phantoms.Select(p => new Uri(p.Source))];
-		DeclaredTableOfContents = SiteNavigationFile.GetAllDeclaredSources(siteNavigationFile);
+		DeclaredTableOfContents = SiteNavigationDefinition.GetAllDeclaredSources(siteNavigationFile);
 		NavigationTitle = "Docs";
 
 		_nodes = [];
@@ -59,11 +60,8 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		{
 			foreach (var (identifier, node) in setNavigation.TableOfContentNodes)
 			{
-				if (!_nodes.TryAdd(identifier, node))
-				{
-					//TODO configurationFileProvider navigation path
-					context.EmitError(context.ConfigurationPath, $"Duplicate navigation identifier: {identifier} in navigation.yml");
-				}
+				// A duplicate identifier is reported once, by AssembledSiteConstraints (TocIdentifiersUnique), when the assembler checks the site.
+				_ = _nodes.TryAdd(identifier, node);
 			}
 		}
 		UnseenNodes = [.. _nodes.Keys];
@@ -133,8 +131,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			// impossible since unseen nodes are build from _nodes
 			if (!_nodes.TryGetValue(node, out var value))
 				continue;
-			if (!DeclaredPhantoms.Contains(node))
-				context.EmitHint(context.ConfigurationPath, $"Navigation does not explicitly declare: {node} as a phantom");
+			// A built table of contents that is neither mounted nor a declared phantom is reported once, by AssembledSiteConstraints (BuiltTocPlaced).
 
 			// ensure the parent of phantom nodes is `SiteNavigation`
 			value.Parent = this;
@@ -363,18 +360,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 			}
 		}
 
-		// Check for any undeclared nested TOCs in the node's children
-		INavigationItem[] allNodeChildren = [.. node.NavigationItems, node.Index];
-		foreach (var nodeChild in allNodeChildren)
-		{
-			if (nodeChild is not IRootNavigationItem<INavigationModel, INavigationItem> rootChild)
-				continue;
-			if (DeclaredTableOfContents.Contains(rootChild.Identifier) || DeclaredPhantoms.Contains(rootChild.Identifier))
-				continue;
-
-			context.EmitWarning(context.ConfigurationPath, $"Navigation does not explicitly declare: {rootChild.Identifier}");
-		}
-
+		// An undeclared nested table of contents is reported once, by AssembledSiteConstraints (NestedTocDeclared).
 		switch (node)
 		{
 			case SiteNavigation:

@@ -3,75 +3,41 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Codex;
 
+/// <summary>What a loaded codex configuration is for; <see cref="Publish"/> also requires what publishing needs.</summary>
+internal enum CodexLoadPurpose
+{
+	/// <summary>Read the configuration (update redirects, ...): only the file's own rules apply.</summary>
+	Read,
+
+	/// <summary>Publish the codex: additionally checks <see cref="CodexPublishingConstraints"/>, e.g. that it names its environment.</summary>
+	Publish
+}
+
 internal static class CodexConfigurationLoader
 {
 	/// <summary>
-	/// Loads a <see cref="CodexConfiguration"/> and its required <paramref name="environment"/>
-	/// field from <paramref name="configFile"/>. Returns <c>false</c> and emits a diagnostic on
-	/// any failure (file missing, unreadable, missing environment). Use <c>out _</c> to discard
-	/// the environment when the caller resolves it from other sources.
+	/// Loads a <see cref="CodexConfiguration"/> from <paramref name="configFile"/> and checks it once: against
+	/// <see cref="CodexConfigurationConstraints"/>, and for <see cref="CodexLoadPurpose.Publish"/> also <see cref="CodexPublishingConstraints"/>.
+	/// Every violation is written to <paramref name="collector"/>. Returns <c>false</c> when the file is missing or unreadable or a rule at error severity failed.
 	/// </summary>
-	internal static bool TryLoad(
+	internal static bool Load(
 		IFileInfo configFile,
 		string originalPath,
 		IDiagnosticsCollector collector,
-		out CodexConfiguration config,
-		out string environment
-	)
-	{
-		environment = string.Empty;
-		if (!TryLoadCore(configFile, originalPath, collector, out config))
-			return false;
-
-		if (string.IsNullOrWhiteSpace(config.Environment))
-		{
-			collector.EmitGlobalError("Codex configuration must specify an 'environment' (e.g., 'internal', 'security').");
-			return false;
-		}
-
-		environment = config.Environment;
-		return true;
-	}
-
-	/// <summary>
-	/// Loads a <see cref="CodexConfiguration"/> without requiring the <c>environment</c> field.
-	/// Use for commands that resolve the environment from other sources (CLI argument, env var).
-	/// </summary>
-	internal static bool TryLoad(
-		IFileInfo configFile,
-		string originalPath,
-		IDiagnosticsCollector collector,
-		out CodexConfiguration config
-	) => TryLoadCore(configFile, originalPath, collector, out config);
-
-	private static bool TryLoadCore(
-		IFileInfo configFile,
-		string originalPath,
-		IDiagnosticsCollector collector,
+		CodexLoadPurpose purpose,
 		out CodexConfiguration config
 	)
 	{
-		config = default!;
-		try
-		{
-			if (!configFile.Exists)
-			{
-				collector.EmitGlobalError($"Codex configuration file not found: {originalPath}");
-				return false;
-			}
-
-			config = CodexConfiguration.Load(configFile);
-			return true;
-		}
-		catch (Exception ex)
-		{
-			collector.EmitGlobalError($"Failed to read codex configuration '{originalPath}': {ex.Message}", ex);
-			return false;
-		}
+		var result = CodexSiteLoader.Load(configFile, originalPath, forPublish: purpose == CodexLoadPurpose.Publish);
+		foreach (var diagnostic in result.Diagnostics)
+			collector.Write(diagnostic);
+		config = result.Value!;
+		return !result.HasErrors;
 	}
 }

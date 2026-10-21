@@ -4,9 +4,12 @@
 
 using System.IO.Abstractions;
 using System.Security;
+using Elastic.Documentation.Codex;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
@@ -53,7 +56,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			return null;
 
 		var json = await context.ReadFileSystem.File.ReadAllTextAsync(snapshotFilePath, ctx);
-		var linkRegistry = LinkRegistry.Deserialize(json);
+		var linkRegistry = LinkLoader.LoadRegistry(json, snapshotFilePath).Unwrap(logger, "link-index snapshot");
 
 		var checkouts = new List<CodexCheckout>();
 		foreach (var subDir in checkoutDir.GetDirectories())
@@ -74,11 +77,11 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 			if (docsetFile == null)
 				continue;
 
-			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing();
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(subDir.FullName, docsDirectory.FullName);
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
-			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
+			CheckDocset(context, repoName, docSet, docsPathForRef, docsetFile);
 
 			string currentCommit;
 			try
@@ -119,7 +122,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		if (!checkoutDir.Exists)
 			checkoutDir.Create();
 
-		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
+		var linkRegistry = (await linkIndexReader.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 		var repoEntries = GetRepositoryEntries(linkRegistry);
 
 		_logger.LogInformation("Cloning {Count} documentation sets to {Directory}", repoEntries.Count, checkoutDir.FullName);
@@ -144,7 +147,7 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 
 		var snapshotFilePath = Path.Join(context.CheckoutDirectory.FullName, LinkRegistrySnapshotFileName);
 
-		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkRegistry.Serialize(linkRegistry), ctx);
+		await context.WriteFileSystem.File.WriteAllTextAsync(snapshotFilePath, LinkLoader.Serialize(linkRegistry), ctx);
 
 		return new CodexCloneResult(checkouts, linkRegistry);
 	}
@@ -241,12 +244,12 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 				return null;
 			}
 
-			var docSet = DocumentationSetFile.LoadMetadata(docsetFile);
+			var docSet = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing();
 			var docsDirectory = docsetFile.Directory!;
 			var docsPath = Path.GetRelativePath(repoDir.FullName, docsDirectory.FullName);
 
 			var docsPathForRef = string.IsNullOrEmpty(docsPath) || docsPath == "." ? "." : docsPath.Replace('\\', '/');
-			WarnIfRegistryMismatch(context, repoName, docSet, docsPathForRef);
+			CheckDocset(context, repoName, docSet, docsPathForRef, docsetFile);
 			var docSetRef = CreateDocumentationSetReference(repoName, entry, docsPathForRef, docSet);
 
 			return new CodexCheckout(docSetRef, repoDir, docsDirectory, docsetFile, currentCommit);
@@ -271,13 +274,13 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	{
 		// A known-path candidate is re-encountered by the recursive walk below (e.g. `docs/docset.yml`
 		// lives inside `docs/`), so metadata is cached per call to avoid parsing the same file twice.
-		var metadataCache = new Dictionary<string, DocumentationSetFile>();
+		var metadataCache = new Dictionary<string, DocumentationSetDefinition>();
 
 		bool MatchesEnvironment(IFileInfo file)
 		{
 			if (!metadataCache.TryGetValue(file.FullName, out var docSet))
 			{
-				docSet = DocumentationSetFile.LoadMetadata(file);
+				docSet = DocumentationSetLoader.LoadMetadata(file).OrThrowIfMissing();
 				metadataCache[file.FullName] = docSet;
 			}
 			return string.Equals(docSet.Registry, environment, StringComparison.OrdinalIgnoreCase);
@@ -339,13 +342,32 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 	}
 
 	/// <summary>
+	/// A docset is paired with the codex site it is listed in here, once, and checked against it (its <c>codex.group</c> must be one of
+	/// the site's groups); then the registry it declares is compared to the codex environment.
+	/// </summary>
+	private static void CheckDocset(
+		CodexContext context,
+		string repoName,
+		DocumentationSetDefinition docSet,
+		string docsPath,
+		IFileInfo docsetFile
+	)
+	{
+		_ = context.Collector.Write(
+			DocumentationSetInCodexConstraints.All.Report(new DocumentationSetInCodex(docSet, context.Configuration)),
+			docsetFile.FullName
+		);
+		WarnIfRegistryMismatch(context, repoName, docSet, docsPath);
+	}
+
+	/// <summary>
 	/// Warns when the docset chosen for a repository does not declare the codex environment as its
 	/// <c>registry</c> (including when <c>registry</c> is absent entirely). This only ever happens via
 	/// the fallback search order in <see cref="FindDocsetFile"/>, since a matching docset is always
 	/// preferred when one exists — so a mismatch usually means the repository has not opted in yet.
 	/// Kept as a warning rather than a hard error so existing repositories are not broken outright.
 	/// </summary>
-	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetFile docSet, string docsPath)
+	private static void WarnIfRegistryMismatch(CodexContext context, string repoName, DocumentationSetDefinition docSet, string docsPath)
 	{
 		if (string.Equals(docSet.Registry, context.EnvironmentName, StringComparison.OrdinalIgnoreCase))
 			return;
@@ -362,17 +384,8 @@ public class CodexCloneService(ILoggerFactory logFactory, ILinkIndexReader linkI
 		string repoName,
 		LinkRegistryEntry entry,
 		string docsPath,
-		DocumentationSetFile docSet
-	) =>
-		new()
-		{
-			Name = repoName,
-			Origin = $"elastic/{repoName}",
-			Branch = entry.Branch,
-			Path = docsPath,
-			Group = docSet.Codex?.Group,
-			Icon = docSet.Icon
-		};
+		DocumentationSetDefinition docSet
+	) => CodexDocumentationSetReference.ForRepository(repoName, entry.Branch, docsPath, docSet.CodexGroup, docSet.Icon);
 
 	private static string GetGitUrl(string origin)
 	{

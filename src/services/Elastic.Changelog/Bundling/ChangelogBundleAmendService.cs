@@ -77,7 +77,8 @@ public class ChangelogBundleAmendService(
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
-	CdnChangelogFetcher? bundleFetcher = null
+	CdnChangelogFetcher? bundleFetcher = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	/// <summary>
@@ -89,9 +90,8 @@ public class ChangelogBundleAmendService(
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
 	private readonly CdnChangelogFetcher _bundleFetcher = bundleFetcher ?? new CdnChangelogFetcher(logFactory, fileSystem);
-	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
-		: null;
+	private readonly ChangelogConfigurationLoader? _configLoader = configurationLoader
+		?? (configurationContext != null ? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem) : null);
 
 	/// <summary>
 	/// Amends a bundle with additional or excluded changelog entries, creating a new immutable amend file.
@@ -113,7 +113,7 @@ public class ChangelogBundleAmendService(
 			ChangelogConfiguration? changelogConfig = null;
 			if (_configLoader != null)
 			{
-				changelogConfig = await _configLoader.LoadChangelogConfiguration(collector, null, ctx);
+				changelogConfig = (await _configLoader.Load(null, ctx)).EmitTo(collector);
 				if (changelogConfig is null)
 					return false;
 			}
@@ -183,21 +183,24 @@ public class ChangelogBundleAmendService(
 			if (removeSources is null)
 				return false;
 
-			var effectiveEntries = BundleAmendMerger.MergeEntries(parentBundle.Entries, existingAmendBundles);
+			var effectiveBundle = parentBundle.ApplyAmends([.. existingAmendBundles.Select(a => new BundleAmend(a))]).Value!;
+			var effectiveEntries = effectiveBundle.Entries;
 			var appliedExclusionKeys = BundleAmendMerger.CollectAppliedExclusionKeys(existingAmendBundles);
 
+			// what is written, and what was asked for: with --force an exclusion is written with the checksum of the entry it matched by name,
+			// and the rules are asked about the request
 			var excludeEntries = new List<BundledEntry>();
+			var requestedExclusions = new List<BundledEntry>();
 			foreach (var removeSource in removeSources)
 			{
 				var exclusion = BuildExclusionEntry(collector, removeSource, effectiveEntries, appliedExclusionKeys, input.Force);
-				if (exclusion == null)
-					return false;
 				if (exclusion is RemoveExclusionResult.Skip)
 					continue;
 
-				var entry = ((RemoveExclusionResult.Add)exclusion).Entry;
-				excludeEntries.Add(entry);
-				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
+				var add = (RemoveExclusionResult.Add)exclusion;
+				excludeEntries.Add(add.Entry);
+				requestedExclusions.Add(add.Requested);
+				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(add.Entry));
 			}
 
 			var entries = new List<BundledEntry>();
@@ -211,6 +214,20 @@ public class ChangelogBundleAmendService(
 					entries.Add(entry);
 				}
 			}
+
+			if (
+				!AmendHoldsToRules(
+					collector,
+					parentBundle,
+					effectiveBundle,
+					requestedExclusions,
+					entries,
+					addSources,
+					removeSources,
+					input.Force
+				)
+			)
+				return false;
 
 			if (excludeEntries.Count == 0 && entries.Count == 0 && input.Description is null)
 			{
@@ -283,9 +300,11 @@ public class ChangelogBundleAmendService(
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
 			// CDN fetches all derive from a bundle file's own products.
-			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries, description: amendDescription);
+			var amendResult = Bundle.AmendOf(parentBundle.Products, entries, excludeEntries, amendDescription);
+			if (amendResult.EmitErrorsTo(collector) is not { } amendBundle)
+				return false;
 
-			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
+			var yaml = ReleaseNotesLoader.Serialize(amendBundle);
 
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
@@ -621,7 +640,7 @@ public class ChangelogBundleAmendService(
 
 		try
 		{
-			var bundle = ReleaseNotesSerialization.DeserializeBundle(fetched.Value.Content);
+			var bundle = ReleaseNotesLoader.LoadBundle(fetched.Value.Content, fetched.Value.FileName).OrThrowIfMissing();
 			return new ResolvedParent
 			{
 				Bundle = bundle,
@@ -702,7 +721,7 @@ public class ChangelogBundleAmendService(
 			{
 				var content = await _fileSystem.File.ReadAllTextAsync(amendPath, ctx);
 				var fileName = _fileSystem.Path.GetFileName(amendPath);
-				byFileName[fileName] = ReleaseNotesSerialization.DeserializeBundle(content);
+				byFileName[fileName] = ReleaseNotesLoader.LoadBundle(content, amendPath).OrThrowIfMissing();
 			}
 			catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
 			{
@@ -721,7 +740,7 @@ public class ChangelogBundleAmendService(
 	{
 		try
 		{
-			bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+			bundle = ReleaseNotesLoader.LoadBundle(content, fileName).OrThrowIfMissing();
 			return true;
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
@@ -750,7 +769,65 @@ public class ChangelogBundleAmendService(
 		public IReadOnlyList<(string FileName, string Content)> CdnAmends { get; init; } = [];
 	}
 
-	private RemoveExclusionResult? BuildExclusionEntry(
+	/// <summary>
+	/// The amend about to be written is checked once against the bundle it amends, by <see cref="BundleAmendConstraints"/>: a removal that is not in the
+	/// bundle (R92), a removal whose checksum is not the bundle's (R92), an addition the bundle already has (R93). <c>--force</c> accepts the checksum
+	/// mismatch (the exclusion is then written with the bundle's checksum, as before) and reports it as a warning; every other error stops the write.
+	/// </summary>
+	private static bool AmendHoldsToRules(
+		IDiagnosticsCollector collector,
+		Bundle parentBundle,
+		Bundle effectiveBundle,
+		IReadOnlyList<BundledEntry> requestedExclusions,
+		IReadOnlyList<BundledEntry> additions,
+		IReadOnlyList<SourcedChangelog> addSources,
+		IReadOnlyList<SourcedChangelog> removeSources,
+		bool force
+	)
+	{
+		if (requestedExclusions.Count == 0 && additions.Count == 0)
+			return true;
+
+		var requested = Bundle.AmendOf(parentBundle.Products, additions, requestedExclusions, null).Value;
+		if (requested is null)
+			return true;
+
+		var pathByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var source in addSources.Concat(removeSources))
+			pathByName[source.FileName] = source.DisplayPath;
+
+		var ok = true;
+		foreach (var violation in BundleAmendConstraints.All.Report(new BundleAmendOfParent(effectiveBundle, requested)).Violations)
+		{
+			var severity = violation.Severity switch
+			{
+				Nullean.Entities.Severity.Error when force
+					&& violation.ConstraintId == BundleAmendConstraints.AmendRemovalChecksumsMatch.Name => Severity.Warning,
+				Nullean.Entities.Severity.Error => Severity.Error,
+				Nullean.Entities.Severity.Warning => Severity.Warning,
+				_ => Severity.Hint
+			};
+			var name = violation.Evidence switch
+			{
+				string text => text,
+				BundledEntry entry => entry.File?.Name,
+				_ => null
+			};
+			collector.Write(new Diagnostic
+			{
+				Severity = severity,
+				File = name is not null && pathByName.TryGetValue(name, out var path) ? path : string.Empty,
+				Message = violation.Message,
+				RuleId = violation.ConstraintId
+			});
+			if (severity == Severity.Error)
+				ok = false;
+		}
+
+		return ok;
+	}
+
+	private RemoveExclusionResult BuildExclusionEntry(
 		IDiagnosticsCollector collector,
 		SourcedChangelog source,
 		IReadOnlyList<BundledEntry> effectiveEntries,
@@ -761,7 +838,7 @@ public class ChangelogBundleAmendService(
 		var fileName = source.FileName;
 		var fileChecksum = source.Content is null ? string.Empty : ChangelogBundlingService.ComputeSha1(source.Content);
 
-		var strictExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = fileChecksum } };
+		var strictExclusion = BundledEntry.Exclusion(fileName, fileChecksum);
 
 		var exclusionKey = BundleAmendMerger.BuildExclusionKey(strictExclusion);
 		if (!string.IsNullOrEmpty(fileChecksum) && appliedExclusionKeys.Contains(exclusionKey))
@@ -776,49 +853,33 @@ public class ChangelogBundleAmendService(
 
 		if (matchedEntry == null)
 		{
-			var nameOnlyExclusion = new BundledEntry { File = new BundledFile { Name = fileName, Checksum = string.Empty } };
+			var nameOnlyExclusion = BundledEntry.Exclusion(fileName, string.Empty);
 
 			var nameMatches = effectiveEntries.Where(entry => BundleAmendMerger.EntryMatchesExclusion(entry, nameOnlyExclusion)).ToList();
 
-			if (nameMatches.Count == 0)
-			{
-				collector.EmitError(
-					source.DisplayPath,
-					$"Changelog '{fileName}' was not found in the effective bundle (parent plus existing amend files)."
-				);
-				return null;
-			}
-
-			if (!force)
-			{
-				collector.EmitError(
-					source.DisplayPath,
-					$"Bundle contains '{fileName}' but with a different checksum than the sourced changelog. " +
-						"Re-create the bundle or use --force to remove by file name only."
-				);
-				return null;
-			}
+			// Not in the bundle, or in it with another checksum and no --force: the request goes on as it was asked and the amend's rules say why
+			// (AmendRemovalsExist, AmendRemovalChecksumsMatch); this method no longer words either.
+			if (nameMatches.Count == 0 || !force)
+				return new RemoveExclusionResult.Add(strictExclusion, strictExclusion);
 
 			matchedEntry = nameMatches[0];
 		}
 
 		var exclusionChecksum = matchedEntry.File?.Checksum ?? fileChecksum;
-		var appliedKey = BundleAmendMerger.BuildExclusionKey(new BundledEntry
-		{
-			File = new BundledFile { Name = fileName, Checksum = exclusionChecksum }
-		});
+		var exclusion = BundledEntry.Exclusion(fileName, exclusionChecksum);
+		var appliedKey = BundleAmendMerger.BuildExclusionKey(exclusion);
 		if (appliedExclusionKeys.Contains(appliedKey))
 		{
 			collector.EmitWarning(source.DisplayPath, $"Changelog '{fileName}' is already excluded by a prior amend file; skipping.");
 			return RemoveExclusionResult.Skip.Instance;
 		}
 
-		return new RemoveExclusionResult.Add(new BundledEntry { File = new BundledFile { Name = fileName, Checksum = exclusionChecksum } });
+		return new RemoveExclusionResult.Add(exclusion, strictExclusion);
 	}
 
 	private abstract record RemoveExclusionResult
 	{
-		public sealed record Add(BundledEntry Entry) : RemoveExclusionResult;
+		public sealed record Add(BundledEntry Entry, BundledEntry Requested) : RemoveExclusionResult;
 
 		public sealed record Skip : RemoveExclusionResult
 		{
@@ -836,7 +897,7 @@ public class ChangelogBundleAmendService(
 		try
 		{
 			var text = await _fileSystem.File.ReadAllTextAsync(bundlePath, ctx);
-			var bundle = ReleaseNotesSerialization.DeserializeBundle(text);
+			var bundle = ReleaseNotesLoader.LoadBundle(text, bundlePath).OrThrowIfMissing();
 			return (true, bundle);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
@@ -857,25 +918,9 @@ public class ChangelogBundleAmendService(
 			}
 
 			var checksum = ChangelogBundlingService.ComputeSha1(source.Content);
-			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(source.Content);
-			var entry = ReleaseNotesSerialization.DeserializeEntry(normalizedYaml);
+			var entry = ReleaseNotesLoader.LoadEntry(source.Content, source.FileName, source.DisplayPath).OrThrowIfMissing();
 
-			return new BundledEntry
-			{
-				File = new BundledFile { Name = source.FileName, Checksum = checksum },
-				Type = entry.Type,
-				Title = entry.Title,
-				Products = entry.Products,
-				Description = entry.Description,
-				Impact = entry.Impact,
-				Action = entry.Action,
-				FeatureId = entry.FeatureId,
-				Highlight = entry.Highlight,
-				Subtype = entry.Subtype,
-				Areas = entry.Areas,
-				Prs = entry.Prs,
-				Issues = entry.Issues
-			};
+			return entry.ToBundledEntry(source.FileName, checksum);
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
 		{

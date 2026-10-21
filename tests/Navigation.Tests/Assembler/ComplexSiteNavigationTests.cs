@@ -5,12 +5,14 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
 using Elastic.Documentation.Navigation.Isolated.Node;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
@@ -37,7 +39,7 @@ public class ComplexSiteNavigationTests()
 		{
 			var repositoryPath = $"/checkouts/current/{repository}";
 			var context = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, repositoryPath);
-			var docset = DocumentationSetFile.LoadAndResolve(
+			var docset = DocumentationSetLoader.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New($"{repositoryPath}/docs/docset.yml"),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -49,7 +51,7 @@ public class ComplexSiteNavigationTests()
 
 		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var siteNavigation = new SiteNavigation(
-			SiteNavigationFile.Deserialize(siteNavYaml),
+			SiteNavigationLoader.Deserialize(siteNavYaml),
 			siteContext,
 			documentationSets,
 			sitePrefix: null
@@ -93,7 +95,7 @@ public class ComplexSiteNavigationTests()
 		                      path_prefix: /elasticsearch/reference
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create all DocumentationSetNavigation instances
@@ -110,7 +112,7 @@ public class ComplexSiteNavigationTests()
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(
+			var docset = DocumentationSetLoader.LoadAndResolve(
 				context.Collector,
 				fileSystem.FileInfo.New(docsetPath),
 				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -188,11 +190,11 @@ public class ComplexSiteNavigationTests()
 		                          path_prefix: /docs/platform/cloud-guide
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -242,11 +244,11 @@ public class ComplexSiteNavigationTests()
 		                          path_prefix: /platform/cloud-guide
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -313,11 +315,11 @@ public class ComplexSiteNavigationTests()
 
 		                  """;
 
-		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
+		var siteNavFile = SiteNavigationLoader.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

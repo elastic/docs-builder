@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using System.Runtime.CompilerServices;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
@@ -34,7 +35,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/api");
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -63,7 +64,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -99,7 +100,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/setup/advanced");
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
@@ -133,7 +134,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/docs/guides/api");
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -161,7 +162,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs/api");
 		// Note: not adding /docs/api/toc.yml file
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -191,7 +192,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -224,7 +225,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -257,7 +258,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
@@ -283,7 +284,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddDirectory("/docs");
 		// Note: /docs/missing.md is intentionally not created on disk
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, MissingFileDocumentationFileFactory.Instance);
@@ -314,7 +315,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);

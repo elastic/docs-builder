@@ -117,35 +117,41 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 
 		// Create Stack collection
 		if (stackItems.Count > 0)
-			result.Stack = new AppliesCollection(stackItems.ToArray());
+			result = result with { Stack = new AppliesCollection(stackItems.ToArray()) };
 
 		// Create Product collection
 		if (productItems.Count > 0)
-			result.Product = new AppliesCollection(productItems.ToArray());
+			result = result with { Product = new AppliesCollection(productItems.ToArray()) };
 
 		// Reconstruct DeploymentApplicability
 		if (deploymentProps.Count > 0)
 		{
-			result.Deployment = new DeploymentApplicability
+			result = result with
 			{
-				Self = deploymentProps.TryGetValue("self", out var self) ? new AppliesCollection(self.ToArray()) : null,
-				Ece = deploymentProps.TryGetValue("ece", out var ece) ? new AppliesCollection(ece.ToArray()) : null,
-				Eck = deploymentProps.TryGetValue("eck", out var eck) ? new AppliesCollection(eck.ToArray()) : null,
-				Ess = deploymentProps.TryGetValue("ech", out var ess) || deploymentProps.TryGetValue("ess", out ess)
-					? new AppliesCollection(ess.ToArray())
-					: null
+				Deployment = new DeploymentApplicability
+				{
+					Self = deploymentProps.TryGetValue("self", out var self) ? new AppliesCollection(self.ToArray()) : null,
+					Ece = deploymentProps.TryGetValue("ece", out var ece) ? new AppliesCollection(ece.ToArray()) : null,
+					Eck = deploymentProps.TryGetValue("eck", out var eck) ? new AppliesCollection(eck.ToArray()) : null,
+					Ess = deploymentProps.TryGetValue("ech", out var ess) || deploymentProps.TryGetValue("ess", out ess)
+						? new AppliesCollection(ess.ToArray())
+						: null
+				}
 			};
 		}
 
 		// Reconstruct ServerlessProjectApplicability
 		if (serverlessProps.Count > 0)
 		{
-			result.Serverless = new ServerlessProjectApplicability
+			result = result with
 			{
-				Elasticsearch = serverlessProps.TryGetValue("elasticsearch", out var es) ? new AppliesCollection(es.ToArray()) : null,
-				Observability = serverlessProps.TryGetValue("observability", out var obs) ? new AppliesCollection(obs.ToArray()) : null,
-				Security = serverlessProps.TryGetValue("security", out var sec) ? new AppliesCollection(sec.ToArray()) : null,
-				VectorDatabase = serverlessProps.TryGetValue("vectordb", out var vdb) ? new AppliesCollection(vdb.ToArray()) : null
+				Serverless = new ServerlessProjectApplicability
+				{
+					Elasticsearch = serverlessProps.TryGetValue("elasticsearch", out var es) ? new AppliesCollection(es.ToArray()) : null,
+					Observability = serverlessProps.TryGetValue("observability", out var obs) ? new AppliesCollection(obs.ToArray()) : null,
+					Security = serverlessProps.TryGetValue("security", out var sec) ? new AppliesCollection(sec.ToArray()) : null,
+					VectorDatabase = serverlessProps.TryGetValue("vectordb", out var vdb) ? new AppliesCollection(vdb.ToArray()) : null
+				}
 			};
 		}
 
@@ -164,7 +170,7 @@ public class ApplicableToJsonConverter : JsonConverter<ApplicableTo>
 				property?.SetValue(productApplicability, new AppliesCollection(items.ToArray()));
 			}
 
-			result.ProductApplicability = productApplicability;
+			result = result with { ProductApplicability = productApplicability };
 		}
 
 		return result;

@@ -69,14 +69,15 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		// which no longer appears in the new keys) so bundles are not misclassified as entries.
 		var isBundlePath = key.StartsWith(ChangelogKeys.BundlePrefix, StringComparison.OrdinalIgnoreCase);
 
-		return isBundlePath ? await ScrubBundle(content, ctx) : await ScrubChangelog(key, content, ctx);
+		return isBundlePath ? await ScrubBundle(content, ctx) : ScrubChangelog(key, content, ctx);
 	}
 
 	private async Task<ScrubResult> ScrubBundle(string content, Cancel ctx)
 	{
 		ctx.ThrowIfCancellationRequested();
 
-		var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
+		var loadedBundle = ReleaseNotesLoader.LoadBundle(content, "bundle.yaml");
+		var bundle = loadedBundle.Value ?? throw new InvalidDataException(loadedBundle.Diagnostics.Select(d => d.Message).FirstOrDefault());
 		var owner = bundle.Products.Count > 0 ? bundle.Products[0].Owner ?? "elastic" : "elastic";
 		var repo = bundle.Products.Count > 0 ? bundle.Products[0].Repo : null;
 
@@ -91,17 +92,17 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			return new ScrubResult { Content = content };
 		}
 
-		var result = ReleaseNotesSerialization.SerializeBundle(sanitized);
+		var result = ReleaseNotesLoader.Serialize(sanitized);
 		LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
 		return new ScrubResult { Content = result };
 	}
 
-	private async Task<ScrubResult> ScrubChangelog(string key, string content, Cancel ctx)
+	private ScrubResult ScrubChangelog(string key, string content, Cancel ctx)
 	{
 		ctx.ThrowIfCancellationRequested();
 
-		var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-		var entry = ReleaseNotesSerialization.DeserializeEntry(normalized);
+		var loadedEntry = ReleaseNotesLoader.LoadEntry(content, key);
+		var entry = loadedEntry.Value ?? throw new InvalidDataException(loadedEntry.Diagnostics.Select(d => d.Message).FirstOrDefault());
 
 		// Marker: link: <pr_number> with no other content.
 		// Re-serialize rather than passing raw content through so private-authored fields
@@ -118,42 +119,21 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 				throw new InvalidOperationException(
 					"Changelog entry has both 'link:' and content fields. A marker must contain only 'link: <pr_number>'."
 				);
-			var safeContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = entry.Link });
+			// the loader reported a link that is not a PR number; the marker is re-written as it is
+			var safeContent = ReleaseNotesLoader.Serialize(ChangelogEntry.Marker(entry.Link).Value!);
 			return new ScrubResult { Content = safeContent, IsMarker = true };
 		}
 
-		var bundledEntry = new BundledEntry
-		{
-			Type = entry.Type,
-			Title = entry.Title,
-			Description = entry.Description,
-			Impact = entry.Impact,
-			Action = entry.Action,
-			Prs = entry.Prs,
-			Issues = entry.Issues,
-			Areas = entry.Areas,
-			Highlight = entry.Highlight,
-			Subtype = entry.Subtype,
-			Link = entry.Link
-		};
-
-		await using var collector = new DiagnosticsCollector([]);
-		if (
-			!LinkAllowlistSanitizer.TryApplyChangelogEntry(
-				collector,
-				bundledEntry,
-				allowRepos,
-				"elastic",
-				null,
-				out var sanitized,
-				out var changed
-			)
-		)
-			throw new InvalidOperationException($"Failed to apply allowlist to changelog entry; errors: {collector.Errors}");
+		var scrubResult = entry.WithoutPrivateLinks(allowRepos);
+		if (scrubResult.Value is not { } scrubbed)
+			throw new InvalidOperationException(
+				$"Failed to apply allowlist to changelog entry; errors: {scrubResult.Diagnostics.Count(d => d.Severity == Severity.Error)}"
+			);
+		var changed = scrubbed.Changed;
 
 		// Derive canonical key and markers AFTER allowlist filtering so private-only PRs that are
 		// stripped from public output don't become the primary anchor or generate stale markers.
-		var publicEntry = changed ? entry with { Prs = sanitized.Prs } : entry;
+		var publicEntry = changed ? scrubbed.Value : entry;
 		var (canonicalKey, markers) = BuildCanonicalKeyAndMarkers(key, publicEntry);
 
 		if (!changed)
@@ -163,17 +143,7 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 			return new ScrubResult { Content = content, CanonicalKey = canonicalKey, Markers = markers };
 		}
 
-		var scrubEntry = entry with
-		{
-			Description = sanitized.Description,
-			Impact = sanitized.Impact,
-			Action = sanitized.Action,
-			Prs = sanitized.Prs,
-			Issues = sanitized.Issues,
-			Link = entry.Link
-		};
-
-		var result = ReleaseNotesSerialization.SerializeEntry(scrubEntry);
+		var result = ReleaseNotesLoader.Serialize(scrubbed.Value);
 		LinkAllowlistSanitizer.ValidateNoPrivateReferences(result, allowRepos);
 		return new ScrubResult { Content = result, CanonicalKey = canonicalKey, Markers = markers };
 	}
@@ -194,30 +164,14 @@ public sealed class ChangelogContentScrubber(ILoggerFactory logFactory, IReadOnl
 		if (fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase) || entry.IsMarker)
 			return (null, []);
 
-		var prNumbers = entry.Prs?.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
-			.Where(n => n.HasValue)
-			.Select(n => n!.Value)
-			.Distinct()
-			.OrderBy(n => n)
-			.ToList();
-
-		if (prNumbers is null or { Count: 0 })
+		if (entry.CanonicalKeyAndMarkers(fileName) is not { } placement)
 			return (null, []);
 
-		var primaryPr = prNumbers[0];
-		var canonicalFileName = $"{primaryPr}.yaml";
-		var canonicalKey = string.Equals(fileName, canonicalFileName, StringComparison.OrdinalIgnoreCase)
-			? null
-			: keyPrefix + canonicalFileName;
-
-		if (prNumbers.Count == 1)
-			return (canonicalKey, []);
-
-		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry
-		{
-			Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture)
-		});
-		var markers = prNumbers.Skip(1).Select(pr => (keyPrefix + $"{pr}.yaml", markerContent)).ToList<(string, string)>();
+		var canonicalKey = placement.IsCanonical ? null : keyPrefix + placement.CanonicalFileName;
+		var markers = placement
+			.Markers
+			.Select(m => (keyPrefix + m.FileName, ReleaseNotesLoader.Serialize(m.Marker)))
+			.ToList<(string, string)>();
 
 		return (canonicalKey, markers);
 	}

@@ -31,7 +31,7 @@ internal static class DesignSystemDirectives
 {
 	public static bool IsEnabled(DirectiveBlock block) => IsEnabled(block.Build);
 
-	public static bool IsEnabled(BuildContext build) => build.Configuration.Features.NavigationPreviewEnabled;
+	public static bool IsEnabled(BuildContext build) => build.Features.NavigationPreviewEnabled;
 
 	/// <returns><c>true</c> when the block was written; <c>false</c> leaves it to the legacy views.</returns>
 	public static bool TryWrite(HtmlRenderer renderer, DirectiveBlock block)
@@ -361,7 +361,7 @@ internal static class DesignSystemDirectives
 				Inline = true,
 				ShowTooltip = showTooltip,
 				DesignSystem = true,
-				VersionsConfig = block.Build.VersionsConfiguration
+				VersionsConfig = block.Build.Catalog.VersioningSystems
 			})
 			.RenderAsync()
 			.GetAwaiter()

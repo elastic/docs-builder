@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
@@ -30,11 +32,11 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/beta.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
@@ -59,11 +61,11 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
@@ -89,11 +91,11 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/gamma.md", new MockFileData("# Gamma"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/beta.md"], options => options.WithStrictOrdering());
 	}
 
@@ -117,11 +119,11 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/beta.md", new MockFileData("# Beta"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
@@ -147,11 +149,11 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/beta.md", new MockFileData("# Beta"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
+		var folderItem = docSet.TableOfContents.First().Value.Should().BeOfType<FolderRef>().Subject;
 
-		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
+		var fileNames = folderItem.Children.Select(c => c.Item().PathRelativeToDocumentationSet.Value).ToList();
 		// index.md should be excluded too — the user explicitly asked for it
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
@@ -178,7 +180,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/docs/internal.md", new MockFileData("# Internal"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["docs/draft.md", "docs/internal.md"]);
 	}
@@ -214,7 +216,7 @@ public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 		fileSystem.AddFile("/docs/reference/deps/main.md", new MockFileData("# Main"));
 
 		var context = CreateContext(fileSystem);
-		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+		var docSet = DocumentationSetLoader.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["reference/api/main.md", "reference/deps/main.md"]);
 	}

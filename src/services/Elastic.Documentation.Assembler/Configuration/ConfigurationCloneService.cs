@@ -7,6 +7,7 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -36,8 +37,7 @@ public class ConfigurationCloneService(ILoggerFactory logFactory, AssemblyConfig
 		}
 
 		// relies on the embedded configuration, but we don't expect this to change
-		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"];
-		repository = repository with { SparsePaths = ["config"] };
+		var repository = assemblyConfiguration.ReferenceRepositories["docs-builder"].AsConfigurationCheckout();
 		var gitReference = gitRef;
 		if (string.IsNullOrEmpty(gitReference))
 			gitReference = "main";

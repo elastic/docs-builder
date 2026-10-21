@@ -49,7 +49,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 	public async Task Render_BetaFlaggedOperation_ShowsBetaBadge()
 	{
 		var beta = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.Extensions?.ContainsKey("x-beta") == true);
-		var row = ApiOverviewBuilder.BuildTagChildren((INavigationItem)beta.Parent!, fixture.Context.VersionsConfiguration).Single(
+		var row = ApiOverviewBuilder.BuildTagChildren((INavigationItem)beta.Parent!, fixture.Context.Catalog.VersioningSystems).Single(
 			r => r.Url == beta.Url
 		);
 
@@ -75,7 +75,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(OperationNavigationItem operation)
 	{
-		var rows = ApiOverviewBuilder.BuildTagChildren((INavigationItem)operation.Parent!, fixture.Context.VersionsConfiguration);
+		var rows = ApiOverviewBuilder.BuildTagChildren((INavigationItem)operation.Parent!, fixture.Context.Catalog.VersioningSystems);
 		return (rows.Single(r => r.Url == operation.Url), [.. rows.Where(r => r.Url != operation.Url)]);
 	}
 

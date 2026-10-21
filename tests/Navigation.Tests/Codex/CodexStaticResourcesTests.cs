@@ -2,18 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
+using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
@@ -46,17 +44,11 @@ public class CodexStaticResourcesTests
 				NullLoggerFactory.Instance,
 				new ConfigurationFileSystem(new FileSystem())
 			),
-			VersionsConfiguration = new VersionsConfiguration
-			{
-				VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-			},
-			ProductsConfiguration = new ProductsConfiguration
-			{
-				Products = FrozenDictionary<string, Product>.Empty,
-				PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-				ProductDisplayNames = FrozenDictionary<string, string>.Empty
-			},
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			Catalog = new GlobalCatalog(
+				new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() },
+				ProductCatalog.FromPublicProducts([]),
+				LegacyUrlMappingCatalog.None
+			),
+			SearchTuning = SearchTuning.None
 		};
 }

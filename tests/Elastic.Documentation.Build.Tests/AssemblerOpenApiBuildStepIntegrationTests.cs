@@ -13,10 +13,12 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -43,7 +45,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize(
+		var assemblyConfig = AssemblyLoader.Deserialize(
 			"""
 			environments:
 			  staging:

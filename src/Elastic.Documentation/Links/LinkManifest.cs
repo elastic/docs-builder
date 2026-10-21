@@ -1,0 +1,118 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Elastic.Documentation.Serialization;
+using Generator.Equals;
+
+namespace Elastic.Documentation.Links;
+
+/// <summary>One page of a <see cref="LinkManifest"/>: its anchors and whether it is hidden.</summary>
+/// <remarks>
+/// Constructed through <c>LinkManifest</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record LinkMetadata
+{
+	/// <summary>The page's anchors; never null (a missing or null <c>anchors</c> key reads as empty).</summary>
+	[JsonIgnore]
+	[OrderedEquality]
+	public string[] Anchors { get; internal init; } = [];
+
+	/// <summary>The wire form of <see cref="Anchors"/>: an empty list is omitted from the file.</summary>
+	[JsonPropertyName("anchors")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	[IgnoreEquality]
+	internal string[]? AnchorsOnWire { get => Anchors.Length == 0 ? null : Anchors; init => Anchors = value ?? []; }
+
+	[JsonPropertyName("hidden")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public bool Hidden { get; internal init; }
+
+	/// <summary>
+	/// Anchors the page declared more than once (compared ignoring case), in the order met. <see cref="Anchors"/> is a set, so the duplicates
+	/// are gone from it. Not part of the wire format.
+	/// </summary>
+	[JsonIgnore]
+	[IgnoreEquality]
+	public IReadOnlyList<string> DuplicateAnchors { get; internal init; } = [];
+}
+
+/// <summary>One redirect of a <see cref="LinkManifest"/>: where it points and which anchors it maps.</summary>
+/// <remarks>
+/// Constructed through <c>LinkManifest</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record LinkSingleRedirect
+{
+	[JsonPropertyName("anchors")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	[UnorderedEquality]
+	public IReadOnlyDictionary<string, string?>? Anchors { get; internal init; }
+
+	[JsonPropertyName("to")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	public string? To { get; internal init; }
+}
+
+/// <summary>A redirect of a <see cref="LinkManifest"/>, optionally a list of anchor-specific redirects.</summary>
+/// <remarks>
+/// Constructed through <c>LinkManifest</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record LinkRedirect : LinkSingleRedirect
+{
+	public static IReadOnlyDictionary<string, string?> CatchAllAnchors { get; } = new Dictionary<string, string?> { { "!", "!" } };
+
+	[JsonPropertyName("many")]
+	[JsonInclude]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+	[OrderedEquality]
+	public LinkSingleRedirect[]? Many { get; internal init; }
+}
+
+/// <summary>
+/// A repository's published <c>links.json</c>: every page and anchor it exposes to cross-links, its redirects, and the
+/// cross-links it makes. The JSON keys are the wire format other repositories' builds read; they never change.
+/// </summary>
+/// <remarks>
+/// Constructed with <c>LinkLoader.LoadManifest</c> or <see cref="LinkManifest.From"/> and <see cref="LinkManifest.Empty"/>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
+[Equatable]
+public partial record LinkManifest
+{
+	[JsonPropertyName("origin")]
+	public required GitCheckoutInformation Origin { get; init; }
+
+	[JsonPropertyName("url_path_prefix")]
+	public required string? UrlPathPrefix { get; init; }
+
+	/// Mapping of relative filepath and all the page's anchors for deep links
+	[JsonPropertyName("links")]
+	[JsonInclude]
+	[JsonRequired]
+	[UnorderedEquality]
+	public required Dictionary<string, LinkMetadata> Links { get; init; } = [];
+
+	[JsonPropertyName("cross_links")]
+	[JsonInclude]
+	[JsonRequired]
+	[OrderedEquality]
+	public required string[] CrossLinks { get; init; } = [];
+
+	/// Mapping of relative filepath and all the page's anchors for deep links
+	[JsonPropertyName("redirects")]
+	[JsonInclude]
+	[UnorderedEquality]
+	public Dictionary<string, LinkRedirect>? Redirects { get; internal init; }
+}

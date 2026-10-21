@@ -6,9 +6,11 @@ using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 
 // ReSharper disable DuplicateItemInLoggerTemplate
@@ -32,8 +34,11 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		var linkRegistrySnapshotPath = Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName);
 		if (!fs.File.Exists(linkRegistrySnapshotPath))
 			throw new FileNotFoundException("Link-index snapshot not found. Run the clone-all command first.", linkRegistrySnapshotPath);
-		var linkRegistrySnapshotStr = File.ReadAllText(linkRegistrySnapshotPath);
-		var linkRegistry = LinkRegistry.Deserialize(linkRegistrySnapshotStr);
+		var linkRegistrySnapshotStr = fs.File.ReadAllText(linkRegistrySnapshotPath);
+		var linkRegistry = LinkLoader.LoadRegistry(linkRegistrySnapshotStr, linkRegistrySnapshotPath).Unwrap(
+			_logger,
+			"link-index snapshot"
+		);
 		foreach (var repo in repositories.Values)
 		{
 			Paths.ValidateSinglePathSegment(repo.Name, nameof(repo.Name));
@@ -80,7 +85,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 		var checkouts = new ConcurrentBag<Checkout>();
 
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
-		var linkRegistry = await linkIndexReader.GetRegistry(ctx);
+		var linkRegistry = (await linkIndexReader.GetRegistry(ctx)).Unwrap(_logger, "link-index.json");
 
 		await Parallel.ForEachAsync(Configuration.AvailableRepositories, new ParallelOptions
 		{
@@ -119,7 +124,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 			.File
 			.WriteAllTextAsync(
 				Path.Join(context.CheckoutDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-				LinkRegistry.Serialize(linkRegistry),
+				LinkLoader.Serialize(linkRegistry),
 				ctx
 			);
 		return new CheckoutResult { Checkouts = checkouts, LinkRegistrySnapshot = linkRegistry };
@@ -134,7 +139,7 @@ public class AssemblerRepositorySourcer(ILoggerFactory logFactory, AssembleConte
 					.WriteFileSystem
 					.Path
 					.Join(context.OutputWithPathPrefixDirectory.FullName, CheckoutResult.LinkRegistrySnapshotFileName),
-				LinkRegistry.Serialize(linkRegistrySnapshot),
+				LinkLoader.Serialize(linkRegistrySnapshot),
 				ctx
 			);
 }
@@ -246,7 +251,7 @@ public class RepositorySourcer(
 				return CloneRef(repository, gitRef, pull, attempt + 1, appendRepositoryName, assumeCloned);
 			}
 		}
-		// Repository already checked out the same commit
+		// RepositoryDto already checked out the same commit
 		if (head != null && head == gitRef)
 			// nothing to do, already at the right commit
 			_logger.LogInformation("{RepositoryName}: HEAD already at {GitRef}", repository.Name, gitRef);

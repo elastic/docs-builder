@@ -6,11 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Configuration.Tests;
@@ -54,7 +55,7 @@ public class ConfigurationFileStorybookRegistryTests
 		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
 	}
 
-	private static ConfigurationFile CreateConfiguration(
+	private static ResolvedDocumentationSet CreateConfiguration(
 		string registry,
 		IEnvironmentVariables environment,
 		DiagnosticsCollector? collector = null
@@ -69,22 +70,17 @@ public class ConfigurationFileStorybookRegistryTests
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir, environment);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary(), };
 
-		var docSet = new DocumentationSetFile
+		var docSet = new DocumentationSetDto
 		{
 			Project = "test",
 			TableOfContents = [],
-			Storybook = new DocumentationSetStorybook { Registry = registry }
+			Storybook = new StorybookDto { Registry = registry }
 		};
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class MockEnvironment : IEnvironmentVariables

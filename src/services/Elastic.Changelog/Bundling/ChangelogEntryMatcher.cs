@@ -4,18 +4,18 @@
 
 using System.IO.Abstractions;
 using System.Linq;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Service for parsing and filtering changelog entries
 /// </summary>
-public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions deserializerOptions, ILogger logger)
+public class ChangelogEntryMatcher(IFileSystem fileSystem, ILogger logger)
 {
 	/// <summary>
 	/// Parses and filters changelog files based on the provided filter criteria.
@@ -189,10 +189,15 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 			// Compute checksum (SHA1)
 			var checksum = ChangelogBundlingService.ComputeSha1(fileContent);
 
-			// Deserialize YAML
-			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-			var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(normalizedYaml, deserializerOptions with { SourceName = filePath })
-				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
+			// Load the entry: parsed, mapped and checked by the release-notes loader
+			var loaded = ReleaseNotesLoader.LoadEntry(fileContent, fileName, filePath);
+			if (loaded.Value is not { } data)
+			{
+				var message = loaded.Diagnostics.Select(d => d.Message).FirstOrDefault() ?? "The file could not be read.";
+				logger.LogWarning("Failed to parse YAML file {FilePath}: {Message}", filePath, message);
+				collector.EmitError(filePath, $"Failed to parse YAML: {message}");
+				return null;
+			}
 
 			// Check for duplicates (using checksum)
 			if (seenChangelogs.Contains(checksum))
@@ -201,22 +206,16 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 				return null;
 			}
 
-			if (!MatchesFilter(yamlDto, fileName, criteria, matchedPrs, matchedIssues))
+			if (!MatchesFilter(data, fileName, criteria, matchedPrs, matchedIssues))
 				return null;
 
 			// Add to seen set
 			_ = seenChangelogs.Add(checksum);
 
-			// Convert to domain type
-			var data = ReleaseNotesSerialization.ConvertEntry(yamlDto);
+			// what the read-stage rules found in an entry that is part of the result
+			_ = loaded.EmitTo(collector);
 
 			return new MatchedChangelogFile { Data = data, FilePath = filePath, FileName = fileName, Checksum = checksum };
-		}
-		catch (YamlException ex)
-		{
-			logger.LogWarning(ex, "Failed to parse YAML file {FilePath}", filePath);
-			collector.EmitError(filePath, $"Failed to parse YAML: {ex.Message}");
-			return null;
 		}
 		catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException or ThreadAbortException))
 		{
@@ -227,7 +226,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 	}
 
 	private static bool MatchesFilter(
-		ChangelogEntryDto data,
+		ChangelogEntry data,
 		string fileName,
 		ChangelogFilterCriteria criteria,
 		HashSet<string> matchedPrs,
@@ -249,7 +248,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 		return true;
 	}
 
-	private static bool MatchesProductFilter(ChangelogEntryDto data, IReadOnlyList<ProductFilter> productFilters)
+	private static bool MatchesProductFilter(ChangelogEntry data, IReadOnlyList<ProductFilter> productFilters)
 	{
 		if (data.Products == null || data.Products.Count == 0)
 			return false;
@@ -259,7 +258,11 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 			// Check if any product in the changelog matches this filter
 			foreach (var changelogProduct in data.Products)
 			{
-				var productMatches = MatchesPattern(changelogProduct.Product, filter.ProductPattern);
+				// product ids are compared in the catalog's spelling: a filter `cloud_hosted` matches the product `cloud-hosted`
+				var productMatches = MatchesPattern(
+					string.IsNullOrEmpty(changelogProduct.ProductId) ? null : ProductNames.Normalize(changelogProduct.ProductId),
+					filter.ProductPattern is null ? null : ProductNames.Normalize(filter.ProductPattern)
+				);
 
 				// Target filtering: null or "*" pattern matches everything.
 				// For notes (Versions list), any version matching the pattern counts.
@@ -275,12 +278,11 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 				}
 				else
 				{
-#pragma warning disable CS0618 // reading obsolete Target for backward compat with legacy entries
-					targetMatches = MatchesPattern(changelogProduct.Target, filter.TargetPattern);
-#pragma warning restore CS0618
+					// legacy entries that carry only the obsolete target: the loader keeps what was written
+					targetMatches = MatchesPattern(changelogProduct.TargetRaw, filter.TargetPattern);
 				}
 
-				var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle, filter.LifecyclePattern);
+				var lifecycleMatches = MatchesPattern(changelogProduct.Lifecycle?.ToStringFast(true), filter.LifecyclePattern);
 
 				if (productMatches && targetMatches && lifecycleMatches)
 					return true;
@@ -290,12 +292,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 		return false;
 	}
 
-	private static bool MatchesPrFilter(
-		ChangelogEntryDto data,
-		string fileName,
-		ChangelogFilterCriteria criteria,
-		HashSet<string> matchedPrs
-	)
+	private static bool MatchesPrFilter(ChangelogEntry data, string fileName, ChangelogFilterCriteria criteria, HashSet<string> matchedPrs)
 	{
 		var fileNumbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		foreach (var pr in criteria.PrsToMatch)
@@ -308,7 +305,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 			}
 		}
 
-		var prs = data.Prs ?? (data.Pr != null ? [data.Pr] : null);
+		var prs = data.Prs;
 		if (prs is not { Count: > 0 })
 			return false;
 
@@ -333,7 +330,7 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions
 		return false;
 	}
 
-	private static bool MatchesIssueFilter(ChangelogEntryDto data, ChangelogFilterCriteria criteria, HashSet<string> matchedIssues)
+	private static bool MatchesIssueFilter(ChangelogEntry data, ChangelogFilterCriteria criteria, HashSet<string> matchedIssues)
 	{
 		if (data.Issues is not { Count: > 0 })
 			return false;

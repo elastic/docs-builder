@@ -28,6 +28,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Elastic.Documentation.Site\Elastic.Documentation.Site.csproj"/>
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj"/>
+    <!-- The version index's one definition (entry, wire format, checked loader), shared with the lambda that publishes it. -->
+    <ProjectReference Include="..\Elastic.Documentation.OpenApiIndex\Elastic.Documentation.OpenApiIndex.csproj"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -34,9 +34,7 @@ public static class AssemblerOpenApiBuildStep
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
 		var env = assembleContext.Environment;
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in env.FeatureFlags)
-			features.Set(key, value);
+		var features = new FeatureFlags([]).With(env.FeatureFlags);
 
 		if (!features.AssemblerApiExplorerEnabled)
 		{
@@ -157,11 +155,8 @@ public static class AssemblerOpenApiBuildStep
 		return owners;
 	}
 
-	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
-	{
-		foreach (var (key, value) in featureFlags)
-			set.BuildContext.Configuration.Features.Set(key, value);
-	}
+	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags) =>
+		set.BuildContext.OverrideFeatures(f => f.With(featureFlags));
 }
 
 internal sealed record AssemblerApiOwner(AssemblerDocumentationSet Set);

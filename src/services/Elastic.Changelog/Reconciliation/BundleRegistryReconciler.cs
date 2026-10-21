@@ -318,7 +318,15 @@ public sealed class BundleRegistryReconciler(
 			await using var stream = response.ResponseStream;
 			using var reader = new StreamReader(stream);
 			var content = await reader.ReadToEndAsync(ctx);
-			return ReleaseNotesSerialization.DeserializeBundle(content);
+			var loaded = ReleaseNotesLoader.LoadBundle(content, file);
+			if (loaded.Value is null)
+				_logger.LogWarning(
+					"Could not read bundle target from {Prefix}{File}: {Message}; recording a null target",
+					scope.Prefix,
+					file,
+					loaded.Diagnostics.Select(d => d.Message).FirstOrDefault()
+				);
+			return loaded.Value;
 		}
 		catch (AmazonS3Exception ex) when (ex.StatusCode == HttpStatusCode.NotFound)
 		{

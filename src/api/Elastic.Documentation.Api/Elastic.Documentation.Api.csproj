@@ -19,6 +19,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation\Elastic.Documentation.csproj" />
+    <PackageReference Include="Nullean.Entities.AspNetCore" />
+    <PackageReference Include="Nullean.Entities" />
     <ProjectReference Include="..\..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
     <ProjectReference Include="..\..\services\search\Elastic.Documentation.Search\Elastic.Documentation.Search.csproj" />
   </ItemGroup>

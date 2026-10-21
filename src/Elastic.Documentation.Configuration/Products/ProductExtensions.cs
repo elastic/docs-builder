@@ -3,22 +3,23 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Catalog;
+using Elastic.Documentation.Publishing;
 using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
-public static class ProductExtensions
+internal static class ProductExtensions
 {
-	public static ProductsConfiguration CreateProducts(this ConfigurationFileProvider provider, VersionsConfiguration versionsConfiguration)
+	public static ProductCatalog CreateProducts(this ConfigurationFileProvider provider, VersioningSystemCatalog versionsConfiguration)
 	{
 		using var reader = provider.ProductsFile.OpenText();
 		return CreateProducts(reader, versionsConfiguration, provider.ProductsFile.FullName);
 	}
 
-	internal static ProductsConfiguration CreateProducts(
+	internal static ProductCatalog CreateProducts(
 		TextReader reader,
-		VersionsConfiguration versionsConfiguration,
+		VersioningSystemCatalog versionsConfiguration,
 		string? sourceName = null
 	)
 	{
@@ -46,22 +47,10 @@ public static class ProductExtensions
 			};
 		});
 
-		var publicReferenceProducts = products.Where(kvp => kvp.Value.Features.PublicReference).ToDictionary(
-			kvp => kvp.Key,
-			kvp => kvp.Value
-		);
-
-		var productDisplayNames = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Display);
-
-		return new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = publicReferenceProducts.ToFrozenDictionary(),
-			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 
-	private static VersioningSystem? ResolveVersioningSystem(VersionsConfiguration versionsConfiguration, string id) =>
+	private static VersioningSystem? ResolveVersioningSystem(VersioningSystemCatalog versionsConfiguration, string id) =>
 		VersioningSystemIdExtensions.TryParse(id, out var versioningSystemId, ignoreCase: true, allowMatchingMetadataAttribute: true)
 			? versionsConfiguration.GetVersioningSystem(versioningSystemId)
 			: null;

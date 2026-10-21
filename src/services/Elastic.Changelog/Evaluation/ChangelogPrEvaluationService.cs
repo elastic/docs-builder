@@ -17,7 +17,6 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using SharpYaml;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -28,12 +27,13 @@ public class ChangelogPrEvaluationService(
 	IGitHubPrService gitHubPrService,
 	ICoreService coreService,
 	IRunnerTempFileSystem fileSystem,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrEvaluationService>();
 	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly GithubDecisionMetadataWriter _metadataWriter = new(logFactory, fileSystem);
 
 	public async Task<bool> EvaluatePr(IDiagnosticsCollector collector, EvaluatePrArguments input, Cancel ctx)
@@ -45,7 +45,7 @@ public class ChangelogPrEvaluationService(
 			return await SetOutputs(PrEvaluationResult.Skipped);
 		}
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
+		var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector) ?? ChangelogConfiguration.Default;
 		var changelogDir = config.Bundle?.Directory ?? "docs/changelog";
 		var defaultBranch = config.Bundle?.Branch ?? "main";
 
@@ -474,9 +474,13 @@ public class ChangelogPrEvaluationService(
 	{
 		try
 		{
-			return ReleaseNotesSerialization.DeserializeEntry(_fileSystem.File.ReadAllText(entryPath));
+			// a rule the entry breaks does not stop it being read here: only YAML that does not parse leaves no entry
+			var entry = ReleaseNotesLoader.LoadEntry(_fileSystem.File.ReadAllText(entryPath), entryPath, entryPath).Value;
+			if (entry is null)
+				_logger.LogWarning("Could not parse changelog entry file {File}", entryPath);
+			return entry;
 		}
-		catch (Exception ex) when (ex is YamlException or IOException or UnauthorizedAccessException)
+		catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
 		{
 			_logger.LogWarning(ex, "Could not read changelog entry file {File}", entryPath);
 			return null;
@@ -543,7 +547,7 @@ public class ChangelogPrEvaluationService(
 
 	private string? ResolveProductsFromRepo(string repo)
 	{
-		var matched = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+		var matched = configurationContext.Catalog.Products.GetProductsByRepositoryName(repo);
 		return matched.Count switch
 		{
 			0 => null,

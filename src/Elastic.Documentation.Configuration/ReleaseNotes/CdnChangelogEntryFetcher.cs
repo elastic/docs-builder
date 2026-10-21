@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Text.Json;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;

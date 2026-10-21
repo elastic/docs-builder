@@ -6,9 +6,12 @@
 
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
+    <!-- GenAuto: generated requests, hostile ones included. Not shipped. -->
+    <PackageReference Include="Nullean.Entities.CsCheck" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="Elastic.Transport.VirtualizedCluster" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />

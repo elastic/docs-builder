@@ -8,16 +8,16 @@ using SharpYaml.Serialization;
 namespace Elastic.Documentation.Configuration.Changelog;
 
 /// <summary>
-/// YAML type converter for TypeEntryYaml that handles both string and object forms.
+/// YAML type converter for ChangelogTypeEntryDto that handles both string and object forms.
 /// String form: "label1, label2"
 /// Object form: { labels: "label1", subtypes: { api: "label" } }
 /// Labels and subtype values accept both scalar (comma-separated) and sequence (list) forms.
 /// </summary>
-public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
+public class TypeEntryYamlConverter : YamlConverter<ChangelogTypeEntryDto>
 {
 	private static readonly string[] KnownKeys = ["labels", "subtypes"];
 
-	public override TypeEntryYaml Read(YamlReader reader)
+	public override ChangelogTypeEntryDto Read(YamlReader reader)
 	{
 		// Handle null value
 		if (reader.TokenType == YamlTokenType.Scalar)
@@ -27,17 +27,17 @@ public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
 
 			// Handle empty scalar (null/empty value)
 			if (string.IsNullOrEmpty(scalarValue) || scalarValue == "~")
-				return new TypeEntryYaml();
+				return new ChangelogTypeEntryDto();
 
 			// Handle string form: just labels
-			return TypeEntryYaml.FromLabels(scalarValue);
+			return ChangelogTypeEntryDto.FromLabels(scalarValue);
 		}
 
 		// Handle object form: { labels: "...", subtypes: {...} }
 		if (reader.TokenType == YamlTokenType.StartMapping)
 		{
 			_ = reader.Read();
-			var entry = new TypeEntryYaml();
+			var entry = new ChangelogTypeEntryDto();
 
 			while (reader.TokenType != YamlTokenType.EndMapping)
 			{
@@ -54,7 +54,7 @@ public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
 						entry = entry with { Subtypes = ParseSubtypes(reader) };
 						break;
 					default:
-						reader.SkipOrReportUnmapped(typeof(TypeEntryYaml), KnownKeys, key, entry);
+						reader.SkipOrReportUnmapped(typeof(ChangelogTypeEntryDto), KnownKeys, key, entry);
 						break;
 				}
 			}
@@ -65,7 +65,7 @@ public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
 
 		// Unknown format
 		reader.Skip();
-		return new TypeEntryYaml();
+		return new ChangelogTypeEntryDto();
 	}
 
 	private static Dictionary<string, YamlLenientList?>? ParseSubtypes(YamlReader reader)
@@ -123,7 +123,7 @@ public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
 		return subtypes;
 	}
 
-	public override void Write(YamlWriter writer, TypeEntryYaml value)
+	public override void Write(YamlWriter writer, ChangelogTypeEntryDto value)
 	{
 		// If only labels and no subtypes, emit as simple string
 		if (value.Subtypes == null || value.Subtypes.Count == 0)

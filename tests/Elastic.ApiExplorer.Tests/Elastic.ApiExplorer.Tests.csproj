@@ -19,4 +19,8 @@
     <Content Include="TestData\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CsCheck" />
+  </ItemGroup>
+
 </Project>

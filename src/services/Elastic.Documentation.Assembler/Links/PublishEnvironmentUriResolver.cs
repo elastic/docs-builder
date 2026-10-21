@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Assembler.Links;
 
@@ -111,8 +112,11 @@ public class PublishEnvironmentUriResolver : IUriEnvironmentResolver
 				'/'
 			);
 
-			// Check if the cross-link starts with this mapping's source
-			if (crossLinkSource.StartsWith(mappingSource, StringComparison.Ordinal))
+			// Check if the cross-link is this mapping's source or inside it: a whole-segment prefix, so `reference/apm` does not claim `reference/apm-agents`
+			if (
+				crossLinkSource.StartsWith(mappingSource, StringComparison.Ordinal)
+				&& (crossLinkSource.Length == mappingSource.Length || crossLinkSource[mappingSource.Length] == '/')
+			)
 			{
 				// Keep the longest (most specific) match
 				if (mappingSource.Length > bestMatchLength)

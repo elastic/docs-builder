@@ -82,16 +82,17 @@ public class ChangelogCreationService(
 	IConfigurationContext configurationContext,
 	IChangelogFileSystem fileSystem,
 	IGitHubPrService? githubPrService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogCreationService>();
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 	private readonly CreateChangelogArgumentsValidator _validator = new(configurationContext);
 	private readonly PrInfoProcessor _prProcessor = new(githubPrService, logFactory.CreateLogger<PrInfoProcessor>());
 	private readonly IssueInfoProcessor _issueProcessor = new(githubPrService, logFactory.CreateLogger<IssueInfoProcessor>());
 	private readonly ChangelogFileWriter _fileWriter = new(fileSystem, logFactory.CreateLogger<ChangelogFileWriter>());
-	private readonly ProductInferService _productInferService = new(configurationContext.ProductsConfiguration);
+	private readonly ProductInferService _productInferService = new(configurationContext.Catalog.Products);
 
 	public async Task<bool> CreateChangelog(IDiagnosticsCollector collector, CreateChangelogArguments input, Cancel ctx)
 	{
@@ -103,7 +104,7 @@ public class ChangelogCreationService(
 			input = EnrichFromCI(input);
 
 			// Load changelog configuration
-			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
@@ -166,7 +167,7 @@ public class ChangelogCreationService(
 			var cliAction = input.Action;
 			input = EnrichFromCI(input);
 
-			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
@@ -228,7 +229,7 @@ public class ChangelogCreationService(
 	{
 		try
 		{
-			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+			var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");

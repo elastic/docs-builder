@@ -10,7 +10,7 @@
 	{
 		if (name == ApiCatalog.HeroSection)
 		{
-			if (Model.BuildContext.Configuration.Features.NavigationPreviewEnabled)
+			if (Model.BuildContext.Features.NavigationPreviewEnabled)
 			{
 				@* The same intro as the landing page: the eyebrow, the title in the display face and the lead, on the hero gradient. *@
 				<section class="landing__hero" id="hero">
@@ -42,7 +42,7 @@
 @{
 	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
 	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
-	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
+	var catalogClass = Model.BuildContext.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
 }
 <section id="elastic-docs-v3" class="@catalogClass">
 	@for (var i = 0; i < Model.Groups.Count; i++)

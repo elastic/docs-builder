@@ -32,120 +32,25 @@ public class BundleBuilder
 		HashSet<string>? hideFeatures = null
 	)
 	{
-		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
-		var bundledEntries = BuildResolvedEntries(collector, entries);
-
-		if (bundledEntries == null)
+		var sources = ResolveSources(collector, entries);
+		if (sources == null)
 			return new BundleBuildResult { IsValid = false, Data = null };
 
-		var bundledData = new Bundle
-		{
-			Products = bundledProducts,
-			HideFeatures = hideFeatures?.Count > 0 ? hideFeatures.ToList() : [],
-			Entries = bundledEntries
-		};
+		var assembled = Bundle.Assemble(
+			sources,
+			outputProducts?.Select(p => new BundleProductSpec(p.Product, p.Target, p.Lifecycle)).ToList(),
+			repo,
+			owner,
+			hideFeatures
+		);
 
-		return new BundleBuildResult { IsValid = true, Data = bundledData };
+		// every finding is forwarded as the collector received it before (a product with several targets is a warning)
+		return new BundleBuildResult { IsValid = !assembled.HasErrors, Data = assembled.EmitTo(collector) };
 	}
 
-	private static List<BundledProduct> BuildProducts(
-		IDiagnosticsCollector collector,
-		IReadOnlyList<MatchedChangelogFile> entries,
-		IReadOnlyList<ProductArgument>? outputProducts,
-		string? repo,
-		string? owner
-	)
+	private static List<BundleSource>? ResolveSources(IDiagnosticsCollector collector, IReadOnlyList<MatchedChangelogFile> entries)
 	{
-		List<BundledProduct> bundledProducts;
-
-		if (outputProducts is { Count: > 0 })
-		{
-			bundledProducts = outputProducts
-				.OrderBy(p => p.Product)
-				.ThenBy(p => p.Target ?? string.Empty)
-				.ThenBy(p => p.Lifecycle ?? string.Empty)
-				.Select(
-					p => new BundledProduct
-					{
-						ProductId = p.Product ?? "",
-						Target = p.Target == "*" ? null : p.Target,
-						Lifecycle = ParseLifecycle(p.Lifecycle == "*" ? null : p.Lifecycle),
-						Repo = repo,
-						Owner = owner
-					}
-				)
-				.ToList();
-		}
-		else if (entries.Count > 0)
-		{
-			var productVersions = new HashSet<(string product, string version, Lifecycle? lifecycle)>();
-			foreach (var entry in entries)
-			{
-				if (entry.Data.Products == null)
-					continue;
-				foreach (var product in entry.Data.Products)
-				{
-					// `Target` is obsolete; prefer the first entry of `Versions` (notes).
-					// For PR-anchored entries neither field is set → version is "".
-#pragma warning disable CS0618 // reading obsolete Target for backward compat
-					var version = (product.Versions.Count > 0 ? product.Versions[0] : null) ?? product.Target ?? string.Empty;
-#pragma warning restore CS0618
-					_ = productVersions.Add((product.ProductId, version, product.Lifecycle));
-				}
-			}
-
-			bundledProducts = productVersions
-				.OrderBy(pv => pv.product)
-				.ThenBy(pv => pv.version)
-				.ThenBy(pv => pv.lifecycle?.ToStringFast(true) ?? string.Empty)
-				.Select(
-					pv => new BundledProduct(
-						pv.product,
-						string.IsNullOrWhiteSpace(pv.version) ? null : pv.version,
-						pv.lifecycle,
-						repo,
-						owner
-					)
-				)
-				.ToList();
-		}
-		else
-			bundledProducts = [];
-
-		var productsByProductId = bundledProducts
-			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
-			.Where(g => g.Count() > 1)
-			.ToList();
-
-		foreach (var productGroup in productsByProductId)
-		{
-			var targets = productGroup.Select(p =>
-			{
-				var target = string.IsNullOrWhiteSpace(p.Target) ? "(no target)" : p.Target;
-				if (p.Lifecycle != null)
-					target = $"{target} {p.Lifecycle.Value.ToStringFast(true)}";
-				return target;
-			}).ToList();
-			collector.EmitWarning(
-				string.Empty,
-				$"Product '{productGroup.Key}' has multiple targets in bundle: {string.Join(", ", targets)}"
-			);
-		}
-
-		return bundledProducts;
-	}
-
-	private static Lifecycle? ParseLifecycle(string? value)
-	{
-		if (string.IsNullOrEmpty(value))
-			return null;
-
-		return LifecycleExtensions.TryParse(value, out var result, ignoreCase: true, allowMatchingMetadataAttribute: true) ? result : null;
-	}
-
-	private static List<BundledEntry>? BuildResolvedEntries(IDiagnosticsCollector collector, IReadOnlyList<MatchedChangelogFile> entries)
-	{
-		var resolvedEntries = new List<BundledEntry>();
+		var sources = new List<BundleSource>();
 		var hasInvalidEntries = false;
 
 		foreach (var entry in entries)
@@ -156,16 +61,12 @@ public class BundleBuilder
 				continue;
 			}
 
-			var bundledEntry = entry.Data.ToBundledEntry() with
-			{
-				File = new BundledFile { Name = entry.FileName, Checksum = entry.Checksum }
-			};
-			resolvedEntries.Add(bundledEntry);
+			sources.Add(new BundleSource(entry.FileName, entry.Checksum, entry.Data));
 		}
 
 		// Report every invalid entry in a single pass instead of aborting on the first,
 		// so a release with several broken changelogs surfaces them all at once.
-		return hasInvalidEntries ? null : resolvedEntries;
+		return hasInvalidEntries ? null : sources;
 	}
 
 	private static bool IsResolvedEntryValid(IDiagnosticsCollector collector, MatchedChangelogFile entry)

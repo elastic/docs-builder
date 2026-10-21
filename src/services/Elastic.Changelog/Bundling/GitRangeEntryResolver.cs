@@ -11,8 +11,6 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
-using Microsoft.Extensions.Logging;
-using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -269,29 +267,19 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
 	{
 		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
-		try
-		{
-			var checksum = ChangelogBundlingService.ComputeSha1(content);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
-				normalized,
-				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
-			)
-				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
-			var entry = new MatchedChangelogFile
-			{
-				Data = ReleaseNotesSerialization.ConvertEntry(dto),
-				FilePath = fileName,
-				FileName = fileName,
-				Checksum = checksum
-			};
-			var prs = dto.Prs ?? (dto.Pr != null ? [dto.Pr] : new List<string>());
-			return new ChangelogPoolCandidate(fileName, content, numbers, entry, null, prs);
-		}
-		catch (YamlException ex)
-		{
-			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
-		}
+		var checksum = ChangelogBundlingService.ComputeSha1(content);
+		var loaded = ReleaseNotesLoader.LoadEntry(content, fileName);
+		if (loaded.Value is not { } data)
+			return new ChangelogPoolCandidate(
+				fileName,
+				content,
+				numbers,
+				null,
+				loaded.Diagnostics.Select(d => d.Message).FirstOrDefault(),
+				[]
+			);
+		var entry = new MatchedChangelogFile { Data = data, FilePath = fileName, FileName = fileName, Checksum = checksum };
+		return new ChangelogPoolCandidate(fileName, content, numbers, entry, null, data.Prs ?? []);
 	}
 
 	/// <summary>
@@ -365,13 +353,6 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			);
 		}
 
-		var type = ChangelogEntryTypeExtensions.TryParse(
-			typeString ?? "other",
-			out var parsedType,
-			ignoreCase: true,
-			allowMatchingMetadataAttribute: true
-		) ? parsedType : ChangelogEntryType.Other;
-
 		var products = ResolveProducts(collector, pr, resolvedProducts);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
@@ -395,20 +376,14 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 
 		var issues = config?.Extract.Issues != false && summary.LinkedIssues.Count > 0 ? summary.LinkedIssues.ToList() : null;
 
-		var entryData = new ChangelogEntry
-		{
-			Title = title,
-			Type = type,
-			Description = description,
-			Products = products,
-			Areas = areas.Count > 0 ? areas : null,
-			FeatureId = featureId,
-			Highlight = highlight,
-			Prs = [pr.Url],
-			Issues = issues
-		};
+		var entryResult = ChangelogEntry.FromPullRequest(
+			new PullRequestFacts(pr.Url, title, typeString, description, areas, featureId, highlight, issues),
+			products
+		);
+		if (entryResult.EmitErrorsTo(collector) is not { } entryData)
+			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
-		var yaml = ReleaseNotesSerialization.SerializeEntry(entryData);
+		var yaml = ReleaseNotesLoader.Serialize(entryData);
 		var fileName = $"{pr.Number}.yaml";
 		var entry = new MatchedChangelogFile
 		{

@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
@@ -79,10 +78,7 @@ public abstract class McpToolsIntegrationTestsBase
 		return (coherenceTools, clientAccessor);
 	}
 
-	private static FullSearchService BuildFullSearchAdapter(
-		ElasticsearchClientAccessor clientAccessor,
-		ProductsConfiguration productsConfig
-	)
+	private static FullSearchService BuildFullSearchAdapter(ElasticsearchClientAccessor clientAccessor, ProductCatalog productsConfig)
 	{
 		var queryConfig = new SearchQueryConfiguration
 		{
@@ -108,20 +104,15 @@ public abstract class McpToolsIntegrationTestsBase
 	{
 		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 
-		var searchConfig = new SearchConfiguration
-		{
-			Synonyms = [],
-			Rules = [],
-			DiminishTerms = ["plugin", "client", "integration", "glossary"]
-		};
+		var searchConfig = new SearchTuning { Synonyms = [], Rules = [], DiminishTerms = ["plugin", "client", "integration", "glossary"] };
 
 		return new ElasticsearchClientAccessor(endpoints, searchConfig);
 	}
 
 	/// <summary>
-	/// Creates a minimal ProductsConfiguration for testing.
+	/// Creates a minimal ProductCatalog for testing.
 	/// </summary>
-	private static ProductsConfiguration CreateProductsConfiguration()
+	private static ProductCatalog CreateProductsConfiguration()
 	{
 		var products = new Dictionary<string, Product>
 		{
@@ -136,11 +127,6 @@ public abstract class McpToolsIntegrationTestsBase
 
 		var productDisplayNames = products.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DisplayName);
 
-		return new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = productDisplayNames.ToFrozenDictionary()
-		};
+		return new ProductCatalog { Products = products.ToFrozenDictionary() };
 	}
 }

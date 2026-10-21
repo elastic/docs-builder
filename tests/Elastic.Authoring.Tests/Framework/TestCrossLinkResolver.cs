@@ -6,8 +6,11 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
 
 namespace Elastic.Authoring.Tests.Framework;
 
@@ -19,14 +22,14 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 public sealed class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly Dictionary<string, RepositoryLinks> _references = new();
+	private readonly Dictionary<string, LinkManifest> _references = new();
 	private readonly HashSet<string> _declared = [];
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
-	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
+	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
-	public TestCrossLinkResolver(ConfigurationFile config)
+	public TestCrossLinkResolver(ResolvedDocumentationSet config)
 	{
-		var redirects = RepositoryLinks.SerializeRedirects(config.Redirects);
+		var redirects = LinkJson.SerializeRedirects(config.Redirects is { } r ? new Dictionary<string, LinkRedirect>(r) : null);
 
 		// language=json
 		var json =
@@ -63,7 +66,7 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 		             }
 		             """;
 
-		var reference = CrossLinkFetcher.Deserialize(json);
+		var reference = LinkLoader.LoadManifest(json, "test-links.json").Value!;
 		_references.Add("docs-content", reference);
 		_references.Add("kibana", reference);
 		_declared.Add("docs-content");
@@ -92,6 +95,9 @@ public sealed class TestCrossLinkResolver : ICrossLinkResolver
 	public IUriEnvironmentResolver UriResolver => _uriResolver;
 
 	public bool TryResolve(Action<string> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
+		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
+
+	public bool TryResolve(Action<string, string?> errorEmitter, Uri crossLinkUri, [NotNullWhen(true)] out Uri? resolvedUri) =>
 		CrossLinkResolver.TryResolve(errorEmitter, _crossLinks, _uriResolver, crossLinkUri, out resolvedUri);
 
 	public bool IsDeclaredCrossLinkScheme(string scheme) => _declared.Contains(scheme);

@@ -11,8 +11,8 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -24,7 +24,10 @@ namespace Elastic.ApiExplorer.Export;
 /// <summary>
 /// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(
+	VersioningSystemCatalog versionsConfiguration,
+	IDocumentInferrerService? documentInferrer = null
+)
 {
 	private static readonly HttpClient HttpClient = new();
 

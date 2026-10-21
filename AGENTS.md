@@ -77,6 +77,38 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
 
+### Constraint sets and property tests
+
+Domain rules live in `Elastic.Documentation` as constraint sets (`XConstraints.All`, see `Constraints/Constraint.cs`). Each set has a test class in `tests/Elastic.Documentation.Tests/Domain/` that supplies a generator of valid models and one counter-example per rule, and either calls `XConstraints.All.Laws(valid, counterExamples)` or, where the type declares more than invariants, runs `AutoTest.For(XConstraints.All, valid).CounterExamples(...).Action(...)` and exposes its `Cases` as a `[MethodDataSource]` test (one test per axis the type declares; see `LinkRegistryConstraintsTests`). There is no shared base class. New rules start as warnings.
+
+Property tests use [CsCheck](https://github.com/AnthonyLloyd/CsCheck). Their inputs are generated and their assertion is a law, so readability rules are stricter than elsewhere, and the doc comment is a deliberate exception to "comments only when *why* is non-obvious":
+
+- An XML doc states the law in plain language **and** the consequence if it breaks.
+- Generators are named properties on a `Gens` class, not inline chains.
+- Pass `print:` when the generated value has no legible `ToString()`.
+- One law per test.
+
+```csharp
+/// <summary>
+/// Law: <c>base-not-after-current</c> reports a versioning system exactly when its base version is after its current one.
+/// Consequence if broken: version dropdowns and applies_to badges are computed from an inverted range.
+/// </summary>
+[Test]
+public void BaseAfterCurrent_IsReportedExactlyWhenInverted() =>
+	Gen.Select(Gens.Version, Gens.Version).Sample(
+		x => VersioningSystemConstraints.Check(Catalog(x.Item1, x.Item2)).Any().Should().Be(x.Item1 > x.Item2),
+		print: x => $"base {x.Item1}, current {x.Item2}"
+	);
+```
+
+### DTO projections
+
+Every hand-written DTO-to-domain projection needs a coverage test in
+`tests/Elastic.Documentation.Configuration.Tests/`. Use `ProjectionCoverage.For<TDto>()` to name every mapped member.
+Members accepted only for compatibility must use `ProjectionCoverage.Ignore(...)` with a reason. The test uses reflection
+only in the test assembly; production code stays AOT-compatible. Golden tests remain responsible for defaults and other
+mapping semantics.
+
 ## Key Locations
 
 | What | Where |

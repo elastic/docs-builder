@@ -45,9 +45,7 @@ public class IsolatedBuildNavigationHtmlWriter(
 		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot
 	)
 	{
-		var useRequestedRoot = requestedRoot != siteRoot
-			|| context.Configuration.Features.PrimaryNavEnabled
-			|| requestedRoot.IsUsingNavigationDropdown;
+		var useRequestedRoot = requestedRoot != siteRoot || context.Features.PrimaryNavEnabled || requestedRoot.IsUsingNavigationDropdown;
 
 		return useRequestedRoot ? requestedRoot : siteRoot;
 	}
@@ -57,15 +55,14 @@ public class IsolatedBuildNavigationHtmlWriter(
 		// Top-level items always come from the docset root (siteRoot) so the dropdown
 		// correctly lists all sections even when renderRoot is a nested island.
 		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
-		var isUsingDropdown = !suppressNavigationDropdown
-			&& (context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
+		var isUsingDropdown = !suppressNavigationDropdown && (context.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
 		var model = NavigationRenderModel.Create(
 			tree: renderRoot,
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
-			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
+			isPrimaryNavEnabled: context.Features.PrimaryNavEnabled,
 			isGlobalAssemblyBuild: false,
-			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
+			navigationPreviewEnabled: context.Features.NavigationPreviewEnabled
 		);
 		return versionSwitcher is { Count: > 0 } ? model with { VersionSwitcher = versionSwitcher } : model;
 	}

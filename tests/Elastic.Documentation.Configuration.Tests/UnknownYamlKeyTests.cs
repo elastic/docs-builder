@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Codex;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Tests.Golden;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
@@ -37,13 +39,13 @@ public class UnknownYamlKeyTests
 		fileSystem.AddFile("/docs/other.md", new MockFileData("# Other"));
 
 		var collector = new CapturingDiagnosticsCollector();
-		_ = DocumentationSetFile.LoadAndResolve(
+		_ = DocumentationSetLoader.LoadAndResolve(
 			collector,
 			fileSystem.FileInfo.New("/docs/docset.yml"),
 			new ScopedFileSystem(fileSystem, "/docs")
 		);
 
-		var diagnostic = collector.Captured.Should().ContainSingle(d => d.Severity == Severity.Error).Subject;
+		var diagnostic = collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Subject;
 		diagnostic.Message.Should().Contain("Unknown key 'fiel'").And.Contain("Did you mean 'file'?");
 		diagnostic.Line.Should().Be(4);
 		diagnostic.Column.Should().Be(5);
@@ -60,9 +62,9 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
+		var diagnostic = collector.Diagnostics.Should().ContainSingle().Subject;
 		diagnostic.Severity.Should().Be(Severity.Error);
 		diagnostic.File.Should().Be("/config/navigation.yml");
 		diagnostic.Line.Should().Be(3);
@@ -80,10 +82,10 @@ public class UnknownYamlKeyTests
 			""";
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
+		_ = SiteNavigationLoader.Deserialize(yaml, collector, "/config/navigation.yml");
 
 		collector
-			.Captured
+			.Diagnostics
 			.Should()
 			.ContainSingle()
 			.Which
@@ -135,10 +137,10 @@ public class UnknownYamlKeyTests
 			  prodcut_id: typo
 			""";
 
-		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, options)!;
+		var sequence = YamlSerializer.Deserialize<ApiProductSequenceDto>(yaml, options)!;
 
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
+		var diagnostic = collector.Diagnostics.Should().ContainSingle().Subject;
 		diagnostic.Severity.Should().Be(Severity.Error);
 		diagnostic.Line.Should().Be(3);
 		diagnostic.Message.Should().Contain("Unknown key 'prodcut_id'");
@@ -173,10 +175,10 @@ public class UnknownYamlKeyTests
 			  other: 3
 			""";
 
-		_ = YamlSerializer.Deserialize<ApiProductSequence>(yaml, options);
+		_ = YamlSerializer.Deserialize<ApiProductSequenceDto>(yaml, options);
 
 		collector
-			.Captured
+			.Diagnostics
 			.Select(d => (d.Severity, d.Message))
 			.Should()
 			.SatisfyRespectively(hint =>
@@ -195,7 +197,7 @@ public class UnknownYamlKeyTests
 	{
 		var path = System.IO.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "config", "codex.example.yml");
 
-		var config = CodexConfiguration.Deserialize(File.ReadAllText(path), path);
+		var config = CodexSiteLoader.Deserialize(File.ReadAllText(path), path);
 
 		config.Groups.Should().ContainSingle().Which.Id.Should().Be("docs");
 	}

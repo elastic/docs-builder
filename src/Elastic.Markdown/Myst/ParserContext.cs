@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Diagnostics;
@@ -54,7 +55,7 @@ public record ParserResolvers : IParserResolvers
 
 public record ParserState(BuildContext Build) : ParserResolvers
 {
-	public ConfigurationFile Configuration { get; } = Build.Configuration;
+	public ResolvedDocumentationSet Configuration { get; } = Build.Configuration;
 
 	public required IFileInfo MarkdownSourcePath { get; init; }
 	public required YamlFrontMatter? YamlFrontMatter { get; init; }
@@ -77,7 +78,7 @@ public record ParserState(BuildContext Build) : ParserResolvers
 
 public class ParserContext : MarkdownParserContext, IParserResolvers
 {
-	public ConfigurationFile Configuration { get; }
+	public ResolvedDocumentationSet Configuration { get; }
 	public ICrossLinkResolver CrossLinkResolver { get; }
 	public IReleaseNotesResolver ReleaseNotesResolver { get; }
 	public IFileInfo MarkdownSourcePath { get; }

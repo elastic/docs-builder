@@ -8,6 +8,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<InternalsVisibleTo Include="Elastic.Documentation.Deploying.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="AWSSDK.S3" />
 		<PackageReference Include="DotNet.Glob" />
 		<PackageReference Include="GitHub.Actions.Core" />
@@ -18,6 +22,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
+		<PackageReference Include="Nullean.Entities" />
 		<ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
 		<ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />

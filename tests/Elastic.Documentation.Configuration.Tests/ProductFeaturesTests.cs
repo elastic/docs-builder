@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
@@ -266,7 +267,7 @@ public class ProductFeaturesTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
 	}
 
-	private static ProductsConfiguration ParseProducts(string yaml)
+	private static ProductCatalog ParseProducts(string yaml)
 	{
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();
@@ -274,7 +275,7 @@ public class ProductFeaturesTests
 		return ProductExtensions.CreateProducts(reader, versionsConfig);
 	}
 
-	private static ProductsConfiguration LoadActualProductsConfiguration()
+	private static ProductCatalog LoadActualProductsConfiguration()
 	{
 		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
 		var versionsConfig = provider.CreateVersionConfiguration();

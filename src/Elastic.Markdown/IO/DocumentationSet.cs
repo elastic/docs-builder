@@ -13,6 +13,8 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Toc.CliReference;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -46,7 +48,7 @@ public class DocumentationSet : INavigationTraversable
 
 	public DateTimeOffset LastWrite { get; }
 
-	public ConfigurationFile Configuration { get; }
+	public ResolvedDocumentationSet Configuration { get; }
 
 	public MarkdownParser MarkdownParser { get; }
 
@@ -88,7 +90,7 @@ public class DocumentationSet : INavigationTraversable
 
 		var fileFactory = new MarkdownFileFactory(context, MarkdownParser, EnabledExtensions);
 		Navigation = new DocumentationSetNavigation<MarkdownFile>(
-			context.ConfigurationYaml,
+			context.Definition,
 			context,
 			fileFactory,
 			null,
@@ -164,44 +166,38 @@ public class DocumentationSet : INavigationTraversable
 		foreach (var redirect in Configuration.Redirects)
 		{
 			if (redirect.Value.To is not null)
-				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors);
-			else if (redirect.Value.Many is not null)
+				ValidateExists(redirect.Key, redirect.Value.To, redirect.Value.Anchors, Severity.Error);
+
+			// Next to a top-level 'to', 'many' targets were never checked; they are reported as warnings until that becomes an error
+			var manySeverity = redirect.Value.To is null ? Severity.Error : Severity.Warning;
+			foreach (var r in redirect.Value.Many ?? [])
 			{
-				foreach (var r in redirect.Value.Many)
-				{
-					if (r.To is not null)
-						ValidateExists(redirect.Key, r.To, r.Anchors);
-				}
+				if (r.To is not null)
+					ValidateExists(redirect.Key, r.To, r.Anchors, manySeverity);
 			}
 		}
 
-		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors)
+		void ValidateExists(string from, string to, IReadOnlyDictionary<string, string?>? valueAnchors, Severity severity)
 		{
+			// An external target that is not a URI, and a local target that does not exist, are reported by the DocumentationSetInCatalog constraints
 			if (to.Contains("://"))
-			{
-				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
-					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
-
 				return;
-			}
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 				to = to.Replace('/', Path.DirectorySeparatorChar);
 
 			var fp = new FilePath(to, SourceDirectory);
 			if (!Files.TryGetValue(fp, out var file))
-			{
-				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which does not exist");
 				return;
-			}
 
 			if (file is not MarkdownFile markdownFile)
 			{
-				Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
+				Context.Collector.Emit(severity, Configuration.SourceFile, $"Redirect {from} points to {to} which is not a markdown file");
 				return;
 			}
 
-			if (valueAnchors is null or { Count: 0 })
+			// Anchors on 'many' targets next to a top-level 'to' were never remapped; checking them doesn't change the output
+			if (severity != Severity.Error || valueAnchors is null or { Count: 0 })
 				return;
 
 			markdownFile.AnchorRemapping = markdownFile.AnchorRemapping?.Concat(valueAnchors)
@@ -258,43 +254,31 @@ public class DocumentationSet : INavigationTraversable
 		_resolved = true;
 	}
 
-	public RepositoryLinks CreateLinkReference()
+	/// <summary>
+	/// The <c>links.json</c> this build publishes, checked by <see cref="LinkManifestConstraints"/> (see <see cref="LinkManifest.From"/>). The value is
+	/// there even when a rule of error severity is broken; the findings are the caller's to report.
+	/// </summary>
+	public Result<LinkManifest> CreateLinkReference()
 	{
-		var redirects = Configuration.Redirects;
-		var crossLinks = Context.Collector.CrossLinks.ToHashSet().OrderBy(l => l).ToArray();
-
 		var leafs = NavigationIndexedByOrder.Values.OfType<ILeafNavigationItem<MarkdownFile>>().ToArray();
 		var nodes = NavigationIndexedByOrder.Values.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToArray();
 
-		var markdownInNavigation = leafs
-			.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m))
-			.Concat(nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g)))
-			.ToList();
+		var markdownInNavigation = leafs.Select(m => (Markdown: m.Model, Navigation: (INavigationItem)m)).Concat(
+			nodes.Select(g => (Markdown: (MarkdownFile)g.Index.Model, Navigation: (INavigationItem)g))
+		);
 
-		var links = markdownInNavigation
-			.Select(tuple =>
-			{
-				var path = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+		var pages = markdownInNavigation.Select(
+			tuple => new LinkPage(
+				RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 					? tuple.Markdown.LinkReferenceRelativePath.Replace('\\', '/')
-					: tuple.Markdown.LinkReferenceRelativePath;
-				return (Path: path, tuple.Markdown, tuple.Navigation);
-			})
-			.DistinctBy(tuple => tuple.Path)
-			.OrderBy(tuple => tuple.Path)
-			.ToDictionary(tuple => tuple.Path, tuple =>
-			{
-				var anchors = tuple.Markdown.Anchors.Count == 0 ? null : tuple.Markdown.Anchors.ToArray();
-				return new LinkMetadata { Anchors = anchors, Hidden = tuple.Navigation.ExcludeFromIndexing };
-			});
+					: tuple.Markdown.LinkReferenceRelativePath,
+				[.. tuple.Markdown.Anchors],
+				tuple.Navigation.ExcludeFromIndexing,
+				tuple.Markdown.DuplicateAnchors
+			)
+		);
 
-		return new RepositoryLinks
-		{
-			Redirects = redirects,
-			UrlPathPrefix = Context.UrlPathPrefix,
-			Origin = Context.Git,
-			Links = links,
-			CrossLinks = crossLinks
-		};
+		return LinkManifest.From(Context.Git, Context.UrlPathPrefix, pages, Context.Collector.CrossLinks, Configuration.Redirects);
 	}
 
 	public void ClearOutputDirectory()
@@ -319,17 +303,17 @@ public class DocumentationSet : INavigationTraversable
 		}
 
 		// Auto-enable CLI reference extension when the TOC contains a cli: entry
-		if (HasCliReferenceRef(Context.ConfigurationYaml.TableOfContents))
+		if (HasCliReferenceRef(Context.Definition.TableOfContents))
 			list.Add(new CliReferenceDocsBuilderExtension(Context));
 
 		// Auto-enable listing extension when the TOC contains a listing: entry
-		if (HasListingRef(Context.ConfigurationYaml.TableOfContents))
+		if (HasListingRef(Context.Definition.TableOfContents))
 			list.Add(new ListingDocsBuilderExtension(Context, MarkdownParser));
 
 		return list.AsReadOnly();
 	}
 
-	private static bool HasCliReferenceRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static bool HasCliReferenceRef(IReadOnlyList<TocItem> items)
 	{
 		foreach (var item in items)
 		{
@@ -349,7 +333,7 @@ public class DocumentationSet : INavigationTraversable
 		return false;
 	}
 
-	private static bool HasListingRef(IReadOnlyCollection<ITableOfContentsItem> items)
+	private static bool HasListingRef(IReadOnlyList<TocItem> items)
 	{
 		foreach (var item in items)
 		{

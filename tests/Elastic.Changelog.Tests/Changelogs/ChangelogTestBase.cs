@@ -6,12 +6,10 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -44,7 +42,7 @@ public abstract class ChangelogTestBase : IDisposable
 		Collector = new TestDiagnosticsCollector();
 		LoggerFactory = new TestLoggerFactory();
 
-		var versionsConfiguration = new VersionsConfiguration
+		var versionsConfiguration = new VersioningSystemCatalog
 		{
 			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
 			{
@@ -107,21 +105,14 @@ public abstract class ChangelogTestBase : IDisposable
 				}
 			}
 		};
-		var productsConfiguration = new ProductsConfiguration
-		{
-			Products = products.ToFrozenDictionary(),
-			PublicReferenceProducts = products.ToFrozenDictionary(),
-			ProductDisplayNames = products.ToDictionary(p => p.Key, p => p.Value.DisplayName).ToFrozenDictionary()
-		};
+		var productsConfiguration = ProductCatalog.FromPublicProducts(products);
 
 		ConfigurationContext = new ConfigurationContext
 		{
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default, },
 			ConfigurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, configFileSystem),
-			VersionsConfiguration = versionsConfiguration,
-			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] },
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
+			Catalog = new GlobalCatalog(versionsConfiguration, productsConfiguration, LegacyUrlMappingCatalog.None),
+			SearchTuning = SearchTuning.None,
 		};
 	}
 

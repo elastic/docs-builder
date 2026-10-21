@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.DocumentationSets;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Configuration.Inference;
 
@@ -58,7 +58,7 @@ public interface IDocumentInferrerService
 	DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	);
@@ -76,10 +76,10 @@ public interface IDocumentInferrerService
 /// from various metadata sources with defined priority.
 /// </summary>
 public class DocumentInferrerService(
-	ProductsConfiguration productsConfiguration,
-	VersionsConfiguration versionsConfiguration,
-	LegacyUrlMappingConfiguration legacyUrlMappings,
-	ConfigurationFile? configurationFile = null,
+	ProductCatalog productsConfiguration,
+	VersioningSystemCatalog versionsConfiguration,
+	LegacyUrlMappingCatalog legacyUrlMappings,
+	ResolvedDocumentationSet? configurationFile = null,
 	GitCheckoutInformation? gitCheckout = null,
 	AssemblyConfiguration? assemblyConfiguration = null
 ) : IDocumentInferrerService
@@ -90,14 +90,14 @@ public class DocumentInferrerService(
 	);
 	private readonly ProductInferService _productInferService = new(productsConfiguration, gitCheckout);
 
-	public ConfigurationFile? ConfigurationFile => configurationFile;
+	public ResolvedDocumentationSet? ConfigurationFile => configurationFile;
 	public GitCheckoutInformation? GitCheckout => gitCheckout;
 
 	/// <inheritdoc />
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	)
@@ -173,7 +173,7 @@ public class DocumentInferrerService(
 	}
 
 	/// <summary>
-	/// Infers product from legacy URL mappings by matching mapped page URLs against LegacyUrlMappingConfiguration.
+	/// Infers product from legacy URL mappings by matching mapped page URLs against LegacyUrlMappingCatalog.
 	/// </summary>
 	private Product? InferProductFromLegacyMappings(IReadOnlyCollection<string>? mappedPages)
 	{
@@ -250,7 +250,7 @@ public class NoopDocumentInferrer : IDocumentInferrerService
 	public DocumentInferenceResult InferForMarkdown(
 		string repositoryName,
 		IReadOnlyCollection<string>? mappedPages,
-		HashSet<Product> docsetProducts,
+		IReadOnlySet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
 		ApplicableTo? applicableTo
 	) => new();

@@ -36,6 +36,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Documentation.Builder.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Cross-field rules for the option objects of a command, reported as Argh errors. -->
+    <PackageReference Include="Nullean.Entities.Argh" />
+  </ItemGroup>
+
+  <ItemGroup>
     <EmbeddedResource Include="..\..\..\config\changelog.example.yml" Link="changelog.example.yml" LogicalName="Documentation.Builder.changelog.example.yml" />
   </ItemGroup>
 

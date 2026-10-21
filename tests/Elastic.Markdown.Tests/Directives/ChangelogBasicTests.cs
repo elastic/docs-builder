@@ -676,7 +676,7 @@ internal static class ChangelogCdnTestResolver
 {
 	public static IReleaseNotesResolver For(string product, params (string FileName, string Content)[] bundleContents)
 	{
-		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents, _ => { });
+		var bundles = new BundleLoader(new MockFileSystem()).LoadBundlesFromContent(bundleContents).Value!;
 		return new ReleaseNotesResolver(new FetchedReleaseNotes
 		{
 			BundlesByProduct = new Dictionary<string, IReadOnlyList<LoadedBundle>>(StringComparer.Ordinal)

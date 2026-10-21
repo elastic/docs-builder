@@ -6,11 +6,12 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
 
@@ -260,7 +261,9 @@ public class ConfigurationFileCtaTests
 
 		var (_, diagnostics) = await CreateConfigurationWithDiagnostics(docSet);
 
-		diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Which.Message.Should().Contain("does-not-exist");
+		diagnostics.Should().ContainSingle(
+			d => d.Severity == Severity.Error && d.Message.Contains("does-not-exist", StringComparison.Ordinal)
+		);
 	}
 
 	[Test]
@@ -357,13 +360,13 @@ public class ConfigurationFileCtaTests
 		config.ResolveCta(null, "solutions/observability/get-started/quickstart.md", out _).Name.Should().Be("monitor-kubernetes");
 	}
 
-	private static DocumentationSetFile LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
+	private static DocumentationSetDto LoadDocSet(string docsetYaml, params (string Content, string Path)[] files)
 	{
 		var collector = new DiagnosticsCollector([]);
 		return LoadDocSet(collector, docsetYaml, files);
 	}
 
-	private static DocumentationSetFile LoadDocSet(
+	private static DocumentationSetDto LoadDocSet(
 		DiagnosticsCollector collector,
 		string docsetYaml,
 		params (string Content, string Path)[] files
@@ -376,17 +379,17 @@ public class ConfigurationFileCtaTests
 			fileSystem.AddFile($"/docs/{path}", new MockFileData(content));
 
 		var docsetPath = fileSystem.FileInfo.New("/docs/docset.yml");
-		return DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
+		return DocumentationSetDto.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet)
 	{
 		var collector = new DiagnosticsCollector([]);
 		return CreateConfiguration(docSet, collector);
 	}
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
-		DocumentationSetFile docSet
+	private static async Task<(ResolvedDocumentationSet Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfigurationWithDiagnostics(
+		DocumentationSetDto docSet
 	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();
@@ -397,23 +400,19 @@ public class ConfigurationFileCtaTests
 		return (config, recorder.Diagnostics);
 	}
 
-	private static ConfigurationFile CreateConfiguration(DocumentationSetFile docSet, DiagnosticsCollector collector)
+	private static ResolvedDocumentationSet CreateConfiguration(DocumentationSetDto docSet, DiagnosticsCollector collector)
 	{
 		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { "/docs/docset.yml", new MockFileData("") } }, "/docs");
+		TocFixtures.EnsureTableOfContents(docSet, fileSystem, "/docs");
 
 		var configPath = fileSystem.FileInfo.New("/docs/docset.yml");
 		var docsDir = fileSystem.DirectoryInfo.New("/docs");
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
-		var productsConfig = new ProductsConfiguration
-		{
-			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
-			PublicReferenceProducts = new Dictionary<string, Product>().ToFrozenDictionary(),
-			ProductDisplayNames = new Dictionary<string, string>().ToFrozenDictionary()
-		};
+		var versionsConfig = new VersioningSystemCatalog { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
+		var productsConfig = new ProductCatalog { Products = new Dictionary<string, Product>().ToFrozenDictionary(), };
 
-		return new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
+		return DocumentationSetResolver.Resolve(docSet, context, versionsConfig, productsConfig).EmitTo(context.Collector)!;
 	}
 
 	private sealed class RecordingDiagnosticsOutput : IDiagnosticsOutput

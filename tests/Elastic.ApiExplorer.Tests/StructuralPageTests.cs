@@ -42,7 +42,7 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 	[Test]
 	public void Overview_HidesAuthenticationAndServersPages()
 	{
-		var rows = ApiOverviewBuilder.Build(fixture.Navigation, fixture.Context.VersionsConfiguration);
+		var rows = ApiOverviewBuilder.Build(fixture.Navigation, fixture.Context.Catalog.VersioningSystems);
 
 		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/servers");
 		rows.Select(row => row.Url).Should().NotContain("/api/doc/fixture/authentication");

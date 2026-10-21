@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler.Building;
 using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Documentation.Build.Tests;
 
@@ -159,6 +160,7 @@ public class AssemblerBuildStampTests
 			"dev",
 			checkouts,
 			configContext.ConfigurationFileProvider,
+			configContext.ConfigurationFileProvider.NavigationFile,
 			new HashSet<Exporter> { Exporter.Html }
 		);
 		result.Should().BeNull();
@@ -182,6 +184,7 @@ public class AssemblerBuildStampTests
 			"dev",
 			checkouts,
 			configContext.ConfigurationFileProvider,
+			configContext.ConfigurationFileProvider.NavigationFile,
 			new HashSet<Exporter> { Exporter.Html }
 		);
 		stamp.Should().NotBeNull();

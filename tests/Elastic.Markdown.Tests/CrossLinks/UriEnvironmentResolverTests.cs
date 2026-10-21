@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -228,7 +229,7 @@ public class CrossLinkResolverFallbackUrlTests
 {
 	private static FetchedCrossLinks BuildFallbackOnlyCrossLinks(string repository, string registryUrl, DocSetRegistry registry)
 	{
-		var emptyRepositoryLinks = new RepositoryLinks
+		var emptyRepositoryLinks = new LinkManifest
 		{
 			Links = [],
 			Origin = new GitCheckoutInformation
@@ -244,7 +245,7 @@ public class CrossLinkResolverFallbackUrlTests
 		return new FetchedCrossLinks
 		{
 			DeclaredRepositories = [repository],
-			LinkReferences = new Dictionary<string, RepositoryLinks> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
+			LinkReferences = new Dictionary<string, LinkManifest> { [repository] = emptyRepositoryLinks }.ToFrozenDictionary(),
 			LinkIndexEntries = new Dictionary<string, LinkRegistryEntry>().ToFrozenDictionary(),
 			RegistryUrlsByRepository = new Dictionary<string, string> { [repository] = registryUrl }.ToFrozenDictionary(),
 			RegistryByRepository = new Dictionary<string, DocSetRegistry> { [repository] = registry }.ToFrozenDictionary()

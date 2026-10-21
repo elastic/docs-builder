@@ -11,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -21,7 +22,8 @@ public class ChangelogPrepareArtifactService(
 	ILoggerFactory logFactory,
 	IConfigurationContext configurationContext,
 	ICoreService coreService,
-	IRunnerTempFileSystem fileSystem
+	IRunnerTempFileSystem fileSystem,
+	ChangelogConfigurationLoader? configurationLoader = null
 ) : IService
 {
 	/// <summary>
@@ -31,7 +33,7 @@ public class ChangelogPrepareArtifactService(
 
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogPrepareArtifactService>();
 	private readonly IRunnerTempFileSystem _fileSystem = fileSystem;
-	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
+	private readonly ChangelogConfigurationLoader _configLoader = configurationLoader ?? new(logFactory, configurationContext, fileSystem);
 
 	public async Task<bool> PrepareArtifact(IDiagnosticsCollector collector, PrepareArtifactArguments input, Cancel ctx)
 	{
@@ -79,7 +81,7 @@ public class ChangelogPrepareArtifactService(
 			}
 		}
 
-		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
+		var config = (await _configLoader.Load(input.Config, ctx)).EmitTo(collector);
 		var createRules = config?.Rules?.Create;
 		var changelogDir = config?.Bundle?.Directory ?? "docs/changelog";
 

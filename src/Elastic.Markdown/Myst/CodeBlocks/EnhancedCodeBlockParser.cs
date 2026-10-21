@@ -119,13 +119,8 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 
 		try
 		{
-			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, appliesToDirective.Build.ProductsConfiguration);
-			appliesToDirective.AppliesTo = applicableTo;
-			if (appliesToDirective.AppliesTo.Diagnostics is null)
-				return;
-			foreach (var (severity, message) in appliesToDirective.AppliesTo.Diagnostics)
-				appliesToDirective.Emit(severity, message);
-			applicableTo.Diagnostics = null;
+			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, appliesToDirective.Build.Catalog.Products);
+			appliesToDirective.AppliesTo = appliesToDirective.ReportApplicableTo(applicableTo);
 		}
 		catch (Exception e)
 		{
@@ -141,7 +136,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 		{
 			var entries = YamlSerialization.Deserialize<List<ContributorEntry>>(
 				yaml,
-				contributorsBlock.Build.ProductsConfiguration,
+				contributorsBlock.Build.Catalog.Products,
 				contributorsBlock.YamlReporting()
 			);
 			contributorsBlock.ResolveContributors(entries, context);

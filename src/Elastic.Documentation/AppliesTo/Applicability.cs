@@ -11,10 +11,17 @@ using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
+/// <summary>The applicability entries of one <c>applies_to</c> key, ordered.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// </remarks>
 public record AppliesCollection : IReadOnlyCollection<Applicability>
 {
 	private readonly Applicability[] _items;
-	public AppliesCollection(Applicability[] items) => _items = items;
+	internal AppliesCollection(Applicability[] items) => _items = items;
+
+	/// <summary>The collection of <paramref name="items"/>, in the order given.</summary>
+	public static AppliesCollection Of(IEnumerable<Applicability> items) => new([.. items]);
 
 	// <lifecycle> [version]
 	public static bool TryParse(string? value, IList<(Severity, string)> diagnostics, out AppliesCollection? availability)
@@ -162,10 +169,23 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public int Count => _items.Length;
 }
 
+/// <summary>One lifecycle and version of an <c>applies_to</c> entry, for example <c>ga 9.1</c>.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record Applicability : IComparable<Applicability>, IComparable
 {
-	public ProductLifecycle Lifecycle { get; init; }
-	public VersionSpec? Version { get; init; }
+	public ProductLifecycle Lifecycle { get; internal init; }
+	public VersionSpec? Version { get; internal init; }
+
+	/// <summary>The item as written (<c>ga 9.0</c>), or null when the item was not read from text. A version that does not parse is <c>null</c> in <see cref="Version"/>, and tokens after the second are dropped; this shows both.</summary>
+	public string? Raw { get; internal init; }
+
+	// Raw records how the item was written, not what it means: it takes no part in equality.
+	public virtual bool Equals(Applicability? other) => other is not null && Lifecycle == other.Lifecycle && Equals(Version, other.Version);
+
+	public override int GetHashCode() => HashCode.Combine(Lifecycle, Version);
 
 	[YamlIgnore]
 	public static Applicability GenerallyAvailable { get; } = new()
@@ -275,12 +295,9 @@ public record Applicability : IComparable<Applicability>, IComparable
 			availability = null;
 			return false;
 		}
-		var deprecatedLifecycles = new[] { ProductLifecycle.Development, ProductLifecycle.Planned, ProductLifecycle.Discontinued };
-
+		// A deprecated lifecycle (dev, coming, planned, discontinued, unavailable) is reported by
+		// ApplicableToConstraints.ApplicabilityLifecycleNotDeprecated (M91), the single emitter: it names the lifecycle as written, from Raw.
 		// TODO emit as error when all docs have been updated
-		if (deprecatedLifecycles.Contains(lifecycle.Value))
-			diagnostics.Add((Severity.Hint, $"The '{lookup}' lifecycle is deprecated and will be removed in a future release."));
-
 		var version = tokens.Length < 2
 			? null
 			: tokens[1] switch
@@ -290,7 +307,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 				"" => AllVersionsSpec.Instance,
 				var t => VersionSpec.TryParse(t, out var v) ? v : null
 			};
-		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value };
+		availability = new Applicability { Version = version, Lifecycle = lifecycle.Value, Raw = value.Trim() };
 		return true;
 	}
 

@@ -8,7 +8,6 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using SharpYaml;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -123,15 +122,11 @@ public class ChangelogGithubCommentService(
 		if (string.IsNullOrWhiteSpace(yaml))
 			return null;
 
-		try
-		{
-			return ReleaseNotesSerialization.DeserializeEntry(yaml);
-		}
-		catch (YamlException ex)
-		{
-			_logger.LogWarning(ex, "Could not parse staged changelog YAML from {Dir}", metadataDir);
-			return null;
-		}
+		// a rule the entry breaks does not stop it being read here: only YAML that does not parse leaves no entry
+		var entry = ReleaseNotesLoader.LoadEntry(yaml, metadataDir).Value;
+		if (entry is null)
+			_logger.LogWarning("Could not parse staged changelog YAML from {Dir}", metadataDir);
+		return entry;
 	}
 
 	private string? SelectBaseBody(GithubDecisionMetadata metadata, string metadataDir, string owner, string repo)

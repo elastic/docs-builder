@@ -30,9 +30,9 @@ internal sealed class RefactorCommands(
 	[MutationScope(MutationScope.Directory)]
 	[CommandName("mv")]
 	public async Task<int> Move(
-		GlobalCliOptions _,
 		[Argument] string source,
 		[Argument] string target,
+		GlobalCliOptions _,
 		[DryRun] bool? dryRun = null,
 		string? path = null,
 		Cancel ct = default

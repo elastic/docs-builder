@@ -5,16 +5,16 @@
 using System.IO.Abstractions;
 using System.Reflection;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.RelatedLearning;
-using Elastic.Documentation.Configuration.Search;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
+using Elastic.Documentation.Search;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Configuration;
@@ -47,16 +47,41 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public IFileInfo ConfigurationPath => FileSystem.Paths.ConfigurationPath;
 	public GitCheckoutInformation Git => FileSystem.Paths.Git;
 
-	public ConfigurationFile Configuration { get; private set; }
-	public DocumentationSetFile ConfigurationYaml { get; set; }
+	/// <summary>The documentation set as declared in its files, before it is checked and joined against the catalog.</summary>
+	public DocumentationSetDefinition Definition { get; private set; }
 
-	public VersionsConfiguration VersionsConfiguration { get; }
+	/// <summary>The documentation set the build uses: <see cref="Definition"/>, checked and joined against the catalog.</summary>
+	public ResolvedDocumentationSet Configuration { get; private set; }
+
+	/// <summary>
+	/// The docset's feature flags: <c>docset.yml</c> toggles, overridable by <c>FEATURE_*</c> environment variables and
+	/// adjusted at runtime by the serve and assembler commands.
+	/// </summary>
+	public FeatureFlags Features { get; private set; }
+
+	/// <summary>
+	/// Layers a runtime override (serve's HUD, an assembler environment's flags) on top of the docset's flags. The one
+	/// place <see cref="Features"/> changes after construction; readers see the new flags from then on.
+	/// </summary>
+	public void OverrideFeatures(Func<FeatureFlags, FeatureFlags> apply) => Features = apply(Features);
+
+	public GlobalCatalog Catalog { get; }
 	public ConfigurationFileProvider ConfigurationFileProvider { get; }
+
+	/// <summary>
+	/// Names of the repositories that are private (including <c>skip: true</c> ones, which do not publish docs but are not public):
+	/// links to them are hidden when rendering. Taken from the assembler configuration the process loaded at startup (the same
+	/// parse the DI singleton is, once per provider); empty when that configuration is not available (standalone builds, tests).
+	/// </summary>
+	public IReadOnlySet<string> PrivateRepositoryNames =>
+		field ??= AssemblyLoader.LoadOnce(ConfigurationFileProvider).Value?.AllPrivateRepositoryNames ?? new HashSet<string>();
+
+	/// <summary>The loader for changelog bundles read through this build's file system: one per build, not one per directive.</summary>
+	public ReleaseNotes.BundleLoader BundleLoader => field ??= new ReleaseNotes.BundleLoader(ReadFileSystem);
+
 	public DocumentationEndpoints Endpoints { get; }
-	public ProductsConfiguration ProductsConfiguration { get; }
-	public RelatedLearningConfiguration RelatedLearningConfiguration { get; }
-	public LegacyUrlMappingConfiguration LegacyUrlMappings { get; }
-	public SearchConfiguration SearchConfiguration { get; }
+	public RelatedLearningCatalog RelatedLearning { get; }
+	public SearchTuning SearchTuning { get; }
 	public IEnvironmentVariables Environment { get; }
 	public IDiagnosticsCollector Collector { get; }
 	public bool Force { get; init; }
@@ -95,33 +120,84 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 		FileSystem = fileSystem;
 		AvailableExporters = ExportOptions.Default;
 		Environment = environment ?? SystemEnvironmentVariables.Instance;
-		SearchConfiguration = configurationContext.SearchConfiguration;
-		VersionsConfiguration = configurationContext.VersionsConfiguration;
+		SearchTuning = configurationContext.SearchTuning;
+		Catalog = configurationContext.Catalog;
 		ConfigurationFileProvider = configurationContext.ConfigurationFileProvider;
-		ProductsConfiguration = configurationContext.ProductsConfiguration;
-		RelatedLearningConfiguration = configurationContext.ConfigurationFileProvider.CreateRelatedLearningConfiguration();
-		LegacyUrlMappings = configurationContext.LegacyUrlMappings;
+		RelatedLearning = configurationContext.RelatedLearning;
 		Endpoints = configurationContext.Endpoints;
 
 		GoogleTagManager = new GoogleTagManagerConfiguration { Enabled = false };
 		Optimizely = new OptimizelyConfiguration { Enabled = false };
 
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(collector, ConfigurationPath, fileSystem.Read)
-			: new DocumentationSetFile();
-
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
+		var loaded = LoadDocumentationSet(fileSystem.Read);
+		Definition = loaded.Definition;
+		Configuration = loaded.Resolved;
+		ReportDiscovery();
+		Features = CreateFeatures();
 	}
+
+	// The one load of docset.yml: checked once, its diagnostics reported once. Errors are reported and the build continues
+	// with what could be built; a docset that yields nothing at all stops here with the last error's message.
+	private LoadedDocumentationSet LoadDocumentationSet(ScopedFileSystem? fileSystem)
+	{
+		var result = DocumentationSetLoader.Load(
+			ConfigurationPath,
+			DocumentationSourceDirectory,
+			ReadFileSystem,
+			fileSystem,
+			Catalog.VersioningSystems,
+			Catalog.Products,
+			Environment
+		);
+		_ = result.EmitTo(Collector);
+		return result.OrThrowIfMissing();
+	}
+
+	// A docset found by scanning should be the repository's default docset, and the only one for its registry.
+	private void ReportDiscovery()
+	{
+		if (FileSystem.Paths.DiscoveredDocsets is not { Count: > 0 } discovered)
+			return;
+		var candidates = discovered.Select(
+			f => TryReadRegistry(f, out var registry) ? new DiscoveredDocset(f, registry) : null
+		).OfType<DiscoveredDocset>();
+		_ = Collector.Write(DocsetDiscoveryConstraints.All.Report(new DocsetDiscovery([.. candidates])), ConfigurationPath.FullName);
+	}
+
+	private bool TryReadRegistry(IFileInfo docsetFile, out string? registry)
+	{
+		registry = null;
+		if (string.Equals(docsetFile.FullName, ConfigurationPath.FullName, StringComparison.OrdinalIgnoreCase))
+		{
+			registry = Definition.Registry;
+			return true;
+		}
+
+		// A docset this build doesn't use can't fail it; one that doesn't parse is left out of the comparison.
+		try
+		{
+			// Metadata only, unchecked on purpose: this docset is not the one being built.
+			registry = DocumentationSetLoader.LoadMetadata(docsetFile).OrThrowIfMissing().Registry;
+			return true;
+		}
+		catch (Exception e) when (e is not OutOfMemoryException)
+		{
+			return false;
+		}
+	}
+
+	private FeatureFlags CreateFeatures() =>
+		new(new Dictionary<string, bool>(Configuration.FeatureToggles, StringComparer.OrdinalIgnoreCase), Environment);
 
 	/// <summary>Re-reads docset.yml from disk and rebuilds the configuration. Used by the serve command on file changes.</summary>
 	public void ReloadConfiguration()
 	{
-		var previousFeatures = Configuration.Features;
-		ConfigurationYaml = ConfigurationPath.Exists
-			? DocumentationSetFile.LoadAndResolve(Collector, ConfigurationPath, ReadFileSystem as ScopedFileSystem)
-			: new DocumentationSetFile();
-		Configuration = new ConfigurationFile(ConfigurationYaml, this, VersionsConfiguration, ProductsConfiguration);
-		Configuration.Features.DiagnosticsPanelEnabled = previousFeatures.DiagnosticsPanelEnabled;
-		Configuration.Features.PageFeedbackEnabled = previousFeatures.PageFeedbackEnabled;
+		var previousFeatures = Features;
+		var loaded = LoadDocumentationSet(ReadFileSystem as ScopedFileSystem);
+		Definition = loaded.Definition;
+		Configuration = loaded.Resolved;
+		Features = CreateFeatures()
+			.With("diagnostics-panel", previousFeatures.DiagnosticsPanelEnabled)
+			.With("page-feedback", previousFeatures.PageFeedbackEnabled);
 	}
 }

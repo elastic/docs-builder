@@ -5,8 +5,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
@@ -49,11 +49,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		//may be updated by DocumentationGroup.ProcessTocItems
 		//todo refactor mutability of MarkdownFile as a whole
 		ScopeDirectory = build.Configuration.ScopeDirectory;
-		Products = build.ProductsConfiguration;
+		Products = build.Catalog.Products;
 		Title = RelativePath;
 	}
 
-	public ProductsConfiguration Products { get; }
+	public ProductCatalog Products { get; }
 
 	public IDirectoryInfo ScopeDirectory { get; set; }
 
@@ -98,6 +98,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	private readonly HashSet<string> _anchors = [with(StringComparer.OrdinalIgnoreCase)];
 	public IReadOnlySet<string> Anchors => _anchors;
+
+	private readonly List<string> _duplicateAnchors = [];
+	/// <summary>Anchors this page declared more than once (ignoring case); <see cref="Anchors"/> is a set and drops them.</summary>
+	public IReadOnlyList<string> DuplicateAnchors => _duplicateAnchors;
 
 	public string FilePath { get; }
 	public string FileName { get; }
@@ -185,7 +189,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
 		{
 			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-			frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+			frontMatter = ReadYamlFrontMatter(raw, build.Catalog.Products, build.Collector, source.FullName);
 		}
 		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
 
@@ -254,8 +258,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		foreach (var t in toc)
 			_pageTableOfContent[t.Slug] = t;
 
+		_duplicateAnchors.Clear();
 		foreach (var label in anchors)
-			_ = _anchors.Add(label);
+		{
+			if (!_anchors.Add(label))
+				_duplicateAnchors.Add(label);
+		}
 
 		_instructionsParsed = true;
 	}
@@ -443,13 +451,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
 		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
-		fm.AppliesTo ??= FallbackAppliesTo;
-
-		if (fm.AppliesTo?.Diagnostics is not null)
+		// Only a block the page itself wrote is checked: a fallback comes from the table of contents and is not this file's to report
+		if (fm.AppliesTo is { } written)
 		{
-			foreach (var (severity, message) in fm.AppliesTo.Diagnostics)
-				Collector.Emit(severity, FilePath, message);
+			foreach (var d in ApplicableToReadConstraints.Check(written))
+				Collector.Write(d with { File = FilePath });
 		}
+		fm.AppliesTo ??= FallbackAppliesTo;
 
 		// Validate mapped_pages URLs
 		if (fm.MappedPages is not null)
@@ -503,7 +511,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	// are reported once, by the full page parse.
 	private static YamlFrontMatter ReadYamlFrontMatter(
 		string raw,
-		ProductsConfiguration products,
+		ProductCatalog products,
 		IDiagnosticsCollector collector,
 		string filePath,
 		YamlUnmappedMemberReporting? reporting = null

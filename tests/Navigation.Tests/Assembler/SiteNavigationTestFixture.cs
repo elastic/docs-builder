@@ -12,19 +12,19 @@ public static class SiteNavigationTestFixture
 	{
 		var fileSystem = new MockFileSystem();
 
-		// Repository 1: serverless-observability
+		// RepositoryDto 1: serverless-observability
 		SetupServerlessObservabilityRepository(fileSystem);
 
-		// Repository 2: serverless-search
+		// RepositoryDto 2: serverless-search
 		SetupServerlessSearchRepository(fileSystem);
 
-		// Repository 3: serverless-security
+		// RepositoryDto 3: serverless-security
 		SetupServerlessSecurityRepository(fileSystem);
 
-		// Repository 4: platform
+		// RepositoryDto 4: platform
 		SetupPlatformRepository(fileSystem);
 
-		// Repository 5: elasticsearch-reference
+		// RepositoryDto 5: elasticsearch-reference
 		SetupElasticsearchReferenceRepository(fileSystem);
 
 		return fileSystem;

@@ -25,8 +25,8 @@ internal sealed class CodexUpdateRedirectsCommand(IDiagnosticsCollector collecto
 	/// <param name="environment">Named deployment target. Defaults to the value in <c>codex.yml</c> or the <c>ENVIRONMENT</c> env var.</param>
 	/// <param name="redirectsFile">Path to <c>redirects.json</c>. Defaults to <c>.artifacts/codex/docs/redirects.json</c>.</param>
 	public async Task<int> UpdateRedirects(
-		GlobalCliOptions _,
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
+		GlobalCliOptions _,
 		string? environment = null,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? redirectsFile = null,
 		CancellationToken ct = default
@@ -35,7 +35,7 @@ internal sealed class CodexUpdateRedirectsCommand(IDiagnosticsCollector collecto
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
 		var fs = new CodexFileSystem(config.FullName);
-		if (!CodexConfigurationLoader.TryLoad(fs.ConfigurationFile, config.FullName, collector, out var codexConfig))
+		if (!CodexConfigurationLoader.Load(fs.ConfigurationFile, config.FullName, collector, CodexLoadPurpose.Read, out var codexConfig))
 			return 1;
 
 		var resolvedEnvironment = environment ?? codexConfig.Environment ?? Environment.GetEnvironmentVariable("ENVIRONMENT") ?? "internal";

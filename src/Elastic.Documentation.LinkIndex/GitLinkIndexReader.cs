@@ -4,6 +4,8 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ExternalCommands;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links;
@@ -69,7 +71,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 	}
 
 	/// <inheritdoc />
-	public async Task<LinkRegistry> GetRegistry(Cancel cancellationToken = default)
+	public async Task<Result<LinkRegistry>> GetRegistry(Cancel cancellationToken = default)
 	{
 		await EnsureCloneAsync(cancellationToken);
 		EnsureSafeRelativePath(_environment, nameof(_environment));
@@ -80,11 +82,11 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			);
 
 		var json = await _fileSystem.File.ReadAllTextAsync(registryPath, cancellationToken);
-		return LinkRegistry.Deserialize(json);
+		return LinkLoader.LoadRegistry(json, registryPath);
 	}
 
 	/// <inheritdoc />
-	public async Task<RepositoryLinks> GetRepositoryLinks(string key, Cancel cancellationToken = default)
+	public async Task<Result<LinkManifest>> GetRepositoryLinks(string key, Cancel cancellationToken = default)
 	{
 		await EnsureCloneAsync(cancellationToken);
 		EnsureSafeRelativePath(key, nameof(key));
@@ -93,7 +95,7 @@ public class GitLinkIndexReader : ILinkIndexReader, IDisposable
 			throw new FileNotFoundException($"Repository links not found at {linksPath}.");
 
 		var json = await _fileSystem.File.ReadAllTextAsync(linksPath, cancellationToken);
-		return RepositoryLinks.Deserialize(json);
+		return LinkLoader.LoadManifest(json, linksPath);
 	}
 
 	private async Task EnsureCloneAsync(Cancel cancellationToken)

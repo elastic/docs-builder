@@ -6,6 +6,8 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Markdown.Extensions;
@@ -174,7 +176,7 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		// Todo re-enable not included check else where
-		// var config = context.ConfigurationYaml;
+		// var config = context.Definition;
 		//if (config.Files.Contains(relativePath))
 		return ExtensionOrDefaultMarkdown();
 

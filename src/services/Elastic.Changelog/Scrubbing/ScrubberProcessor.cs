@@ -487,14 +487,7 @@ public sealed class ScrubberProcessor(
 	{
 		if (content is null)
 			return null;
-		try
-		{
-			return ReleaseNotesSerialization.DeserializeEntry(content);
-		}
-		catch
-		{
-			return null;
-		}
+		return ReleaseNotesLoader.LoadEntry(content, "entry.yaml").Value;
 	}
 
 	private async Task WriteSourcePointerAsync(string sourceKey, string canonicalKey, Cancel ctx)
@@ -504,7 +497,7 @@ public sealed class ScrubberProcessor(
 		var stem = Path.GetFileNameWithoutExtension(canonicalFileName);
 		if (!int.TryParse(stem, NumberStyles.None, CultureInfo.InvariantCulture, out _))
 			return; // Not a PR-based canonical key; nothing to point to.
-		var pointerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry { Link = stem, SourceRedirect = true });
+		var pointerContent = ReleaseNotesLoader.Serialize(ChangelogEntry.SourcePointer(stem).Value!);
 		await PutPublicObject(sourceKey, pointerContent, "application/yaml", ctx);
 		_logger.LogInformation("Wrote source pointer {SourceKey} → canonical {CanonicalKey}", sourceKey, canonicalKey);
 	}
@@ -560,7 +553,8 @@ public sealed class ScrubberProcessor(
 
 	private static IReadOnlyList<string> DeriveMarkerKeys(string publicKey, string content)
 	{
-		var entry = ReleaseNotesSerialization.DeserializeEntry(content);
+		var loaded = ReleaseNotesLoader.LoadEntry(content, "entry.yaml");
+		var entry = loaded.Value ?? throw new InvalidDataException(loaded.Diagnostics.Select(d => d.Message).FirstOrDefault());
 		if (entry.IsMarker || entry.Prs is not { Count: > 0 })
 			return [];
 

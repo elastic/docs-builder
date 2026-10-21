@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 
@@ -45,13 +46,11 @@ public record AssemblerDocumentationSet
 			? Path.Join(context.OutputDirectory.FullName, env.PathPrefix)
 			: context.OutputDirectory.FullName;
 
-		var gitConfiguration = new GitCheckoutInformation
-		{
-			RepositoryName = checkout.Repository.Name,
-			Ref = checkout.HeadReference,
-			Remote = $"elastic/{checkout.Repository.Name}",
-			Branch = checkout.Repository.GetBranch(env.ContentSource)
-		};
+		var gitConfiguration = GitCheckoutInformation.ForElasticRepository(
+			checkout.Repository.Name,
+			checkout.HeadReference,
+			checkout.Repository.GetBranch(env.ContentSource)
+		);
 
 		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { Output = output, Git = gitConfiguration, });
 		var buildContext = new BuildContext(context.Collector, docFs, configurationContext)

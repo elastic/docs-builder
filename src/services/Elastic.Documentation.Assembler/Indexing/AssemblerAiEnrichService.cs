@@ -9,6 +9,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace Elastic.Documentation.Assembler.Indexing;
 /// </summary>
 public class AssemblerAiEnrichService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService
 ) : IService
@@ -47,7 +48,7 @@ public class AssemblerAiEnrichService(
 		var githubEnvironmentInput = githubActionsService.GetInput("environment");
 		environment ??= !string.IsNullOrEmpty(githubEnvironmentInput) ? githubEnvironmentInput : "dev";
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
+		var assembleContext = contexts.Get(environment, collector, fileSystem);
 
 		using var exporter = new ElasticsearchMarkdownExporter(logFactory, collector, assembleContext.Endpoints, assembleContext);
 		if (!exporter.AiEnrichmentEnabled)

@@ -5,9 +5,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Elastic.Channels;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Indexing;
 using Elastic.Documentation.Search;
@@ -41,8 +40,8 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly ElasticsearchTypeContext _lexicalTypeContext;
 	private readonly ElasticsearchTypeContext _semanticTypeContext;
 
-	private readonly VersionsConfiguration _versionsConfiguration;
-	private readonly IReadOnlyList<string[]> _synonyms;
+	private readonly VersioningSystemCatalog _versionsConfiguration;
+	private readonly IReadOnlyList<SynonymGroup> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
 
@@ -78,9 +77,9 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_endpoint = endpoints.Elasticsearch;
 		_buildType = endpoints.BuildType;
 		_environment = endpoints.Environment;
-		_versionsConfiguration = context.VersionsConfiguration;
-		_synonyms = context.SearchConfiguration.Synonyms;
-		_rules = context.SearchConfiguration.Rules;
+		_versionsConfiguration = context.Catalog.VersioningSystems;
+		_synonyms = context.SearchTuning.Synonyms;
+		_rules = context.SearchTuning.Rules;
 		var es = endpoints.Elasticsearch;
 
 		_transport = ElasticsearchTransportFactory.Create(es);
@@ -303,7 +302,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		var setName = $"docs-{_buildType}-{_environment}";
 		_logger.LogInformation("Publishing synonym set '{SetName}' to Elasticsearch", setName);
 
-		var synonymRules = _synonyms.Select(s => new SynonymRule { Id = s[0], Synonyms = string.Join(", ", s) }).ToList();
+		var synonymRules = _synonyms.Select(s => new SynonymRule { Id = s.Terms[0], Synonyms = string.Join(", ", s.Terms) }).ToList();
 
 		var synonymsSet = new SynonymsSet { Synonyms = synonymRules };
 		await PutSynonyms(synonymsSet, setName, ctx);

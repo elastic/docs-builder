@@ -2,14 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Catalog;
 using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -3230,7 +3229,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 	{
 		// products.yml maps cloud-serverless → repository: cloud (docs catalog). The bundle must
 		// still stamp the authoring checkout (elasticsearch) for PR/issue defaults.
-		var versions = ConfigurationContext.VersionsConfiguration;
+		var versions = ConfigurationContext.Catalog.VersioningSystems;
 		var cloudServerless = new Product
 		{
 			Id = "cloud-serverless",
@@ -3238,20 +3237,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			VersioningSystem = versions.GetVersioningSystem(VersioningSystemId.Stack),
 			Repository = "cloud"
 		};
-		var productsConfiguration = new ProductsConfiguration
+		var productsConfiguration = new ProductCatalog
 		{
 			Products = new Dictionary<string, Product> { ["cloud-serverless"] = cloudServerless }.ToFrozenDictionary(),
-			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
-			ProductDisplayNames = new Dictionary<string, string> { ["cloud-serverless"] = cloudServerless.DisplayName }.ToFrozenDictionary()
 		};
 		var catalogContext = new ConfigurationContext
 		{
 			Endpoints = ConfigurationContext.Endpoints,
 			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
-			VersionsConfiguration = versions,
-			ProductsConfiguration = productsConfiguration,
-			SearchConfiguration = ConfigurationContext.SearchConfiguration,
-			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
+			Catalog = new GlobalCatalog(versions, productsConfiguration, ConfigurationContext.Catalog.LegacyUrlMappings),
+			SearchTuning = ConfigurationContext.SearchTuning,
 		};
 		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
 

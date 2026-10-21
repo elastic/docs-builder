@@ -12,11 +12,11 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,8 +30,8 @@ public class OpenApiGeneratorMultiVersionTests
 
 	private static BuildContext CreateContext(
 		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
+		VersioningSystemCatalog? versionsConfiguration = null,
+		ProductCatalog? productsConfiguration = null,
 		GitCheckoutInformation? git = null
 	) =>
 		new(
@@ -58,15 +58,8 @@ public class OpenApiGeneratorMultiVersionTests
 			Repository = repository
 		};
 
-	private static ProductsConfiguration ProductsFor(params Product[] products) =>
-		new()
-		{
-			Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames = products.ToDictionary(p => p.Id, p => p.DisplayName, StringComparer.OrdinalIgnoreCase).ToFrozenDictionary(
-				StringComparer.OrdinalIgnoreCase
-			)
-		};
+	private static ProductCatalog ProductsFor(params Product[] products) =>
+		new() { Products = products.ToFrozenDictionary(p => p.Id, StringComparer.OrdinalIgnoreCase) };
 
 	private static OpenApiDocument SpecDocument(string title) =>
 		new()
@@ -326,8 +319,8 @@ public class OpenApiGeneratorMultiVersionTests
 
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
-		VersionsConfiguration versionsConfiguration,
-		ProductsConfiguration productsConfiguration,
+		VersioningSystemCatalog versionsConfiguration,
+		ProductCatalog productsConfiguration,
 		string outputRoot,
 		GitCheckoutInformation git
 	)

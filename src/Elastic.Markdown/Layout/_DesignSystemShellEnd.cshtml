@@ -61,7 +61,7 @@
 				{
 					@await RenderPartialAsync(_CtaCard.Create(new CtaCardModel { Label = Layout.Cta.Label, Url = Layout.Cta.Url, Name = Layout.Cta.Name, Benefits = [.. Layout.Cta.Benefits] }))
 				}
-				@await RenderPartialAsync(_Toc.Create(new TocModel { Items = [.. Layout.PageTocItems.Select(i => new TocItem(i.Heading, i.Slug, i.Level))] }))
+				@await RenderPartialAsync(_Toc.Create(new TocModel { Items = [.. Layout.PageTocItems.Select(i => new Elastic.Documentation.Site.Components.Navigation.Toc.TocItem(i.Heading, i.Slug, i.Level))] }))
 			</aside>
 		}
 	</div>

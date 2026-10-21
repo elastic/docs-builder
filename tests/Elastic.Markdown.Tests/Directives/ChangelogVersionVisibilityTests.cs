@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Publishing;
 using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;

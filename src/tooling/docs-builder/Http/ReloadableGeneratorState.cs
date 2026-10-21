@@ -8,6 +8,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -180,7 +182,7 @@ public class ReloadableGeneratorState : IDisposable
 		}
 	}
 
-	private bool HaveOpenApiSpecsChanged(ConfigurationFile config)
+	private bool HaveOpenApiSpecsChanged(ResolvedDocumentationSet config)
 	{
 		if (_isWatchBuild)
 			return false;
@@ -205,7 +207,7 @@ public class ReloadableGeneratorState : IDisposable
 		return HaveApiMarkdownFilesChanged(config);
 	}
 
-	private bool HaveApiMarkdownFilesChanged(ConfigurationFile config)
+	private bool HaveApiMarkdownFilesChanged(ResolvedDocumentationSet config)
 	{
 		var current = CurrentApiMarkdownTimestamps(config);
 		if (current.Count != _apiMarkdownFilesLastModified.Count)
@@ -220,7 +222,7 @@ public class ReloadableGeneratorState : IDisposable
 		return false;
 	}
 
-	private static Dictionary<string, DateTimeOffset> CurrentApiMarkdownTimestamps(ConfigurationFile config)
+	private static Dictionary<string, DateTimeOffset> CurrentApiMarkdownTimestamps(ResolvedDocumentationSet config)
 	{
 		var current = new Dictionary<string, DateTimeOffset>(StringComparer.Ordinal);
 		if (config.ApiConfigurations is null)
@@ -238,7 +240,7 @@ public class ReloadableGeneratorState : IDisposable
 		return current;
 	}
 
-	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
+	private void UpdateOpenApiSpecTimestamps(ResolvedDocumentationSet config)
 	{
 		_openApiSpecLastModified.Clear();
 		_apiMarkdownFilesLastModified.Clear();

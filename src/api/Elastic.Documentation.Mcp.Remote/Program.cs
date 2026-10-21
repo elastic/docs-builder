@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
 using Elastic.Documentation.Search.Common;
@@ -18,11 +19,13 @@ using OpenTelemetry.Trace;
 
 try
 {
-	var env = SystemEnvironmentVariables.Instance;
-	var profile = McpServerProfile.Resolve(env.McpServerProfile);
+	var builder = WebApplication.CreateSlimBuilder(args);
 
-	var builder = WebApplication
-		.CreateSlimBuilder(args)
+	// Read through configuration, which includes environment variables, so hosts and tests can set the profile
+	// without mutating the process environment. Same default as IEnvironmentVariables.McpServerProfile.
+	var profile = McpServerProfile.Resolve(builder.Configuration["MCP_SERVER_PROFILE"] ?? "public");
+
+	_ = builder
 		.AddDocumentationServiceDefaults()
 		.HealthCheckBuilderExtensions()
 		.AddDocumentationOpenTelemetry(new OtelRegistration(profile.ServiceName)
@@ -87,6 +90,9 @@ try
 	var app = builder.Build();
 
 	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	// No diagnostics collector here: global configuration warnings are logged once at startup.
+	_ = app.Services.GetRequiredService<StartupDiagnostics>().LogTo(logger);
 
 	LogElasticsearchConfiguration(app, logger);
 

@@ -18,8 +18,8 @@ public class ApiLanding : IApiGroupingModel
 	public object? CreatePageModel(ApiRenderContext context) =>
 		ApiOverviewBuilder.Build(
 			context.CurrentNavigation.NavigationRoot,
-			context.BuildContext.VersionsConfiguration,
-			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			context.BuildContext.Catalog.VersioningSystems,
+			context.BuildContext.Features.NavigationPreviewEnabled
 		);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
@@ -27,8 +27,8 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
@@ -43,8 +43,8 @@ public class ApiLanding : IApiGroupingModel
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
 			?? ApiOverviewBuilder.Build(
 				context.CurrentNavigation.NavigationRoot,
-				context.BuildContext.VersionsConfiguration,
-				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+				context.BuildContext.Catalog.VersioningSystems,
+				context.BuildContext.Features.NavigationPreviewEnabled
 			);
 		return Task.FromResult<string?>(
 			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)

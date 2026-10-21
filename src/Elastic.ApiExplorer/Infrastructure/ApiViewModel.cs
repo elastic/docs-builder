@@ -7,6 +7,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Icons;
@@ -111,7 +112,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
 			GoogleTagManager = BuildContext.GoogleTagManager,
 			Optimizely = BuildContext.Optimizely,
-			Features = BuildContext.Configuration.Features,
+			Features = BuildContext.Features,
 			StaticFileContentHashProvider = StaticFileContentHashProvider,
 			BuildType = BuildContext.BuildType,
 			PageFeedbackSurface = "api",

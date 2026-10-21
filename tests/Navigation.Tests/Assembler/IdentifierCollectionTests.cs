@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Node;
@@ -20,7 +22,7 @@ public class IdentifierCollectionTests()
 
 		// Test platform repository
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -43,7 +45,7 @@ public class IdentifierCollectionTests()
 
 		// Test platform repository with nested TOCs
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			platformContext.ConfigurationPath,
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -71,7 +73,7 @@ public class IdentifierCollectionTests()
 
 		// Test observability repository (no nested TOCs)
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+		var observabilityDocset = DocumentationSetLoader.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -94,7 +96,7 @@ public class IdentifierCollectionTests()
 
 		// Test platform repository with nested TOCs
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -123,7 +125,7 @@ public class IdentifierCollectionTests()
 
 		// Create multiple documentation sets
 		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
-		var platformDocset = DocumentationSetFile.LoadAndResolve(
+		var platformDocset = DocumentationSetLoader.LoadAndResolve(
 			platformContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
@@ -135,7 +137,7 @@ public class IdentifierCollectionTests()
 		);
 
 		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+		var observabilityDocset = DocumentationSetLoader.LoadAndResolve(
 			observabilityContext.Collector,
 			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
 			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)

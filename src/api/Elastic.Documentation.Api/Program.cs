@@ -2,10 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.OpenTelemetry;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.ServiceDefaults.Telemetry;
@@ -19,10 +21,7 @@ try
 
 	var builder = WebApplication
 		.CreateSlimBuilder(args)
-		.AddDocumentationServiceDefaults((s, p) =>
-		{
-			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
-		})
+		.AddDocumentationServiceDefaults()
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
 
@@ -44,6 +43,9 @@ try
 	var app = builder.Build();
 
 	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+	// The API has no diagnostics collector: global configuration warnings are logged once at startup.
+	_ = app.Services.GetRequiredService<StartupDiagnostics>().LogTo(logger);
 
 	LogElasticsearchConfiguration(app, logger);
 
@@ -75,6 +77,13 @@ try
 
 	Console.WriteLine("Application startup completed successfully");
 	app.Run();
+}
+catch (ConfigurationException ex)
+{
+	// Invalid global configuration is the one early exit: list every diagnostic the loaders found, then fail.
+	foreach (var line in ex.Lines)
+		Console.Error.WriteLine(line);
+	Environment.ExitCode = 1;
 }
 catch (Exception ex)
 {

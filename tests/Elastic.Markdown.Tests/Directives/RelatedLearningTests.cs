@@ -23,7 +23,7 @@ public class RelatedLearningBasicTests() : DirectiveTest<RelatedLearningBlock>("
 		item.Title.Should().NotBeNullOrWhiteSpace();
 		item.Url.Should().NotBeNullOrWhiteSpace();
 
-		Set.Context.RelatedLearningConfiguration.TryGet("apm-with-elastic", out var catalog).Should().BeTrue();
+		Set.Context.RelatedLearning.TryGet("apm-with-elastic", out var catalog).Should().BeTrue();
 		item.Title.Should().Be(catalog!.Title);
 		item.Url.Should().Be(catalog.Url);
 	}

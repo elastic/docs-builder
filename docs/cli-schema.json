@@ -244,7 +244,7 @@
           "name": "canonical-base-url",
           "type": "string",
           "required": false,
-          "summary": "Base URL written into \u003Clink rel=canonical\u003E tags.",
+          "summary": "Base URL written into <link rel=canonical> tags.",
           "validations": [
             {
               "kind": "uriScheme",
@@ -524,8 +524,8 @@
           "validations": [
             {
               "kind": "timeSpanRange",
-              "min": "\u00221m\u0022",
-              "max": "\u002224h\u0022"
+              "min": "\"1m\"",
+              "max": "\"24h\""
             }
           ]
         },
@@ -573,8 +573,8 @@
           "validations": [
             {
               "kind": "timeSpanRange",
-              "min": "\u00221s\u0022",
-              "max": "\u002260m\u0022"
+              "min": "\"1s\"",
+              "max": "\"60m\""
             }
           ]
         },
@@ -747,7 +747,7 @@
       "path": [],
       "name": "mv",
       "summary": "Move a file or folder and rewrite all inbound links across the documentation set.",
-      "usage": "docs-builder mv \u003Csource\u003E \u003Ctarget\u003E [options]",
+      "usage": "docs-builder mv <source> <target> [options]",
       "examples": [],
       "parameters": [
         {
@@ -923,7 +923,7 @@
           ],
           "name": "ai-enrich",
           "summary": "Run generative AI enrichment against an already-indexed semantic index, without a full assembler build.",
-          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index, budgeted by --max-ai-docs/--max-ai-time\n(the same flags used by index and assembler index). Does not crawl, build, or index documents \u2014\nrun assemble or assembler index first.",
+          "notes": "Bootstraps and resolves the existing Elasticsearch aliases for environment, then runs a\nbounded generative AI enrichment pass on the semantic index, budgeted by --max-ai-docs/--max-ai-time\n(the same flags used by index and assembler index). Does not crawl, build, or index documents —\nrun assemble or assembler index first.",
           "usage": "docs-builder assembler ai-enrich [options]",
           "examples": [],
           "parameters": [
@@ -994,8 +994,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221m\u0022",
-                  "max": "\u002224h\u0022"
+                  "min": "\"1m\"",
+                  "max": "\"24h\""
                 }
               ]
             },
@@ -1043,8 +1043,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022"
+                  "min": "\"1s\"",
+                  "max": "\"60m\""
                 }
               ]
             },
@@ -1473,8 +1473,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221m\u0022",
-                  "max": "\u002224h\u0022"
+                  "min": "\"1m\"",
+                  "max": "\"24h\""
                 }
               ]
             },
@@ -1522,8 +1522,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022"
+                  "min": "\"1s\"",
+                  "max": "\"60m\""
                 }
               ]
             },
@@ -1847,8 +1847,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221m\u0022",
-                  "max": "\u002224h\u0022"
+                  "min": "\"1m\"",
+                  "max": "\"24h\""
                 }
               ]
             },
@@ -1896,8 +1896,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022"
+                  "min": "\"1s\"",
+                  "max": "\"60m\""
                 }
               ]
             },
@@ -2079,7 +2079,7 @@
               "name": "create",
               "summary": "Build a bloom filter binary from a local legacy-docs repository.",
               "notes": "The bloom filter is a compact data structure that records which legacy URLs existed before migration.\nIt is used to verify redirect coverage: if a legacy URL is absent from the filter, any redirect\npointing to it cannot be validated. Run once after cloning the legacy-docs repository.",
-              "usage": "docs-builder assembler bloom-filter create --built-docs-dir \u003Cdir\u003E",
+              "usage": "docs-builder assembler bloom-filter create --built-docs-dir <dir>",
               "examples": [],
               "parameters": [
                 {
@@ -2143,7 +2143,7 @@
               ],
               "name": "lookup",
               "summary": "Test whether a URL path is recorded in the bloom filter.",
-              "usage": "docs-builder assembler bloom-filter lookup --path \u003Cstring\u003E",
+              "usage": "docs-builder assembler bloom-filter lookup --path <string>",
               "examples": [],
               "parameters": [
                 {
@@ -2281,7 +2281,7 @@
               "name": "match",
               "summary": "Check whether a repository at a specific branch or tag should be included in the next build.",
               "notes": "Exits 0 if the repository matches; 1 otherwise. Useful for conditional CI steps.",
-              "usage": "docs-builder assembler content-source match [\u003Crepository\u003E] [\u003Cbranch-or-tag\u003E]",
+              "usage": "docs-builder assembler content-source match [<repository>] [<branch-or-tag>]",
               "examples": [],
               "parameters": [
                 {
@@ -2402,7 +2402,7 @@
               "name": "apply",
               "summary": "Upload the changes described in a plan file to S3.",
               "notes": "Run after assembler deploy plan. Applies the pre-computed diff to the S3 bucket.",
-              "usage": "docs-builder assembler deploy apply --environment \u003Cstring\u003E --s3-bucket-name \u003Cstring\u003E --plan-file \u003Cfile\u003E",
+              "usage": "docs-builder assembler deploy apply --environment <string> --s3-bucket-name <string> --plan-file <file>",
               "examples": [],
               "parameters": [
                 {
@@ -2493,7 +2493,7 @@
               "name": "plan",
               "summary": "Compute a diff of what would change when deploying to S3 and write it to a plan file.",
               "notes": "Two-step deployment: plan computes the diff and writes a plan file; apply executes it.\nReview the plan before applying to avoid accidental mass deletions.",
-              "usage": "docs-builder assembler deploy plan --environment \u003Cstring\u003E --s3-bucket-name \u003Cstring\u003E [options]",
+              "usage": "docs-builder assembler deploy plan --environment <string> --s3-bucket-name <string> [options]",
               "examples": [],
               "parameters": [
                 {
@@ -2527,7 +2527,7 @@
                   "name": "delete-threshold",
                   "type": "number",
                   "required": false,
-                  "summary": "Abort if the plan would delete more than this percentage of objects (0\u2013100).",
+                  "summary": "Abort if the plan would delete more than this percentage of objects (0–100).",
                   "defaultValue": "default"
                 },
                 {
@@ -2579,9 +2579,9 @@
                 "deploy"
               ],
               "name": "update-redirects",
-              "summary": "Push the redirects mapping to CloudFront\u0027s KeyValueStore.",
+              "summary": "Push the redirects mapping to CloudFront's KeyValueStore.",
               "notes": "Run after assembler build produces a redirects.json.",
-              "usage": "docs-builder assembler deploy update-redirects --environment \u003Cstring\u003E [options]",
+              "usage": "docs-builder assembler deploy update-redirects --environment <string> [options]",
               "examples": [],
               "parameters": [
                 {
@@ -2617,7 +2617,7 @@
                   "name": "no-delete",
                   "type": "boolean",
                   "required": false,
-                  "summary": "Only PUT the new entries without deleting any existing KVS keys.\nUse for per-docset isolated builds that should not remove other repos\u0027 redirects.",
+                  "summary": "Only PUT the new entries without deleting any existing KVS keys.\nUse for per-docset isolated builds that should not remove other repos' redirects.",
                   "defaultValue": "false"
                 },
                 {
@@ -2723,7 +2723,7 @@
               ],
               "name": "validate-link-reference",
               "summary": "Check that no link in a local links.json conflicts with a path prefix defined in navigation.yml.",
-              "usage": "docs-builder assembler navigation validate-link-reference [\u003Cfile\u003E]",
+              "usage": "docs-builder assembler navigation validate-link-reference [<file>]",
               "examples": [],
               "parameters": [
                 {
@@ -2810,7 +2810,7 @@
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Optional: Products affected in format \u0022product [lifecycle], ...\u0022 (e.g., \u0022cloud-serverless, kibana\u0022 or \u0022elasticsearch ga\u0022). Do not include a version or date; that is an error. Use \u0027changelog note\u0027 for version-listed items. If not specified, products are inferred from the repository or config defaults."
+              "summary": "Optional: Products affected in format \"product [lifecycle], ...\" (e.g., \"cloud-serverless, kibana\" or \"elasticsearch ga\"). Do not include a version or date; that is an error. Use 'changelog note' for version-listed items. If not specified, products are inferred from the repository or config defaults."
             },
             {
               "role": "flag",
@@ -2841,7 +2841,7 @@
               "name": "config",
               "type": "string",
               "required": false,
-              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
+              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -2878,7 +2878,7 @@
               "name": "no-extract-issues",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Turn off extraction of linked references. When using --prs: turns off extraction of linked issues from the PR body (e.g., \u0022Fixes #123\u0022). When using --issues: turns off extraction of linked PRs from the issue body (e.g., \u0022Fixed by #123\u0022). By default, linked references are extracted in both cases.",
+              "summary": "Optional: Turn off extraction of linked references. When using --prs: turns off extraction of linked issues from the PR body (e.g., \"Fixes #123\"). When using --issues: turns off extraction of linked PRs from the issue body (e.g., \"Fixed by #123\"). By default, linked references are extracted in both cases.",
               "defaultValue": "false"
             },
             {
@@ -2901,14 +2901,14 @@
               "name": "impact",
               "type": "string",
               "required": false,
-              "summary": "Optional: How the user\u0027s environment is affected"
+              "summary": "Optional: How the user's environment is affected"
             },
             {
               "role": "flag",
               "name": "issues",
               "type": "array",
               "required": false,
-              "summary": "Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., \u0060--issues \u0022https://github.com/owner/repo/issues/123,456\u0022\u0060) or a file path (e.g., \u0060--issues /path/to/file.txt\u0060). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.",
+              "summary": "Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues \"https://github.com/owner/repo/issues/123,456\"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -2917,7 +2917,7 @@
               "name": "owner",
               "type": "string",
               "required": false,
-              "summary": "Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \u0022elastic\u0022 is used."
+              "summary": "Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \"elastic\" is used."
             },
             {
               "role": "flag",
@@ -2938,7 +2938,7 @@
               "name": "prs",
               "type": "array",
               "required": false,
-              "summary": "Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., \u0060--prs \u0022https://github.com/owner/repo/pull/123,6789\u0022\u0060) or a file path (e.g., \u0060--prs /path/to/file.txt\u0060). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.",
+              "summary": "Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs \"https://github.com/owner/repo/pull/123,6789\"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -2947,14 +2947,14 @@
               "name": "report",
               "type": "string",
               "required": false,
-              "summary": "Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as \u0060changelog bundle --report\u0060). Mutually exclusive with --prs, --issues, and --release-version."
+              "summary": "Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version."
             },
             {
               "role": "flag",
               "name": "release-version",
               "type": "string",
               "required": false,
-              "summary": "Optional: GitHub release tag to fetch PRs from (e.g., \u0022v9.2.0\u0022 or \u0022latest\u0022). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use \u0027changelog gh-release\u0027 for that."
+              "summary": "Optional: GitHub release tag to fetch PRs from (e.g., \"v9.2.0\" or \"latest\"). When specified, creates one changelog per PR in the release notes. Requires --repo (or bundle.repo in changelog.yml). Mutually exclusive with --prs, --issues, and --report. Does not create a bundle; use 'changelog gh-release' for that."
             },
             {
               "role": "flag",
@@ -2968,7 +2968,7 @@
               "name": "strip-title-prefix",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022, \u0022[ES|QL]: Title\u0022 becomes \u0022Title\u0022, \u0022[Discover][ESQL] Title\u0022 becomes \u0022Title\u0022)",
+              "summary": "Optional: When used with --prs or --report, remove square brackets and text within them from the beginning of PR titles, and also remove a colon if it follows the closing bracket (e.g., \"[Inference API] Title\" becomes \"Title\", \"[ES|QL]: Title\" becomes \"Title\", \"[Discover][ESQL] Title\" becomes \"Title\")",
               "defaultValue": "false"
             },
             {
@@ -3061,7 +3061,7 @@
           ],
           "name": "backfill",
           "summary": "Backfill changelog entries, notes, and bundles from published release-notes pages.",
-          "notes": "Fetches every product\u0027s release-notes Markdown \u2014 either from the published elastic.co site page\nor from a pinned raw.githubusercontent.com ref for products whose published page is an empty\n\u003Cchangelog\u003E stub \u2014 parses it into typed bundle YAML, and writes all output to\n--output (default: .artifacts/release-notes-backfill/). Nothing is written to S3;\nuse changelog upload --directory \u003Cproduct\u003E/changelog/bundles to publish.\n\nThe scope table (BackfillScope.All) covers 38 products (37 site-source \u002B 1 repo-source); use --products to narrow\na run. Entries without a PR reference are emitted as note-*.yaml files. Sourced from a\nprototype (scripts/scrape-release-notes.py, 2026-08-25).",
+          "notes": "Fetches every product's release-notes Markdown — either from the published elastic.co site page\nor from a pinned raw.githubusercontent.com ref for products whose published page is an empty\n<changelog> stub — parses it into typed bundle YAML, and writes all output to\n--output (default: .artifacts/release-notes-backfill/). Nothing is written to S3;\nuse changelog upload --directory <product>/changelog/bundles to publish.\n\nThe scope table (BackfillScope.All) covers 38 products (37 site-source + 1 repo-source); use --products to narrow\na run. Entries without a PR reference are emitted as note-*.yaml files. Sourced from a\nprototype (scripts/scrape-release-notes.py, 2026-08-25).",
           "usage": "docs-builder changelog backfill [options]",
           "examples": [],
           "parameters": [
@@ -3095,7 +3095,7 @@
               "name": "concurrency",
               "type": "integer",
               "required": false,
-              "summary": "Maximum number of pages fetched concurrently (1\u201316, default 4).",
+              "summary": "Maximum number of pages fetched concurrently (1–16, default 4).",
               "defaultValue": "4"
             },
             {
@@ -3151,8 +3151,8 @@
           ],
           "name": "bundle",
           "summary": "Aggregate changelog entries matching a filter into a single bundle YAML.",
-          "notes": "Profile-based commands (bundle \u003Cprofile\u003E \u003Cversion|report\u003E [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. --description and\n--description-file are allowed in profile-based commands only when neither bundle.description nor\nthe profile\u0027s description is set. Only --plan is otherwise supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.\u003Cname\u003E.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified \u2014\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
-          "usage": "docs-builder changelog bundle [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
+          "notes": "Profile-based commands (bundle <profile> <version|report> [report] [--plan]): filters, paths, repo metadata,\ndescription, hide-features, and release-date behaviour come from changelog.yml. --description and\n--description-file are allowed in profile-based commands only when neither bundle.description nor\nthe profile's description is set. Only --plan is otherwise supported\nalongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in\nconfiguration instead. Config is auto-discovered from ./changelog.yml or ./docs/changelog.yml. Use\nbundle.release_dates or bundle.profiles.<name>.release_dates to control auto-population;\n--release-date and --no-release-date require option-based mode.\n\nOption-based mode (no profile argument): exactly one filter must be specified —\n--all, --input-products, --prs, --issues, --release-version, --report, or --files.",
+          "usage": "docs-builder changelog bundle [<profile>] [<profile-arg>] [<profile-report>] [options]",
           "examples": [],
           "parameters": [
             {
@@ -3160,28 +3160,28 @@
               "name": "profile",
               "type": "string",
               "required": false,
-              "summary": "Profile name from bundle.profiles in config (for example, \u0022elasticsearch-release\u0022). Used as the first positional argument in profile-based commands. The equivalent configuration entry is bundle.profiles.\u003Cname\u003E."
+              "summary": "Profile name from bundle.profiles in config (for example, \"elasticsearch-release\"). Used as the first positional argument in profile-based commands. The equivalent configuration entry is bundle.profiles.<name>."
             },
             {
               "role": "positional",
               "name": "profile-arg",
               "type": "string",
               "required": false,
-              "summary": "Version number or promotion report URL/path when using a profile (for example, \u00229.2.0\u0022 or \u0022https://buildkite.../promotion-report.html\u0022). Required second positional argument in profile-based commands."
+              "summary": "Version number or promotion report URL/path when using a profile (for example, \"9.2.0\" or \"https://buildkite.../promotion-report.html\"). Required second positional argument in profile-based commands."
             },
             {
               "role": "positional",
               "name": "profile-report",
               "type": "string",
               "required": false,
-              "summary": "Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source (for example, \u0022bundle serverless-release 2026-02 ./report.html\u0022). Optional third positional argument in profile-based commands."
+              "summary": "Promotion report, URL list file, or changelog path list file when also providing a version. When provided, the second argument must be a version string and this is the filter source (for example, \"bundle serverless-release 2026-02 ./report.html\"). Optional third positional argument in profile-based commands."
             },
             {
               "role": "flag",
               "name": "all",
               "type": "boolean",
               "required": false,
-              "summary": "Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products: \u0022* * *\u0022.",
+              "summary": "Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.<name>.products: \"* * *\".",
               "defaultValue": "false"
             },
             {
@@ -3189,7 +3189,7 @@
               "name": "config",
               "type": "string",
               "required": false,
-              "summary": "Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027 in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.",
+              "summary": "Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -3237,7 +3237,7 @@
               "name": "hide-features",
               "type": "array",
               "required": false,
-              "summary": "Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.hide_features.",
+              "summary": "Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.<name>.hide_features.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3246,7 +3246,7 @@
               "name": "no-release-date",
               "type": "boolean",
               "required": false,
-              "summary": "Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are bundle.release_dates: false or bundle.profiles.\u003Cname\u003E.release_dates: false.",
+              "summary": "Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are bundle.release_dates: false or bundle.profiles.<name>.release_dates: false.",
               "defaultValue": "false"
             },
             {
@@ -3261,21 +3261,21 @@
               "name": "input-products",
               "type": "string",
               "required": false,
-              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\u0022). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.products."
+              "summary": "Filter by products in format \"product target lifecycle, ...\" (for example, \"cloud-serverless 2025-12-02 ga, cloud-serverless 2025-12-06 beta\"). All three parts are required but can be wildcards (*). A non-wildcard target matches products[].versions (changelog note) or a legacy target; not supported when sourcing from the CDN. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.<name>.products."
             },
             {
               "role": "flag",
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes {repo}-{product}-{version}.yaml (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or {product}-{version}.yaml if no repo resolves. Not supported in profile-based commands; the equivalent configuration option is bundle.profiles.\u003Cname\u003E.output_directory (directory only; same convention for the file name)."
+              "summary": "Output path for the bundled changelog. A .yml/.yaml file is used as-is. A directory, or omitting this option, writes {repo}-{product}-{version}.yaml (from --repo / bundle.repo / git origin, --output-products then --input-products, then --release-version). Warns and writes changelog-bundle.yaml if product or version cannot be resolved, or {product}-{version}.yaml if no repo resolves. Not supported in profile-based commands; the equivalent configuration option is bundle.profiles.<name>.output_directory (directory only; same convention for the file name)."
             },
             {
               "role": "flag",
               "name": "output-products",
               "type": "string",
               "required": false,
-              "summary": "Explicitly set the products array in the output file in format \u0022product target lifecycle, ...\u0022. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.output_products."
+              "summary": "Explicitly set the products array in the output file in format \"product target lifecycle, ...\". This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.<name>.output_products."
             },
             {
               "role": "flag",
@@ -3308,14 +3308,14 @@
               "name": "owner",
               "type": "string",
               "required": false,
-              "summary": "GitHub repository owner for PR/issue numbers or --release-version. Falls back to bundle.owner or \u0022elastic\u0022. This option is not supported in profile-based commands. The equivalent configuration options are bundle.owner or bundle.profiles.\u003Cname\u003E.owner."
+              "summary": "GitHub repository owner for PR/issue numbers or --release-version. Falls back to bundle.owner or \"elastic\". This option is not supported in profile-based commands. The equivalent configuration options are bundle.owner or bundle.profiles.<name>.owner."
             },
             {
               "role": "flag",
               "name": "branch",
               "type": "string",
               "required": false,
-              "summary": "Branch whose CDN changelog entry pool (changelog/{org}/{repo}/{branch}/...) is sourced from. Falls back to bundle.branch or \u0022main\u0022. This option is not supported in profile-based commands. The equivalent configuration options are bundle.branch or bundle.profiles.\u003Cname\u003E.branch."
+              "summary": "Branch whose CDN changelog entry pool (changelog/{org}/{repo}/{branch}/...) is sourced from. Falls back to bundle.branch or \"main\". This option is not supported in profile-based commands. The equivalent configuration options are bundle.branch or bundle.profiles.<name>.branch."
             },
             {
               "role": "flag",
@@ -3339,14 +3339,14 @@
               "name": "release-version",
               "type": "string",
               "required": false,
-              "summary": "GitHub release tag to use as a filter source (for example, \u0022v9.2.0\u0022 or \u0022latest\u0022). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.\u003Cname\u003E.source: github_release."
+              "summary": "GitHub release tag to use as a filter source (for example, \"v9.2.0\" or \"latest\"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is bundle.profiles.<name>.source: github_release."
             },
             {
               "role": "flag",
               "name": "repo",
               "type": "string",
               "required": false,
-              "summary": "GitHub repository name for PR/issue numbers or --release-version. Falls back to bundle.repo or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are bundle.repo or bundle.profiles.\u003Cname\u003E.repo."
+              "summary": "GitHub repository name for PR/issue numbers or --release-version. Falls back to bundle.repo or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are bundle.repo or bundle.profiles.<name>.repo."
             },
             {
               "role": "flag",
@@ -3360,14 +3360,14 @@
               "name": "start-git-ref",
               "type": "string",
               "required": false,
-              "summary": "Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API \u002B GraphQL associatedPullRequests), each PR\u0027s entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, \u0027bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456\u0027); mutually exclusive with all other filter options."
+              "summary": "Start ref (exclusive) of a git commit range to bundle, for example the previously published endpoint ref. Must be provided together with --end-git-ref; the start ref is never inferred. The PR list is derived from the range itself (GitHub compare API + GraphQL associatedPullRequests), each PR's entry is sourced pool-first with PR-metadata fallback, and requires GITHUB_TOKEN. Supported in profile-based commands (for example, 'bundle serverless-release 2026-08-13 --start-git-ref abc123 --end-git-ref def456'); mutually exclusive with all other filter options."
             },
             {
               "role": "flag",
               "name": "end-git-ref",
               "type": "string",
               "required": false,
-              "summary": "End ref (inclusive) of the git commit range to bundle \u2014 the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the git_ref metadata field."
+              "summary": "End ref (inclusive) of the git commit range to bundle — the currently published endpoint ref. Must be provided together with --start-git-ref. Recorded in the bundle output as the git_ref metadata field."
             },
             {
               "role": "flag",
@@ -3443,7 +3443,7 @@
           "name": "bundle-amend",
           "summary": "Append or exclude changelog entries, or replace the bundle intro description, without modifying the parent file.",
           "notes": "Creates an immutable .amend-N sidecar using the same .yaml or .yml extension\nas the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator\n/bundle/{product}/{file}.yaml (the sidecar is written under --output,\nbundle.output_directory, or the current directory).\nUpload the sidecar separately with changelog upload --artifact-type bundle.",
-          "usage": "docs-builder changelog bundle-amend \u003Cbundle-path\u003E [options]",
+          "usage": "docs-builder changelog bundle-amend <bundle-path> [options]",
           "examples": [],
           "parameters": [
             {
@@ -3458,7 +3458,7 @@
               "name": "add",
               "type": "array",
               "required": false,
-              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \u0022file1.yaml,file2.yaml\u0022). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle\u0027s repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.",
+              "summary": "Optional: Changelog YAML paths to add. Repeat --add or pass a comma-separated list in one value (for example, --add \"file1.yaml,file2.yaml\"). Supports tilde (~) expansion and relative paths. When entries are sourced from the CDN (the default when bundle.repo or the parent bundle's repo resolves), paths are matched by file name and do not need to exist locally; with local sourcing (--force-local or bundle.use_local_changelogs) the paths must exist on disk.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -3507,7 +3507,7 @@
               "name": "description",
               "type": "string",
               "required": false,
-              "summary": "Optional: Replace the parent bundle\u0027s intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove."
+              "summary": "Optional: Replace the parent bundle's intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove."
             },
             {
               "role": "flag",
@@ -3570,7 +3570,7 @@
           "name": "evaluate-artifact",
           "summary": "(CI) Evaluate downloaded artifact in the resolving workflow.",
           "notes": "Reads metadata, validates PR state (SHA, labels), and sets GitHub Actions outputs\nfor downstream steps (commit, comment).",
-          "usage": "docs-builder changelog evaluate-artifact --metadata \u003Cstring\u003E --owner \u003Cstring\u003E --repo \u003Cstring\u003E",
+          "usage": "docs-builder changelog evaluate-artifact --metadata <string> --owner <string> --repo <string>",
           "examples": [],
           "parameters": [
             {
@@ -3640,7 +3640,7 @@
           "name": "evaluate-pr",
           "summary": "(CI) Evaluate a pull request for changelog generation eligibility and set GitHub Actions outputs.",
           "notes": "Runs pre-flight checks (body-only edit, bot loop, manual edit), applies label rules from\nchangelog.yml, and resolves the entry type and title. Designed to be called from a\nGitHub Actions workflow step.",
-          "usage": "docs-builder changelog evaluate-pr --config \u003Cfile\u003E --owner \u003Cstring\u003E --repo \u003Cstring\u003E --pr-number \u003Cint\u003E --pr-title \u003Cstring\u003E --pr-labels \u003Cstring\u003E --head-ref \u003Cstring\u003E --head-sha \u003Cstring\u003E [options]",
+          "usage": "docs-builder changelog evaluate-pr --config <file> --owner <string> --repo <string> --pr-number <int> --pr-title <string> --pr-labels <string> --head-ref <string> --head-sha <string> [options]",
           "examples": [],
           "parameters": [
             {
@@ -3835,7 +3835,7 @@
           ],
           "name": "gh-release",
           "summary": "Create changelog entries from the PRs referenced in a GitHub release.",
-          "usage": "docs-builder changelog gh-release [\u003Crepo\u003E] [\u003Cversion\u003E] [options]",
+          "usage": "docs-builder changelog gh-release [<repo>] [<version>] [options]",
           "examples": [],
           "parameters": [
             {
@@ -3843,14 +3843,14 @@
               "name": "repo",
               "type": "string",
               "required": false,
-              "summary": "Optional: GitHub repository in owner/repo format (e.g., \u0022elastic/elasticsearch\u0022 or just \u0022elasticsearch\u0022). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin."
+              "summary": "Optional: GitHub repository in owner/repo format (e.g., \"elastic/elasticsearch\" or just \"elasticsearch\"). When omitted, falls back to bundle.repo in changelog.yml, then the GITHUB_REPOSITORY env var, then the git remote origin."
             },
             {
               "role": "positional",
               "name": "version",
               "type": "string",
               "required": false,
-              "summary": "Optional: Version tag to fetch (e.g., \u0022v9.0.0\u0022, \u00229.0.0\u0022). Defaults to \u0022latest\u0022",
+              "summary": "Optional: Version tag to fetch (e.g., \"v9.0.0\", \"9.0.0\"). Defaults to \"latest\"",
               "defaultValue": "latest"
             },
             {
@@ -3858,7 +3858,7 @@
               "name": "config",
               "type": "string",
               "required": false,
-              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
+              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -3887,7 +3887,7 @@
               "name": "output",
               "type": "string",
               "required": false,
-              "summary": "Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to \u0027./changelogs\u0027"
+              "summary": "Optional: Output directory for changelog files. Falls back to bundle.directory in changelog.yml when not specified. Defaults to './changelogs'"
             },
             {
               "role": "flag",
@@ -3901,7 +3901,7 @@
               "name": "strip-title-prefix",
               "type": "boolean",
               "required": false,
-              "summary": "Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., \u0022[Inference API] Title\u0022 becomes \u0022Title\u0022)",
+              "summary": "Optional: Remove square brackets and text within them from the beginning of PR titles (e.g., \"[Inference API] Title\" becomes \"Title\")",
               "defaultValue": "false"
             },
             {
@@ -3950,7 +3950,7 @@
           "name": "github-comment",
           "summary": "(CI, hidden) Post or update the sticky changelog comment on the PR.",
           "notes": "Reads the decision metadata and renders the appropriate body based on the validation status\nand commit outcome. Owner and repo are resolved from the GITHUB_REPOSITORY environment\nvariable (always set by GitHub Actions). This command is only meaningful under\nGITHUB_ACTIONS and must only be invoked from a job with pull-requests: write.",
-          "usage": "docs-builder changelog github-comment --metadata \u003Cstring\u003E",
+          "usage": "docs-builder changelog github-comment --metadata <string>",
           "examples": [],
           "parameters": [
             {
@@ -3997,8 +3997,7 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ],
-          "hidden": true
+          ]
         },
         {
           "path": [
@@ -4007,7 +4006,7 @@
           "name": "github-decision",
           "summary": "(CI, hidden) Record commit outcome into the decision metadata file.",
           "notes": "Reads metadata.json, amends it with the commit step result, and writes it back.\nRun by submit/apply after the git-push step so the downstream\nchangelog github-comment command knows which body to render.",
-          "usage": "docs-builder changelog github-decision --metadata \u003Cstring\u003E --commit-outcome \u003Cenum\u003E [options]",
+          "usage": "docs-builder changelog github-decision --metadata <string> --commit-outcome <enum> [options]",
           "examples": [],
           "parameters": [
             {
@@ -4073,8 +4072,7 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ],
-          "hidden": true
+          ]
         },
         {
           "path": [
@@ -4181,7 +4179,7 @@
           ],
           "name": "note",
           "summary": "Create a note-*.yml changelog fragment for items that have no associated PR.",
-          "notes": "Use this command for version-listed changelogs that are not tied to a specific pull request \u2014 for example, a\nknown issue or a security advisory. Every product listed must include at least one concrete version\n(not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
+          "notes": "Use this command for version-listed changelogs that are not tied to a specific pull request — for example, a\nknown issue or a security advisory. Every product listed must include at least one concrete version\n(not a wildcard); --prs and --issues are still accepted as\noptional citations but do not affect the output filename.",
           "usage": "docs-builder changelog note [options]",
           "examples": [],
           "parameters": [
@@ -4197,7 +4195,7 @@
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Products in format \u0022product versions [lifecycle], ...\u0022 (for example, \u0022elasticsearch 9.2.0|9.3.0 ga\u0022). At least one concrete version is required for each product."
+              "summary": "Products in format \"product versions [lifecycle], ...\" (for example, \"elasticsearch 9.2.0|9.3.0 ga\"). At least one concrete version is required for each product."
             },
             {
               "role": "flag",
@@ -4304,7 +4302,7 @@
               "name": "owner",
               "type": "string",
               "required": false,
-              "summary": "GitHub owner. Falls back to bundle.owner or \u0022elastic\u0022."
+              "summary": "GitHub owner. Falls back to bundle.owner or \"elastic\"."
             },
             {
               "role": "flag",
@@ -4411,8 +4409,8 @@
           ],
           "name": "prepare-artifact",
           "summary": "(CI) Package changelog artifact for cross-workflow transfer.",
-          "notes": "Resolves final status from evaluate-pr \u002B changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.\n\n\nThe isFork, canCommit and maintainerCanModify parameters are declared\nas bool? so the generated CLI emits both --flag and --no-flag pairs\n(Argh convention). A plain bool would expose presence-only switches: passing\n--can-commit \u0022false\u0022 would set canCommit = true (the flag is present) and\nsilently discard the literal \u0022false\u0022 as a stray positional. Callers that forward a\ndynamic value (--can-commit \u0022$VAR\u0022) would then misroute fork PRs into the\ncommit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172\nfor the workflow-side fix.",
-          "usage": "docs-builder changelog prepare-artifact --staging-dir \u003Cstring\u003E --output-dir \u003Cstring\u003E --evaluate-status \u003Cstring\u003E --generate-outcome \u003Cstring\u003E --pr-number \u003Cint\u003E --head-ref \u003Cstring\u003E --head-sha \u003Cstring\u003E [options]",
+          "notes": "Resolves final status from evaluate-pr + changelog add outcomes, copies generated YAML,\nwrites metadata.json, and sets GitHub Actions outputs. Always succeeds (exit 0) so the upload step runs.\n\n\nThe isFork, canCommit and maintainerCanModify parameters are declared\nas bool? so the generated CLI emits both --flag and --no-flag pairs\n(Argh convention). A plain bool would expose presence-only switches: passing\n--can-commit \"false\" would set canCommit = true (the flag is present) and\nsilently discard the literal \"false\" as a stray positional. Callers that forward a\ndynamic value (--can-commit \"$VAR\") would then misroute fork PRs into the\ncommit-and-push branch and die on a detached-HEAD push. See elastic/docs-actions#172\nfor the workflow-side fix.",
+          "usage": "docs-builder changelog prepare-artifact --staging-dir <string> --output-dir <string> --evaluate-status <string> --generate-outcome <string> --pr-number <int> --head-ref <string> --head-sha <string> [options]",
           "examples": [],
           "parameters": [
             {
@@ -4427,7 +4425,7 @@
               "name": "output-dir",
               "type": "string",
               "required": true,
-              "summary": "Directory to write the artifact (metadata.json \u002B YAML)"
+              "summary": "Directory to write the artifact (metadata.json + YAML)"
             },
             {
               "role": "flag",
@@ -4575,7 +4573,7 @@
           ],
           "name": "remove",
           "summary": "Delete changelog entry files matching a filter.",
-          "usage": "docs-builder changelog remove [\u003Cprofile\u003E] [\u003Cprofile-arg\u003E] [\u003Cprofile-report\u003E] [options]",
+          "usage": "docs-builder changelog remove [<profile>] [<profile-arg>] [<profile-report>] [options]",
           "examples": [],
           "parameters": [
             {
@@ -4583,14 +4581,14 @@
               "name": "profile",
               "type": "string",
               "required": false,
-              "summary": "Optional: Profile name from bundle.profiles in config (for example, \u0022elasticsearch-release\u0022). When specified, the second argument is the version or promotion report URL."
+              "summary": "Optional: Profile name from bundle.profiles in config (for example, \"elasticsearch-release\"). When specified, the second argument is the version or promotion report URL."
             },
             {
               "role": "positional",
               "name": "profile-arg",
               "type": "string",
               "required": false,
-              "summary": "Optional: Version number or promotion report URL/path when using a profile (for example, \u00229.2.0\u0022 or \u0022https://buildkite.../promotion-report.html\u0022)"
+              "summary": "Optional: Version number or promotion report URL/path when using a profile (for example, \"9.2.0\" or \"https://buildkite.../promotion-report.html\")"
             },
             {
               "role": "positional",
@@ -4612,7 +4610,7 @@
               "name": "config",
               "type": "string",
               "required": false,
-              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
+              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -4672,14 +4670,14 @@
               "name": "owner",
               "type": "string",
               "required": false,
-              "summary": "Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \u0022elastic\u0022 is used."
+              "summary": "Optional: GitHub repository owner, which is used when PRs or issues are specified as numbers or when using --release-version. Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, \"elastic\" is used."
             },
             {
               "role": "flag",
               "name": "products",
               "type": "string",
               "required": false,
-              "summary": "Filter by products in format \u0022product target lifecycle, ...\u0022 (for example, \u0022elasticsearch 9.3.0 ga\u0022). All three parts are required but can be wildcards (*)."
+              "summary": "Filter by products in format \"product target lifecycle, ...\" (for example, \"elasticsearch 9.3.0 ga\"). All three parts are required but can be wildcards (*)."
             },
             {
               "role": "flag",
@@ -4695,7 +4693,7 @@
               "name": "release-version",
               "type": "string",
               "required": false,
-              "summary": "GitHub release tag to use as a filter source (for example, \u0022v9.2.0\u0022 or \u0022latest\u0022). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match \u2014 equivalent to passing the PR list using --prs."
+              "summary": "GitHub release tag to use as a filter source (for example, \"v9.2.0\" or \"latest\"). Fetches the release, parses PR references from the release notes, and removes changelogs whose PR URLs match — equivalent to passing the PR list using --prs."
             },
             {
               "role": "flag",
@@ -4769,7 +4767,7 @@
               "name": "input",
               "type": "array",
               "required": false,
-              "summary": "Required: Bundle input(s) in format \u0022bundle-file-path|repo|link-visibility\u0022 (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \u0022hide-links\u0022 or \u0022keep-links\u0022 (default). Use \u0022hide-links\u0022 for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
+              "summary": "Required: Bundle input(s) in format \"bundle-file-path|repo|link-visibility\" (use pipe as delimiter). To merge multiple bundles, separate them with commas. Only bundle-file-path is required. link-visibility can be \"hide-links\" or \"keep-links\" (default). Use \"hide-links\" for private repositories; when set, all PR and issue links for each affected entry are hidden (entries may have multiple links via the prs and issues arrays). Paths support tilde (~) expansion and relative paths.",
               "repeatable": true,
               "elementType": "string"
             },
@@ -4778,7 +4776,7 @@
               "name": "config",
               "type": "string",
               "required": false,
-              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to \u0027docs/changelog.yml\u0027",
+              "summary": "Optional: Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml'",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -4800,7 +4798,7 @@
               "name": "file-type",
               "type": "string",
               "required": false,
-              "summary": "Optional: Output file type. Valid values: \u0022markdown\u0022, \u0022asciidoc\u0022, or \u0022gfm\u0022. Defaults to \u0022markdown\u0022",
+              "summary": "Optional: Output file type. Valid values: \"markdown\", \"asciidoc\", or \"gfm\". Defaults to \"markdown\"",
               "defaultValue": "markdown"
             },
             {
@@ -4895,7 +4893,7 @@
           ],
           "name": "scrubber-allowlist",
           "summary": "Resolve the link allowlist identity of the deployed changelog scrubber.",
-          "notes": "The scrubber Lambda embeds its link allowlist from config/assembler.yml at build time, so the\ndeployed allowlist can differ from any local checkout. The release pipeline attaches a\nchangelog-scrubber-allowlist.json asset to the GitHub release after each successful scrubber\ndeploy; this command resolves the identity from that asset. Without a --tag, the newest release\ncarrying the asset wins \u2014 the most recent deploy that passed the gated pipeline. Exits non-zero when\nno identity can be resolved: backfill plans must pin this identity and cannot be approved without it.",
+          "notes": "The scrubber Lambda embeds its link allowlist from config/assembler.yml at build time, so the\ndeployed allowlist can differ from any local checkout. The release pipeline attaches a\nchangelog-scrubber-allowlist.json asset to the GitHub release after each successful scrubber\ndeploy; this command resolves the identity from that asset. Without a --tag, the newest release\ncarrying the asset wins — the most recent deploy that passed the gated pipeline. Exits non-zero when\nno identity can be resolved: backfill plans must pin this identity and cannot be approved without it.",
           "usage": "docs-builder changelog scrubber-allowlist [options]",
           "examples": [],
           "parameters": [
@@ -4904,7 +4902,7 @@
               "name": "tag",
               "type": "string",
               "required": false,
-              "summary": "Release tag to resolve the identity from (e.g., \u0022v5.7.0\u0022). Defaults to the newest release carrying the identity asset."
+              "summary": "Release tag to resolve the identity from (e.g., \"v5.7.0\"). Defaults to the newest release carrying the identity asset."
             },
             {
               "role": "flag",
@@ -4990,7 +4988,7 @@
           "name": "unpack",
           "summary": "Recreate individual changelog YAML files from a bundle using changelog add and changelog note.",
           "notes": "Writes one file per bundle entry through the same writers as changelog add (PR-anchored)\nand changelog note (no PR, or products with versions). Filenames follow add and note rules,\nnot the bundle file.name provenance. Checksums are not reproduced.\nBundles that were scrubbed during changelog upload (public-bucket copies) have their\nprivate PRs and issues removed, so they are less likely to unpack successfully. Prefer the\nprivate-side bundle YAML.",
-          "usage": "docs-builder changelog unpack \u003Cbundle\u003E [options]",
+          "usage": "docs-builder changelog unpack <bundle> [options]",
           "examples": [],
           "parameters": [
             {
@@ -4998,7 +4996,7 @@
               "name": "bundle",
               "type": "string",
               "required": true,
-              "summary": "Local bundle or amend YAML file to unpack. The file must exist on disk; CDN locators such as /bundle/{product}/{file}.yaml are not accepted. A parent bundle is merged with sibling .amend-* bundles first (same as changelog render). An amend bundle unpacks only that file\u0027s entries; exclude-entries are skipped.",
+              "summary": "Local bundle or amend YAML file to unpack. The file must exist on disk; CDN locators such as /bundle/{product}/{file}.yaml are not accepted. A parent bundle is merged with sibling .amend-* bundles first (same as changelog render). An amend bundle unpacks only that file's entries; exclude-entries are skipped.",
               "validations": [
                 {
                   "kind": "rejectSymbolicLinks"
@@ -5097,8 +5095,8 @@
           ],
           "name": "upload",
           "summary": "Upload changelog entries or bundle artifacts to S3 or Elasticsearch.",
-          "notes": "Uses content-hash\u2013based incremental transfer \u2014 only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner \u003E bundle.owner \u003E git remote), repository (--repo\n\u003E bundle.repo \u003E git remote), and branch (--branch \u003E the current checkout\u0027s\nbranch). The branch is stored verbatim, so a branch\u0027s / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",
-          "usage": "docs-builder changelog upload --artifact-type \u003Cstring\u003E --target \u003Cstring\u003E [options]",
+          "notes": "Uses content-hash–based incremental transfer — only changed files are uploaded.\n\n\nChangelog entries are uploaded once under changelog/{org}/{repo}/{branch}/{file}, keyed by the\nauthoring owner (--owner > bundle.owner > git remote), repository (--repo\n> bundle.repo > git remote), and branch (--branch > the current checkout's\nbranch). The branch is stored verbatim, so a branch's / become real key separators. Bundles\nare uploaded under bundle/{product}/{file}, product-scoped from the bundle YAML, and do not\nrequire an owner/repo/branch.",
+          "usage": "docs-builder changelog upload --artifact-type <string> --target <string> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5106,21 +5104,21 @@
               "name": "artifact-type",
               "type": "string",
               "required": true,
-              "summary": "Artifact type to upload: \u0027changelog\u0027 (individual entries) or \u0027bundle\u0027 (consolidated bundles)."
+              "summary": "Artifact type to upload: 'changelog' (individual entries) or 'bundle' (consolidated bundles)."
             },
             {
               "role": "flag",
               "name": "target",
               "type": "string",
               "required": true,
-              "summary": "Upload destination: \u0027s3\u0027 or \u0027elasticsearch\u0027."
+              "summary": "Upload destination: 's3' or 'elasticsearch'."
             },
             {
               "role": "flag",
               "name": "s3-bucket-name",
               "type": "string",
               "required": false,
-              "summary": "S3 bucket name (required when target is \u0027s3\u0027)."
+              "summary": "S3 bucket name (required when target is 's3')."
             },
             {
               "role": "flag",
@@ -5175,7 +5173,7 @@
               "name": "branch",
               "type": "string",
               "required": false,
-              "summary": "Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout\u0027s branch. Required for changelog uploads; ignored for bundle uploads."
+              "summary": "Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads."
             },
             {
               "role": "flag",
@@ -5238,7 +5236,7 @@
           ],
           "name": "validate",
           "summary": "(CI and local) Validate changelog entry files that a PR added or modified. Checks YAML validity, required fields, config-value membership, PR existence, and entry hygiene. Exits non-zero on any error-level finding; warnings do not block.",
-          "usage": "docs-builder changelog validate \u003Cpr-number\u003E [options]",
+          "usage": "docs-builder changelog validate <pr-number> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5289,7 +5287,7 @@
               "name": "pr-labels",
               "type": "string",
               "required": false,
-              "summary": "Comma-separated list of PR labels. When supplied, validates that type: matches the label-derived type (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in Actions)."
+              "summary": "Comma-separated list of PR labels. When supplied, validates that type: matches the label-derived type (use ${{ join(github.event.pull_request.labels.*.name, ',') }} in Actions)."
             },
             {
               "role": "flag",
@@ -5313,14 +5311,14 @@
               "name": "head-ref",
               "type": "string",
               "required": false,
-              "summary": "PR head branch ref \u2014 written to decision metadata when on CI."
+              "summary": "PR head branch ref — written to decision metadata when on CI."
             },
             {
               "role": "flag",
               "name": "head-sha",
               "type": "string",
               "required": false,
-              "summary": "PR head commit SHA \u2014 written to decision metadata when on CI."
+              "summary": "PR head commit SHA — written to decision metadata when on CI."
             },
             {
               "role": "flag",
@@ -5398,8 +5396,8 @@
           ],
           "name": "validate-labels",
           "summary": "(CI) Validate PR labels against the changelog config without writing any files or calling the GitHub API.",
-          "notes": "A lightweight label-only gate intended for the pull_request event. Resolves\npivot.types, pivot.products, and rules.create skip labels against the PR\u0027s\nlabel set and exits non-zero on no-label. Does not perform title resolution, bot-loop\ndetection, or changelog-file lookup \u2014 use EvaluatePr when those are needed.\n\n\nOutputs: status (ok | no-label | skipped), type, products,\nlabel-table (shown on failure), product-label-table (shown on product failure),\nskip-labels.",
-          "usage": "docs-builder changelog validate-labels --config \u003Cfile\u003E --pr-labels \u003Cstring\u003E [options]",
+          "notes": "A lightweight label-only gate intended for the pull_request event. Resolves\npivot.types, pivot.products, and rules.create skip labels against the PR's\nlabel set and exits non-zero on no-label. Does not perform title resolution, bot-loop\ndetection, or changelog-file lookup — use EvaluatePr when those are needed.\n\n\nOutputs: status (ok | no-label | skipped), type, products,\nlabel-table (shown on failure), product-label-table (shown on product failure),\nskip-labels.",
+          "usage": "docs-builder changelog validate-labels --config <file> --pr-labels <string> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5423,14 +5421,14 @@
               "name": "pr-labels",
               "type": "string",
               "required": true,
-              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, \u0027,\u0027) }} in actions)."
+              "summary": "Comma-separated list of PR labels (use ${{ join(github.event.pull_request.labels.*.name, ',') }} in actions)."
             },
             {
               "role": "flag",
               "name": "pr-number",
               "type": "integer",
               "required": false,
-              "summary": "PR number \u2014 required for decision metadata written when running on CI.",
+              "summary": "PR number — required for decision metadata written when running on CI.",
               "defaultValue": "0"
             },
             {
@@ -5438,14 +5436,14 @@
               "name": "head-ref",
               "type": "string",
               "required": false,
-              "summary": "PR head branch ref \u2014 written to decision metadata when on CI."
+              "summary": "PR head branch ref — written to decision metadata when on CI."
             },
             {
               "role": "flag",
               "name": "head-sha",
               "type": "string",
               "required": false,
-              "summary": "PR head commit SHA \u2014 written to decision metadata when on CI."
+              "summary": "PR head commit SHA — written to decision metadata when on CI."
             },
             {
               "role": "flag",
@@ -5523,7 +5521,7 @@
           ],
           "name": "validate-onboarding",
           "summary": "Validate that every product registered with features.release-notes: dra or on-release has the required onboarding files in its repository.",
-          "notes": "Probes each DRA or on-release product\u0027s repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
+          "notes": "Probes each DRA or on-release product's repository (resolved from products.yml: the product key\nor its repository: override) via the GitHub contents API for the changelog\nconfiguration (docs/changelog.yml or changelog.yml) and the\nchangelog-validate, changelog-submit, changelog-upload, and\nchangelog-bundle-stage workflows. Exits non-zero when anything is missing, so CI can\ngate on registration drift. Set GITHUB_TOKEN to probe private repositories.",
           "usage": "docs-builder changelog validate-onboarding [options]",
           "examples": [],
           "parameters": [
@@ -5584,7 +5582,7 @@
       "defaultCommand": {
         "kind": "namespace",
         "summary": "Clone all repositories and build the portal in one step.",
-        "usage": "docs-builder codex __argh_root \u003Cconfig\u003E [options]",
+        "usage": "docs-builder codex __argh_root <config> [options]",
         "examples": [],
         "parameters": [
           {
@@ -5700,7 +5698,7 @@
           "name": "build",
           "summary": "Build the portal from previously cloned repositories.",
           "notes": "Run after codex clone.",
-          "usage": "docs-builder codex build \u003Cconfig\u003E [options]",
+          "usage": "docs-builder codex build <config> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5793,7 +5791,7 @@
           ],
           "name": "clone",
           "summary": "Clone all repositories listed in the codex configuration.",
-          "usage": "docs-builder codex clone \u003Cconfig\u003E [options]",
+          "usage": "docs-builder codex clone <config> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5891,7 +5889,7 @@
           "name": "index",
           "summary": "Index the built portal documentation into Elasticsearch.",
           "notes": "Run after codex build. Streams documents from all included documentation sets to the cluster.",
-          "usage": "docs-builder codex index \u003Cconfig\u003E [options]",
+          "usage": "docs-builder codex index <config> [options]",
           "examples": [],
           "parameters": [
             {
@@ -5983,8 +5981,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221m\u0022",
-                  "max": "\u002224h\u0022"
+                  "min": "\"1m\"",
+                  "max": "\"24h\""
                 }
               ]
             },
@@ -6032,8 +6030,8 @@
               "validations": [
                 {
                   "kind": "timeSpanRange",
-                  "min": "\u00221s\u0022",
-                  "max": "\u002260m\u0022"
+                  "min": "\"1s\"",
+                  "max": "\"60m\""
                 }
               ]
             },
@@ -6281,9 +6279,9 @@
             "codex"
           ],
           "name": "update-redirects",
-          "summary": "Push the codex redirects mapping to CloudFront\u0027s KeyValueStore.",
+          "summary": "Push the codex redirects mapping to CloudFront's KeyValueStore.",
           "notes": "Run after codex build produces a redirects.json.",
-          "usage": "docs-builder codex update-redirects \u003Cconfig\u003E [options]",
+          "usage": "docs-builder codex update-redirects <config> [options]",
           "examples": [],
           "parameters": [
             {
@@ -6390,7 +6388,7 @@
               "name": "apply",
               "summary": "Upload the changes described in a plan file to S3.",
               "notes": "Run after codex sync plan. Applies the pre-computed diff to the S3 bucket.",
-              "usage": "docs-builder codex sync apply \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E --plan-file \u003Cfile\u003E",
+              "usage": "docs-builder codex sync apply <config> --s3-bucket-name <string> --plan-file <file>",
               "examples": [],
               "parameters": [
                 {
@@ -6496,7 +6494,7 @@
               "name": "plan",
               "summary": "Compute a diff of what would change when deploying to S3 and write it to a plan file.",
               "notes": "Two-step deployment: plan computes the diff and writes a plan file; apply executes it.\nReview the plan before applying to avoid accidental mass deletions.",
-              "usage": "docs-builder codex sync plan \u003Cconfig\u003E --s3-bucket-name \u003Cstring\u003E [options]",
+              "usage": "docs-builder codex sync plan <config> --s3-bucket-name <string> [options]",
               "examples": [],
               "parameters": [
                 {
@@ -6545,7 +6543,7 @@
                   "name": "delete-threshold",
                   "type": "number",
                   "required": false,
-                  "summary": "Abort if the plan would delete more than this percentage of objects (0\u2013100).",
+                  "summary": "Abort if the plan would delete more than this percentage of objects (0–100).",
                   "defaultValue": "default"
                 },
                 {
@@ -6553,7 +6551,7 @@
                   "name": "exclude",
                   "type": "array",
                   "required": false,
-                  "summary": "Glob patterns to exclude from both upload and deletion (repeatable).\nFor example: --exclude \u0027_preview/*\u0027 --exclude \u0027403/*\u0027.\nMatched against the S3 key / relative path of each object.",
+                  "summary": "Glob patterns to exclude from both upload and deletion (repeatable).\nFor example: --exclude '_preview/*' --exclude '403/*'.\nMatched against the S3 key / relative path of each object.",
                   "repeatable": true,
                   "elementType": "string"
                 },
@@ -6813,8 +6811,8 @@
           ],
           "name": "serverless",
           "summary": "Bundle the release notes of a serverless promotion, from the previously published endpoint ref to serviceVersion.",
-          "notes": "The previous endpoint ref is the last different production-noncanary-ds-5 version in the\nservice\u0027s versions.yaml history in elastic/serverless-gitops. Each repository\u0027s\ndocs/changelog.yml is read at its end ref, and one bundle per repository is built with\nits serverless-release profile from the commit range. Kibana produces one bundle.\nElasticsearch produces two: elasticsearch-serverless over the serverless range, and\nelasticsearch, a submodule of it, over the range of submodule commits pinned at the two refs.\n\n\nRequires GITHUB_TOKEN with read access to elastic/serverless-gitops and the service repositories.",
-          "usage": "docs-builder release serverless \u003Cservice\u003E \u003Cservice-version\u003E [options]",
+          "notes": "The previous endpoint ref is the last different production-noncanary-ds-5 version in the\nservice's versions.yaml history in elastic/serverless-gitops. Each repository's\ndocs/changelog.yml is read at its end ref, and one bundle per repository is built with\nits serverless-release profile from the commit range. Kibana produces one bundle.\nElasticsearch produces two: elasticsearch-serverless over the serverless range, and\nelasticsearch, a submodule of it, over the range of submodule commits pinned at the two refs.\n\n\nRequires GITHUB_TOKEN with read access to elastic/serverless-gitops and the service repositories.",
+          "usage": "docs-builder release serverless <service> <service-version> [options]",
           "examples": [],
           "parameters": [
             {
@@ -6836,7 +6834,7 @@
               "name": "date",
               "type": "string",
               "required": false,
-              "summary": "Bundle version, a date (YYYY-MM-DD). Defaults to today\u0027s UTC date. Named date because --version is the CLI\u0027s own flag."
+              "summary": "Bundle version, a date (YYYY-MM-DD). Defaults to today's UTC date. Named date because --version is the CLI's own flag."
             },
             {
               "role": "flag",
@@ -6890,8 +6888,7 @@
               "required": false,
               "summary": "Skip cloning private repositories"
             }
-          ],
-          "hidden": true
+          ]
         }
       ],
       "namespaces": [
@@ -6908,7 +6905,7 @@
               "name": "build",
               "summary": "Build the unified release notes site from the bundles that release unified bundle wrote.",
               "notes": "The docset is created in memory from products.yml. Every product with\nfeatures.release-notes: dra gets a page per version at /{product}/{version},\nwith known issues, breaking changes, and deprecations nested under that version.\nNo documentation folder is needed.\n\n\n\nThe command resolves the argument like release unified bundle. A product without bundles is left\nout of the site, and the build fails only when no product has any bundle.",
-              "usage": "docs-builder release unified build \u003Cversion-or-keyword\u003E [options]",
+              "usage": "docs-builder release unified build <version-or-keyword> [options]",
               "examples": [],
               "parameters": [
                 {
@@ -6916,7 +6913,7 @@
                   "name": "version-or-keyword",
                   "type": "string",
                   "required": true,
-                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
+                  "summary": "A version string (e.g. 9.5.5), \"current\", or \"preview\"."
                 },
                 {
                   "role": "flag",
@@ -6983,8 +6980,7 @@
                   "required": false,
                   "summary": "Skip cloning private repositories"
                 }
-              ],
-              "hidden": true
+              ]
             },
             {
               "path": [
@@ -6993,8 +6989,8 @@
               ],
               "name": "bundle",
               "summary": "Generate changelog bundles for all DRA products at the given version, for the current GA, or for the next upcoming release(s).",
-              "notes": "- \u0022current\u0022 \u2014 bundles the latest GA version from past-releases.json.\n  - \n    \u0022preview\u0022 \u2014 bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) \u2014 bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to \u003CoutputDir\u003E/\u003Cproduct-id\u003E/.\n\n\n\nThe release notes of a version cover the commits between two build manifests. The end is the product\u0027s\ncommit in the manifest of the target. The start is its commit in the manifest of the previous release:\nthe previous patch of the same minor, or the previous minor\u0027s .0 for a x.y.0 release.\nA product whose commit is the same in both manifests has no changes and gets no bundle.\nA range that resolves no changelog entries, because it has no pull requests or every pull request was excluded,\nalso gets no bundle. DRA products often ship a version with no user-facing changes.\nThe pull requests in that range come from the GitHub GraphQL API, so GITHUB_TOKEN must be set.\nThe first profile of each product\u0027s changelog.yml shapes the bundle and must use product:\nor output_products:. A products: pattern cannot be combined with a commit range.",
-              "usage": "docs-builder release unified bundle \u003Cversion-or-keyword\u003E [options]",
+              "notes": "- \"current\" — bundles the latest GA version from past-releases.json.\n  - \n    \"preview\" — bundles both the next patch and next minor releases. Each uses its BC\n    manifest when one has been cut; otherwise the corresponding SNAPSHOT is used.\n  \n  - \n    Explicit version (e.g. 9.5.5) — bundles using the latest BC manifest. Errors when\n    no BC has been cut yet, and skips gracefully when the version is already GA.\n  \n\n\n\n\nOnly products with features.release-notes: dra in products.yml are bundled.\nBundle files are written to <outputDir>/<product-id>/.\n\n\n\nThe release notes of a version cover the commits between two build manifests. The end is the product's\ncommit in the manifest of the target. The start is its commit in the manifest of the previous release:\nthe previous patch of the same minor, or the previous minor's .0 for a x.y.0 release.\nA product whose commit is the same in both manifests has no changes and gets no bundle.\nA range that resolves no changelog entries, because it has no pull requests or every pull request was excluded,\nalso gets no bundle. DRA products often ship a version with no user-facing changes.\nThe pull requests in that range come from the GitHub GraphQL API, so GITHUB_TOKEN must be set.\nThe first profile of each product's changelog.yml shapes the bundle and must use product:\nor output_products:. A products: pattern cannot be combined with a commit range.",
+              "usage": "docs-builder release unified bundle <version-or-keyword> [options]",
               "examples": [],
               "parameters": [
                 {
@@ -7002,21 +6998,21 @@
                   "name": "version-or-keyword",
                   "type": "string",
                   "required": true,
-                  "summary": "A version string (e.g. 9.5.5), \u0022current\u0022, or \u0022preview\u0022."
+                  "summary": "A version string (e.g. 9.5.5), \"current\", or \"preview\"."
                 },
                 {
                   "role": "flag",
                   "name": "output-dir",
                   "type": "string",
                   "required": false,
-                  "summary": "Root directory for bundle output. Defaults to ./bundles. Each product writes to a\n\u003Cproduct-id\u003E/ subdirectory."
+                  "summary": "Root directory for bundle output. Defaults to ./bundles. Each product writes to a\n<product-id>/ subdirectory."
                 },
                 {
                   "role": "flag",
                   "name": "changelog-configs",
                   "type": "string",
                   "required": false,
-                  "summary": "Optional directory of prototype \u003Cproduct-id\u003E.changelog.yml files. When present,\na product\u0027s local file takes precedence over the file fetched from GitHub, allowing teams to\niterate on the configuration ahead of landing it in their repository."
+                  "summary": "Optional directory of prototype <product-id>.changelog.yml files. When present,\na product's local file takes precedence over the file fetched from GitHub, allowing teams to\niterate on the configuration ahead of landing it in their repository."
                 },
                 {
                   "role": "flag",
@@ -7087,8 +7083,7 @@
                   "required": false,
                   "summary": "Skip cloning private repositories"
                 }
-              ],
-              "hidden": true
+              ]
             }
           ],
           "namespaces": []

@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
+using Elastic.Documentation.Publishing;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -21,7 +23,7 @@ public class AssemblerConfigurationYamlTests
 		File.Exists(path).Should().BeTrue();
 
 		var yaml = File.ReadAllText(path);
-		var asm = AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: false);
+		var asm = AssemblyLoader.Deserialize(yaml, skipPrivateRepositories: false);
 		asm.ReferenceRepositories.Should().NotBeEmpty();
 	}
 }

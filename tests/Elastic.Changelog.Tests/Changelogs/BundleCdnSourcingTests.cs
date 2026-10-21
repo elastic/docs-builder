@@ -535,11 +535,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var config = await configLoader.LoadChangelogConfigurationRequired(
-			Collector,
-			configPath,
-			TestContext.Current!.Execution.CancellationToken
-		);
+		var config = (await configLoader.LoadRequired(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);

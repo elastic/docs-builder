@@ -254,7 +254,7 @@ public class ReleaseVersionTests() : ChangelogTestBase()
 	[Test]
 	public async Task ReleaseVersion_UnknownRepo_ReturnsError()
 	{
-		// Arrange – "unknown-repo" is not registered in ConfigurationContext.ProductsConfiguration
+		// Arrange – "unknown-repo" is not registered in ConfigurationContext.ProductCatalog
 		var service = CreateService();
 		var input = new CreateChangelogsFromReleaseArguments
 		{

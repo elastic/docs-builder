@@ -372,7 +372,7 @@ public partial class ChangelogBackfillService(
 
 			foreach (var release in releases)
 			{
-				var yaml = ReleaseNotesSerialization.SerializeBundle(release.Bundle);
+				var yaml = ReleaseNotesLoader.Serialize(release.Bundle);
 				var filePath = Path.Join(bundleDir, $"{SanitizeFileName(release.Version)}.yaml");
 				fileSystem.File.WriteAllText(filePath, yaml);
 				filesWritten++;
@@ -523,19 +523,9 @@ public partial class ChangelogBackfillService(
 
 	private static string SerializeEntry(BundledEntry bundled, BackfillScope scope, string version)
 	{
-		var entry = new ChangelogEntry
-		{
-			Type = bundled.Type ?? ChangelogEntryType.Other,
-			Title = bundled.Title ?? string.Empty,
-			Areas = bundled.Areas,
-			Prs = bundled.Prs,
-			Issues = bundled.Issues,
-			// `Target` is obsolete; backfill notes carry their version in `Versions`.
-#pragma warning disable CS0618 // deliberately not populating the obsolete Target
-			Products = [new ProductReference { ProductId = scope.ProductId, Versions = [version] }]
-#pragma warning restore CS0618
-		};
-		return ReleaseNotesSerialization.SerializeEntry(entry);
+		// backfill notes carry their version in `versions`; a note scraped from a page breaks no read-stage rule, so there is no finding to forward
+		var entry = bundled.ToNote(scope.ProductId, version).Value!;
+		return ReleaseNotesLoader.Serialize(entry);
 	}
 
 	private static string SanitizeFileName(string version) => string.Join('_', version.Split(Path.GetInvalidFileNameChars()));

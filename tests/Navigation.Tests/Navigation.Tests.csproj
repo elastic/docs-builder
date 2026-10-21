@@ -20,7 +20,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The fixed-seed convention of the property tests: one definition, linked where it is used. -->
+    <Compile Include="..\Elastic.Documentation.Tests\Domain\Props.cs" Link="Props.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AngleSharp" />
+    <PackageReference Include="CsCheck" />
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Nullean.ScopedFileSystem" />

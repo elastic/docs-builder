@@ -4,6 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 
@@ -44,8 +45,8 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 		           	  }
 		           	}
 		           """;
-		var reference = CrossLinkFetcher.Deserialize(json);
-		var linkReferences = new Dictionary<string, RepositoryLinks>();
+		var reference = LinkLoader.LoadManifest(json, "test-links.json").Value!;
+		var linkReferences = new Dictionary<string, LinkManifest>();
 		var declaredRepositories = new HashSet<string>();
 		linkReferences.Add("docs-content", reference);
 		linkReferences.Add("kibana", reference);

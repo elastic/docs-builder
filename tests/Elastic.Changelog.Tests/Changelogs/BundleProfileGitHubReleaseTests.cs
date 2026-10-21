@@ -35,11 +35,7 @@ public class BundleProfileGitHubReleaseTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var loader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
-		var config = await loader.LoadChangelogConfigurationRequired(
-			Collector,
-			configPath,
-			TestContext.Current!.Execution.CancellationToken
-		);
+		var config = (await loader.LoadRequired(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);

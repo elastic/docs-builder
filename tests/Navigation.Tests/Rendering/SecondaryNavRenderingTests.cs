@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Tests.Isolation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Layout;

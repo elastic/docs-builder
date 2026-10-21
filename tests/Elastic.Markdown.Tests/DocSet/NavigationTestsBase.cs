@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.FileSystems;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
@@ -39,7 +40,7 @@ public class NavigationTestsBase : IAsyncInitializer, IAsyncDisposable
 	protected DocumentationFileSystem FileSystem { get; }
 	protected DocumentationSet Set { get; }
 	protected DocumentationGenerator Generator { get; }
-	protected ConfigurationFile? Configuration { get; set; }
+	protected ResolvedDocumentationSet? Configuration { get; set; }
 
 	public async Task InitializeAsync()
 	{

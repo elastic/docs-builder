@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging;

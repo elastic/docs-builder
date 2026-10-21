@@ -7,8 +7,10 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging.Abstractions;
 using TUnit.Core.Interfaces;
 
@@ -33,7 +35,7 @@ public class PublicOnlyAssemblerConfigurationTests
 			skipPrivateRepositories: true
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 	}
@@ -64,7 +66,7 @@ public class AssemblerConfigurationTests(DocumentationFixture fixture) : IAsyncI
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
 		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, CheckoutDirectory.FullName, null);
 		return Task.CompletedTask;

@@ -4,7 +4,7 @@
 
 using System.Text.Json.Serialization;
 using Elastic.Documentation.AppliesTo;
-using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Myst.Directives.Changelog;
@@ -18,20 +18,16 @@ namespace Elastic.Markdown.Myst;
 
 public static class YamlSerialization
 {
-	public static T Deserialize<T>(string yaml, ProductsConfiguration products) => Deserialize<T>(yaml, products, o => o);
+	public static T Deserialize<T>(string yaml, ProductCatalog products) => Deserialize<T>(yaml, products, o => o);
 
 	/// <summary>
 	/// Deserializes YAML content (e.g. front matter or a directive body), reporting unknown keys as errors
 	/// through <paramref name="reporting"/> instead of silently skipping them.
 	/// </summary>
-	public static T Deserialize<T>(string yaml, ProductsConfiguration products, YamlUnmappedMemberReporting reporting) =>
+	public static T Deserialize<T>(string yaml, ProductCatalog products, YamlUnmappedMemberReporting reporting) =>
 		Deserialize<T>(yaml, products, o => o.WithUnmappedReporting(reporting));
 
-	private static T Deserialize<T>(
-		string yaml,
-		ProductsConfiguration products,
-		Func<YamlSerializerOptions, YamlSerializerOptions> configure
-	)
+	private static T Deserialize<T>(string yaml, ProductCatalog products, Func<YamlSerializerOptions, YamlSerializerOptions> configure)
 	{
 		var context = DocsBuilderYamlStaticContext.Default;
 		var options = context.CreateOptions(
@@ -123,5 +119,7 @@ internal class ListingFrontMatterConverter : YamlConverter<ListingFrontMatter>
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewConfig))]
-[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+// Product is a domain record read by ProductConverter (which needs the product catalog, so it is registered with a real instance at runtime above);
+// the generator is told it is handled so it does not generate metadata for the domain types a Product holds.
+[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, Converters = [typeof(ProductConverter)])]
 public partial class DocsBuilderYamlStaticContext : YamlSerializerContext;

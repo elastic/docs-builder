@@ -17,6 +17,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LegacyDocs;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +25,7 @@ namespace Elastic.Documentation.Assembler.Building;
 
 public class AssemblerBuildService(
 	ILoggerFactory logFactory,
-	AssemblyConfiguration assemblyConfiguration,
+	AssembleContextProvider contexts,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
 	IEnvironmentVariables environmentVariables
@@ -63,7 +64,7 @@ public class AssemblerBuildService(
 
 		_logger.LogInformation("Creating assemble context");
 
-		var assembleContext = new AssembleContext(assemblyConfiguration, configurationContext, environment, collector, fileSystem);
+		var assembleContext = contexts.Get(environment, collector, fileSystem);
 
 		// Explicit --assume-build on CI is not allowed: CI must produce fresh, reproducible output.
 		if (assumeBuild == true && _env.IsRunningOnCI)
@@ -90,6 +91,7 @@ public class AssemblerBuildService(
 				environment,
 				checkouts,
 				configurationContext.ConfigurationFileProvider,
+				assembleContext.NavigationFile,
 				exporters
 			);
 			var (isUpToDate, reason) = AssemblerBuildStampService.IsUpToDate(existingStamp, currentStamp);
@@ -128,12 +130,7 @@ public class AssemblerBuildService(
 			ctx
 		);
 
-		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(
-			await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx),
-			assembleContext.Collector,
-			navigationFileInfo.FullName
-		);
+		var siteNavigationFile = assembleContext.Navigation;
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
 		var navigation = new SiteNavigation(
@@ -144,12 +141,11 @@ public class AssemblerBuildService(
 			navigationPreviewEnabled
 		);
 
-		_logger.LogInformation("Validating navigation.yml does not contain colliding path prefixes");
-		// this validates all path prefixes are unique, early exit if duplicates are detected
-		if (
-			!SiteNavigationFile.ValidatePathPrefixes(assembleContext.Collector, siteNavigationFile, navigationFileInfo)
-			|| assembleContext.Collector.Errors > 0
-		)
+		// loading the navigation (above) checked it, e.g. that path prefixes are unique; the assembled site is checked once, here
+		_ = AssembledSiteChecker.Check(assembleContext, assembleSources).EmitTo(collector);
+
+		// early exit if either has errors
+		if (assembleContext.Collector.Errors > 0)
 			return false;
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
@@ -157,7 +153,7 @@ public class AssemblerBuildService(
 		var legacyPageChecker = new LegacyPageService(logFactory);
 		var historyMapper = new PageLegacyUrlMapper(
 			legacyPageChecker,
-			assembleContext.VersionsConfiguration,
+			assembleContext.Catalog.VersioningSystems,
 			assembleSources.LegacyUrlMappings
 		);
 
@@ -235,6 +231,7 @@ public class AssemblerBuildService(
 				environment,
 				checkouts,
 				configurationContext.ConfigurationFileProvider,
+				assembleContext.NavigationFile,
 				exporters
 			);
 			if (stamp is not null)

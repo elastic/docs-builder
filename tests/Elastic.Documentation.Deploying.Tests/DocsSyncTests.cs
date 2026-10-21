@@ -11,6 +11,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Deploying.Synchronization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
@@ -45,7 +46,7 @@ public class DocsSyncTests
 		);
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
 		var context = new AssembleContext(
 			config,
@@ -73,7 +74,7 @@ public class DocsSyncTests
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
 		// Act
-		var plan = await planStrategy.Plan(null, [], Cancel.None);
+		var plan = (await planStrategy.Plan(null, [], Cancel.None)).OrThrowIfMissing();
 
 		// Assert
 
@@ -108,7 +109,7 @@ public class DocsSyncTests
 			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var context = new AssembleContext(
 			config,
 			configurationContext,
@@ -130,7 +131,7 @@ public class DocsSyncTests
 		});
 		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
 
-		var plan = await planStrategy.Plan(null, [], Cancel.None);
+		var plan = (await planStrategy.Plan(null, [], Cancel.None)).OrThrowIfMissing();
 
 		plan.AddRequests.Should().ContainSingle(i => i.DestinationPath == "docs/_static/main-newhash0.js");
 		plan.RetainedPaths.Should().HaveCount(10);
@@ -165,7 +166,9 @@ public class DocsSyncTests
 		bool valid
 	)
 	{
-		var (validator, _, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold);
+		var (validator, _, checkedPlan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold);
+
+		var plan = checkedPlan.OrThrowIfMissing();
 
 		// Assert
 
@@ -175,7 +178,7 @@ public class DocsSyncTests
 		plan.AddRequests.Count.Should().Be(totalFilesToAdd);
 		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
 
-		var validationResult = validator.Validate(plan);
+		var validationResult = validator.Validate(checkedPlan);
 		if (plan.TotalSyncRequests <= 100)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.8f));
 		else if (plan.TotalSyncRequests <= 1000)
@@ -206,7 +209,9 @@ public class DocsSyncTests
 		bool valid
 	)
 	{
-		var (validator, _, plan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold, "different-etag");
+		var (validator, _, checkedPlan) = await SetupS3SyncContextSetup(localFiles, remoteFiles, deleteThreshold, "different-etag");
+
+		var plan = checkedPlan.OrThrowIfMissing();
 
 		// Assert
 
@@ -216,7 +221,7 @@ public class DocsSyncTests
 		plan.UpdateRequests.Count.Should().Be(totalFilesToUpdate);
 		plan.DeleteRequests.Count.Should().Be(totalFilesToRemove);
 
-		var validationResult = validator.Validate(plan);
+		var validationResult = validator.Validate(checkedPlan);
 		if (plan.TotalSyncRequests <= 100)
 			validationResult.DeleteThreshold.Should().Be(Math.Max(deleteThreshold, 0.8f));
 		else if (plan.TotalSyncRequests <= 1000)
@@ -228,7 +233,7 @@ public class DocsSyncTests
 			.Be(valid, $"Delete ratio is {validationResult.DeleteRatio} when maximum is {validationResult.DeleteThreshold}");
 	}
 
-	private static async Task<(DocsSyncPlanValidator validator, AwsS3SyncPlanStrategy planStrategy, SyncPlan plan)> SetupS3SyncContextSetup(
+	private static async Task<(DocsSyncPlanValidator validator, AwsS3SyncPlanStrategy planStrategy, Result<SyncPlan> plan)> SetupS3SyncContextSetup(
 		int localFiles,
 		int remoteFiles,
 		float? deleteThreshold = null,
@@ -247,7 +252,7 @@ public class DocsSyncTests
 			fileSystem.AddFile($"docs/file-{i}.md", new MockFileData($"# Local Document {i}"));
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
 		var context = new AssembleContext(
 			config,
@@ -302,7 +307,7 @@ public class DocsSyncTests
 			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var checkoutDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
 		var assembleFs3 = CheckoutsFileSystem.FromWorkingDirectory(fileSystem);
 		var context = new AssembleContext(config, configurationContext, "dev", collector, assembleFs3);
@@ -403,7 +408,7 @@ public class DocsSyncTests
 			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
 		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var config = AssemblyLoader.Create(configurationContext.ConfigurationFileProvider);
 		var context = new AssembleContext(
 			config,
 			configurationContext,

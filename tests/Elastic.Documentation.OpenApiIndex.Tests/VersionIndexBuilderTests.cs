@@ -149,4 +149,23 @@ public class VersionIndexBuilderTests
 		index["elastic/elasticsearch"]["openapi.json"]["8"].Version.Should().Be("8.16");
 		invalidKeys.Should().BeEquivalentTo(["not-a-valid-key", "elastic/elasticsearch/not-a-branch/openapi.json"]);
 	}
+
+	[Test]
+	public void Build_ChecksTheIndexOnce_AndReportsWhatItBreaks()
+	{
+		var build = VersionIndexBuilder.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/main/openapi.json"]);
+
+		build.Report.HasErrors.Should().BeFalse();
+		build.Report.Violations.Should().BeEquivalentTo(VersionIndexLoader.Check(build.Index).Violations);
+		build.InvalidKeys.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Build_NoKeys_IsAnEmptyIndexTheRulesAccept()
+	{
+		var build = VersionIndexBuilder.Build([]);
+
+		build.Index.Should().BeEmpty();
+		build.Report.HasErrors.Should().BeFalse();
+	}
 }

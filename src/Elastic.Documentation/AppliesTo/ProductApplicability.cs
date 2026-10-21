@@ -7,79 +7,84 @@ using System.Text.Json.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
+/// <summary>The <c>product</c> part of an <c>applies_to</c> block: the products that have their own applicability.</summary>
+/// <remarks>
+/// Constructed through <c>ApplicableTo</c>.
+/// Optional members are <c>internal init</c>: only tests (<c>InternalsVisibleTo</c>) can set them.
+/// </remarks>
 public record ProductApplicability
 {
 	[JsonPropertyName("ecctl")]
-	public AppliesCollection? Ecctl { get; set; }
+	public AppliesCollection? Ecctl { get; internal init; }
 
 	[JsonPropertyName("curator")]
-	public AppliesCollection? Curator { get; set; }
+	public AppliesCollection? Curator { get; internal init; }
 
 	[JsonPropertyName("apm-agent-android")]
-	public AppliesCollection? ApmAgentAndroid { get; set; }
+	public AppliesCollection? ApmAgentAndroid { get; internal init; }
 
 	[JsonPropertyName("apm-agent-dotnet")]
-	public AppliesCollection? ApmAgentDotnet { get; set; }
+	public AppliesCollection? ApmAgentDotnet { get; internal init; }
 
 	[JsonPropertyName("apm-agent-go")]
-	public AppliesCollection? ApmAgentGo { get; set; }
+	public AppliesCollection? ApmAgentGo { get; internal init; }
 
 	[JsonPropertyName("apm-agent-ios")]
-	public AppliesCollection? ApmAgentIos { get; set; }
+	public AppliesCollection? ApmAgentIos { get; internal init; }
 
 	[JsonPropertyName("apm-agent-java")]
-	public AppliesCollection? ApmAgentJava { get; set; }
+	public AppliesCollection? ApmAgentJava { get; internal init; }
 
 	[JsonPropertyName("apm-agent-node")]
-	public AppliesCollection? ApmAgentNode { get; set; }
+	public AppliesCollection? ApmAgentNode { get; internal init; }
 
 	[JsonPropertyName("apm-agent-php")]
-	public AppliesCollection? ApmAgentPhp { get; set; }
+	public AppliesCollection? ApmAgentPhp { get; internal init; }
 
 	[JsonPropertyName("apm-agent-python")]
-	public AppliesCollection? ApmAgentPython { get; set; }
+	public AppliesCollection? ApmAgentPython { get; internal init; }
 
 	[JsonPropertyName("apm-agent-ruby")]
-	public AppliesCollection? ApmAgentRuby { get; set; }
+	public AppliesCollection? ApmAgentRuby { get; internal init; }
 
 	[JsonPropertyName("apm-agent-rum-js")]
-	public AppliesCollection? ApmAgentRumJs { get; set; }
+	public AppliesCollection? ApmAgentRumJs { get; internal init; }
 
 	[JsonPropertyName("edot-ios")]
-	public AppliesCollection? EdotIos { get; set; }
+	public AppliesCollection? EdotIos { get; internal init; }
 
 	[JsonPropertyName("edot-android")]
-	public AppliesCollection? EdotAndroid { get; set; }
+	public AppliesCollection? EdotAndroid { get; internal init; }
 
 	[JsonPropertyName("edot-dotnet")]
-	public AppliesCollection? EdotDotnet { get; set; }
+	public AppliesCollection? EdotDotnet { get; internal init; }
 
 	[JsonPropertyName("edot-java")]
-	public AppliesCollection? EdotJava { get; set; }
+	public AppliesCollection? EdotJava { get; internal init; }
 
 	[JsonPropertyName("edot-node")]
-	public AppliesCollection? EdotNode { get; set; }
+	public AppliesCollection? EdotNode { get; internal init; }
 
 	[JsonPropertyName("edot-browser")]
-	public AppliesCollection? EdotBrowser { get; set; }
+	public AppliesCollection? EdotBrowser { get; internal init; }
 
 	[JsonPropertyName("edot-php")]
-	public AppliesCollection? EdotPhp { get; set; }
+	public AppliesCollection? EdotPhp { get; internal init; }
 
 	[JsonPropertyName("edot-python")]
-	public AppliesCollection? EdotPython { get; set; }
+	public AppliesCollection? EdotPython { get; internal init; }
 
 	[JsonPropertyName("edot-cf-aws")]
-	public AppliesCollection? EdotCfAws { get; set; }
+	public AppliesCollection? EdotCfAws { get; internal init; }
 
 	[JsonPropertyName("edot-cf-azure")]
-	public AppliesCollection? EdotCfAzure { get; set; }
+	public AppliesCollection? EdotCfAzure { get; internal init; }
 
 	[JsonPropertyName("edot-cf-gcp")]
-	public AppliesCollection? EdotCfGcp { get; set; }
+	public AppliesCollection? EdotCfGcp { get; internal init; }
 
 	[JsonPropertyName("edot-collector")]
-	public AppliesCollection? EdotCollector { get; set; }
+	public AppliesCollection? EdotCollector { get; internal init; }
 
 	/// <inheritdoc />
 	public override string ToString()

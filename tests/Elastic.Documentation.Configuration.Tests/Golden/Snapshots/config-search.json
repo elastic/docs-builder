@@ -1,0 +1,468 @@
+{
+  "value": {
+    "synonyms": [
+      [
+        ".net",
+        "c#",
+        "csharp",
+        "dotnet",
+        "net"
+      ],
+      [
+        "agg",
+        "aggs => aggregations"
+      ],
+      [
+        "apm",
+        "application performance monitoring"
+      ],
+      [
+        "aws",
+        "amazon"
+      ],
+      [
+        "ccr",
+        "cross-cluster replication",
+        "cross cluster replication"
+      ],
+      [
+        "ccs",
+        "cross cluster search",
+        "cross-cluster search",
+        "spaghetti"
+      ],
+      [
+        "cps",
+        "cross project search",
+        "cross-project search"
+      ],
+      [
+        "data-stream",
+        "data stream",
+        "datastream => data-streams"
+      ],
+      [
+        "data-streams",
+        "data streams",
+        "datastreams"
+      ],
+      [
+        "ecctl",
+        "elastic cloud control"
+      ],
+      [
+        "ece",
+        "elastic cloud enterprise"
+      ],
+      [
+        "ech",
+        "elastic cloud hosted",
+        "ess"
+      ],
+      [
+        "eck",
+        "elastic cloud on kubernetes"
+      ],
+      [
+        "ecs",
+        "elastic common schema"
+      ],
+      [
+        "edot",
+        "elastic distribution of opentelemetry",
+        "elastic opentelemetry",
+        "elastic otel"
+      ],
+      [
+        "edot collector",
+        "edot-collector",
+        "elastic distribution of opentelemetry collector"
+      ],
+      [
+        "edot cf",
+        "edot cloud forwarder",
+        "elastic distribution of opentelemetry cloud forwarder",
+        "elastic cloud forwarder"
+      ],
+      [
+        "edr",
+        "endpoint detection response"
+      ],
+      [
+        "eis",
+        "elastic inference service"
+      ],
+      [
+        "eks",
+        "elastic kubernetes service"
+      ],
+      [
+        "elastic distributions of opentelemetry",
+        "edot"
+      ],
+      [
+        "elastic learned sparse encoder",
+        "elser"
+      ],
+      [
+        "elasticsearch service",
+        "elastic cloud"
+      ],
+      [
+        "elv2",
+        "elastic license v2"
+      ],
+      [
+        "es",
+        "elasticsearch"
+      ],
+      [
+        "esaas",
+        "elastic stack as a service"
+      ],
+      [
+        "esql",
+        "es|ql => esql"
+      ],
+      [
+        "gcp",
+        "google cloud platform"
+      ],
+      [
+        "ilm",
+        "index lifecycle management"
+      ],
+      [
+        "javascript",
+        "js",
+        "node",
+        "nodejs",
+        "node.js"
+      ],
+      [
+        "k8s",
+        "kubernetes"
+      ],
+      [
+        "knn",
+        "k-nearest neighbors"
+      ],
+      [
+        "kpi",
+        "key performance indicator"
+      ],
+      [
+        "kql",
+        "kibana query language"
+      ],
+      [
+        "logsdb",
+        "logs datastream",
+        "logs data stream"
+      ],
+      [
+        "machine-learning",
+        "machine learning",
+        "ml => machine learning"
+      ],
+      [
+        "motlp",
+        "managed otlp"
+      ],
+      [
+        "opentelemetry",
+        "otel"
+      ],
+      [
+        "querydsl",
+        "query dsl",
+        "query dsl"
+      ],
+      [
+        "rag",
+        "retrieval augmented generation"
+      ],
+      [
+        "s3",
+        "aws s3",
+        "amazon s3"
+      ],
+      [
+        "sso",
+        "single sign-on"
+      ],
+      [
+        "traffic filter",
+        "network security"
+      ],
+      [
+        "tsvb",
+        "time series visual builder"
+      ]
+    ],
+    "synonymBiDirectional": {
+      ".net": [
+        "c#",
+        "csharp",
+        "dotnet",
+        "net"
+      ],
+      "agg": [
+        "aggs => aggregations"
+      ],
+      "amazon": [
+        "aws"
+      ],
+      "apm": [
+        "application performance monitoring"
+      ],
+      "aws": [
+        "amazon"
+      ],
+      "c#": [
+        ".net",
+        "csharp",
+        "dotnet",
+        "net"
+      ],
+      "ccr": [
+        "cross-cluster replication",
+        "cross cluster replication"
+      ],
+      "ccs": [
+        "cross cluster search",
+        "cross-cluster search",
+        "spaghetti"
+      ],
+      "cps": [
+        "cross project search",
+        "cross-project search"
+      ],
+      "csharp": [
+        ".net",
+        "c#",
+        "dotnet",
+        "net"
+      ],
+      "data-stream": [
+        "data stream",
+        "datastream => data-streams"
+      ],
+      "data-streams": [
+        "data streams",
+        "datastreams"
+      ],
+      "datastreams": [
+        "data-streams",
+        "data streams"
+      ],
+      "dotnet": [
+        ".net",
+        "c#",
+        "csharp",
+        "net"
+      ],
+      "ecctl": [
+        "elastic cloud control"
+      ],
+      "ece": [
+        "elastic cloud enterprise"
+      ],
+      "ech": [
+        "elastic cloud hosted",
+        "ess"
+      ],
+      "eck": [
+        "elastic cloud on kubernetes"
+      ],
+      "ecs": [
+        "elastic common schema"
+      ],
+      "edot": [
+        "elastic distribution of opentelemetry",
+        "elastic opentelemetry",
+        "elastic otel"
+      ],
+      "edot-collector": [
+        "edot collector",
+        "elastic distribution of opentelemetry collector"
+      ],
+      "edr": [
+        "endpoint detection response"
+      ],
+      "eis": [
+        "elastic inference service"
+      ],
+      "eks": [
+        "elastic kubernetes service"
+      ],
+      "elasticsearch": [
+        "es"
+      ],
+      "elser": [
+        "elastic learned sparse encoder"
+      ],
+      "elv2": [
+        "elastic license v2"
+      ],
+      "es": [
+        "elasticsearch"
+      ],
+      "esaas": [
+        "elastic stack as a service"
+      ],
+      "esql": [
+        "es|ql => esql"
+      ],
+      "ess": [
+        "ech",
+        "elastic cloud hosted"
+      ],
+      "gcp": [
+        "google cloud platform"
+      ],
+      "ilm": [
+        "index lifecycle management"
+      ],
+      "javascript": [
+        "js",
+        "node",
+        "nodejs",
+        "node.js"
+      ],
+      "js": [
+        "javascript",
+        "node",
+        "nodejs",
+        "node.js"
+      ],
+      "k8s": [
+        "kubernetes"
+      ],
+      "knn": [
+        "k-nearest neighbors"
+      ],
+      "kpi": [
+        "key performance indicator"
+      ],
+      "kql": [
+        "kibana query language"
+      ],
+      "kubernetes": [
+        "k8s"
+      ],
+      "logsdb": [
+        "logs datastream",
+        "logs data stream"
+      ],
+      "machine-learning": [
+        "machine learning",
+        "ml => machine learning"
+      ],
+      "motlp": [
+        "managed otlp"
+      ],
+      "net": [
+        ".net",
+        "c#",
+        "csharp",
+        "dotnet"
+      ],
+      "node": [
+        "javascript",
+        "js",
+        "nodejs",
+        "node.js"
+      ],
+      "node.js": [
+        "javascript",
+        "js",
+        "node",
+        "nodejs"
+      ],
+      "nodejs": [
+        "javascript",
+        "js",
+        "node",
+        "node.js"
+      ],
+      "opentelemetry": [
+        "otel"
+      ],
+      "otel": [
+        "opentelemetry"
+      ],
+      "querydsl": [
+        "query dsl"
+      ],
+      "rag": [
+        "retrieval augmented generation"
+      ],
+      "s3": [
+        "aws s3",
+        "amazon s3"
+      ],
+      "spaghetti": [
+        "ccs",
+        "cross cluster search",
+        "cross-cluster search"
+      ],
+      "sso": [
+        "single sign-on"
+      ],
+      "tsvb": [
+        "time series visual builder"
+      ]
+    },
+    "rules": [
+      {
+        "ruleId": "pin-data-streams",
+        "type": "Pinned",
+        "criteria": [
+          {
+            "type": "Exact",
+            "metadata": "query_string",
+            "values": [
+              "data stream",
+              "data-stream",
+              "data-streams",
+              "datastream",
+              "datastreams"
+            ]
+          }
+        ],
+        "actions": {
+          "ids": [
+            "/docs/manage-data/data-store/data-streams"
+          ]
+        }
+      },
+      {
+        "ruleId": "pin-logstash",
+        "type": "Pinned",
+        "criteria": [
+          {
+            "type": "Exact",
+            "metadata": "query_string",
+            "values": [
+              "logstash"
+            ]
+          }
+        ],
+        "actions": {
+          "ids": [
+            "/docs/reference/logstash"
+          ]
+        }
+      }
+    ],
+    "diminishTerms": [
+      "plugin",
+      "client",
+      "integration",
+      "curator",
+      "hadoop",
+      "glossary"
+    ]
+  }
+}

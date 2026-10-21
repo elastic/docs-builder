@@ -4,10 +4,7 @@
 
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.ServiceDefaults.Logging;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,13 +62,19 @@ public static class AppDefaultsExtensions
 			})
 			.AddConfigurationFileProvider(cliOptions.SkipPrivateRepositories, cliOptions.ConfigSource, (s, p) =>
 			{
-				var versionConfiguration = p.CreateVersionConfiguration();
-				var products = p.CreateProducts(versionConfiguration);
-				var search = p.CreateSearchConfiguration();
-				_ = s.AddSingleton(p.CreateLegacyUrlMappings(products));
-				_ = s.AddSingleton(products);
-				_ = s.AddSingleton(versionConfiguration);
-				_ = s.AddSingleton(search);
+				// The only place global configuration is loaded: one entry, every file, every error listed at once (ConfigurationException).
+				// The warnings it carries are registered as StartupDiagnostics, drained by whoever owns a collector (once per process).
+				var result = GlobalConfigurationLoader.LoadOnce(p);
+				var global = result.OrThrow();
+				var catalog = global.Catalog;
+				_ = s.AddSingleton(global);
+				_ = s.AddSingleton(GlobalConfigurationLoader.StartupDiagnosticsOf(result));
+				_ = s.AddSingleton(global.Assembly);
+				_ = s.AddSingleton(catalog);
+				_ = s.AddSingleton(catalog.VersioningSystems);
+				_ = s.AddSingleton(catalog.Products);
+				_ = s.AddSingleton(catalog.LegacyUrlMappings);
+				_ = s.AddSingleton(global.Search);
 				configure?.Invoke(s, p);
 			})
 			.AddSingleton(cliOptions);

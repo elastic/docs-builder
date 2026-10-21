@@ -6,6 +6,7 @@ using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Elastic.Documentation.Links;
+using Elastic.Documentation.Serialization;
 
 namespace Elastic.Documentation.LinkIndex;
 
@@ -24,7 +25,7 @@ public class AwsS3LinkIndexReaderWriter(
 		if (registry.ETag == null)
 			// The ETag should not be null if the LinkReferenceRegistry was retrieved from GetLinkIndex()
 			throw new InvalidOperationException($"{nameof(LinkRegistry)}.{nameof(registry.ETag)} cannot be null");
-		var json = LinkRegistry.Serialize(registry);
+		var json = LinkJson.Serialize(registry);
 		var putObjectRequest = new PutObjectRequest
 		{
 			BucketName = _bucketName,

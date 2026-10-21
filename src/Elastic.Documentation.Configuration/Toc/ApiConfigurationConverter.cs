@@ -37,9 +37,9 @@ internal static class ApiConfigurationShapeGuidance
 		+ "        categories: [self, ece, ess, serverless]";
 }
 
-public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter) : YamlConverter<ApiProductSequence>
+internal class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter) : YamlConverter<ApiProductSequenceDto>
 {
-	public override ApiProductSequence Read(YamlReader reader)
+	public override ApiProductSequenceDto Read(YamlReader reader)
 	{
 		if (reader.TokenType != YamlTokenType.StartSequence)
 		{
@@ -52,27 +52,27 @@ public class ApiProductSequenceConverter(ApiProductEntryConverter entryConverter
 		}
 
 		_ = reader.Read(); // consume StartSequence
-		var entries = new List<ApiProductEntry>();
+		var entries = new List<ApiProductEntryDto>();
 		while (reader.TokenType != YamlTokenType.EndSequence)
 			entries.Add(entryConverter.Read(reader));
 		_ = reader.Read(); // consume EndSequence
 
-		return new ApiProductSequence { Entries = entries };
+		return new ApiProductSequenceDto { Entries = entries };
 	}
 
-	public override void Write(YamlWriter writer, ApiProductSequence value) =>
+	public override void Write(YamlWriter writer, ApiProductSequenceDto value) =>
 		throw new NotSupportedException(
-			"ApiProductSequence YAML serialization is not supported; api configuration is only ever read from YAML."
+			"ApiProductSequenceDto YAML serialization is not supported; api configuration is only ever read from YAML."
 		);
 }
 
-public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
+internal class ApiProductEntryConverter : YamlConverter<ApiProductEntryDto>
 {
 	private static readonly string[] KnownEntryKeys = ["spec", "product", "repository", "children", "catalog"];
 	private static readonly string[] KnownCatalogKeys = ["categories"];
 	private static readonly string[] KnownChildKeys = ["file"];
 
-	public override ApiProductEntry Read(YamlReader reader)
+	public override ApiProductEntryDto Read(YamlReader reader)
 	{
 		if (reader.TokenType != YamlTokenType.StartMapping)
 		{
@@ -89,7 +89,8 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 
 		// SharpYaml's Mark.Line/Column are 0-based; +1 to match the 1-based convention used
 		// everywhere else in this codebase for user-facing diagnostics.
-		var entry = new ApiProductEntry { Line = entryStart.Line + 1, Column = entryStart.Column + 1 };
+		var entry = new ApiProductEntryDto { Line = entryStart.Line + 1, Column = entryStart.Column + 1 };
+		var unknown = new List<string>();
 
 		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
@@ -132,11 +133,13 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 						$"'file:' entries directly in the api sequence (legacy intro/outro shape) are no longer supported. {ApiConfigurationShapeGuidance.Text}"
 					);
 				default:
-					reader.SkipOrReportUnmapped(typeof(ApiProductEntry), KnownEntryKeys, key, entry);
+					unknown.Add(key);
+					reader.SkipOrReportUnmapped(typeof(ApiProductEntryDto), KnownEntryKeys, key, entry);
 					break;
 			}
 		}
 		_ = reader.Read(); // consume MappingEnd
+		entry.UnknownKeys = unknown;
 		return entry;
 	}
 
@@ -160,7 +163,7 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 		}
 	}
 
-	private static ApiCatalogSettings? ReadCatalog(YamlReader reader)
+	private static ApiCatalogDto? ReadCatalog(YamlReader reader)
 	{
 		if (reader.TokenType != YamlTokenType.StartMapping)
 		{
@@ -171,7 +174,7 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 		var start = reader.Start;
 		_ = reader.Read();
 		// SharpYaml's Mark.Line/Column are 0-based; +1 to match the 1-based convention.
-		var catalog = new ApiCatalogSettings { Line = start.Line + 1, Column = start.Column + 1 };
+		var catalog = new ApiCatalogDto { Line = start.Line + 1, Column = start.Column + 1 };
 		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
 			var key = reader.GetScalarValue();
@@ -179,7 +182,7 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 			if (key == "categories")
 				catalog.Categories = ReadStringSequence(reader);
 			else
-				reader.SkipOrReportUnmapped(typeof(ApiCatalogSettings), KnownCatalogKeys, key, catalog);
+				reader.SkipOrReportUnmapped(typeof(ApiCatalogDto), KnownCatalogKeys, key, catalog);
 		}
 		_ = reader.Read();
 		return catalog;
@@ -209,9 +212,9 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 		return values;
 	}
 
-	private static List<ApiEntryChild> ReadChildren(YamlReader reader)
+	private static List<ApiEntryChildDto> ReadChildren(YamlReader reader)
 	{
-		var children = new List<ApiEntryChild>();
+		var children = new List<ApiEntryChildDto>();
 		if (reader.TokenType != YamlTokenType.StartSequence)
 		{
 			reader.Skip();
@@ -228,7 +231,7 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 			}
 
 			_ = reader.Read(); // consume MappingStart
-			var child = new ApiEntryChild();
+			var child = new ApiEntryChildDto();
 			while (reader.TokenType != YamlTokenType.EndMapping)
 			{
 				var childKey = reader.GetScalarValue();
@@ -239,7 +242,7 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 					_ = reader.Read();
 				}
 				else if (childKey != "file")
-					reader.SkipOrReportUnmapped(typeof(ApiEntryChild), KnownChildKeys, childKey, child);
+					reader.SkipOrReportUnmapped(typeof(ApiEntryChildDto), KnownChildKeys, childKey, child);
 				else
 					reader.Skip();
 			}
@@ -250,8 +253,8 @@ public class ApiProductEntryConverter : YamlConverter<ApiProductEntry>
 		return children;
 	}
 
-	public override void Write(YamlWriter writer, ApiProductEntry value) =>
+	public override void Write(YamlWriter writer, ApiProductEntryDto value) =>
 		throw new NotSupportedException(
-			"ApiProductEntry YAML serialization is not supported; api configuration is only ever read from YAML."
+			"ApiProductEntryDto YAML serialization is not supported; api configuration is only ever read from YAML."
 		);
 }

@@ -6,12 +6,10 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Elastic.Documentation;
+using Elastic.Documentation.Catalog;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.LegacyUrlMappings;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Search;
-using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Search;
 using Elastic.Documentation.Versions;
 using Elastic.Markdown;
 using Elastic.Markdown.IO;
@@ -58,12 +56,10 @@ public static class AuthoringGenerator
 
 		var configurationContext = new ConfigurationContext
 		{
-			VersionsConfiguration = versionsConfig,
+			Catalog = new GlobalCatalog(versionsConfig, productsConfig, LegacyUrlMappingCatalog.None),
 			ConfigurationFileProvider = configurationFileProvider,
 			Endpoints = new DocumentationEndpoints { Elasticsearch = ElasticsearchEndpoint.Default },
-			ProductsConfiguration = productsConfig,
-			LegacyUrlMappings = new LegacyUrlMappingConfiguration { Mappings = [] },
-			SearchConfiguration = new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+			SearchTuning = SearchTuning.None
 		};
 
 		var context = new BuildContext(collector, docFs, configurationContext)
@@ -72,7 +68,7 @@ public static class AuthoringGenerator
 			CanonicalBaseUrl = new Uri("https://www.elastic.co/")
 		};
 
-		context.Configuration.Features.NavigationPreviewEnabled = options.NavigationPreview;
+		context.OverrideFeatures(features => features.With("navigation-preview", options.NavigationPreview));
 
 		var loggerFactory = new TestLoggerFactory();
 		var conversionCollector = new TestConversionCollector();
@@ -96,6 +92,14 @@ public static class AuthoringGenerator
 		_ = collector.StartAsync(ctx);
 		await generator.GenerateAll(ctx);
 		await collector.StopAsync(ctx);
+
+		// the guard for double reporting: the collector drops an exact duplicate of a rule's diagnostic, so the output cannot show one
+		if (collector.DuplicatesDropped.Count > 0)
+			throw new InvalidOperationException(
+				"A rule reported the same problem twice (one emitter per problem):" + string.Concat(
+					collector.DuplicatesDropped.Select(d => $"{Environment.NewLine}  [{d.RuleId}] {d.File}:{d.Line}:{d.Column} {d.Message}")
+				)
+			);
 
 		// Materialize all results (including MinimalParse) so the lazy F# Seq-per-assertion
 		// pattern is gone — each MarkdownResult is computed once.

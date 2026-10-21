@@ -10,8 +10,10 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.DocumentationSets;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 
@@ -175,7 +177,7 @@ public record GlobalLayoutViewModel
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
 	/// <summary>White-label branding overrides. When non-null, all Elastic-specific chrome is suppressed.</summary>
-	public BrandingConfiguration? Branding { get; init; }
+	public Branding? Branding { get; init; }
 
 	/// <summary>Static URL of the branding icon, if configured.</summary>
 	public string? BrandingIconStaticPath => Branding?.Icon is { } icon ? Static(Path.GetFileName(icon)) : null;

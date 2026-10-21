@@ -39,24 +39,28 @@ public class ConfigurationExporter(
 
 		var assemblerConfig = configurationFileProvider.AssemblerFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", assemblerConfig.Name, configFolder.FullName);
-		fs.File.Copy(assemblerConfig.FullName, Path.Join(configFolder.FullName, assemblerConfig.Name), true);
+		Copy(fs, assemblerConfig, configFolder);
 
 		var navigationConfig = configurationFileProvider.NavigationFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", navigationConfig.Name, configFolder.FullName);
-		fs.File.Copy(navigationConfig.FullName, Path.Join(configFolder.FullName, navigationConfig.Name), true);
+		Copy(fs, navigationConfig, configFolder);
 
 		var legacyUrlMappingsConfig = configurationFileProvider.LegacyUrlMappingsFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", legacyUrlMappingsConfig.Name, configFolder.FullName);
-		fs.File.Copy(legacyUrlMappingsConfig.FullName, Path.Join(configFolder.FullName, legacyUrlMappingsConfig.Name), true);
+		Copy(fs, legacyUrlMappingsConfig, configFolder);
 
 		var versionsConfig = configurationFileProvider.VersionFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", versionsConfig.Name, configFolder.FullName);
-		fs.File.Copy(versionsConfig.FullName, Path.Join(configFolder.FullName, versionsConfig.Name), true);
+		Copy(fs, versionsConfig, configFolder);
 
 		var productsConfig = configurationFileProvider.ProductsFile;
 		_logger.LogInformation("Exporting {Name} to {ConfigFolder}", productsConfig.Name, configFolder.FullName);
-		fs.File.Copy(productsConfig.FullName, Path.Join(configFolder.FullName, productsConfig.Name), true);
+		Copy(fs, productsConfig, configFolder);
 
 		return default;
 	}
+
+	// The file is read through the file system it came from: it lives outside the output scope the write file system is confined to.
+	private static void Copy(IFileSystem writeFileSystem, IFileInfo source, IDirectoryInfo target) =>
+		writeFileSystem.File.WriteAllBytes(Path.Join(target.FullName, source.Name), source.FileSystem.File.ReadAllBytes(source.FullName));
 }

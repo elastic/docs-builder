@@ -10,6 +10,7 @@ using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
+using Nullean.Entities;
 using SharpYaml;
 using SharpYaml.Serialization;
 
@@ -19,7 +20,7 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// Centralized YAML serialization for release notes/changelog operations.
 /// Provides static deserializers and serializers configured for different use cases.
 /// </summary>
-public static partial class ReleaseNotesSerialization
+internal static partial class ReleaseNotesSerialization
 {
 	/// <summary>
 	/// Regex to normalize "version:" to "target:" in changelog YAML files.
@@ -40,6 +41,13 @@ public static partial class ReleaseNotesSerialization
 	);
 
 	/// <summary>
+	/// Parses an entry file's (normalized) text to its DTO, null for an empty file. Only the loader's own validator reads the shape; everything else gets a record.
+	/// <paramref name="sourceName"/> is the file name unknown keys are reported at.
+	/// </summary>
+	internal static ChangelogEntryDto? ParseEntryDto(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<ChangelogEntryDto>(NormalizeYaml(yaml), GetEntryDeserializerOptions(sourceName));
+
+	/// <summary>
 	/// Gets the raw YAML deserializer options for changelog entry DTOs.
 	/// Used by bundling service for direct deserialization with error handling.
 	/// </summary>
@@ -53,7 +61,7 @@ public static partial class ReleaseNotesSerialization
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(yaml, GetEntryDeserializerOptions(sourceName))
-			?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
+			?? throw new InvalidDataException("The changelog entry has no content.");
 		return ToEntry(yamlDto);
 	}
 
@@ -76,7 +84,7 @@ public static partial class ReleaseNotesSerialization
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
 		var yamlDto = YamlSerializer.Deserialize<BundleDto>(yaml, GetEntryDeserializerOptions(sourceName))
-			?? throw new InvalidOperationException("Failed to deserialize bundle YAML.");
+			?? throw new InvalidDataException("The changelog bundle has no content.");
 		return ToBundle(yamlDto);
 	}
 
@@ -170,7 +178,8 @@ public static partial class ReleaseNotesSerialization
 			FeatureId = dto.FeatureId,
 			Highlight = dto.Highlight,
 			Link = dto.Link,
-			SourceRedirect = dto.SourceRedirect ?? false
+			SourceRedirect = dto.SourceRedirect ?? false,
+			Pr = dto.Pr
 		};
 
 	private static ChangelogEntry ToEntry(BundledEntry entry) =>
@@ -199,7 +208,13 @@ public static partial class ReleaseNotesSerialization
 		IReadOnlyList<string> versions = dto.Versions is { Count: > 0 }
 			? dto.Versions
 			: !string.IsNullOrWhiteSpace(dto.Target) ? [dto.Target] : [];
-		return new() { ProductId = dto.Product ?? "", Versions = versions, Lifecycle = ParseLifecycle(dto.Lifecycle) };
+		return new()
+		{
+			ProductId = dto.Product ?? "",
+			Versions = versions,
+			Lifecycle = ParseLifecycle(dto.Lifecycle),
+			TargetRaw = dto.Target
+		};
 #pragma warning restore CS0618
 	}
 
@@ -208,7 +223,7 @@ public static partial class ReleaseNotesSerialization
 		{
 			Products = dto.Products?.Select(ToBundledProduct).ToList() ?? [],
 			Description = dto.Description,
-			ReleaseDate = ParseReleaseDate(dto.ReleaseDate),
+			ReleaseDateAuthored = Authored.Of(dto.ReleaseDate, ParseReleaseDate(dto.ReleaseDate)),
 			GitRef = dto.GitRef,
 			HideFeatures = dto.HideFeatures ?? [],
 			Entries = dto.Entries?.Select(ToBundledEntry).ToList() ?? [],
@@ -305,9 +320,8 @@ public static partial class ReleaseNotesSerialization
 			Subtype = EntrySubtypeToString(entry.Subtype),
 			Products = entry.Products?.Select(ToDto).ToList(),
 			Areas = entry.Areas?.ToList(),
-			// Empty is the "missing title" sentinel (see ChangelogFileWriter.GenerateYaml) and must
-			// round-trip to the DTO's null so DefaultIgnoreCondition.WhenWritingDefault omits it —
-			// that condition compares against default(string?), i.e. null, not "".
+			// Serialization shaping, not the domain: a blank title is absent from the file (a CLI writing an entry whose title is still to be added comments it out).
+			// Empty must round-trip to the DTO's null so DefaultIgnoreCondition.WhenWritingDefault omits it — that condition compares against null, not "".
 			Title = string.IsNullOrEmpty(entry.Title) ? null : entry.Title,
 			Description = entry.Description,
 			Impact = entry.Impact,
@@ -453,7 +467,7 @@ public static partial class ReleaseNotesSerialization
 /// Used for AOT-compatible lightweight loading of publish blocker configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class ChangelogConfigMinimalDto
+internal sealed class ChangelogConfigMinimalDto
 {
 	/// <summary>Rules configuration section (new format).</summary>
 	public RulesConfigMinimalDto? Rules { get; set; }
@@ -463,7 +477,7 @@ public sealed class ChangelogConfigMinimalDto
 /// Minimal DTO for rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class RulesConfigMinimalDto
+internal sealed class RulesConfigMinimalDto
 {
 	/// <summary>Global match mode ("any" or "all").</summary>
 	public string? Match { get; set; }
@@ -476,7 +490,7 @@ public sealed class RulesConfigMinimalDto
 /// Minimal DTO for publish rules configuration.
 /// Registered with YamlStaticContext for source-generated deserialization.
 /// </summary>
-public sealed class PublishRulesMinimalDto
+internal sealed class PublishRulesMinimalDto
 {
 	/// <summary>Match mode for areas ("any" or "all").</summary>
 	public string? MatchAreas { get; set; }

@@ -35,7 +35,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -81,7 +81,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -129,7 +129,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -177,7 +177,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -226,7 +226,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -276,7 +276,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().BeNull();
@@ -321,7 +321,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().BeNull();
@@ -367,7 +367,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().BeNull();
@@ -418,7 +418,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -461,7 +461,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().BeNull();
@@ -912,7 +912,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		try
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
-			return await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			return (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 		}
 		finally
 		{
@@ -951,7 +951,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -993,7 +993,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1019,10 +1019,10 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert – ChangelogConfiguration.Default is returned; Bundle is null so CLI fallbacks apply
-			config.Should().NotBeNull("LoadChangelogConfiguration returns Default when no file is found");
+			config.Should().NotBeNull("Load returns Default when no file is found");
 			Collector.Errors.Should().Be(0);
 			config.Bundle.Should().BeNull("Default config has no bundle section");
 		}
@@ -1062,7 +1062,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1111,7 +1111,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1158,7 +1158,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1204,7 +1204,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		{
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			config.Should().NotBeNull();
 			Collector.Errors.Should().Be(0);
@@ -1255,7 +1255,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().NotBeNull();
@@ -1299,7 +1299,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			FileSystem.Directory.SetCurrentDirectory(configDir);
 
 			// Act
-			var config = await configLoader.LoadChangelogConfiguration(Collector, null, TestContext.Current!.Execution.CancellationToken);
+			var config = (await configLoader.Load(null, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 			// Assert
 			config.Should().BeNull();
@@ -1332,7 +1332,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1361,7 +1361,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
@@ -1386,7 +1386,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().BeNull();
@@ -1550,7 +1550,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().BeNull();
@@ -1577,7 +1577,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert — config loads (backward compat) but warns
 		config.Should().NotBeNull();
@@ -1612,7 +1612,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1734,7 +1734,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1777,7 +1777,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().BeNull();
@@ -1810,7 +1810,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1839,7 +1839,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1871,7 +1871,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().BeNull();
@@ -1893,7 +1893,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
@@ -1917,7 +1917,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Act
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		// Assert
 		config.Should().NotBeNull();
@@ -1946,7 +1946,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 			""";
 		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		var config = (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 
 		config.Should().NotBeNull();
 		Collector.Errors.Should().Be(0);
@@ -1959,7 +1959,7 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
 		await FileSystem.File.WriteAllTextAsync(configPath, bundleYaml, TestContext.Current!.Execution.CancellationToken);
-		return await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+		return (await configLoader.Load(configPath, TestContext.Current!.Execution.CancellationToken)).EmitTo(Collector);
 	}
 
 	[Test]

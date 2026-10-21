@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Loading;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
@@ -103,7 +104,10 @@ public class LinkIndexService(ILoggerFactory logFactory, IFileSystem fileSystem)
 		try
 		{
 			var json = await fileSystem.File.ReadAllTextAsync(localLinksJson.FullName, ctx);
-			var localLinkReference = RepositoryLinks.Deserialize(json);
+			var localLinkReference = LinkLoader.LoadManifest(json, localLinksJson.FullName).Unwrap(
+				_logger,
+				$"local links.json of '{repository}'"
+			);
 			crossLinks = resolver.UpdateLinkReference(repository, localLinkReference);
 		}
 		catch (Exception e)

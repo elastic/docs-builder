@@ -9,7 +9,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
-using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Markdown.Helpers;
@@ -214,7 +213,7 @@ public class LlmMarkdownExporter(bool branded = false, DocumentationWriteFileSys
 			AppliesTo = appliesTo,
 			Inline = true,
 			ShowTooltip = true,
-			VersionsConfig = buildContext.VersionsConfiguration
+			VersionsConfig = buildContext.Catalog.VersioningSystems
 		};
 
 		var items = viewModel.GetApplicabilityItems();

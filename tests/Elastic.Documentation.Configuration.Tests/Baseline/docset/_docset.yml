@@ -1,0 +1,277 @@
+project: 'doc-builder'
+max_toc_depth: 2
+dev_docs: true
+cross_links:
+  - docs-content
+  - elasticsearch
+exclude:
+  - '_*.md'
+subs:
+  a-global-variable: "This was defined in docset.yml"
+  serverless-short: Serverless
+  ech: "Elastic Cloud Hosted"
+  serverless-full: "Elastic Cloud Serverless"
+  ecloud: "Elastic Cloud"
+  dbuild: "docs-builder"
+  kib: "Kibana"
+  es: "Elasticsearch"
+  fleet: "Fleet"
+  fleet-server: "Fleet Server"
+  ls: "Logstash"
+  stack: "Elastic Stack"
+  stack-monitor-app: "Stack Monitoring"
+  stack-security-features: "Elastic Stack security features"
+  security-features: "Elastic Stack security features"
+  package-manager: "Elastic Package Manager"
+  agent: "Elastic Agent"
+  agents: "Elastic Agents"
+  bedrock: "Amazon Bedrock"
+  gemini: "Google Gemini"
+  ibm-r: "IBM Resilient"
+  opsgenie: "Opsgenie"
+  sn-itsm: "ServiceNow ITSM"
+  sn-sir: "ServiceNow SIR"
+  sn-itom: "ServiceNow ITOM"
+  swimlane: "Swimlane"
+  webhook-cm: "Case Management webhook"
+  hosted-ems: "hosted Elastic Maps Service"
+
+release_notes:
+  - product: docs-builder
+
+features:
+  primary-nav: false
+
+# Isolated fixtures. Keys stay prefixed so assembler preview does not collide
+# with docs-content (this checkout is still loaded even with skip: true).
+# Isolated serve (no --watch): /api/doc/docs-builder-elasticsearch/, /api/doc/docs-builder-kibana/, …
+api:
+  docs-builder-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+  docs-builder-elasticsearch-serverless:
+    - spec: elasticsearch-serverless.json
+      product: serverless-elasticsearch
+      repository: elastic/elasticsearch-specification
+  docs-builder-kibana:
+    - spec: kibana.yaml
+      product: kibana
+      repository: elastic/kibana
+  docs-builder-kibana-serverless:
+    - spec: kibana-serverless.yaml
+      product: kibana
+      repository: elastic/kibana
+  docs-builder-cloud-connect:
+    - spec: cloud-connect.yml
+      product: ess
+      repository: elastic/cloud-connected-api
+  docs-builder-cloud-serverless:
+    - spec: elastic-cloud-serverless.yml
+      product: cloud-serverless
+      repository: elastic/serverless-api-specification
+
+cta:
+  docs-builder:
+    button:
+      label: Star docs-builder on GitHub
+      url: https://github.com/elastic/docs-builder
+    benefits:
+      - "Open source"
+      - "Built with .NET"
+      - "Contributions welcome"
+
+suppress:
+  - AutolinkElasticCoDocs
+  - DeepLinkingVirtualFile
+
+toc:
+  - file: index.md
+  - file: release-notes.md
+  - hidden: 404.md
+  - hidden: developer-notes.md
+
+  # Getting started
+  - folder: getting-started
+    children:
+      - file: index.md
+      - file: installation.md
+      - file: serve.md
+      - file: writing-content.md
+      - file: pages-and-links.md
+      - file: publish.md
+
+  # Syntax guide
+  - folder: syntax
+    children:
+      - file: index.md
+      - file: quick-ref.md
+      - file: directives.md
+      - file: headings.md
+      - file: admonitions.md
+      - file: agent-skill.md
+      - file: applies.md
+      - file: applies-switch.md
+      - file: automated_settings.md
+      - file: buttons.md
+      - file: card-group.md
+      - file: changelog.md
+      - file: code.md
+      - file: comments.md
+      - file: contributors.md
+      - file: csv-include.md
+      - file: dropdowns.md
+      - file: definition-lists.md
+      - file: explore.md
+      - file: file_inclusion.md
+      - file: footnotes.md
+      - file: frontmatter.md
+      - file: get-started.md
+      - file: hero.md
+      - file: hub-pages.md
+      - file: icons.md
+      - file: images.md
+      - file: videos.md
+      - file: kbd.md
+      - file: link-card.md
+      - file: math.md
+      - file: vector-sizing-calculator.md
+      - file: diagrams.md
+      - file: lists.md
+      - file: task-lists.md
+      - file: line_breaks.md
+      - file: storybook.md
+      - file: links.md
+      - file: list-sub-pages.md
+      - file: page-card.md
+      - file: related-learning.md
+      - file: stepper.md
+      - file: substitutions.md
+      - file: version-variables.md
+      - file: sundries.md
+      - file: tables.md
+      - file: tabs.md
+      - file: titles.md
+      - file: whats-new.md
+
+  # Examples
+  - folder: examples
+    children:
+      - file: index.md
+      - folder: products
+        children:
+          - file: docs-builder.md
+
+  # Documentation builds
+  - folder: documentation
+    children:
+      - file: index.md
+      - file: distributed-builds.md
+      - file: cross-links.md
+      - folder: isolated
+        children:
+          - file: index.md
+          - folder: configure
+            children:
+              - file: index.md
+          - file: navigation.md
+          - file: urls.md
+          - file: cta.md
+          - file: extensions.md
+          - hidden: how-to/cumulative-docs/index.md
+          - hidden: how-to/cumulative-docs/guidelines.md
+          - hidden: how-to/cumulative-docs/badge-placement.md
+          - hidden: how-to/cumulative-docs/example-scenarios.md
+          - hidden: how-to/cumulative-docs/reference.md
+          - folder: how-to
+            children:
+              - file: move.md
+              - hidden: locally.md
+              - hidden: on-the-web.md
+      - folder: assembler
+        children:
+          - file: index.md
+          - folder: configure
+            children:
+              - file: index.md
+          - file: navigation.md
+          - file: urls.md
+          - file: environments.md
+          - file: add-repo.md
+          - file: infrastructure.md
+      - folder: codex
+        children:
+          - file: index.md
+          - folder: configure
+            children:
+              - file: index.md
+          - file: navigation.md
+          - file: urls.md
+          - file: infrastructure.md
+      - folder: catalog
+        children:
+          - file: index.md
+          - file: products.md
+          - file: related-learning.md
+          - file: versions.md
+          - file: synonyms.md
+          - file: legacy-url-mappings.md
+      - file: redirects.md
+
+  # Structured
+  - folder: data
+    children:
+      - file: index.md
+      - folder: mcp
+        children:
+          - file: index.md
+      - file: api.md
+      - folder: openapi
+        children:
+          - file: index.md
+          - file: api-explorer.md
+          - file: supplemental.md
+      - folder: cli-schema
+        children:
+          - file: index.md
+          - file: supplemental.md
+      - folder: exporters
+        children:
+          - file: index.md
+          - file: elasticsearch.md
+          - file: llm.md
+          - file: okf.md
+          - file: plain-text.md
+      - folder: release-notes
+        children:
+          - file: index.md
+          - file: overview.md
+            children:
+              - file: configure.md
+                children:
+                  - file: configure-ref.md
+              - file: create.md
+              - file: bundle.md
+              - file: publish.md
+          - file: explorer.md
+
+  # Integrations
+  - folder: integrations
+    children:
+      - file: index.md
+      - file: docs-actions.md
+      - file: elastic-cli.md
+
+  # CLI reference
+  - cli: cli-schema.json
+    folder: cli
+    navigation_title: CLI Reference
+    children: []
+
+  # Development
+  - toc: development

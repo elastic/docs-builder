@@ -179,6 +179,31 @@ public class PageFeedbackEndpointTests
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
+	/// <summary>
+	/// Law: a rejected request is answered with a 400 that names the field and says what was wrong with it.
+	/// Consequence if broken: the client gets a bare 400 and has to guess which field to fix.
+	/// </summary>
+	[Test]
+	public async Task Put_InvalidFeedback_NamesTheFieldThatBrokeARule()
+	{
+		var feedbackService = A.Fake<IPageFeedbackService>();
+		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
+		using var client = factory.CreateClient();
+		using var request = CreateRequest(
+			Guid.NewGuid(),
+			/*lang=json,strict*/
+			"""
+			{ "pageUrl": "//elsewhere.example/x", "pageTitle": "Test page", "reaction": "thumbsUp" }
+			"""
+		);
+
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
+		var body = await response.Content.ReadAsStringAsync(TestContext.Current!.Execution.CancellationToken);
+
+		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+		body.Should().Contain("PageUrl").And.Contain("path on this site");
+	}
+
 	[Test]
 	public async Task Put_PersistenceFails_ReturnsServiceUnavailable()
 	{

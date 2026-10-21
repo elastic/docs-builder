@@ -56,7 +56,7 @@ public class BundleDataResolver
 			.Select(
 				entry => new ResolvedEntry
 				{
-					Entry = ReleaseNotesSerialization.ConvertBundledEntry(entry),
+					Entry = ReleaseNotesLoader.ToEntry(entry),
 					Repo = repo,
 					Owner = owner,
 					BundleProductIds = bundleProductIds,

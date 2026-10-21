@@ -15,6 +15,7 @@ using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Publishing;
 using Elastic.Documentation.Serialization;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
@@ -69,9 +70,9 @@ public class AssemblerBuilder(
 
 			// Create inferrer per-repository with git context
 			var documentInferrer = new DocumentInferrerService(
-				context.ProductsConfiguration,
-				context.VersionsConfiguration,
-				context.LegacyUrlMappings,
+				context.Catalog.Products,
+				context.Catalog.VersioningSystems,
+				context.Catalog.LegacyUrlMappings,
 				set.DocumentationSet.Configuration,
 				set.DocumentationSet.Context.Git
 			);
@@ -196,7 +197,8 @@ public class AssemblerBuilder(
 	private void SetFeatureFlags(AssemblerDocumentationSet set)
 	{
 		// Enable primary nav by default
-		set.DocumentationSet.Configuration.Features.PrimaryNavEnabled = true;
+		var context = set.DocumentationSet.Context;
+		context.OverrideFeatures(f => f.With("primary-nav", true));
 		foreach (var configurationFeatureFlag in set.AssembleContext.Environment.FeatureFlags)
 		{
 			_logger.LogInformation(
@@ -204,9 +206,9 @@ public class AssemblerBuilder(
 				configurationFeatureFlag.Key,
 				configurationFeatureFlag.Value
 			);
-			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
+			context.OverrideFeatures(f => f.With(configurationFeatureFlag.Key, configurationFeatureFlag.Value));
 		}
-		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
+		context.OverrideFeatures(f => f.WithWebsiteSearchScriptUrl(set.AssembleContext.Environment.WebsiteSearchScriptUrl));
 	}
 
 	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)

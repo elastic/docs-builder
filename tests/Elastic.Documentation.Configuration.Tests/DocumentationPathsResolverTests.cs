@@ -524,4 +524,27 @@ public class DocumentationPathsResolverTests
 		docFs.Paths.Git.Ref.Should().Be("99aabb");
 		docFs.Paths.Git.RepositoryName.Should().Be("worktree-test");
 	}
+
+	[Test]
+	public void Resolve_Scanned_ListsEveryDocsetAtAKnownLocationInDiscoveryOrder()
+	{
+		var fs = RegularRepo();
+		fs.AddFile("/repo/docset.yml", new MockFileData("registry: internal\ntoc: []\n"));
+
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), new DocumentationScopeOptions { Inner = fs }, fs);
+
+		paths.ConfigurationPath.FullName.Should().Be(P(fs, "/repo/docset.yml"));
+		paths.DiscoveredDocsets.Select(f => f.FullName).Should().Equal(P(fs, "/repo/docset.yml"), P(fs, "/repo/docs/docset.yml"));
+	}
+
+	[Test]
+	public void Resolve_ConfigurationFileGiven_DiscoversNothing()
+	{
+		var fs = RegularRepo();
+		var options = new DocumentationScopeOptions { Inner = fs, ConfigurationFile = P(fs, "/repo/docs/docset.yml") };
+
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), options, fs);
+
+		paths.DiscoveredDocsets.Should().BeEmpty();
+	}
 }

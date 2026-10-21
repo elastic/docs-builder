@@ -7,6 +7,7 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Publishing;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Links;
