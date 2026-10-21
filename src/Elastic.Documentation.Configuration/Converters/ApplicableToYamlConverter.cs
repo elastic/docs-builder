@@ -151,9 +151,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		foreach (var unknownKey in unknownKeys)
 		{
 			var suggestion = YamlUnmappedMemberDiagnostics.Suggest(unknownKey, _knownKeys);
-			diagnostics.Add(
-				(Severity.Error, YamlUnmappedMemberDiagnostics.FormatMessage("applies_to", unknownKey, suggestion, _knownKeys))
-			);
+			// Hint while content repositories migrate off keys that sharpyaml now flags; ignored either way.
+			diagnostics.Add((Severity.Hint, YamlUnmappedMemberDiagnostics.FormatMessage("applies_to", unknownKey, suggestion, _knownKeys)));
 		}
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
