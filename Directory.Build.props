@@ -9,8 +9,6 @@
     <PackageReleaseNotes>https://github.com/elastic/elastic-otel-dotnet/releases</PackageReleaseNotes>
   </PropertyGroup>
   
-  <Import Project="$(MSBuildThisFileDirectory)Nullean.Entities.props" />
-
   <PropertyGroup>
     <IsPackable>False</IsPackable>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>

@@ -41,7 +41,7 @@
 
   <ItemGroup>
     <!-- Cross-field rules for the option objects of a command, reported as Argh errors. -->
-    <ProjectReference Include="$(NulleanEntitiesArghProject)" />
+    <PackageReference Include="Nullean.Entities.Argh" />
   </ItemGroup>
 
   <ItemGroup>

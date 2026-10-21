@@ -22,7 +22,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
-		<ProjectReference Include="$(NulleanEntitiesGeneratorProject)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<PackageReference Include="Nullean.Entities" />
 		<ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation.ServiceDefaults\Elastic.Documentation.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
 		<ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />

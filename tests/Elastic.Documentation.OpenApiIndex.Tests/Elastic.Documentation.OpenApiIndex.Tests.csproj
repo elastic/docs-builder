@@ -12,7 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.Documentation.OpenApiIndex\Elastic.Documentation.OpenApiIndex.csproj" />
     <!-- Laws: how the index constraints are tested. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
+    <PackageReference Include="Nullean.Entities.CsCheck" />
   </ItemGroup>
 
   <ItemGroup>

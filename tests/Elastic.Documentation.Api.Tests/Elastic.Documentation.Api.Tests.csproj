@@ -7,7 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\api\Elastic.Documentation.Api\Elastic.Documentation.Api.csproj" />
     <!-- GenAuto: generated requests, hostile ones included. Not shipped. -->
-    <ProjectReference Include="$(NulleanEntitiesCsCheckProject)" />
+    <PackageReference Include="Nullean.Entities.CsCheck" />
   </ItemGroup>
 
   <ItemGroup>

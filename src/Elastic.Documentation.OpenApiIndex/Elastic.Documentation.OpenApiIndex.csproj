@@ -8,8 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="$(NulleanEntitiesProject)" />
-      <ProjectReference Include="$(NulleanEntitiesGeneratorProject)" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+      <PackageReference Include="Nullean.Entities" />
     </ItemGroup>
 
     <ItemGroup>
