@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 
@@ -64,7 +65,11 @@ public class AdmonitionBlock : DirectiveBlock, IBlockTitle, IBlockAppliesTo
 		try
 		{
 			var applicableTo = YamlSerialization.Deserialize<ApplicableTo>(yaml, Build.Catalog.Products);
-			return this.ReportApplicableTo(applicableTo);
+			// Admonitions and dropdowns never reported what the reader found, and `{ ece:, ess: }` reads as the key `ece:`, which would be an error
+			// that fails strict builds of existing docs. Only the hints are reported until those blocks are cleaned up.
+			foreach (var d in ApplicableToReadConstraints.Check(applicableTo).Where(d => d.Severity == Severity.Hint))
+				this.Emit(d.Severity, d.Message, ruleId: d.RuleId);
+			return applicableTo;
 		}
 		catch
 		{

@@ -530,10 +530,12 @@ public partial class DocumentationGenerator
 		var file = DocumentationSet.LinkReferenceFile;
 		var checkedManifest = DocumentationSet.CreateLinkReference();
 		// The rule the writer can break surfaces through the collector (a warning for now, see LinkManifestConstraints); the rest of the manifest's
-		// findings (redirect shadows and chains) are reported by the redirect loader already.
+		// findings (redirect shadows and chains) are reported by the redirect loader already. A build with no git checkout at all (a generated site,
+		// a scratch folder) never warned about its origin and stays quiet; the manifest still carries the finding.
 		var surfaced = new HashSet<string?> { LinkManifestConstraints.LinkManifestOriginNamed.Name };
-		foreach (var diagnostic in checkedManifest.Diagnostics.Where(d => surfaced.Contains(d.RuleId)))
-			Context.Collector.Write(diagnostic);
+		if (Context.Git.IsAvailable)
+			foreach (var diagnostic in checkedManifest.Diagnostics.Where(d => surfaced.Contains(d.RuleId)))
+				Context.Collector.Write(diagnostic);
 		var state = checkedManifest.OrThrowIfMissing();
 		if (checkGraph)
 			ReportLinkGraph(state);
