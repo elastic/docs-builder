@@ -32,7 +32,7 @@ public class DocumentationSetGoldenTests
 
 	internal static MockFileSystem CreateDocsTree()
 	{
-		var fs = new MockFileSystem(new Dictionary<string, MockFileData>(), DocsRoot);
+		var fs = new MockFileSystem();
 		var docsetDirectory = BaselineFile("docset");
 		foreach (var relative in File.ReadAllLines(Path.Join(docsetDirectory, "files.txt")).Where(l => l.Length > 0))
 		{
