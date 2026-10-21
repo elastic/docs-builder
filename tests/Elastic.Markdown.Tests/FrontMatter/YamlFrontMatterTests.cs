@@ -135,7 +135,7 @@ public class CommentOnlyFrontMatter() : DirectiveTest("""
 	}
 }
 
-public class UnknownFrontMatterKeyErrors() : DirectiveTest(
+public class UnknownFrontMatterKeyIsAHint() : DirectiveTest(
 	"""
 	---
 	navigation_title: Test
@@ -147,10 +147,10 @@ public class UnknownFrontMatterKeyErrors() : DirectiveTest(
 )
 {
 	[Test]
-	public void ReportsErrorAtFileLineWithSuggestion()
+	public void ReportsHintAtFileLineWithSuggestion()
 	{
 		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
+		diagnostic.Severity.Should().Be(Severity.Hint);
 		diagnostic.Line.Should().Be(3);
 		diagnostic.Column.Should().Be(1);
 		diagnostic.Length.Should().Be("navigaton_title".Length);
@@ -172,13 +172,13 @@ public class UnknownFrontMatterKeyWithoutSuggestionListsValidKeys() : DirectiveT
 	public void ListsValidKeys()
 	{
 		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
+		diagnostic.Severity.Should().Be(Severity.Hint);
 		diagnostic.Line.Should().Be(2);
 		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'").And.Contain("Valid keys:").And.Contain("navigation_title");
 	}
 }
 
-public class LegacyFrontMatterKeysAreHints() : DirectiveTest(
+public class AllUnknownFrontMatterKeysAreHints() : DirectiveTest(
 	"""
 	---
 	type: connector
@@ -199,9 +199,9 @@ public class LegacyFrontMatterKeysAreHints() : DirectiveTest(
 			.Diagnostics
 			.Select(d => d.Message)
 			.Should()
-			.Contain(m => m.Contains("'type' is not supported in frontmatter"))
+			.Contain(m => m.Contains("Unknown key 'type'"))
 			.And
-			.Contain(m => m.Contains("'comment' is not supported in frontmatter"));
+			.Contain(m => m.Contains("Unknown key 'comment'"));
 	}
 }
 
@@ -581,43 +581,5 @@ public class MappedPagesNotAbsoluteUri() : DirectiveTest("""
 					"Invalid mapped_pages URL: \"not-a-uri-at-all\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\""
 				)
 			);
-	}
-}
-
-// A single known typo in elastic/curator's frontmatter (see MarkdownFile.FrontMatterLegacyKeys) is
-// downgraded to a hint only for that file, and only until the upstream fix merges.
-public class CuratorNavigationTitleTypoOverride
-{
-	private static Diagnostic DeserializeNavigationTite(string filePath)
-	{
-		var fileSystem = new MockFileSystem();
-		var products = TestHelpers.CreateConfigurationContext(fileSystem).ProductsConfiguration;
-		var collector = new TestDiagnosticsCollector();
-		// language=yaml
-		const string yaml = "navigation_tite: reindex";
-
-		_ = YamlSerialization.Deserialize<YamlFrontMatter>(
-			yaml,
-			products,
-			new YamlUnmappedMemberReporting(collector, filePath, policy: MarkdownFile.FrontMatterLegacyKeys())
-		);
-
-		return collector.Diagnostics.Should().ContainSingle().Subject;
-	}
-
-	[Test]
-	public void IsAHintForTheKnownCuratorFile()
-	{
-		var diagnostic = DeserializeNavigationTite("/checkouts/current/curator/docs/reference/ex_reindex.md");
-		diagnostic.Severity.Should().Be(Severity.Hint);
-		diagnostic.Message.Should().Contain("github.com/elastic/curator/pull/1798");
-	}
-
-	[Test]
-	public void IsStillAnErrorForEveryOtherFile()
-	{
-		var diagnostic = DeserializeNavigationTite("/checkouts/current/curator/docs/reference/ex_delete.md");
-		diagnostic.Severity.Should().Be(Severity.Error);
-		diagnostic.Message.Should().Contain("Unknown key 'navigation_tite'").And.Contain("Did you mean 'navigation_title'?");
 	}
 }
