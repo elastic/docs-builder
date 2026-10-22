@@ -299,7 +299,8 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		page.PathParameterNames.Should().Equal("space_id", "id");
 		var space = page.PathParameters.Items[0];
 		space.IsRequired.Should().BeFalse();
-		space.OptionalRoute.Should().BeNull("the row reads as optional by lacking the required badge, without a hint");
+		space.IsOptionalPath.Should().BeTrue();
+		space.OptionalRoute.Should().BeNull("only a path some routes leave out gets the hint");
 		space
 			.DescriptionMarkdown
 			.Should()

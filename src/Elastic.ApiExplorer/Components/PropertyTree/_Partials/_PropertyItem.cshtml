@@ -20,7 +20,7 @@
 		{
 			<span class="required @SchemaHelpers.StatusCssClass">required</span>
 		}
-		@if (Model.OptionalRoute is not null)
+		@if (Model.IsOptionalPath)
 		{
 			<span class="optional @SchemaHelpers.StatusCssClass">optional</span>
 		}
