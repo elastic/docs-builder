@@ -38,6 +38,8 @@ function release() {
 }
 
 describe('mermaid pan', () => {
+    afterEach(() => jest.restoreAllMocks())
+
     it('pans the dragged diagram', () => {
         document.body.innerHTML = diagram('a')
         initMermaid()
@@ -86,5 +88,27 @@ describe('mermaid pan', () => {
             'scale(1) translate(30px, 15px)'
         )
         expect(old.style.transform).toBe('')
+    })
+
+    it('adds no document listeners when pages with diagrams are swapped', () => {
+        const added = jest.spyOn(document, 'addEventListener')
+        document.body.innerHTML = diagram('a')
+        initMermaid()
+        document.body.innerHTML = diagram('b')
+        initMermaid()
+
+        press(viewport('b'), 10, 10)
+        move(40, 25)
+        release()
+
+        // The pan proves both pages were initialized, so an empty list below is not a no-op passing.
+        expect(rendered('b').style.transform).toBe(
+            'scale(1) translate(30px, 15px)'
+        )
+        expect(
+            added.mock.calls
+                .map(([type]) => type)
+                .filter((type) => type === 'mousemove' || type === 'mouseup')
+        ).toEqual([])
     })
 })
