@@ -27,7 +27,7 @@ public class SchemaPageModelTests(ApiExplorerFixture fixture)
 		var page = SchemaPageModel.Create(item.Model, context);
 
 		page.UnionKeyword.Should().Be(UnionKeyword.OneOf);
-		page.UnionVariants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ buckets }", "{ value }"]);
+		page.UnionVariants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 		page.UnionVariants.Variants.Should().OnlyContain(v => v.AnchorId.StartsWith("oneof-variant-"), "links to a variant keep working");
 		page.UnionVariants.Label.Should().BeNull("the section heading already names the keyword");
 		page.Requires.Should().BeNull();

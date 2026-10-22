@@ -61,7 +61,12 @@ public static class NavigationCurrentMarker
 
 			if (IsTag(tag, "li", end: false))
 			{
-				stack.Add(new LiFrame { IsFolder = ElementHasClass(tag, "nav-folder"), InputStart = -1, ClipInsertAt = -1 });
+				stack.Add(new LiFrame
+				{
+					IsFolder = ElementHasClass(tag, "nav-folder") || ElementHasClass(tag, "nav-tree__group"),
+					InputStart = -1,
+					ClipInsertAt = -1
+				});
 				continue;
 			}
 
@@ -114,13 +119,19 @@ public static class NavigationCurrentMarker
 		List<SpanEdit> edits
 	)
 	{
-		if (!IsTag(tag, "a", end: false) || !ElementHasClass(tag, "sidebar-link"))
+		if (!IsTag(tag, "a", end: false))
+			return;
+
+		// The legacy tree marks the link with a class; the design-system tree marks it with aria-current.
+		var isDesignSystemLink = ElementHasClass(tag, "nav-tree__link");
+		if (!isDesignSystemLink && !ElementHasClass(tag, "sidebar-link"))
 			return;
 
 		if (!TryGetQuotedAttribute(tag, "href", out var href) || !NormalizePath(href).SequenceEqual(target))
 			return;
 
-		if (WithCurrentClass(tag) is { } marked)
+		var marked = isDesignSystemLink ? WithAriaCurrent(tag) : WithCurrentClass(tag);
+		if (marked is not null)
 			edits.Add(new SpanEdit(tagStart, tagEnd, marked));
 
 		for (var i = 0; i < stack.Count; i++)
@@ -234,6 +245,10 @@ public static class NavigationCurrentMarker
 
 		return string.Concat(tag[..valueEnd], " current", tag[valueEnd..]);
 	}
+
+	/// <summary>Returns the tag with <c>aria-current="page"</c> added, or <see langword="null"/> when it is already marked.</summary>
+	private static string? WithAriaCurrent(ReadOnlySpan<char> tag) =>
+		tag.IndexOf("aria-current=", StringComparison.Ordinal) >= 0 ? null : string.Concat(tag, " aria-current=\"page\"");
 
 	private static bool HasClass(ReadOnlySpan<char> classes, string name)
 	{

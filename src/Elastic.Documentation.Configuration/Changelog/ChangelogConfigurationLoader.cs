@@ -10,9 +10,8 @@ using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -23,17 +22,30 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
-	private static readonly IDeserializer ConfigurationDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.WithTypeConverter(new YamlLenientListConverter())
-		.WithTypeConverter(new TypeEntryYamlConverter())
-		.Build();
+	private static readonly YamlSerializerOptions ConfigurationOptions = YamlStaticContext.Default.CreateOptions(
+		o => (o with { Converters = [new YamlLenientListConverter(), new TypeEntryYamlConverter()] }).WithUnmappedKeysThrowing()
+	);
 
 	/// <summary>
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
-	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
+	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<ChangelogConfigurationYaml>(
+			yaml,
+			sourceName is null ? ConfigurationOptions : ConfigurationOptions with { SourceName = sourceName }
+		)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content, reporting unknown keys to
+	/// <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	private static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, IDiagnosticsCollector collector, string configPath)
+	{
+		var options = ConfigurationOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, configPath));
+		return YamlSerializer.Deserialize<ChangelogConfigurationYaml>(yaml, options)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+	}
 
 	/// <summary>
 	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
@@ -57,7 +69,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = DeserializeConfiguration(yamlContent);
+		var yamlConfig = DeserializeConfiguration(yamlContent, configPath);
 
 		if (yamlConfig.Rules?.Publish == null)
 			return null;
@@ -86,7 +98,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, finalConfigPath);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
@@ -897,7 +909,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, configPath);
 			return ParseConfiguration(collector, yamlConfig, configPath);
 		}
 		catch (IOException ex)
@@ -910,7 +922,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -945,7 +957,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, foundPath);
 			return ParseConfiguration(collector, yamlConfig, foundPath);
 		}
 		catch (IOException ex)
@@ -958,7 +970,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;

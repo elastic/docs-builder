@@ -23,6 +23,9 @@ cta: <7>
 ---
 ```
 
+Unknown frontmatter keys are ignored and reported as hints, not errors. The message names the key, its line, and the closest
+valid key when there is one, for example `Unknown key 'navigaton_title'. Did you mean 'navigation_title'?`.
+
 1. [`navigation_title`](#navigation-title)
 2. [`meta_title`](#meta-title)
 3. [`description`](#description)

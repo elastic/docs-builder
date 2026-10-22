@@ -123,6 +123,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
+			SiteTopNav = RenderContext.SiteTopNav,
+			ApiCatalogUrl = catalogUrl,
 			ShowSecondaryNav = false,
 			ApiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl),
 			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),

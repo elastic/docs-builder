@@ -519,6 +519,34 @@ public class SectionNavigationTests()
 	}
 
 	[Test]
+	public void SectionTopNavBuilder_TreatsARootRelativeExternalAsALinkInsideTheSite()
+	{
+		// language=yaml
+		var yaml =
+			"""
+		           toc:
+		             - section: Guides
+		               children:
+		                 - toc: observability://
+		                   path_prefix: /observability
+		             - section: APIs
+		               external: /api/
+		             - section: Elastic
+		               external: https://www.elastic.co/
+		           """;
+
+		var (navigation, _, _) = BuildTwoChildSection(yaml);
+		var renderModel = SectionTopNavBuilder.Build(navigation, SiteNavigationFile.Deserialize(yaml));
+
+		var apis = renderModel!.Items[1].Should().BeOfType<TopNavLinkItem>().Subject;
+		apis.Url.Should().Be("/docs/api/", "the site prefix is added");
+		apis.IsExternal.Should().BeFalse();
+		var elastic = renderModel.Items[2].Should().BeOfType<TopNavLinkItem>().Subject;
+		elastic.Url.Should().Be("https://www.elastic.co/");
+		elastic.IsExternal.Should().BeTrue();
+	}
+
+	[Test]
 	public void SectionTopNavBuilder_BuildsTab_WithSectionId()
 	{
 		// language=yaml
