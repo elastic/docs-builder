@@ -36,7 +36,7 @@ public record PublishEnvironment
 	[YamlPropertyName("website_search_url")]
 	public string? WebsiteSearchScriptUrl { get; set; }
 
-	[YamlMember(Alias = "waf_integration_url")]
+	[YamlPropertyName("waf_integration_url")]
 	public string? WafIntegrationUrl { get; set; }
 
 	/// <summary>
