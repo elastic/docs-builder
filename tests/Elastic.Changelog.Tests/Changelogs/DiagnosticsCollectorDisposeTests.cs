@@ -48,8 +48,30 @@ public class DiagnosticsCollectorDisposeTests
 
 		collector.Warnings.Should().Be(1, "severity counters update regardless of reader state");
 		collector.IsStarted.Should().BeFalse();
-		collector.OffendingFiles.Should().Contain("file.yaml", "StopAsync drains the channel synchronously");
+		collector.OffendingFiles.Keys.Should().Contain("file.yaml", "StopAsync drains the channel synchronously");
 		output.Items.Should().HaveCount(1, "outputs receive items from the synchronous drain in StopAsync");
+	}
+
+	// Regression: the codex build failed with "Destination array is not long enough" because the
+	// background reader added to OffendingFiles while the build thread snapshotted it.
+	[Test]
+	public async Task OffendingFiles_SnapshotWhileReaderIsWriting_DoesNotThrow()
+	{
+		var collector = new DiagnosticsCollector([]);
+		_ = collector.StartAsync(CancellationToken.None);
+		var writer = Task.Run(() =>
+		{
+			for (var i = 0; i < 20_000; i++)
+				collector.EmitWarning($"file-{i}.md", "warning");
+		});
+
+		while (!writer.IsCompleted)
+			_ = collector.OffendingFiles.Keys.ToArray();
+
+		await writer;
+		await collector.DisposeAsync();
+
+		collector.OffendingFiles.Should().HaveCount(20_000);
 	}
 
 	[Test]
