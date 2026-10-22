@@ -186,6 +186,7 @@ public partial record OperationPageModel
 		var requestScope = new PropertyTreeScope
 		{
 			Prefix = "req",
+			JsonPath = "",
 			IsRequest = true,
 			DescriptionOverrides = supplemental?.RequestBodyOverrides
 		};

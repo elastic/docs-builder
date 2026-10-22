@@ -93,6 +93,7 @@ public partial class ApiPropertyTreeBuilder
 						scope with
 						{
 							Prefix = optionId,
+							JsonPath = (variant.IsArray ? scope.IntoItems() : scope).JsonPath,
 							Depth = scope.Depth + 1,
 							AncestorRefs = newAncestors,
 							RequiredProperties = null,
