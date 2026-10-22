@@ -23,6 +23,8 @@ function ensureHighlightReady(): Promise<void> {
             hljs.registerLanguage(name, languageFn)
         }
         hljs.registerAliases(['sh'], { languageName: 'shell' })
+        hljs.registerAliases(['fish'], { languageName: 'bash' })
+        hljs.registerAliases(['batch'], { languageName: 'dos' })
     })
 
     return allLanguagesReady
