@@ -29,6 +29,9 @@ public record ExampleDisplay(
 	public string? MediaType { get; init; }
 }
 
+/// <summary>The examples listed under one content type of a request body.</summary>
+internal sealed record RequestContent(string? MediaType, IDictionary<string, IOpenApiExample>? Examples);
+
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
 public record ExampleResponse
 {
@@ -147,40 +150,40 @@ public partial record OperationPageModel
 		else if (!hasRequestScenarios && scenarios.Count > 1)
 			scenarios = CollapseIntoSingleScenario(scenarios);
 
-		// Samples whose language name carries an example suffix (cURL_tag_names) belong to the example of that name.
-		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
-		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
-		return suffixed.Length == 0 ? attached : ExampleCodeSamples.Join(attached, suffixed);
+		// Samples that name an example, by language suffix (cURL_tag_names) or by title, belong to that example.
+		var tied = codeSamples.Where(static c => c.IsTied).ToArray();
+		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => !c.IsTied)]);
+		return tied.Length == 0 ? attached : ExampleCodeSamples.Join(attached, tied);
 	}
 
 	/// <summary>The content types of a request with their examples, the primary one first.</summary>
-	internal static (string? MediaType, IDictionary<string, IOpenApiExample>? Examples)[] RequestContentTypes(
+	internal static IReadOnlyList<RequestContent> RequestContentTypes(
 		IOpenApiRequestBody? requestBody,
 		KeyValuePair<string, IOpenApiMediaType>? primary
 	)
 	{
-		var result = new List<(string?, IDictionary<string, IOpenApiExample>?)>();
+		var result = new List<RequestContent>();
 		if (primary is { } first)
-			result.Add((first.Key, first.Value?.Examples));
+			result.Add(new RequestContent(first.Key, first.Value?.Examples));
 		foreach (var (mediaType, media) in requestBody?.Content ?? new Dictionary<string, IOpenApiMediaType>())
 		{
 			if (primary is not { } p || mediaType != p.Key)
-				result.Add((mediaType, media?.Examples));
+				result.Add(new RequestContent(mediaType, media?.Examples));
 		}
 
-		return [.. result];
+		return result;
 	}
 
 	/// <summary>
 	/// The request examples of every content type, the primary one first. Examples with the same title show as one.
 	/// </summary>
 	internal static IReadOnlyList<ExampleDisplay> MapRequestExamples(
-		IEnumerable<(string? MediaType, IDictionary<string, IOpenApiExample>? Examples)> examplesPerContentType,
+		IEnumerable<RequestContent> requestContent,
 		Func<string?, HtmlString> renderMarkdown,
 		OperationEndpoint? endpoint = null
 	) =>
 		[
-			.. examplesPerContentType.SelectMany(
+			.. requestContent.SelectMany(
 				c => MapExamples(c.Examples, renderMarkdown, endpoint: endpoint).Select(e => e with { MediaType = c.MediaType })
 			).DistinctBy(static e => e.Title, StringComparer.OrdinalIgnoreCase)
 		];

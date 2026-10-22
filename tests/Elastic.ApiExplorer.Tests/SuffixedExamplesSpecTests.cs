@@ -240,6 +240,25 @@ public class SuffixedExamplesSpecTests
 	}
 
 	[Test]
+	public async Task ExampleLevelSamples_OfASummaryThatLooksLikeAKey_AttachToThatExampleNotToItsHumanizedName()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			Spec(
+				Json(
+					Examples(
+						("plain", Example("Search", """{"a":1}""")),
+						("camel", Example("searchRequest", """{"b":2}""", ("Python", "camel()")))
+					)
+				)
+			)
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("Search", "searchRequest");
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("camel()");
+	}
+
+	[Test]
 	public async Task ExampleLevelSamples_OfAnExampleGivenByReference_Attach()
 	{
 		var components = new JsonObject
@@ -277,10 +296,7 @@ public class SuffixedExamplesSpecTests
 			OperationPageModel.PrimaryRequestContent(operation.RequestBody)
 		);
 		var examples = OperationPageModel.MapRequestExamples(contentTypes, static m => new HtmlString(m ?? ""));
-		var samples = ExampleCodeSamples.Combine(
-			OpenApiExtensionReader.ParseCodeSamples(operation),
-			contentTypes.Select(static c => c.Examples)
-		);
+		var samples = ExampleCodeSamples.Combine(OpenApiExtensionReader.ParseCodeSamples(operation), contentTypes);
 		return OperationPageModel.BuildExampleScenarios(examples, responses ?? [], samples);
 	}
 
@@ -354,7 +370,10 @@ public class SuffixedExamplesSpecTests
 		var operation = document.Paths["/{index}/_search"].Operations![HttpMethod.Post];
 		var requestExamples = operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples;
 		var examples = OperationPageModel.MapExamples(requestExamples, static m => new HtmlString(m ?? ""));
-		var samples = ExampleCodeSamples.Combine(OpenApiExtensionReader.ParseCodeSamples(operation), [requestExamples]);
+		var samples = ExampleCodeSamples.Combine(
+			OpenApiExtensionReader.ParseCodeSamples(operation),
+			[new RequestContent("application/json", requestExamples)]
+		);
 		return OperationPageModel.BuildExampleScenarios(examples, [], samples);
 	}
 }
