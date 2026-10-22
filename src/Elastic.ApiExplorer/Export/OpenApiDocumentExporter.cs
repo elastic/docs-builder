@@ -33,6 +33,29 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
+	/// Converts the <c>main</c> spec of every API the generators render. When two generators declare the same
+	/// API key, the first one wins.
+	/// </summary>
+	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
+		IEnumerable<OpenApiGenerator> generators,
+		[EnumeratorCancellation] Cancel ctx = default
+	)
+	{
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var generator in generators)
+		{
+			foreach (var (apiKey, productId, spec) in await generator.ResolveCanonicalDocuments(ctx).ConfigureAwait(false))
+			{
+				if (!seenKeys.Add(apiKey))
+					continue;
+
+				foreach (var doc in ConvertToDocuments(spec, apiKey, productId))
+					yield return doc;
+			}
+		}
+	}
+
+	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
 	/// <paramref name="product"/> is the API key the explorer publishes the spec under. It builds URLs and labels.
 	/// <paramref name="productId"/> is the <c>products.yml</c> id the key binds to. It drives product metadata and defaults to the key.

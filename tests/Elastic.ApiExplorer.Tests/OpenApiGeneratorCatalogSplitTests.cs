@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -74,6 +75,51 @@ public class OpenApiGeneratorCatalogSplitTests
 		documents.Should().ContainSingle();
 		documents[0].ApiKey.Should().Be("elasticsearch");
 		documents[0].Document.Info!.Title.Should().Be("Elasticsearch main");
+	}
+
+	[Test]
+	public async Task ExportDocuments_ApisBeyondElasticsearchAndKibana_AreIndexedOncePerKey()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  cloud-billing:
+			    - spec: cloud-billing.json
+			      product: elasticsearch
+			  cloud-connect:
+			    - spec: cloud-connect.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, SharedProductHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(SpecDocument("Spec"))
+		);
+		var generators = Enumerable
+			.Range(0, 2)
+			.Select(
+				_ => new OpenApiGenerator(
+					NullLoggerFactory.Instance,
+					context,
+					NoopMarkdownStringRenderer.Instance,
+					versionIndexClient,
+					reader
+				)
+			)
+			.ToList();
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		var paths = new List<string>();
+		await foreach (var doc in exporter.ExportDocuments(generators, TestContext.Current!.Execution.CancellationToken))
+			paths.Add(doc.Path);
+
+		paths.Should().BeEquivalentTo(
+			"/docs/api/doc/cloud-billing/operation/operation-ping",
+			"/docs/api/doc/cloud-connect/operation/operation-ping"
+		);
 	}
 
 	[Test]

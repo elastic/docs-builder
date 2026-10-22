@@ -307,23 +307,16 @@ public partial class ElasticsearchMarkdownExporter
 	)
 	{
 		using var versionIndexClient = new VersionIndexClient();
-		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		foreach (var (buildContext, documentationSet) in _apiDocsets)
-		{
-			var generator = new OpenApiGenerator(
+		var generators = _apiDocsets.Select(
+			kv => new OpenApiGenerator(
 				_logFactory,
-				buildContext,
-				new DocumentationGenerator(documentationSet, _logFactory).MarkdownStringRenderer,
+				kv.Key,
+				new DocumentationGenerator(kv.Value, _logFactory).MarkdownStringRenderer,
 				versionIndexClient
-			);
-			foreach (var (apiKey, productId, spec) in await generator.ResolveCanonicalDocuments(ctx))
-			{
-				if (!seenKeys.Add(apiKey))
-					continue;
+			)
+		).ToList();
 
-				foreach (var doc in exporter.ConvertToDocuments(spec, apiKey, productId))
-					yield return doc;
-			}
-		}
+		await foreach (var doc in exporter.ExportDocuments(generators, ctx))
+			yield return doc;
 	}
 }
