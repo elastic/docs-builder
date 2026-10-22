@@ -24,8 +24,10 @@ public class TableOfContentsFile
 	public bool Island { get; set; }
 
 	/// <summary>
-	/// Set of diagnostic hint types to suppress. Deserialized directly from YAML list of strings.
-	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch"
+	/// Set of diagnostic hint types to suppress for the entries in this table of contents.
+	/// Deserialized directly from YAML list of strings.
+	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch", "AutolinkElasticCoDocs"
+	/// (the latter is only honoured from <c>docset.yml</c>).
 	/// </summary>
 	[YamlPropertyName("suppress")]
 	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
