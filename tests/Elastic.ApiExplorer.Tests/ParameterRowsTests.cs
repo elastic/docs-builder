@@ -310,6 +310,25 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		page.DescriptionMarkdown.Should().Be("Get a thing.");
 	}
 
+	[Test]
+	public async Task Render_SpaceIdPathParameter_ShowsTheOptionalBadgeWithoutTheHint()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things", new OpenApiPathItem(), "api");
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		var html = await _PropertyList.Create(page.PathParameters).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().Contain("<span class=\"optional");
+		html.Should().NotContain("api-path-param-optional-hint");
+	}
+
 	private ApiRenderContext RenderContext(INavigationItem current) =>
 		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
 		{
