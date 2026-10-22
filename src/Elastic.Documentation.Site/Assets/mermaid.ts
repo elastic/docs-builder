@@ -26,7 +26,6 @@ interface DiagramState {
     zoom: number
     panX: number
     panY: number
-    isDragging: boolean
     startX: number
     startY: number
 }
@@ -55,6 +54,26 @@ function applyTransform(rendered: HTMLElement, state: DiagramState): void {
     rendered.style.transform = `scale(${state.zoom}) translate(${state.panX}px, ${state.panY}px)`
 }
 
+let drag: {
+    state: DiagramState
+    viewport: HTMLElement
+    rendered: HTMLElement
+} | null = null
+
+// One pair for every diagram, so a page swapped out by htmx is not kept alive through document listeners.
+document.addEventListener('mousemove', (e: MouseEvent) => {
+    if (!drag) return
+    drag.state.panX = (e.clientX - drag.state.startX) / drag.state.zoom
+    drag.state.panY = (e.clientY - drag.state.startY) / drag.state.zoom
+    applyTransform(drag.rendered, drag.state)
+})
+
+document.addEventListener('mouseup', () => {
+    if (!drag) return
+    drag.viewport.classList.remove('is-dragging')
+    drag = null
+})
+
 /**
  * Set up zoom and pan controls for a mermaid container
  */
@@ -68,7 +87,6 @@ function setupControls(
         zoom: 1,
         panX: 0,
         panY: 0,
-        isDragging: false,
         startX: 0,
         startY: 0,
     }
@@ -138,25 +156,11 @@ function setupControls(
     // Pan with mouse drag
     viewport.addEventListener('mousedown', (e: MouseEvent) => {
         if (e.button !== 0) return // Only left click
-        state.isDragging = true
         state.startX = e.clientX - state.panX * state.zoom
         state.startY = e.clientY - state.panY * state.zoom
         viewport.classList.add('is-dragging')
+        drag = { state, viewport, rendered }
         e.preventDefault()
-    })
-
-    document.addEventListener('mousemove', (e: MouseEvent) => {
-        if (!state.isDragging) return
-        state.panX = (e.clientX - state.startX) / state.zoom
-        state.panY = (e.clientY - state.startY) / state.zoom
-        applyTransform(rendered, state)
-    })
-
-    document.addEventListener('mouseup', () => {
-        if (state.isDragging) {
-            state.isDragging = false
-            viewport.classList.remove('is-dragging')
-        }
     })
 
     // Zoom with wheel (requires Ctrl/Cmd)
@@ -235,10 +239,10 @@ function openFullscreenModal(imgSrc: string): void {
         zoom: 1,
         panX: 0,
         panY: 0,
-        isDragging: false,
         startX: 0,
         startY: 0,
     }
+    let isDragging = false
 
     // Store initial zoom for reset
     let initialZoom = 1
@@ -293,7 +297,7 @@ function openFullscreenModal(imgSrc: string): void {
     // Modal pan handlers
     viewport.addEventListener('mousedown', (e: MouseEvent) => {
         if (e.button !== 0) return
-        state.isDragging = true
+        isDragging = true
         state.startX = e.clientX - state.panX * state.zoom
         state.startY = e.clientY - state.panY * state.zoom
         viewport.classList.add('is-dragging')
@@ -301,15 +305,15 @@ function openFullscreenModal(imgSrc: string): void {
     })
 
     const onMouseMove = (e: MouseEvent) => {
-        if (!state.isDragging) return
+        if (!isDragging) return
         state.panX = (e.clientX - state.startX) / state.zoom
         state.panY = (e.clientY - state.startY) / state.zoom
         applyTransform(rendered, state)
     }
 
     const onMouseUp = () => {
-        if (state.isDragging) {
-            state.isDragging = false
+        if (isDragging) {
+            isDragging = false
             viewport.classList.remove('is-dragging')
         }
     }
