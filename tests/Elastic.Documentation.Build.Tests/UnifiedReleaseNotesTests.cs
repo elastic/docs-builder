@@ -187,7 +187,9 @@ public class UnifiedReleaseNotesTests : IDisposable
 				      - file: 9.5.6/breaking-changes.md
 				      - file: 9.5.6/deprecations.md
 
-				"""
+				""".ReplaceLineEndings(
+					"\n"
+				)
 			);
 
 		files["kibana/index.md"].Should().Contain("navigation_title: Kibana\n");

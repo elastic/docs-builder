@@ -8,6 +8,18 @@ The `docset.yml` file is the configuration file for a documentation set. At mini
 
 For an overview of navigation concepts and common patterns, see [Navigation](../navigation.md).
 
+## Unknown keys
+
+Unknown keys in `docset.yml` and in nested `toc.yml` files are build errors, so a typo is never silently ignored. Each error points at the key, shows where it sits in the file, and suggests the closest valid key:
+
+```text
+Error: Unknown key 'fiel' in $.toc[1]. Did you mean 'file'?
+ 5 │   - fiel: other.md
+   ·     ────
+```
+
+If no valid key is close, the error lists the valid keys for that position. The same applies to [frontmatter](../../../syntax/frontmatter.md), `redirects.yml`, `{settings}` files, and the other YAML the build reads.
+
 ## `project`
 
 The name of the project.

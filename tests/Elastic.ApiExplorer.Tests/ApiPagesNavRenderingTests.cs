@@ -20,7 +20,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class ApiPagesNavRenderingTests
+public partial class ApiPagesNavRenderingTests
 {
 	[Test]
 	public async Task Render_Isolated_HostsProductAndVersionAheadOfTheTree()

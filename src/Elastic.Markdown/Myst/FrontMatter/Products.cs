@@ -4,40 +4,46 @@
 
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Suggestions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using Elastic.Documentation.Diagnostics;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.FrontMatter;
 
-public class ProductConverter(ProductsConfiguration products) : IYamlTypeConverter
+public class ProductConverter(ProductsConfiguration products) : YamlConverter<Product>
 {
-	public bool Accepts(Type type) => type == typeof(Product);
+	private static readonly string[] KnownKeys = ["id"];
 
-	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override Product Read(YamlReader reader)
 	{
-		if (parser.Current is Scalar)
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
-			var value = parser.Consume<Scalar>().Value;
+			var value = reader.ScalarValue;
+			_ = reader.Read();
 			throw new InvalidProductException(
 				$"Invalid YAML format. Products must be specified as a mapping with an 'id' field. Found scalar value: '{value}'. Example format:\nproducts:\n  - id: apm",
 				products
 			);
 		}
 
-		_ = parser.Consume<MappingStart>();
+		if (reader.TokenType != YamlTokenType.StartMapping)
+			throw new InvalidProductException("Product entries must be a mapping with an 'id' field.", products);
+
+		_ = reader.Read(); // consume StartMapping
 		string? productId = null;
 
-		while (parser.Current is not MappingEnd)
+		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
-			var key = parser.Consume<Scalar>().Value;
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
 			if (key == "id")
-				productId = parser.Consume<Scalar>().Value;
+			{
+				productId = reader.GetScalarValue();
+				_ = reader.Read();
+			}
 			else
-				parser.SkipThisAndNestedEvents();
+				reader.SkipOrReportUnmapped(typeof(Product), KnownKeys, key, null);
 		}
-
-		_ = parser.Consume<MappingEnd>();
+		_ = reader.Read(); // consume EndMapping
 
 		if (string.IsNullOrWhiteSpace(productId))
 			throw new InvalidProductException("Product 'id' field is required. Example format:\nproducts:\n  - id: apm", products);
@@ -48,7 +54,8 @@ public class ProductConverter(ProductsConfiguration products) : IYamlTypeConvert
 		throw new InvalidProductException(productId, products);
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, Product value) =>
+		throw new NotSupportedException("Product YAML serialization is not supported; products front matter is only ever read from YAML.");
 }
 
 public class InvalidProductException(string invalidValue, ProductsConfiguration products) : Exception(

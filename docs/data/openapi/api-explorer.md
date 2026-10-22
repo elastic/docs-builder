@@ -154,7 +154,7 @@ specs per product are not currently supported.
 
 On assembler builds a bar under the site header says which API you are reading: `[logo] Elasticsearch API ⇅ [main ▾]`. The API name opens a switcher that lists every API whose spec loaded (each with its logo, plus an **All APIs** link back to the catalog), and the version picker sits right beside it. Each switcher row uses that spec's title (`info.title`), the same text as the landing page heading. On the right, the **Download OpenAPI spec** button downloads the whole spec as JSON or YAML; on narrow screens it shows only its icon. The page itself starts with the full breadcrumb, which begins at Docs. The bar looks the same whether or not `navigation-preview` is on. The catalog page has no API, so it has no bar.
 
-The left navigation starts with a **Find in all APIs** box. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
+The left navigation starts with a finder, labelled **Press ❲/❳ to find API**. It looks up operations by title across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Press <kbd>/</kbd> anywhere on the page, outside a text field, to jump to the box, as on GitHub. The shortcut is off on narrow screens, where the navigation sits in a drawer. Isolated and air-gapped builds omit it. Isolated builds have no site header and no bar, so they put the API name, switcher and version picker at the top of the left navigation instead. Markdown docs pages do not get the filter box back.
 
 ## Remote spec resolution
 
@@ -474,7 +474,7 @@ Use the `x-displayName` extension (from [Redocly](https://redocly.com/docs-legac
 **Behavior:**
 
 - When `x-displayName` is present, it's used for navigation titles, tag landing page titles, and section headings on the main API overview
-- When `x-displayName` is absent, the canonical tag `name` is used as a fallback
+- When `x-displayName` is absent, the canonical tag `name` is used as a fallback. If the name starts with a lowercase word (such as `elasticsearch projects`), its first letter is capitalized (`Elasticsearch projects`). Names that start with a code-like token, such as `ml_anomaly` or `v2`, or that already start with a capital letter are shown as written
 - Tag landing page URLs and tag URL segments are derived from the canonical tag `name`
 
 :::{note}

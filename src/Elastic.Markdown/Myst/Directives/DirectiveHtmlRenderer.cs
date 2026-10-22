@@ -41,7 +41,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -54,6 +54,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	protected override void Write(HtmlRenderer renderer, DirectiveBlock directiveBlock)
 	{
 		_ = renderer.EnsureLine();
+
+		if (DesignSystemDirectives.IsEnabled(directiveBlock) && DesignSystemDirectives.TryWrite(renderer, directiveBlock))
+			return;
 
 		switch (directiveBlock)
 		{
@@ -342,14 +345,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			});
 		}
 
-		var slice = GetStartedView.Create(new GetStartedViewModel
+		var model = new GetStartedViewModel
 		{
 			DirectiveBlock = block,
 			Title = data.Title,
 			IntroHtml = RenderInlineMarkdown(data.Intro),
 			Steps = steps,
 			SitePathPrefix = block.Build.UrlPathPrefix
-		});
+		};
+		var slice = DesignSystemDirectives.IsEnabled(block) ? GetStartedDesignView.Create(model) : GetStartedView.Create(model);
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -730,6 +734,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			DesignSystem = DesignSystemDirectives.IsEnabled(block),
 			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{

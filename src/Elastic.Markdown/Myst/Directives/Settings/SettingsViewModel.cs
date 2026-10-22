@@ -20,6 +20,9 @@ public class SettingsViewModel
 
 	public required VersionsConfiguration VersionsConfig { get; init; }
 
+	/// <summary>Renders applies-to badges with the design system. Set when NAVIGATION_PREVIEW is on.</summary>
+	public bool DesignSystem { get; init; }
+
 	/// <summary>Markdown heading level for each group section (1–6).</summary>
 	public required int GroupHeadingLevel { get; init; }
 
@@ -83,6 +86,7 @@ public class SettingsViewModel
 			AppliesTo = appliesTo,
 			Inline = true,
 			VersionsConfig = VersionsConfig,
+			DesignSystem = DesignSystem,
 			BadgePlacement = placement
 		};
 

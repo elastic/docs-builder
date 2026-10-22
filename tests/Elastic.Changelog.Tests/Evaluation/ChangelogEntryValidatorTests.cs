@@ -17,7 +17,8 @@ public class ChangelogEntryValidatorTests
 	private static ChangelogEntryDto ParseYaml(string yaml)
 	{
 		var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-		return ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized) ?? new ChangelogEntryDto();
+		return SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(normalized, ReleaseNotesSerialization.GetEntryDeserializerOptions())
+			?? new ChangelogEntryDto();
 	}
 
 	private static IReadOnlyList<EntryFileFinding> Validate(
