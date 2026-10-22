@@ -1,4 +1,7 @@
-import { syncApiVersionSwitcher } from './api-version-switcher'
+import {
+    syncApiVersionSwitcher,
+    syncIsolatedHeaderTitle,
+} from './api-chrome-sync'
 
 const picker = (hrefs: string[]) =>
     `<div id="api-version-switcher">${hrefs
@@ -47,5 +50,34 @@ describe('api version switcher sync', () => {
         expect(document.querySelectorAll('a')[1].getAttribute('href')).toBe(
             '/api/doc/es/v8'
         )
+    })
+})
+
+describe('isolated header title sync', () => {
+    const header = (title: string) =>
+        `<div id="isolated-header"><elastic-docs-header title="${title}"></elastic-docs-header></div>`
+
+    beforeEach(() => {
+        document.body.innerHTML = header('Elasticsearch API')
+    })
+
+    it('takes the title of the API that was swapped in', () => {
+        const changed = syncIsolatedHeaderTitle(
+            `<html><body>${header('Kibana API')}</body></html>`
+        )
+
+        expect(changed).toBe(true)
+        expect(
+            document.querySelector('elastic-docs-header')?.getAttribute('title')
+        ).toBe('Kibana API')
+    })
+
+    it('leaves the title alone when the response has no header', () => {
+        const changed = syncIsolatedHeaderTitle('<html><body></body></html>')
+
+        expect(changed).toBe(false)
+        expect(
+            document.querySelector('elastic-docs-header')?.getAttribute('title')
+        ).toBe('Elasticsearch API')
     })
 })

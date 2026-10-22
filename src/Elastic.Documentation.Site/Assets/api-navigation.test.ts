@@ -1,18 +1,8 @@
-import { changesApiVersion, changesPageChrome } from './api-navigation'
+import { changesApiTree, changesPageChrome } from './api-navigation'
 
 const root = '/docs'
 
 describe('changesPageChrome', () => {
-    it('reloads when the target is a different API product', () => {
-        expect(
-            changesPageChrome(
-                '/docs/api/doc/kibana-serverless/operation/get-actions',
-                '/docs/api/doc/elasticsearch/group/endpoint-analytics',
-                root
-            )
-        ).toBe(true)
-    })
-
     it('reloads between a docs page and an API page, in both directions', () => {
         expect(
             changesPageChrome(
@@ -36,6 +26,16 @@ describe('changesPageChrome', () => {
             changesPageChrome(
                 '/docs/get-started/the-stack',
                 '/docs/deploy-manage/',
+                root
+            )
+        ).toBe(false)
+    })
+
+    it('stays boosted between API products', () => {
+        expect(
+            changesPageChrome(
+                '/docs/api/doc/kibana-serverless/operation/get-actions',
+                '/docs/api/doc/elasticsearch/group/endpoint-analytics',
                 root
             )
         ).toBe(false)
@@ -89,35 +89,44 @@ describe('changesPageChrome', () => {
     })
 
     it('works without a root path, as in isolated builds', () => {
+        expect(changesPageChrome('/api/doc/kibana', '/get-started/', '')).toBe(
+            true
+        )
         expect(
             changesPageChrome('/api/doc/kibana', '/api/doc/elasticsearch', '')
-        ).toBe(true)
+        ).toBe(false)
     })
 })
 
-describe('changesApiVersion', () => {
+describe('changesApiTree', () => {
     const main = '/docs/api/doc/elasticsearch/operation/operation-ping'
     const v9 = '/docs/api/doc/elasticsearch/v9/operation/operation-ping'
     const v8 = '/docs/api/doc/elasticsearch/v8'
 
     it('is true between main and a released version, in both directions', () => {
-        expect(changesApiVersion(v9, main)).toBe(true)
-        expect(changesApiVersion(main, v9)).toBe(true)
+        expect(changesApiTree(v9, main)).toBe(true)
+        expect(changesApiTree(main, v9)).toBe(true)
+    })
+
+    it('is true between two API products', () => {
+        expect(
+            changesApiTree('/docs/api/doc/kibana/operation/get-actions', main)
+        ).toBe(true)
     })
 
     it('is true between two released versions', () => {
-        expect(changesApiVersion(v8, v9)).toBe(true)
+        expect(changesApiTree(v8, v9)).toBe(true)
     })
 
     it('is false within one version', () => {
         expect(
-            changesApiVersion(
+            changesApiTree(
                 '/docs/api/doc/elasticsearch/v9/group/endpoint-search',
                 v9
             )
         ).toBe(false)
         expect(
-            changesApiVersion(
+            changesApiTree(
                 '/docs/api/doc/elasticsearch/group/endpoint-search',
                 main
             )
@@ -125,7 +134,7 @@ describe('changesApiVersion', () => {
     })
 
     it('is false when either path is not an API product page', () => {
-        expect(changesApiVersion('/docs/get-started', main)).toBe(false)
-        expect(changesApiVersion(main, '/docs/api')).toBe(false)
+        expect(changesApiTree('/docs/get-started', main)).toBe(false)
+        expect(changesApiTree(main, '/docs/api')).toBe(false)
     })
 })

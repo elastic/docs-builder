@@ -1,4 +1,4 @@
-import { changesApiVersion } from './api-navigation'
+import { changesApiTree } from './api-navigation'
 import { prefersReducedMotion } from './motion'
 import { initPagesNavScroll } from './pages-nav-scroll'
 import { throttle } from 'lodash'
@@ -946,9 +946,7 @@ function retargetArticleSwap(event: Event) {
     ) {
         return
     }
-    if (
-        changesApiVersion(detail.pathInfo?.requestPath ?? '', location.pathname)
-    ) {
+    if (changesApiTree(detail.pathInfo?.requestPath ?? '', location.pathname)) {
         return
     }
     tryRetargetSwap(
