@@ -16,8 +16,9 @@ export const useSlashToFocus = ({ enabled, inputRef }: Options) => {
         if (!enabled) return
 
         const handleKeyDown = (e: KeyboardEvent) => {
-            // Shift is allowed: "/" is Shift+7 on some keyboard layouts.
-            if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return
+            if (e.ctrlKey || e.metaKey || e.altKey) return
+            // Shift is allowed for "/" (Shift+7 on some layouts) but not for "s", so a capital S is ignored.
+            if (e.key !== '/' && !(e.key === 's' && !e.shiftKey)) return
             if (e.defaultPrevented || isEditableTarget(e.target)) return
 
             const input = inputRef.current
