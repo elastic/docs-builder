@@ -1,6 +1,7 @@
 // Entry point of the design-system bundle, loaded instead of main.ts when NAVIGATION_PREVIEW is on.
 // Everything here is progressive enhancement: pages are complete HTML without it. Enhancements bind to data-* attributes,
 // never to styling classes, so a theme can rewrite the CSS without touching behaviour.
+import { initApiChromeSync } from './api-chrome-sync'
 import { initAskAi } from './ds/ask-ai'
 import { initCarousels } from './ds/carousel'
 import { initCopyButtons, initCopyText } from './ds/copy'
@@ -67,6 +68,7 @@ function init(scope: ParentNode = document) {
 
 bindOutsideClick()
 initDocsBarSync()
+initApiChromeSync()
 bindSearchShortcut()
 document.addEventListener('DOMContentLoaded', () => init())
 // htmx swaps #main-container; re-bind inside the swapped content
