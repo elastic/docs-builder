@@ -52,7 +52,7 @@ const NavigationSearchInner = ({
     const typeFilter = parseTypeFilter(type)
     const resolvedPlaceholder =
         placeholder ??
-        (typeFilter === 'api' ? 'Press ❲/❳ to find API' : undefined)
+        (typeFilter === 'api' ? 'Type ❲/❳ to explore API' : undefined)
 
     if (config.airGapped) {
         return null
