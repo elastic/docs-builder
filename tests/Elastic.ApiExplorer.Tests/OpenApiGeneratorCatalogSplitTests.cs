@@ -77,6 +77,35 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task ResolveCanonicalDocuments_KeyDiffersFromProduct_ReturnsBoth()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  cloud-billing:
+			    - spec: cloud-billing.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, SharedProductHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Cloud Billing API"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().ContainSingle();
+		documents[0].ApiKey.Should().Be("cloud-billing", "the key builds the URL");
+		documents[0].ProductId.Should().Be("elasticsearch", "the product id drives product metadata");
+	}
+
+	[Test]
 	public async Task ResolveCanonicalDocuments_NoMainVersion_LeavesTheApiOut()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

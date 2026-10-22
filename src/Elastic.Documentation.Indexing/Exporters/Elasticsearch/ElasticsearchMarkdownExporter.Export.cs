@@ -316,12 +316,12 @@ public partial class ElasticsearchMarkdownExporter
 				new DocumentationGenerator(documentationSet, _logFactory).MarkdownStringRenderer,
 				versionIndexClient
 			);
-			foreach (var (apiKey, spec) in await generator.ResolveCanonicalDocuments(ctx))
+			foreach (var (apiKey, productId, spec) in await generator.ResolveCanonicalDocuments(ctx))
 			{
 				if (!seenKeys.Add(apiKey))
 					continue;
 
-				foreach (var doc in exporter.ConvertToDocuments(spec, apiKey))
+				foreach (var doc in exporter.ConvertToDocuments(spec, apiKey, productId))
 					yield return doc;
 			}
 		}

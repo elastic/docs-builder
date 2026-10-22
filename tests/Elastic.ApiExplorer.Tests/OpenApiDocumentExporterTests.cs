@@ -9,10 +9,12 @@ using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using FakeItEasy;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 using static System.StringComparison;
@@ -159,6 +161,32 @@ public class OpenApiDocumentExporterTests
 			doc.Description.Should().NotContain("methods and paths for this operation", "the fixed method list is not the search hit");
 			doc.Description.Should().NotContain("method and path for this operation", "the fixed method list is not the search hit");
 		}
+	}
+
+	[Test]
+	public void ConvertToDocuments_KeyDiffersFromProduct_InfersFromProductAndKeepsKeyInUrl()
+	{
+		var inferrer = A.Fake<IDocumentInferrerService>();
+		A.CallTo(() => inferrer.InferForOpenApi(A<string>._)).Returns(new DocumentInferenceResult());
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/api/v1/deployments"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation { OperationId = "list-deployments", Summary = "List Deployments" }
+					}
+				}
+			}
+		};
+
+		var doc = new OpenApiDocumentExporter(StackVersions(), inferrer).ConvertToDocuments(spec, "cloud", "cloud-hosted").Single();
+
+		doc.Path.Should().StartWith("/docs/api/doc/cloud/operation/");
+		A.CallTo(() => inferrer.InferForOpenApi("cloud-hosted")).MustHaveHappenedOnceExactly();
+		A.CallTo(() => inferrer.InferForOpenApi("cloud")).MustNotHaveHappened();
 	}
 
 	private static async Task<List<DocumentationDocument>> FetchDocuments(OpenApiDocumentExporter exporter, int limitPerSource, Cancel ctx)

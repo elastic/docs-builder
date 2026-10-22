@@ -158,15 +158,20 @@ public class OpenApiGenerator(
 	/// The <c>main</c> document of every configured API, keyed by the same API key the explorer publishes
 	/// under <c>/api/doc/{key}/</c>. An API with no <c>main</c> document has no page at that path, so it is left out.
 	/// </summary>
-	public async Task<IReadOnlyList<(string ApiKey, OpenApiDocument Document)>> ResolveCanonicalDocuments(Cancel ctx = default)
+	public async Task<IReadOnlyList<(string ApiKey, string ProductId, OpenApiDocument Document)>> ResolveCanonicalDocuments(
+		Cancel ctx = default
+	)
 	{
 		var configs = ApiConfigsToRender();
 		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
 		return [
 			.. configs
-				.Zip(resolved, (c, r) => (c.Key, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document))
+				.Zip(
+					resolved,
+					(c, r) => (c.Key, c.Value.Product.Id, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document)
+				)
 				.Where(x => x.Document is not null)
-				.Select(x => (x.Key, x.Document!))
+				.Select(x => (ApiKey: x.Key, ProductId: x.Id, x.Document!))
 		];
 	}
 

@@ -34,9 +34,10 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 
 	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
-	/// <paramref name="product"/> is the API key the explorer publishes the spec under.
+	/// <paramref name="product"/> is the API key the explorer publishes the spec under. It builds URLs and labels.
+	/// <paramref name="productId"/> is the <c>products.yml</c> id the key binds to. It drives product metadata and defaults to the key.
 	/// </summary>
-	public IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
+	public IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product, string? productId = null)
 	{
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
 		// All API products currently version against Stack
@@ -99,7 +100,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					?? [];
 
 				// Infer product and repository metadata
-				var inference = documentInferrer?.InferForOpenApi(product);
+				var inference = documentInferrer?.InferForOpenApi(productId ?? product);
 
 				yield return new DocumentationDocument
 				{
