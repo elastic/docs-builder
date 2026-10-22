@@ -178,6 +178,9 @@ public record ApiProperty
 	/// <summary>For a path parameter that some routes leave out, the route to use without it; the row reads "optional".</summary>
 	public string? OptionalRoute { get; init; }
 
+	/// <summary>Whether a path parameter is optional, either because some routes leave it out or because it is not required; the row reads "optional".</summary>
+	public bool IsOptionalPath { get; init; }
+
 	/// <summary>Whether the value can be <c>null</c>; the type annotation leaves <c>null</c> out, so a badge says it.</summary>
 	public bool IsNullable { get; init; }
 	public required bool IsLast { get; init; }

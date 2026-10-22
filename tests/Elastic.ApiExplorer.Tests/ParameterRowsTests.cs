@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -270,6 +271,62 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		section.Should().Contain("<dt id=\"query-tags\">");
 		section.Should().Contain("<dt id=\"query-tags-string\">");
 		section.Should().Contain("&lt;string&gt;");
+	}
+
+	[Test]
+	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterFirst()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things/{id}</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+				+ "\n\nGet a thing.",
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things/{id}", new OpenApiPathItem(), "api");
+
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		page.PathParameterNames.Should().Equal("space_id", "id");
+		var space = page.PathParameters.Items[0];
+		space.IsRequired.Should().BeFalse();
+		space.IsOptionalPath.Should().BeTrue();
+		space.OptionalRoute.Should().BeNull("only a path some routes leave out gets the hint");
+		space
+			.DescriptionMarkdown
+			.Should()
+			.Be(
+				"An identifier for the space. If `space_id` is not provided in the URL, the default space is used. Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information."
+			);
+		page.DescriptionMarkdown.Should().Be("Get a thing.");
+	}
+
+	[Test]
+	public async Task Render_SpaceIdPathParameter_ShowsTheOptionalBadgeWithoutTheHint()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things", new OpenApiPathItem(), "api");
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		var html = await _PropertyList.Create(page.PathParameters).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().Contain("<span class=\"optional");
+		html.Should().NotContain("api-path-param-optional-hint");
 	}
 
 	private ApiRenderContext RenderContext(INavigationItem current) =>

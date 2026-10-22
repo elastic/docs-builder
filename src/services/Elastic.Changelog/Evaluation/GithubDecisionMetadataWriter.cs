@@ -44,9 +44,30 @@ internal class GithubDecisionMetadataWriter(ILoggerFactory logFactory, IRunnerTe
 		_ = fileSystem.Directory.CreateDirectory(dir);
 
 		var path = fileSystem.Path.Combine(dir, MetadataFilename);
+		metadata = await CarryForward(metadata, path, ctx);
 		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await fileSystem.File.WriteAllTextAsync(path, json, ctx);
 		_logger.LogInformation("Wrote decision metadata to {Path}", path);
+	}
+
+	/// <summary>
+	/// Each gate overwrites the file, but the release-note outcome and the opt-in flag are decided by the first gate that knows them,
+	/// so a later write that doesn't set them must not erase them.
+	/// </summary>
+	private async Task<GithubDecisionMetadata> CarryForward(GithubDecisionMetadata metadata, string path, Cancel ctx)
+	{
+		if (metadata.Outcome is not null && metadata.CommentOnSuccess)
+			return metadata;
+
+		var existing = await ReadAsync(path, ctx);
+		if (existing is null || existing.PrNumber != metadata.PrNumber)
+			return metadata;
+
+		return metadata with
+		{
+			Outcome = metadata.Outcome ?? existing.Outcome,
+			CommentOnSuccess = metadata.CommentOnSuccess || existing.CommentOnSuccess
+		};
 	}
 
 	/// <summary>Returns <paramref name="path"/> relative to the working directory when it lies inside it, otherwise unchanged.</summary>

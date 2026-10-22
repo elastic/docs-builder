@@ -39,6 +39,65 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void BuildExampleScenarios_SuffixedSamplesJoinTheExampleOfTheSameTitle()
+	{
+		var first = new ExampleDisplay("A simple term search", null, /*lang=json,strict*/  """{"query":{"term":{"a":1}}}""", null);
+		var second = new ExampleDisplay("A point in time search", null, /*lang=json,strict*/  """{"pit":{"id":"x"}}""", null);
+		CodeSample[] samples =
+		[
+			new("Console", "GET /_search\n{\"query\":{\"term\":{\"a\":1}}}", "language-console"),
+			new("Python", "first()", "language-python"),
+			new("Console", "POST /_search\n{\"pit\":{\"id\":\"x\"}}", "language-console") { Scenario = "A point in time search" },
+			new("Python", "second()", "language-python") { Scenario = "A point in time search" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([first, second], [], samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("A simple term search", "A point in time search");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().Contain("first()");
+		scenarios[1].RequestJson.Should().Contain("pit");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Contain("second()");
+		scenarios[1].CodeSamplesIncludeRequest.Should().BeTrue();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_SuffixMatchesTheHumanizedKeyOfAnExampleWithoutSummary()
+	{
+		var first = new ExampleDisplay("First", null, /*lang=json,strict*/  """{"a":1}""", null);
+		var second = new ExampleDisplay(
+			OperationPageModel.HumanizeExampleKey("secondRequest"),
+			null, /*lang=json,strict*/
+			"""{"b":2}""",
+			null
+		);
+		CodeSample[] samples =
+		[
+			new("Console", "GET /_x\n{\"a\":1}", "language-console"),
+			new("Console", "GET /_x\n{\"b\":2}", "language-console") { Scenario = "secondRequest" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([first, second], [], samples);
+
+		scenarios.Should().HaveCount(2);
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
+	public void BuildExampleScenarios_SuffixedSamplesOfAnotherTitleStillBecomeTheirOwnExample()
+	{
+		var first = new ExampleDisplay("First", null, /*lang=json,strict*/  """{"a":1}""", null);
+		CodeSample[] samples =
+		[
+			new("Console", "GET /_x\n{\"a\":1}", "language-console"),
+			new("Console", "GET /_x?y=1", "language-console") { Scenario = "Another" }
+		];
+
+		var scenarios = OperationPageModel.BuildExampleScenarios([first], [], samples);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Another");
+	}
+
+	[Test]
 	public void BuildExampleScenarios_SuffixedSamplesBecomeTheirOwnExamples()
 	{
 		var ok = new ExampleDisplay("searchDashboardsResponse", null, /*lang=json,strict*/  """{"items":[]}""", null, "200");
@@ -502,6 +561,61 @@ public class ExampleScenarioTests
 		var curl = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples.Single(static s => s.IsCurl);
 
 		curl.Source.Should().Be("curl -X POST -H \"kbn-xsrf: true\" -d '{}' \"https://localhost:9200/_search\"");
+	}
+
+	[Test]
+	public void GeneratedCodeSamples_ExampleOfAnotherContentType_GetsNoCurlFromTheJsonTemplate()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Plain text",
+			TabId = "plain-text",
+			RequestJson = "hello",
+			RequestLine = ("POST", "/_x"),
+			MediaType = "text/plain"
+		};
+		var spec = new[]
+		{
+			new CodeSample(
+				"curl",
+				"curl -X POST -H \"Content-Type: application/json\" -d '{}' \"${ELASTICSEARCH_URL}/_x\"",
+				"language-curl"
+			)
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_x")], "/_x");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples;
+
+		samples.Select(static s => s.Language).Should().Equal("Console");
+	}
+
+	[Test]
+	[Arguments("application/json; charset=utf-8")]
+	[Arguments("application/problem+json; charset=utf-8")]
+	[Arguments("APPLICATION/JSON")]
+	public void GeneratedCodeSamples_JsonExampleWithMediaTypeParameters_StillGetsCurl(string mediaType)
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Json",
+			TabId = "json",
+			RequestJson = "{}",
+			RequestLine = ("POST", "/_x"),
+			MediaType = mediaType
+		};
+		var spec = new[]
+		{
+			new CodeSample(
+				"curl",
+				"curl -X POST -H \"Content-Type: application/json\" -d '{}' \"${ELASTICSEARCH_URL}/_x\"",
+				"language-curl"
+			)
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_x")], "/_x");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples;
+
+		samples.Select(static s => s.Language).Should().Equal("Console", "curl");
 	}
 
 	[Test]

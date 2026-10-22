@@ -468,4 +468,106 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("https://github.com/elastic/repo/blob/main/docs/changelog.yml");
 		body.Should().NotContain("/home/runner");
 	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Included_ListsTypeProductsAndAreas()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = true,
+			Type = "feature",
+			Products = "kibana",
+			Areas = "Dashboards"
+		});
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body
+			.Should()
+			.Contain("will be part of the release notes")
+			.And
+			.Contain("`feature`")
+			.And
+			.Contain("`kibana`")
+			.And
+			.Contain("`Dashboards`");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_AreaWithBackticks_CannotBreakOutOfInlineCode()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome { Included = true, Areas = "a`b" });
+
+		body.Should().Contain("``a`b``");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Excluded_StatesTheReason()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = false,
+			Reason = "it has the label skip"
+		});
+
+		body.Should().Contain("will not be part of the release notes** because it has the label skip");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_WithImpactAndAction_AppendsCapturedBlock()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(
+			new ReleaseNoteOutcome { Included = true, Type = "breaking-change" },
+			"Breaks.",
+			"Fix."
+		);
+
+		body.Should().Contain("Breaks.").And.Contain("Fix.");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_AreaMissing_ContainsAreaHeadlineAndTable()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, areaLabelTable: "| `:Search` | Search |");
+
+		body.Should().Contain("Area label needed").And.Contain("add an area label");
+		body.Should().Contain("**area** labels").And.Contain("`:Search`");
+		body.Should().NotContain("Add a type label that matches");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_ProductAndAreaMissing_ListsBothPivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			null,
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("Changelog labels needed").And.Contain("add product and area labels");
+		body.Should().Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeProductAndAreaMissing_ListsAllThreePivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"type:bug,type:feature",
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("add type, product and area labels");
+		body.Should().Contain("type labels").And.Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeMissing_HeadlineIsUnchangedByAreaSupport() =>
+		ChangelogCommentRenderer
+			.RenderLabelsNeeded("type:bug", null, null, null)
+			.Should()
+			.Contain("🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.");
 }

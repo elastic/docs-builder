@@ -56,7 +56,7 @@ describe('NavigationSearchWrapper type attribute', () => {
         render(<NavigationSearchWrapper type="api" />)
 
         const input = await screen.findByPlaceholderText(
-            'Press ❲/❳ to find API'
+            'Type ❲/❳ to explore API'
         )
         await userEvent.type(input, '_bulk')
 
@@ -72,7 +72,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             <NavigationSearchWrapper type="api" variant="sidebar" />
         )
 
-        await screen.findByPlaceholderText('Press ❲/❳ to find API')
+        await screen.findByPlaceholderText('Type ❲/❳ to explore API')
 
         expect(container.querySelector('.sticky')).toBeNull()
         expect(container.querySelector('hr')).toBeNull()
@@ -105,7 +105,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper slash shortcut', () => {
-    const apiPlaceholder = 'Press ❲/❳ to find API'
+    const apiPlaceholder = 'Type ❲/❳ to explore API'
 
     beforeEach(() => {
         sharedQueryClient.clear()
@@ -129,6 +129,42 @@ describe('NavigationSearchWrapper slash shortcut', () => {
 
         expect(input).toHaveFocus()
         expect(input).toHaveValue('')
+    })
+
+    it('focuses the api input on "s" without typing the letter', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.keyboard('s')
+
+        expect(input).toHaveFocus()
+        expect(input).toHaveValue('')
+    })
+
+    it('ignores a capital "S"', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.keyboard('S')
+
+        expect(input).not.toHaveFocus()
+    })
+
+    it('leaves "s" alone while typing in another field', async () => {
+        render(
+            <>
+                <textarea aria-label="notes" />
+                <NavigationSearchWrapper type="api" />
+            </>
+        )
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+        const notes = screen.getByLabelText('notes')
+
+        await userEvent.click(notes)
+        await userEvent.keyboard('s')
+
+        expect(notes).toHaveValue('s')
+        expect(input).not.toHaveFocus()
     })
 
     it('blurs the api input on Escape and logs one close', async () => {
@@ -161,7 +197,19 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         render(<NavigationSearchWrapper type="api" />)
         const input = await screen.findByPlaceholderText(apiPlaceholder)
 
-        expect(input).toHaveAttribute('aria-keyshortcuts', '/')
+        expect(input).toHaveAttribute('aria-keyshortcuts', '/ s')
+    })
+
+    it('names the api input and describes it on hover', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        await screen.findByPlaceholderText(apiPlaceholder)
+
+        const input = screen.getByRole('textbox', { name: 'Explore API' })
+
+        expect(input).toHaveAttribute(
+            'title',
+            'Explore API operations. Type / to focus.'
+        )
     })
 
     it('leaves "/" alone while typing in another field', async () => {
@@ -182,17 +230,19 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         expect(input).not.toHaveFocus()
     })
 
-    it.each(['{Control>}/{/Control}', '{Meta>}/{/Meta}', '{Alt>}/{/Alt}'])(
-        'ignores "/" with a modifier (%s)',
-        async (keys) => {
-            render(<NavigationSearchWrapper type="api" />)
-            const input = await screen.findByPlaceholderText(apiPlaceholder)
+    it.each([
+        '{Control>}/{/Control}',
+        '{Meta>}/{/Meta}',
+        '{Alt>}/{/Alt}',
+        '{Control>}s{/Control}',
+    ])('ignores "/" with a modifier (%s)', async (keys) => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
 
-            await userEvent.keyboard(keys)
+        await userEvent.keyboard(keys)
 
-            expect(input).not.toHaveFocus()
-        }
-    )
+        expect(input).not.toHaveFocus()
+    })
 
     it('does not take over Ctrl+K', async () => {
         render(<NavigationSearchWrapper type="api" />)
