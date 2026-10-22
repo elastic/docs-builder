@@ -28,6 +28,7 @@ public partial class DefaultSearchService<TDocument>(
 	IProductNameLookup? productNameLookup = null
 ) : ISearchService<TDocument> where TDocument : SearchDocumentBase
 {
+	private const string ApiContentType = "api";
 	private const string PreTag = "<mark>";
 	private const string PostTag = "</mark>";
 
@@ -113,6 +114,10 @@ public partial class DefaultSearchService<TDocument>(
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
+		var query = lexicalQuery;
+		if (request.TypeFilter == ApiContentType && SearchQueryBuilder.BuildBareWordEndpointQuery(request.Query) is { } bareWordEndpoint)
+			query = new BoolQuery { Must = [lexicalQuery], Should = [bareWordEndpoint] };
+
 		var response = await client.SearchAsync<TDocument>(
 			s =>
 			{
@@ -120,7 +125,7 @@ public partial class DefaultSearchService<TDocument>(
 					.Indices(indexAlias)
 					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
 					.Size(request.PageSize)
-					.Query(lexicalQuery)
+					.Query(query)
 					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
 					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
 					.Highlight(

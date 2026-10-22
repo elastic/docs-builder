@@ -74,6 +74,25 @@ public class SearchQueryBuilderTests
 		SearchQueryBuilder.BuildApiEndpointQuery(input).Should().BeNull();
 
 	[Test]
+	[Arguments("search")]
+	[Arguments("  Search ")]
+	public void BuildBareWordEndpointQuery_Word_TargetsUnderscoreEndpoint(string input) =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildBareWordEndpointQuery(input))
+			.Should()
+			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}""");
+
+	[Test]
+	[Arguments("_search")]
+	[Arguments("run a search")]
+	[Arguments("index/_search")]
+	[Arguments("GET /_search")]
+	[Arguments("")]
+	public void BuildBareWordEndpointQuery_NotABareWord_ReturnsNull(string input) =>
+		SearchQueryBuilder.BuildBareWordEndpointQuery(input).Should().BeNull();
+
+	[Test]
 	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerms()
 	{
 		var query = SearchQueryBuilder.BuildLexicalQuery("_search", new Dictionary<string, string[]>(), [], null);

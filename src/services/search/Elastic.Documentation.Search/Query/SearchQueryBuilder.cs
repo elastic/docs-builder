@@ -115,6 +115,20 @@ public static class SearchQueryBuilder
 		};
 	}
 
+	/// <summary>
+	/// Elasticsearch endpoints are underscore-prefixed (<c>_search</c>, <c>_bulk</c>), so a bare word like
+	/// <c>search</c> is scored as the endpoint <c>_search</c> too. Only meant for API-filtered lookups: in the
+	/// unfiltered docs search it would put <c>/_aliases</c> above the "Aliases" docs page.
+	/// </summary>
+	public static Query? BuildBareWordEndpointQuery(string searchQuery)
+	{
+		var word = searchQuery.Trim();
+		if (word.Length == 0 || word.StartsWith('_') || word.Any(c => c is '/' or ' ' or '{'))
+			return null;
+
+		return BuildApiEndpointQuery("_" + word);
+	}
+
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }
 			|| new SemanticQuery(QueryFieldNames.SummarySemanticText, searchQuery) { Boost = 3.0f }
