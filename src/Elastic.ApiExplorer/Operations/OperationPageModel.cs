@@ -134,7 +134,10 @@ public partial record OperationPageModel
 		var requestContentTypes = RequestContentTypes(operation.RequestBody, requestContentEntry);
 		var requestExamples = MapRequestExamples(requestContentTypes, options.RenderMarkdown, endpoint);
 		var codeSamples = SampleMethods.Align(
-			WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), requestContentTypes.Select(static c => c.Examples)),
+			ExampleCodeSamples.Combine(
+				OpenApiExtensionReader.ParseCodeSamples(operation),
+				requestContentTypes.Select(static c => c.Examples)
+			),
 			endpoint
 		);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;

@@ -150,70 +150,7 @@ public partial record OperationPageModel
 		// Samples whose language name carries an example suffix (cURL_tag_names) belong to the example of that name.
 		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
 		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
-		return suffixed.Length == 0 ? attached : SuffixedScenarios(attached, suffixed);
-	}
-
-	/// <summary>
-	/// Adds the <c>x-codeSamples</c> that request examples carry themselves, each tied to its example by title.
-	/// Examples are read from every content type. Examples with the same title show as one example, so the first
-	/// one keeps its samples. The operation's own unsuffixed samples stay, except the ones an example repeats verbatim:
-	/// a spec may copy the first example's samples to the operation for tools that read only the operation.
-	/// </summary>
-	internal static IReadOnlyList<CodeSample> WithExampleCodeSamples(
-		IReadOnlyList<CodeSample> operationSamples,
-		IEnumerable<IDictionary<string, IOpenApiExample>?> examplesPerContentType
-	)
-	{
-		var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var exampleSamples = new List<CodeSample>();
-		foreach (var (key, example) in examplesPerContentType.SelectMany(static e => e ?? new Dictionary<string, IOpenApiExample>()))
-		{
-			var title = string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
-			if (!titles.Add(title))
-				continue;
-			exampleSamples.AddRange(OpenApiExtensionReader.ParseCodeSamples(example?.Extensions).Select(s => s with { Scenario = title }));
-		}
-
-		if (exampleSamples.Count == 0)
-			return operationSamples;
-
-		// The operation samples an example repeats verbatim are its own. The rest of that group belongs to the same
-		// example, so they follow it instead of attaching to whichever example the body check finds.
-		var unsuffixed = operationSamples.Where(static s => s.Scenario is null).ToArray();
-		var owner = exampleSamples
-			.Select(local => (Local: local, Match: unsuffixed.FirstOrDefault(u => SameSample(u, local))))
-			.Where(static pair => pair.Match is not null)
-			.OrderByDescending(static pair => pair.Match!.IsConsole)
-			.Select(static pair => pair.Local.Scenario)
-			.FirstOrDefault();
-		var carried = operationSamples.Where(s => s.Scenario is not null || !exampleSamples.Exists(e => SameSample(s, e))).Select(
-			s => s.Scenario is null && owner is not null ? s with { Scenario = owner } : s
-		);
-
-		// A local sample wins over an operation sample of the same example and language.
-		var local = exampleSamples.Select(static s => (s.Scenario!.ToUpperInvariant(), s.Language.ToUpperInvariant())).ToHashSet();
-		return [
-			.. carried.Where(s => !local.Contains((s.Scenario?.ToUpperInvariant() ?? "", s.Language.ToUpperInvariant()))),
-			.. exampleSamples
-		];
-	}
-
-	/// <summary>Two samples of one language are the same when they differ only in line endings or surrounding whitespace.</summary>
-	private static bool SameSample(CodeSample a, CodeSample b) =>
-		string.Equals(a.Language, b.Language, StringComparison.OrdinalIgnoreCase)
-			&& string.Equals(a.Source.ReplaceLineEndings("\n").Trim(), b.Source.ReplaceLineEndings("\n").Trim(), StringComparison.Ordinal);
-
-	/// <summary>
-	/// The rail hides an example's own request block when its samples show the request. A Console sample is the request;
-	/// other samples count when they contain the body. An example with no inline body has nothing to hide.
-	/// </summary>
-	private static bool SamplesShowRequest(ExampleScenario scenario, IEnumerable<CodeSample> samples)
-	{
-		if (string.IsNullOrWhiteSpace(scenario.RequestJson))
-			return string.IsNullOrEmpty(scenario.RequestExternalValue);
-
-		var body = Compact(scenario.RequestJson);
-		return samples.Any(s => s.IsConsole || Compact(s.Source).Contains(body, StringComparison.Ordinal));
+		return suffixed.Length == 0 ? attached : ExampleCodeSamples.Join(attached, suffixed);
 	}
 
 	/// <summary>The content types of a request with their examples, the primary one first.</summary>
@@ -301,55 +238,6 @@ public partial record OperationPageModel
 
 		scenarios[0] = scenarios[0] with { CodeSamples = codeSamples };
 		return scenarios;
-	}
-
-	/// <summary>
-	/// Each suffix names an example. Its samples join the example of the same title, replacing the sample of the
-	/// same language that example already has; otherwise they become an example of their own, sharing the first
-	/// example's responses, after the existing ones.
-	/// </summary>
-	private static List<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
-	{
-		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
-		var result = new List<ExampleScenario>(scenarios);
-		foreach (var group in suffixed.GroupBy(static c => c.Scenario!, StringComparer.OrdinalIgnoreCase))
-		{
-			var title = HumanizeExampleKey(group.Key);
-			var existing = result.FindIndex(
-				s => !s.FromUnmatchedSamples &&
-					(string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
-						s.Title,
-						group.Key,
-						StringComparison.OrdinalIgnoreCase
-					))
-			);
-			if (existing >= 0)
-			{
-				var languages = group.Select(static c => c.Language).ToHashSet(StringComparer.OrdinalIgnoreCase);
-				var merged = result[existing]
-					.CodeSamples
-					.Where(c => !languages.Contains(c.Language))
-					.Concat(group)
-					.OrderBy(static c => c.Rank)
-					.ToArray();
-				result[existing] = result[existing] with
-				{
-					CodeSamples = merged,
-					CodeSamplesIncludeRequest = SamplesShowRequest(result[existing], merged)
-				};
-				continue;
-			}
-
-			result.Add(new ExampleScenario
-			{
-				Title = title,
-				TabId = UniqueTabId(ToTabId(title, result.Count), result),
-				CodeSamples = [.. group],
-				CodeSamplesIncludeRequest = true,
-				Responses = responses
-			});
-		}
-		return result;
 	}
 
 	/// <summary>
@@ -546,7 +434,7 @@ public partial record OperationPageModel
 	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
 		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
 
-	private static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
+	internal static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
 	{
 		var candidate = id;
 		for (var i = 1; scenarios.Any(s => s.TabId == candidate); i++)
@@ -556,7 +444,7 @@ public partial record OperationPageModel
 
 	internal static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
 
-	private static string ToTabId(string title, int index)
+	internal static string ToTabId(string title, int index)
 	{
 		var chars = title.Trim().ToLowerInvariant().Select(static c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
 		var slug = new string(chars).Trim('-');
@@ -649,7 +537,7 @@ public partial record OperationPageModel
 				if (description is not null && endpoint is not null)
 					description = SampleMethods.AlignDescription(description, endpoint);
 				return new ExampleDisplay(
-					string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary,
+					ExampleTitle(e.Key, e.Value),
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
 					e.Value?.Value?.ToString(),
 					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
@@ -658,6 +546,10 @@ public partial record OperationPageModel
 				)
 				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(description) };
 			}).ToArray();
+
+	/// <summary>The title an example shows under: its summary, or its humanized key when it has none.</summary>
+	internal static string ExampleTitle(string key, IOpenApiExample? example) =>
+		string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
 
 	/// <summary>
 	/// Spec example keys stand in for a missing summary: <c>executeBuiltinEsqlToolRequest</c> reads as
