@@ -1013,6 +1013,13 @@
 	--code-pad: calc(var(--spacing) * 3);
 	/* Code taller than this scrolls in its card; api-examples-carousel.ts shows the expand button past it. */
 	--api-max-lines: 16;
+	--api-response-lines: 12;
+	--api-code-cap: calc(
+		var(--api-max-lines) * var(--text-sm) * 1.5 + var(--code-pad) * 2
+	);
+	--api-response-cap: calc(
+		var(--api-response-lines) * var(--text-sm) * 1.5 + var(--code-pad) * 2
+	);
 	/* API pages use Inter only — drop Mier B (font-sans) from headings/chrome */
 	font-family: var(--font-body);
 
@@ -3094,30 +3101,18 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 	}
 
-	/* Examples rail: hug content, cap at the viewport, scroll inside.
-	   Same header-collapse transition as .sidebar-nav so the rails move together. */
-	#api-examples-panel {
-		--api-rail-top: calc(var(--offset-top) + 16px);
-		position: sticky;
-		top: var(--api-rail-top);
-		box-sizing: border-box;
-		max-height: calc(100vh - var(--api-rail-top));
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-		transition:
-			top 0.3s ease,
-			max-height 0.3s ease;
+	/* The examples are normal page flow: no sticky, no scrolling box. Long examples make the page long. */
+	.layout__rail.api-page-rail {
+		position: static;
+		max-height: none;
+		overflow: visible;
 	}
 
-	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
-	   with min-height: 0 the request card collapsed to its header and hid the code. */
+	#api-examples-panel {
+		box-sizing: border-box;
+	}
+
 	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
-		min-height: 0;
-		max-height: none;
-		overflow-x: hidden;
-		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 	}
@@ -3156,7 +3151,6 @@ button.example-response-tab:focus-visible {
 	#api-examples-panel .api-code-sample-body,
 	#api-examples-panel .example-block-body {
 		flex: 0 0 auto;
-		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
 		overflow: auto;
 	}
 }
@@ -4046,8 +4040,14 @@ html:has(.api-page-shell) {
 	margin-left: auto;
 }
 
-#api-examples-panel .api-code-carousel-card-body {
-	max-height: max(12rem, calc((100vh - var(--offset-top, 0px)) * 0.4));
+#api-examples-panel .api-code-carousel-card-body,
+#api-examples-panel .api-code-sample-body {
+	max-height: var(--api-code-cap);
+	overflow: auto;
+}
+
+#api-examples-panel .example-block-body {
+	max-height: var(--api-response-cap);
 	overflow: auto;
 }
 
@@ -4203,104 +4203,6 @@ html:has(.api-page-shell) {
 .api-code-preview-body .highlight pre code {
 	box-sizing: content-box;
 	width: 100ch;
-}
-
-/*
- * Rail frame: from 1024px the rail is as tall as its examples, up to the viewport, and never
- * scrolls. A short operation gets a short rail, so the rail does not stretch the row below
- * the reference column. Example chips stay put, the request pane hugs the active sample, the
- * response takes the rest, and only the code areas scroll.
- */
-@media (min-width: 1101px) {
-	#api-examples-panel {
-		max-height: calc(100vh - var(--api-rail-top) - 16px);
-	}
-
-	#api-examples-panel .api-examples-panel-nav {
-		flex: 1 1 auto;
-		overflow: hidden;
-	}
-
-	#api-examples-panel .api-examples {
-		display: flex;
-		flex: 1 1 auto;
-		flex-direction: column;
-		min-height: 0;
-	}
-
-	#api-examples-panel .api-examples-heading,
-	#api-examples-panel .api-example-chips-row,
-	#api-examples-panel .api-example-description {
-		flex: 0 0 auto;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
-		flex: 1 1 auto;
-		min-height: 0;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden='until-found'] {
-		flex: 0 0 0;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	/* Each snippet is as tall as its own code, up to --api-max-lines, and the strip follows the active one
-	   (--api-strip-height, measured from the code in api-examples-carousel.ts). The response takes whatever is left.
-	   Longer code scrolls, and the expand button shows all of it. */
-	#api-examples-panel .api-rail-request {
-		--api-code-cap: calc(
-			var(--api-max-lines, 16) * var(--text-sm) * 1.5 + var(--code-pad) *
-				2
-		);
-		display: flex;
-		flex: 0 1 auto;
-		flex-direction: column;
-		min-height: 7.5rem;
-	}
-
-	#api-examples-panel .api-rail-request > .api-code-card {
-		flex: 0 1 auto;
-		min-height: 0;
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-carousel-card-body {
-		flex: 1 1 auto;
-		max-height: var(--api-code-cap, none);
-		min-height: 0;
-		overflow: auto;
-	}
-
-	#api-examples-panel .api-code-sample-body {
-		flex: 1 1 auto;
-		max-height: var(--api-code-cap, none);
-		min-height: 0;
-	}
-
-	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
-	   The request pane gives way instead, so the response does not change size when the language or the
-	   example code changes. */
-	#api-examples-panel {
-		--api-response-height: clamp(140px, 24vh, 300px);
-	}
-
-	#api-examples-panel .api-rail-response {
-		flex: 0 0 auto;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel .example-block--response {
-		flex: 0 0 auto;
-		max-height: var(--api-response-height);
-		min-height: 0;
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .example-block--response .example-block-body {
-		flex: 1 1 auto;
-		max-height: none;
-		min-height: 0;
-	}
 }
 
 @media (max-width: 1100px) {
