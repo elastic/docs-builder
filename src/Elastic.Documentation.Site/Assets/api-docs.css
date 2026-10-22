@@ -3213,6 +3213,12 @@ button.example-response-tab:focus-visible {
 	width: 100%;
 }
 
+/* EUI caps an input popover at 400px unless it is told to be full width. The cap left the box at the left
+   edge of the finder instead of filling it. */
+.api-catalog-finder .euiInputPopover {
+	max-width: none;
+}
+
 /* The navigation-preview hero is left-aligned, so the finder lines up with its title and lede. */
 .landing__hero-text .api-catalog-finder {
 	margin-inline: 0;
