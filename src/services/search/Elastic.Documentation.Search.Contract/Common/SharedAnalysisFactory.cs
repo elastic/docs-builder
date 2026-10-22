@@ -23,13 +23,11 @@ public static class SharedAnalysisFactory
 				"keyword_normalizer",
 				n => n.Custom().CharFilter("strip_non_word_chars").Filters("lowercase", "asciifolding", "trim")
 			)
-			.Normalizer("endpoint_normalizer", n => n.Custom().CharFilter("strip_braces").Filters("lowercase", "trim"))
 			.Analyzer("starts_with_analyzer", a => a.Custom().Tokenizer("starts_with_tokenizer").Filter("lowercase"))
 			.Analyzer("starts_with_analyzer_search", a => a.Custom().Tokenizer("keyword").Filter("lowercase"))
 			.Analyzer("highlight_analyzer", a => a.Custom().Tokenizer("group_tokenizer").Filters("lowercase", "english_stop"))
 			.Analyzer("hierarchy_analyzer", a => a.Custom().Tokenizer("path_tokenizer"))
 			.CharFilter("strip_non_word_chars", cf => cf.PatternReplace().Pattern(@"\W").Replacement(" "))
-			.CharFilter("strip_braces", cf => cf.PatternReplace().Pattern(@"[{}]").Replacement(""))
 			.TokenFilter("english_stop", tf => tf.Stop().Stopwords("_english_"))
 			.Tokenizer(
 				"starts_with_tokenizer",

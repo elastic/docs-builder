@@ -368,16 +368,13 @@ public class MappingStructureTests
 		fields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
 	}
 	[Test]
-	public void DocumentationDocument_MappingJson_ApiEndpointsUsesEndpointNormalizer()
+	public void DocumentationDocument_MappingJson_ApiEndpointsIsPlainKeyword()
 	{
 		var json = DocumentationMappingContext.DocumentationDocument.GetMappingJson();
 		using var doc = JsonDocument.Parse(json);
 		var api = doc.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties");
 
-		var endpoints = api.GetProperty("endpoints");
-		endpoints.GetProperty("type").GetString().Should().Be("keyword");
-		endpoints.GetProperty("normalizer").GetString().Should().Be("endpoint_normalizer");
-		foreach (var name in new[] { "method", "path", "operation_id" })
+		foreach (var name in new[] { "endpoints", "method", "path", "operation_id" })
 		{
 			api.GetProperty(name).GetProperty("type").GetString().Should().Be("keyword");
 			api.GetProperty(name).TryGetProperty("normalizer", out _).Should().BeFalse();

@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
@@ -15,67 +16,70 @@ public class SearchQueryBuilderTests
 	private static readonly ElasticsearchClient Client = new(new ElasticsearchClientSettings(new InMemoryRequestInvoker()));
 
 	[Test]
-	[Arguments("GET /_search", "_search")]
-	[Arguments("_search", "_search")]
-	[Arguments("/_cat", "_cat")]
-	[Arguments("POST /{index}", "{index}")]
-	[Arguments("search", "search")]
-	public void BuildApiEndpointQuery_SingleSegment_ReturnsDisMaxOfOneFullBoostTerm(string input, string expectedTerm)
-	{
-		var query = SearchQueryBuilder.BuildApiEndpointQuery(input);
-
+	[Arguments("GET /_search")]
+	[Arguments("_search")]
+	[Arguments("/_search")]
+	public void BuildApiEndpointQuery_SingleSegment_ReturnsDisMaxOfOneFullBoostTerms(string input) =>
 		Client
 			.RequestResponseSerializer
-			.SerializeToString(query)
+			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery(input))
 			.Should()
-			.Be(
-				"{\"dis_max\":{\"queries\":[{\"constant_score\":{\"boost\":5,\"filter\":{\"term\":{\"api.endpoints\":{\"value\":\"" +
-					expectedTerm + "\"}}}}}]}}"
-			);
-	}
+			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}""");
 
 	[Test]
-	public void BuildApiEndpointQuery_ValueThenEndpoint_ScoresFullRunAboveSingleSegments()
-	{
-		var query = SearchQueryBuilder.BuildApiEndpointQuery("my-index/_search");
-
+	public void BuildApiEndpointQuery_ValueThenEndpoint_ScoresFullTermAboveWildcardTemplates() =>
 		Client
 			.RequestResponseSerializer
-			.SerializeToString(query)
+			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery("my-index/_search"))
 			.Should()
 			.Be(
-				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"term":{"api.endpoints":{"value":"my-index/_search"}}}}},{"constant_score":{"boost":3.3333333,"filter":{"term":{"api.endpoints":{"value":"my-index"}}}}},{"constant_score":{"boost":3.3333333,"filter":{"term":{"api.endpoints":{"value":"_search"}}}}}]}}"""
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["my-index/_search"]}}}},{"constant_score":{"boost":3.3333333,"filter":{"terms":{"api.endpoints":["*/_search","my-index/*"]}}}}]}}"""
 			);
-	}
 
 	[Test]
-	public void BuildApiEndpointQuery_ThreeSegments_ScoresLongerRunsHigher()
+	public void BuildApiEndpointQuery_InteriorValue_MatchesTemplateAndNeverTheParentPrefix()
 	{
-		var query = SearchQueryBuilder.BuildApiEndpointQuery("_cat/indices/logs-2026");
+		var json = Client.RequestResponseSerializer.SerializeToString(
+			SearchQueryBuilder.BuildApiEndpointQuery("_security/user/alice/_password")
+		);
+		using var doc = JsonDocument.Parse(json);
+		var clauses = doc
+			.RootElement
+			.GetProperty("dis_max")
+			.GetProperty("queries")
+			.EnumerateArray()
+			.Select(q => q.GetProperty("constant_score"))
+			.ToArray();
+		var terms = clauses.Select(
+			c => c
+				.GetProperty("filter")
+				.GetProperty("terms")
+				.GetProperty("api.endpoints")
+				.EnumerateArray()
+				.Select(t => t.GetString())
+				.ToArray()
+		).ToArray();
 
-		Client
-			.RequestResponseSerializer
-			.SerializeToString(query)
-			.Should()
-			.Be(
-				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"term":{"api.endpoints":{"value":"_cat/indices/logs-2026"}}}}},{"constant_score":{"boost":3.75,"filter":{"term":{"api.endpoints":{"value":"_cat/indices"}}}}},{"constant_score":{"boost":3.75,"filter":{"term":{"api.endpoints":{"value":"indices/logs-2026"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"_cat"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"indices"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"logs-2026"}}}}}]}}"""
-			);
+		clauses.Select(c => c.GetProperty("boost").GetSingle()).Should().Equal(5f, 4f, 3f, 2f);
+		terms[1].Should().Contain("_security/user/*/_password");
+		terms.SelectMany(t => t).Should().NotContain("_security/user");
 	}
 
 	[Test]
 	[Arguments("   ")]
 	[Arguments("GET")]
 	[Arguments("/")]
-	public void BuildApiEndpointQuery_NothingLeftAfterNormalizing_ReturnsNull(string input) =>
+	[Arguments("POST /{index}")]
+	public void BuildApiEndpointQuery_NoLiteralSegmentAfterNormalizing_ReturnsNull(string input) =>
 		SearchQueryBuilder.BuildApiEndpointQuery(input).Should().BeNull();
 
 	[Test]
-	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerm()
+	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerms()
 	{
 		var query = SearchQueryBuilder.BuildLexicalQuery("_search", new Dictionary<string, string[]>(), [], null);
 
 		var json = Client.RequestResponseSerializer.SerializeToString(query);
 
-		json.Should().Contain("""{"term":{"api.endpoints":{"value":"_search"}}}""");
+		json.Should().Contain("""{"terms":{"api.endpoints":["_search"]}}""");
 	}
 }

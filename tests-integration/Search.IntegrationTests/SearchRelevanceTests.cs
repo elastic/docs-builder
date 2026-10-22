@@ -53,6 +53,7 @@ public class SearchRelevanceTests
 		yield return ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
 		yield return ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
 		yield return ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
+		yield return ("_security/user/alice/_password", "/docs/api/doc/elasticsearch/operation/operation-security-change-password", null);
 		yield return ("data-streams", "/docs/manage-data/data-store/data-streams", null);
 		yield return ("datastream", "/docs/manage-data/data-store/data-streams", null);
 		yield return ("data stream", "/docs/manage-data/data-store/data-streams", null);

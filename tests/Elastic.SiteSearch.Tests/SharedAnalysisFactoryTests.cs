@@ -112,24 +112,4 @@ public class SharedAnalysisFactoryTests
 		// hyphen-vs-space normalization needs an explicit rule.
 		synonyms.Should().BeEquivalentTo(["customer story, customer-story"]);
 	}
-
-	[Test]
-	public void EndpointNormalizer_StripsBracesThenLowercasesAndTrims()
-	{
-		var json = BuildAnalysisJson();
-		var normalizer = json.GetProperty("normalizer").GetProperty("endpoint_normalizer");
-		normalizer.GetProperty("type").GetString().Should().Be("custom");
-		normalizer.GetProperty("char_filter").EnumerateArray().Select(e => e.GetString()).Should().Equal("strip_braces");
-		normalizer.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).Should().Equal("lowercase", "trim");
-	}
-
-	[Test]
-	public void StripBracesCharFilter_IsPatternReplaceOfBracesWithNothing()
-	{
-		var json = BuildAnalysisJson();
-		var charFilter = json.GetProperty("char_filter").GetProperty("strip_braces");
-		charFilter.GetProperty("type").GetString().Should().Be("pattern_replace");
-		charFilter.GetProperty("pattern").GetString().Should().Be("[{}]");
-		charFilter.GetProperty("replacement").GetString().Should().Be("");
-	}
 }

@@ -88,7 +88,7 @@ public class OpenApiEndpointSearchKeysTests
 	{
 		var search = ConvertByOperationId()["search"];
 
-		search.Api!.Endpoints.Should().Equal("{index}/_search", "_search");
+		search.Api!.Endpoints.Should().Equal("*/_search", "_search");
 		search.Api.Method.Should().Be("POST");
 		search.Api.Path.Should().Be("/{index}/_search");
 		search.Api.OperationId.Should().Be("search");
@@ -99,7 +99,7 @@ public class OpenApiEndpointSearchKeysTests
 	{
 		var scroll = ConvertByOperationId()["scroll"];
 
-		scroll.Api!.Endpoints.Should().Equal("_search/scroll/{scroll_id}", "_search/scroll");
+		scroll.Api!.Endpoints.Should().Equal("_search/scroll/*", "_search/scroll");
 	}
 
 	[Test]
@@ -107,7 +107,7 @@ public class OpenApiEndpointSearchKeysTests
 	{
 		var catIndices = ConvertByOperationId()["cat-indices"];
 
-		catIndices.Api!.Endpoints.Should().Equal("_cat/indices/{index}", "_cat/indices");
+		catIndices.Api!.Endpoints.Should().Equal("_cat/indices/*", "_cat/indices");
 		catIndices.Api.Method.Should().Be("GET");
 	}
 
