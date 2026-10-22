@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.RegularExpressions;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Search;
 /// so the builder is decoupled from any specific TDocument and reusable across docs-only and
 /// unified indices.
 /// </summary>
-public static partial class SearchQueryBuilder
+public static class SearchQueryBuilder
 {
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
@@ -85,23 +85,30 @@ public static partial class SearchQueryBuilder
 	}
 
 	/// <summary>
-	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>)
-	/// ranks that operation above every other API whose search title merely starts with the same token.
+	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
+	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
+	/// with the same token. Each contiguous run of the typed segments scores by the share of the query it covers,
+	/// and <c>dis_max</c> keeps the best one.
 	/// </summary>
 	public static Query? BuildApiEndpointQuery(string searchQuery)
 	{
-		var endpoint = NormalizeEndpointQuery(searchQuery);
-		if (endpoint.Length == 0)
+		var candidates = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
+		if (candidates.Count == 0)
 			return null;
 
-		return new ConstantScoreQuery { Filter = new TermQuery { Field = QueryFieldNames.ApiEndpoints, Value = endpoint }, Boost = 5.0f };
+		var total = candidates[0].Segments;
+		return new DisMaxQuery
+		{
+			Queries = candidates.Select(
+				c =>
+					(Query)new ConstantScoreQuery
+					{
+						Filter = new TermQuery { Field = QueryFieldNames.ApiEndpoints, Value = c.Term },
+						Boost = 5.0f * c.Segments / total
+					}
+			).ToList()
+		};
 	}
-
-	internal static string NormalizeEndpointQuery(string searchQuery) =>
-		HttpMethodPrefix().Replace(searchQuery.Trim(), string.Empty).TrimStart('/').ToLowerInvariant().Trim();
-
-	[GeneratedRegex(@"^(GET|POST|PUT|DELETE|HEAD|PATCH)(?:\s+|$)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
-	private static partial Regex HttpMethodPrefix();
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }

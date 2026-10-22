@@ -49,6 +49,9 @@ public class SearchRelevanceTests
 		yield return ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
 		yield return ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
 		yield return ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
 		yield return ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
 		yield return ("data-streams", "/docs/manage-data/data-store/data-streams", null);
 		yield return ("datastream", "/docs/manage-data/data-store/data-streams", null);

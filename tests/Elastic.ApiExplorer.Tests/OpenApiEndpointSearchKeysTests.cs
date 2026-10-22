@@ -112,17 +112,6 @@ public class OpenApiEndpointSearchKeysTests
 	}
 
 	[Test]
-	public void EndpointSearchKeys_LeadingAndTrailingParameters_ReturnsFullLeadingTrailingAndBothStripped() =>
-		OpenApiDocumentExporter
-			.EndpointSearchKeys(["/{index}/_doc/{id}"])
-			.Should()
-			.Equal("{index}/_doc/{id}", "_doc/{id}", "{index}/_doc", "_doc");
-
-	[Test]
-	public void EndpointSearchKeys_OnlyParameter_ReturnsFullPathOnly() =>
-		OpenApiDocumentExporter.EndpointSearchKeys(["/{index}"]).Should().Equal("{index}");
-
-	[Test]
 	public void AlternatePaths_OperationListHtml_ReturnsRawPathsInOrder() =>
 		OpenApiDocumentExporter.AlternatePaths(SearchDescription).Should().Equal("/_search", "/_search", "/{index}/_search");
 

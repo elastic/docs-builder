@@ -15,10 +15,11 @@ public record ApiOperationMetadata
 {
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
-	/// <c>{param}</c> segments, e.g. <c>{index}/_search</c> and <c>_search</c>. Plain keyword so an
-	/// exact term query on what the user typed matches; <c>keyword_normalizer</c> would strip <c>/ { }</c>.
+	/// <c>{param}</c> segments, e.g. <c>{index}/_search</c> and <c>_search</c>. <c>endpoint_normalizer</c>
+	/// deletes <c>{</c> and <c>}</c> at index and query time, so <c>{index}/_search</c> and <c>index/_search</c>
+	/// are the same term. Not <c>keyword_normalizer</c>, which turns <c>/</c> into a space.
 	/// </summary>
-	[Keyword]
+	[Keyword(Normalizer = "endpoint_normalizer")]
 	[JsonPropertyName("endpoints")]
 	public required string[] Endpoints { get; init; }
 

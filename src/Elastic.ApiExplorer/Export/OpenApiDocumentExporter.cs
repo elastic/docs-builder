@@ -192,7 +192,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					],
 					Api = new ApiOperationMetadata
 					{
-						Endpoints = EndpointSearchKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
+						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
 						Method = method,
 						Path = path.Key,
 						OperationId = operationId
@@ -279,28 +279,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		var block = description[start..EndOfOperationList(description, start)];
 		return OperationPathSpanRegex().Matches(block).Select(m => m.Groups["path"].Value.Trim());
 	}
-
-	/// <summary>
-	/// Every way a user could type an endpoint path: lowercased, no leading <c>/</c>, and each path
-	/// also without its leading and/or trailing <c>{param}</c> segments. Deduped in first-seen order.
-	/// </summary>
-	internal static string[] EndpointSearchKeys(IEnumerable<string> paths) =>
-		paths.SelectMany(EndpointVariants).Where(k => k.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
-
-	private static IEnumerable<string> EndpointVariants(string path)
-	{
-		var segments = path.Trim().TrimStart('/').ToLowerInvariant().Split('/', StringSplitOptions.RemoveEmptyEntries);
-		var leading = segments.TakeWhile(IsPathParameter).Count();
-		var trailing = Enumerable.Reverse(segments).TakeWhile(IsPathParameter).Count();
-		var innerLength = Math.Max(0, segments.Length - leading - trailing);
-
-		yield return string.Join('/', segments);
-		yield return string.Join('/', segments.Skip(leading));
-		yield return string.Join('/', segments.Take(segments.Length - trailing));
-		yield return string.Join('/', segments.Skip(leading).Take(innerLength));
-	}
-
-	private static bool IsPathParameter(string segment) => segment.StartsWith('{') && segment.EndsWith('}');
 
 	private static int EndOfOperationList(string description, int afterHeader)
 	{
