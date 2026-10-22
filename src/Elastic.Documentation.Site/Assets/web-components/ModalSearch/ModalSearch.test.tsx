@@ -45,31 +45,51 @@ describe('ModalSearch', () => {
         })
     })
 
-    it('closes before an HTMX navigation swaps the page', () => {
+    it('keeps the clicked result mounted until the HTMX swap is done', () => {
         renderModalSearch()
 
         act(() => {
             modalSearchStore.getState().actions.openModal()
         })
-        expect(
-            screen.getByRole('button', { name: 'Close search modal' })
-        ).toBeInTheDocument()
+        const closeButton = () =>
+            screen.queryByRole('button', { name: 'Close search modal' })
+        expect(closeButton()).toBeInTheDocument()
 
         const result = document.createElement('a')
         result.setAttribute('data-search-result-index', '0')
 
         act(() => {
             document.dispatchEvent(
-                new CustomEvent('htmx:beforeSend', {
-                    detail: { elt: result },
-                })
+                new CustomEvent('htmx:beforeSend', { detail: { elt: result } })
             )
         })
+        expect(modalSearchStore.getState().isOpen).toBe(true)
+        expect(closeButton()).toBeInTheDocument()
 
+        act(() => {
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
+        })
         expect(modalSearchStore.getState().isOpen).toBe(false)
-        expect(
-            screen.queryByRole('button', { name: 'Close search modal' })
-        ).not.toBeInTheDocument()
+        expect(closeButton()).not.toBeInTheDocument()
+    })
+
+    it('stays open when a swap is not a search result navigation', () => {
+        renderModalSearch()
+
+        act(() => {
+            modalSearchStore.getState().actions.openModal()
+        })
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSend', {
+                    detail: { elt: document.createElement('a') },
+                })
+            )
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
+        })
+
+        expect(modalSearchStore.getState().isOpen).toBe(true)
     })
 
     it('does not offer Ask AI in an isolated build', () => {
