@@ -3203,6 +3203,9 @@ button.example-response-tab:focus-visible {
    under the lede, as wide as the lede, and its results open below it. Both heroes use it, and the
    navigation-preview one sits outside `.api-catalog`, so the rule stands alone. */
 .api-catalog-finder {
+	/* The box is added by script. This is its height (20px line, 12px padding, 2px border), so the cards
+	   below do not jump when it loads. */
+	min-height: 34px;
 	max-width: 36rem;
 	margin: 20px auto 0;
 	text-align: left;
