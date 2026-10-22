@@ -3715,40 +3715,6 @@ html:has(.api-page-shell) {
 	min-height: 0;
 }
 
-.api-code-carousel-position {
-	flex: 1;
-	min-width: 0;
-	font-size: 13px;
-}
-
-.api-code-carousel-position span {
-	margin-left: 4px;
-	color: #516381;
-	font-size: 12px;
-}
-
-.api-code-carousel-arrow {
-	width: 28px;
-	height: 28px;
-	border: 1px solid var(--color-grey-20, #e3e8f2);
-	border-radius: 50%;
-	background: #fff;
-	color: #1d2a3e;
-	font-size: 16px;
-	line-height: 1;
-	cursor: pointer;
-}
-
-.api-code-carousel-arrow:hover:not(:disabled) {
-	border-color: #1d2a3e;
-}
-
-.api-code-carousel-arrow:disabled {
-	opacity: 0.35;
-	cursor: default;
-}
-
-.api-code-carousel-arrow:focus-visible,
 .api-code-carousel-dot:focus-visible,
 .api-code-carousel-strip:focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
@@ -3770,47 +3736,10 @@ html:has(.api-page-shell) {
 }
 
 #api-examples-panel .api-code-carousel-card {
-	flex: 0 0 86%;
+	flex: 0 0 100%;
 	min-width: 0;
 	margin: 0;
 	scroll-snap-align: start;
-	opacity: 0.55;
-	transform: scale(0.96);
-	transform-origin: left top;
-	transition:
-		opacity 0.25s,
-		transform 0.25s,
-		transform-origin 0.25s;
-}
-
-/* The only language has no neighbour to peek beside it, so its card takes the whole rail. */
-#api-examples-panel .api-code-carousel-card:only-child {
-	flex-basis: 100%;
-}
-
-/* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
-   deliberately stops where the strip runs out, with the previous card showing beside it. */
-#api-examples-panel .api-code-carousel-card:has(~ .is-active) {
-	transform-origin: right top;
-}
-
-.api-code-carousel-card:not(.is-active) {
-	cursor: pointer;
-}
-
-/* While the remembered language is applied on load (api-examples-carousel.ts), nothing animates. */
-#api-examples-panel .is-settling .api-code-carousel-card,
-#api-examples-panel .is-settling .api-code-carousel-strip {
-	transition: none;
-}
-
-#api-examples-panel .api-code-carousel-card:not(.is-active):hover {
-	opacity: 0.8;
-}
-
-#api-examples-panel .api-code-carousel-card.is-active {
-	opacity: 1;
-	transform: none;
 }
 
 .api-code-carousel-card-header {
@@ -3978,16 +3907,9 @@ html:has(.api-page-shell) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.api-code-carousel-card,
 	.api-code-carousel-dot,
 	#api-examples-panel .api-code-carousel-strip {
 		transition: none;
-	}
-}
-
-@media (max-width: 640px) {
-	#api-examples-panel .api-code-carousel-card {
-		flex-basis: 100%;
 	}
 }
 
