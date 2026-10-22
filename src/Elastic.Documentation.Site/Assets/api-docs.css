@@ -2927,10 +2927,6 @@ button.example-response-tab:focus-visible {
 	}
 
 	/* The examples are normal page flow: no sticky, no scrolling box. Long examples make the page long. */
-	#api-examples-panel {
-		box-sizing: border-box;
-	}
-
 	#api-examples-panel .api-examples-panel-nav {
 		display: flex;
 		flex-direction: column;
@@ -2970,7 +2966,6 @@ button.example-response-tab:focus-visible {
 	#api-examples-panel .api-code-sample-body,
 	#api-examples-panel .example-block-body {
 		flex: 0 0 auto;
-		overflow: auto;
 	}
 }
 
