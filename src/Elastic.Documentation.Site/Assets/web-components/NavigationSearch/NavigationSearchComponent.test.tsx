@@ -56,7 +56,7 @@ describe('NavigationSearchWrapper type attribute', () => {
         render(<NavigationSearchWrapper type="api" />)
 
         const input = await screen.findByPlaceholderText(
-            'Press ❲/❳ to find API'
+            'Type ❲/❳ to explore API'
         )
         await userEvent.type(input, '_bulk')
 
@@ -72,7 +72,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             <NavigationSearchWrapper type="api" variant="sidebar" />
         )
 
-        await screen.findByPlaceholderText('Press ❲/❳ to find API')
+        await screen.findByPlaceholderText('Type ❲/❳ to explore API')
 
         expect(container.querySelector('.sticky')).toBeNull()
         expect(container.querySelector('hr')).toBeNull()
@@ -105,7 +105,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper slash shortcut', () => {
-    const apiPlaceholder = 'Press ❲/❳ to find API'
+    const apiPlaceholder = 'Type ❲/❳ to explore API'
 
     beforeEach(() => {
         sharedQueryClient.clear()
@@ -162,6 +162,18 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         const input = await screen.findByPlaceholderText(apiPlaceholder)
 
         expect(input).toHaveAttribute('aria-keyshortcuts', '/')
+    })
+
+    it('names the api input and describes it on hover', async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        await screen.findByPlaceholderText(apiPlaceholder)
+
+        const input = screen.getByRole('textbox', { name: 'Explore API' })
+
+        expect(input).toHaveAttribute(
+            'title',
+            'Explore API operations. Type / to focus.'
+        )
     })
 
     it('leaves "/" alone while typing in another field', async () => {
