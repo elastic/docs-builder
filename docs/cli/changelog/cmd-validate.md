@@ -9,7 +9,7 @@ docs-builder changelog validate 4009
 
 Pass `--require` to also fail when no entry file references this PR number, combining file-presence and content validation in a single command.
 
-When running under GitHub Actions and `--head-sha` is provided, writes decision metadata to `.artifacts/changelog-decision/metadata.json` for the downstream `changelog github-comment` step. Pass `--comment-on-success` as well, so the release-note outcome recorded by `validate-labels` is kept. See [Comment on success](cmd-evaluate-pr.md#comment-on-success).
+When running under GitHub Actions and `--head-sha` is provided, writes decision metadata to `.artifacts/changelog-decision/metadata.json` for the downstream `changelog github-comment` step. Pass `--comment-on-success` as well, so the release-note outcome recorded by `validate-labels` is kept. See [Comment on success](/cli/changelog/evaluate-pr.md#comment-on-success).
 
 ## Owner, repo, and config resolution
 
