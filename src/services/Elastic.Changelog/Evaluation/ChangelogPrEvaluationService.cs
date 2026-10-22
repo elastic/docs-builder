@@ -167,17 +167,11 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
-		// Resolve type — detect multiple matching labels before picking one
-		string? resolvedType = null;
-		string? ambiguousTypeLabels = null;
-		if (config.LabelToType is { Count: > 0 })
-		{
-			var matching = PrInfoProcessor.MatchingTypeLabels(input.PrLabels, config.LabelToType);
-			if (matching.Count > 1)
-				ambiguousTypeLabels = string.Join(",", matching);
-			else
-				resolvedType = matching.Count == 1 ? config.LabelToType[matching[0]] : null;
-		}
+		var resolution = PrLabelResolver.Resolve(input.PrLabels, config);
+		var resolvedType = resolution.Type;
+		var ambiguousTypeLabels = resolution.AmbiguousTypeLabels;
+		var resolvedProducts = resolution.Products;
+		var productLabelTable = resolution.ProductLabelTable;
 
 		if (ambiguousTypeLabels != null)
 		{
@@ -195,31 +189,10 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
-		// Resolve products from labels
-		string? resolvedProducts = null;
-		string? productLabelTable = null;
-		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
-		{
-			var products = ProductResolution.FromLabels(input.PrLabels, config);
-			if (products.Count > 0)
-			{
-				resolvedProducts = ProductArgument.FormatProductSpecs(products);
-				_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
-			}
-			else
-			{
-				// When only one distinct product is configured, assigning it implicitly is
-				// unambiguous — no point requiring contributors to add a redundant label.
-				var distinctSpecs = labelToProducts.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-				if (distinctSpecs.Count == 1)
-				{
-					resolvedProducts = ProductArgument.FormatProductSpecs(ProductArgument.ParseProductSpecs(distinctSpecs[0]));
-					_logger.LogInformation("Single product configured; assigning implicitly: {Products}", resolvedProducts);
-				}
-				else
-					productLabelTable = BuildProductLabelTable(labelToProducts);
-			}
-		}
+		if (resolution.ProductAssignment == ProductAssignment.FromLabels)
+			_logger.LogInformation("Mapped PR labels to products: {Products}", resolvedProducts);
+		else if (resolution.ProductAssignment == ProductAssignment.SingleConfigured)
+			_logger.LogInformation("Single product configured; assigning implicitly: {Products}", resolvedProducts);
 
 		if (resolvedType == null)
 		{

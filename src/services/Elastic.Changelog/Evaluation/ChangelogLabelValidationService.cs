@@ -60,17 +60,11 @@ public class ChangelogLabelValidationService(
 			return true;
 		}
 
-		// Resolve type — detect multiple matching labels before picking one
-		string? resolvedType = null;
-		string? ambiguousTypeLabels = null;
-		if (config.LabelToType is { Count: > 0 })
-		{
-			var matching = PrInfoProcessor.MatchingTypeLabels(input.PrLabels, config.LabelToType);
-			if (matching.Count > 1)
-				ambiguousTypeLabels = string.Join(",", matching);
-			else
-				resolvedType = matching.Count == 1 ? config.LabelToType[matching[0]] : null;
-		}
+		var resolution = PrLabelResolver.Resolve(input.PrLabels, config);
+		var resolvedType = resolution.Type;
+		var ambiguousTypeLabels = resolution.AmbiguousTypeLabels;
+		var resolvedProducts = resolution.Products;
+		var productLabelTable = resolution.ProductLabelTable;
 
 		if (ambiguousTypeLabels != null)
 		{
@@ -83,26 +77,6 @@ public class ChangelogLabelValidationService(
 				labelKeys: ChangelogPrEvaluationService.BuildLabelKeys(config.LabelToType)
 			);
 			return false;
-		}
-
-		// Resolve products
-		string? resolvedProducts = null;
-		string? productLabelTable = null;
-		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
-		{
-			var products = ProductResolution.FromLabels(input.PrLabels, config);
-			if (products.Count > 0)
-			{
-				resolvedProducts = ProductArgument.FormatProductSpecs(products);
-			}
-			else
-			{
-				var distinctSpecs = labelToProducts.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-				if (distinctSpecs.Count == 1)
-					resolvedProducts = ProductArgument.FormatProductSpecs(ProductArgument.ParseProductSpecs(distinctSpecs[0]));
-				else
-					productLabelTable = ChangelogPrEvaluationService.BuildProductLabelTable(labelToProducts);
-			}
 		}
 
 		if (resolvedType == null)
