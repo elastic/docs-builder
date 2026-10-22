@@ -135,7 +135,10 @@ public partial record OperationPageModel
 			? primaryExamples
 			: operation.RequestBody?.Content?.Values.Select(static m => m?.Examples).FirstOrDefault(static e => e is { Count: > 0 });
 		var requestExamples = MapExamples(requestExampleSource, options.RenderMarkdown, endpoint: endpoint);
-		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
+		var codeSamples = SampleMethods.Align(
+			WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), requestExampleSource),
+			endpoint
+		);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		var parameters = apiOperation.Parameters;
 		var requestSchema = requestContentEntry?.Value?.Schema;

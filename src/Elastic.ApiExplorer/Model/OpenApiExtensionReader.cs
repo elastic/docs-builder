@@ -138,10 +138,13 @@ public static class OpenApiExtensionReader
 	/// <summary>
 	/// Parses the <c>x-codeSamples</c> extension into code samples, ordered with Console first.
 	/// </summary>
-	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation) => ParseCodeSamples(operation.Extensions);
+
+	/// <summary>Parses the <c>x-codeSamples</c> extension of any extensible OpenAPI object, such as a request example.</summary>
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(IDictionary<string, IOpenApiExtension>? extensions)
 	{
 		if (
-			operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
+			extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
 			|| jsonExt.Node is not JsonArray samplesArray
 		)

@@ -144,6 +144,25 @@ public partial record OperationPageModel
 		return suffixed.Length == 0 ? attached : SuffixedScenarios(attached, suffixed);
 	}
 
+	/// <summary>
+	/// Adds the <c>x-codeSamples</c> that request examples carry themselves, each tied to its example by title.
+	/// Those samples replace the operation's own unsuffixed ones, which the spec repeats from the first example.
+	/// </summary>
+	internal static IReadOnlyList<CodeSample> WithExampleCodeSamples(
+		IReadOnlyList<CodeSample> operationSamples,
+		IDictionary<string, IOpenApiExample>? examples
+	)
+	{
+		var exampleSamples = (examples ?? new Dictionary<string, IOpenApiExample>()).SelectMany(e =>
+		{
+			var title = string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary;
+			return OpenApiExtensionReader.ParseCodeSamples(e.Value?.Extensions).Select(s => s with { Scenario = title });
+		}).ToArray();
+		return exampleSamples.Length == 0
+			? operationSamples
+			: [.. operationSamples.Where(static s => s.Scenario is not null), .. exampleSamples];
+	}
+
 	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
 	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
 		[
@@ -210,7 +229,12 @@ public partial record OperationPageModel
 		{
 			var title = HumanizeExampleKey(group.Key);
 			var existing = result.FindIndex(
-				s => s.CodeSamples.Count == 0 && string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase)
+				s => s.CodeSamples.Count == 0 &&
+					(string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
+						s.Title,
+						group.Key,
+						StringComparison.OrdinalIgnoreCase
+					))
 			);
 			if (existing >= 0)
 			{
