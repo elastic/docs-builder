@@ -35,6 +35,30 @@ describe('initHighlight', () => {
         expect(hljs.listLanguages()).toContain('javascript')
     })
 
+    it('registers the added grammars and the fish and batch aliases', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('fish')
+
+        await initHighlight()
+
+        for (const name of [
+            'clojure',
+            'diff',
+            'gherkin',
+            'graphql',
+            'makefile',
+        ]) {
+            expect(hljs.getLanguage(name)).toBeDefined()
+        }
+        expect(hljs.getLanguage('fish')?.name).toBe(
+            hljs.getLanguage('bash')?.name
+        )
+        expect(hljs.getLanguage('batch')?.name).toBe(
+            hljs.getLanguage('dos')?.name
+        )
+        expect(hljs.getLanguage('Gherkin')).toBeDefined()
+    })
+
     it('loads no node_modules language when there are no code blocks', async () => {
         const { initHighlight, hljs } = await loadModule()
         document.body.innerHTML = '<div id="markdown-content"></div>'
