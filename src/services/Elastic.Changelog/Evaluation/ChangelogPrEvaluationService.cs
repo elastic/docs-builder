@@ -115,6 +115,20 @@ public class ChangelogPrEvaluationService(
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("Skipping: all products blocked by label rules");
+			// Without the opt-in no metadata is written for a skip, exactly as before.
+			if (input.CommentOnSuccess)
+				await WriteDecisionMetadataAsync(
+					input,
+					PrEvaluationResult.Skipped.ToStringFast(true),
+					skipLabels: skipLabels,
+					defaultBranch: defaultBranch,
+					outcome: new ReleaseNoteOutcome
+					{
+						Included = false,
+						Reason = PrInfoProcessor.DescribeBlockedReason(input.PrLabels, config.Rules?.Create)
+					},
+					ctx: ctx
+				);
 			return await SetOutputs(PrEvaluationResult.Skipped, skipLabels: skipLabels);
 		}
 
@@ -352,6 +366,13 @@ public class ChangelogPrEvaluationService(
 			// Only values scraped from the description are echoed. With an entry file, the file is the source.
 			impact: existingFilename == null ? impact : null,
 			action: existingFilename == null ? action : null,
+			outcome: new ReleaseNoteOutcome
+			{
+				Included = true,
+				Type = resolvedType,
+				Products = resolvedProducts,
+				Areas = ResolveAreas(input.PrLabels, config)
+			},
 			ctx: ctx
 		);
 		return await SetOutputs(
@@ -491,6 +512,14 @@ public class ChangelogPrEvaluationService(
 	/// No-ops when <c>GITHUB_ACTIONS</c> is unset or <c>PrNumber</c> is zero (local runs).
 	/// Failures are logged as warnings; they never affect the command exit code.
 	/// </summary>
+	private static string? ResolveAreas(string[] prLabels, ChangelogConfiguration config)
+	{
+		if (config.LabelToAreas is not { Count: > 0 })
+			return null;
+		var areas = PrInfoProcessor.MapLabelsToAreas(prLabels, config.LabelToAreas);
+		return areas.Count > 0 ? string.Join(", ", areas) : null;
+	}
+
 	private async Task WriteDecisionMetadataAsync(
 		EvaluatePrArguments input,
 		string status,
@@ -507,7 +536,8 @@ public class ChangelogPrEvaluationService(
 		string? conflictingSections = null,
 		string? resolvedType = null,
 		string? impact = null,
-		string? action = null
+		string? action = null,
+		ReleaseNoteOutcome? outcome = null
 	)
 	{
 		if (env?.IsRunningOnCI != true || input.PrNumber <= 0)
@@ -536,7 +566,9 @@ public class ChangelogPrEvaluationService(
 			ConflictingSections = conflictingSections,
 			ResolvedType = resolvedType,
 			Impact = impact,
-			Action = action
+			Action = action,
+			CommentOnSuccess = input.CommentOnSuccess,
+			Outcome = input.CommentOnSuccess ? outcome : null
 		};
 		await _metadataWriter.WriteAsync(metadata, ctx);
 	}

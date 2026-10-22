@@ -48,7 +48,15 @@ public class ChangelogLabelValidationService(
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("All products blocked by label rules; skipping");
-			await Finish("skipped", skipLabels: skipLabels);
+			await Finish(
+				"skipped",
+				skipLabels: skipLabels,
+				outcome: new ReleaseNoteOutcome
+				{
+					Included = false,
+					Reason = PrInfoProcessor.DescribeBlockedReason(input.PrLabels, config.Rules?.Create)
+				}
+			);
 			return true;
 		}
 
@@ -133,7 +141,20 @@ public class ChangelogLabelValidationService(
 		}
 
 		_logger.LogInformation("Label validation complete: type={Type}, products={Products}", resolvedType, resolvedProducts);
-		await Finish("ok", type: resolvedType, products: resolvedProducts, skipLabels: skipLabels);
+		var areas = config.LabelToAreas is { Count: > 0 } ? PrInfoProcessor.MapLabelsToAreas(input.PrLabels, config.LabelToAreas) : [];
+		await Finish(
+			"ok",
+			type: resolvedType,
+			products: resolvedProducts,
+			skipLabels: skipLabels,
+			outcome: new ReleaseNoteOutcome
+			{
+				Included = true,
+				Type = resolvedType,
+				Products = resolvedProducts,
+				Areas = areas.Count > 0 ? string.Join(", ", areas) : null
+			}
+		);
 		return true;
 
 		async Task Finish(
@@ -144,7 +165,8 @@ public class ChangelogLabelValidationService(
 			string? labelKeys = null,
 			string? productLabelTable = null,
 			string? skipLabels = null,
-			string? ambiguousTypeLabels = null
+			string? ambiguousTypeLabels = null,
+			ReleaseNoteOutcome? outcome = null
 		)
 		{
 			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels, ambiguousTypeLabels);
@@ -167,7 +189,9 @@ public class ChangelogLabelValidationService(
 					SkipLabels = skipLabels,
 					ConfigFile = input.ConfigFile,
 					AmbiguousTypeLabels = ambiguousTypeLabels,
-					DefaultBranch = defaultBranch
+					DefaultBranch = defaultBranch,
+					CommentOnSuccess = input.CommentOnSuccess,
+					Outcome = input.CommentOnSuccess ? outcome : null
 				};
 				await _metadataWriter.WriteAsync(metadata, ctx);
 			}

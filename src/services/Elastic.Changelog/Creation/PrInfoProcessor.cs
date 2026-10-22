@@ -393,6 +393,24 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return IsBlockedByRules(prLabels, createRules);
 	}
 
+	/// <summary>Human-readable reason for <see cref="AreAllProductsBlocked"/>, naming the labels that decided it.</summary>
+	internal static string DescribeBlockedReason(string[] prLabels, CreateRules? createRules)
+	{
+		var rules = createRules?.Labels is { Count: > 0 }
+			? createRules
+			: createRules?.ByProduct?.Values.FirstOrDefault(r => r.Labels is { Count: > 0 });
+		if (rules?.Labels is not { Count: > 0 })
+			return "the create rules in the changelog configuration exclude it";
+
+		if (rules.Mode == FieldMode.Include)
+			return $"none of the labels {string.Join(", ", rules.Labels)} is set";
+
+		var matching = prLabels.Where(l => rules.Labels.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
+		return matching.Count > 0
+			? $"it has the label {string.Join(", ", matching)}"
+			: "the create rules in the changelog configuration exclude it";
+	}
+
 	/// <summary>
 	/// Checks if a single set of create rules blocks the given PR labels (no diagnostics).
 	/// In exclude mode, blocked when the configured labels ARE found on the PR.

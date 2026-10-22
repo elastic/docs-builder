@@ -3792,6 +3792,14 @@
             },
             {
               "role": "flag",
+              "name": "comment-on-success",
+              "type": "boolean",
+              "required": false,
+              "summary": "Also comment when the check passes, saying whether the PR will be part of the release notes",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -5355,6 +5363,14 @@
             },
             {
               "role": "flag",
+              "name": "comment-on-success",
+              "type": "boolean",
+              "required": false,
+              "summary": "Keep the release-note outcome comment when entry validation passes.",
+              "defaultValue": "false"
+            },
+            {
+              "role": "flag",
               "name": "log-level",
               "shortName": "l",
               "type": "enum",
@@ -5477,6 +5493,14 @@
               "type": "string",
               "required": false,
               "summary": "Fork repository full name (owner/repo)."
+            },
+            {
+              "role": "flag",
+              "name": "comment-on-success",
+              "type": "boolean",
+              "required": false,
+              "summary": "Also comment when the check passes, saying whether the PR will be part of the release notes.",
+              "defaultValue": "false"
             },
             {
               "role": "flag",
