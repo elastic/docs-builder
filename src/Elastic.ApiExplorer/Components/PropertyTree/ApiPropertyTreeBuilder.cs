@@ -77,6 +77,7 @@ public partial class ApiPropertyTreeBuilder(
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null,
 		string? OptionalRoute = null,
+		bool IsOptionalPath = false,
 		string? Example = null,
 		string? JsonPath = null
 	);
@@ -136,6 +137,7 @@ public partial class ApiPropertyTreeBuilder(
 				IsDeprecated = parameter.Deprecated,
 				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
 				OptionalRoute = routeWithout,
+				IsOptionalPath = parameter.In == ParameterLocation.Path && (!parameter.Required || routeWithout is not null),
 				Example = ParameterExample.Pick(parameter, _analyzer.ResolveSchema(schema) ?? schema, _analyzer.GetEnumValues(schema))
 			};
 			items.Add(BuildProperty(row, scope));
@@ -322,6 +324,7 @@ public partial class ApiPropertyTreeBuilder(
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			OptionalRoute = row.OptionalRoute,
+			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
 			Requires = DescribeRequiredAlternatives(propSchema),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
