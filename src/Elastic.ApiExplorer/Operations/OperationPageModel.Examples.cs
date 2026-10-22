@@ -146,30 +146,55 @@ public partial record OperationPageModel
 
 	/// <summary>
 	/// Adds the <c>x-codeSamples</c> that request examples carry themselves, each tied to its example by title.
-	/// Those samples replace the operation's own unsuffixed ones, which the spec repeats from the first example.
-	/// Examples are read from every content type; a key or a title seen first keeps its samples, because examples
-	/// with the same title show as one example.
+	/// Examples are read from every content type. Examples with the same title show as one example, so the first
+	/// one keeps its samples. The operation's own unsuffixed samples stay, except the ones an example repeats verbatim:
+	/// a spec may copy the first example's samples to the operation for tools that read only the operation.
 	/// </summary>
 	internal static IReadOnlyList<CodeSample> WithExampleCodeSamples(
 		IReadOnlyList<CodeSample> operationSamples,
 		IEnumerable<IDictionary<string, IOpenApiExample>?> examplesPerContentType
 	)
 	{
-		var keys = new HashSet<string>(StringComparer.Ordinal);
 		var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var exampleSamples = new List<CodeSample>();
 		foreach (var (key, example) in examplesPerContentType.SelectMany(static e => e ?? new Dictionary<string, IOpenApiExample>()))
 		{
 			var title = string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
-			if (!keys.Add(key) || !titles.Add(title))
+			if (!titles.Add(title))
 				continue;
 			exampleSamples.AddRange(OpenApiExtensionReader.ParseCodeSamples(example?.Extensions).Select(s => s with { Scenario = title }));
 		}
 
-		return exampleSamples.Count == 0
-			? operationSamples
-			: [.. operationSamples.Where(static s => s.Scenario is not null), .. exampleSamples];
+		if (exampleSamples.Count == 0)
+			return operationSamples;
+
+		// A local sample wins over an operation sample of the same example and language, suffixed or repeated verbatim.
+		var repeated = exampleSamples.Select(static s => (s.Language, s.Source)).ToHashSet();
+		var local = exampleSamples.Select(static s => (s.Scenario!.ToUpperInvariant(), s.Language.ToUpperInvariant())).ToHashSet();
+		return [
+			.. operationSamples.Where(
+				s => s.Scenario is null
+					? !repeated.Contains((s.Language, s.Source))
+					: !local.Contains((s.Scenario.ToUpperInvariant(), s.Language.ToUpperInvariant()))
+			),
+			.. exampleSamples
+		];
 	}
+
+	/// <summary>
+	/// The request examples of every content type, the primary one first. Examples with the same title show as one.
+	/// </summary>
+	internal static IReadOnlyList<ExampleDisplay> MapRequestExamples(
+		IEnumerable<IDictionary<string, IOpenApiExample>?> examplesPerContentType,
+		Func<string?, HtmlString> renderMarkdown,
+		OperationEndpoint? endpoint = null
+	) =>
+		[
+			.. examplesPerContentType.SelectMany(e => MapExamples(e, renderMarkdown, endpoint: endpoint)).DistinctBy(
+				static e => e.Title,
+				StringComparer.OrdinalIgnoreCase
+			)
+		];
 
 	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
 	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
@@ -226,8 +251,9 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>
-	/// Each suffix names an example. Its samples join the example of the same title when that one has none yet;
-	/// otherwise they become an example of their own, sharing the first example's responses, after the existing ones.
+	/// Each suffix names an example. Its samples join the example of the same title, replacing the sample of the
+	/// same language that example already has; otherwise they become an example of their own, sharing the first
+	/// example's responses, after the existing ones.
 	/// </summary>
 	private static List<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
 	{
@@ -237,16 +263,21 @@ public partial record OperationPageModel
 		{
 			var title = HumanizeExampleKey(group.Key);
 			var existing = result.FindIndex(
-				s => s.CodeSamples.Count == 0 &&
-					(string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
-						s.Title,
-						group.Key,
-						StringComparison.OrdinalIgnoreCase
-					))
+				s => string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
+					s.Title,
+					group.Key,
+					StringComparison.OrdinalIgnoreCase
+				)
 			);
 			if (existing >= 0)
 			{
-				result[existing] = result[existing] with { CodeSamples = [.. group], CodeSamplesIncludeRequest = true };
+				var languages = group.Select(static c => c.Language).ToHashSet(StringComparer.OrdinalIgnoreCase);
+				var kept = result[existing].CodeSamples.Where(c => !languages.Contains(c.Language));
+				result[existing] = result[existing] with
+				{
+					CodeSamples = [.. kept.Concat(group).OrderBy(static c => c.Rank)],
+					CodeSamplesIncludeRequest = true
+				};
 				continue;
 			}
 

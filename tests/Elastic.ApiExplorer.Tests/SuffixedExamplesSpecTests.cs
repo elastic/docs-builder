@@ -111,17 +111,92 @@ public class SuffixedExamplesSpecTests
 		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("three()");
 	}
 
-	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenariosFromSpec(string json)
+	[Test]
+	public async Task OperationSamples_OfAnExampleWithoutLocalSamples_AreKept()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x",
+			  "x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"a\":1}"},{"lang":"Python","source":"first()"}],
+			  "requestBody":{"content":{"application/json":{"schema":{"type":"object"},"examples":{
+			    "First":{"summary":"First","value":{"a":1}},
+			    "Second":{"summary":"Second","value":{"b":2},"x-codeSamples":[{"lang":"Python","source":"second()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().Contain("first()");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("second()");
+	}
+
+	[Test]
+	public async Task LocalSamples_ReplaceASuffixedOperationSampleOfTheSameLanguage()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x",
+			  "x-codeSamples":[{"lang":"Python_Search slicing","source":"suffixed()"},{"lang":"Java_Search slicing","source":"java()"}],
+			  "requestBody":{"content":{"application/json":{"schema":{"type":"object"},"examples":{
+			    "Search slicing":{"summary":"Search slicing","value":{"a":1},"x-codeSamples":[{"lang":"Python","source":"local()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Should().ContainSingle();
+		scenarios[0].CodeSamples.Select(c => (c.Language, c.Source)).Should().BeEquivalentTo([("Python", "local()"), ("Java", "java()")]);
+	}
+
+	[Test]
+	public async Task ExampleLevelSamples_OfTheSameKeyOnAnotherContentType_AreKeptWhenTheTitlesDiffer()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "example":{"summary":"One","value":{"a":1},"x-codeSamples":[{"lang":"Python","source":"one()"}]}}},
+			  "application/x-ndjson":{"schema":{"type":"string"},"examples":{
+			    "example":{"summary":"Two","value":"{}","x-codeSamples":[{"lang":"Python","source":"two()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("One", "Two");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("two()");
+	}
+
+	[Test]
+	public async Task RequestExamples_OfAnotherContentType_PairWithTheirOwnResponses()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{"First":{"summary":"First","value":{"a":1}}}},
+			  "application/x-ndjson":{"schema":{"type":"string"},"examples":{"Second":{"summary":"Second","value":"{}","x-codeSamples":[{"lang":"Python","source":"two()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			""",
+			[new ExampleDisplay("First", null, "{\"r\":1}", null, "200"), new ExampleDisplay("Second", null, "{\"r\":2}", null, "200")]
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
+		scenarios[1].Responses.Should().ContainSingle().Which.JsonValue.Should().Contain("\"r\":2");
+	}
+
+	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenariosFromSpec(
+		string json,
+		IReadOnlyList<ExampleDisplay>? responses = null
+	)
 	{
 		var document = await TestSpecs.LoadSpecAsync(json);
 		var operation = document.Paths["/_x"].Operations![HttpMethod.Post];
 		var perContentType = operation.RequestBody!.Content!.Values.Select(static m => m.Examples).ToArray();
-		var examples = OperationPageModel.MapExamples(
-			perContentType.First(static e => e is { Count: > 0 }),
-			static m => new HtmlString(m ?? "")
-		);
+		var examples = OperationPageModel.MapRequestExamples(perContentType, static m => new HtmlString(m ?? ""));
 		var samples = OperationPageModel.WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), perContentType);
-		return OperationPageModel.BuildExampleScenarios(examples, [], samples);
+		return OperationPageModel.BuildExampleScenarios(examples, responses ?? [], samples);
 	}
 
 	private static Task<IReadOnlyList<ExampleScenario>> BuildScenarios() => BuildScenarios("suffixed-examples-openapi.json");
