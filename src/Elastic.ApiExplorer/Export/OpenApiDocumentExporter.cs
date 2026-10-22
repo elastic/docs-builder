@@ -34,6 +34,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
 	private static partial Regex OperationListIntroRegex();
 
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationPathSpanRegex();
+
 	/// <summary>
 	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
 	/// </summary>
@@ -187,6 +190,13 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 						new ParentDocument { Title = "API", Path = "/docs/api" },
 						new ParentDocument { Title = productLabel, Path = productUrl }
 					],
+					Api = new ApiOperationMetadata
+					{
+						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
+						Method = method,
+						Path = path.Key,
+						OperationId = operationId
+					},
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
 						? inference
@@ -250,6 +260,24 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		if (after.Length == 0)
 			return before;
 		return $"{before}\n\n{after}";
+	}
+
+	/// <summary>
+	/// Paths listed in the description's "All methods and paths for this operation" block, verbatim.
+	/// Locates the block exactly as <see cref="RemoveOperationListIntro"/> does.
+	/// </summary>
+	internal static IEnumerable<string> AlternatePaths(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return [];
+
+		var match = OperationListIntroRegex().Match(description);
+		if (!match.Success)
+			return [];
+
+		var start = match.Index + match.Length;
+		var block = description[start..EndOfOperationList(description, start)];
+		return OperationPathSpanRegex().Matches(block).Select(m => m.Groups["path"].Value.Trim());
 	}
 
 	private static int EndOfOperationList(string description, int afterHeader)

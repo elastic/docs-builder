@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Search.Contract;
+using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
@@ -81,6 +83,36 @@ public static class SearchQueryBuilder
 			query |= new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = synonym };
 
 		return query;
+	}
+
+	/// <summary>
+	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
+	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
+	/// with the same token. A typed value matches the <c>*</c> of a parameter in any position. One <c>terms</c>
+	/// clause per number of literal segments kept, weighted <c>5 * (1 + literals) / (1 + total)</c>, and
+	/// <c>dis_max</c> keeps the best.
+	/// </summary>
+	public static Query? BuildApiEndpointQuery(string searchQuery)
+	{
+		var groups = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
+		if (groups.Count == 0)
+			return null;
+
+		var total = groups[0].LiteralSegments;
+		return new DisMaxQuery
+		{
+			Queries = groups.Select(
+				g =>
+					(Query)new ConstantScoreQuery
+					{
+						Filter = new TermsQuery(
+							QueryFieldNames.ApiEndpoints,
+							new TermsQueryField(g.Terms.Select(t => (FieldValue)t).ToArray())
+						),
+						Boost = 5.0f * (1 + g.LiteralSegments) / (1 + total)
+					}
+			).ToList()
+		};
 	}
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
@@ -170,6 +202,10 @@ public static class SearchQueryBuilder
 		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);
 		if (titleKeywordQuery is not null)
 			query |= titleKeywordQuery;
+
+		var apiEndpointQuery = BuildApiEndpointQuery(searchQuery);
+		if (apiEndpointQuery is not null)
+			query |= apiEndpointQuery;
 
 		var startsWithQuery = BuildTitleStartsWithQuery(searchQuery);
 		if (startsWithQuery is not null)

@@ -143,7 +143,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 	private ApiContextBar BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{
 		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
-		var versions = RenderContext.VersionSwitcherItems;
+		var versions = ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 		var productGroups = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
 		// Same text as the menu row, so the bar and the menu name the API alike.
 		var title = productGroups.SelectMany(static g => g.Products).FirstOrDefault(static p => p.Selected)?.Label

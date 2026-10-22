@@ -37,8 +37,7 @@
 						<a class="secondary-nav-dropdown-link api-context-product-link@(selectedClass)"
 						   href="@product.Url"
 						   aria-current="@(product.Selected ? "true" : null)"
-						   preload="mousedown"
-						   hx-boost="false">
+						   preload="mousedown">
 							@if (product.IconSvg is not null)
 							{
 								<span class="api-context-logo api-context-logo--sm" aria-hidden="true">@(new HtmlString(product.IconSvg))</span>
@@ -53,8 +52,7 @@
 				<div class="api-context-menu-sep" role="separator"></div>
 				<a class="secondary-nav-dropdown-link api-context-product-link"
 				   href="@Model.HubUrl"
-				   preload="mousedown"
-				   hx-boost="false">
+				   preload="mousedown">
 					<span class="api-context-logo api-context-logo--sm api-context-logo--muted" aria-hidden="true">
 						<svg viewBox="0 0 16 16"><use href="#icon-grid"/></svg>
 					</span>
