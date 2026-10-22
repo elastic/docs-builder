@@ -267,6 +267,7 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 | `pivot.features`  | Maps `feature-id` values to GitHub labels. When a PR or issue has a matching label, `changelog add` sets `feature-id` unless you pass `--feature-id`. If there are multiple feature labels, the first match is used and a warning is emitted. |
 | `pivot.highlight` | Defines labels that set the `highlight` flag on changelogs. |
 | `pivot.products`  | Maps product IDs (and optionally version and lifecycle) to GitHub labels. |
+| `pivot.required`  | Lists the pivots, besides the type, that every pull request must set a label for: `areas`, `products`, or both. Refer to [Required pivots](#pivot-required). |
 | `pivot.types`     | Lists the valid type values (at a minimum, `feature`, `bug-fix`, and `breaking-change`). Optionally maps types to GitHub labels (for example, `bug-fix: ">bug"`). You can also optionally define breaking change subtypes. |
 
 :::
@@ -328,16 +329,41 @@ products:
       lifecycle: ga
 ```
 
+### Required pivots [pivot-required]
+
+Every pull request needs a type label. Set `pivot.required` to also require an area label, a product label, or both:
+
+```yaml
+pivot:
+  required: [areas, products]
+  areas:
+    Search: ":Search"
+  products:
+    'elasticsearch':
+      - ":stack/elasticsearch"
+    'kibana':
+      - ":stack/kibana"
+```
+
+When a listed pivot has no matching label on a pull request, `changelog validate-labels` and `changelog evaluate-pr` fail the check, and the sticky pull request comment lists the labels to add. The comment names every missing pivot, so one comment covers the type, product, and area labels. `changelog add` with `--prs` or `--issues` and bundles built from a git range report the same error.
+
+- `areas` and `products` each need labels in `pivot.areas` or `pivot.products`. Otherwise the configuration is invalid, because no pull request could satisfy it.
+- Listing `types` is allowed and changes nothing.
+- For `changelog add`, passing `--areas` or `--products` satisfies the requirement.
+- A required product label also applies when `products.default` is set or `pivot.products` maps a single product. The defaults and the single-product shortcut do not replace the label.
+- Without `products` in `pivot.required`, a product label is required only when `pivot.products` maps two or more distinct products and `products.default` is not set. That rule is unchanged.
+- Skip labels from `rules.create` still exclude a pull request from the checks.
+
 ### Product resolution order [products-resolution]
 
 `changelog add`, the PR evaluation, and bundles built from a git range resolve the products of an entry in the same order:
 
 1. The `--products` option, when given. An explicit list is taken as given: `products.implies` does not apply to it.
 2. The products that the labels map to in `pivot.products`, plus the products that `products.implies` lists for each of them.
-3. `products.default`, with its lifecycle.
+3. `products.default`, with its lifecycle. This step does not apply when `pivot.required` lists `products`.
 4. Without a default, when `pivot.products` maps two or more distinct products: an error that names the pull request or issue and lists the labels to add. Otherwise, for `changelog add`, the product inferred from the repository name; for a git range bundle, the profile's output products.
 
-A team that wants every pull request to name its product omits `products.default`.
+When `pivot.required` lists `products`, a pull request without a product label is always an error, so steps 3 and 4 never apply. A team that wants every pull request to name its product can set `pivot.required` or omit `products.default`.
 
 ### Implied products [products-implies]
 

@@ -56,6 +56,11 @@ public record ChangelogConfiguration
 	public PivotConfiguration? Pivot { get; init; }
 
 	/// <summary>
+	/// Pivots that a PR must set a label for, from <c>pivot.required</c>. The type is always required.
+	/// </summary>
+	public RequiredPivot RequiredPivots { get; init; } = RequiredPivot.None;
+
+	/// <summary>
 	/// Available types for changelog entries (computed from Pivot.Types or defaults)
 	/// </summary>
 	public IReadOnlyList<string> Types { get; init; } = DefaultTypes;

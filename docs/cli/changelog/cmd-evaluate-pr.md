@@ -24,6 +24,7 @@ When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is 
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings |
 | `label-table` | Markdown table of configured label-to-type mappings |
 | `product-label-table` | Markdown table of configured label-to-product mappings |
+| `area-label-table` | Markdown table of configured label-to-area mappings (when `no-label` because `pivot.required` lists `areas` and the PR has no area label) |
 | `changelog-dir` | Resolved changelog directory (from `bundle.directory` or default `docs/changelog`) |
 | `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
 | `skip-labels` | Comma-separated list of configured skip labels (from `rules.create` exclude rules) |

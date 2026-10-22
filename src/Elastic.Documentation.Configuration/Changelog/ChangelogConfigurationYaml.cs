@@ -230,6 +230,11 @@ public sealed record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Features { get; set; }
 
 	/// <summary>
+	/// Pivots that every PR must set a label for: <c>types</c>, <c>areas</c> or <c>products</c> (string or list).
+	/// </summary>
+	public YamlLenientList? Required { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }

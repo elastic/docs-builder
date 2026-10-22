@@ -143,6 +143,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, string>? labelToProducts;
 		Dictionary<string, string>? labelToFeatures;
 		PivotConfiguration? pivot = null;
+		var requiredPivots = RequiredPivot.None;
 
 		if (yamlConfig.Pivot != null)
 		{
@@ -275,6 +276,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 			labelToFeatures = BuildLabelToFeaturesMapping(yamlConfig.Pivot.Features);
+
+			var mappedPivots = (labelToAreas is { Count: > 0 } ? RequiredPivot.Areas : RequiredPivot.None)
+				| (labelToProducts is { Count: > 0 } ? RequiredPivot.Products : RequiredPivot.None);
+			if (ParseRequiredPivots(collector, yamlConfig.Pivot.Required, mappedPivots, configPath) is not { } parsedRequired)
+				return null;
+			requiredPivots = parsedRequired;
 		}
 		else
 		{
@@ -437,6 +444,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
+			RequiredPivots = requiredPivots,
 			Types = availableTypes,
 			SubTypes = availableSubtypes,
 			Lifecycles = lifecycles,
@@ -453,6 +461,47 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Extract = extract,
 			Filename = filenameStrategy
 		};
+	}
+
+	// mappedPivots holds the pivots that map at least one label: an entry without labels cannot satisfy a requirement.
+	private static RequiredPivot? ParseRequiredPivots(
+		IDiagnosticsCollector collector,
+		YamlLenientList? requiredList,
+		RequiredPivot mappedPivots,
+		string configPath
+	)
+	{
+		var required = RequiredPivot.None;
+		foreach (var value in requiredList?.Values ?? [])
+		{
+			switch (value.Trim().ToLowerInvariant())
+			{
+				// The type is always required, so listing it changes nothing.
+				case "types":
+					break;
+				case "areas" when !mappedPivots.HasFlag(RequiredPivot.Areas):
+				case "products" when !mappedPivots.HasFlag(RequiredPivot.Products):
+					collector.EmitError(
+						configPath,
+						$"pivot.required lists '{value}', but pivot.{value.Trim().ToLowerInvariant()} maps no labels, so no PR could satisfy it. Add labels to pivot.{value.Trim().ToLowerInvariant()}."
+					);
+					return null;
+				case "areas":
+					required |= RequiredPivot.Areas;
+					break;
+				case "products":
+					required |= RequiredPivot.Products;
+					break;
+				default:
+					collector.EmitError(
+						configPath,
+						$"'{value}' in pivot.required is not a pivot that can be required. Valid values: types, areas, products."
+					);
+					return null;
+			}
+		}
+
+		return required;
 	}
 
 	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)

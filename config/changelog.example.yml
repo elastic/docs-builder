@@ -63,6 +63,14 @@ lifecycles:
 # NOTE: subtype and area are optional and either may be omitted.
 # Labels are specified in a "label -> value" format
 pivot:
+  # Pivots that every PR must set a label for, beyond the type (which is always required):
+  # "areas" and/or "products". The PR check fails and the PR comment asks for the missing labels.
+  # A listed pivot needs labels in pivot.areas or pivot.products. For "products", a label is required
+  # even when products.default is set or pivot.products maps a single product.
+  # Without "products" here, a product label is only required when pivot.products maps two or more
+  # distinct products and products.default is not set.
+  # required: [areas, products]
+
   # Type definitions with optional labels
   # At a minimum, feature, bug-fix, and breaking-change must be configured.
   # Keys are type names, values can be:

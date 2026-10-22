@@ -523,4 +523,51 @@ public class ChangelogCommentRendererTests
 
 		body.Should().Contain("Breaks.").And.Contain("Fix.");
 	}
+
+	[Test]
+	public void RenderLabelsNeeded_AreaMissing_ContainsAreaHeadlineAndTable()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, areaLabelTable: "| `:Search` | Search |");
+
+		body.Should().Contain("Area label needed").And.Contain("add an area label");
+		body.Should().Contain("**area** labels").And.Contain("`:Search`");
+		body.Should().NotContain("Add a type label that matches");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_ProductAndAreaMissing_ListsBothPivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			null,
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("Changelog labels needed").And.Contain("add product and area labels");
+		body.Should().Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeProductAndAreaMissing_ListsAllThreePivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"type:bug,type:feature",
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("add type, product and area labels");
+		body.Should().Contain("type labels").And.Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeMissing_HeadlineIsUnchangedByAreaSupport() =>
+		ChangelogCommentRenderer
+			.RenderLabelsNeeded("type:bug", null, null, null)
+			.Should()
+			.Contain("🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.");
 }

@@ -737,4 +737,32 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 		stored!.Outcome.Should().BeNull();
 		stored.CommentOnSuccess.Should().BeFalse();
 	}
+
+	[Test]
+	public async Task PostComment_NoLabelFromFileGate_RendersLabelsNeededBodyWithAreaTable()
+	{
+		await WriteMetadata(BaseMetadata(status: "no-label") with
+		{
+			Gate = ValidationGate.File,
+			AreaLabelTable = "| `:Search` | Search |"
+		});
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("Area label needed"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+	}
 }
