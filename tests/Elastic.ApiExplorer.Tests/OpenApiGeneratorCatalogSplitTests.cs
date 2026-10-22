@@ -77,6 +77,33 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task ResolveCanonicalDocuments_NoMainVersion_LeavesTheApiOut()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(
+					/*lang=json,strict*/
+					"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"9":{"version":"9.4"}}}}"""
+				)
+				: SpecResponse()
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch 9"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().BeEmpty("the explorer renders only /api/doc/elasticsearch/v9/, so unversioned search URLs would be dead links");
+	}
+
+	[Test]
 	public async Task GenerateProducts_IsolatedFixtureKey_DropsPrefixFromUrl()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

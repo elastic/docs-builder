@@ -155,8 +155,8 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// The unversioned document of every configured API, keyed by the same API key the explorer publishes
-	/// under <c>/api/doc/{key}/</c>. Search indexes exactly the APIs that have pages.
+	/// The <c>main</c> document of every configured API, keyed by the same API key the explorer publishes
+	/// under <c>/api/doc/{key}/</c>. An API with no <c>main</c> document has no page at that path, so it is left out.
 	/// </summary>
 	public async Task<IReadOnlyList<(string ApiKey, OpenApiDocument Document)>> ResolveCanonicalDocuments(Cancel ctx = default)
 	{
@@ -164,7 +164,7 @@ public class OpenApiGenerator(
 		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
 		return [
 			.. configs
-				.Zip(resolved, (c, r) => (c.Key, CanonicalDocument(r)?.Document))
+				.Zip(resolved, (c, r) => (c.Key, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document))
 				.Where(x => x.Document is not null)
 				.Select(x => (x.Key, x.Document!))
 		];
