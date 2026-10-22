@@ -21,7 +21,7 @@ internal static class ExampleCodeSamples
 	/// </summary>
 	public static IReadOnlyList<CodeSample> Combine(IReadOnlyList<CodeSample> operationSamples, IEnumerable<RequestContent> requestContent)
 	{
-		var local = Collect(requestContent);
+		var (local, titles) = Collect(requestContent);
 		if (local.Count == 0)
 			return operationSamples;
 
@@ -31,7 +31,7 @@ internal static class ExampleCodeSamples
 		);
 
 		// A local sample wins over an operation sample of the same example and language.
-		return [.. carried.Where(s => !local.Exists(e => Overrides(e, s))), .. local];
+		return [.. carried.Where(s => !local.Exists(e => Overrides(e, s, titles))), .. local];
 	}
 
 	/// <summary>
@@ -43,7 +43,7 @@ internal static class ExampleCodeSamples
 	{
 		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
 		var result = new List<ExampleScenario>(scenarios);
-		var resolved = tied.Select(sample => (Sample: sample, Index: result.FindIndex(s => Names(s, sample)))).ToArray();
+		var resolved = tied.Select(sample => (Sample: sample, Index: IndexOf(result, sample))).ToArray();
 
 		foreach (var group in resolved.Where(static r => r.Index >= 0).GroupBy(static r => r.Index))
 			result[group.Key] = MergeInto(result[group.Key], [.. group.Select(static r => r.Sample)]);
@@ -57,18 +57,21 @@ internal static class ExampleCodeSamples
 		return result;
 	}
 
-	private static List<CodeSample> Collect(IEnumerable<RequestContent> requestContent)
+	private static (List<CodeSample> Samples, List<string> Titles) Collect(IEnumerable<RequestContent> requestContent)
 	{
-		var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var titles = new List<string>();
 		var samples = new List<CodeSample>();
 		foreach (var (key, example) in requestContent.SelectMany(static c => c.Examples ?? new Dictionary<string, IOpenApiExample>()))
 		{
 			var title = OperationPageModel.ExampleTitle(key, example);
-			if (titles.Add(title))
-				samples.AddRange(OpenApiExtensionReader.ParseCodeSamples(example?.Extensions).Select(s => s with { ExampleTitle = title }));
+			if (titles.Exists(t => Same(t, title)))
+				continue;
+
+			titles.Add(title);
+			samples.AddRange(OpenApiExtensionReader.ParseCodeSamples(example?.Extensions).Select(s => s with { ExampleTitle = title }));
 		}
 
-		return samples;
+		return (samples, titles);
 	}
 
 	/// <summary>
@@ -109,21 +112,32 @@ internal static class ExampleCodeSamples
 	private static string NewTitleOf(CodeSample sample) => sample.ExampleTitle ?? OperationPageModel.HumanizeExampleKey(sample.Scenario!);
 
 	/// <summary>
-	/// An example made only to hold unmatched samples is never named. A sample's title must match the scenario's
-	/// title; a language suffix may also match the humanized key, as the example's own title is made from a key.
+	/// The scenario a sample names. A title names its example exactly. A language suffix names the example whose title
+	/// is that suffix; only when none is, the example whose title the suffix humanizes to, as a title made from a key is.
+	/// An example made only to hold unmatched samples is never named.
 	/// </summary>
-	private static bool Names(ExampleScenario scenario, CodeSample sample) =>
-		!scenario.FromUnmatchedSamples
-			&& (sample.ExampleTitle is { } title
-				? Same(scenario.Title, title)
-				: Same(scenario.Title, sample.Scenario!) || Same(scenario.Title, NewTitleOf(sample)));
+	private static int IndexOf(List<ExampleScenario> scenarios, CodeSample sample)
+	{
+		if (sample.ExampleTitle is { } title)
+			return scenarios.FindIndex(s => !s.FromUnmatchedSamples && Same(s.Title, title));
 
-	/// <summary>A local sample overrides a sample of the same language that names the same example.</summary>
-	private static bool Overrides(CodeSample local, CodeSample other) =>
-		Same(local.Language, other.Language)
-			&& (other.ExampleTitle is { } title
-				? Same(local.ExampleTitle!, title)
-				: other.Scenario is { } suffix && (Same(local.ExampleTitle!, suffix) || Same(local.ExampleTitle!, NewTitleOf(other))));
+		var exact = scenarios.FindIndex(s => !s.FromUnmatchedSamples && Same(s.Title, sample.Scenario!));
+		return exact >= 0 ? exact : scenarios.FindIndex(s => !s.FromUnmatchedSamples && Same(s.Title, NewTitleOf(sample)));
+	}
+
+	/// <summary>A local sample overrides a tied sample of the same language that names the same example.</summary>
+	private static bool Overrides(CodeSample local, CodeSample other, IReadOnlyList<string> titles) =>
+		other.IsTied && Same(local.Language, other.Language) && Same(local.ExampleTitle!, TargetTitle(other, titles));
+
+	/// <summary>The title of the example a tied sample belongs to, resolved against the titles the spec lists.</summary>
+	private static string TargetTitle(CodeSample sample, IReadOnlyList<string> titles)
+	{
+		if (sample.ExampleTitle is { } title)
+			return title;
+
+		var suffix = sample.Scenario!;
+		return titles.FirstOrDefault(t => Same(t, suffix)) ?? titles.FirstOrDefault(t => Same(t, NewTitleOf(sample))) ?? suffix;
+	}
 
 	/// <summary>Two samples of one language are the same when they differ only in line endings or surrounding whitespace.</summary>
 	private static bool SameSample(CodeSample a, CodeSample b) =>

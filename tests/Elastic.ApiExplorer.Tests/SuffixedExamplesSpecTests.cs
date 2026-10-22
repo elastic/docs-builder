@@ -259,6 +259,37 @@ public class SuffixedExamplesSpecTests
 	}
 
 	[Test]
+	public async Task SuffixedOperationSample_OfAnExampleTitledLikeAKey_IsNotOverriddenByTheExampleItHumanizesTo()
+	{
+		var scenarios = await BuildScenariosFromSpec(Spec(
+			Json(
+				Examples(
+					("camel", Example("searchRequest", """{"a":1}""")),
+					("plain", Example("Search", """{"b":2}""", ("Python", "plain()")))
+				)
+			),
+			operationSamples: [("Python_searchRequest", "camel()")]
+		));
+
+		scenarios.Select(s => s.Title).Should().Equal("searchRequest", "Search");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().Equal("camel()");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("plain()");
+	}
+
+	[Test]
+	public async Task SuffixedOperationSample_PrefersTheExampleWhoseTitleIsTheSuffix()
+	{
+		var scenarios = await BuildScenariosFromSpec(Spec(
+			Json(Examples(("plain", Example("Search", """{"b":2}""")), ("camel", Example("searchRequest", """{"a":1}""")))),
+			operationSamples: [("Python_searchRequest", "camel()")]
+		));
+
+		scenarios.Select(s => s.Title).Should().Equal("Search", "searchRequest");
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("camel()");
+	}
+
+	[Test]
 	public async Task ExampleLevelSamples_OfAnExampleGivenByReference_Attach()
 	{
 		var components = new JsonObject
