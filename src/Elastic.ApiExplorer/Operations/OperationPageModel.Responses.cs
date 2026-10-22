@@ -84,7 +84,7 @@ public partial record OperationPageModel
 					: statusCode.StartsWith('4') || statusCode.StartsWith('5') ? "error" : "info",
 				Contents = BuildMediaContents(
 					response.Content,
-					new PropertyTreeScope { Prefix = $"res-{statusCode}", IsResponse = true },
+					new PropertyTreeScope { Prefix = $"res-{statusCode}", JsonPath = "", IsResponse = true },
 					analyzer,
 					builder
 				),

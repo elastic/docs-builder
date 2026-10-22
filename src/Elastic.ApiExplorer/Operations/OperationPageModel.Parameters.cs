@@ -55,7 +55,7 @@ public partial record OperationPageModel
 			.ToArray();
 		return source.Builder.BuildParameterList(
 			rows,
-			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), IsRequest = true }
+			new PropertyTreeScope { Prefix = location.ToString().ToLowerInvariant(), JsonPath = "", IsRequest = true }
 		);
 	}
 

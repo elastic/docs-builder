@@ -20,8 +20,7 @@
 				var selectedClass = version.Selected ? " secondary-nav-dropdown-link--selected" : "";
 				<a class="secondary-nav-dropdown-link@(selectedClass)"
 				   href="@version.Value"
-				   aria-current="@(version.Selected ? "true" : null)"
-				   hx-boost="false">@version.Label</a>
+				   aria-current="@(version.Selected ? "true" : null)">@version.Label</a>
 			}
 		</div>
 	</div>

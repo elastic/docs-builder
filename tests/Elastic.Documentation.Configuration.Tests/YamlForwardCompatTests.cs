@@ -6,8 +6,10 @@ using AwesomeAssertions;
 using CsCheck;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -21,13 +23,14 @@ public class YamlForwardCompatTests
 	private static readonly Gen<string> AlphaNumericString = Gen.Char.AlphaNumeric.Array[1, 20].Select(chars => new string(chars));
 
 	/// <summary>
-	/// Law: unknown top-level product DTO properties (e.g. a new dra_artifact key) must not crash parsing.
-	/// Why: the binary is published; if a new YAML key is added to products.yml on main,
-	/// the running validate step (which uses the last released binary) must not crash with SIGABRT (exit 134).
-	/// IgnoreUnmatchedProperties on the deserializer guarantees this.
+	/// Law: an unknown top-level product property fails loading with an error that names the key.
+	/// Why: a typo'd or renamed key must never be silently ignored. When a key is intentionally
+	/// retired, handle it explicitly through a <see cref="YamlUnknownKeyPolicy"/> instead of
+	/// tolerating every unknown key.
+	/// Consequence: adding a new key to config/products.yml requires releasing a binary that knows it.
 	/// </summary>
 	[Test]
-	public void UnknownTopLevelProductProperty_DoesNotThrow()
+	public void UnknownTopLevelProductProperty_Throws_NamingTheKey()
 	{
 		// Prefix ensures no collision with any real ProductDto property name.
 		var unknownKeyGen = AlphaNumericString.Select(key => $"__unknown_{key}__");
@@ -43,7 +46,10 @@ public class YamlForwardCompatTests
 				    {unknownKey}: some_value
 				"""
 				);
-			act.Should().NotThrow($"unknown product property '{unknownKey}' must be silently ignored");
+			_ = act
+				.Should()
+				.Throw<YamlException>($"unknown product property '{unknownKey}' must not be silently ignored")
+				.WithMessage($"*Unknown key '{unknownKey}'*");
 		});
 	}
 

@@ -116,6 +116,21 @@ public class GetStartedWithoutABody : MarkdownTest
 	public async Task Errors() => await Docs.HasError("{get-started}");
 }
 
+// A body that is only a YAML comment is not null, so it reaches the deserializer rather than the
+// "requires a YAML body" check above. SharpYaml deserializes it to null, which must still fall back
+// to GetStartedData.Empty and report the usual missing-title error, not throw.
+public class GetStartedWithACommentOnlyBody : MarkdownTest
+{
+	protected override string Markdown => """
+		:::{get-started}
+		# title: Get started
+		:::
+		""";
+
+	[Test, DisplayName("errors on the missing title instead of throwing")]
+	public async Task ErrorsOnMissingTitle() => await Docs.HasError("requires a `title` field");
+}
+
 // The section is not fixed at three steps. The first step sits in its own box. The column
 // count follows the steps after it, so the last row is never short.
 public class GetStartedWithFourSteps : MarkdownTest

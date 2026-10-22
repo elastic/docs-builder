@@ -183,7 +183,6 @@ internal sealed class ServerlessReleaseCommand(
 			var arguments = new BundleChangelogsArguments
 			{
 				Profile = svc.Profile,
-				EntryProducts = [.. ServerlessPromotion.EntryProductIds(svc).Select(id => new ProductArgument { Product = id })],
 				ProfileArgument = bundleVersion,
 				OutputDirectory = rootOutput.FullName,
 				Config = tempConfig,

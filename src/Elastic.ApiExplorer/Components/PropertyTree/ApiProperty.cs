@@ -119,6 +119,9 @@ public static class NestedRowsId
 public record DictionaryChildDisplay
 {
 	public required string KeyAnchorId { get; init; }
+
+	/// <summary>The JSON path of the map's values, such as <c>aggs.&lt;string&gt;</c>; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(KeyAnchorId);
 	public required int Depth { get; init; }
 	public required bool IsCollapsible { get; init; }
@@ -159,7 +162,16 @@ public record ApiProperty
 	public required IOpenApiSchema Schema { get; init; }
 
 	public required string AnchorId { get; init; }
+
+	/// <summary>Where the field sits in the body, such as <c>query.bool.must[].match</c>; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
+
+	/// <summary>The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name.</summary>
+	public string? TooltipPath => JsonPath is { } path && path != Name ? path : null;
+
+	/// <summary>What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.</summary>
+	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? path : Name;
 	public required int Depth { get; init; }
 	public required bool IsRequired { get; init; }
 

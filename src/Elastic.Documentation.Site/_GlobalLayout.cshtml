@@ -9,7 +9,7 @@
 
 <body
 	hx-history="false"
-	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")@(Model.Features.NavigationPreviewEnabled ? " navigation-preview" : "")"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-@(Model.BuildType.ToString().ToLowerInvariant())@(Model.Features.AirGappedEnabled ? " air-gapped" : "")@(Model.Features.NavigationPreviewEnabled ? " navigation-preview" : "")@(Model.FullWidth ? " layout-full" : "")"
 	hx-ext="preload, head-support"
 	hx-boost="true"
 	hx-push-url="true"

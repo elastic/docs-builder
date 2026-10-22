@@ -18,7 +18,12 @@ public partial class ApiPropertyTreeBuilder
 		public sealed record Dictionary(int Count) : ChildPlan(Count);
 
 		/// <summary>The schema's properties, then the variants of a union that declares properties as well.</summary>
-		public sealed record Properties(IOpenApiSchema Schema, int Count, List<UnionOption>? UnionVariants = null) : ChildPlan(Count);
+		public sealed record Properties(
+			IOpenApiSchema Schema,
+			int Count,
+			List<UnionOption>? UnionVariants = null,
+			bool OfItems = false
+		) : ChildPlan(Count);
 
 		/// <summary>
 		/// A union's variants. <paramref name="Inner"/> is <c>X</c> of an <c>X | X[]</c> row: the row hides its own options
@@ -85,7 +90,7 @@ public partial class ApiPropertyTreeBuilder
 			&& propSchema.Items is { } items
 			&& PropertyCount(items, scope) is > 0 and var itemCount
 		)
-			return new ChildPlan.Properties(items, itemCount);
+			return new ChildPlan.Properties(items, itemCount, OfItems: true);
 
 		return hasUnionOptions ? new ChildPlan.Variants(typeInfo.UnionOptions!, variantCount) : null;
 	}
@@ -148,6 +153,7 @@ public partial class ApiPropertyTreeBuilder
 		var childScope = scope with
 		{
 			Prefix = row.AnchorId,
+			JsonPath = row.JsonPath,
 			Depth = scope.Depth + 1,
 			AncestorRefs = AugmentAncestors(row.TypeInfo, scope.AncestorRefs),
 			RequiredProperties = null,
@@ -163,7 +169,8 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.PropertyList,
 					UseHidden = useHidden,
-					Properties = BuildPropertyList(properties.Schema, childScope) ?? new ApiPropertyList([]),
+					Properties = BuildPropertyList(properties.Schema, properties.OfItems ? childScope.IntoItems() : childScope)
+						?? new ApiPropertyList([]),
 					Variants = properties.UnionVariants is { } variants ? BuildLabelledVariants(row, childScope, variants) : null
 				},
 			ChildPlan.Variants variants =>
@@ -171,7 +178,7 @@ public partial class ApiPropertyTreeBuilder
 				{
 					Kind = ChildKind.UnionVariants,
 					UseHidden = useHidden,
-					Variants = BuildVariantChildren(row, childScope, variants)
+					Variants = BuildVariantChildren(row, row.TypeInfo.IsArray ? childScope.IntoItems() : childScope, variants)
 				},
 			_ => ApiPropertyChildren.None
 		};

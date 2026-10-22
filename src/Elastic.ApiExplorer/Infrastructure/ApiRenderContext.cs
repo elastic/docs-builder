@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -19,7 +20,18 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected);
+/// <param name="PageNames">
+/// Every name of every page this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).
+/// Each name maps to all names of that page, canonical first, because a collapsed operation also answers to its former paths.
+/// </param>
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected)
+{
+	public IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames
+	{
+		get;
+		init;
+	} = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
+}
 
 public record ApiRenderContext(
 	BuildContext BuildContext,
@@ -42,6 +54,9 @@ public record ApiRenderContext(
 
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }
+
+	/// <summary>The site's top navigation in an assembler build, so API pages carry the same docs bar as the rest of the site.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
 
 	internal IReadOnlyDictionary<string, ApiSupplementalDoc> OperationSupplemental
 	{

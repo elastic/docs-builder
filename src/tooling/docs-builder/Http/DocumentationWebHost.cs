@@ -22,7 +22,11 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.IO;
+using Elastic.ApiExplorer.StyleGuide;
+using Elastic.Codex.StyleGuide;
+using Elastic.Markdown.StyleGuide;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -186,6 +190,8 @@ public class DocumentationWebHost
 			});
 
 		_ = _webApplication.UseRouting();
+
+		MapStyleGuide();
 
 		_ = _webApplication.MapGet(
 			"/",
@@ -461,6 +467,53 @@ public class DocumentationWebHost
 				var renderedNotFound = await generator.RenderLayout((notFoundDocumentationFile as MarkdownFile)!, ctx);
 				return Results.Content(renderedNotFound.Html, "text/html", null, (int)HttpStatusCode.NotFound);
 		}
+	}
+
+	// The living design-system guide. It renders the same Razor components as the site, so it is a dev-server route regardless of feature flags.
+	private void MapStyleGuide()
+	{
+		MarkdownComponentSections.Register();
+		var hashes = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context));
+
+		string StaticUrl(string path) => hashes.GetUrl(path, string.Empty);
+
+		async Task<IResult> Serve(string? page, Cancel ctx)
+		{
+			var html = await StyleGuideCatalog.RenderAsync(page, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		}
+
+		_ = _webApplication.MapGet($"{LayoutSamples.Route}/{{name}}", async (string name, Cancel ctx) =>
+		{
+			var html = await LayoutSamples.RenderAsync(name, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
+
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/download.zip", async (Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var zip = await StyleGuideExport.BuildZipAsync(
+				provider,
+				async id => await StyleGuidePreviews.RenderAsync(id, Context, ctx) ?? await CodexStyleGuidePreviews.RenderAsync(
+					id,
+					Context,
+					provider,
+					ctx
+				) ?? await ApiStyleGuidePreviews.RenderAsync(id, Context, provider, ctx),
+				ctx
+			);
+			return Results.File(zip, "application/zip", "style-guide.zip");
+		});
+		_ = _webApplication.MapGet($"{StyleGuidePreviewCatalog.Route}/{{id}}", async (string id, Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var html = await StyleGuidePreviews.RenderAsync(id, Context, ctx)
+				?? await CodexStyleGuidePreviews.RenderAsync(id, Context, provider, ctx)
+				?? await ApiStyleGuidePreviews.RenderAsync(id, Context, provider, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
+		_ = _webApplication.MapGet(StyleGuideCatalog.Route, (Cancel ctx) => Serve(null, ctx));
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/{{**page}}", (string? page, Cancel ctx) => Serve(page, ctx));
 	}
 
 	internal static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)

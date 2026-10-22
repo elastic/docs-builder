@@ -30,7 +30,8 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false
+	bool AirGapped = false,
+	string? WafIntegrationUrl = null
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
@@ -75,6 +76,9 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>The site's top navigation for pages that sit outside the site's navigation tree, such as the generated API pages.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	/// <summary>
 	/// The configured top navigation for assembler builds. Derived by walking the
 	/// <see cref="CurrentNavigationItem"/> parent chain to find a
@@ -85,6 +89,8 @@ public record GlobalLayoutViewModel
 	{
 		get
 		{
+			if (SiteTopNav is not null)
+				return SiteTopNav;
 			for (var item = (INavigationItem?)CurrentNavigationItem; item is not null; item = item.Parent)
 			{
 				if (item is ISiteNavigationRoot siteRoot)
@@ -128,6 +134,9 @@ public record GlobalLayoutViewModel
 	/// </summary>
 	public ApiContextBar? ApiContext { get; init; }
 
+	/// <summary>API catalog URL used by the API header's home link.</summary>
+	public string? ApiCatalogUrl { get; init; }
+
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
 	/// the URL of its nearest visible ancestor. The client uses this to highlight the correct
@@ -160,6 +169,9 @@ public record GlobalLayoutViewModel
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
+	/// <summary>Lays the page out at the full window width, up to the wide limit, instead of the width of the elastic.co header.</summary>
+	public bool FullWidth { get; init; }
+
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
@@ -187,7 +199,15 @@ public record GlobalLayoutViewModel
 	{
 		BuildType.Assembler when Features.AirGappedEnabled =>
 			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Assembler =>
+			new FrontendConfig(
+				"assembler",
+				"docs-frontend",
+				true,
+				StaticPathPrefix,
+				ApiBasePath,
+				WafIntegrationUrl: Features.WafIntegrationUrl
+			),
 		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 	};

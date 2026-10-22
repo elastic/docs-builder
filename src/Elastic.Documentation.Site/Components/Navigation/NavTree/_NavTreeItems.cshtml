@@ -1,0 +1,75 @@
+@inherits RazorSlice<IReadOnlyList<Elastic.Documentation.Site.Navigation.NavigationRenderNode>>
+@using Elastic.Documentation.Site.Navigation
+@foreach (var item in Model)
+{
+	switch (item.Kind)
+	{
+		case NavigationRenderNodeKind.Separator:
+			<li class="nav-tree__separator" role="separator"></li>
+			break;
+		case NavigationRenderNodeKind.Leaf:
+			<li class="nav-tree__item">
+				@if (item.Url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+				{
+					<a class="nav-tree__link nav-tree__link--external" href="@item.Url" rel="noopener" target="_blank">
+						@await RenderPartialAsync(_NavTreeLabel.Create(item))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "external", Size = IconSize.Small }))
+					</a>
+				}
+				else
+				{
+					<a class="nav-tree__link" href="@item.Url"@(item.Url.Contains('#') ? new HtmlString(" hx-boost=\"false\"") : HtmlString.Empty)>
+						@await RenderPartialAsync(_NavTreeLabel.Create(item))
+					</a>
+				}
+			</li>
+			break;
+		case NavigationRenderNodeKind.Island:
+			<li class="nav-tree__item">
+				<a class="nav-tree__link nav-tree__link--island" href="@item.Url">
+					@await RenderPartialAsync(_NavTreeLabel.Create(item))
+					@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_double_right", Size = IconSize.Small }))
+				</a>
+			</li>
+			break;
+		case NavigationRenderNodeKind.Heading:
+			<li class="nav-tree__group">
+				@if (item.ShowToggle)
+				{
+					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle>
+					<label class="nav-tree__row nav-tree__row--heading" for="@item.Id">
+						@await RenderPartialAsync(_NavTreeLabel.Create(item))
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+					</label>
+				}
+				else
+				{
+					<span class="nav-tree__row nav-tree__row--heading">@await RenderPartialAsync(_NavTreeLabel.Create(item))</span>
+				}
+				<ul class="nav-tree__children">
+					@await RenderPartialAsync(_NavTreeItems.Create(item.NavigationItems))
+				</ul>
+			</li>
+			break;
+		default:
+			<li class="nav-tree__group">
+				@if (item.ShowToggle)
+				{
+					<input class="nav-tree__toggle" type="checkbox" id="@item.Id" data-nav-toggle aria-label="Show pages under @item.NavigationTitle">
+				}
+				<div class="nav-tree__row">
+					<a class="nav-tree__link" href="@item.Url">@await RenderPartialAsync(_NavTreeLabel.Create(item))</a>
+					@if (item.ShowToggle)
+					{
+						<label class="nav-tree__chevron" for="@item.Id" aria-hidden="true">
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+						</label>
+					}
+				</div>
+				<ul class="nav-tree__children">
+					@await RenderPartialAsync(_NavTreeItems.Create(item.NavigationItems))
+				</ul>
+			</li>
+			break;
+	}
+}

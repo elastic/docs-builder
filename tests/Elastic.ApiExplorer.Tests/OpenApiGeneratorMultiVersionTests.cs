@@ -324,6 +324,56 @@ public class OpenApiGeneratorMultiVersionTests
 			.BeTrue();
 	}
 
+	[Test]
+	public async Task Generate_VersionPickerKeepsTheSamePageWhenItExists()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var mainDocument = SpecDocument("Elasticsearch main");
+		mainDocument.Paths["/newop"] = new OpenApiPathItem
+		{
+			Operations = new Dictionary<HttpMethod, OpenApiOperation>
+			{
+				[HttpMethod.Get] = new()
+				{
+					OperationId = "newop",
+					Tags = new HashSet<OpenApiTagReference> { new("core") },
+					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+				}
+			}
+		};
+		var reader = CreateVersionedReader(
+			("main", mainDocument),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var shared = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-ping", "index.html"));
+		shared.Should().Contain("href=\"/api/doc/elasticsearch/v8/operation/operation-ping\"");
+		shared.Should().Contain("href=\"/api/doc/elasticsearch/v9/operation/operation-ping\"");
+		var mainOnly = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-newop", "index.html"));
+		mainOnly.Should().Contain("href=\"/api/doc/elasticsearch/v8\"");
+		mainOnly.Should().NotContain("/api/doc/elasticsearch/v8/operation/operation-newop");
+		var older = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
+		older.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-ping\"");
+	}
+
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
 		VersionsConfiguration versionsConfiguration,

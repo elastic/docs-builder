@@ -55,6 +55,17 @@ public class SchemaHelpersTests
 		SchemaHelpers.TypeAtomCssClassOrNull("QueryContainer").Should().Be("type-object", "only a real link, by $ref id, gets type-linked");
 
 	[Test]
+	[Arguments("union", "type-wrapper union-icon")]
+	[Arguments("enum", "type-wrapper enum-icon")]
+	[Arguments("oneOf", "type-wrapper")]
+	public void TypeAtomCssClassOrNull_ShapeName_ReturnsTypeWrapper(string name, string expected) =>
+		SchemaHelpers.TypeAtomCssClassOrNull(name).Should().Be(expected);
+
+	[Test]
+	public void TypeAtomCssClassOrNull_Array_StaysPrimitiveNotShape() =>
+		SchemaHelpers.TypeAtomCssClassOrNull("array").Should().Be("type-primitive");
+
+	[Test]
 	public void TypeAtomCssClassOrNull_Unknown_ReturnsNull() => SchemaHelpers.TypeAtomCssClassOrNull("unknown").Should().BeNull();
 
 	[Test]

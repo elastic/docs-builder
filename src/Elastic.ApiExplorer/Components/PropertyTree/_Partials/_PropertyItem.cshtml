@@ -4,10 +4,17 @@
 }
 <div class="property-item depth-@Model.Depth @(Model.IsLast ? "last-sibling" : "") @(hasChildren ? "has-children" : "") @(Model.IsCollapsible ? (Model.DefaultExpanded ? "expanded" : "collapsed") : "") @(Model.ShowDeprecatedBadge ? "deprecated" : "")">
 	<dt id="@Model.AnchorId">
-		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.Name">
+		<a class="property-anchor" href="#@Model.AnchorId" aria-label="Link to @Model.PermalinkLabel">
 			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
 		</a>
-		<code>@Model.Name</code>
+		@if (Model.TooltipPath is { } path)
+		{
+			<code data-tippy-content="@path" data-tippy-theme="mono">@Model.Name</code>
+		}
+		else
+		{
+			<code>@Model.Name</code>
+		}
 		@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(Model.Type))
 		@if (Model.IsRequired)
 		{
@@ -159,7 +166,14 @@
 				<dl class="property-list">
 					<div class="property-item depth-@dict.Depth last-sibling has-children @(dict.IsCollapsible ? (dict.DefaultExpanded ? "expanded" : "collapsed") : "")">
 						<dt id="@dict.KeyAnchorId">
-							<code>&lt;string&gt;</code>
+							@if (dict.JsonPath is { } keyPath)
+							{
+								<code data-tippy-content="@keyPath" data-tippy-theme="mono">&lt;string&gt;</code>
+							}
+							else
+							{
+								<code>&lt;string&gt;</code>
+							}
 							@(await RenderPartialAsync<_SchemaType, TypeAnnotation>(dict.ValueType))
 						</dt>
 						@(await RenderPartialAsync<_EnumValues, EnumValueList>(new EnumValueList(dict.EnumValues)))

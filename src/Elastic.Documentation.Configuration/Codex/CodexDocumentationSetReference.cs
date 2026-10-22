@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Codex;
 
@@ -14,32 +14,32 @@ public record CodexDocumentationSetReference
 	/// <summary>
 	/// The name of the documentation set. This is used in the URL path.
 	/// </summary>
-	[YamlMember(Alias = "name")]
+	[YamlPropertyName("name")]
 	public string Name { get; set; } = string.Empty;
 
 	/// <summary>
 	/// The git origin for the repository. Defaults to "elastic/{name}" if not specified.
 	/// </summary>
-	[YamlMember(Alias = "origin")]
+	[YamlPropertyName("origin")]
 	public string? Origin { get; set; }
 
 	/// <summary>
 	/// The git branch to checkout. Required.
 	/// </summary>
-	[YamlMember(Alias = "branch")]
+	[YamlPropertyName("branch")]
 	public string Branch { get; set; } = string.Empty;
 
 	/// <summary>
 	/// The path within the repository where documentation lives. Defaults to "docs".
 	/// </summary>
-	[YamlMember(Alias = "path")]
+	[YamlPropertyName("path")]
 	public string Path { get; set; } = "docs";
 
 	/// <summary>
 	/// Optional group id for grouping documentation sets. References a group defined in the groups section.
 	/// If specified, the docset appears under /g/{group}/. If not specified, the docset appears at the codex root.
 	/// </summary>
-	[YamlMember(Alias = "group")]
+	[YamlPropertyName("group")]
 	public string? Group { get; set; }
 
 	/// <summary>
@@ -47,7 +47,7 @@ public record CodexDocumentationSetReference
 	/// If not specified, defaults to <see cref="Name"/>. This allows including the same
 	/// repository multiple times with different URL paths.
 	/// </summary>
-	[YamlMember(Alias = "repo_name")]
+	[YamlPropertyName("repo_name")]
 	public string? RepoName { get; set; }
 
 	/// <summary>
@@ -55,7 +55,7 @@ public record CodexDocumentationSetReference
 	/// Deprecated: Use the index.md h1 heading instead.
 	/// </summary>
 	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "display_name")]
+	[YamlPropertyName("display_name")]
 	public string? DisplayName { get; set; }
 
 	/// <summary>
@@ -63,7 +63,7 @@ public record CodexDocumentationSetReference
 	/// Deprecated: Use the index.md frontmatter description instead.
 	/// </summary>
 	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
 	/// <summary>
@@ -71,7 +71,7 @@ public record CodexDocumentationSetReference
 	/// Can be a predefined icon name (e.g., "elasticsearch", "kibana", "observability")
 	/// or a custom SVG path.
 	/// </summary>
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
 	/// <summary>
