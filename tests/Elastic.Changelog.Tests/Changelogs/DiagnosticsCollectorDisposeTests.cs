@@ -57,18 +57,17 @@ public class DiagnosticsCollectorDisposeTests
 	[Test]
 	public async Task OffendingFiles_SnapshotWhileReaderIsWriting_DoesNotThrow()
 	{
+		const int total = 20_000;
 		var collector = new DiagnosticsCollector([]);
 		_ = collector.StartAsync(CancellationToken.None);
-		var writer = Task.Run(() =>
-		{
-			for (var i = 0; i < 20_000; i++)
-				collector.EmitWarning($"file-{i}.md", "warning");
-		});
+		for (var i = 0; i < total; i++)
+			collector.EmitWarning($"file-{i}.md", "warning");
 
-		while (!writer.IsCompleted)
+		// Snapshot for as long as the reader is still adding, so both sides overlap.
+		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+		while (collector.OffendingFiles.Count < total && !timeout.IsCancellationRequested)
 			_ = collector.OffendingFiles.Keys.ToArray();
 
-		await writer;
 		await collector.DisposeAsync();
 
 		collector.OffendingFiles.Should().HaveCount(20_000);
