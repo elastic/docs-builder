@@ -251,7 +251,24 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Code examples");
-		foreach (var sample in page.CodeSamples)
+		// With several examples carrying samples, each set sits under its example's title so the copy can tell them apart.
+		var perExample = page.Scenarios.Where(static s => s.CodeSamples.Any(static c => !c.Generated)).ToArray();
+		if (perExample.Length < 2)
+		{
+			WriteSamples(markdown, page.CodeSamples);
+			return;
+		}
+
+		foreach (var scenario in perExample)
+		{
+			ApiCommonMark.Heading(markdown, 3, scenario.Title);
+			WriteSamples(markdown, [.. scenario.CodeSamples.Where(static c => !c.Generated)]);
+		}
+	}
+
+	private static void WriteSamples(StringBuilder markdown, IReadOnlyList<CodeSample> samples)
+	{
+		foreach (var sample in samples)
 		{
 			ApiCommonMark.Heading(markdown, 4, sample.Language);
 			ApiCommonMark.Fence(markdown, sample.Language.ToLowerInvariant(), sample.Source);

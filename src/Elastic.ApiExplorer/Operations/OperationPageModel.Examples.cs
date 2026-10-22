@@ -181,15 +181,12 @@ public partial record OperationPageModel
 		// example, so they follow it instead of attaching to whichever example the body check finds.
 		var unsuffixed = operationSamples.Where(static s => s.Scenario is null).ToArray();
 		var owner = exampleSamples
-			.Select(
-				local => (Local: local, Match: unsuffixed.FirstOrDefault(u => u.Language == local.Language && u.Source == local.Source))
-			)
+			.Select(local => (Local: local, Match: unsuffixed.FirstOrDefault(u => SameSample(u, local))))
 			.Where(static pair => pair.Match is not null)
 			.OrderByDescending(static pair => pair.Match!.IsConsole)
 			.Select(static pair => pair.Local.Scenario)
 			.FirstOrDefault();
-		var repeated = exampleSamples.Select(static s => (s.Language, s.Source)).ToHashSet();
-		var carried = operationSamples.Where(s => s.Scenario is not null || !repeated.Contains((s.Language, s.Source))).Select(
+		var carried = operationSamples.Where(s => s.Scenario is not null || !exampleSamples.Exists(e => SameSample(s, e))).Select(
 			s => s.Scenario is null && owner is not null ? s with { Scenario = owner } : s
 		);
 
@@ -199,6 +196,24 @@ public partial record OperationPageModel
 			.. carried.Where(s => !local.Contains((s.Scenario?.ToUpperInvariant() ?? "", s.Language.ToUpperInvariant()))),
 			.. exampleSamples
 		];
+	}
+
+	/// <summary>Two samples of one language are the same when they differ only in line endings or surrounding whitespace.</summary>
+	private static bool SameSample(CodeSample a, CodeSample b) =>
+		string.Equals(a.Language, b.Language, StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(a.Source.ReplaceLineEndings("\n").Trim(), b.Source.ReplaceLineEndings("\n").Trim(), StringComparison.Ordinal);
+
+	/// <summary>
+	/// The rail hides an example's own request block when its samples show the request. A Console sample is the request;
+	/// other samples count when they contain the body. An example with no inline body has nothing to hide.
+	/// </summary>
+	private static bool SamplesShowRequest(ExampleScenario scenario, IEnumerable<CodeSample> samples)
+	{
+		if (string.IsNullOrWhiteSpace(scenario.RequestJson))
+			return string.IsNullOrEmpty(scenario.RequestExternalValue);
+
+		var body = Compact(scenario.RequestJson);
+		return samples.Any(s => s.IsConsole || Compact(s.Source).Contains(body, StringComparison.Ordinal));
 	}
 
 	/// <summary>The content types of a request with their examples, the primary one first.</summary>
@@ -311,11 +326,16 @@ public partial record OperationPageModel
 			if (existing >= 0)
 			{
 				var languages = group.Select(static c => c.Language).ToHashSet(StringComparer.OrdinalIgnoreCase);
-				var kept = result[existing].CodeSamples.Where(c => !languages.Contains(c.Language));
+				var merged = result[existing]
+					.CodeSamples
+					.Where(c => !languages.Contains(c.Language))
+					.Concat(group)
+					.OrderBy(static c => c.Rank)
+					.ToArray();
 				result[existing] = result[existing] with
 				{
-					CodeSamples = [.. kept.Concat(group).OrderBy(static c => c.Rank)],
-					CodeSamplesIncludeRequest = true
+					CodeSamples = merged,
+					CodeSamplesIncludeRequest = SamplesShowRequest(result[existing], merged)
 				};
 				continue;
 			}

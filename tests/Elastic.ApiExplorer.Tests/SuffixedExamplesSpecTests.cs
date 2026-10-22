@@ -227,13 +227,87 @@ public class SuffixedExamplesSpecTests
 		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("named()");
 	}
 
+	[Test]
+	public async Task OperationSamples_DifferingOnlyInWhitespace_AreStillTheExamplesOwn()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x",
+			  "x-codeSamples":[{"lang":"Console","source":"POST /_x\r\n{\"a\":1}\r\n"},{"lang":"Python","source":"first()\n"}],
+			  "requestBody":{"content":{"application/json":{"schema":{"type":"object"},"examples":{
+			    "First":{"summary":"First","value":{"a":1},"x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"a\":1}"},{"lang":"Python","source":"first()"}]},
+			    "Second":{"summary":"Second","value":{"b":2},"x-codeSamples":[{"lang":"Python","source":"second()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
+		scenarios[0].CodeSamples.Select(c => c.Language).Should().Equal("Console", "Python");
+	}
+
+	[Test]
+	public async Task ExampleLevelSamples_WithoutTheBody_KeepTheRequestBlock()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "WithConsole":{"summary":"With console","value":{"a":1},"x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"a\":1}"}]},
+			    "WithBody":{"summary":"With body","value":{"b":2},"x-codeSamples":[{"lang":"Python","source":"client.x(body={\"b\": 2})"}]},
+			    "WithoutBody":{"summary":"Without body","value":{"c":3},"x-codeSamples":[{"lang":"Python","source":"client.x()"}]},
+			    "External":{"summary":"External","externalValue":"https://example.test/body.json","x-codeSamples":[{"lang":"Python","source":"client.x()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.CodeSamplesIncludeRequest).Should().Equal(true, true, false, false);
+	}
+
+	[Test]
+	public async Task ExampleLevelSamples_OfAnExampleGivenByReference_Attach()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "Shared":{"$ref":"#/components/examples/Shared"}}}}},
+			  "responses":{"200":{"description":"ok"}}}}},
+			  "components":{"examples":{"Shared":{"summary":"Shared example","value":{"a":1},"x-codeSamples":[{"lang":"Python","source":"shared()"}]}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("Shared example");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().Equal("shared()");
+	}
+
+	[Test]
+	public async Task ExampleLevelSamples_ForAPrefixedConsoleTarget_KeepThePrefix()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/api/x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "Kibana":{"summary":"Kibana","value":{"a":1},"x-codeSamples":[{"lang":"Console","source":"POST kbn:/api/x\n{\"a\":1}"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			""",
+			path: "/api/x"
+		);
+
+		scenarios[0].CodeSamples.Should().ContainSingle().Which.Source.Should().StartWith("POST kbn:/api/x");
+	}
+
 	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenariosFromSpec(
 		string json,
-		IReadOnlyList<ExampleDisplay>? responses = null
+		IReadOnlyList<ExampleDisplay>? responses = null,
+		string path = "/_x"
 	)
 	{
 		var document = await TestSpecs.LoadSpecAsync(json);
-		var operation = document.Paths["/_x"].Operations![HttpMethod.Post];
+		var operation = document.Paths[path].Operations![HttpMethod.Post];
 		var contentTypes = OperationPageModel.RequestContentTypes(
 			operation.RequestBody,
 			OperationPageModel.PrimaryRequestContent(operation.RequestBody)
