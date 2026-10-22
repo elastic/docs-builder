@@ -564,6 +564,32 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void GeneratedCodeSamples_ExampleOfAnotherContentType_GetsNoCurlFromTheJsonTemplate()
+	{
+		var scenario = new ExampleScenario
+		{
+			Title = "Plain text",
+			TabId = "plain-text",
+			RequestJson = "hello",
+			RequestLine = ("POST", "/_x"),
+			MediaType = "text/plain"
+		};
+		var spec = new[]
+		{
+			new CodeSample(
+				"curl",
+				"curl -X POST -H \"Content-Type: application/json\" -d '{}' \"${ELASTICSEARCH_URL}/_x\"",
+				"language-curl"
+			)
+		};
+		var endpoint = OperationEndpoint.FromVariants([new EndpointVariant("post", "/_x")], "/_x");
+
+		var samples = GeneratedCodeSamples.Fill([scenario], spec, endpoint, "").Single().CodeSamples;
+
+		samples.Select(static s => s.Language).Should().Equal("Console");
+	}
+
+	[Test]
 	public void GeneratedCodeSamples_RequestLineMethodNotOnTheRow_IsKept()
 	{
 		var slicing = new ExampleScenario { Title = "Slicing", TabId = "slicing", RequestJson = "{}", RequestLine = ("GET", "/_search") };

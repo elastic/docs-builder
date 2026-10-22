@@ -186,6 +186,47 @@ public class SuffixedExamplesSpecTests
 		scenarios[1].Responses.Should().ContainSingle().Which.JsonValue.Should().Contain("\"r\":2");
 	}
 
+	[Test]
+	public async Task OperationSamples_OfAnExampleThatRepeatsOnlyTheConsoleSample_FollowThatExample()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x",
+			  "x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"b\":2}"},{"lang":"Java","source":"java()"}],
+			  "requestBody":{"content":{"application/json":{"schema":{"type":"object"},"examples":{
+			    "First":{"summary":"First","value":{"a":1}},
+			    "Second":{"summary":"Second","value":{"b":2},"x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"b\":2}"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
+		scenarios[0].CodeSamples.Should().BeEmpty();
+		scenarios[1].CodeSamples.Select(c => c.Language).Should().Equal("Console", "Java");
+	}
+
+	[Test]
+	public async Task SuffixedSamples_OfAnExampleTitledExample_SkipTheScenarioOfUnmatchedSamples()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x",
+			  "x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"other\":true}"},{"lang":"Python_Example","source":"named()"}],
+			  "requestBody":{"content":{"application/json":{"schema":{"type":"object"},"examples":{
+			    "Example":{"summary":"Example","value":{"a":1}}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Should().HaveCount(2);
+		scenarios[0].FromUnmatchedSamples.Should().BeTrue();
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().NotContain("named()");
+		scenarios[1].RequestJson.Should().Contain("\"a\"");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("named()");
+	}
+
 	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenariosFromSpec(
 		string json,
 		IReadOnlyList<ExampleDisplay>? responses = null
@@ -193,9 +234,15 @@ public class SuffixedExamplesSpecTests
 	{
 		var document = await TestSpecs.LoadSpecAsync(json);
 		var operation = document.Paths["/_x"].Operations![HttpMethod.Post];
-		var perContentType = operation.RequestBody!.Content!.Values.Select(static m => m.Examples).ToArray();
-		var examples = OperationPageModel.MapRequestExamples(perContentType, static m => new HtmlString(m ?? ""));
-		var samples = OperationPageModel.WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), perContentType);
+		var contentTypes = OperationPageModel.RequestContentTypes(
+			operation.RequestBody,
+			OperationPageModel.PrimaryRequestContent(operation.RequestBody)
+		);
+		var examples = OperationPageModel.MapRequestExamples(contentTypes, static m => new HtmlString(m ?? ""));
+		var samples = OperationPageModel.WithExampleCodeSamples(
+			OpenApiExtensionReader.ParseCodeSamples(operation),
+			contentTypes.Select(static c => c.Examples)
+		);
 		return OperationPageModel.BuildExampleScenarios(examples, responses ?? [], samples);
 	}
 

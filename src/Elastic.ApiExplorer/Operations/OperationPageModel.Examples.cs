@@ -24,6 +24,9 @@ public record ExampleDisplay(
 
 	/// <summary>What the response's status code means, from the spec's <c>responses.&lt;code&gt;.description</c>.</summary>
 	public string? StatusDescription { get; init; }
+
+	/// <summary>The request content type the example is listed under.</summary>
+	public string? MediaType { get; init; }
 }
 
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
@@ -66,6 +69,12 @@ public record ExampleScenario
 
 	/// <summary>Method and path the example description says to run; generated samples use it.</summary>
 	public (string Method, string Path)? RequestLine { get; init; }
+
+	/// <summary>The request content type of the example; generated curl samples only fit JSON.</summary>
+	public string? MediaType { get; init; }
+
+	/// <summary>True for an example made only to hold code samples that match no named example.</summary>
+	public bool FromUnmatchedSamples { get; init; }
 
 	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
 	public bool CodeSamplesIncludeRequest { get; init; }
@@ -168,32 +177,60 @@ public partial record OperationPageModel
 		if (exampleSamples.Count == 0)
 			return operationSamples;
 
-		// A local sample wins over an operation sample of the same example and language, suffixed or repeated verbatim.
+		// The operation samples an example repeats verbatim are its own. The rest of that group belongs to the same
+		// example, so they follow it instead of attaching to whichever example the body check finds.
+		var unsuffixed = operationSamples.Where(static s => s.Scenario is null).ToArray();
+		var owner = exampleSamples
+			.Select(
+				local => (Local: local, Match: unsuffixed.FirstOrDefault(u => u.Language == local.Language && u.Source == local.Source))
+			)
+			.Where(static pair => pair.Match is not null)
+			.OrderByDescending(static pair => pair.Match!.IsConsole)
+			.Select(static pair => pair.Local.Scenario)
+			.FirstOrDefault();
 		var repeated = exampleSamples.Select(static s => (s.Language, s.Source)).ToHashSet();
+		var carried = operationSamples.Where(s => s.Scenario is not null || !repeated.Contains((s.Language, s.Source))).Select(
+			s => s.Scenario is null && owner is not null ? s with { Scenario = owner } : s
+		);
+
+		// A local sample wins over an operation sample of the same example and language.
 		var local = exampleSamples.Select(static s => (s.Scenario!.ToUpperInvariant(), s.Language.ToUpperInvariant())).ToHashSet();
 		return [
-			.. operationSamples.Where(
-				s => s.Scenario is null
-					? !repeated.Contains((s.Language, s.Source))
-					: !local.Contains((s.Scenario.ToUpperInvariant(), s.Language.ToUpperInvariant()))
-			),
+			.. carried.Where(s => !local.Contains((s.Scenario?.ToUpperInvariant() ?? "", s.Language.ToUpperInvariant()))),
 			.. exampleSamples
 		];
+	}
+
+	/// <summary>The content types of a request with their examples, the primary one first.</summary>
+	internal static (string? MediaType, IDictionary<string, IOpenApiExample>? Examples)[] RequestContentTypes(
+		IOpenApiRequestBody? requestBody,
+		KeyValuePair<string, IOpenApiMediaType>? primary
+	)
+	{
+		var result = new List<(string?, IDictionary<string, IOpenApiExample>?)>();
+		if (primary is { } first)
+			result.Add((first.Key, first.Value?.Examples));
+		foreach (var (mediaType, media) in requestBody?.Content ?? new Dictionary<string, IOpenApiMediaType>())
+		{
+			if (primary is not { } p || mediaType != p.Key)
+				result.Add((mediaType, media?.Examples));
+		}
+
+		return [.. result];
 	}
 
 	/// <summary>
 	/// The request examples of every content type, the primary one first. Examples with the same title show as one.
 	/// </summary>
 	internal static IReadOnlyList<ExampleDisplay> MapRequestExamples(
-		IEnumerable<IDictionary<string, IOpenApiExample>?> examplesPerContentType,
+		IEnumerable<(string? MediaType, IDictionary<string, IOpenApiExample>? Examples)> examplesPerContentType,
 		Func<string?, HtmlString> renderMarkdown,
 		OperationEndpoint? endpoint = null
 	) =>
 		[
-			.. examplesPerContentType.SelectMany(e => MapExamples(e, renderMarkdown, endpoint: endpoint)).DistinctBy(
-				static e => e.Title,
-				StringComparer.OrdinalIgnoreCase
-			)
+			.. examplesPerContentType.SelectMany(
+				c => MapExamples(c.Examples, renderMarkdown, endpoint: endpoint).Select(e => e with { MediaType = c.MediaType })
+			).DistinctBy(static e => e.Title, StringComparer.OrdinalIgnoreCase)
 		];
 
 	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
@@ -239,6 +276,7 @@ public partial record OperationPageModel
 				{
 					Title = "Example",
 					TabId = UniqueTabId("example", scenarios),
+					FromUnmatchedSamples = true,
 					CodeSamples = codeSamples,
 					Responses = scenarios[0].Responses.Where(static r => !r.StatusCode.StartsWith('2')).ToArray()
 				}
@@ -263,11 +301,12 @@ public partial record OperationPageModel
 		{
 			var title = HumanizeExampleKey(group.Key);
 			var existing = result.FindIndex(
-				s => string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
-					s.Title,
-					group.Key,
-					StringComparison.OrdinalIgnoreCase
-				)
+				s => !s.FromUnmatchedSamples &&
+					(string.Equals(s.Title, title, StringComparison.OrdinalIgnoreCase) || string.Equals(
+						s.Title,
+						group.Key,
+						StringComparison.OrdinalIgnoreCase
+					))
 			);
 			if (existing >= 0)
 			{
@@ -363,7 +402,8 @@ public partial record OperationPageModel
 					RequestDescriptionHtml = existing.RequestDescriptionHtml ?? example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
-					RequestLine = example.RequestLine
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
 				}
 				: existing with { Responses = UpsertResponse(existing.Responses, example) };
 			return;
@@ -379,7 +419,8 @@ public partial record OperationPageModel
 					RequestDescriptionHtml = example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
-					RequestLine = example.RequestLine
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
 				}
 				: new ExampleScenario
 				{
