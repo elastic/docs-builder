@@ -22,7 +22,10 @@ public class ApiEndpointPathTests
 		ApiEndpointPath.IndexKeys(["/{index}/_doc/{id}"]).Should().Equal("{index}/_doc/{id}", "_doc/{id}", "{index}/_doc", "_doc");
 
 	[Test]
-	public void IndexKeys_OnlyParameter_ReturnsFullPathOnly() => ApiEndpointPath.IndexKeys(["/{index}"]).Should().Equal("{index}");
+	public void IndexKeys_OnlyParameter_ReturnsEmpty() => ApiEndpointPath.IndexKeys(["/{index}"]).Should().BeEmpty();
+
+	[Test]
+	public void IndexKeys_OnlyParameters_ReturnsEmpty() => ApiEndpointPath.IndexKeys(["/{index}/{type}"]).Should().BeEmpty();
 
 	[Test]
 	public void QueryCandidates_ValueThenEndpoint_ReturnsFullRunThenSingleSegments() =>

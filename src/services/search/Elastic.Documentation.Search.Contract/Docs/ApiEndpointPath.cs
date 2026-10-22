@@ -21,10 +21,10 @@ public static partial class ApiEndpointPath
 	/// <summary>
 	/// Every way a user could type an endpoint path: lowercased, no leading <c>/</c>, each path also without
 	/// its leading and/or trailing <c>{param}</c> segments. Deduped in first-seen order. Braces stay;
-	/// <c>endpoint_normalizer</c> removes them in the index.
+	/// <c>endpoint_normalizer</c> removes them in the index. A key needs at least one literal segment.
 	/// </summary>
 	public static string[] IndexKeys(IEnumerable<string> paths) =>
-		paths.SelectMany(Variants).Where(k => k.Length > 0).Distinct(StringComparer.Ordinal).ToArray();
+		paths.SelectMany(Variants).Where(HasLiteralSegment).Distinct(StringComparer.Ordinal).ToArray();
 
 	/// <summary>
 	/// Every contiguous run of segments in an already normalized query, longest first then leftmost first.
@@ -63,6 +63,9 @@ public static partial class ApiEndpointPath
 		yield return string.Join('/', segments.Take(segments.Length - trailing));
 		yield return string.Join('/', segments.Skip(leading).Take(innerLength));
 	}
+
+	// The normalizer strips braces, so a key of only {param} segments would match plain words like "index".
+	private static bool HasLiteralSegment(string key) => key.Split('/').Any(s => s.Length > 0 && !IsPathParameter(s));
 
 	private static bool IsPathParameter(string segment) => segment.StartsWith('{') && segment.EndsWith('}');
 

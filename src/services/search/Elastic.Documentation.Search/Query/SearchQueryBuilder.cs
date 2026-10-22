@@ -87,8 +87,8 @@ public static class SearchQueryBuilder
 	/// <summary>
 	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
 	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
-	/// with the same token. Each contiguous run of the typed segments scores by the share of the query it covers,
-	/// and <c>dis_max</c> keeps the best one.
+	/// with the same token. Each contiguous run of the typed segments scores <c>5 * (1 + run) / (1 + total)</c>
+	/// by segment count, so a partial run weighs more than its bare share, and <c>dis_max</c> keeps the best one.
 	/// </summary>
 	public static Query? BuildApiEndpointQuery(string searchQuery)
 	{
@@ -104,7 +104,7 @@ public static class SearchQueryBuilder
 					(Query)new ConstantScoreQuery
 					{
 						Filter = new TermQuery { Field = QueryFieldNames.ApiEndpoints, Value = c.Term },
-						Boost = 5.0f * c.Segments / total
+						Boost = 5.0f * (1 + c.Segments) / (1 + total)
 					}
 			).ToList()
 		};

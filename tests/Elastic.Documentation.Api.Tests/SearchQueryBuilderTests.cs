@@ -35,7 +35,7 @@ public class SearchQueryBuilderTests
 	}
 
 	[Test]
-	public void BuildApiEndpointQuery_ValueThenEndpoint_ScoresEachRunByShareOfQuery()
+	public void BuildApiEndpointQuery_ValueThenEndpoint_ScoresFullRunAboveSingleSegments()
 	{
 		var query = SearchQueryBuilder.BuildApiEndpointQuery("my-index/_search");
 
@@ -44,7 +44,21 @@ public class SearchQueryBuilderTests
 			.SerializeToString(query)
 			.Should()
 			.Be(
-				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"term":{"api.endpoints":{"value":"my-index/_search"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"my-index"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"_search"}}}}}]}}"""
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"term":{"api.endpoints":{"value":"my-index/_search"}}}}},{"constant_score":{"boost":3.3333333,"filter":{"term":{"api.endpoints":{"value":"my-index"}}}}},{"constant_score":{"boost":3.3333333,"filter":{"term":{"api.endpoints":{"value":"_search"}}}}}]}}"""
+			);
+	}
+
+	[Test]
+	public void BuildApiEndpointQuery_ThreeSegments_ScoresLongerRunsHigher()
+	{
+		var query = SearchQueryBuilder.BuildApiEndpointQuery("_cat/indices/logs-2026");
+
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(query)
+			.Should()
+			.Be(
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"term":{"api.endpoints":{"value":"_cat/indices/logs-2026"}}}}},{"constant_score":{"boost":3.75,"filter":{"term":{"api.endpoints":{"value":"_cat/indices"}}}}},{"constant_score":{"boost":3.75,"filter":{"term":{"api.endpoints":{"value":"indices/logs-2026"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"_cat"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"indices"}}}}},{"constant_score":{"boost":2.5,"filter":{"term":{"api.endpoints":{"value":"logs-2026"}}}}}]}}"""
 			);
 	}
 
