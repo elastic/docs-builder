@@ -2149,4 +2149,40 @@ public class ChangelogConfigurationTests() : ChangelogTestBase()
 		config.Should().BeNull();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.areas maps no labels"));
 	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredProductsWithoutLabels_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [products]
+			{RequiredPivotTypes}
+			  products:
+			    'elasticsearch':
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.products maps no labels"));
+	}
+
+	[Test]
+	public async Task LoadChangelogConfiguration_PivotRequiredAreasWithoutLabels_ReturnsError()
+	{
+		// language=yaml
+		var config = await LoadConfig(
+			$"""
+			pivot:
+			  required: [areas]
+			{RequiredPivotTypes}
+			  areas:
+			    Search:
+			"""
+		);
+
+		config.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pivot.areas maps no labels"));
+	}
 }

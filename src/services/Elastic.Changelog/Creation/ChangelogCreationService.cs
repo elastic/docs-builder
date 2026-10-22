@@ -423,10 +423,12 @@ public class ChangelogCreationService(
 			return false;
 
 		// Fetch PR info when any derivable field is still missing (title, type, or products),
-		// or when a breaking change could still pick up Impact and Action from the PR description.
+		// when a breaking change could still pick up Impact and Action from the PR description,
+		// or when pivot.required lists areas and none was given: the PR labels name the area.
 		var needsDerivation = string.IsNullOrWhiteSpace(input.Title)
 			|| string.IsNullOrWhiteSpace(input.Type)
 			|| input.Products.Count == 0
+			|| IsAreaMissing(input, config)
 			|| NeedsImpactActionFromPr(input);
 		if (!string.IsNullOrWhiteSpace(prUrl) && needsDerivation)
 		{

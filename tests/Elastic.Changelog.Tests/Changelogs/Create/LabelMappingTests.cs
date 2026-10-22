@@ -1012,4 +1012,31 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndTitleTypeProductsGiven_StillFetchesThePrForTheAreaLabel()
+	{
+		// The documented CI flow passes title, type and products, so nothing else would trigger the PR fetch
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":Search"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Title = "Fix something",
+			Type = "bug-fix",
+			Products = [new ProductArgument { Product = "kibana" }],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).MustHaveHappened();
+	}
 }
