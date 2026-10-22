@@ -172,6 +172,7 @@ public class ChangelogPrEvaluationService(
 		var ambiguousTypeLabels = resolution.AmbiguousTypeLabels;
 		var resolvedProducts = resolution.Products;
 		var productLabelTable = resolution.ProductLabelTable;
+		var areaLabelTable = resolution.AreaLabelTable;
 
 		if (ambiguousTypeLabels != null)
 		{
@@ -210,13 +211,15 @@ public class ChangelogPrEvaluationService(
 				resolvedDescription: description,
 				labelTable: noTypeLabelTable,
 				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
 			);
 			await WriteDecisionMetadataAsync(
 				input,
 				"no-label",
 				labelTable: BuildLabelKeys(config.LabelToType),
 				productLabelTable: productLabelTable,
+				areaLabelTable: areaLabelTable,
 				skipLabels: skipLabels,
 				defaultBranch: defaultBranch,
 				ctx: ctx
@@ -224,31 +227,43 @@ public class ChangelogPrEvaluationService(
 			return false;
 		}
 
-		// Multiple products are configured via labels but none matched, and no defaults are
-		// available to fill in via inference at 'changelog add' time. Surface this as a
-		// missing-label failure so the contributor sees an actionable hint instead of a hard
-		// error later in the workflow.
-		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
+		// A product label is required and none matched (several products are configured without defaults, or
+		// pivot.required lists products), or pivot.required lists areas and no area label matched. Surface this as a
+		// missing-label failure so the contributor sees an actionable hint instead of a hard error later in the workflow.
+		if (resolution.MissingProduct || resolution.MissingArea)
 		{
-			_logger.LogInformation("Multiple products configured but no matching product label on PR; no default products configured");
-			var productLabels = config.LabelToProducts is { Count: > 0 }
-				? string.Join(", ", config.LabelToProducts.Keys)
-				: "(none configured)";
-			collector.EmitError(
-				string.Empty,
-				$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
-			);
+			if (resolution.MissingProduct)
+			{
+				_logger.LogInformation("No matching product label on PR");
+				var productLabels = config.LabelToProducts is { Count: > 0 }
+					? string.Join(", ", config.LabelToProducts.Keys)
+					: "(none configured)";
+				collector.EmitError(
+					string.Empty,
+					$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
+				);
+			}
+
+			if (resolution.MissingArea)
+			{
+				_logger.LogInformation("No matching area label on PR");
+				collector.EmitError(string.Empty, AreaResolution.MissingAreaLabelMessage("this PR", config));
+			}
+
+			var missingProductTable = resolution.MissingProduct ? productLabelTable : null;
 			_ = await SetOutputs(
 				PrEvaluationResult.NoLabel,
 				title,
 				resolvedDescription: description,
-				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
+				productLabelTable: missingProductTable,
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
 			);
 			await WriteDecisionMetadataAsync(
 				input,
 				"no-label",
-				productLabelTable: productLabelTable,
+				productLabelTable: missingProductTable,
+				areaLabelTable: areaLabelTable,
 				skipLabels: skipLabels,
 				defaultBranch: defaultBranch,
 				ctx: ctx
@@ -499,6 +514,7 @@ public class ChangelogPrEvaluationService(
 		Cancel ctx,
 		string? labelTable = null,
 		string? productLabelTable = null,
+		string? areaLabelTable = null,
 		string? skipLabels = null,
 		string? changelogDir = null,
 		string? changelogFilename = null,
@@ -529,6 +545,7 @@ public class ChangelogPrEvaluationService(
 			HeadRepo = input.HeadRepo,
 			LabelTable = labelTable,
 			ProductLabelTable = productLabelTable,
+			AreaLabelTable = areaLabelTable,
 			SkipLabels = skipLabels,
 			ChangelogDir = changelogDir,
 			ChangelogFilename = changelogFilename,
@@ -571,7 +588,8 @@ public class ChangelogPrEvaluationService(
 		string? resolvedImpact = null,
 		string? resolvedAction = null,
 		string? resolvedEntryImpact = null,
-		string? resolvedEntryAction = null
+		string? resolvedEntryAction = null,
+		string? areaLabelTable = null
 	)
 	{
 		var statusString = status == PrEvaluationResult.Success ? ProceedStatus : status.ToStringFast(true);
@@ -627,6 +645,11 @@ public class ChangelogPrEvaluationService(
 			await coreService.SetOutputAsync(
 				"product-label-table",
 				OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength)
+			);
+		if (areaLabelTable != null)
+			await coreService.SetOutputAsync(
+				"area-label-table",
+				OutputSanitizer.SanitizeForOutput(areaLabelTable, OutputSanitizer.LabelTableMaxLength)
 			);
 		if (changelogDir != null)
 			await coreService.SetOutputAsync(

@@ -143,6 +143,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, string>? labelToProducts;
 		Dictionary<string, string>? labelToFeatures;
 		PivotConfiguration? pivot = null;
+		var requiredPivots = RequiredPivot.None;
 
 		if (yamlConfig.Pivot != null)
 		{
@@ -275,6 +276,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 			labelToFeatures = BuildLabelToFeaturesMapping(yamlConfig.Pivot.Features);
+
+			if (ParseRequiredPivots(collector, yamlConfig.Pivot, configPath) is not { } parsedRequired)
+				return null;
+			requiredPivots = parsedRequired;
 		}
 		else
 		{
@@ -437,6 +442,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
+			RequiredPivots = requiredPivots,
 			Types = availableTypes,
 			SubTypes = availableSubtypes,
 			Lifecycles = lifecycles,
@@ -453,6 +459,41 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Extract = extract,
 			Filename = filenameStrategy
 		};
+	}
+
+	private static RequiredPivot? ParseRequiredPivots(IDiagnosticsCollector collector, PivotConfigurationYaml pivot, string configPath)
+	{
+		var required = RequiredPivot.None;
+		foreach (var value in pivot.Required?.Values ?? [])
+		{
+			switch (value.Trim().ToLowerInvariant())
+			{
+				// The type is always required, so listing it changes nothing.
+				case "types":
+					break;
+				case "areas" when pivot.Areas is not { Count: > 0 }:
+				case "products" when pivot.Products is not { Count: > 0 }:
+					collector.EmitError(
+						configPath,
+						$"pivot.required lists '{value}', but pivot.{value.Trim().ToLowerInvariant()} maps no labels, so no PR could satisfy it. Add labels to pivot.{value.Trim().ToLowerInvariant()}."
+					);
+					return null;
+				case "areas":
+					required |= RequiredPivot.Areas;
+					break;
+				case "products":
+					required |= RequiredPivot.Products;
+					break;
+				default:
+					collector.EmitError(
+						configPath,
+						$"'{value}' in pivot.required is not a pivot that can be required. Valid values: types, areas, products."
+					);
+					return null;
+			}
+		}
+
+		return required;
 	}
 
 	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)

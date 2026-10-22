@@ -25,12 +25,18 @@ public enum ProductAssignment
 /// <param name="Products">The formatted product specs, or null when no product was resolved.</param>
 /// <param name="ProductAssignment">How <paramref name="Products"/> was resolved.</param>
 /// <param name="ProductLabelTable">The product label table to show when a product label could be added; null otherwise.</param>
+/// <param name="MissingProduct">True when a product label is required and none is on the PR.</param>
+/// <param name="MissingArea">True when <c>pivot.required</c> lists <c>areas</c> and no area label is on the PR.</param>
+/// <param name="AreaLabelTable">The area label table to show when <paramref name="MissingArea"/> is true; null otherwise.</param>
 public sealed record PrLabelResolution(
 	string? Type,
 	string? AmbiguousTypeLabels,
 	string? Products,
 	ProductAssignment ProductAssignment,
-	string? ProductLabelTable
+	string? ProductLabelTable,
+	bool MissingProduct,
+	bool MissingArea,
+	string? AreaLabelTable
 )
 {
 	public bool IsAmbiguousType => AmbiguousTypeLabels != null;
@@ -47,7 +53,10 @@ public static class PrLabelResolver
 	{
 		var (type, ambiguous) = ResolveType(labels, config);
 		var (products, assignment, productLabelTable) = ResolveProducts(labels, config);
-		return new PrLabelResolution(type, ambiguous, products, assignment, productLabelTable);
+		var missingProduct = productLabelTable != null && ProductResolution.RequiresProductLabel(config);
+		var missingArea = AreaResolution.RequiresAreaLabel(config) && AreaResolution.FromLabels(labels, config).Count == 0;
+		var areaLabelTable = missingArea ? ChangelogTableRenderers.BuildAreaLabelTable(config.LabelToAreas) : null;
+		return new PrLabelResolution(type, ambiguous, products, assignment, productLabelTable, missingProduct, missingArea, areaLabelTable);
 	}
 
 	// Detects multiple matching labels before picking one.
@@ -76,9 +85,10 @@ public static class PrLabelResolver
 			return (ProductArgument.FormatProductSpecs(products), ProductAssignment.FromLabels, null);
 
 		// When only one distinct product is configured, assigning it implicitly is
-		// unambiguous — no point requiring contributors to add a redundant label.
+		// unambiguous — no point requiring contributors to add a redundant label,
+		// unless pivot.required asks for one.
 		var distinctSpecs = labelToProducts.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-		if (distinctSpecs.Count == 1)
+		if (distinctSpecs.Count == 1 && !ProductResolution.RequiresProductLabelExplicitly(config))
 			return (ProductArgument.FormatProductSpecs(
 				ProductArgument.ParseProductSpecs(distinctSpecs[0])
 			), ProductAssignment.SingleConfigured, null);

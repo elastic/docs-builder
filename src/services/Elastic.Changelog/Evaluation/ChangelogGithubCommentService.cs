@@ -254,7 +254,8 @@ public class ChangelogGithubCommentService(
 
 		// Step 1 (label gate): labels are missing — tell the author which ones to add.
 		// Dispatches on Gate when present; falls back to status for artifacts written before Gate was added.
-		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels)
+		// evaluate-pr (File gate) also reports missing labels, with the same wording.
+		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels or ValidationGate.File)
 		{
 			_logger.LogInformation("Rendering labels-needed body for PR #{PrNumber}", metadata.PrNumber);
 			return ChangelogCommentRenderer.RenderLabelsNeeded(
@@ -265,7 +266,8 @@ public class ChangelogGithubCommentService(
 				metadata.AmbiguousTypeLabels,
 				owner,
 				repo,
-				metadata.DefaultBranch
+				metadata.DefaultBranch,
+				metadata.AreaLabelTable
 			);
 		}
 

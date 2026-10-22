@@ -255,7 +255,8 @@ internal static class ChangelogCommentRenderer
 		string? ambiguousTypeLabels = null,
 		string? owner = null,
 		string? repo = null,
-		string? defaultBranch = null
+		string? defaultBranch = null,
+		string? areaLabelTable = null
 	)
 	{
 		// An absolute path is a runner location, not a repository path, so it cannot form a link.
@@ -268,14 +269,11 @@ internal static class ChangelogCommentRenderer
 		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
+		var hasAreaIssue = !string.IsNullOrWhiteSpace(areaLabelTable);
 
 		var headline = hasAmbiguousType
 			? "🏷️ **Multiple type labels set** — a PR can only have one type. Remove all but one."
-			: hasTypeIssue && hasProductIssue
-				? "🏷️ **Changelog labels needed** — add type and product labels so we can determine this PR's release-notes status."
-				: hasProductIssue
-					? "🏷️ **Product label needed** — add a product label so we can determine this PR's release-notes status."
-					: "🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.";
+			: BuildMissingLabelsHeadline(hasTypeIssue, hasProductIssue, hasAreaIssue);
 
 		var sections = new List<string>();
 
@@ -294,11 +292,14 @@ internal static class ChangelogCommentRenderer
 			);
 			sections.Add($"\n🔖 Add one of these type labels to your PR: {string.Join(", ", inlineLabels)}");
 		}
-		else if (!hasProductIssue)
+		else if (!hasProductIssue && !hasAreaIssue)
 			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configRef}.");
 
 		if (hasProductIssue)
 			sections.Add(string.Join("\n", "", "📦 Add one or more **product** labels to your PR:", "", productLabelTable));
+
+		if (hasAreaIssue)
+			sections.Add(string.Join("\n", "", "🗂️ Add one or more **area** labels to your PR:", "", areaLabelTable));
 
 		string skipSection;
 		if (!string.IsNullOrWhiteSpace(skipLabels))
@@ -356,6 +357,31 @@ internal static class ChangelogCommentRenderer
 			yield return $"- **Products:** {WrapInlineCode(outcome.Products)}";
 		if (!string.IsNullOrWhiteSpace(outcome.Areas))
 			yield return $"- **Areas:** {WrapInlineCode(outcome.Areas)}";
+	}
+
+	/// <summary>
+	/// The single-pivot wordings are kept as they were; two or more missing pivots share one "labels needed" headline.
+	/// With nothing flagged, the type label is what the author has to add.
+	/// </summary>
+	private static string BuildMissingLabelsHeadline(bool hasTypeIssue, bool hasProductIssue, bool hasAreaIssue)
+	{
+		const string status = "so we can determine this PR's release-notes status.";
+		var missing = new List<string>();
+		if (hasTypeIssue)
+			missing.Add("type");
+		if (hasProductIssue)
+			missing.Add("product");
+		if (hasAreaIssue)
+			missing.Add("area");
+
+		return missing switch
+		{
+			[] or ["type"] => $"🏷️ **Changelog label needed** — add a type label {status}",
+			["product"] => $"🏷️ **Product label needed** — add a product label {status}",
+			["area"] => $"🏷️ **Area label needed** — add an area label {status}",
+			_ =>
+				$"🏷️ **Changelog labels needed** — add {string.Join(", ", missing.Take(missing.Count - 1))} and {missing[^1]} labels {status}"
+		};
 	}
 
 	/// <summary>

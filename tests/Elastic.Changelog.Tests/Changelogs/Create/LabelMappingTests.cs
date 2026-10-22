@@ -924,4 +924,92 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Split('\n').Should().NotContain(line => line.TrimStart().StartsWith("feature-id:", StringComparison.Ordinal));
 	}
+
+	private const string RequiredAreaConfig =
+		"""
+		pivot:
+		  required: [areas]
+		  types:
+		    feature:
+		    bug-fix: "type:bug"
+		    breaking-change:
+		  areas:
+		    Search: ":Search"
+		  products:
+		    'kibana':
+		      - ":stack/kibana"
+		lifecycles:
+		  - ga
+		""";
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndNoAreaLabel_FailsAPr()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching area label found on PR https://github.com/elastic/kibana/pull/12345"
+				) && d.Message.Contains("--areas")
+			);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndAreaLabel_WritesTheEntry()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana", ":Search"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndExplicitAreas_WritesTheEntry()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Areas = ["Search"],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+	}
 }
