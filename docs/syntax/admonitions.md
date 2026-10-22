@@ -2,6 +2,8 @@
 
 Admonitions allow you to highlight important information with varying levels of priority. In software documentation, these blocks are used to emphasize risks, provide helpful advice, or share relevant but non-critical details.
 
+Use them sparingly. Admonitions interrupt the reader to highlight something they can't afford to miss, and the more you use them, the less any one of them stands out. Aim for no more than one per section, don't stack them, and keep information that readers need to complete a task in the body text. For more writing guidance, refer to the [Elastic style guide](https://www.elastic.co/docs/contribute-docs/style-guide/formatting#admonitions).
+
 ## Basic admonitions
 
 Admonitions can span multiple lines and support inline formatting.
