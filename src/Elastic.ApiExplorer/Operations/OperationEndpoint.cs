@@ -32,9 +32,13 @@ public sealed partial record OperationEndpoint(
 	IReadOnlyList<EndpointRow> Rows,
 	IReadOnlySet<string> OptionalPathParameters,
 	string ShortestRoute,
-	string? Description
+	string? Description,
+	string? SpaceParameter = null
 )
 {
+	/// <summary>What the Kibana specs say after the Spaces route listing; it becomes the description of the <c>space_id</c> path parameter.</summary>
+	public const string SpacesNote = "Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.";
+
 	private static readonly string[] MethodRank = ["post", "put", "patch", "get", "delete", "head", "options", "trace"];
 
 	/// <summary>
@@ -100,7 +104,8 @@ public sealed partial record OperationEndpoint(
 			.Select(static s => s[1..^1])
 			.ToHashSet(StringComparer.Ordinal);
 		var shortest = routes.OrderBy(static r => Split(r).Length).ThenBy(static r => r.Length).First();
-		return new OperationEndpoint(rows, optionalParameters, shortest, description);
+		var spaceParameter = spaced.FirstOrDefault() is { } spaceRoute ? Split(spaceRoute)[1][1..^1] : null;
+		return new OperationEndpoint(rows, optionalParameters, shortest, description, spaceParameter);
 	}
 
 	/// <summary>
@@ -370,7 +375,7 @@ public sealed partial record OperationEndpoint(
 		| RegexOptions.CultureInvariant)]
 	private static partial Regex PathBadge();
 
-	[GeneratedRegex("""\*\*(?:All methods and paths|Spaces method and path) for this operation:\*\*\s*(?:<div\b[^>]*>.*?</div>\s*)+""", RegexOptions.IgnoreCase
+	[GeneratedRegex("""\*\*(?:All methods and paths|Spaces method and path) for this operation:\*\*\s*(?:<div\b[^>]*>.*?</div>\s*)+(?:Refer to (?:\[Spaces\]\([^)]*\)|Spaces) for more information\.\s*)?""", RegexOptions.IgnoreCase
 		| RegexOptions.Singleline
 		| RegexOptions.CultureInvariant)]
 	private static partial Regex PathListing();

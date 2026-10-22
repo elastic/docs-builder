@@ -43,7 +43,7 @@ public partial record OperationPageModel
 		ParameterRowSource source
 	)
 	{
-		var rows = parameters
+		var rows = WithSpaceParameter(parameters, location, source.Endpoint)
 			.Where(p => p.In == location && !(location == ParameterLocation.Header && IgnoredHeaders.Contains(p.Name ?? "")))
 			.Select(
 				p => new ParameterRowInput(
@@ -59,9 +59,36 @@ public partial record OperationPageModel
 		);
 	}
 
+	/// <summary>
+	/// Kibana specs declare the <c>/s/{space_id}</c> route only in the description, so the page lists the parameter itself,
+	/// first as it is the route's first segment, unless the spec declares it.
+	/// </summary>
+	private static IEnumerable<IOpenApiParameter> WithSpaceParameter(
+		IEnumerable<IOpenApiParameter> parameters,
+		ParameterLocation location,
+		OperationEndpoint endpoint
+	)
+	{
+		if (
+			location != ParameterLocation.Path
+			|| endpoint.SpaceParameter is not { } name
+			|| parameters.Any(p => p.In == location && p.Name == name)
+		)
+			return parameters;
+
+		IOpenApiParameter space = new OpenApiParameter
+		{
+			Name = name,
+			In = ParameterLocation.Path,
+			Required = false,
+			Description = OperationEndpoint.SpacesNote,
+			Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+		};
+		return parameters.Prepend(space);
+	}
+
 	/// <summary>The route to use without a path parameter that some routes leave out (a sibling route has none); null for any other parameter.</summary>
 	private static string? RouteWithout(IOpenApiParameter parameter, OperationEndpoint endpoint) =>
-		parameter is { In: ParameterLocation.Path, Name: { } name } && endpoint.OptionalPathParameters.Contains(name)
-			? endpoint.ShortestRoute
-			: null;
+		parameter is { In: ParameterLocation.Path, Name: { } name }
+			&& (endpoint.OptionalPathParameters.Contains(name) || name == endpoint.SpaceParameter) ? endpoint.ShortestRoute : null;
 }

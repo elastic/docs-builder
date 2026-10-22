@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -270,6 +271,37 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		section.Should().Contain("<dt id=\"query-tags\">");
 		section.Should().Contain("<dt id=\"query-tags-string\">");
 		section.Should().Contain("&lt;string&gt;");
+	}
+
+	[Test]
+	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterFirst()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things/{id}</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+				+ "\n\nGet a thing.",
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things/{id}", new OpenApiPathItem(), "api");
+
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		page.PathParameterNames.Should().Equal("space_id", "id");
+		var space = page.PathParameters.Items[0];
+		space.IsRequired.Should().BeFalse();
+		space.OptionalRoute.Should().Be("/api/things/{id}");
+		space.DescriptionMarkdown.Should().Be(OperationEndpoint.SpacesNote);
+		page.DescriptionMarkdown.Should().Be("Get a thing.");
 	}
 
 	private ApiRenderContext RenderContext(INavigationItem current) =>
