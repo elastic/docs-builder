@@ -464,8 +464,9 @@ public partial record OperationPageModel
 			.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
 			.ToArray();
 
+	/// <summary>Plain text for the status tab tooltip, which can't render Markdown, so inline code loses its backticks.</summary>
 	private static string? StatusDescriptionOf(IOpenApiResponse? response) =>
-		string.IsNullOrWhiteSpace(response?.Description) ? null : response.Description.Trim();
+		string.IsNullOrWhiteSpace(response?.Description) ? null : response.Description.Replace("`", "", StringComparison.Ordinal).Trim();
 
 	private static IReadOnlyList<ExampleDisplay> MapResponseExamples(OpenApiResponses? responses, Func<string?, HtmlString> renderMarkdown)
 	{

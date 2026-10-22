@@ -44,7 +44,7 @@ public class ApiNavParityTests
 
 		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
 		ordered[1].Should().BeOfType<SidebarSeparatorNavigationItem>();
-		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("search");
+		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("Search");
 	}
 
 	[Test]

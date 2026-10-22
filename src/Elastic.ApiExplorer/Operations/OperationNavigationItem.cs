@@ -25,6 +25,12 @@ public record ApiOperation(
 	// rather than the spec; the sidebar badge must agree with it.
 	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
 
+	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
+	public string DisplayName =>
+		!string.IsNullOrWhiteSpace(Operation.OperationId) && string.Equals(ApiName, Operation.OperationId, StringComparison.Ordinal)
+			? ApiName.TitleCaseFromSlug()
+			: ApiName;
+
 	/// <summary>
 	/// The operation's parameters and the path item's, which apply to every operation on the path unless the operation
 	/// declares one of the same name and location itself.
@@ -70,7 +76,7 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	{
 		NavigationRoot = root;
 		Model = apiOperation;
-		NavigationTitle = apiOperation.ApiName;
+		NavigationTitle = apiOperation.DisplayName;
 		Parent = parent;
 		Url = ApiUrlBuilder.OperationUrl(
 			urlPathPrefix,

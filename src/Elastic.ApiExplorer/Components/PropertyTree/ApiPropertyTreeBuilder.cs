@@ -295,7 +295,9 @@ public partial class ApiPropertyTreeBuilder(
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && row.IsDeprecated,
-			Availability = options.ShowVersionInfo ? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration) : null,
+			Availability = options.ShowVersionInfo
+				? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration, designSystem: options.DesignSystem)
+				: null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
