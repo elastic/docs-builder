@@ -114,9 +114,7 @@ public partial class DefaultSearchService<TDocument>(
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
-		var query = lexicalQuery;
-		if (request.TypeFilter == ApiContentType && SearchQueryBuilder.BuildBareWordEndpointQuery(request.Query) is { } bareWordEndpoint)
-			query = new BoolQuery { Must = [lexicalQuery], Should = [bareWordEndpoint] };
+		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>

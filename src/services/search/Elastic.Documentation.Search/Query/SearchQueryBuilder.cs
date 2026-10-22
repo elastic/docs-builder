@@ -129,6 +129,50 @@ public static class SearchQueryBuilder
 		return BuildApiEndpointQuery("_" + word);
 	}
 
+	/// <summary>
+	/// Partial-match fallback for API lookups. The strict lexical query needs every typed word, so
+	/// <c>create deployment cloud</c> finds only operations that contain all three. From three words on, this
+	/// clause also matches operations that contain 75% of them, at a lower weight than a full match.
+	/// </summary>
+	public static Query? BuildLoosePartialMatchQuery(string searchQuery)
+	{
+		if (searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 3)
+			return null;
+
+		return new BoolQuery
+		{
+			Must =
+			[
+				new MultiMatchQuery
+				{
+					Query = searchQuery,
+					Operator = Operator.Or,
+					MinimumShouldMatch = "75%",
+					Type = TextQueryType.BestFields,
+					Analyzer = "synonyms_analyzer",
+					Boost = 0.5f,
+					Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.Body }
+				}
+			],
+			Filter = [DocumentFilter]
+		};
+	}
+
+	/// <summary>
+	/// API-filtered lookups only: widens the match set with <see cref="BuildLoosePartialMatchQuery"/> and lifts the
+	/// endpoint of a bare word. Both are no-ops for queries they don't apply to.
+	/// </summary>
+	public static Query ApplyApiRanking(Query lexicalQuery, string searchQuery)
+	{
+		var query = BuildLoosePartialMatchQuery(searchQuery) is { } loose
+			? new BoolQuery { Should = [lexicalQuery, loose], MinimumShouldMatch = 1 }
+			: lexicalQuery;
+
+		return BuildBareWordEndpointQuery(searchQuery) is { } bareWordEndpoint
+			? new BoolQuery { Must = [query], Should = [bareWordEndpoint] }
+			: query;
+	}
+
 	public static Query BuildSemanticQuery(string searchQuery) =>
 		(Query)new SemanticQuery(QueryFieldNames.TitleSemanticText, searchQuery) { Boost = 5.0f }
 			|| new SemanticQuery(QueryFieldNames.SummarySemanticText, searchQuery) { Boost = 3.0f }
