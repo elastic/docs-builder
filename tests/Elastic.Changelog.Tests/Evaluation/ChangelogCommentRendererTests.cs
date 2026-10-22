@@ -468,4 +468,59 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("https://github.com/elastic/repo/blob/main/docs/changelog.yml");
 		body.Should().NotContain("/home/runner");
 	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Included_ListsTypeProductsAndAreas()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = true,
+			Type = "feature",
+			Products = "kibana",
+			Areas = "Dashboards"
+		});
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body
+			.Should()
+			.Contain("will be part of the release notes")
+			.And
+			.Contain("`feature`")
+			.And
+			.Contain("`kibana`")
+			.And
+			.Contain("`Dashboards`");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_AreaWithBackticks_CannotBreakOutOfInlineCode()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome { Included = true, Areas = "a`b" });
+
+		body.Should().Contain("``a`b``");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Excluded_StatesTheReason()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = false,
+			Reason = "it has the label skip"
+		});
+
+		body.Should().Contain("will not be part of the release notes** because it has the label skip");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_WithImpactAndAction_AppendsCapturedBlock()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(
+			new ReleaseNoteOutcome { Included = true, Type = "breaking-change" },
+			"Breaks.",
+			"Fix."
+		);
+
+		body.Should().Contain("Breaks.").And.Contain("Fix.");
+	}
 }

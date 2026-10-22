@@ -593,4 +593,148 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 			)
 		).MustHaveHappenedOnceExactly();
 	}
+
+	private static ReleaseNoteOutcome IncludedOutcome() =>
+		new() { Included = true, Type = "feature", Products = "elasticsearch", Areas = "Search, Aggregations" };
+
+	private static void MustHaveUpserted(IGitHubCommentService commentSvc, Func<string, bool> bodyMatches) =>
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				"elastic",
+				"test-repo",
+				42,
+				A<string>.That.Matches(b => bodyMatches(b)),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
+
+	[Test]
+	public async Task PostComment_OutcomeRecordedButOptInOff_StillDeletesStickyComment()
+	{
+		await WriteMetadata(BaseMetadata(status: "ok") with { Gate = ValidationGate.Labels, Outcome = IncludedOutcome() });
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync("elastic", "test-repo", 42, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task PostComment_OptInAndIncluded_RendersTypeProductsAndAreas()
+	{
+		await WriteMetadata(BaseMetadata(status: "ok") with
+		{
+			Gate = ValidationGate.Labels,
+			CommentOnSuccess = true,
+			Outcome = IncludedOutcome()
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		MustHaveUpserted(
+			commentSvc,
+			b => b.Contains("will be part of the release notes") && b.Contains("`feature`") && b.Contains("`elasticsearch`") && b.Contains(
+				"`Search, Aggregations`"
+			)
+		);
+		A.CallTo(
+			() => commentSvc.DeleteStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<CancellationToken>._)
+		).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task PostComment_OptInAndSkipped_RendersExclusionReason()
+	{
+		await WriteMetadata(BaseMetadata(status: "skipped") with
+		{
+			CommentOnSuccess = true,
+			Outcome = new ReleaseNoteOutcome { Included = false, Reason = "it has the label changelog:skip" }
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		MustHaveUpserted(
+			commentSvc,
+			b => b.Contains("will not be part of the release notes") && b.Contains("it has the label changelog:skip")
+		);
+	}
+
+	[Test]
+	public async Task PostComment_OptInAndBreakingChange_PostsOneCommentWithOutcomeAndImpactAction()
+	{
+		await WriteMetadata(BaseMetadata(status: "proceed", canCommit: false) with
+		{
+			Gate = ValidationGate.File,
+			CommentOnSuccess = true,
+			ResolvedType = "breaking-change",
+			Impact = "Users break.",
+			Action = "Upgrade now.",
+			Outcome = new ReleaseNoteOutcome { Included = true, Type = "breaking-change" }
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		MustHaveUpserted(
+			commentSvc,
+			b => b.Contains("will be part of the release notes") && b.Contains("`breaking-change`") && b.Contains(
+				"Users break."
+			) && b.Contains("Upgrade now.")
+		);
+	}
+
+	[Test]
+	public async Task PostComment_OptInButCheckFailed_RendersFailureNotOutcome()
+	{
+		await WriteMetadata(BaseMetadata(status: "no-label") with
+		{
+			LabelTable = "| label | type |",
+			CommentOnSuccess = true,
+			Outcome = IncludedOutcome()
+		});
+		var commentSvc = CreateCommentFake();
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		MustHaveUpserted(commentSvc, b => !b.Contains("will be part of the release notes"));
+	}
+
+	[Test]
+	public async Task WriteAsync_LaterGateWithoutOutcome_KeepsOutcomeAndOptIn()
+	{
+		var writer = new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem);
+		await WriteMetadata(BaseMetadata(status: "ok") with
+		{
+			Gate = ValidationGate.Labels,
+			CommentOnSuccess = true,
+			Outcome = IncludedOutcome()
+		});
+
+		await WriteMetadata(BaseMetadata(status: "ok") with { Gate = ValidationGate.Entries });
+
+		var stored = await writer.ReadAsync(MetadataPath, CancellationToken.None);
+		stored!.Gate.Should().Be(ValidationGate.Entries);
+		stored.CommentOnSuccess.Should().BeTrue();
+		stored.Outcome.Should().BeEquivalentTo(IncludedOutcome());
+	}
+
+	[Test]
+	public async Task WriteAsync_OutcomeFromOtherPr_IsNotCarriedForward()
+	{
+		var writer = new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem);
+		await WriteMetadata(BaseMetadata(status: "ok") with { CommentOnSuccess = true, Outcome = IncludedOutcome() });
+
+		await WriteMetadata(BaseMetadata(status: "ok") with { PrNumber = 43 });
+
+		var stored = await writer.ReadAsync(MetadataPath, CancellationToken.None);
+		stored!.Outcome.Should().BeNull();
+		stored.CommentOnSuccess.Should().BeFalse();
+	}
 }

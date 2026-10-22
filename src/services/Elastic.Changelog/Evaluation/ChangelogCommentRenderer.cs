@@ -327,6 +327,38 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
+	/// Renders the opt-in success body: whether the PR will be part of the release notes and, when it will, its type, products and areas.
+	/// A breaking change's captured Impact and Action go into the same body so the PR never carries two comments.
+	/// </summary>
+	internal static string RenderReleaseNoteOutcome(ReleaseNoteOutcome outcome, string? impact = null, string? action = null)
+	{
+		if (!outcome.Included)
+		{
+			var reason = string.IsNullOrWhiteSpace(outcome.Reason) ? "of the changelog configuration" : outcome.Reason;
+			return Truncate(string.Join("\n", Title, "", $"⏭️ **This PR will not be part of the release notes** because {reason}."));
+		}
+
+		var parts = new List<string> { Title, "", "✅ **This PR will be part of the release notes.**", "" };
+		parts.AddRange(OutcomeFields(outcome));
+		if (impact is not null || action is not null)
+		{
+			parts.Add("");
+			parts.Add(RenderBreakingChangeCaptured(impact, action));
+		}
+		return Truncate(string.Join("\n", parts));
+	}
+
+	private static IEnumerable<string> OutcomeFields(ReleaseNoteOutcome outcome)
+	{
+		if (!string.IsNullOrWhiteSpace(outcome.Type))
+			yield return $"- **Type:** {WrapInlineCode(outcome.Type)}";
+		if (!string.IsNullOrWhiteSpace(outcome.Products))
+			yield return $"- **Products:** {WrapInlineCode(outcome.Products)}";
+		if (!string.IsNullOrWhiteSpace(outcome.Areas))
+			yield return $"- **Areas:** {WrapInlineCode(outcome.Areas)}";
+	}
+
+	/// <summary>
 	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
 	/// clearing the stale Step 1 comment and confirming the release-notes status is determined.
 	/// </summary>

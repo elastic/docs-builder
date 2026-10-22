@@ -158,4 +158,53 @@ public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
 		metadata.PrNumber.Should().Be(42);
 		metadata.Status.Should().Be("no-label");
 	}
+
+	private static IEnvironmentVariables CiEnv()
+	{
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		return env;
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptIn_WritesIncludedOutcomeWithType()
+	{
+		await WriteConfig(MinimalConfig);
+		var args = DefaultArgs(["type:feature"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeTrue();
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeTrue();
+		metadata.Outcome.Type.Should().Be("feature");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInAndSkipLabel_WritesExcludedOutcomeNamingTheLabel()
+	{
+		await WriteConfig(ConfigWithExcludeRule);
+		var args = DefaultArgs(["changelog:skip"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.Status.Should().Be("skipped");
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeFalse();
+		metadata.Outcome.Reason.Should().Contain("changelog:skip");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInOff_WritesNoOutcome()
+	{
+		await WriteConfig(MinimalConfig);
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 42), CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeFalse();
+		metadata.Outcome.Should().BeNull();
+	}
 }

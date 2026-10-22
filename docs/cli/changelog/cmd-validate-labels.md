@@ -10,6 +10,8 @@ Exits non-zero when `status` is `no-label`. All other statuses (`ok`, `skipped`)
 
 When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is set) and `--pr-number` is provided, the command writes a decision metadata file to `.artifacts/changelog-decision/metadata.json`. This file is picked up by the downstream `changelog github-comment` command to post or update the sticky PR comment.
 
+Pass `--comment-on-success` to also record whether the PR will be part of the release notes (type, products and areas, or the reason it is excluded). The comment command then posts that instead of removing the sticky comment. See [Comment on success](cmd-evaluate-pr.md#comment-on-success).
+
 ## GitHub Actions outputs
 
 | Output | Description |
