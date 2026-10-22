@@ -56,6 +56,27 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task ResolveCanonicalDocuments_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().ContainSingle();
+		documents[0].ApiKey.Should().Be("elasticsearch");
+		documents[0].Document.Info!.Title.Should().Be("Elasticsearch main");
+	}
+
+	[Test]
 	public async Task GenerateProducts_IsolatedFixtureKey_DropsPrefixFromUrl()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

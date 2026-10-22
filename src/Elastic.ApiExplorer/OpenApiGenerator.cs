@@ -155,6 +155,22 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
+	/// The unversioned document of every configured API, keyed by the same API key the explorer publishes
+	/// under <c>/api/doc/{key}/</c>. Search indexes exactly the APIs that have pages.
+	/// </summary>
+	public async Task<IReadOnlyList<(string ApiKey, OpenApiDocument Document)>> ResolveCanonicalDocuments(Cancel ctx = default)
+	{
+		var configs = ApiConfigsToRender();
+		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
+		return [
+			.. configs
+				.Zip(resolved, (c, r) => (c.Key, CanonicalDocument(r)?.Document))
+				.Where(x => x.Document is not null)
+				.Select(x => (x.Key, x.Document!))
+		];
+	}
+
+	/// <summary>
 	/// Writes the combined API catalog page once from entries collected across one or more owners.
 	/// </summary>
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
@@ -272,12 +288,15 @@ public class OpenApiGenerator(
 		}
 	}
 
+	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
+		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? (resolved.Documents.Count > 0 ? resolved.Documents[0] : null);
+
 	private ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
 		if (resolved.Documents.Count == 0)
 			return null;
 
-		var canonical = resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? resolved.Documents[0];
+		var canonical = CanonicalDocument(resolved)!;
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)

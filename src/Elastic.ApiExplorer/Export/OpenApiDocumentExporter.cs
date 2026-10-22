@@ -22,15 +22,10 @@ using Microsoft.OpenApi.Reader;
 namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
-/// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
+/// Converts the OpenAPI specifications the API explorer renders into DocumentationDocument instances.
 /// </summary>
 public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
-	private static readonly HttpClient HttpClient = new();
-
-	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
-	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
-
 	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
 	private static partial Regex OperationListIntroRegex();
 
@@ -38,78 +33,10 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
-	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
-	/// </summary>
-	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
-	/// <param name="ctx">Cancellation token</param>
-	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
-	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
-		int? limitPerSource = null,
-		[EnumeratorCancellation] Cancel ctx = default
-	)
-	{
-		// Process Elasticsearch API
-		var elasticsearchCount = 0;
-		await foreach (var doc in ExportFromUrl(ElasticsearchOpenApiUrl, "elasticsearch", ctx))
-		{
-			yield return doc;
-			elasticsearchCount++;
-			if (limitPerSource.HasValue && elasticsearchCount >= limitPerSource.Value)
-				break;
-		}
-
-		// Process Kibana API
-		var kibanaCount = 0;
-		await foreach (var doc in ExportFromUrl(KibanaOpenApiUrl, "kibana", ctx))
-		{
-			yield return doc;
-			kibanaCount++;
-			if (limitPerSource.HasValue && kibanaCount >= limitPerSource.Value)
-				break;
-		}
-	}
-
-	/// <summary>
-	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
-	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(string url, string product, [EnumeratorCancellation] Cancel ctx)
-	{
-		var openApiDocument = await FetchOpenApiDocument(url, ctx);
-		if (openApiDocument == null)
-			yield break;
-
-		foreach (var doc in ConvertToDocuments(openApiDocument, product))
-			yield return doc;
-	}
-
-	/// <summary>
-	/// Fetches and parses an OpenAPI document from a URL.
-	/// </summary>
-	private static async Task<OpenApiDocument?> FetchOpenApiDocument(string url, Cancel ctx)
-	{
-		try
-		{
-			var response = await HttpClient.GetAsync(url, ctx);
-			_ = response.EnsureSuccessStatusCode();
-
-			await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx);
-
-			return openApiDocument.Document;
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"Failed to fetch OpenAPI document from {url}: {ex.Message}");
-			return null;
-		}
-	}
-
-	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
-	/// Internal (rather than private) so tests can exercise it against an in-memory spec.
+	/// <paramref name="product"/> is the API key the explorer publishes the spec under.
 	/// </summary>
-	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
+	public IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
 	{
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
 		// All API products currently version against Stack

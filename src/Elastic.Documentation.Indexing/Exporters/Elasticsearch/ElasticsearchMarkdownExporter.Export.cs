@@ -2,17 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.IO.Abstractions;
+using System.Runtime.CompilerServices;
+using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Export;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Ingest.Elasticsearch.Indices;
+using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
+using Elastic.Markdown.IO;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using static System.StringSplitOptions;
@@ -23,6 +30,9 @@ namespace Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 public partial class ElasticsearchMarkdownExporter
 {
 	private IDocumentInferrerService? _inferService;
+
+	// One docset per BuildContext that declares APIs, so FinishExportAsync can index the specs the explorer renders.
+	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new();
 
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
@@ -146,6 +156,8 @@ public partial class ElasticsearchMarkdownExporter
 		var url = currentNavigation.Url;
 
 		_inferService ??= fileContext.InferenceService;
+		if (fileContext.BuildContext.Configuration.ApiConfigurations is not null)
+			_ = _apiDocsets.TryAdd(fileContext.BuildContext, fileContext.DocumentationSet);
 
 		if (url is "/docs" or "/docs/404")
 		{
@@ -252,7 +264,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		var exporter = new OpenApiDocumentExporter(_versionsConfiguration, _inferService);
 
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: null, ctx))
+		await foreach (var doc in ExportApiDocuments(exporter, ctx))
 		{
 			var document = MarkdownParser.Parse(doc.Body ?? string.Empty);
 
@@ -286,5 +298,31 @@ public partial class ElasticsearchMarkdownExporter
 
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
+	}
+
+	private async IAsyncEnumerable<DocumentationDocument> ExportApiDocuments(
+		OpenApiDocumentExporter exporter,
+		[EnumeratorCancellation] Cancel ctx
+	)
+	{
+		using var versionIndexClient = new VersionIndexClient();
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (buildContext, documentationSet) in _apiDocsets)
+		{
+			var generator = new OpenApiGenerator(
+				_logFactory,
+				buildContext,
+				new DocumentationGenerator(documentationSet, _logFactory).MarkdownStringRenderer,
+				versionIndexClient
+			);
+			foreach (var (apiKey, spec) in await generator.ResolveCanonicalDocuments(ctx))
+			{
+				if (!seenKeys.Add(apiKey))
+					continue;
+
+				foreach (var doc in exporter.ConvertToDocuments(spec, apiKey))
+					yield return doc;
+			}
+		}
 	}
 }
