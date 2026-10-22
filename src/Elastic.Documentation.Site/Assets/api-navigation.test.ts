@@ -1,4 +1,4 @@
-import { changesPageChrome } from './api-navigation'
+import { changesApiVersion, changesPageChrome } from './api-navigation'
 
 const root = '/docs'
 
@@ -92,5 +92,40 @@ describe('changesPageChrome', () => {
         expect(
             changesPageChrome('/api/doc/kibana', '/api/doc/elasticsearch', '')
         ).toBe(true)
+    })
+})
+
+describe('changesApiVersion', () => {
+    const main = '/docs/api/doc/elasticsearch/operation/operation-ping'
+    const v9 = '/docs/api/doc/elasticsearch/v9/operation/operation-ping'
+    const v8 = '/docs/api/doc/elasticsearch/v8'
+
+    it('is true between main and a released version, in both directions', () => {
+        expect(changesApiVersion(v9, main)).toBe(true)
+        expect(changesApiVersion(main, v9)).toBe(true)
+    })
+
+    it('is true between two released versions', () => {
+        expect(changesApiVersion(v8, v9)).toBe(true)
+    })
+
+    it('is false within one version', () => {
+        expect(
+            changesApiVersion(
+                '/docs/api/doc/elasticsearch/v9/group/endpoint-search',
+                v9
+            )
+        ).toBe(false)
+        expect(
+            changesApiVersion(
+                '/docs/api/doc/elasticsearch/group/endpoint-search',
+                main
+            )
+        ).toBe(false)
+    })
+
+    it('is false when either path is not an API product page', () => {
+        expect(changesApiVersion('/docs/get-started', main)).toBe(false)
+        expect(changesApiVersion(main, '/docs/api')).toBe(false)
     })
 })

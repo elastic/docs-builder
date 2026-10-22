@@ -7,7 +7,7 @@
 <div class="api-sidebar-chrome" data-nav-filter-scope>
 	@if (apiContext is not null && apiContext.Versions.Count > 1)
 	{
-		<div id="api-version-switcher" hx-boost="false">
+		<div id="api-version-switcher">
 			@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
 			{
 				Label = "API version",

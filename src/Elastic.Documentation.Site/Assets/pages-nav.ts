@@ -1,3 +1,4 @@
+import { changesApiVersion } from './api-navigation'
 import { prefersReducedMotion } from './motion'
 import { initPagesNavScroll } from './pages-nav-scroll'
 import { throttle } from 'lodash'
@@ -905,6 +906,7 @@ export function shouldRetargetApiContentSwap(
 }
 
 type HtmxSwapDetail = {
+    pathInfo?: { requestPath?: string }
     target?: EventTarget
     selectOverride?: string
     serverResponse?: string
@@ -941,6 +943,11 @@ function retargetArticleSwap(event: Event) {
             'content-container',
             shouldRetargetArticleSwap
         )
+    ) {
+        return
+    }
+    if (
+        changesApiVersion(detail.pathInfo?.requestPath ?? '', location.pathname)
     ) {
         return
     }

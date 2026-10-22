@@ -23,3 +23,22 @@ export function changesPageChrome(
     if ((target === undefined) !== (current === undefined)) return true
     return !!target && !!current && target !== current
 }
+
+/** `v9` for `/api/doc/es/v9/...`, an empty string for the unversioned `main` tree, `null` outside an API product. */
+function apiVersion(path: string): string | null {
+    const product = /\/api\/doc\/[^/]+(?:\/(v\d+))?(?:\/|$)/.exec(path)
+    return product ? (product[1] ?? '') : null
+}
+
+/**
+ * A move between versions of one API replaces the navigation tree and the version picker, which sit outside
+ * `#api-content-grid`, so it must swap the whole `#main-container`.
+ */
+export function changesApiVersion(
+    targetPath: string,
+    currentPath: string
+): boolean {
+    const target = apiVersion(targetPath)
+    const current = apiVersion(currentPath)
+    return target !== null && current !== null && target !== current
+}
