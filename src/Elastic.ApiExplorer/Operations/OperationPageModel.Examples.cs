@@ -147,18 +147,26 @@ public partial record OperationPageModel
 	/// <summary>
 	/// Adds the <c>x-codeSamples</c> that request examples carry themselves, each tied to its example by title.
 	/// Those samples replace the operation's own unsuffixed ones, which the spec repeats from the first example.
+	/// Examples are read from every content type; a key or a title seen first keeps its samples, because examples
+	/// with the same title show as one example.
 	/// </summary>
 	internal static IReadOnlyList<CodeSample> WithExampleCodeSamples(
 		IReadOnlyList<CodeSample> operationSamples,
-		IDictionary<string, IOpenApiExample>? examples
+		IEnumerable<IDictionary<string, IOpenApiExample>?> examplesPerContentType
 	)
 	{
-		var exampleSamples = (examples ?? new Dictionary<string, IOpenApiExample>()).SelectMany(e =>
+		var keys = new HashSet<string>(StringComparer.Ordinal);
+		var titles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var exampleSamples = new List<CodeSample>();
+		foreach (var (key, example) in examplesPerContentType.SelectMany(static e => e ?? new Dictionary<string, IOpenApiExample>()))
 		{
-			var title = string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary;
-			return OpenApiExtensionReader.ParseCodeSamples(e.Value?.Extensions).Select(s => s with { Scenario = title });
-		}).ToArray();
-		return exampleSamples.Length == 0
+			var title = string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
+			if (!keys.Add(key) || !titles.Add(title))
+				continue;
+			exampleSamples.AddRange(OpenApiExtensionReader.ParseCodeSamples(example?.Extensions).Select(s => s with { Scenario = title }));
+		}
+
+		return exampleSamples.Count == 0
 			? operationSamples
 			: [.. operationSamples.Where(static s => s.Scenario is not null), .. exampleSamples];
 	}

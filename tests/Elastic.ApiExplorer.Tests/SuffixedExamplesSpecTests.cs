@@ -69,6 +69,61 @@ public class SuffixedExamplesSpecTests
 			html.Split($"<span class=\"api-example-chip-title\">{title}</span>").Should().HaveCount(2, $"'{title}' has one chip");
 	}
 
+	[Test]
+	public async Task ExampleLevelSamples_OnAnotherContentType_StillAttach()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "First":{"summary":"First","value":{"a":1},"x-codeSamples":[{"lang":"Console","source":"POST /_x\n{\"a\":1}"}]}}},
+			  "application/x-ndjson":{"schema":{"type":"string"},"examples":{
+			    "First":{"summary":"First","value":"{}","x-codeSamples":[{"lang":"Console","source":"duplicate()"}]},
+			    "Second":{"summary":"Second","value":"{}","x-codeSamples":[{"lang":"Console","source":"POST /_x\n{}"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().NotContain("duplicate()");
+		scenarios[1].CodeSamples.Should().ContainSingle();
+	}
+
+	[Test]
+	public async Task ExampleLevelSamples_OfExamplesWithTheSameTitle_KeepTheFirstOnly()
+	{
+		var scenarios = await BuildScenariosFromSpec(
+			/*lang=json,strict*/
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/_x":{"post":{"operationId":"x","requestBody":{"content":{
+			  "application/json":{"schema":{"type":"object"},"examples":{
+			    "searchOne":{"summary":"Same title","value":{"a":1},"x-codeSamples":[{"lang":"Python","source":"one()"}]},
+			    "searchTwo":{"summary":"Same title","value":{"a":2},"x-codeSamples":[{"lang":"Python","source":"two()"}]},
+			    "Search three":{"value":{"a":3},"x-codeSamples":[{"lang":"Python","source":"three()"}]},
+			    "searchThree":{"summary":"Search three","value":{"a":4},"x-codeSamples":[{"lang":"Python","source":"four()"}]}}}}},
+			  "responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		scenarios.Select(s => s.Title).Should().Equal("Same title", "Search three");
+		scenarios[0].CodeSamples.Select(c => c.Source).Should().Equal("one()");
+		scenarios[1].CodeSamples.Select(c => c.Source).Should().Equal("three()");
+	}
+
+	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenariosFromSpec(string json)
+	{
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var operation = document.Paths["/_x"].Operations![HttpMethod.Post];
+		var perContentType = operation.RequestBody!.Content!.Values.Select(static m => m.Examples).ToArray();
+		var examples = OperationPageModel.MapExamples(
+			perContentType.First(static e => e is { Count: > 0 }),
+			static m => new HtmlString(m ?? "")
+		);
+		var samples = OperationPageModel.WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), perContentType);
+		return OperationPageModel.BuildExampleScenarios(examples, [], samples);
+	}
+
 	private static Task<IReadOnlyList<ExampleScenario>> BuildScenarios() => BuildScenarios("suffixed-examples-openapi.json");
 
 	private static async Task<IReadOnlyList<ExampleScenario>> BuildScenarios(string fixture)
@@ -79,7 +134,7 @@ public class SuffixedExamplesSpecTests
 		var operation = document.Paths["/{index}/_search"].Operations![HttpMethod.Post];
 		var requestExamples = operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples;
 		var examples = OperationPageModel.MapExamples(requestExamples, static m => new HtmlString(m ?? ""));
-		var samples = OperationPageModel.WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), requestExamples);
+		var samples = OperationPageModel.WithExampleCodeSamples(OpenApiExtensionReader.ParseCodeSamples(operation), [requestExamples]);
 		return OperationPageModel.BuildExampleScenarios(examples, [], samples);
 	}
 }
