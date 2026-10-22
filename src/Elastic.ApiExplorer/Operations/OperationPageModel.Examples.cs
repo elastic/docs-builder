@@ -24,7 +24,13 @@ public record ExampleDisplay(
 
 	/// <summary>What the response's status code means, from the spec's <c>responses.&lt;code&gt;.description</c>.</summary>
 	public string? StatusDescription { get; init; }
+
+	/// <summary>The request content type the example is listed under.</summary>
+	public string? MediaType { get; init; }
 }
+
+/// <summary>The examples listed under one content type of a request body.</summary>
+internal sealed record RequestContent(string? MediaType, IDictionary<string, IOpenApiExample>? Examples);
 
 /// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
 public record ExampleResponse
@@ -66,6 +72,12 @@ public record ExampleScenario
 
 	/// <summary>Method and path the example description says to run; generated samples use it.</summary>
 	public (string Method, string Path)? RequestLine { get; init; }
+
+	/// <summary>The request content type of the example; generated curl samples only fit JSON.</summary>
+	public string? MediaType { get; init; }
+
+	/// <summary>True for an example made only to hold code samples that match no named example.</summary>
+	public bool FromUnmatchedSamples { get; init; }
 
 	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
 	public bool CodeSamplesIncludeRequest { get; init; }
@@ -138,11 +150,43 @@ public partial record OperationPageModel
 		else if (!hasRequestScenarios && scenarios.Count > 1)
 			scenarios = CollapseIntoSingleScenario(scenarios);
 
-		// Samples whose language name carries an example suffix (cURL_tag_names) are their own examples.
-		var suffixed = codeSamples.Where(static c => c.Scenario is not null).ToArray();
-		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => c.Scenario is null)]);
-		return suffixed.Length == 0 ? attached : [.. attached, .. SuffixedScenarios(attached, suffixed)];
+		// Samples that name an example, by language suffix (cURL_tag_names) or by title, belong to that example.
+		var tied = codeSamples.Where(static c => c.IsTied).ToArray();
+		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => !c.IsTied)]);
+		return tied.Length == 0 ? attached : ExampleCodeSamples.Join(attached, tied);
 	}
+
+	/// <summary>The content types of a request with their examples, the primary one first.</summary>
+	internal static IReadOnlyList<RequestContent> RequestContentTypes(
+		IOpenApiRequestBody? requestBody,
+		KeyValuePair<string, IOpenApiMediaType>? primary
+	)
+	{
+		var result = new List<RequestContent>();
+		if (primary is { } first)
+			result.Add(new RequestContent(first.Key, first.Value?.Examples));
+		foreach (var (mediaType, media) in requestBody?.Content ?? new Dictionary<string, IOpenApiMediaType>())
+		{
+			if (primary is not { } p || mediaType != p.Key)
+				result.Add(new RequestContent(mediaType, media?.Examples));
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// The request examples of every content type, the primary one first. Examples with the same title show as one.
+	/// </summary>
+	internal static IReadOnlyList<ExampleDisplay> MapRequestExamples(
+		IEnumerable<RequestContent> requestContent,
+		Func<string?, HtmlString> renderMarkdown,
+		OperationEndpoint? endpoint = null
+	) =>
+		[
+			.. requestContent.SelectMany(
+				c => MapExamples(c.Examples, renderMarkdown, endpoint: endpoint).Select(e => e with { MediaType = c.MediaType })
+			).DistinctBy(static e => e.Title, StringComparer.OrdinalIgnoreCase)
+		];
 
 	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
 	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
@@ -187,6 +231,7 @@ public partial record OperationPageModel
 				{
 					Title = "Example",
 					TabId = UniqueTabId("example", scenarios),
+					FromUnmatchedSamples = true,
 					CodeSamples = codeSamples,
 					Responses = scenarios[0].Responses.Where(static r => !r.StatusCode.StartsWith('2')).ToArray()
 				}
@@ -196,26 +241,6 @@ public partial record OperationPageModel
 
 		scenarios[0] = scenarios[0] with { CodeSamples = codeSamples };
 		return scenarios;
-	}
-
-	/// <summary>One example per suffix, sharing the first example's responses; the samples already say how to call it.</summary>
-	private static IEnumerable<ExampleScenario> SuffixedScenarios(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> suffixed)
-	{
-		var responses = scenarios.Count > 0 ? scenarios[0].Responses : [];
-		var added = new List<ExampleScenario>();
-		foreach (var group in suffixed.GroupBy(static c => c.Scenario!, StringComparer.OrdinalIgnoreCase))
-		{
-			var title = HumanizeExampleKey(group.Key);
-			added.Add(new ExampleScenario
-			{
-				Title = title,
-				TabId = UniqueTabId(ToTabId(title, scenarios.Count + added.Count), [.. scenarios, .. added]),
-				CodeSamples = [.. group],
-				CodeSamplesIncludeRequest = true,
-				Responses = responses
-			});
-		}
-		return added;
 	}
 
 	/// <summary>
@@ -288,7 +313,8 @@ public partial record OperationPageModel
 					RequestDescriptionHtml = existing.RequestDescriptionHtml ?? example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
-					RequestLine = example.RequestLine
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
 				}
 				: existing with { Responses = UpsertResponse(existing.Responses, example) };
 			return;
@@ -304,7 +330,8 @@ public partial record OperationPageModel
 					RequestDescriptionHtml = example.DescriptionHtml,
 					RequestJson = example.JsonValue,
 					RequestExternalValue = example.ExternalValue,
-					RequestLine = example.RequestLine
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
 				}
 				: new ExampleScenario
 				{
@@ -410,7 +437,7 @@ public partial record OperationPageModel
 	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
 		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
 
-	private static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
+	internal static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
 	{
 		var candidate = id;
 		for (var i = 1; scenarios.Any(s => s.TabId == candidate); i++)
@@ -420,7 +447,7 @@ public partial record OperationPageModel
 
 	internal static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
 
-	private static string ToTabId(string title, int index)
+	internal static string ToTabId(string title, int index)
 	{
 		var chars = title.Trim().ToLowerInvariant().Select(static c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
 		var slug = new string(chars).Trim('-');
@@ -513,7 +540,7 @@ public partial record OperationPageModel
 				if (description is not null && endpoint is not null)
 					description = SampleMethods.AlignDescription(description, endpoint);
 				return new ExampleDisplay(
-					string.IsNullOrEmpty(e.Value?.Summary) ? HumanizeExampleKey(e.Key) : e.Value.Summary,
+					ExampleTitle(e.Key, e.Value),
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
 					e.Value?.Value?.ToString(),
 					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
@@ -522,6 +549,10 @@ public partial record OperationPageModel
 				)
 				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(description) };
 			}).ToArray();
+
+	/// <summary>The title an example shows under: its summary, or its humanized key when it has none.</summary>
+	internal static string ExampleTitle(string key, IOpenApiExample? example) =>
+		string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
 
 	/// <summary>
 	/// Spec example keys stand in for a missing summary: <c>executeBuiltinEsqlToolRequest</c> reads as

@@ -131,11 +131,12 @@ public partial record OperationPageModel
 		var privileges = RequiredPrivilegesExtractor.Extract(operation, endpoint.Description, context.ApiExplorerLog, apiOperation.Route);
 		var requestContentEntry = PrimaryRequestContent(operation.RequestBody);
 		// Examples may sit on another content type than the schema does, as when the spec lists one only to attach them.
-		var requestExampleSource = requestContentEntry?.Value?.Examples is { Count: > 0 } primaryExamples
-			? primaryExamples
-			: operation.RequestBody?.Content?.Values.Select(static m => m?.Examples).FirstOrDefault(static e => e is { Count: > 0 });
-		var requestExamples = MapExamples(requestExampleSource, options.RenderMarkdown, endpoint: endpoint);
-		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
+		var requestContentTypes = RequestContentTypes(operation.RequestBody, requestContentEntry);
+		var requestExamples = MapRequestExamples(requestContentTypes, options.RenderMarkdown, endpoint);
+		var codeSamples = SampleMethods.Align(
+			ExampleCodeSamples.Combine(OpenApiExtensionReader.ParseCodeSamples(operation), requestContentTypes),
+			endpoint
+		);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		var parameters = apiOperation.Parameters;
 		var requestSchema = requestContentEntry?.Value?.Schema;

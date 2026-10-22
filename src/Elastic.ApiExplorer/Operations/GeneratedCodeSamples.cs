@@ -59,7 +59,11 @@ public static partial class GeneratedCodeSamples
 				}
 
 				var shellPath = SyntheticCodeSamples.NamePlaceholders(path, forShell: true);
-				if (Curl(curl?.Source, method, shellPath, scenario.RequestJson) is { } curlSource)
+				// The copied curl sample sends JSON, so it does not fit an example listed under another content type.
+				if (
+					(scenario.MediaType is null || RequestBodyExample.IsJson(scenario.MediaType))
+					&& Curl(curl?.Source, method, shellPath, scenario.RequestJson) is { } curlSource
+				)
 					samples.Add(CodeSample.Generate("curl", curlSource));
 
 				// Nothing runnable to show, so the request stays in the rail's own block.
