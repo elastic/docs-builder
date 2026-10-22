@@ -1,0 +1,48 @@
+.toc {
+	position: relative;
+	font-family: var(--font-body);
+}
+
+.toc__title {
+	margin: 0 0 var(--space-2);
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-bold);
+}
+
+.toc__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.toc__item {
+	border-left: var(--border-width-strong) solid var(--color-border);
+}
+
+.toc__item--nested {
+	padding-left: var(--space-3);
+}
+
+.toc__link {
+	display: block;
+	padding: var(--space-1) var(--space-3);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	line-height: var(--leading-snug);
+	transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.toc__link:hover {
+	color: var(--color-heading);
+}
+
+/* Marked by the scroll-spy enhancement; without JavaScript the list is still a working outline. */
+.toc__item:has(.toc__link[aria-current='location']) {
+	border-left-color: var(--color-accent);
+}
+
+.toc__link[aria-current='location'] {
+	color: var(--color-accent);
+	font-weight: var(--weight-semibold);
+}

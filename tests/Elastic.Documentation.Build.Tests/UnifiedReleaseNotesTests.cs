@@ -119,14 +119,17 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		foreach (var product in new[] { "elasticsearch", "kibana" })
 		{
-			files.Should().ContainKey($"release-notes/{product}/index.md");
-			files.Should().ContainKey($"release-notes/{product}/9.6.0.md");
-			files.Should().ContainKey($"release-notes/{product}/9.5.6.md");
-			files.Should().ContainKey($"release-notes/{product}/known-issues.md");
-			files.Should().ContainKey($"release-notes/{product}/breaking-changes.md");
-			files.Should().ContainKey($"release-notes/{product}/deprecations.md");
-			files.Should().ContainKey($"release-notes/{product}/toc.yml");
+			files.Should().ContainKey($"{product}/index.md");
+			files.Should().ContainKey($"{product}/9.6.0.md");
+			files.Should().ContainKey($"{product}/9.5.6.md");
+			files.Should().ContainKey($"{product}/9.6.0/known-issues.md");
+			files.Should().ContainKey($"{product}/9.6.0/breaking-changes.md");
+			files.Should().ContainKey($"{product}/9.6.0/deprecations.md");
+			files.Should().ContainKey($"{product}/9.5.6/known-issues.md");
+			files.Should().ContainKey($"{product}/toc.yml");
 		}
+
+		files.Keys.Should().NotContain(k => k.StartsWith("release-notes/", StringComparison.Ordinal));
 
 		files.Keys.Should().NotContain(k => k.Contains("auditbeat") || k.Contains("curator"));
 	}
@@ -138,9 +141,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		files["docset.yml"]
 			.Should()
-			.Be(
-				"project: unified-release-notes\ntoc:\n  - folder: release-notes\n    children:\n      - file: index.md\n      - toc: elasticsearch\n      - toc: kibana\n"
-			);
+			.Be("project: unified-release-notes\ntoc:\n  - file: index.md\n  - toc: elasticsearch\n  - toc: kibana\n");
 		files.Should().NotContainKey("toc.yml");
 	}
 
@@ -149,15 +150,18 @@ public class UnifiedReleaseNotesTests : IDisposable
 	{
 		var files = GenerateFiles();
 
-		files["release-notes/elasticsearch/index.md"].Should().Contain("# Elasticsearch release notes");
-		files["release-notes/elasticsearch/index.md"].Should().Contain("- [9.6.0](9.6.0.md)\n- [9.5.6](9.5.6.md)");
-		files["release-notes/elasticsearch/9.6.0.md"]
+		files["elasticsearch/index.md"].Should().Contain("# Elasticsearch release notes");
+		files["elasticsearch/index.md"].Should().Contain("- [9.6.0](9.6.0.md)\n- [9.5.6](9.5.6.md)");
+		files["elasticsearch/9.6.0.md"]
 			.Should()
 			.Contain(":::{changelog} /changelog/bundles/elasticsearch\n:version: 9.6.0\n:highlights:\n:subsections:\n:::");
-		files["release-notes/elasticsearch/9.6.0.md"].Should().Contain("# Elasticsearch 9.6.0");
-		files["release-notes/kibana/breaking-changes.md"].Should().Contain(":type: breaking-change\n:dropdowns:");
-		files["release-notes/kibana/known-issues.md"].Should().Contain(":type: known-issue");
-		files["release-notes/kibana/deprecations.md"].Should().Contain(":type: deprecation");
+		files["elasticsearch/9.6.0.md"].Should().Contain("# Elasticsearch 9.6.0");
+		files["kibana/9.6.0/breaking-changes.md"]
+			.Should()
+			.Contain(":::{changelog} /changelog/bundles/kibana\n:version: 9.6.0\n:type: breaking-change\n:dropdowns:\n:subsections:\n:::");
+		files["kibana/9.6.0/known-issues.md"].Should().Contain(":version: 9.6.0\n:type: known-issue\n:subsections:");
+		files["kibana/9.6.0/deprecations.md"].Should().Contain(":version: 9.6.0\n:type: deprecation\n:subsections:");
+		files["kibana/9.6.0/deprecations.md"].Should().Contain("# Kibana 9.6.0 deprecations");
 	}
 
 	[Test]
@@ -165,16 +169,32 @@ public class UnifiedReleaseNotesTests : IDisposable
 	{
 		var files = GenerateFiles();
 
-		files["release-notes/kibana/9.6.0.md"].Should().Contain("navigation_title: 9.6.0\n");
-		files["release-notes/kibana/toc.yml"]
+		files["kibana/9.6.0.md"].Should().Contain("navigation_title: 9.6.0\n");
+		files["kibana/toc.yml"]
 			.Should()
 			.Be(
-				"toc:\n  - file: index.md\n  - file: 9.6.0.md\n  - file: 9.5.6.md\n  - file: known-issues.md\n  - file: breaking-changes.md\n  - file: deprecations.md\n"
+				"""
+				toc:
+				  - file: index.md
+				  - file: 9.6.0.md
+				    children:
+				      - file: 9.6.0/known-issues.md
+				      - file: 9.6.0/breaking-changes.md
+				      - file: 9.6.0/deprecations.md
+				  - file: 9.5.6.md
+				    children:
+				      - file: 9.5.6/known-issues.md
+				      - file: 9.5.6/breaking-changes.md
+				      - file: 9.5.6/deprecations.md
+
+				""".ReplaceLineEndings(
+					"\n"
+				)
 			);
 
-		files["release-notes/kibana/index.md"].Should().Contain("navigation_title: Kibana\n");
-		files["release-notes/kibana/known-issues.md"].Should().Contain("navigation_title: Known issues\n");
-		files["release-notes/index.md"].Should().Contain("navigation_title: Release notes\n");
+		files["kibana/index.md"].Should().Contain("navigation_title: Kibana\n");
+		files["kibana/9.6.0/known-issues.md"].Should().Contain("navigation_title: Known issues\n");
+		files["index.md"].Should().Contain("navigation_title: Release notes\n");
 	}
 
 	[Test]
@@ -191,8 +211,8 @@ public class UnifiedReleaseNotesTests : IDisposable
 	{
 		var files = GenerateFiles();
 
-		files["release-notes/index.md"].Should().Contain("- [Elasticsearch](elasticsearch/index.md)");
-		files["release-notes/index.md"].Should().Contain("- [Kibana](kibana/index.md)");
+		files["index.md"].Should().Contain("- [Elasticsearch](elasticsearch/index.md)");
+		files["index.md"].Should().Contain("- [Kibana](kibana/index.md)");
 	}
 
 	[Test]
@@ -209,27 +229,25 @@ public class UnifiedReleaseNotesTests : IDisposable
 		collector.Warnings.Should().Be(0);
 		collector.Hints.Should().Be(0, "the generated toc should not trigger structure hints");
 		var output = _fileSystem.Path.Join(_temp.FullName, "site");
-		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "index.html")).Should().BeTrue();
+		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "elasticsearch", "index.html")).Should().BeTrue();
+		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "kibana", "9.5.0", "breaking-changes", "index.html")).Should().BeTrue();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "kibana", "breaking-changes")).Should().BeFalse();
 		_fileSystem
 			.File
-			.Exists(_fileSystem.Path.Join(output, "release-notes", "kibana", "breaking-changes", "index.html"))
-			.Should()
-			.BeTrue();
-		_fileSystem
-			.File
-			.ReadAllText(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "9.5.0", "index.html"))
+			.ReadAllText(_fileSystem.Path.Join(output, "elasticsearch", "9.5.0", "index.html"))
 			.Should()
 			.Contain("Elasticsearch unified change")
 			.And
 			.Contain("This is a preview of an unreleased version");
 		_fileSystem
 			.File
-			.ReadAllText(_fileSystem.Path.Join(output, "release-notes", "elasticsearch", "index.html"))
+			.ReadAllText(_fileSystem.Path.Join(output, "elasticsearch", "index.html"))
 			.Should()
 			.Contain("9.5.0")
 			.And
 			.NotContain("Elasticsearch unified change");
-		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "release-notes", "auditbeat")).Should().BeFalse();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "auditbeat")).Should().BeFalse();
+		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "release-notes")).Should().BeFalse();
 	}
 
 	[Test]
@@ -242,7 +260,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 
 		succeeded.Should().BeTrue();
 		collector.Errors.Should().Be(0);
-		var output = _fileSystem.Path.Join(_temp.FullName, "site", "release-notes");
+		var output = _fileSystem.Path.Join(_temp.FullName, "site");
 		_fileSystem.File.Exists(_fileSystem.Path.Join(output, "elasticsearch", "index.html")).Should().BeTrue();
 		_fileSystem.Directory.Exists(_fileSystem.Path.Join(output, "kibana")).Should().BeFalse("kibana has no bundles");
 		_fileSystem.File.ReadAllText(_fileSystem.Path.Join(output, "index.html")).Should().NotContain("kibana/");
@@ -278,7 +296,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 			.Should()
 			.Be(0, "each version page's :version: filter should match its own bundle despite the bundle target's 'v' prefix");
 
-		var output = _fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch");
+		var output = _fileSystem.Path.Join(_temp.FullName, "site", "elasticsearch");
 		_fileSystem
 			.File
 			.ReadAllText(_fileSystem.Path.Join(output, "9.5.0", "index.html"))
@@ -369,9 +387,7 @@ public class UnifiedReleaseNotesTests : IDisposable
 		var succeeded = await Service().Build(collector, Options("9.5.0"), TestContext.Current!.Execution.CancellationToken);
 
 		succeeded.Should().BeTrue();
-		var html = _fileSystem.File.ReadAllText(
-			_fileSystem.Path.Join(_temp.FullName, "site", "release-notes", "elasticsearch", "9.5.0", "index.html")
-		);
+		var html = _fileSystem.File.ReadAllText(_fileSystem.Path.Join(_temp.FullName, "site", "elasticsearch", "9.5.0", "index.html"));
 		html.Should().Contain("Original change");
 		html.Should().Contain("Change added by the amend");
 		html.Should().NotContain("Change removed by the amend");

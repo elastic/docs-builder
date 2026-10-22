@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -38,6 +39,10 @@ public static class OpenApiExtensionReader
 	/// <summary>The <c>x-namespace</c> and <c>x-api-name</c> pair used to group operations into endpoints.</summary>
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>
 		(TryGetString(operation.Extensions, "x-namespace"), TryGetString(operation.Extensions, "x-api-name"));
+
+	/// <summary>The operation summary, trimmed; null when absent or blank (specs sometimes emit <c>summary: ''</c>).</summary>
+	public static string? GetSummary(OpenApiOperation operation) =>
+		string.IsNullOrWhiteSpace(operation.Summary) ? null : operation.Summary.Trim();
 
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>
@@ -110,7 +115,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName;
+			var displayName = tagName.CapitalizeFirstLetter();
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;

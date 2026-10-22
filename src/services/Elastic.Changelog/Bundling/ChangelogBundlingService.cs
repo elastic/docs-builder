@@ -36,6 +36,14 @@ public record BundleChangelogsArguments
 	public Action<string>? OnPoolMissing { get; init; }
 
 	/// <summary>
+	/// Called when a commit range resolves no changelog entries because it has no pull requests, or every pull request
+	/// was excluded. When set, that range succeeds and writes no bundle. When <c>null</c>, the range is an error.
+	/// A pull request whose metadata could not be read is still an error. Set for DRA products, which often ship a
+	/// version with no user-facing changes.
+	/// </summary>
+	public Action? OnEmptyRange { get; init; }
+
+	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
 	public string? Directory { get; init; }
@@ -43,12 +51,6 @@ public record BundleChangelogsArguments
 	public bool All { get; init; }
 	public IReadOnlyList<ProductArgument>? InputProducts { get; init; }
 	public IReadOnlyList<ProductArgument>? OutputProducts { get; init; }
-
-	/// <summary>
-	/// Commit-range mode only. Products set on every entry synthesized from PR metadata, replacing
-	/// label-derived and <see cref="OutputProducts"/> products. Entries from the changelog pool keep their own products.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 	public string[]? Prs { get; init; }
 	public string[]? Issues { get; init; }
 
@@ -422,7 +424,7 @@ public partial class ChangelogBundlingService(
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
 			// the named paths, in CDN mode it selects pool entries by file name.
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -1062,8 +1064,7 @@ public partial class ChangelogBundlingService(
 				Repo = sourcing.Repo,
 				StartRef = input.StartGitRef!,
 				EndRef = input.EndGitRef!,
-				FallbackProducts = input.OutputProducts,
-				EntryProducts = input.EntryProducts
+				FallbackProducts = input.OutputProducts
 			},
 			ctx
 		);
@@ -1100,16 +1101,43 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		if (allEntries.Count == 0)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."
-			);
-			return false;
-		}
+			return FinishEmptyRange(collector, input, result, $"{owner}/{sourcing.Repo}");
 
 		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
 	}
+
+	/// <summary>
+	/// A range with nothing to publish. DRA bundling allows it: the product shipped with no user-facing changes.
+	/// A pull request whose metadata could not be read is still an error, so a failed fetch is not reported as an empty release.
+	/// </summary>
+	private bool FinishEmptyRange(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		GitRangeEntryResolutionResult result,
+		string repository
+	)
+	{
+		if (input.OnEmptyRange is not null && RangeHasNoNotes(result))
+		{
+			_logger.LogInformation(
+				"No changelog entries in commit range {Start}..{End} of {Repository}. The release has no notes.",
+				input.StartGitRef,
+				input.EndGitRef,
+				repository
+			);
+			input.OnEmptyRange();
+			return true;
+		}
+
+		collector.EmitError(
+			string.Empty,
+			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {repository}."
+		);
+		return false;
+	}
+
+	private static bool RangeHasNoNotes(GitRangeEntryResolutionResult result) =>
+		result.Report.Rows.All(row => row.Source is GitRangePrSourceKind.Excluded or GitRangePrSourceKind.ExcludedBaseBranch);
 
 	/// <summary>
 	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
@@ -1739,7 +1767,11 @@ public partial class ChangelogBundlingService(
 			try
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions()
+				)
+					?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 				var data = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ComputeSha1(entry.Content);
 				matchedNotes.Add(new MatchedChangelogFile

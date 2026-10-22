@@ -126,6 +126,18 @@ public class XStateApplicabilityTests
 		AvailabilityBadge.From(OperationWithState(xState).Extensions, StackVersions()).Should().BeNull();
 
 	[Test]
+	public void FromOperation_DesignSystemOn_RendersTheDesignSystemBadge()
+	{
+		var operation = new OpenApiOperation
+		{
+			Extensions = new Dictionary<string, IOpenApiExtension> { ["x-beta"] = new JsonNodeExtension(JsonValue.Create(true)) }
+		};
+
+		AvailabilityBadge.FromOperation(operation, StackVersions(), designSystem: true)!.DesignSystem.Should().BeTrue();
+		AvailabilityBadge.FromOperation(operation, StackVersions())!.DesignSystem.Should().BeFalse("flag-off keeps the custom element");
+	}
+
+	[Test]
 	public void FromOperation_XBetaOnly_RendersBetaAppliesToBadge()
 	{
 		var operation = new OpenApiOperation

@@ -442,7 +442,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
 		fm.AppliesTo ??= FallbackAppliesTo;
 
 		if (fm.AppliesTo?.Diagnostics is not null)
@@ -484,18 +484,38 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw) => ReadYamlFrontMatter(raw, Products, Collector, FilePath);
+	private YamlFrontMatter ReadYamlFrontMatter(string raw, int lineOffset) =>
+		ReadYamlFrontMatter(
+			raw,
+			Products,
+			Collector,
+			FilePath,
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterUnknownKeys())
+		);
 
+	// Content repositories carry many frontmatter keys we don't model (slug, status, last_updated, ...), so
+	// an unknown key is a hint with the usual message, not an error, until those repositories are cleaned up.
+	// internal: exercised directly by tests without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterUnknownKeys() =>
+		member => new YamlUnknownKeyOverride(Severity.Hint, $"{YamlUnmappedMemberDiagnostics.FormatMessage(member)} It is ignored.");
+
+	// reporting is null when the same front matter is only being read for its titles, so unknown keys
+	// are reported once, by the full page parse.
 	private static YamlFrontMatter ReadYamlFrontMatter(
 		string raw,
 		ProductsConfiguration products,
 		IDiagnosticsCollector collector,
-		string filePath
+		string filePath,
+		YamlUnmappedMemberReporting? reporting = null
 	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, products);
+			// Comment-only front matter deserializes to null; treat it as empty front matter.
+			var frontMatter = reporting is null
+				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
+				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
+			return frontMatter ?? new YamlFrontMatter();
 		}
 		catch (InvalidProductException e)
 		{

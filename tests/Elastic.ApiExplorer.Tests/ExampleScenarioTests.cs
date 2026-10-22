@@ -237,6 +237,18 @@ public class ExampleScenarioTests
 	}
 
 	[Test]
+	public void EnsureResponseTabs_StatusDescriptionWithInlineCode_DropsTheBackticksForTheTooltip()
+	{
+		var samples = new[] { new CodeSample("Console", "GET /_cat/master", "language-console") };
+		var scenarios = OperationPageModel.BuildExampleScenarios([], [], samples);
+		var responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "Run `GET /_cat/master?v=true` to see" } };
+
+		var withTabs = OperationPageModel.EnsureResponseTabs(scenarios, responses);
+
+		withTabs[0].Responses[0].StatusDescription.Should().Be("Run GET /_cat/master?v=true to see");
+	}
+
+	[Test]
 	public void BuildExampleScenarios_ResponseOnlyDescription_StaysOnTheResponse()
 	{
 		var response = new ExampleDisplay("Get response", new HtmlString("<p>A successful response.</p>"), "{}", null, "200");

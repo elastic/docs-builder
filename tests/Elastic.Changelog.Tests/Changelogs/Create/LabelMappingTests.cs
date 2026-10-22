@@ -626,7 +626,7 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("- Alerting, connectors, and reporting"); // Full name, not split
+		yamlContent.Should().Contain("- \"Alerting, connectors, and reporting\""); // Full name, not split
 	}
 
 	[Test]
@@ -790,7 +790,7 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:new-search-api");
+		yamlContent.Should().Contain("feature-id: \"feature:new-search-api\"");
 	}
 
 	[Test]
@@ -833,7 +833,7 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:cli-override");
+		yamlContent.Should().Contain("feature-id: \"feature:cli-override\"");
 		yamlContent.Should().NotContain("feature-id: feature:new-search-api");
 	}
 
@@ -880,7 +880,7 @@ public class LabelMappingTests() : CreateChangelogTestBase()
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:foo");
+		yamlContent.Should().Contain("feature-id: \"feature:foo\"");
 	}
 
 	[Test]

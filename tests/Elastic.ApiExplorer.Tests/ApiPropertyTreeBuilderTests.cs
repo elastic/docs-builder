@@ -257,11 +257,11 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		variants.Should().NotBeNull();
 		variants!.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
-		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ buckets }", "{ value }"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
 
 	[Test]
-	public void BuildUnionVariants_CodegenOneOf_LabelsVariantsByTheFieldsOnlyTheyHave()
+	public void BuildUnionVariants_CodegenOneOf_NamesReferencedVariantsByTheirSchema()
 	{
 		var builder = CreateBuilder();
 		var schema = Schema("fixture.InvalidInputResponse");
@@ -274,7 +274,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["{ error, statusCode }", "{ status_code }"]);
+		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}
