@@ -368,25 +368,6 @@ public class DocumentationSetFile : TableOfContentsFile
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
 		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml, collector, tocFilePath);
 
-		// this is temporary after this lands in main we can update these files to include
-		// suppress:
-		//	- DeepLinkingVirtualFile
-		string[] skip =
-		[
-			"docs-content/solutions/toc.yml",
-			"docs-content/manage-data/toc.yml",
-			"docs-content/explore-analyze/toc.yml",
-			"docs-content/deploy-manage/toc.yml",
-			"docs-content/troubleshoot/toc.yml",
-			"docs-content/troubleshoot/ingest/opentelemetry/toc.yml",
-			"docs-content/reference/security/toc.yml"
-		];
-
-		var path = tocFilePath.OptionalWindowsReplace();
-		// Hardcode suppression for known problematic files
-		if (skip.Any(f => path.Contains(f, StringComparison.OrdinalIgnoreCase)))
-			_ = nestedTocFile.SuppressDiagnostics.Add(HintType.DeepLinkingVirtualFile);
-
 		// Recursively resolve children with the FULL TOC path as the parent path
 		// This ensures all file paths within the TOC include the TOC directory path
 		// The context for children is the toc.yml file that defines them

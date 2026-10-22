@@ -208,6 +208,48 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
+	public async Task NestedToc_UnderFormerlyHardcodedPathWithoutSuppress_EmitsDeepLinkingHint()
+	{
+		var diagnostics = await LoadNestedDeepLinkingToc(suppress: false);
+
+		diagnostics.Should().Contain(
+			d => d.Severity == Severity.Hint && d.File.EndsWith("solutions/toc.yml") && d.Message.Contains(
+				"a/b/overview.md"
+			) && d.Message.Contains("deep-linking")
+		);
+	}
+
+	[Test]
+	public async Task NestedToc_UnderFormerlyHardcodedPathWithSuppress_DoesNotEmitDeepLinkingHint()
+	{
+		var diagnostics = await LoadNestedDeepLinkingToc(suppress: true);
+
+		diagnostics.Should().NotContain(d => d.Message.Contains("deep-linking"));
+	}
+
+	private async Task<IReadOnlyCollection<Diagnostic>> LoadNestedDeepLinkingToc(bool suppress)
+	{
+		var suppressYaml = suppress ? "suppress:\n  - DeepLinkingVirtualFile\n" : "";
+		var tocYaml = suppressYaml + "toc:\n" + "  - file: a/b/overview.md\n" + "    children:\n" + "      - file: a/b/setup.md\n";
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs-content");
+		fileSystem.AddFile("/docs-content/solutions/toc.yml", new MockFileData(tocYaml));
+		var context = CreateContext(fileSystem);
+		var docSet = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			"project: 'test-project'\ntoc:\n  - toc: solutions\n",
+			fileSystem.NewDirInfo("docs-content")
+		);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
+		return context.Diagnostics;
+	}
+
+	[Test]
 	public async Task ValidationEmitsHintForNestedPathVirtualFiles()
 	{
 		// language=yaml
