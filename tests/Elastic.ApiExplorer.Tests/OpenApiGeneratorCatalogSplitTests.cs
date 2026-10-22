@@ -396,7 +396,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task GenerateCatalog_RendersTheTitleBandOutsideTheContainerAndNoSearchField()
+	public async Task GenerateCatalog_RendersTheTitleBandOutsideTheContainer()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -423,8 +423,37 @@ public class OpenApiGeneratorCatalogSplitTests
 				html.IndexOf("id=\"content-container\"", StringComparison.Ordinal),
 				"the band is rendered outside the width-limited container"
 			);
-		html.Should().NotContain("navigation-search", "the catalog has no search field");
 	}
+
+	[Test]
+	[Arguments(BuildType.Assembler, true)]
+	[Arguments(BuildType.Isolated, false)]
+	public async Task GenerateCatalog_Finder_AppearsOnlyWhereTheSidebarHasOne(BuildType buildType, bool expected)
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, buildType: buildType);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+
+		await generator.GenerateCatalog(
+			[new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch")],
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
+		if (expected)
+		{
+			html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
+			Count(html, "<navigation-search").Should().Be(1);
+		}
+		else
+			html.Should().NotContain("navigation-search");
+	}
+
+	private static int Count(string html, string value) => html.Split(value).Length - 1;
 
 	[Test]
 	public async Task GenerateCatalog_CloudHostedAndEnterprise_ShowCloudMarksNotTheGenericGlyph()
@@ -450,7 +479,12 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().NotContain("M13.5 5 10.5 19", "that is the generic fallback glyph");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot, string? docsetYaml = null, string? displayName = null)
+	private static BuildContext CreateGenerateContext(
+		string outputRoot,
+		string? docsetYaml = null,
+		string? displayName = null,
+		BuildType buildType = BuildType.Isolated
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -501,7 +535,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			),
 			configurationContext
 		)
-		{ UrlPathPrefix = "docs" };
+		{ UrlPathPrefix = "docs", BuildType = buildType };
 	}
 
 	private static OpenApiDocument SpecDocument(string title) =>

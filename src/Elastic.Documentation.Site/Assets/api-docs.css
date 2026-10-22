@@ -3211,6 +3211,37 @@ button.example-response-tab:focus-visible {
 	text-wrap: balance;
 }
 
+/* The finder is the same box as the API sidebar's, so it looks up operations across every API. It sits
+   under the lede, as wide as the lede, and its results open below it. Both heroes use it, and the
+   navigation-preview one sits outside `.api-catalog`, so the rule stands alone. */
+.api-catalog-finder {
+	max-width: 36rem;
+	margin: 20px auto 0;
+	text-align: left;
+}
+
+/* The box is added by script. min-height is its height (20px line, 12px padding, 2px border), so what sits
+   below it, the sidebar tree or the catalog cards, does not jump when it loads. */
+navigation-search[variant='sidebar'] {
+	display: block;
+	min-height: 34px;
+}
+
+.api-catalog-finder navigation-search {
+	width: 100%;
+}
+
+/* EUI caps an input popover at 400px unless it is told to be full width. The cap left the box at the left
+   edge of the finder instead of filling it. */
+.api-catalog-finder .euiInputPopover {
+	max-width: none;
+}
+
+/* The navigation-preview hero is left-aligned, so the finder lines up with its title and lede. */
+.landing__hero-text .api-catalog-finder {
+	margin-inline: 0;
+}
+
 @media (max-width: 640px) {
 	.api-catalog .hub-hero.api-catalog-hero {
 		padding: 36px 0 32px;
