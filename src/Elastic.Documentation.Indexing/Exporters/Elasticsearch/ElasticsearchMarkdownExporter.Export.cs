@@ -32,7 +32,8 @@ public partial class ElasticsearchMarkdownExporter
 	private IDocumentInferrerService? _inferService;
 
 	// One docset per BuildContext that declares APIs, so FinishExportAsync can index the specs the explorer renders.
-	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new();
+	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
+	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
