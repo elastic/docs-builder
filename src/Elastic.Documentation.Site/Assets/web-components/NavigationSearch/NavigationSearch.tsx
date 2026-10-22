@@ -126,26 +126,16 @@ export const NavigationSearch = ({
         setIsPopoverOpen(false)
     }
 
-    // Close popover and blur input when htmx navigation starts from a search result
+    // Close after the swap, not before: the clicked result link must stay
+    // mounted so htmx can still read the body's inherited hx-swap and hx-select.
     useEffect(() => {
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                setIsPopoverOpen(false)
-                inputRef.current?.blur()
-            }
+        const handleAfterSwap = () => {
+            setIsPopoverOpen(false)
+            inputRef.current?.blur()
         }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-        }
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
+        return () =>
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
     }, [inputRef])
 
     return (

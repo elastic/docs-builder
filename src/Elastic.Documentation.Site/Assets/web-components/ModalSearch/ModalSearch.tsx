@@ -406,30 +406,10 @@ export const ModalSearch = ({
     useEffect(() => {
         if (!isOpen) return
 
-        // The clicked result stays mounted until its swap is done: htmx reads
-        // hx-swap and hx-select from the request element after the response
-        // arrives, and a detached element has lost the body's inherited values.
-        let navigating = false
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            navigating = !!trigger?.hasAttribute('data-search-result-index')
-        }
-        const handleAfterSwap = () => {
-            if (navigating) closeModal()
-        }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        document.addEventListener('htmx:afterSwap', handleAfterSwap)
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
-        }
+        // Close after the swap, not before: the clicked result link must stay
+        // mounted so htmx can still read the body's inherited hx-swap and hx-select.
+        document.addEventListener('htmx:afterSwap', closeModal)
+        return () => document.removeEventListener('htmx:afterSwap', closeModal)
     }, [isOpen, closeModal])
 
     const handleBackdropClick = useCallback(

@@ -45,7 +45,7 @@ describe('ModalSearch', () => {
         })
     })
 
-    it('keeps the clicked result mounted until the HTMX swap is done', () => {
+    it('stays open until the HTMX swap is done, then closes', () => {
         renderModalSearch()
 
         act(() => {
@@ -55,13 +55,8 @@ describe('ModalSearch', () => {
             screen.queryByRole('button', { name: 'Close search modal' })
         expect(closeButton()).toBeInTheDocument()
 
-        const result = document.createElement('a')
-        result.setAttribute('data-search-result-index', '0')
-
         act(() => {
-            document.dispatchEvent(
-                new CustomEvent('htmx:beforeSend', { detail: { elt: result } })
-            )
+            document.dispatchEvent(new CustomEvent('htmx:beforeSend'))
         })
         expect(modalSearchStore.getState().isOpen).toBe(true)
         expect(closeButton()).toBeInTheDocument()
@@ -71,25 +66,6 @@ describe('ModalSearch', () => {
         })
         expect(modalSearchStore.getState().isOpen).toBe(false)
         expect(closeButton()).not.toBeInTheDocument()
-    })
-
-    it('stays open when a swap is not a search result navigation', () => {
-        renderModalSearch()
-
-        act(() => {
-            modalSearchStore.getState().actions.openModal()
-        })
-
-        act(() => {
-            document.dispatchEvent(
-                new CustomEvent('htmx:beforeSend', {
-                    detail: { elt: document.createElement('a') },
-                })
-            )
-            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
-        })
-
-        expect(modalSearchStore.getState().isOpen).toBe(true)
     })
 
     it('does not offer Ask AI in an isolated build', () => {
