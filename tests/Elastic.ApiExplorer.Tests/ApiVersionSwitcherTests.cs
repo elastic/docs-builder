@@ -37,17 +37,20 @@ public class ApiVersionSwitcherTests
 		items.Single(i => i.Selected).Label.Should().Be("main");
 	}
 
+	private static IReadOnlyDictionary<string, IReadOnlyList<string>> Pages(params string[][] pages) =>
+		pages.SelectMany(names => names.Select(name => (name, names))).ToDictionary(x => x.name, IReadOnlyList<string> (x) => x.names);
+
 	private static IReadOnlyList<ApiVersionSwitcherItem> Items(string current) =>
 		ApiVersionSwitcher.Build(
 			"",
 			"elasticsearch",
 			["main", "9", "8"],
 			current,
-			new Dictionary<string, IReadOnlySet<string>>
+			new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>
 			{
-				["main"] = new HashSet<string> { "", "/operation/operation-ping", "/operation/operation-newop" },
-				["9"] = new HashSet<string> { "", "/operation/operation-ping" },
-				["8"] = new HashSet<string> { "" }
+				["main"] = Pages([""], ["/operation/operation-ping"], ["/operation/operation-newop"]),
+				["9"] = Pages([""], ["/operation/operation-ping"]),
+				["8"] = Pages([""])
 			}
 		);
 
@@ -99,5 +102,59 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.ForPage(Items("main"), "/api/doc/elasticsearch/");
 
 		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
+	}
+
+	[Test]
+	public void ForPage_CollapsedPageInSource_FindsTheOperationUnderItsFormerPath()
+	{
+		var items = ApiVersionSwitcher.ForPage(
+			ApiVersionSwitcher.Build(
+				"",
+				"elasticsearch",
+				["main", "8"],
+				"main",
+				new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>
+				{
+					["main"] = Pages(
+						["",],
+						["/operation/operation-search", "/operation/operation-search-1", "/operation/operation-search-2"]
+					),
+					["8"] = Pages([""], ["/operation/operation-search-2"])
+				}
+			),
+			"/api/doc/elasticsearch/operation/operation-search"
+		);
+
+		items
+			.Select(i => i.Url)
+			.Should()
+			.Equal("/api/doc/elasticsearch/operation/operation-search", "/api/doc/elasticsearch/v8/operation/operation-search-2");
+	}
+
+	[Test]
+	public void ForPage_CollapsedPageInTarget_LinksToItsCanonicalPath()
+	{
+		var items = ApiVersionSwitcher.ForPage(
+			ApiVersionSwitcher.Build(
+				"",
+				"elasticsearch",
+				["main", "8"],
+				"8",
+				new Dictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>
+				{
+					["main"] = Pages(
+						[""],
+						["/operation/operation-search", "/operation/operation-search-1", "/operation/operation-search-2"]
+					),
+					["8"] = Pages([""], ["/operation/operation-search-2"])
+				}
+			),
+			"/api/doc/elasticsearch/v8/operation/operation-search-2"
+		);
+
+		items
+			.Select(i => i.Url)
+			.Should()
+			.Equal("/api/doc/elasticsearch/operation/operation-search", "/api/doc/elasticsearch/v8/operation/operation-search-2");
 	}
 }

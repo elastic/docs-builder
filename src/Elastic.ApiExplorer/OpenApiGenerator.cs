@@ -190,9 +190,9 @@ public class OpenApiGenerator(
 				)
 			)
 		).ConfigureAwait(false);
-		var pagePaths = versionedDocuments.Zip(navigations, (v, nav) => (v.Version.Moniker, Paths: PagePaths(nav))).ToDictionary(
+		var pageNames = versionedDocuments.Zip(navigations, (v, nav) => (v.Version.Moniker, Names: PageNames(nav))).ToDictionary(
 			x => x.Moniker,
-			x => x.Paths
+			x => x.Names
 		);
 
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
@@ -203,7 +203,7 @@ public class OpenApiGenerator(
 		await Parallel.ForEachAsync(versionedDocuments.Zip(navigations), ctx, async (item, token) =>
 		{
 			var (versioned, navigation) = item;
-			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker, pagePaths);
+			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker, pageNames);
 			await GenerateApiProduct(
 				new(
 					versioned.Document,
@@ -576,31 +576,36 @@ public class OpenApiGenerator(
 		}
 	}
 
-	/// <summary>Every page of one version's tree, relative to its product root, with collapsed operations' former URLs.</summary>
-	private static IReadOnlySet<string> PagePaths(LandingNavigationItem navigation)
+	/// <summary>
+	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
+	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
+	/// </summary>
+	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
 		var pages = new List<(INavigationItem Item, IApiModel Model)>();
 		CollectPages(navigation, pages);
 		var root = navigation.Url.TrimEnd('/');
-		var paths = new HashSet<string>(StringComparer.Ordinal);
+		var names = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 		foreach (var (item, _) in pages)
 		{
-			AddRelative(item.Url);
-			if (item is OperationNavigationItem collapsed)
-			{
-				foreach (var alias in collapsed.AliasUrls)
-					AddRelative(alias);
-			}
+			var all = RelativeNames(item, root);
+			foreach (var name in all)
+				names[name] = all;
 		}
 
-		return paths;
+		return names;
+	}
 
-		void AddRelative(string url)
-		{
-			var trimmed = url.TrimEnd('/');
-			if (trimmed.StartsWith(root, StringComparison.Ordinal))
-				_ = paths.Add(trimmed[root.Length..]);
-		}
+	private static string[] RelativeNames(INavigationItem item, string root)
+	{
+		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
+		return [
+			.. urls
+				.Select(static url => url.TrimEnd('/'))
+				.Where(url => url.StartsWith(root, StringComparison.Ordinal))
+				.Select(url => url[root.Length..])
+				.Distinct(StringComparer.Ordinal)
+		];
 	}
 
 	private static void CollectPages(INavigationItem item, List<(INavigationItem Item, IApiModel Model)> pages)

@@ -13,7 +13,7 @@ public static class ApiVersionSwitcher
 		string apiKey,
 		IReadOnlyList<string> monikers,
 		string currentMoniker,
-		IReadOnlyDictionary<string, IReadOnlySet<string>>? pagePaths = null
+		IReadOnlyDictionary<string, IReadOnlyDictionary<string, IReadOnlyList<string>>>? pageNames = null
 	)
 	{
 		if (monikers.Count <= 1)
@@ -27,7 +27,11 @@ public static class ApiVersionSwitcher
 					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m)),
 					Selected: m == currentMoniker
 				)
-				{ PagePaths = pagePaths is not null && pagePaths.TryGetValue(m, out var paths) ? paths : FrozenSet<string>.Empty }
+				{
+					PageNames = pageNames is not null && pageNames.TryGetValue(m, out var names)
+						? names
+						: FrozenDictionary<string, IReadOnlyList<string>>.Empty
+				}
 			)
 			.ToArray();
 	}
@@ -50,10 +54,21 @@ public static class ApiVersionSwitcher
 		if (path.Length > 0 && path[0] != '/')
 			return items;
 
-		if (path.Length == 0)
+		if (path.Length == 0 || !selected.PageNames.TryGetValue(path, out var names))
 			return items;
 
-		return [.. items.Select(i => i.PagePaths.Contains(path) ? i with { Url = i.Url + path } : i)];
+		return [.. items.Select(i => LinkToPage(i, names))];
+	}
+
+	private static ApiVersionSwitcherItem LinkToPage(ApiVersionSwitcherItem item, IReadOnlyList<string> names)
+	{
+		foreach (var name in names)
+		{
+			if (item.PageNames.TryGetValue(name, out var target))
+				return item with { Url = item.Url + target[0] };
+		}
+
+		return item;
 	}
 
 	private static int ParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : 0;
