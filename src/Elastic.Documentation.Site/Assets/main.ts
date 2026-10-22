@@ -2,6 +2,7 @@ import { initAgentSkillCopy } from './agent-skill'
 import { initApiDocs } from './api-docs'
 import { initApiMenus } from './api-menu'
 import { changesPageChrome } from './api-navigation'
+import { initApiVersionSwitcherSync } from './api-version-switcher'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
@@ -247,6 +248,7 @@ document.addEventListener('click', handleCtaActivation)
 initPrivacyConsent()
 initSecondaryNav()
 initApiMenus()
+initApiVersionSwitcherSync()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.

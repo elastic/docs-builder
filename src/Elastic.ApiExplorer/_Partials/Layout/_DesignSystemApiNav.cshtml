@@ -7,11 +7,13 @@
 <div class="api-sidebar-chrome" data-nav-filter-scope>
 	@if (apiContext is not null && apiContext.Versions.Count > 1)
 	{
-		@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
-		{
-			Label = "API version",
-			Items = [.. apiContext.Versions.Select(item => new LinkMenuItem(item.Label, item.Value, item.Selected))]
-		}))
+		<div id="api-version-switcher" hx-boost="false">
+			@await RenderPartialAsync(_LinkMenu.Create(new LinkMenuModel
+			{
+				Label = "API version",
+				Items = [.. apiContext.Versions.Select(item => new LinkMenuItem(item.Label, item.Value, item.Selected))]
+			}))
+		</div>
 	}
 	@if (apiContext is not null && apiContext.ProductGroups.Count > 0 && Model.BuildType != BuildType.Assembler)
 	{

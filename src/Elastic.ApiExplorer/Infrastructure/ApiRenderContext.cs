@@ -20,7 +20,11 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected);
+/// <param name="PagePaths">Pages this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).</param>
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected)
+{
+	public IReadOnlySet<string> PagePaths { get; init; } = FrozenSet<string>.Empty;
+}
 
 public record ApiRenderContext(
 	BuildContext BuildContext,

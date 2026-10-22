@@ -28,9 +28,9 @@ internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, Open
 internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDocument> Documents, string? UnmatchedBaseFilesMoniker);
 
 internal sealed record ApiProductGeneration(
-	string Prefix,
 	OpenApiDocument Document,
 	ResolvedApiConfiguration? ApiConfig,
+	LandingNavigationItem Navigation,
 	IReadOnlyList<ApiVersionSwitcherItem> VersionSwitcherItems,
 	string Moniker,
 	bool EmitUnmatchedBaseFiles,
@@ -175,20 +175,40 @@ public class OpenApiGenerator(
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
 		var highestMajor = monikers.Max(TryParseMajor);
 
+		// Each version's tree is built before any page renders, so every picker can link to the same
+		// page in the other versions. The trees were already alive together while versions rendered in parallel.
+		var navigations = await Task.WhenAll(
+			versionedDocuments.Select(
+				v => Task.Run(
+					() => CreateNavigation(
+						ApiUrlBuilder.ProductSuffix(prefix, v.Version.Moniker),
+						v.Document,
+						apiConfig,
+						SupplementalMajor(v.Version.Moniker, highestMajor)
+					),
+					ctx
+				)
+			)
+		).ConfigureAwait(false);
+		var pagePaths = versionedDocuments.Zip(navigations, (v, nav) => (v.Version.Moniker, Paths: PagePaths(nav))).ToDictionary(
+			x => x.Moniker,
+			x => x.Paths
+		);
+
 		// Each moniker gets an independent ApiRenderContext, navigation tree and navigation HTML
 		// writer, so there is no shared mutable state between concurrent versions. The outer loop in
 		// GenerateProducts fans out products only; rendering versions sequentially here made a
 		// product's total time the sum of all its versions. Pages within one version stay sequential,
 		// so concurrency is bounded by the number of product×version units, not ProcessorCount².
-		await Parallel.ForEachAsync(versionedDocuments, ctx, async (versioned, token) =>
+		await Parallel.ForEachAsync(versionedDocuments.Zip(navigations), ctx, async (item, token) =>
 		{
-			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker);
-			var apiUrlSuffix = ApiUrlBuilder.ProductSuffix(prefix, versioned.Version.Moniker);
+			var (versioned, navigation) = item;
+			var switcherItems = ApiVersionSwitcher.Build(context.UrlPathPrefix, prefix, monikers, versioned.Version.Moniker, pagePaths);
 			await GenerateApiProduct(
 				new(
-					apiUrlSuffix,
 					versioned.Document,
 					apiConfig,
+					navigation,
 					switcherItems,
 					versioned.Version.Moniker,
 					EmitUnmatchedBaseFiles: versioned.Version.Moniker == resolved.UnmatchedBaseFilesMoniker,
@@ -390,17 +410,11 @@ public class OpenApiGenerator(
 			discovery,
 			new(generation.Document, context.Collector, generation.Moniker, EmitUnmatchedBaseFiles: generation.EmitUnmatchedBaseFiles)
 		);
-		var navigation = CreateNavigation(
-			generation.Prefix,
-			generation.Document,
-			generation.ApiConfig,
-			versionMajor: generation.SupplementalMajor
-		);
+		var navigation = generation.Navigation;
 		_logger.LogInformation(
-			"Generating OpenApiDocument {Title} ({Operations} operations, navigation built in {Elapsed}ms)",
+			"Generating OpenApiDocument {Title} ({Operations} operations)",
 			title,
-			generation.Document.Paths.Sum(static p => p.Value.Operations?.Count ?? 0),
-			started.ElapsedMilliseconds
+			generation.Document.Paths.Sum(static p => p.Value.Operations?.Count ?? 0)
 		);
 
 		var navigationRenderer = new IsolatedBuildNavigationHtmlWriter(
@@ -559,6 +573,33 @@ public class OpenApiGenerator(
 				},
 				ctx
 			).ConfigureAwait(false);
+		}
+	}
+
+	/// <summary>Every page of one version's tree, relative to its product root, with collapsed operations' former URLs.</summary>
+	private static IReadOnlySet<string> PagePaths(LandingNavigationItem navigation)
+	{
+		var pages = new List<(INavigationItem Item, IApiModel Model)>();
+		CollectPages(navigation, pages);
+		var root = navigation.Url.TrimEnd('/');
+		var paths = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var (item, _) in pages)
+		{
+			AddRelative(item.Url);
+			if (item is OperationNavigationItem collapsed)
+			{
+				foreach (var alias in collapsed.AliasUrls)
+					AddRelative(alias);
+			}
+		}
+
+		return paths;
+
+		void AddRelative(string url)
+		{
+			var trimmed = url.TrimEnd('/');
+			if (trimmed.StartsWith(root, StringComparison.Ordinal))
+				_ = paths.Add(trimmed[root.Length..]);
 		}
 	}
 

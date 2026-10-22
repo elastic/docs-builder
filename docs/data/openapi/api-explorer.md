@@ -219,6 +219,8 @@ Versionless products (`versioning: serverless` and similar) render only the unve
 version is rendered, the bar shows a version picker beside the API name. The current tree is
 labeled `main`, and each frozen major is `v9`, `v8`. Isolated builds put the same picker
 under the API name in the left navigation.
+Picking a version opens the same page in that version when it has one, for example the same
+operation, and that version's landing page otherwise.
 
 ### Smoke-test every CloudFront spec locally
 
