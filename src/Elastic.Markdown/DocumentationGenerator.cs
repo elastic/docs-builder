@@ -543,7 +543,7 @@ public partial class DocumentationGenerator
 			DocumentationSet.LastWrite,
 			stateFile.FullName
 		);
-		var badFiles = Context.Collector.OffendingFiles.ToArray();
+		var badFiles = Context.Collector.OffendingFiles.Keys.ToArray();
 		var state = new GenerationState
 		{
 			LastSeenChanges = DocumentationSet.LastWrite,
