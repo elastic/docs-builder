@@ -36,8 +36,12 @@ public sealed partial record OperationEndpoint(
 	string? SpaceParameter = null
 )
 {
-	/// <summary>What the Kibana specs say after the Spaces route listing; it becomes the description of the <c>space_id</c> path parameter.</summary>
+	/// <summary>What the Kibana specs say after the Spaces route listing; the page moves it into the description of the <c>space_id</c> path parameter.</summary>
 	public const string SpacesNote = "Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.";
+
+	/// <summary>The description of the <c>space_id</c> path parameter the page adds.</summary>
+	public const string SpaceParameterDescription = "An identifier for the space. If `space_id` is not provided in the URL, the default space is used. "
+		+ SpacesNote;
 
 	private static readonly string[] MethodRank = ["post", "put", "patch", "get", "delete", "head", "options", "trace"];
 

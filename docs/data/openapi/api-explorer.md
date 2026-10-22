@@ -397,7 +397,7 @@ An operation page lists every path of the operation, one row per path, longest p
 
 The paths come from either of two sources, and both produce the same rows:
 
-- The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description. When it lists a `/s/{space_id}/…` route, the page also lists an optional `space_id` path parameter, described by the `Refer to [Spaces](…) for more information.` sentence that follows the block, which is removed from the description too.
+- The `**All methods and paths for this operation:**` (or `**Spaces method and path for this operation:**`) HTML block that bump.sh-flavoured specs put in the operation description. The block is removed from the rendered description. When it lists a `/s/{space_id}/…` route, the page also lists an optional `space_id` path parameter, described as the space identifier, defaulting to the default space, followed by the `Refer to [Spaces](…) for more information.` sentence that follows the block. That sentence is removed from the operation description.
 - Separate spec operations that share `x-namespace` and `x-api-name` (see below).
 
 ### Required authorization [x-req-auth]

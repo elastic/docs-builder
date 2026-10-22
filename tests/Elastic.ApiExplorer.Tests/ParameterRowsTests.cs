@@ -299,8 +299,13 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		page.PathParameterNames.Should().Equal("space_id", "id");
 		var space = page.PathParameters.Items[0];
 		space.IsRequired.Should().BeFalse();
-		space.OptionalRoute.Should().Be("/api/things/{id}");
-		space.DescriptionMarkdown.Should().Be(OperationEndpoint.SpacesNote);
+		space.OptionalRoute.Should().BeNull("the row reads as optional by lacking the required badge, without a hint");
+		space
+			.DescriptionMarkdown
+			.Should()
+			.Be(
+				"An identifier for the space. If `space_id` is not provided in the URL, the default space is used. Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information."
+			);
 		page.DescriptionMarkdown.Should().Be("Get a thing.");
 	}
 

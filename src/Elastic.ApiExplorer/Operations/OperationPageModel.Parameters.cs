@@ -81,7 +81,7 @@ public partial record OperationPageModel
 			Name = name,
 			In = ParameterLocation.Path,
 			Required = false,
-			Description = OperationEndpoint.SpacesNote,
+			Description = OperationEndpoint.SpaceParameterDescription,
 			Schema = new OpenApiSchema { Type = JsonSchemaType.String }
 		};
 		return parameters.Prepend(space);
@@ -89,6 +89,7 @@ public partial record OperationPageModel
 
 	/// <summary>The route to use without a path parameter that some routes leave out (a sibling route has none); null for any other parameter.</summary>
 	private static string? RouteWithout(IOpenApiParameter parameter, OperationEndpoint endpoint) =>
-		parameter is { In: ParameterLocation.Path, Name: { } name }
-			&& (endpoint.OptionalPathParameters.Contains(name) || name == endpoint.SpaceParameter) ? endpoint.ShortestRoute : null;
+		parameter is { In: ParameterLocation.Path, Name: { } name } && endpoint.OptionalPathParameters.Contains(name)
+			? endpoint.ShortestRoute
+			: null;
 }
