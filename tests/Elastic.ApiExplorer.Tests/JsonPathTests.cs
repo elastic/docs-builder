@@ -98,13 +98,23 @@ public class JsonPathTests
 	}
 
 	[Test]
-	public async Task Render_RowWithoutPath_LeavesTooltipEmpty()
+	public async Task Render_TopLevelRow_HasNoTooltip()
+	{
+		var list = await BuildAsync("");
+
+		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("<code>bool</code>", "a top-level path would only repeat the name");
+	}
+
+	[Test]
+	public async Task Render_RowWithoutPaths_HasNoTooltip()
 	{
 		var list = await BuildAsync(null);
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("""<code data-tippy-content="" data-tippy-theme="mono">bool</code>""", "tooltip.ts skips an empty tooltip");
+		html.Should().Contain("<code>bool</code>").And.NotContain("data-tippy-theme");
 	}
 
 	[Test]

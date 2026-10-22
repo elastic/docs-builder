@@ -167,6 +167,9 @@ public record ApiProperty
 	public string? JsonPath { get; init; }
 	public string ChildrenId => NestedRowsId.Of(AnchorId);
 
+	/// <summary>The hover tooltip: the JSON path, except on a top-level field, where it would only repeat the name.</summary>
+	public string? TooltipPath => JsonPath is { } path && path != Name ? path : null;
+
 	/// <summary>What the permalink announces: the JSON path where there is one, since the hover tooltip is out of keyboard reach.</summary>
 	public string PermalinkLabel => JsonPath is { Length: > 0 } path ? path : Name;
 	public required int Depth { get; init; }
