@@ -186,6 +186,25 @@ public class ApiCatalogViewModelTests
 		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/doc/cloud/");
 	}
 
+	[Test]
+	public void CatalogMarkdown_LinksToTheLatestVersionAndItsSiblingFiles()
+	{
+		var markdown = LandingCommonMark.Catalog([
+			Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" },
+			Entry("cloud", "Elastic Cloud API")
+		]);
+
+		markdown.Should().Contain("[Kibana](/api/doc/kibana/v9)");
+		markdown
+			.Should()
+			.Contain("[Markdown](/api/doc/kibana/v9.md)")
+			.And
+			.Contain("[JSON](/api/doc/kibana/v9.json)")
+			.And
+			.Contain("[YAML](/api/doc/kibana/v9.yaml)");
+		markdown.Should().Contain("[Elastic Cloud API](/api/doc/cloud/)").And.Contain("[Markdown](/api/doc/cloud.md)");
+	}
+
 	private static ApiCatalogItem Item(string key, string? parentKey = null) =>
 		new(key, key, $"/api/doc/{key}/", "<svg></svg>", null, [], parentKey);
 

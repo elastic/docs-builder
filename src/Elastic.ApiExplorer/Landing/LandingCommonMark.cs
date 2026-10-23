@@ -33,13 +33,14 @@ internal static class LandingCommonMark
 
 	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
 	{
-		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.LatestUrl ?? entry.Url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
+		var url = entry.LatestUrl ?? entry.Url;
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
 			_ = markdown.AppendLine($"  {summary}");
 		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
 			_ = markdown.AppendLine($"  Deployments: {string.Join(", ", deployments.Select(d => d.Name))}");
 		_ = markdown.AppendLine(
-			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(entry.Url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(entry.Url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(entry.Url))}"
+			$"  {ApiCommonMark.Link("Markdown", ApiOutputPaths.MarkdownUrl(url))} · {ApiCommonMark.Link("JSON", ApiOutputPaths.JsonUrl(url))} · {ApiCommonMark.Link("YAML", ApiOutputPaths.YamlUrl(url))}"
 		);
 	}
 
