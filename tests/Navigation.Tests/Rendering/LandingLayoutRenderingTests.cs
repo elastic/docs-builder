@@ -62,8 +62,12 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 	{
 		var html = await RenderLanding(navigationPreviewEnabled);
 
-		html.Should().Contain("href=\"/docs/release-notes\"");
-		html.Should().Contain("Upgrading from an earlier version?");
+		var start = html.IndexOf("Upgrading from an earlier version?", StringComparison.Ordinal);
+		start.Should().BeGreaterThan(-1);
+		var upgradeParagraph = html[start..html.IndexOf("</p>", start, StringComparison.Ordinal)];
+
+		upgradeParagraph.Should().Contain("href=\"/docs/release-notes\"");
+		html.Should().NotContain("View release notes");
 	}
 
 	private async Task<string> RenderLanding(bool navigationPreviewEnabled)
