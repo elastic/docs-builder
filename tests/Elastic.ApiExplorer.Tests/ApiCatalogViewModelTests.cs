@@ -175,6 +175,17 @@ public class ApiCatalogViewModelTests
 	public void DeploymentsOf_NoCategories_IsEmpty() =>
 		ApiCatalogViewModel.DeploymentsOf(Entry("cloud", "Elastic Cloud API")).Should().BeEmpty();
 
+	[Test]
+	public void ToItem_LinksToTheLatestVersionWhenThereIsOne()
+	{
+		ApiCatalogViewModel
+			.ToItem(Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" })
+			.Url
+			.Should()
+			.Be("/api/doc/kibana/v9");
+		ApiCatalogViewModel.ToItem(Entry("cloud", "Elastic Cloud API")).Url.Should().Be("/api/doc/cloud/");
+	}
+
 	private static ApiCatalogItem Item(string key, string? parentKey = null) =>
 		new(key, key, $"/api/doc/{key}/", "<svg></svg>", null, [], parentKey);
 

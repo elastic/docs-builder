@@ -33,7 +33,7 @@ internal static class LandingCommonMark
 
 	private static void WriteCatalogEntry(StringBuilder markdown, ApiCatalogEntry entry)
 	{
-		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.Url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
+		_ = markdown.AppendLine($"- {ApiCommonMark.Link(entry.Title, entry.LatestUrl ?? entry.Url)} ({ApiCommonMark.CodeSpan(entry.Key)})");
 		if (ApiSeoDescription.Excerpt(entry.Description) is { } summary)
 			_ = markdown.AppendLine($"  {summary}");
 		if (ApiCatalogViewModel.DeploymentsOf(entry) is { Count: > 0 } deployments)
