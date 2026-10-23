@@ -68,6 +68,15 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_PathCopyButtons_CopyMethodAndPath()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex("api-url-copy[^>]*data-copy=\"(GET|POST|PUT|DELETE|HEAD) /");
+	}
+
+	[Test]
 	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
 	{
 		var nav = SearchOperation();

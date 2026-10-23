@@ -61,7 +61,7 @@
 			<li class="api-url-list-item">
 				<span class="api-url-row">
 					@(await RenderPartialAsync<_EndpointPath, EndpointPathModel>(new EndpointPathModel(row, endpoint.ShortestRoute, documentedPathParameters)))
-					@(await RenderPartialAsync<_EndpointCopyButton, string>(row.Route))
+					@(await RenderPartialAsync<_EndpointCopyButton, string>($"{row.Method.ToUpperInvariant()} {row.Route}"))
 				</span>
 			</li>
 		}
