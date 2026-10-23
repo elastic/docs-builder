@@ -274,7 +274,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	{
 		var indexOfLastComment = Math.Max(span.LastIndexOf(" # "), span.LastIndexOf(" // "));
 		var startIndex = span.LastIndexOf('<');
-		if (startIndex <= 0)
+		if (startIndex < 0)
 			return [];
 
 		var allStartIndices = new List<int>();
@@ -401,7 +401,7 @@ public class EnhancedCodeBlockParser : FencedBlockParserBase<EnhancedCodeBlock>
 	)
 	{
 		List<CallOut> callOuts = [];
-		var hasClassicCallout = span.IndexOf("<") > 0 && span.LastIndexOf(">") == span.Length - 1;
+		var hasClassicCallout = span.IndexOf("<") >= 0 && span.LastIndexOf(">") == span.Length - 1;
 		if (hasClassicCallout)
 		{
 			var matchClassicCallout = CallOutParser.CallOutNumber().EnumerateMatches(span);
