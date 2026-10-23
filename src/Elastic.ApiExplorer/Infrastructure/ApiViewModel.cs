@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Components.Navigation.PageActions;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Icons;
 using Elastic.Documentation.Site.Navigation;
@@ -34,6 +35,9 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 
 	/// <summary>The Copy page menu, the spec download alone on a page with no Markdown export, or null when the page has neither.</summary>
 	public ApiPageActionsModel? PageActions { get; init; }
+
+	/// <summary>The design-system rail's page actions. The assembler's docs bar already carries the spec download.</summary>
+	public PageActionsModel? DesignSystemPageActions { get; init; }
 
 	public string? ProductName { get; init; }
 
@@ -135,6 +139,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			MarkdownUrl = markdownUrl,
 			ShowPageActions = ShowPageActions,
 			PageActions = BuildPageActions(markdownUrl, apiContext?.Spec),
+			DesignSystemPageActions = BuildDesignSystemPageActions(markdownUrl, apiContext?.Spec),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
@@ -148,6 +153,21 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
 		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
+
+	private PageActionsModel? BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
+	{
+		var downloads = spec is not null && BuildContext.BuildType != BuildType.Assembler
+			? new PageActionDownload[]
+			{
+				new("Download OpenAPI spec (JSON)", spec.JsonUrl),
+				new("Download OpenAPI spec (YAML)", spec.YamlUrl)
+			}
+			: [];
+		if (!ShowPageActions && downloads.Length == 0)
+			return null;
+
+		return new PageActionsModel { MarkdownUrl = ShowPageActions ? markdownUrl : null, Downloads = downloads };
+	}
 
 	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{

@@ -48,9 +48,9 @@
 					@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Model))
 				</main>
 				<aside class="layout__rail api-page-rail">
-					@if (Model.ShowPageActions)
+					@if (Model.DesignSystemPageActions is not null)
 					{
-						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Navigation.PageActions._PageActions.Create(new Elastic.Documentation.Site.Components.Navigation.PageActions.PageActionsModel { MarkdownUrl = Model.MarkdownUrl }))
+						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Navigation.PageActions._PageActions.Create(Model.DesignSystemPageActions))
 					}
 					@await RenderSectionAsync(ApiPageSections.Rail)
 				</aside>

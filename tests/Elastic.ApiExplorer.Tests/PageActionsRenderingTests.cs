@@ -7,6 +7,7 @@ using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Site;
 using RazorSlices;
+using DesignSystemPageActions = Elastic.Documentation.Site.Components.Navigation.PageActions;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -77,5 +78,28 @@ public class PageActionsRenderingTests
 			.Contain("href=\"/api/doc/elasticsearch.yaml\"");
 		html.Should().NotContain("Copy page").And.NotContain("data-copy-page").And.NotContain("View as Markdown");
 		html.Should().NotContain("role=\"separator\"");
+	}
+
+	[Test]
+	public async Task DesignSystemRail_ListsTheDownloadsAsDownloadLinks()
+	{
+		var model = new DesignSystemPageActions.PageActionsModel
+		{
+			MarkdownUrl = "/api/doc/elasticsearch.md",
+			Downloads = [new("Download OpenAPI spec (JSON)", "/api/doc/elasticsearch.json")]
+		};
+
+		var html = await Elastic
+			.Documentation
+			.Site
+			.Components
+			.Navigation
+			.PageActions
+			._PageActions
+			.Create(model)
+			.RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("View as Markdown").And.Contain("Download OpenAPI spec (JSON)");
+		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"").And.Contain("download");
 	}
 }
