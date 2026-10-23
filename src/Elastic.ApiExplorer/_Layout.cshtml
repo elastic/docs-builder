@@ -70,10 +70,6 @@ else
 }
 @* API content column. Sidebar is _ApiPagesNav (main), not Nav V2 _PagesNav. *@
 <div id="main-container" class="relative">
-	@if (Model.BuildType == BuildType.Assembler && Model.ApiContext is not null)
-	{
-		@(await RenderPartialAsync(_ApiContextBar.Create(Model.ApiContext)))
-	}
 	<div class="min-h-screen w-full mx-auto api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
 			@* #api-content-grid is the htmx swap target for API pages (pages-nav.ts). Every API page has the same
@@ -95,9 +91,9 @@ else
 						</article>
 					</main>
 					<div class="api-page-rail">
-						@if (Model.ShowPageActions)
+						@if (Model.PageActions is not null)
 						{
-							@(await RenderPartialAsync<_PageActions, string>(Model.MarkdownUrl))
+							@(await RenderPartialAsync(_PageActions.Create(Model.PageActions)))
 						}
 						@await RenderSectionAsync(ApiPageSections.Rail)
 					</div>

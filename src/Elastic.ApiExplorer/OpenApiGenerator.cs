@@ -194,7 +194,7 @@ public class OpenApiGenerator(
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var highestMajor = monikers.Max(TryParseMajor);
+		var highestMajor = monikers.Max(ApiVersions.TryParseMajor);
 
 		// Each version's tree is built before any page renders, so every picker can link to the same
 		// page in the other versions. The trees were already alive together while versions rendered in parallel.
@@ -306,9 +306,15 @@ public class OpenApiGenerator(
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{
-			CatalogCategories = apiConfig.CatalogCategories
+			CatalogCategories = apiConfig.CatalogCategories,
+			LatestUrl = LatestVersionUrl(prefix, resolved)
 		};
 	}
+
+	private string? LatestVersionUrl(string prefix, ResolvedProductDocuments resolved) =>
+		ApiVersions.LatestMajor(resolved.Documents.Select(static v => v.Version.Moniker)) is { } latest
+			? ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, ApiUrlBuilder.ProductSuffix(prefix, latest))
+			: null;
 
 	/// <summary>
 	/// Resolves every OpenAPI document to render for one API key, including canonical <c>main</c>
@@ -381,9 +387,7 @@ public class OpenApiGenerator(
 	/// unversioned URL matches the current-major overlay (the one page CLI authors expect).
 	/// </summary>
 	internal static int? SupplementalMajor(string moniker, int? highestNumericMoniker) =>
-		TryParseMajor(moniker) ?? (moniker == "main" ? highestNumericMoniker : null);
-
-	private static int? TryParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : null;
+		ApiVersions.TryParseMajor(moniker) ?? (moniker == "main" ? highestNumericMoniker : null);
 
 	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
 		string apiKey,

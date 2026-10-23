@@ -32,6 +32,9 @@ public record ApiLayoutViewModel : GlobalLayoutViewModel
 	/// <summary>Intro/outro markdown pages have no Markdown export, so they have no Copy page.</summary>
 	public bool ShowPageActions { get; init; } = true;
 
+	/// <summary>The Copy page menu, the spec download alone on a page with no Markdown export, or null when the page has neither.</summary>
+	public ApiPageActionsModel? PageActions { get; init; }
+
 	public string? ProductName { get; init; }
 
 	/// <summary>
@@ -95,6 +98,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
 		var docsUrl = string.IsNullOrEmpty(BuildContext.UrlPathPrefix) ? "/" : BuildContext.UrlPathPrefix;
 		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, docsUrl, catalogUrl, docTitle, onCatalog: onCatalog);
+		var apiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl);
+		var markdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url);
 
 		return new()
 		{
@@ -126,9 +131,10 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			SiteTopNav = RenderContext.SiteTopNav,
 			ApiCatalogUrl = catalogUrl,
 			ShowSecondaryNav = false,
-			ApiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl),
-			MarkdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url),
+			ApiContext = apiContext,
+			MarkdownUrl = markdownUrl,
 			ShowPageActions = ShowPageActions,
+			PageActions = BuildPageActions(markdownUrl, apiContext?.Spec),
 			// Header properties for isolated mode
 			HeaderTitle = docTitle,
 			HeaderVersion = Document.Info?.Version ?? "1.0",
@@ -140,21 +146,24 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		};
 	}
 
-	private ApiContextBar BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
+	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
+		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
+
+	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{
 		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
 		var versions = ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
 		var productGroups = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
-		// Same text as the menu row, so the bar and the menu name the API alike.
+		// Same text as the menu row, so the trigger and the menu name the API alike.
 		var title = productGroups.SelectMany(static g => g.Products).FirstOrDefault(static p => p.Selected)?.Label
 			?? RenderContext.Product?.DisplayName
 			?? docTitle;
-		return new ApiContextBar(
+		return new ApiIdentity(
 			title,
 			ProductIcons.Get(productId),
 			productGroups,
 			catalogUrl,
-			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected))],
+			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
 			new ApiSpecDownload(ApiOutputPaths.JsonUrl(specRootUrl), ApiOutputPaths.YamlUrl(specRootUrl))
 		);
 	}

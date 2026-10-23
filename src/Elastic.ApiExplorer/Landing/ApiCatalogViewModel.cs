@@ -173,11 +173,12 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 			)
 		];
 
-	private static ApiCatalogItem ToItem(ApiCatalogEntry entry) =>
+	/// <summary>A card opens the API's latest numbered version when it has one, like the sidebar selector.</summary>
+	internal static ApiCatalogItem ToItem(ApiCatalogEntry entry) =>
 		new(
 			entry.Key,
 			entry.Title,
-			entry.Url,
+			entry.OpenUrl,
 			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
 			DeploymentsOf(entry),
