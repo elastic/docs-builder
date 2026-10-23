@@ -2897,7 +2897,7 @@ button.example-response-tab:focus-visible {
 		grid-row: 2;
 	}
 
-	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
+	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector (36px row from 64px). */
 	.api-page-rail {
 		grid-column: 2;
 		grid-row: 1;
@@ -2906,7 +2906,7 @@ button.example-response-tab:focus-visible {
 		align-items: stretch;
 		gap: 16px;
 		min-width: 0;
-		padding-top: 24px;
+		padding-top: 18px;
 		padding-bottom: 48px;
 	}
 
