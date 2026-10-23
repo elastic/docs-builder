@@ -296,7 +296,7 @@ public class OpenApiGenerator(
 	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
 		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? (resolved.Documents.Count > 0 ? resolved.Documents[0] : null);
 
-	private ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
+	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
 		if (resolved.Documents.Count == 0)
 			return null;
