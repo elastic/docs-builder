@@ -217,6 +217,29 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
+	public async Task ApiIdentityTriggerDropsTheLatestSuffixButTheMenuKeepsIt()
+	{
+		var bar = new ApiContextBar(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[
+				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("v9 (latest)", "/a/v9/", true),
+				new NavigationSelectOption("v8", "/a/v8/", false)
+			],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("api-context-version-label\">v9</span>").And.Contain("version v9\"");
+		html.Should().Contain(">v9 (latest)</a>");
+		CountOccurrences(html, "(latest)").Should().Be(1);
+	}
+
+	[Test]
 	public async Task ApiIdentityWithoutVersionsOrOtherApisIsPlainText()
 	{
 		var bar = new ApiContextBar("Alpha API", null, [], null, [], new ApiSpecDownload("/a.json", "/a.yaml"));

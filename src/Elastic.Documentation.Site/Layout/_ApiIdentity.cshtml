@@ -6,6 +6,8 @@
 	var hasVersions = Model.Versions.Count > 1;
 	var hasProducts = Model.ProductGroups.Count > 0;
 	var current = hasVersions ? Model.Versions.FirstOrDefault(static v => v.Selected) ?? Model.Versions[0] : null;
+	// "(latest)" is for choosing a version in the menu; the trigger names just the version.
+	var currentLabel = current?.Label.Replace(" (latest)", "", StringComparison.Ordinal);
 }
 @if (hasProducts || hasVersions)
 {
@@ -13,7 +15,7 @@
 		<button type="button"
 		        class="api-context-product-trigger"
 		        popovertarget="api-hub-menu"
-		        aria-label="@(current is null ? $"API: {Model.Title}" : $"API: {Model.Title}, version {current.Label}")">
+		        aria-label="@(current is null ? $"API: {Model.Title}" : $"API: {Model.Title}, version {currentLabel}")">
 			@if (Model.IconSvg is not null)
 			{
 				<span class="api-context-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
@@ -22,7 +24,7 @@
 				<span class="api-context-title">@Model.Title</span>
 				@if (current is not null)
 				{
-					<span class="api-context-version-label">@current.Label</span>
+					<span class="api-context-version-label">@currentLabel</span>
 				}
 			</span>
 			<span class="api-context-updown" aria-hidden="true">
