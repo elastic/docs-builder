@@ -13,9 +13,9 @@
 	};
 	var guides = new (string Name, string Description, string Icon, string Path)[]
 	{
+		("Deploy and manage", "Learn how to deploy and manage all aspects of your Elastic environment.", "storage", "/deploy-manage"),
 		("Manage data", "Learn how to ingest, enrich, and manage your data in Elastic.", "database", "/manage-data"),
 		("Explore and analyze", "Discover the tools of Elasticsearch and Kibana.", "ml_data_visualizer", "/explore-analyze"),
-		("Deploy and manage", "Learn how to deploy and manage all aspects of your Elastic environment.", "storage", "/deploy-manage"),
 		("Manage Cloud account", "Manage your profile information, preferences, and personal settings.", "user", "/cloud-account")
 	};
 	var references = new (string Name, string Icon, string Url, bool External)[]
@@ -94,7 +94,7 @@
 		</section>
 		<section class="band band--dots band--wash-b landing__section">
 			<div class="band__content landing__inner">
-				<h2 class="landing__heading" id="how-to-guides">How-to guides</h2>
+				<h2 class="landing__heading" id="elasticsearch-platform-guides">Elasticsearch Platform guides</h2>
 				<div class="grid grid--4 landing__grid">
 					@foreach (var guide in guides)
 					{
@@ -128,7 +128,7 @@
 					<div class="landing__resource landing__resource--hubs">
 						<div>
 							<p class="landing__resource-title">Docs by product</p>
-							<p class="landing__resource-text">Browse documentation hubs to find all docs specific to a product</p>
+							<p class="landing__resource-text">Browse documentation hubs to find all docs specific to a product.</p>
 						</div>
 						<div class="landing__resource-links">
 							<a href="@Model.Link("/products/elasticsearch")">Elasticsearch hub</a>

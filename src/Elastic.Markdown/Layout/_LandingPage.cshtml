@@ -114,14 +114,22 @@
 
 	<section class="w-full">
 		<div class="container mx-auto pt-20 pb-10">
-			<div class="heading-wrapper" id="how-to-guides">
+			<div class="heading-wrapper" id="elasticsearch-platform-guides">
 				<h2 class="font-bold font-sans text-3xl text-ink-dark">
-					<a href="#how-to-guides">
-						How-to guides
+					<a href="#elasticsearch-platform-guides">
+						Elasticsearch Platform guides
 					</a>
 				</h2>
 			</div>
 			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
+					<img loading="lazy" alt="Deploy and manage icon" src="@Model.Static("storage.svg")" class="size-8"/>
+					<div class="flex flex-col grow">
+						<p class="font-sans font-bold text-xl">Deploy and manage</p>
+						<p class="mt-2 grow">Learn how to deploy and manage all aspects of your Elastic environment.</p>
+						<a href="@Model.Link("/deploy-manage")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
+					</div>
+				</div>
 				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
 					<img loading="lazy" alt="Manage data icon" src="@Model.Static("productStreamsWired.svg")" class="size-8"/>
 					<div class="flex flex-col grow">
@@ -136,14 +144,6 @@
 						<p class="font-sans font-bold text-xl">Explore and analyze</p>
 						<p class="mt-2 grow">Discover the tools of Elasticsearch and Kibana.</p>
 						<a href="@Model.Link("/explore-analyze")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
-					</div>
-				</div>
-				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
-					<img loading="lazy" alt="Deploy and manage icon" src="@Model.Static("storage.svg")" class="size-8"/>
-					<div class="flex flex-col grow">
-						<p class="font-sans font-bold text-xl">Deploy and manage</p>
-						<p class="mt-2 grow">Learn how to deploy and manage all aspects of your Elastic environment.</p>
-						<a href="@Model.Link("/deploy-manage")" class="text-blue-elastic-100 hover:text-blue-elastic-110 font-sans font-semibold mt-3">View docs</a>
 					</div>
 				</div>
 				<div class="min-h-61 rounded-2xl border-1 border-grey-20 p-8 bg-white flex flex-col gap-6 items-start">
@@ -211,7 +211,7 @@
 			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
 				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Docs by product</p>
-					<p class="mt-2 grow">Browse documentation hubs to find all docs specific to a product</p>
+					<p class="mt-2 grow">Browse documentation hubs to find all docs specific to a product.</p>
 					<div class="grid grid-cols-1 mt-3 gap-2">
 						<a href="@Model.Link("/products/elasticsearch")" class="text-sm text-grey-20 hover:text-white font-sans font-semibold">Elasticsearch hub</a>
 						<a href="@Model.Link("/products/kibana")" class="text-sm text-grey-20 hover:text-white font-sans font-semibold">Kibana hub</a>
