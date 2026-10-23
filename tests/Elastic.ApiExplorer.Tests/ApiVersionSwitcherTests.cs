@@ -23,17 +23,17 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
 
 		items.Should().HaveCount(3);
-		items.Select(i => i.Label).Should().Equal("v9 (latest)", "v9", "v8");
+		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
 		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
 	[Test]
-	public void Build_CurrentMain_LabelsItAsTheLatestMajor()
+	public void Build_CurrentMain_KeepsMainAndMarksTheHighestMajorLatest()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
 
-		items.Select(i => i.Label).Should().Equal("v9 (latest)", "v9", "v8");
+		items.Select(i => i.Label).Should().Equal("main", "v9 (latest)", "v8");
 		items.Single(i => i.Selected).Url.Should().Be("/api/doc/elasticsearch");
 	}
 
@@ -101,7 +101,7 @@ public class ApiVersionSwitcherTests
 				"/api/doc/elasticsearch/v9/operation/operation-ping",
 				"/api/doc/elasticsearch/v8"
 			);
-		items.Single(i => i.Selected).Label.Should().Be("v9");
+		items.Single(i => i.Selected).Label.Should().Be("v9 (latest)");
 	}
 
 	[Test]

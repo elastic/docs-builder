@@ -41,12 +41,9 @@ public static class ApiVersionSwitcher
 	private static string? LatestMajor(IReadOnlyList<string> monikers) =>
 		monikers.Where(static m => int.TryParse(m, out _)).OrderByDescending(ParseMajor).FirstOrDefault();
 
-	/// <summary>
-	/// <c>main</c> is the unversioned tree, which tracks the highest major, so it reads as that major's latest.
-	/// Only the label changes: the link stays the unversioned URL.
-	/// </summary>
+	/// <summary>The highest numeric major reads as the latest. <c>main</c> keeps its name and its unversioned link.</summary>
 	private static string LabelFor(string moniker, string? latest) =>
-		moniker != "main" ? $"v{moniker}" : latest is null ? moniker : $"v{latest} (latest)";
+		moniker == "main" ? moniker : moniker == latest ? $"v{moniker} (latest)" : $"v{moniker}";
 
 	/// <summary>
 	/// Points each version at the same page as <paramref name="pageUrl"/> when that version renders it,
