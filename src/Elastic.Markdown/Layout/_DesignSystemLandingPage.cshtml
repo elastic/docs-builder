@@ -131,10 +131,10 @@
 							<p class="landing__resource-text">Start with the Elastic Stack, or go straight to Elasticsearch, Kibana, or Logstash.</p>
 						</div>
 						<div class="landing__resource-links">
-							<a class="landing__resource-name" href="@Model.Link("/products/elastic-stack")">View Elastic Stack hub @await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</a>
 							<a href="@Model.Link("/products/elasticsearch")">Elasticsearch hub</a>
 							<a href="@Model.Link("/products/kibana")">Kibana hub</a>
 							<a href="@Model.Link("/products/logstash")">Logstash hub</a>
+							<a class="landing__resource-name" href="@Model.Link("/products/elastic-stack")">See all Elastic Stack @await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</a>
 						</div>
 					</div>
 					@foreach (var resource in resources)
