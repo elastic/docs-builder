@@ -97,7 +97,8 @@ public abstract class ApiViewModel(ApiRenderContext context)
 		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
 		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
 		var docsUrl = string.IsNullOrEmpty(BuildContext.UrlPathPrefix) ? "/" : BuildContext.UrlPathPrefix;
-		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, docsUrl, catalogUrl, docTitle, onCatalog: onCatalog);
+		var specCrumbName = SpecCrumbName(docTitle);
+		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, docsUrl, catalogUrl, specCrumbName, onCatalog: onCatalog);
 		var apiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl);
 		var markdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url);
 
@@ -124,7 +125,7 @@ public abstract class ApiViewModel(ApiRenderContext context)
 			Breadcrumbs = breadcrumbs,
 			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
 				breadcrumbs,
-				BreadcrumbCurrentTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, docTitle),
+				BreadcrumbCurrentTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, specCrumbName),
 				BuildContext.CanonicalBaseUrl
 			),
 			ProductName = RenderContext.Product?.DisplayName,
@@ -148,6 +149,13 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
 		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
+
+	/// <summary>The API name followed by the selected version, when the API has more than one.</summary>
+	private string SpecCrumbName(string docTitle)
+	{
+		var selected = RenderContext.VersionSwitcherItems.FirstOrDefault(static v => v.Selected);
+		return selected?.ShortLabel is { Length: > 0 } version ? $"{docTitle} {version}" : docTitle;
+	}
 
 	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
 	{
