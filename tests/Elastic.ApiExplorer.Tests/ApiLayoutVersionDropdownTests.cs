@@ -42,6 +42,29 @@ public class ApiLayoutVersionDropdownTests
 	}
 
 	[Test]
+	[Arguments("main", "Elasticsearch API main")]
+	[Arguments("9", "Elasticsearch API v9")]
+	[Arguments("8", "Elasticsearch API v8")]
+	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheBreadcrumb(string selectedMoniker, string expected)
+	{
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], selectedMoniker);
+
+		var layout = CreateLayout(items: items);
+
+		layout.StructuredBreadcrumbsJson.Should().Contain($"\"name\": \"{expected}\"");
+	}
+
+	[Test]
+	public void CreateGlobalLayoutModel_KeepsTheUnversionedNameWhenThereIsOneVersion()
+	{
+		var layout = CreateLayout(items: []);
+
+		layout.StructuredBreadcrumbsJson.Should().Contain("\"name\": \"Elasticsearch API\"");
+		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API v");
+		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API main");
+	}
+
+	[Test]
 	public void CreateGlobalLayoutModel_DescribesTheCurrentApiInTheContextBar()
 	{
 		var layout = CreateLayout(buildType: BuildType.Assembler, catalogEntries: Catalog);
