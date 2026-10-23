@@ -151,6 +151,16 @@
 		}
 	}
 
+	/* The version sits under the name, so a long label such as "v9 (latest)" never squeezes the name. */
+	.api-context-name {
+		display: flex;
+		flex: 1 1 auto;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 4px;
+		min-width: 0;
+	}
+
 	.api-context-version-label {
 		flex-shrink: 0;
 		padding: 0 6px;

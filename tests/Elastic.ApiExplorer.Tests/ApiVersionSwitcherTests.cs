@@ -23,18 +23,26 @@ public class ApiVersionSwitcherTests
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "8");
 
 		items.Should().HaveCount(3);
-		items.Select(i => i.Label).Should().Equal("main", "v9", "v8");
+		items.Select(i => i.Label).Should().Equal("v9 (latest)", "v9", "v8");
 		items.Select(i => i.Url).Should().Equal("/api/doc/elasticsearch", "/api/doc/elasticsearch/v9", "/api/doc/elasticsearch/v8");
 		items.Single(i => i.Selected).Label.Should().Be("v8");
 	}
 
 	[Test]
-	public void Build_CurrentMain_LabelsItLatest()
+	public void Build_CurrentMain_LabelsItAsTheLatestMajor()
 	{
 		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");
 
-		items.Select(i => i.Label).Should().Equal("main", "v9", "v8");
-		items.Single(i => i.Selected).Label.Should().Be("main");
+		items.Select(i => i.Label).Should().Equal("v9 (latest)", "v9", "v8");
+		items.Single(i => i.Selected).Url.Should().Be("/api/doc/elasticsearch");
+	}
+
+	[Test]
+	public void Build_NoNumericMajor_KeepsMainAsIs()
+	{
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "next"], "main");
+
+		items.Select(i => i.Label).Should().Contain("main");
 	}
 
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> Pages(params string[][] pages) =>

@@ -19,11 +19,12 @@ public static class ApiVersionSwitcher
 		if (monikers.Count <= 1)
 			return [];
 
+		var latest = LatestMajor(monikers);
 		return monikers
 			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
 			.Select(
 				m => new ApiVersionSwitcherItem(
-					Label: m == "main" ? m : $"v{m}",
+					Label: LabelFor(m, latest),
 					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m)),
 					Selected: m == currentMoniker
 				)
@@ -35,6 +36,17 @@ public static class ApiVersionSwitcher
 			)
 			.ToArray();
 	}
+
+	/// <summary>The highest numeric major, or null when there is none.</summary>
+	private static string? LatestMajor(IReadOnlyList<string> monikers) =>
+		monikers.Where(static m => int.TryParse(m, out _)).OrderByDescending(ParseMajor).FirstOrDefault();
+
+	/// <summary>
+	/// <c>main</c> is the unversioned tree, which tracks the highest major, so it reads as that major's latest.
+	/// Only the label changes: the link stays the unversioned URL.
+	/// </summary>
+	private static string LabelFor(string moniker, string? latest) =>
+		moniker != "main" ? $"v{moniker}" : latest is null ? moniker : $"v{latest} (latest)";
 
 	/// <summary>
 	/// Points each version at the same page as <paramref name="pageUrl"/> when that version renders it,

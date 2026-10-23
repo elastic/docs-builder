@@ -154,7 +154,7 @@ Each product key in the `api:` block must have **exactly one** entry, with **exa
 `spec:`. The build fails if a product sequence is empty or has more than one entry. Multiple
 specs per product are not currently supported.
 
-The left navigation starts with one selector that says which API you are reading and which version: `[logo] Elasticsearch API  main ⇅`. It opens a menu with the versions of this API, then every API whose spec loaded (each with its logo), then an **All APIs** link back to the catalog. Each row uses that spec's title (`info.title`), the same text as the landing page heading. It is the same on assembler and isolated builds, and with or without `navigation-preview`. With a single version the menu lists only the APIs; with a single API and a single version the name is plain text. The **Copy page** menu at the top right of each page also holds **Download OpenAPI spec (JSON)** and **(YAML)**, which download the whole spec. The page itself starts with the full breadcrumb, which begins at Docs. The catalog page has no API, so it has no selector; its finder sits in the title band instead.
+The left navigation starts with one selector that says which API you are reading and which version: `[logo] Elasticsearch API  v9 (latest) ⇅`. It opens a menu with the versions of this API, then every API whose spec loaded (each with its logo), then an **All APIs** link back to the catalog. Each row uses that spec's title (`info.title`), the same text as the landing page heading. It is the same on assembler and isolated builds, and with or without `navigation-preview`. With a single version the menu lists only the APIs; with a single API and a single version the name is plain text. The **Copy page** menu at the top right of each page also holds **Download OpenAPI spec (JSON)** and **(YAML)**, which download the whole spec. The page itself starts with the full breadcrumb, which begins at Docs. The catalog page has no API, so it has no selector; its finder sits in the title band instead.
 
 Below the selector, the left navigation has a box labelled **Type ❲/❳ to explore API**. It explores operations across every API, not only the one you are reading, and shows the matches in a list; it does not filter the navigation tree. It is not the site-wide search. Type <kbd>/</kbd> or <kbd>s</kbd> anywhere on the page, outside a text field, to jump to the box, as on GitHub. The shortcut is off on narrow screens, where the navigation sits in a drawer. Isolated and air-gapped builds omit it. Markdown docs pages do not get it back.
 
@@ -219,7 +219,7 @@ remotely through the index.
 Versionless products (`versioning: serverless` and similar) render only the unversioned
 `/api/doc/<key>/` path even when the index lists historical monikers. When more than one
 version is rendered, the bar shows a version picker beside the API name. The current tree is
-labeled `main`, and each frozen major is `v9`, `v8`. Isolated builds put the same picker
+labeled with the highest major followed by `(latest)`, such as `v9 (latest)`. Its link is still the unversioned URL. Each frozen major is `v9`, `v8`. A product with no numeric major keeps the label `main`. Isolated builds put the same picker
 under the API name in the left navigation.
 Picking a version opens the same page in that version when it has one, for example the same
 operation, and that version's landing page otherwise.

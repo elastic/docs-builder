@@ -18,11 +18,13 @@
 			{
 				<span class="api-context-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
 			}
-			<span class="api-context-title">@Model.Title</span>
-			@if (current is not null)
-			{
-				<span class="api-context-version-label">@current.Label</span>
-			}
+			<span class="api-context-name">
+				<span class="api-context-title">@Model.Title</span>
+				@if (current is not null)
+				{
+					<span class="api-context-version-label">@current.Label</span>
+				}
+			</span>
 			<span class="api-context-updown" aria-hidden="true">
 				<svg viewBox="0 0 16 16"><use href="#icon-chevron-updown"/></svg>
 			</span>

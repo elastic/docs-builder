@@ -187,11 +187,11 @@
 	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
-/* Beside the sidebar the breadcrumb row is centred on the API selector (a 36px row). Its own
-   24px top padding and the page's pt-6 would put it about 22px lower. */
+/* Beside the sidebar the breadcrumb row is centred on the first line of the API selector's name.
+   Its own 24px top padding and the page's pt-6 would put it about 22px lower. */
 @media (width >= 1024px) {
 	.api-page-main .api-page-toolbar {
-		margin-top: calc(var(--spacing) * -2);
+		margin-top: calc(var(--spacing) * -2.5);
 	}
 
 	.api-page-main .api-page-toolbar #breadcrumbs {
@@ -2897,7 +2897,7 @@ button.example-response-tab:focus-visible {
 		grid-row: 2;
 	}
 
-	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector (36px row from 64px). */
+	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector's name. */
 	.api-page-rail {
 		grid-column: 2;
 		grid-row: 1;
@@ -2906,7 +2906,7 @@ button.example-response-tab:focus-visible {
 		align-items: stretch;
 		gap: 16px;
 		min-width: 0;
-		padding-top: 18px;
+		padding-top: 16px;
 		padding-bottom: 48px;
 	}
 
