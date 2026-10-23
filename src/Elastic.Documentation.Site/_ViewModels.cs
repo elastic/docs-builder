@@ -40,13 +40,13 @@ public record CodexBreadcrumb(string Title, string? Url);
 /// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
 public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
 
-/// <summary>One API product in the context bar's product menu.</summary>
+/// <summary>One API product in the identity menu.</summary>
 public sealed record ApiContextProduct(string Label, string Url, bool Selected, string? IconSvg);
 
 /// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
 public sealed record ApiContextProductGroup(string? Title, IReadOnlyList<ApiContextProduct> Products);
 
-/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads.</summary>
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads. Rendered as the sidebar selector.</summary>
 public sealed record ApiContextBar(
 	string Title,
 	string? IconSvg,

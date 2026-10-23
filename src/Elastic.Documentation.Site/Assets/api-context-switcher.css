@@ -1,53 +1,12 @@
 /*
- * API context bar on assembler API pages: which API this is (product and version together) and
- * the spec download. Isolated builds have no bar, so the same product and version
- * controls sit at the top of the sidebar (.api-sidebar-identity).
- * Used on API pages in both navigation-preview states, so nothing here is scoped to
- * body.navigation-preview. The menus are popovers placed by api-menu.ts; the rows reuse
- * .secondary-nav-dropdown-link from secondary-nav-dropdown.css.
+ * The API identity at the top of the API sidebar: product and version in one trigger and one menu.
+ * Used on API pages in the current layout, so nothing here is scoped to body.navigation-preview.
+ * The menu is a popover placed by api-menu.ts; the rows reuse .secondary-nav-dropdown-link from
+ * secondary-nav-dropdown.css.
  */
 
-/* The bar and the sticky offset below it must agree; assembler.css reads this for --offset-top. */
-:root {
-	--api-context-bar-height: 56px;
-}
-
 @layer components {
-	.api-context-bar {
-		background-color: #fff;
-		box-shadow: inset 0 -1px 0 #eeeff1;
-	}
-
-	.api-context-bar__inner {
-		box-sizing: border-box;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: 100%;
-		min-width: 0;
-		height: var(--api-context-bar-height);
-		padding-inline: 16px;
-		font-family: var(--font-body);
-	}
-
-	/* Product and version side by side, close enough to read as a pair. */
-	.api-context-switcher {
-		display: flex;
-		flex-shrink: 1;
-		align-items: center;
-		min-width: 0;
-		gap: 4px;
-	}
-
-	/* Beside the sidebar the logo lines up with the nav text: the trigger's 8px padding plus this 8px
-	   gives the nav's 16px inset. The page shell has no side padding. */
-	@media (width >= 768px) {
-		.api-context-bar__inner {
-			padding-inline-start: calc(var(--spacing) * 2);
-		}
-	}
-
-	/* Product identity: the largest thing in the row. */
+	/* Product identity: the largest thing in the sidebar header. */
 	.api-context-product {
 		flex-shrink: 1;
 		min-width: 0;
@@ -91,8 +50,7 @@
 		height: 20px;
 	}
 	.api-context-logo svg,
-	.api-context-updown svg,
-	.api-context-spec__icon svg {
+	.api-context-updown svg {
 		display: block;
 		width: 100%;
 		height: 100%;
@@ -186,76 +144,23 @@
 		}
 	}
 
-	/* Version: a compact nav-select, shown when there is more than one to pick from. */
-	.api-context-version {
+	.api-context-version-label {
 		flex-shrink: 0;
-	}
-	.api-context-version .nav-select {
-		height: 28px;
-		box-shadow: none;
-	}
-	.api-context-version .nav-select__body {
-		gap: 6px;
-	}
-	.api-context-version .nav-select__value {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 13px;
-		font-weight: 500;
-	}
-
-	/* Spec download: quiet until hovered. */
-	.api-context-actions {
-		display: flex;
-		flex-shrink: 0;
-		align-items: center;
-		margin-inline-start: auto;
-	}
-
-	.api-context-spec-trigger {
-		box-sizing: border-box;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		height: 32px;
-		margin: 0;
-		padding-inline: 10px;
-		border: 1px solid transparent;
-		border-radius: 8px;
-		background: none;
+		padding: 0 6px;
+		border-radius: 4px;
+		background: #eeeff1;
 		color: #516381;
-		font: inherit;
-		font-size: 14px;
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 12px;
 		font-weight: 500;
 		line-height: 20px;
-		cursor: pointer;
 	}
-	.api-context-spec-trigger:hover,
-	.api-context-spec-trigger[aria-expanded='true'] {
-		border-color: #cad3e2;
-		color: #1d2a3e;
-	}
-	.api-context-spec-trigger:focus-visible {
-		outline: 2px solid #0b64dd;
-		outline-offset: 2px;
-	}
-	.api-context-bar [aria-expanded='true'] .nav-select__chevron,
-	.api-sidebar-identity [aria-expanded='true'] .nav-select__chevron {
+
+	.api-context-product-trigger[aria-expanded='true'] .api-context-updown {
 		transform: rotate(180deg);
 	}
-	.api-context-spec__icon {
-		display: flex;
-		width: 16px;
-		height: 16px;
-	}
 
-	@media (width < 768px) {
-		.api-context-spec__label,
-		.api-context-spec-trigger .nav-select__chevron {
-			display: none;
-		}
-	}
-
-	/* The sidebar carries the identity. Stacked so the name fits. */
+	/* Stacked so the name fits. */
 	.api-sidebar-identity {
 		display: flex;
 		flex-direction: column;
@@ -292,14 +197,5 @@
 	}
 	.api-sidebar-identity .api-context-updown {
 		margin-top: 4px;
-	}
-	/* Isolated builds have no bar, so the sidebar carries the product and version. */
-	.api-sidebar-identity .api-context-version,
-	.api-sidebar-identity .api-context-version .nav-select {
-		width: 100%;
-	}
-	.api-sidebar-identity .api-context-version .nav-select__body {
-		flex: 1 1 auto;
-		justify-content: space-between;
 	}
 }

@@ -1,28 +1,51 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Documentation.Site.ApiContextBar>
-@* The menu is a popover (top layer), positioned by api-menu.ts. *@
-@if (Model.ProductGroups.Count > 0)
+@* Which API this is, and which version of it: one choice, one menu. The top of the API sidebar.
+   The menu is a popover (top layer), positioned by api-menu.ts. *@
+@{
+	var hasVersions = Model.Versions.Count > 1;
+	var hasProducts = Model.ProductGroups.Count > 0;
+	var current = hasVersions ? Model.Versions.FirstOrDefault(static v => v.Selected) ?? Model.Versions[0] : null;
+}
+@if (hasProducts || hasVersions)
 {
 	<div class="api-context-product" id="api-hub-switcher">
 		<button type="button"
 		        class="api-context-product-trigger"
 		        popovertarget="api-hub-menu"
-				        aria-label="API product: @Model.Title">
+		        aria-label="@(current is null ? $"API: {Model.Title}" : $"API: {Model.Title}, version {current.Label}")">
 			@if (Model.IconSvg is not null)
 			{
 				<span class="api-context-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
 			}
 			<span class="api-context-title">@Model.Title</span>
+			@if (current is not null)
+			{
+				<span class="api-context-version-label">@current.Label</span>
+			}
 			<span class="api-context-updown" aria-hidden="true">
 				<svg viewBox="0 0 16 16"><use href="#icon-chevron-updown"/></svg>
 			</span>
 		</button>
-		<div id="api-hub-menu" class="api-menu" popover data-placement="bottom-start" aria-label="API product">
+		<div id="api-hub-menu" class="api-menu" popover data-placement="bottom-start" aria-label="API and version">
+			@if (hasVersions)
+			{
+				<div id="api-version-switcher" role="group" aria-labelledby="api-version-group-label">
+					<div id="api-version-group-label" class="api-context-menu-group-label">Version</div>
+					@foreach (var version in Model.Versions)
+					{
+						var selectedClass = version.Selected ? " secondary-nav-dropdown-link--selected" : "";
+						<a class="secondary-nav-dropdown-link@(selectedClass)"
+						   href="@version.Value"
+						   aria-current="@(version.Selected ? "true" : null)">@version.Label</a>
+					}
+				</div>
+			}
 			@for (var g = 0; g < Model.ProductGroups.Count; g++)
 			{
 				var group = Model.ProductGroups[g];
 				var labelId = "api-hub-group-" + g;
-				if (g > 0)
+				if (hasVersions || g > 0)
 				{
 					<div class="api-context-menu-sep" role="separator"></div>
 				}
@@ -47,7 +70,7 @@
 					}
 				</div>
 			}
-			@if (Model.HubUrl is not null)
+			@if (hasProducts && Model.HubUrl is not null)
 			{
 				<div class="api-context-menu-sep" role="separator"></div>
 				<a class="secondary-nav-dropdown-link api-context-product-link"

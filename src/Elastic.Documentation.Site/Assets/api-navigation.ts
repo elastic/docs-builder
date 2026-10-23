@@ -1,7 +1,7 @@
 /**
  * Boosted navigation swaps only `#main-container`, and the header sits outside it. Docs pages
  * and API pages bring different headers, so a move between them has to reload the page. The API
- * context bar lives inside `#main-container`, so a move between API products or versions does not.
+ * identity selector lives in the sidebar inside `#main-container`, so a move between API products or versions does not.
  */
 
 /** The API product in an API path, `null` for the catalog, and `undefined` for any other path. */
@@ -29,7 +29,7 @@ function apiTree(path: string): string | null {
 }
 
 /**
- * A move to another product or version replaces the navigation tree and the context bar, which sit outside
+ * A move to another product or version replaces the navigation tree and the identity selector, which sit outside
  * `#api-content-grid`, so it must swap the whole `#main-container`.
  */
 export function changesApiTree(
