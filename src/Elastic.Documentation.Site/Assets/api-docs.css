@@ -187,6 +187,20 @@
 	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
+/* Beside the sidebar the breadcrumb row is centred on the API selector (a 36px row). Its own
+   24px top padding and the page's pt-6 would put it about 22px lower. */
+@media (width >= 1024px) {
+	.api-page-main .api-page-toolbar {
+		margin-top: calc(var(--spacing) * -2);
+	}
+
+	.api-page-main .api-page-toolbar #breadcrumbs {
+		box-sizing: border-box;
+		min-height: 36px;
+		padding-top: 0;
+	}
+}
+
 .api-page-actions {
 	position: relative;
 	z-index: 6;
@@ -553,36 +567,6 @@
 	margin: 32px 0 8px;
 	font-size: 20px;
 	line-height: 28px;
-}
-
-/* Quiet outlined link: the spec downloads in the landing facts (rail and under the intro). */
-.api-rail-facts a.api-chip-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 12px;
-	border: 1px solid var(--color-grey-20);
-	border-radius: 8px;
-	color: inherit;
-	font-size: 14px;
-	line-height: 20px;
-	text-decoration: none;
-}
-
-.api-chip-link svg {
-	width: 14px;
-	height: 14px;
-}
-
-.api-rail-facts a.api-chip-link:hover,
-.api-rail-facts a.api-chip-link:focus-visible {
-	border-color: var(--color-grey-80);
-	color: var(--color-blue-elastic, #0b64dd);
-}
-
-.api-rail-facts a.api-chip-link:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
 }
 
 .api-index-group {
