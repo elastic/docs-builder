@@ -74,6 +74,66 @@ public class SearchQueryBuilderTests
 		SearchQueryBuilder.BuildApiEndpointQuery(input).Should().BeNull();
 
 	[Test]
+	[Arguments("search")]
+	[Arguments("  Search ")]
+	public void BuildBareWordEndpointQuery_Word_TargetsUnderscoreEndpoint(string input) =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildBareWordEndpointQuery(input))
+			.Should()
+			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}""");
+
+	[Test]
+	[Arguments("_search")]
+	[Arguments("run a search")]
+	[Arguments("index/_search")]
+	[Arguments("GET /_search")]
+	[Arguments("")]
+	public void BuildBareWordEndpointQuery_NotABareWord_ReturnsNull(string input) =>
+		SearchQueryBuilder.BuildBareWordEndpointQuery(input).Should().BeNull();
+
+	[Test]
+	[Arguments("search")]
+	[Arguments("create deployment")]
+	[Arguments("")]
+	public void BuildLoosePartialMatchQuery_FewerThanThreeWords_ReturnsNull(string input) =>
+		SearchQueryBuilder.BuildLoosePartialMatchQuery(input).Should().BeNull();
+
+	[Test]
+	public void BuildLoosePartialMatchQuery_ThreeWords_MatchesAnyWordsAtLowerWeightWithDocumentFilter()
+	{
+		var json = Client.RequestResponseSerializer.SerializeToString(
+			SearchQueryBuilder.BuildLoosePartialMatchQuery("create deployment cloud")
+		);
+
+		json.Should().Contain("\"operator\":\"or\"");
+		json.Should().Contain("\"minimum_should_match\":\"75%\"");
+		json.Should().Contain("\"boost\":0.5");
+		json.Should().Contain("\"hidden\"");
+	}
+
+	[Test]
+	public void ApplyApiRanking_ThreeWords_OrsStrictAndLooseQueries()
+	{
+		var strict = SearchQueryBuilder.BuildLexicalQuery("create deployment cloud", new Dictionary<string, string[]>(), [], null);
+
+		var json = Client.RequestResponseSerializer.SerializeToString(
+			SearchQueryBuilder.ApplyApiRanking(strict, "create deployment cloud")
+		);
+
+		json.Should().StartWith("""{"bool":{"minimum_should_match":1,"should":[""");
+		json.Should().Contain("\"minimum_should_match\":\"75%\"");
+	}
+
+	[Test]
+	public void ApplyApiRanking_TwoWords_ReturnsStrictQueryUnchanged()
+	{
+		var strict = SearchQueryBuilder.BuildLexicalQuery("create deployment", new Dictionary<string, string[]>(), [], null);
+
+		SearchQueryBuilder.ApplyApiRanking(strict, "create deployment").Should().BeSameAs(strict);
+	}
+
+	[Test]
 	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerms()
 	{
 		var query = SearchQueryBuilder.BuildLexicalQuery("_search", new Dictionary<string, string[]>(), [], null);

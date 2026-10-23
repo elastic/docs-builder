@@ -235,6 +235,64 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		}
 	}
 
+	public static IEnumerable<(string, string)> ApiSearchQueryTestCases()
+	{
+		yield return ("search", "operation-search");
+		yield return ("_search", "operation-search");
+		yield return ("bulk", "operation-bulk");
+	}
+
+	[Test]
+	[MethodDataSource(nameof(ApiSearchQueryTestCases))]
+	public async Task ApiSearchReturnsExpectedFirstResult(string query, string expectedOperation)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		results.Should().NotBeEmpty($"API search for '{query}' should return results");
+		results.Should().OnlyContain(r => r.Type == "api");
+		// The Serverless twin of an operation ties with the stack one, so match the operation, not the API.
+		results[0].Url.Should().EndWith($"/operation/{expectedOperation}");
+	}
+
+	[Test]
+	public async Task ApiSearchWithThreeWordsMatchesOperationsThatContainTwoOfThem()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "create deployment zzzunknownword", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var titles = searchResult.Results.Select(r => r.Title.Replace("<mark>", "").Replace("</mark>", "")).ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", titles));
+
+		// No operation contains the third word, so the strict query matches nothing. Only the 75% clause returns hits.
+		searchResult.TotalResults.Should().BeGreaterThan(0);
+		// The operations that match both real words lead.
+		titles
+			.Take(3)
+			.Should()
+			.OnlyContain(
+				t => t.Contains("create", StringComparison.OrdinalIgnoreCase) && t.Contains(
+					"deployment",
+					StringComparison.OrdinalIgnoreCase
+				)
+			);
+	}
+
 	[Test]
 	public async Task ExplainTopResultAndExpectedAsyncReturnsDetailedScoring()
 	{
