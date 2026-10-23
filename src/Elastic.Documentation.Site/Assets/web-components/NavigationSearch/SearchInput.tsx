@@ -2,13 +2,13 @@ import { EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import { useState } from 'react'
 
-const CustomSearchIcon = () => {
+const CustomSearchIcon = ({ iconSize }: { iconSize: number }) => {
     const { euiTheme } = useEuiTheme()
 
     return (
         <svg
-            width="16"
-            height="16"
+            width={iconSize}
+            height={iconSize}
             viewBox="0 0 16 16"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -61,6 +61,7 @@ export const SearchInput = ({
     const { euiTheme } = useEuiTheme()
     const [focused, setFocused] = useState(false)
     const showHint = !!shortcutHint && !focused && !value
+    const isLarge = size === 'l'
 
     return (
         <div
@@ -73,7 +74,7 @@ export const SearchInput = ({
             <span
                 css={css`
                     position: absolute;
-                    left: ${euiTheme.base * 0.75}px;
+                    left: ${isLarge ? euiTheme.base * 0.875 : euiTheme.base * 0.75}px;
                     display: flex;
                     align-items: center;
                     pointer-events: none;
@@ -82,7 +83,7 @@ export const SearchInput = ({
                 {isLoading ? (
                     <EuiLoadingSpinner size="m" />
                 ) : (
-                    <CustomSearchIcon />
+                    <CustomSearchIcon iconSize={isLarge ? 18 : 16} />
                 )}
             </span>
 
@@ -107,22 +108,19 @@ export const SearchInput = ({
                 disabled={disabled}
                 css={css`
                     width: 100%;
-                    padding: calc(
-                            ${
-                                    size === 's'
-                                        ? euiTheme.size.xs
-                                        : euiTheme.size.s
-                                } +
-                                2px
-                        )
-                        ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
-                    padding-left: 34px;
-                    ${showHint ? 'padding-right: 36px;' : ''}
+                    padding: ${
+                        isLarge
+                            ? `${euiTheme.size.m} ${euiTheme.size.base}`
+                            : `calc(${size === 's' ? euiTheme.size.xs : euiTheme.size.s} + 2px) ${size === 's' ? euiTheme.size.s : euiTheme.size.m}`
+                    };
+                    padding-left: ${isLarge ? 42 : 34}px;
+                    ${showHint ? `padding-right: ${isLarge ? 48 : 36}px;` : ''}
                     border: 1px solid #cad3e2;
-                    border-radius: 8px;
+                    border-radius: ${isLarge ? 10 : 8}px;
                     background: #fff;
-                    font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    font-size: ${(isLarge ? euiTheme.font.scale.m : euiTheme.font.scale.s) * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
+                    ${isLarge ? 'box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px rgba(16, 24, 40, 0.05);' : ''}
                     color: ${euiTheme.colors.textParagraph};
                     outline: none;
 
@@ -142,7 +140,7 @@ export const SearchInput = ({
                     aria-hidden="true"
                     css={css`
                         position: absolute;
-                        right: ${euiTheme.size.s};
+                        right: ${isLarge ? euiTheme.size.base : euiTheme.size.s};
                         display: flex;
                         align-items: center;
                         justify-content: center;

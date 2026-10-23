@@ -3210,6 +3210,12 @@ navigation-search[variant='sidebar'] {
 	min-height: 34px;
 }
 
+/* The landing box is a little larger: 20px line, 24px padding, 2px border. */
+navigation-search[variant='hero'] {
+	display: block;
+	min-height: 46px;
+}
+
 .api-catalog-finder navigation-search {
 	width: 100%;
 }
