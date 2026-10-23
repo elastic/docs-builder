@@ -7,7 +7,8 @@
 				<p class="mt-4">Welcome to the technical documentation for <span class="whitespace-nowrap">Elastic Stack 9.0.0</span>
 					and later, and <span class="whitespace-nowrap">Elastic Cloud Serverless</span>. Deploy, operate, and scale with step-by-step guides, API references, examples, and best practices.</p>
 				<p class="mt-4"><strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")"
-					class="link">upgrade guide</a> to plan and complete your upgrade. </p>
+					class="link">upgrade guide</a> to plan and complete your upgrade, and check the <a href="@Model.Link("/release-notes/")"
+					class="link">release notes</a> to see what changed.</p>
 
 				<div class="flex md:inline-flex flex-col mt-6">
 					<div class="flex gap-3">
@@ -209,14 +210,19 @@
 			</div>
 			<div class="grid grid-cols-1 min-[1024px]:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
 				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
-					<p class="font-sans font-bold text-xl">Release notes</p>
-					<p class="mt-2 grow">Explore the latest features and changes in Elastic.</p>
-					<a href="@Model.Link("/release-notes/")" class="link mt-3 justify-start text-white hover:text-grey-20">View release notes
+					<p class="font-sans font-bold text-xl">Elastic Stack</p>
+					<p class="mt-2 grow">Start with the Elastic Stack, or go straight to Elasticsearch, Kibana, or Logstash.</p>
+					<a href="@Model.Link("/products/elastic-stack")" class="link mt-3 justify-start text-white hover:text-grey-20">View Elastic Stack hub
 						<svg class="link-arrow"
 						     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
 						</svg>
 						</a>
+					<div class="grid grid-cols-1 mt-3 gap-2">
+						<a href="@Model.Link("/products/elasticsearch")" class="text-sm text-grey-20 hover:text-white font-sans font-semibold">Elasticsearch hub</a>
+						<a href="@Model.Link("/products/kibana")" class="text-sm text-grey-20 hover:text-white font-sans font-semibold">Kibana hub</a>
+						<a href="@Model.Link("/products/logstash")" class="text-sm text-grey-20 hover:text-white font-sans font-semibold">Logstash hub</a>
+					</div>
 				</div>
 				<div class="min-h-61 rounded-2xl bg-ink-navy border-1 border-grey-20 text-white p-8 flex flex-col items-start">
 					<p class="font-sans font-bold text-xl">Extend and contribute</p>
