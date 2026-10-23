@@ -8,6 +8,7 @@ using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using AwesomeAssertions;
+using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Uploading;
 using Elastic.Documentation.Configuration;
@@ -52,6 +53,132 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		var path = _mockFileSystem.Path.Join(_changelogDir, fileName);
 		_mockFileSystem.AddFile(path, new MockFileData(yaml));
 		return path;
+	}
+
+	[Test]
+	public void DiscoverUploadTargets_EntryFormat_UploadsTheDocsBuilderFormat()
+	{
+		AddChangelog("144630.yaml", "pr: 144630\nsummary: Limit size of sql query\narea: SQL\ntype: bug\nissues: []\n");
+
+		var targets = _service.DiscoverUploadTargets(
+			_collector,
+			_changelogDir,
+			"elastic",
+			"elasticsearch",
+			"main",
+			ChangelogEntryFormat.All["elasticsearch"]
+		);
+
+		targets.Should().ContainSingle();
+		targets[0].S3Key.Should().Be("changelog/elastic/elasticsearch/main/144630.yaml");
+		var uploaded = ReleaseNotesSerialization.DeserializeEntry(targets[0].InlineContent!);
+		uploaded.Title.Should().Be("Limit size of sql query");
+		uploaded.Type.Should().Be(ChangelogEntryType.BugFix);
+		uploaded.Areas.Should().Equal("SQL");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task FindPullRequestsOfFiles_TimestampedFragment_UploadsItUnderThePullRequestThatAddedIt()
+	{
+		var path = AddChangelog("1792145980-fix-the-registry.yaml", "kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n");
+		AddChangelog(
+			"1792145981-named.yaml",
+			"kind: feature\nsummary: Named\ncomponent: all\npr: https://github.com/elastic/beats/pull/7\n"
+		);
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(
+			() => prService.FetchPullRequestAddingFileAsync(
+				"elastic",
+				"beats",
+				A<string>.That.EndsWith("1792145980-fix-the-registry.yaml"),
+				"main",
+				A<CancellationToken>._
+			)
+		).Returns(4242);
+		var service = new ChangelogUploadService(
+			NullLoggerFactory.Instance,
+			fileSystem: _fileSystem,
+			s3Client: _s3Client,
+			prService: prService
+		);
+		var format = ChangelogEntryFormat.All["elastic-agent-changelog-tool"];
+
+		var pullRequests = await service.FindPullRequestsOfFilesAsync(
+			[_changelogDir],
+			format,
+			"elastic",
+			"beats",
+			"main",
+			CancellationToken.None
+		);
+		var targets = service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "beats", "main", format, pullRequests);
+
+		pullRequests.Should().ContainSingle().Which.Value.Should().Be("https://github.com/elastic/beats/pull/4242");
+		A.CallTo(
+			() => prService.FetchPullRequestAddingFileAsync(A<string>._, A<string>._, A<string>._, A<string>._, A<CancellationToken>._)
+		).MustHaveHappenedOnceExactly();
+		// Fragments keep their file names as keys, so several fragments of one pull request don't overwrite each other.
+		var fragment = targets.Single(t => t.LocalPath == path);
+		fragment.S3Key.Should().Be("changelog/elastic/beats/main/1792145980-fix-the-registry.yaml");
+		ReleaseNotesSerialization
+			.DeserializeEntry(fragment.InlineContent!)
+			.Prs
+			.Should()
+			.Equal("https://github.com/elastic/beats/pull/4242");
+		_collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task FindPullRequestsOfFiles_TwoFragmentsOfOnePullRequest_KeepDistinctKeys()
+	{
+		AddChangelog("1792145980-first.yaml", "kind: bug-fix\nsummary: First\ncomponent: filebeat\n");
+		AddChangelog("1792145990-second.yaml", "kind: feature\nsummary: Second\ncomponent: filebeat\n");
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(() => prService.FetchPullRequestAddingFileAsync("elastic", "beats", A<string>._, "main", A<CancellationToken>._)).Returns(
+			4242
+		);
+		var service = new ChangelogUploadService(
+			NullLoggerFactory.Instance,
+			fileSystem: _fileSystem,
+			s3Client: _s3Client,
+			prService: prService
+		);
+		var format = ChangelogEntryFormat.All["elastic-agent-changelog-tool"];
+
+		var pullRequests = await service.FindPullRequestsOfFilesAsync(
+			[_changelogDir],
+			format,
+			"elastic",
+			"beats",
+			"main",
+			CancellationToken.None
+		);
+		var targets = service.DiscoverUploadTargets(_collector, _changelogDir, "elastic", "beats", "main", format, pullRequests);
+
+		targets
+			.Select(t => t.S3Key)
+			.Should()
+			.BeEquivalentTo("changelog/elastic/beats/main/1792145980-first.yaml", "changelog/elastic/beats/main/1792145990-second.yaml");
+		targets.Should().OnlyContain(t => t.InlineContent!.Contains("pull/4242"));
+	}
+
+	[Test]
+	public void DiscoverUploadTargets_EntryFormat_ReportsAFileItCannotConvert()
+	{
+		AddChangelog("1.yaml", "pr: 1\nsummary: A change\narea: Search\ntype: bug\nsumary: typo\n");
+
+		var targets = _service.DiscoverUploadTargets(
+			_collector,
+			_changelogDir,
+			"elastic",
+			"elasticsearch",
+			"main",
+			ChangelogEntryFormat.All["elasticsearch"]
+		);
+
+		targets.Should().BeEmpty();
+		_collector.Errors.Should().Be(1);
 	}
 
 	[Test]

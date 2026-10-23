@@ -1,0 +1,78 @@
+# Changelog entry formats that docs-builder reads besides its own.
+#
+# A repository that writes changelog entry files in one of these formats sets `entry_format: <name>`
+# in its docs/changelog.yml. docs-builder then converts each entry file to its own format where it
+# reads the repository's files: `changelog validate`, `changelog upload`, and commit-range bundling.
+#
+# Each format maps docs-builder entry fields to fields of the source file:
+#
+#   fields:
+#     <target>:
+#       from: <path> or [<path>, ...]   # the first path with a value wins; a path can be nested, as in breaking.details
+#       split: ","                      # list targets only: split a string value on this separator
+#       unless: <path>                  # skip this field when the path has a value
+#       template: "text {path} text"    # build the value from paths; applies only when every path has a value
+#       present: <path>                 # highlight only: true when the path exists and `from` gives no value
+#   values:
+#     <target>: { <source value>: <docs-builder value> }   # translate values, for example type names
+#   ignore: [<path>, ...]               # source keys that docs-builder does not use
+#   files: pr-number                    # default: file names start with the PR number, as in 12345.yaml
+#   files: any                          # file names don't carry the PR (for example timestamps): the PR comes from
+#                                       # the pull request being validated, and from the pull request that added the
+#                                       # file when uploading and bundling
+#
+# Targets: title, type, subtype, description, impact, action, areas, pr, prs, issues, highlight, feature-id.
+# Entries in these formats have no products: they take the products of their pull request from the
+# repository's changelog.yml (pivot.products labels, then products.default).
+# Any other key in a source file is an error, so a typo is not silently dropped.
+
+formats:
+  # elastic/elasticsearch and elastic/elasticsearch-serverless: docs/changelog/<pr>.yaml.
+  # Schema: build-tools-internal/src/main/resources/changelog-schema.json in elastic/elasticsearch.
+  elasticsearch:
+    fields:
+      title: { from: summary }
+      type: { from: type }
+      areas: { from: [area, breaking.area, deprecation.area], split: "," }
+      pr: { from: pr, unless: source_repo }
+      prs: { template: "elastic/{source_repo}#{pr}" }
+      issues: { from: issues }
+      description: { from: [breaking.details, deprecation.details, highlight.body] }
+      impact: { from: [breaking.impact, deprecation.impact] }
+      highlight: { from: highlight.notable, present: highlight }
+    values:
+      type:
+        bug: bug-fix
+        breaking: breaking-change
+        breaking-java: breaking-change
+        new-aggregation: feature
+        upgrade: other
+      # The schema's area names where the elasticsearch docs/changelog.yml spells them differently.
+      areas:
+        Snapshot/Restore: Snapshot and restore
+        Extract&Transform: Extract and transform
+    ignore:
+      - breaking.title
+      - breaking.notable
+      - breaking.ess_setting_change
+      - deprecation.title
+      - deprecation.notable
+      - deprecation.ess_setting_change
+      - highlight.title
+
+  # elastic/beats, elastic/elastic-agent, elastic/fleet-server and other repositories that use
+  # elastic-agent-changelog-tool: changelog/fragments/<timestamp>-<slug>.yaml.
+  elastic-agent-changelog-tool:
+    files: any
+    fields:
+      title: { from: summary }
+      type: { from: kind }
+      description: { from: description }
+      areas: { from: component, split: "," }
+      prs: { from: pr }
+      issues: { from: issue }
+      impact: { from: impact }
+      action: { from: action }
+    values:
+      type:
+        upgrade: other

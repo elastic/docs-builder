@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Amazon.S3;
+using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -14,6 +15,7 @@ using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
+using SharpYaml;
 
 namespace Elastic.Changelog.Uploading;
 
@@ -88,10 +90,12 @@ public class ChangelogUploadService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IAmazonS3? s3Client = null
+	IAmazonS3? s3Client = null,
+	IGitHubPrService? prService = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
+	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
@@ -105,9 +109,16 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var directories = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
-			? await ResolveBundleScanDirectories(collector, args, ctx)
-			: [await ResolveChangelogDirectory(collector, args, ctx) ?? "docs/changelog"];
+		ChangelogEntryFormat? entryFormat = null;
+		IReadOnlyList<string> directories;
+		if (args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend)
+			directories = await ResolveBundleScanDirectories(collector, args, ctx);
+		else
+		{
+			var (directory, format) = await ResolveChangelogDirectory(collector, args, ctx);
+			directories = [directory ?? "docs/changelog"];
+			entryFormat = format;
+		}
 
 		var existing = directories.Where(d => !string.IsNullOrWhiteSpace(d) && _fileSystem.Directory.Exists(d)).ToList();
 		if (existing.Count == 0)
@@ -120,7 +131,12 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var targets = DiscoverTargets(collector, args, existing);
+		// A format whose file names don't carry the PR: find the pull request that added each file that names none.
+		var pullRequests = entryFormat is { FileNamesCarryPr: false } && args.ArtifactType is ArtifactType.Changelog
+			? await FindPullRequestsOfFilesAsync(existing, entryFormat, args.Owner, args.Repo, args.Branch, ctx)
+			: null;
+
+		var targets = DiscoverTargets(collector, args, existing, entryFormat, pullRequests);
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -237,8 +253,9 @@ public class ChangelogUploadService(
 		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run without --no-overwrite to replace it.{body}";
 	}
 
+	// Inline content is either a PR-alias marker or an entry converted from the repository's entry format.
 	private static bool IsPrAliasMarker(UploadConflict conflict) =>
-		conflict.InlineContent is not null || TryMarkerLink(conflict.RemoteContent) is not null;
+		TryMarkerLink(conflict.InlineContent) is not null || TryMarkerLink(conflict.RemoteContent) is not null;
 
 	private static string? TryMarkerLink(string? yaml)
 	{
@@ -256,12 +273,18 @@ public class ChangelogUploadService(
 		}
 	}
 
+	/// <param name="entryFormat">
+	/// The repository's entry format (<c>entry_format</c>), or null. Entry files in that format are converted and
+	/// uploaded in the docs-builder format, so the pool only holds docs-builder entries.
+	/// </param>
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
 		IDiagnosticsCollector collector,
 		string changelogDir,
 		string? org,
 		string? repo,
-		string? branch
+		string? branch,
+		ChangelogEntryFormat? entryFormat = null,
+		IReadOnlyDictionary<string, string>? pullRequests = null
 	)
 	{
 		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
@@ -325,19 +348,35 @@ public class ChangelogUploadService(
 			}
 
 			ChangelogEntry? entry = null;
+			string? converted = null;
 			try
 			{
 				var content = _fileSystem.File.ReadAllText(filePath);
-				entry = ReleaseNotesSerialization.DeserializeEntry(content);
+				if (entryFormat != null)
+				{
+					converted = entryFormat.ToEntryYaml(content, filePath, pullRequests?.GetValueOrDefault(filePath));
+					entry = ReleaseNotesSerialization.DeserializeEntry(converted);
+				}
+				else
+					entry = ReleaseNotesSerialization.DeserializeEntry(content);
+			}
+			catch (YamlException ex) when (entryFormat != null)
+			{
+				collector.EmitError(filePath, $"Cannot convert this entry from the '{entryFormat.Name}' entry format: {ex.Message}");
+				continue;
 			}
 			catch (Exception ex)
 			{
 				_logger.LogWarning(ex, "Could not read entry from {File}; using filename for key", filePath);
 			}
 
-			var (canonicalFileName, markerEntries) = DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
+			// A format whose file names don't carry the PR keeps them as keys: one pull request can add several fragments,
+			// and keying them by PR number would make them overwrite each other. They match by their prs instead.
+			var (canonicalFileName, markerEntries) = entryFormat is { FileNamesCarryPr: false }
+				? (fileName, [])
+				: DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
 			var primaryKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, canonicalFileName);
-			targets.Add(new UploadTarget(filePath, primaryKey));
+			targets.Add(new UploadTarget(filePath, primaryKey, converted));
 
 			foreach (var (markerFileName, markerContent) in markerEntries)
 			{
@@ -537,10 +576,68 @@ public class ChangelogUploadService(
 		}
 	}
 
+	/// <summary>
+	/// For entry files that name no pull request, the pull request that added each one on the branch, as a PR URL keyed
+	/// by file path. Files that already name one, or whose pull request can't be found, are left out.
+	/// </summary>
+	internal async Task<IReadOnlyDictionary<string, string>> FindPullRequestsOfFilesAsync(
+		IReadOnlyList<string> directories,
+		ChangelogEntryFormat entryFormat,
+		string? org,
+		string? repo,
+		string? branch,
+		Cancel ctx
+	)
+	{
+		var result = new Dictionary<string, string>(StringComparer.Ordinal);
+		if (!ChangelogKeys.IsValidOrg(org) || !ChangelogKeys.IsValidRepo(repo) || !ChangelogKeys.IsValidBranch(branch))
+			return result;
+
+		var currentDirectory = _fileSystem.Directory.GetCurrentDirectory();
+		foreach (var directory in directories)
+		{
+			var files = _fileSystem
+				.Directory
+				.GetFiles(directory, "*.yaml", SearchOption.TopDirectoryOnly)
+				.Concat(_fileSystem.Directory.GetFiles(directory, "*.yml", SearchOption.TopDirectoryOnly))
+				.Where(f => !_fileSystem.Path.GetFileName(f).StartsWith("note-", StringComparison.OrdinalIgnoreCase));
+			foreach (var filePath in files)
+			{
+				try
+				{
+					var entry = ReleaseNotesSerialization.DeserializeEntry(
+						entryFormat.ToEntryYaml(_fileSystem.File.ReadAllText(filePath), filePath)
+					);
+					if (entry.Prs is { Count: > 0 })
+						continue;
+				}
+				catch (YamlException)
+				{
+					// DiscoverUploadTargets reports files that don't convert.
+					continue;
+				}
+
+				var repoPath = _fileSystem
+					.Path
+					.GetRelativePath(currentDirectory, _fileSystem.Path.GetFullPath(filePath))
+					.Replace('\\', '/');
+				var number = await _prService.FetchPullRequestAddingFileAsync(org, repo, repoPath, branch, ctx);
+				if (number is { } pr)
+					result[filePath] = $"https://github.com/{org}/{repo}/pull/{pr}";
+				else
+					_logger.LogWarning("No pull request found that added {File}; uploading it without one", filePath);
+			}
+		}
+
+		return result;
+	}
+
 	private IReadOnlyList<UploadTarget> DiscoverTargets(
 		IDiagnosticsCollector collector,
 		ChangelogUploadArguments args,
-		IReadOnlyList<string> directories
+		IReadOnlyList<string> directories,
+		ChangelogEntryFormat? entryFormat,
+		IReadOnlyDictionary<string, string>? pullRequests
 	)
 	{
 		var targets = new List<UploadTarget>();
@@ -550,7 +647,7 @@ public class ChangelogUploadService(
 			{
 				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
 				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
-				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch, entryFormat, pullRequests)
 			};
 			targets.AddRange(found);
 		}
@@ -607,15 +704,18 @@ public class ChangelogUploadService(
 		return CollectBundleScanDirectories(null, config);
 	}
 
-	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
+	private async Task<(string? Directory, ChangelogEntryFormat? EntryFormat)> ResolveChangelogDirectory(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		Cancel ctx
+	)
 	{
-		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return args.Directory;
-
 		if (_configLoader == null)
-			return "docs/changelog";
+			return (string.IsNullOrWhiteSpace(args.Directory) ? "docs/changelog" : args.Directory, null);
 
+		// The configuration is read even when --directory overrides its directory: entry_format still applies.
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.Directory ?? "docs/changelog";
+		var directory = string.IsNullOrWhiteSpace(args.Directory) ? config?.Bundle?.Directory ?? "docs/changelog" : args.Directory;
+		return (directory, config?.EntryFormat);
 	}
 }

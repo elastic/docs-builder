@@ -91,6 +91,11 @@ public static partial class ReleaseNotesSerialization
 	}
 
 	/// <summary>
+	/// Serializes a changelog entry DTO to YAML in the docs-builder entry format.
+	/// </summary>
+	public static string SerializeEntryDto(ChangelogEntryDto dto) => YamlSerializer.Serialize(dto, SerializerOptions);
+
+	/// <summary>
 	/// Serializes bundled changelog data to YAML.
 	/// </summary>
 	public static string SerializeBundle(Bundle bundle)

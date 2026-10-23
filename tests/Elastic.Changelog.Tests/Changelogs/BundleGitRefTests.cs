@@ -937,6 +937,205 @@ public class BundleGitRefTests() : ChangelogTestBase()
 	public void ParseLeadingPrNumbers_CoversNamingSchemes(string fileName, int[] expected) =>
 		ChangelogPrIdentity.ParseLeadingPrNumbers(fileName).Should().Equal(expected);
 
+	// An entry in the Elasticsearch changelog format: summary and area instead of title and areas, and no products.
+	// language=yaml
+	private const string ElasticsearchFormatPoolEntry =
+		"""
+		pr: 100
+		summary: Faster hosted search
+		area: Search
+		type: bug
+		issues: []
+		""";
+
+	[Test]
+	public async Task ProfileMode_EntryFormatPoolEntries_AreReadAndTakeProductsFromConfiguration()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			pivotProducts: "  products:\n    cloud-serverless: \"serverless\"",
+			topLevel: "entry_format: elasticsearch\nproducts:\n  default:\n    - product: cloud-hosted"
+		);
+
+		// The repository sets entry_format, and its pool still holds files in that format from before it did.
+		// PR 100 has such an entry and no product label: it takes products.default.
+		// PR 200 has such an entry and the serverless label: its label wins.
+		// PR 300 has an entry in the docs-builder format, as the upload now writes it: it is read as it is.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json(
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" }, { "file": "200.yaml" }, { "file": "300.yaml" } ] }"""
+				);
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(ElasticsearchFormatPoolEntry);
+			if (path.EndsWith("200.yaml", StringComparison.Ordinal))
+				return Yaml(
+					ElasticsearchFormatPoolEntry.Replace("pr: 100", "pr: 200").Replace("Faster hosted search", "Leaner serverless search")
+				);
+			if (path.EndsWith("300.yaml", StringComparison.Ordinal))
+				return Yaml("title: Converted entry\ntype: feature\npr: \"300\"\nproducts:\n  - product: cloud-hosted\n");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/100", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo { Title = "PR title 100", Body = "", Labels = [">bug"], LinkedIssues = [] });
+		_ = A.CallTo(
+			() => prService.FetchPrInfoAsync("https://github.com/elastic/widget/pull/200", A<string?>._, A<string?>._, A<Cancel>._)
+		).Returns(new GitHubPrInfo { Title = "PR title 200", Body = "", Labels = [">bug", "serverless"], LinkedIssues = [] });
+
+		var service = Service(pool, RangeService(100, 200, 300), prService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// The entries come from the pool, not from the PR titles.
+		bundle.Should().Contain("Faster hosted search").And.Contain("Leaner serverless search").And.Contain("Converted entry");
+		bundle.Should().NotContain("PR title");
+		bundle.Should().Contain("type: bug-fix").And.Contain("- Search");
+
+		var entries = bundle[bundle.IndexOf("entries:", StringComparison.Ordinal)..];
+		var second = entries.IndexOf("Leaner serverless search", StringComparison.Ordinal);
+		var third = entries.IndexOf("Converted entry", StringComparison.Ordinal);
+		entries[..second].Should().Contain("product: cloud-hosted").And.NotContain("product: cloud-serverless");
+		entries[second..third].Should().Contain("product: cloud-serverless").And.NotContain("product: cloud-hosted");
+	}
+
+	[Test]
+	public async Task ProfileMode_TimestampedPoolEntryWithoutPr_IsMatchedThroughThePullRequestFiles()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(
+			outputDir,
+			topLevel: "entry_format: elastic-agent-changelog-tool\nproducts:\n  default:\n    - product: cloud-hosted"
+		);
+
+		// The pool holds two fragments PR 100 added: one names the PR, one names none. PR 200 added nothing in the pool.
+		// A docs-builder entry uploaded as 300.yaml with no prs (a scrubbed copy) still matches PR 300 by its file name.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+			{
+				return Json(
+					"""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "1792145980-fix-the-registry.yaml" }, { "file": "1792145999-named.yaml" }, { "file": "300.yaml" } ] }"""
+				);
+			}
+			if (path.EndsWith("1792145980-fix-the-registry.yaml", StringComparison.Ordinal))
+				return Yaml("kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n");
+			if (path.EndsWith("1792145999-named.yaml", StringComparison.Ordinal))
+				return Yaml(
+					"kind: feature\nsummary: Named fragment\ncomponent: filebeat\npr: https://github.com/elastic/widget/pull/100\n"
+				);
+			if (path.EndsWith("300.yaml", StringComparison.Ordinal))
+				return Yaml("title: Scrubbed entry\ntype: feature\nproducts:\n  - product: cloud-hosted\n");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var prService = A.Fake<IGitHubPrService>();
+		_ = A.CallTo(() => prService.FetchAddedFilesAsync("elastic", "widget", 100, A<Cancel>._)).Returns(new List<string>
+		{
+			"changelog/fragments/1792145980-fix-the-registry.yaml",
+			"changelog/fragments/1792145999-named.yaml"
+		});
+		_ = A.CallTo(() => prService.FetchAddedFilesAsync("elastic", "widget", 200, A<Cancel>._)).Returns(new List<string> { "README.md" });
+		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).ReturnsLazily(
+			(string url, string? _, string? _, Cancel _) => new GitHubPrInfo
+			{
+				Title = $"PR title {url[^3..]}",
+				Body = "",
+				Labels = [">feature"],
+				LinkedIssues = []
+			}
+		);
+
+		var service = Service(pool, RangeService(100, 200, 300), prService);
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		var bundle = await FileSystem.File.ReadAllTextAsync(
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		// PR 100 gets both fragments, not its title; PR 200 has none, so its entry comes from its title; PR 300 keeps its entry.
+		bundle
+			.Should()
+			.Contain("Fix the registry")
+			.And
+			.Contain("Named fragment")
+			.And
+			.NotContain("PR title 100")
+			.And
+			.Contain("PR title 200");
+		bundle.Should().Contain("Scrubbed entry").And.NotContain("PR title 300");
+		bundle.Should().Contain("https://github.com/elastic/widget/pull/100");
+	}
+
+	[Test]
+	public async Task ProfileMode_EntryFormatPoolEntryWithoutEntryFormat_FailsToParse()
+	{
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+		var configPath = await WriteProfileConfig(outputDir, topLevel: "products:\n  default:\n    - product: cloud-hosted");
+
+		// Without entry_format, a pool entry in another format is an error, as it was before entry formats.
+		var pool = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
+				return Json("""{ "schema_version": 1, "product": "widget", "bundles": [ { "file": "100.yaml" } ] }""");
+			if (path.EndsWith("100.yaml", StringComparison.Ordinal))
+				return Yaml(ElasticsearchFormatPoolEntry);
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+
+		var service = Service(pool, RangeService(100));
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "promotion",
+			ProfileArgument = "2026-08-13",
+			Config = configPath,
+			StartGitRef = StartRef,
+			EndGitRef = EndRef
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be parsed"));
+	}
+
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
