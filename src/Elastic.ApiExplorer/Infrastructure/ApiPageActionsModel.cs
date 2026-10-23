@@ -6,5 +6,8 @@ using Elastic.Documentation.Site;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-/// <summary>The Copy page menu: the page's Markdown, plus the whole spec download when the page belongs to an API.</summary>
-public sealed record ApiPageActionsModel(string MarkdownUrl, ApiSpecDownload? Spec);
+/// <summary>
+/// The Copy page menu: the page's Markdown, plus the whole spec download when the page belongs to an API.
+/// <see cref="MarkdownUrl"/> is null for a page with no Markdown export, which then gets the downloads alone.
+/// </summary>
+public sealed record ApiPageActionsModel(string? MarkdownUrl, ApiSpecDownload? Spec);

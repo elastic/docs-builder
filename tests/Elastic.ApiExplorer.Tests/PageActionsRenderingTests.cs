@@ -59,4 +59,23 @@ public class PageActionsRenderingTests
 
 		html.Should().NotContain("Download OpenAPI spec");
 	}
+
+	[Test]
+	public async Task Render_WithoutMarkdown_OffersTheDownloadsAlone()
+	{
+		var spec = new ApiSpecDownload("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		var html = await _PageActions.Create(new ApiPageActionsModel(null, spec)).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html
+			.Should()
+			.Contain("Download spec")
+			.And
+			.Contain("href=\"/api/doc/elasticsearch.json\"")
+			.And
+			.Contain("href=\"/api/doc/elasticsearch.yaml\"");
+		html.Should().NotContain("Copy page").And.NotContain("data-copy-page").And.NotContain("View as Markdown");
+		html.Should().NotContain("role=\"separator\"");
+	}
 }
