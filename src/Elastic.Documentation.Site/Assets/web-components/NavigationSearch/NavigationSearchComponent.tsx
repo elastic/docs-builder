@@ -51,7 +51,7 @@ const NavigationSearchInner = ({
     const { euiTheme } = useEuiTheme()
     const typeFilter = parseTypeFilter(type)
     const resolvedPlaceholder =
-        placeholder ?? (typeFilter === 'api' ? 'Explore API' : undefined)
+        placeholder ?? (typeFilter === 'api' ? 'Explore APIs' : undefined)
 
     if (config.airGapped) {
         return null

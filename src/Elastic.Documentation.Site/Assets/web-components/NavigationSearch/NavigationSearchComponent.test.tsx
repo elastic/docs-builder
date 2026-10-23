@@ -55,7 +55,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     it('requests navigation-search with type=api when type is api', async () => {
         render(<NavigationSearchWrapper type="api" />)
 
-        const input = await screen.findByPlaceholderText('Explore API')
+        const input = await screen.findByPlaceholderText('Explore APIs')
         await userEvent.type(input, '_bulk')
 
         await waitFor(() => {
@@ -70,7 +70,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             <NavigationSearchWrapper type="api" variant="sidebar" />
         )
 
-        await screen.findByPlaceholderText('Explore API')
+        await screen.findByPlaceholderText('Explore APIs')
 
         expect(container.querySelector('.sticky')).toBeNull()
         expect(container.querySelector('hr')).toBeNull()
@@ -103,7 +103,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper slash shortcut', () => {
-    const apiPlaceholder = 'Explore API'
+    const apiPlaceholder = 'Explore APIs'
 
     beforeEach(() => {
         sharedQueryClient.clear()
@@ -238,7 +238,7 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         render(<NavigationSearchWrapper type="api" />)
         await screen.findByPlaceholderText(apiPlaceholder)
 
-        const input = screen.getByRole('textbox', { name: 'Explore API' })
+        const input = screen.getByRole('textbox', { name: 'Explore APIs' })
 
         expect(input).toHaveAttribute(
             'title',

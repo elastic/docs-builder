@@ -180,7 +180,7 @@ export const NavigationSearch = ({
                         isLoading={isSearching}
                         keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
                         shortcutHint={slashFocusEnabled ? '/' : undefined}
-                        ariaLabel={isApi ? 'Explore API' : undefined}
+                        ariaLabel={isApi ? 'Explore APIs' : undefined}
                         title={
                             isApi
                                 ? 'Explore API operations. Type / to focus.'
