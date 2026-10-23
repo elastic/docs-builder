@@ -27,7 +27,6 @@
 	};
 	var resources = new (string Name, string Icon, string Url, bool External)[]
 	{
-		("Release notes", "documentation", Model.Link("/release-notes/"), false),
 		("Extend and contribute", "plus", Model.Link("extend/"), false),
 		("Troubleshoot", "wrench", Model.Link("/troubleshoot/"), false),
 		("Previous versions", "refresh_time", "https://www.elastic.co/guide?lang=en", true)
@@ -49,7 +48,7 @@
 			}
 		</div>
 	</section>
-	<p class="landing__notice"><span class="band__content landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade.</span></p>
+	<p class="landing__notice"><span class="band__content landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade, and check the <a href="@Model.Link("/release-notes/")">release notes</a> to see what changed.</span></p>
 		<section class="band band--wash landing__section">
 			<div class="band__content landing__inner">
 				<div class="landing__slab">
@@ -126,6 +125,18 @@
 			<div class="band__content landing__inner">
 				<h2 class="landing__heading" id="product-resources">Product resources</h2>
 				<div class="grid grid--4 landing__grid">
+					<div class="landing__resource landing__resource--hubs">
+						<div>
+							<p class="landing__resource-title">Elastic Stack</p>
+							<p class="landing__resource-text">Start with the Elastic Stack, or go straight to Elasticsearch, Kibana, or Logstash.</p>
+						</div>
+						<div class="landing__resource-links">
+							<a class="landing__resource-name" href="@Model.Link("/products/elastic-stack")">View Elastic Stack hub @await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</a>
+							<a href="@Model.Link("/products/elasticsearch")">Elasticsearch hub</a>
+							<a href="@Model.Link("/products/kibana")">Kibana hub</a>
+							<a href="@Model.Link("/products/logstash")">Logstash hub</a>
+						</div>
+					</div>
 					@foreach (var resource in resources)
 					{
 						<a class="landing__resource" href="@resource.Url"@(resource.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\" hx-disable=\"true\"") : HtmlString.Empty)>
