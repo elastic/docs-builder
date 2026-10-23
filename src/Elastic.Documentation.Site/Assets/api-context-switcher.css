@@ -151,13 +151,12 @@
 		}
 	}
 
-	/* The version sits under the name, so a long label such as "v9 (latest)" never squeezes the name. */
+	/* The version sits beside the name, on its first line. A long name wraps and the version stays put. */
 	.api-context-name {
 		display: flex;
 		flex: 1 1 auto;
-		flex-direction: column;
 		align-items: flex-start;
-		gap: 4px;
+		gap: 8px;
 		min-width: 0;
 	}
 
@@ -211,6 +210,10 @@
 		text-wrap: balance;
 		overflow-wrap: anywhere;
 		line-height: 1.25;
+	}
+	/* The version hugs the name instead of sitting at the far edge. */
+	.api-sidebar-identity .api-context-name .api-context-title {
+		flex: 0 1 auto;
 	}
 	.api-sidebar-identity .api-context-updown {
 		margin-top: 4px;
