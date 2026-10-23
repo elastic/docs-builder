@@ -500,6 +500,12 @@ function getNavScrollContainer(nav: HTMLElement) {
     return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
 }
 
+// The smaller golden-ratio share (0.382) puts the active row a little above centre.
+const NAV_FOCUS_RATIO = 1 - 1 / ((1 + Math.sqrt(5)) / 2)
+
+// A fresh page or a replaced tree places the row even when it is already visible.
+let placeCurrentEvenIfVisible = true
+
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const currentNavItem = currentInNav(nav)
 
@@ -522,19 +528,25 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
 
     const effectiveNavTop = navRect.top + stickyHeight
 
+    const force = placeCurrentEvenIfVisible
+    placeCurrentEvenIfVisible = false
+
     // Check if the item is already fully visible in the nav container's viewport
     // Account for sticky element that may be covering the top portion
     if (
+        !force &&
         currentNavItemRect.top >= effectiveNavTop &&
         currentNavItemRect.bottom <= navRect.bottom
     ) {
         return
     }
 
-    // Calculate target position: center of nav container (accounting for sticky area)
+    // Calculate target position: golden-ratio point of the visible nav area (accounting for sticky area)
     const visibleNavHeight = navRect.height - stickyHeight
     const targetPosition =
-        stickyHeight + visibleNavHeight / 2 - currentNavItemRect.height / 2
+        stickyHeight +
+        visibleNavHeight * NAV_FOCUS_RATIO -
+        currentNavItemRect.height / 2
 
     // Calculate how much we need to scroll to position the item at the target
     const currentPositionInNav = currentNavItemRect.top - navRect.top
@@ -828,6 +840,7 @@ export function syncPagesNavFromResponse(
         return false
     }
     canRecenterNav = true
+    placeCurrentEvenIfVisible = true
     pinnedNavScrollTop = null
     pendingFolderReset = true
     navJustReplaced = true
