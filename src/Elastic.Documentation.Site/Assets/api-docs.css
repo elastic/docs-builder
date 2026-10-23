@@ -509,6 +509,13 @@
 	min-width: 0;
 }
 
+/* On an operation page the badges sit under the path, as a row of their own. */
+.api-page-intro .api-title-badges {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
 .api-group-heading .api-title-badges {
 	display: inline-flex;
 	flex-wrap: wrap;
