@@ -179,6 +179,7 @@ export const NavigationSearch = ({
                         disabled={isSearchCooldownActive}
                         isLoading={isSearching}
                         keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
+                        shortcutHint={slashFocusEnabled ? '/' : undefined}
                         ariaLabel={isApi ? 'Explore API' : undefined}
                         title={
                             isApi

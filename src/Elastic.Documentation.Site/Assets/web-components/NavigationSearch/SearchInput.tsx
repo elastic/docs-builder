@@ -1,5 +1,6 @@
 import { EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useState } from 'react'
 
 const CustomSearchIcon = () => {
     const { euiTheme } = useEuiTheme()
@@ -36,6 +37,7 @@ export interface SearchInputProps {
     disabled: boolean
     isLoading: boolean
     keyShortcuts?: string
+    shortcutHint?: string
     ariaLabel?: string
     title?: string
 }
@@ -52,10 +54,13 @@ export const SearchInput = ({
     disabled,
     isLoading,
     keyShortcuts,
+    shortcutHint,
     ariaLabel,
     title,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
+    const [focused, setFocused] = useState(false)
+    const showHint = !!shortcutHint && !focused && !value
 
     return (
         <div
@@ -90,8 +95,14 @@ export const SearchInput = ({
                 aria-keyshortcuts={keyShortcuts}
                 value={value}
                 onChange={onChange}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                onFocus={() => {
+                    setFocused(true)
+                    onFocus()
+                }}
+                onBlur={(e) => {
+                    setFocused(false)
+                    onBlur(e)
+                }}
                 onKeyDown={onKeyDown}
                 disabled={disabled}
                 css={css`
@@ -106,6 +117,7 @@ export const SearchInput = ({
                         )
                         ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
                     padding-left: 34px;
+                    ${showHint ? 'padding-right: 36px;' : ''}
                     border: 1px solid #cad3e2;
                     border-radius: 8px;
                     background: #fff;
@@ -124,6 +136,33 @@ export const SearchInput = ({
                     }
                 `}
             />
+
+            {showHint && (
+                <kbd
+                    aria-hidden="true"
+                    css={css`
+                        position: absolute;
+                        right: ${euiTheme.size.s};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-width: 18px;
+                        padding: 0 ${euiTheme.size.xs};
+                        border: 1px solid ${euiTheme.border.color};
+                        border-bottom-width: 2px;
+                        border-radius: ${euiTheme.border.radius.small};
+                        background: #fff;
+                        color: ${euiTheme.colors.textSubdued};
+                        font-family: inherit;
+                        font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
+                        font-weight: ${euiTheme.font.weight.semiBold};
+                        line-height: ${euiTheme.base * 1.1}px;
+                        pointer-events: none;
+                    `}
+                >
+                    {shortcutHint}
+                </kbd>
+            )}
         </div>
     )
 }
