@@ -85,6 +85,13 @@
 		gap: 8px;
 	}
 
+	/* The chosen API and version read blue, like the current page in the sidebar. */
+	.api-menu .secondary-nav-dropdown-link--selected,
+	.api-menu .secondary-nav-dropdown-link--selected:hover,
+	.api-menu .secondary-nav-dropdown-link--selected:focus-visible {
+		color: #0b64dd;
+	}
+
 	.api-context-menu-group-label {
 		padding: 4px 8px;
 		font-size: 11px;
