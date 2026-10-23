@@ -34,6 +34,22 @@ public class ApiLayoutVersionDropdownTests
 	}
 
 	[Test]
+	public void CreateGlobalLayoutModel_OffersTheSpecDownloadInTheDesignSystemRailWhenNoDocsBarHasIt()
+	{
+		var isolated = CreateLayout();
+		var assembler = CreateLayout(buildType: BuildType.Assembler);
+
+		isolated.DesignSystemPageActions!
+			.Downloads
+			.Select(d => d.Url)
+			.Should()
+			.Equal("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		isolated.PageActions!.Spec.Should().NotBeNull();
+		// The assembler's docs bar carries the download.
+		assembler.DesignSystemPageActions!.Downloads.Should().BeEmpty();
+	}
+
+	[Test]
 	public void CreateGlobalLayoutModel_HasNoVersionsToPickWhenThereIsOne()
 	{
 		var layout = CreateLayout(items: []);
