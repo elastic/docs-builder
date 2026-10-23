@@ -41,15 +41,9 @@ public class LandingViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public string? Version => string.IsNullOrEmpty(ApiInfo.Version) ? null : ApiInfo.Version;
 
-	/// <summary>The assembler hosts the download in its context bar.</summary>
-	public bool ShowSpecDownload => BuildContext.BuildType != BuildType.Assembler;
-
-	public bool HasFacts => Servers.Count > 0 || Version is not null || ShowSpecDownload;
+	public bool HasFacts => Servers.Count > 0 || Version is not null;
 
 	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ReadServers(Document);
-
-	public string JsonUrl { get; } = ApiOutputPaths.JsonUrl(context.CurrentNavigation.Url);
-	public string YamlUrl { get; } = ApiOutputPaths.YamlUrl(context.CurrentNavigation.Url);
 
 	public string? IconSvg { get; } = ProductIcons.Get(context.Product?.Id ?? context.CurrentApiKey);
 
