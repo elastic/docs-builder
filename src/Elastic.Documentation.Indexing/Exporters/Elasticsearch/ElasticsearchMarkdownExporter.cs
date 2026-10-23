@@ -28,6 +28,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 {
 	private readonly IDiagnosticsCollector _collector;
 	private readonly IDocumentationConfigurationContext _context;
+	private readonly ILoggerFactory _logFactory;
 	private readonly ILogger _logger;
 	private readonly ElasticsearchEndpoint _endpoint;
 	private readonly DistributedTransport _transport;
@@ -74,6 +75,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	{
 		_collector = collector;
 		_context = context;
+		_logFactory = logFactory;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
 		_buildType = endpoints.BuildType;
