@@ -408,8 +408,30 @@ export const ModalSearch = ({
 
         // Close after the swap, not before: the clicked result link must stay
         // mounted so htmx can still read the body's inherited hx-swap and hx-select.
-        document.addEventListener('htmx:afterSwap', closeModal)
-        return () => document.removeEventListener('htmx:afterSwap', closeModal)
+        // A dismissal while the request is pending unmounts it anyway, so cancel
+        // the request instead of letting the response swap in the wrong place.
+        let pending: Element | null = null
+        const handleBeforeSend = (event: Event) => {
+            const elt = (event as CustomEvent).detail?.elt as
+                Element | undefined
+            pending = elt?.hasAttribute('data-search-result-index') ? elt : null
+        }
+        const handleAfterSwap = () => {
+            pending = null
+            closeModal()
+        }
+        document.addEventListener('htmx:beforeSend', handleBeforeSend)
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
+        return () => {
+            document.removeEventListener('htmx:beforeSend', handleBeforeSend)
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
+            if (pending) {
+                // The link is already detached, so the event cannot bubble from it.
+                document.body.dispatchEvent(
+                    new CustomEvent('htmx:abort', { detail: { elt: pending } })
+                )
+            }
+        }
     }, [isOpen, closeModal])
 
     const handleBackdropClick = useCallback(

@@ -73,6 +73,61 @@ describe('ModalSearch', () => {
         expect(closeButton()).not.toBeInTheDocument()
     })
 
+    it('cancels a pending result navigation when the modal is dismissed', () => {
+        renderModalSearch()
+
+        act(() => {
+            modalSearchStore.getState().actions.openModal()
+        })
+
+        const result = document.createElement('a')
+        result.setAttribute('data-search-result-index', '0')
+        const aborted = jest.fn()
+        const onAbort = (event: Event) => {
+            if ((event as CustomEvent).detail?.elt === result) aborted()
+        }
+        document.body.addEventListener('htmx:abort', onAbort)
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSend', { detail: { elt: result } })
+            )
+        })
+        act(() => {
+            modalSearchStore.getState().actions.closeModal()
+        })
+
+        document.body.removeEventListener('htmx:abort', onAbort)
+        expect(aborted).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not cancel a result navigation that finished its swap', () => {
+        renderModalSearch()
+
+        act(() => {
+            modalSearchStore.getState().actions.openModal()
+        })
+
+        const result = document.createElement('a')
+        result.setAttribute('data-search-result-index', '0')
+        const aborted = jest.fn()
+        const onAbort = (event: Event) => {
+            if ((event as CustomEvent).detail?.elt === result) aborted()
+        }
+        document.body.addEventListener('htmx:abort', onAbort)
+
+        act(() => {
+            document.dispatchEvent(
+                new CustomEvent('htmx:beforeSend', { detail: { elt: result } })
+            )
+            document.dispatchEvent(new CustomEvent('htmx:afterSwap'))
+        })
+
+        expect(modalSearchStore.getState().isOpen).toBe(false)
+        document.body.removeEventListener('htmx:abort', onAbort)
+        expect(aborted).not.toHaveBeenCalled()
+    })
+
     it('does not offer Ask AI in an isolated build', () => {
         renderModalSearch()
 
