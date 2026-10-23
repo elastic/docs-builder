@@ -3892,40 +3892,6 @@ html:has(.api-page-shell) {
 	min-height: 0;
 }
 
-.api-code-carousel-position {
-	flex: 1;
-	min-width: 0;
-	font-size: 0.8125rem;
-}
-
-.api-code-carousel-position span {
-	margin-left: var(--space-1);
-	color: var(--color-text-muted);
-	font-size: 0.75rem;
-}
-
-.api-code-carousel-arrow {
-	width: 1.75rem;
-	height: 1.75rem;
-	border: 1px solid var(--color-border);
-	border-radius: 50%;
-	background: var(--color-surface);
-	color: var(--color-heading);
-	font-size: 1rem;
-	line-height: 1;
-	cursor: pointer;
-}
-
-.api-code-carousel-arrow:hover:not(:disabled) {
-	border-color: var(--color-heading);
-}
-
-.api-code-carousel-arrow:disabled {
-	opacity: 0.35;
-	cursor: default;
-}
-
-.api-code-carousel-arrow:focus-visible,
 .api-code-carousel-dot:focus-visible,
 .api-code-carousel-strip:focus-visible {
 	outline: 2px solid var(--color-accent);
@@ -3947,42 +3913,10 @@ html:has(.api-page-shell) {
 }
 
 #api-examples-panel .api-code-carousel-card {
-	flex: 0 0 86%;
+	flex: 0 0 100%;
 	min-width: 0;
 	margin: 0;
 	scroll-snap-align: start;
-	opacity: 0.55;
-	transform: scale(0.96);
-	transform-origin: left top;
-	transition:
-		opacity 0.25s,
-		transform 0.25s,
-		transform-origin 0.25s;
-}
-
-/* Inactive cards shrink towards the active one, so the gap beside it stays 12px on both sides. The last card
-   deliberately stops where the strip runs out, with the previous card showing beside it. */
-#api-examples-panel .api-code-carousel-card:has(~ .is-active) {
-	transform-origin: right top;
-}
-
-.api-code-carousel-card:not(.is-active) {
-	cursor: pointer;
-}
-
-/* While the remembered language is applied on load (api-examples-carousel.ts), nothing animates. */
-#api-examples-panel .is-settling .api-code-carousel-card,
-#api-examples-panel .is-settling .api-code-carousel-strip {
-	transition: none;
-}
-
-#api-examples-panel .api-code-carousel-card:not(.is-active):hover {
-	opacity: 0.8;
-}
-
-#api-examples-panel .api-code-carousel-card.is-active {
-	opacity: 1;
-	transform: none;
 }
 
 .api-code-carousel-card-header {
@@ -4121,16 +4055,9 @@ html:has(.api-page-shell) {
 	border-color: var(--color-accent);
 }
 
-:root[data-motion='reduce'] .api-code-carousel-card,
 :root[data-motion='reduce'] .api-code-carousel-dot,
 :root[data-motion='reduce'] #api-examples-panel .api-code-carousel-strip {
 	transition: none;
-}
-
-@media (max-width: 760px) {
-	#api-examples-panel .api-code-carousel-card {
-		flex-basis: 100%;
-	}
 }
 
 /* Full screen preview of one code block. The card button shares the header copy button's rule (code-block.css).

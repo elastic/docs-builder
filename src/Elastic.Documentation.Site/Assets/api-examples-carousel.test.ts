@@ -29,9 +29,6 @@ function carousel(langs: string[]): string {
         .join('')
     return `
         <div class="api-code-carousel" data-api-carousel>
-            <span data-carousel-position></span>
-            <button data-carousel-step="-1"></button>
-            <button data-carousel-step="1"></button>
             <div data-example-description>
                 <div class="api-example-caption-text">A description.</div>
                 <button data-description-toggle aria-expanded="false" hidden>Show more</button>
@@ -96,10 +93,6 @@ describe('API examples carousel', () => {
         initApiExamples()
 
         expect(activeLang('term')).toBe('Console')
-        expect(
-            document.querySelector('[data-carousel-position] strong')
-                ?.textContent
-        ).toBe('Console')
     })
 
     describe('when the page has no Console card', () => {
@@ -361,30 +354,6 @@ describe('API examples carousel', () => {
         const appendTo = close._tippy?.props.appendTo
         expect(typeof appendTo === 'function' && appendTo(close)).toBe(dialog)
         dialog.dispatchEvent(new Event('close'))
-    })
-
-    it('steps with the arrows and disables them at the ends', () => {
-        initApiExamples()
-        const prev = document.querySelector<HTMLButtonElement>(
-            '[data-scenario="term"] [data-carousel-step="-1"]'
-        )!
-        expect(prev.disabled).toBe(true)
-
-        click('[data-scenario="term"] [data-carousel-step="1"]')
-
-        expect(activeLang('term')).toBe('curl')
-        expect(prev.disabled).toBe(false)
-    })
-
-    it('switches to the dimmed neighbour card when it is clicked', () => {
-        initApiExamples()
-
-        click(
-            '[data-scenario="term"] .api-code-carousel-card[data-lang="curl"] pre'
-        )
-
-        expect(activeLang('term')).toBe('curl')
-        expect(window.localStorage.getItem(apiLanguageStorageKey)).toBe('curl')
     })
 
     it('switches example and keeps the language when the example has it', () => {

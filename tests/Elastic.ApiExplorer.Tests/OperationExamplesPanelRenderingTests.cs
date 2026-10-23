@@ -146,6 +146,16 @@ public class OperationExamplesPanelRenderingTests
 	}
 
 	[Test]
+	public async Task Render_Carousel_SwitchesLanguageOnlyThroughTheDots()
+	{
+		var html = await RenderPanel(TermSearch, Slicing);
+
+		html.Should().NotContain("data-carousel-step");
+		html.Should().NotContain("data-carousel-position");
+		html.Should().Contain("data-carousel-dot=");
+	}
+
+	[Test]
 	public async Task Render_GeneratedSample_SaysSoInsideItsOwnCard()
 	{
 		var html = await RenderScenario(Slicing);
