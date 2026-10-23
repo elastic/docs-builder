@@ -83,6 +83,15 @@ public class ChangelogGithubCommentService(
 	{
 		var body = SelectBaseBody(metadata, metadataDir, owner, repo);
 
+		// Opt-in: a passing check (or a skipped PR) says whether the PR will be part of the release notes, one comment in place of the other bodies below.
+		if (
+			body is null
+			&& metadata.CommentOnSuccess
+			&& metadata.Outcome is { } outcome
+			&& (IsSuccess(metadata.Status) || IsSkipped(metadata.Status))
+		)
+			return RenderOutcomeBody(metadata, outcome, metadataDir);
+
 		// Breaking changes keep their comment on success and echo what was scraped from the PR description, so there are no surprises at bundling time.
 		var generated = metadata.Gate is not ValidationGate.Entries && (IsSuccess(metadata.Status) || metadata.CommitOutcome is not null);
 		if (!generated)
@@ -115,6 +124,17 @@ public class ChangelogGithubCommentService(
 		return body is null || metadata.CommitOutcome is null
 			? ChangelogCommentRenderer.RenderBreakingChangeResolved(metadata.Impact, metadata.Action, entryGenerated: false)
 			: ChangelogCommentRenderer.AppendBreakingChangeCaptured(body, metadata.Impact, metadata.Action);
+	}
+
+	private string RenderOutcomeBody(GithubDecisionMetadata metadata, ReleaseNoteOutcome outcome, string metadataDir)
+	{
+		var entry = TryReadStagedEntry(metadataDir);
+		var (impact, action) = entry is { Type: ChangelogEntryType.BreakingChange }
+			? (entry.Impact, entry.Action)
+			: string.Equals(metadata.ResolvedType, ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase)
+				? (metadata.Impact, metadata.Action)
+				: (null, null);
+		return ChangelogCommentRenderer.RenderReleaseNoteOutcome(outcome, impact, action);
 	}
 
 	private ChangelogEntry? TryReadStagedEntry(string metadataDir)
@@ -234,7 +254,8 @@ public class ChangelogGithubCommentService(
 
 		// Step 1 (label gate): labels are missing — tell the author which ones to add.
 		// Dispatches on Gate when present; falls back to status for artifacts written before Gate was added.
-		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels)
+		// evaluate-pr (File gate) also reports missing labels, with the same wording.
+		if (isNoLabel && metadata.Gate is null or ValidationGate.Labels or ValidationGate.File)
 		{
 			_logger.LogInformation("Rendering labels-needed body for PR #{PrNumber}", metadata.PrNumber);
 			return ChangelogCommentRenderer.RenderLabelsNeeded(
@@ -245,7 +266,8 @@ public class ChangelogGithubCommentService(
 				metadata.AmbiguousTypeLabels,
 				owner,
 				repo,
-				metadata.DefaultBranch
+				metadata.DefaultBranch,
+				metadata.AreaLabelTable
 			);
 		}
 

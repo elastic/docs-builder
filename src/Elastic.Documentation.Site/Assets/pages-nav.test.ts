@@ -87,6 +87,35 @@ describe('syncPagesNavFromResponse', () => {
         jest.useRealTimers()
     })
 
+    it('places a visible current row at the golden-ratio point of a replaced sidebar', () => {
+        jest.useFakeTimers()
+        document.body.innerHTML = pagesNav('nav-tree-ref', 'Reference')
+        syncPagesNavFromResponse(`<html><body>
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                    <div class="pages-nav-v2__scroll" id="nav-scroll">
+                        <ul id="nav-tree-es">
+                            <li><a class="sidebar-link current" href="/">A</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </body></html>`)
+        const scroll = document.querySelector<HTMLElement>('#nav-scroll')!
+        const row = document.querySelector<HTMLElement>('a.current')!
+        scroll.scrollTop = 100
+        scroll.getBoundingClientRect = () =>
+            ({ top: 0, bottom: 600, height: 600 }) as DOMRect
+        row.getBoundingClientRect = () =>
+            ({ top: 400, bottom: 432, height: 32 }) as DOMRect
+
+        initNav()
+        jest.advanceTimersByTime(150)
+
+        // Row centre sits 400 + 16 - 100 = 416 below the top. 600 * 0.382 = 229.2.
+        expect(scroll.scrollTop).toBeCloseTo(100 + (416 - 600 * 0.381966), 1)
+    })
+
     it('keeps the live sidebar when the heading and tree stay the same', () => {
         document.body.innerHTML = pagesNav(
             'nav-tree-ref',
@@ -912,7 +941,7 @@ describe('API nav deep link', () => {
         initNav()
         jest.advanceTimersByTime(150)
 
-        expect(nav.scrollTop).toBe(490)
+        expect(nav.scrollTop).toBeCloseTo(80 + 500 - (200 * 0.381966 - 10), 1)
         jest.useRealTimers()
     })
 

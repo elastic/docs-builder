@@ -3,6 +3,18 @@
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
 }
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	@await RenderPartialAsync(_DesignSystemCodexHeader.Create(Model))
+	<div id="main-container">
+		@await RenderPartialAsync(_DesignSystemCodexBreadcrumbs.Create(Model))
+		<main id="content-container" class="codex-main">
+			@await RenderBodyAsync()
+		</main>
+	</div>
+	@await RenderPartialAsync(_DesignSystemCodexFooter.Create(Model))
+	return;
+}
 @(await RenderPartialAsync(_CodexHeader.Create(Model)))
 <div id="main-container" class="relative">
 	@await RenderPartialAsync(_CodexSubHeader.Create(Model))

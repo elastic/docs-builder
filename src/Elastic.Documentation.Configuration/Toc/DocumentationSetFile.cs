@@ -1319,6 +1319,13 @@ public class BrandingConfiguration
 	/// </summary>
 	[YamlPropertyName("apple-touch-icon")]
 	public string? AppleTouchIcon { get; set; }
+
+	/// <summary>
+	/// The copyright line shown in the footer, for example <c>© 2026 Acme Inc.</c>.
+	/// When not set, branded builds have no footer.
+	/// </summary>
+	[YamlPropertyName("copyright")]
+	public string? Copyright { get; set; }
 }
 
 /// <summary>

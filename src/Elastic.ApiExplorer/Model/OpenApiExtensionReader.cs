@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -114,7 +115,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName;
+			var displayName = tagName.CapitalizeFirstLetter();
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;
@@ -137,10 +138,13 @@ public static class OpenApiExtensionReader
 	/// <summary>
 	/// Parses the <c>x-codeSamples</c> extension into code samples, ordered with Console first.
 	/// </summary>
-	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation) => ParseCodeSamples(operation.Extensions);
+
+	/// <summary>Parses the <c>x-codeSamples</c> extension of any extensible OpenAPI object, such as a request example.</summary>
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(IDictionary<string, IOpenApiExtension>? extensions)
 	{
 		if (
-			operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
+			extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
 			|| jsonExt.Node is not JsonArray samplesArray
 		)

@@ -106,6 +106,29 @@ public class ImageRefOutOfScope : GeneratorTest
 	public async Task EmitsError() => await Docs.HasError("./img/observability.png` does not exist. resolved to");
 }
 
+public class ScreenshotClassInsideListInAppliesSwitch : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::::{applies-switch}
+		::::{applies-item} serverless: ga
+
+		1. Customize the lifecycle.
+
+		   :::{image} img/observability.png
+		   :alt: Elasticsearch
+		   :width: 250px
+		   :screenshot:
+		   :::
+
+		::::
+		:::::
+		""";
+
+	[Test, DisplayName("keeps screenshot class when the image sits in a list")]
+	public async Task KeepsScreenshotClassInsideList() => await Docs.ConvertsToContainingRawHtml("class=\"screenshot\"");
+}
+
 public class EmptyAltAttribute : MarkdownTest
 {
 	protected override string Markdown => """

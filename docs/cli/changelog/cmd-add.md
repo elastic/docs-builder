@@ -82,7 +82,7 @@ The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
 1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied. Products listed in `products.implies` for a matched product are added.
-1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `products.default` is defined in the changelog configuration file, those default products are used. This does not apply when `pivot.required` lists `products`: a PR or issue with no matching label is then an error.
 1. If `products.default` is not defined and `pivot.products` maps two or more distinct products, a PR or issue with no matching label is an error. The error names the PR or issue and lists the labels to add.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
 
@@ -110,6 +110,7 @@ If a configuration file exists, the command validates its values before generati
 
 - If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the known valid values, validation fails.
 - If the configuration file contains `areas` values and they don't match what you specify in `--areas`, validation fails.
+- If `pivot.required` lists `areas`, a PR or issue with no matching area label is an error unless you pass `--areas`.
 - If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
 
 In each of these cases where validation fails, a changelog file is not created.

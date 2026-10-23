@@ -16,12 +16,20 @@ namespace Elastic.ApiExplorer.Landing;
 public class ApiLanding : IApiGroupingModel
 {
 	public object? CreatePageModel(ApiRenderContext context) =>
-		ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot, context.BuildContext.VersionsConfiguration);
+		ApiOverviewBuilder.Build(
+			context.CurrentNavigation.NavigationRoot,
+			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+		);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot, context.BuildContext.VersionsConfiguration);
+			?? ApiOverviewBuilder.Build(
+				context.CurrentNavigation.NavigationRoot,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
 		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -33,7 +41,11 @@ public class ApiLanding : IApiGroupingModel
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot, context.BuildContext.VersionsConfiguration);
+			?? ApiOverviewBuilder.Build(
+				context.CurrentNavigation.NavigationRoot,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
 		return Task.FromResult<string?>(
 			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
 		);

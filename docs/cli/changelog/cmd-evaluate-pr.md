@@ -24,6 +24,7 @@ When running under GitHub Actions (the `GITHUB_ACTIONS` environment variable is 
 | `products` | Comma-separated product specs resolved from PR labels via `pivot.products` mappings |
 | `label-table` | Markdown table of configured label-to-type mappings |
 | `product-label-table` | Markdown table of configured label-to-product mappings |
+| `area-label-table` | Markdown table of configured label-to-area mappings (when `no-label` because `pivot.required` lists `areas` and the PR has no area label) |
 | `changelog-dir` | Resolved changelog directory (from `bundle.directory` or default `docs/changelog`) |
 | `existing-changelog-filename` | Filename of a previously committed changelog for this PR (if any) |
 | `skip-labels` | Comma-separated list of configured skip labels (from `rules.create` exclude rules) |
@@ -65,3 +66,15 @@ A breaking-change PR that has an entry file and also has `## Impact` or `## Acti
 Pass `--require-impact-action` to fail the PR (`missing-impact-action`) when its resolved type is `breaking-change` and its source lacks an Impact and/or Action. With an entry file that means a missing `impact:` or `action:` field. Without one it means a missing `Impact` or `Action` section in the PR description. Recognized forms are a markdown heading of any level (`## Impact`, `### Action`) or a label (`Impact: ...`). Sections that contain only HTML comments, such as an unfilled PR template, count as missing. A section under a heading runs until the next heading of the same or a higher level, so put notes that are not part of Impact or Action under their own heading. A label section ends at the first blank line. Like `--require-changelog-file`, this flag is designed to be passed as a workflow input.
 
 The sticky PR comment lists the missing sections with a template to paste into the description. Once the sections are present, `evaluate-pr` sets the `impact` and `action` outputs. When Impact or Action is scraped from the PR description, the comment stays on the PR and echoes the scraped text in a collapsible block, so you can check it before bundling. Nothing is echoed when the values come from an entry file, since the file is already part of the PR. `evaluate-pr` records the captured sections in the decision metadata, so the echo works even when no entry file is generated in the same run.
+
+### Comment on success [comment-on-success]
+
+By default the sticky PR comment only appears when a check fails, or to echo a breaking change's Impact and Action. Pass `--comment-on-success` (the `comment-on-success` workflow input) to also comment when the check passes. The comment says whether the PR will be part of the release notes:
+
+- **Included**: the resolved type, products and areas, taken from the PR labels through `pivot.types`, `pivot.products` and `pivot.areas`.
+- **Not included**: the reason, such as the label that matches a `rules.create` exclusion.
+
+This is the same sticky comment, not a second one. For a breaking change the captured Impact and Action are shown in the same comment. A failing check still shows its failure body instead. Without the flag nothing changes: the comment is removed on success.
+
+`--comment-on-success` has to be passed to `validate-labels`, `validate` and `evaluate-pr` alike, because each of them rewrites the decision metadata. The first one to know the outcome records it and the later ones keep it.
+

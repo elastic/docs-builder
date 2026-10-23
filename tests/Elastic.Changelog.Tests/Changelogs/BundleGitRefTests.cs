@@ -956,4 +956,64 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));
 	}
+
+	private const string RequiredAreaPivot =
+		"  required: [areas]\n  areas:\n    Search: \":Search\"\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless";
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndNoAreaLabel_FailAPullRequest()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching area label found on PR https://github.com/elastic/widget/pull/300",
+					StringComparison.Ordinal
+				)
+			);
+	}
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndAreaLabelPresent_KeepThePullRequestInTheBundle()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless", ":Search"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeTrue();
+		bundle.Should().Contain("Faster entity resolution");
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_RequiredDespiteProductsDefault_FailAPullRequestWithoutAProductLabel()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			"  required: [products]\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("No matching product label found on PR", StringComparison.Ordinal)
+			);
+	}
 }

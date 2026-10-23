@@ -8,6 +8,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -53,6 +54,128 @@ public class OpenApiGeneratorCatalogSplitTests
 		entries[0].CatalogCategories.Should().Equal("ece", "ess", "self");
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html")).Should().BeTrue();
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "index.html")).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task ResolveCanonicalDocuments_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().ContainSingle();
+		documents[0].ApiKey.Should().Be("elasticsearch");
+		documents[0].Document.Info!.Title.Should().Be("Elasticsearch main");
+	}
+
+	[Test]
+	public async Task ExportDocuments_ApisBeyondElasticsearchAndKibana_AreIndexedOncePerKey()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  cloud-billing:
+			    - spec: cloud-billing.json
+			      product: elasticsearch
+			  cloud-connect:
+			    - spec: cloud-connect.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, SharedProductHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(SpecDocument("Spec"))
+		);
+		var generators = Enumerable
+			.Range(0, 2)
+			.Select(
+				_ => new OpenApiGenerator(
+					NullLoggerFactory.Instance,
+					context,
+					NoopMarkdownStringRenderer.Instance,
+					versionIndexClient,
+					reader
+				)
+			)
+			.ToList();
+		var exporter = new OpenApiDocumentExporter(TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9));
+
+		var paths = new List<string>();
+		await foreach (var doc in exporter.ExportDocuments(generators, TestContext.Current!.Execution.CancellationToken))
+			paths.Add(doc.Path);
+
+		paths.Should().BeEquivalentTo(
+			"/docs/api/doc/cloud-billing/operation/operation-ping",
+			"/docs/api/doc/cloud-connect/operation/operation-ping"
+		);
+	}
+
+	[Test]
+	public async Task ResolveCanonicalDocuments_KeyDiffersFromProduct_ReturnsBoth()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(
+			outputRoot,
+			"""
+			api:
+			  cloud-billing:
+			    - spec: cloud-billing.json
+			      product: elasticsearch
+			"""
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, SharedProductHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Cloud Billing API"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().ContainSingle();
+		documents[0].ApiKey.Should().Be("cloud-billing", "the key builds the URL");
+		documents[0].ProductId.Should().Be("elasticsearch", "the product id drives product metadata");
+	}
+
+	[Test]
+	public async Task ResolveCanonicalDocuments_NoMainVersion_LeavesTheApiOut()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(
+					/*lang=json,strict*/
+					"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"9":{"version":"9.4"}}}}"""
+				)
+				: SpecResponse()
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch 9"))
+		);
+
+		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+
+		documents.Should().BeEmpty("the explorer renders only /api/doc/elasticsearch/v9/, so unversioned search URLs would be dead links");
 	}
 
 	[Test]
@@ -396,7 +519,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task GenerateCatalog_RendersTheTitleBandOutsideTheContainerAndNoSearchField()
+	public async Task GenerateCatalog_RendersTheTitleBandOutsideTheContainer()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -423,8 +546,37 @@ public class OpenApiGeneratorCatalogSplitTests
 				html.IndexOf("id=\"content-container\"", StringComparison.Ordinal),
 				"the band is rendered outside the width-limited container"
 			);
-		html.Should().NotContain("navigation-search", "the catalog has no search field");
 	}
+
+	[Test]
+	[Arguments(BuildType.Assembler, true)]
+	[Arguments(BuildType.Isolated, false)]
+	public async Task GenerateCatalog_Finder_AppearsOnlyWhereTheSidebarHasOne(BuildType buildType, bool expected)
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, buildType: buildType);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient);
+
+		await generator.GenerateCatalog(
+			[new("elasticsearch", "Elasticsearch", "/docs/api/doc/elasticsearch", "elasticsearch")],
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
+		if (expected)
+		{
+			html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
+			Count(html, "<navigation-search").Should().Be(1);
+		}
+		else
+			html.Should().NotContain("navigation-search");
+	}
+
+	private static int Count(string html, string value) => html.Split(value).Length - 1;
 
 	[Test]
 	public async Task GenerateCatalog_CloudHostedAndEnterprise_ShowCloudMarksNotTheGenericGlyph()
@@ -450,7 +602,12 @@ public class OpenApiGeneratorCatalogSplitTests
 		html.Should().NotContain("M13.5 5 10.5 19", "that is the generic fallback glyph");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot, string? docsetYaml = null, string? displayName = null)
+	private static BuildContext CreateGenerateContext(
+		string outputRoot,
+		string? docsetYaml = null,
+		string? displayName = null,
+		BuildType buildType = BuildType.Isolated
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -501,7 +658,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			),
 			configurationContext
 		)
-		{ UrlPathPrefix = "docs" };
+		{ UrlPathPrefix = "docs", BuildType = buildType };
 	}
 
 	private static OpenApiDocument SpecDocument(string title) =>

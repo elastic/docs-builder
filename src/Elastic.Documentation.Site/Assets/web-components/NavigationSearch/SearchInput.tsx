@@ -36,6 +36,8 @@ export interface SearchInputProps {
     disabled: boolean
     isLoading: boolean
     keyShortcuts?: string
+    ariaLabel?: string
+    title?: string
 }
 
 export const SearchInput = ({
@@ -50,6 +52,8 @@ export const SearchInput = ({
     disabled,
     isLoading,
     keyShortcuts,
+    ariaLabel,
+    title,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
 
@@ -81,6 +85,8 @@ export const SearchInput = ({
                 ref={inputRef}
                 type="text"
                 placeholder={placeholder}
+                aria-label={ariaLabel}
+                title={title}
                 aria-keyshortcuts={keyShortcuts}
                 value={value}
                 onChange={onChange}
