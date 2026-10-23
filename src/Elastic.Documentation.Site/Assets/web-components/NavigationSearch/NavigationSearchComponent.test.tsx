@@ -218,11 +218,11 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         expect(container.querySelector('kbd')).toBeNull()
     })
 
-    it('renders the hero variant with its own placeholder and the key chip', async () => {
+    it('renders the hero variant with the same placeholder and the key chip', async () => {
         const { container } = render(
             <NavigationSearchWrapper type="api" variant="hero" />
         )
-        await screen.findByPlaceholderText('Search every API operation')
+        await screen.findByPlaceholderText(apiPlaceholder)
 
         expect(container.querySelector('kbd')).toHaveTextContent('/')
     })
