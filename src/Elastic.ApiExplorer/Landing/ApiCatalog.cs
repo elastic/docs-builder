@@ -21,6 +21,9 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url, strin
 	/// <summary>The highest frozen major's root, such as <c>/api/doc/kibana/v9</c>. Null when the API has no numbered version.</summary>
 	public string? LatestUrl { get; init; }
 
+	/// <summary>Where a link to this API goes: its latest numbered version, or its root.</summary>
+	public string OpenUrl => LatestUrl ?? Url;
+
 	public string? IconSvg => ProductIcons.Get(ProductId ?? Key);
 }
 

@@ -7,14 +7,14 @@
 
 @layer components {
 	/* Product identity: the largest thing in the sidebar header. */
-	.api-context-product {
+	.api-identity-product {
 		flex-shrink: 1;
 		min-width: 0;
 		height: 36px;
 	}
 
-	.api-context-product-trigger,
-	.api-context-product--static {
+	.api-identity-product-trigger,
+	.api-identity-product--static {
 		box-sizing: border-box;
 		display: flex;
 		align-items: center;
@@ -26,7 +26,7 @@
 		color: #1d2a3e;
 	}
 
-	.api-context-product-trigger {
+	.api-identity-product-trigger {
 		margin: 0;
 		border: 0;
 		background: none;
@@ -34,36 +34,36 @@
 		text-align: start;
 		cursor: pointer;
 	}
-	.api-context-product-trigger:hover,
-	.api-context-product-trigger[aria-expanded='true'] {
+	.api-identity-product-trigger:hover,
+	.api-identity-product-trigger[aria-expanded='true'] {
 		background: #f6f9fc;
 	}
-	.api-context-product-trigger:focus-visible {
+	.api-identity-product-trigger:focus-visible {
 		outline: 2px solid #0b64dd;
 		outline-offset: 2px;
 	}
 
-	.api-context-logo {
+	.api-identity-logo {
 		display: inline-flex;
 		flex-shrink: 0;
 		width: 20px;
 		height: 20px;
 	}
-	.api-context-logo svg,
-	.api-context-updown svg {
+	.api-identity-logo svg,
+	.api-identity-updown svg {
 		display: block;
 		width: 100%;
 		height: 100%;
 	}
-	.api-context-logo--sm {
+	.api-identity-logo--sm {
 		width: 16px;
 		height: 16px;
 	}
-	.api-context-logo--muted {
+	.api-identity-logo--muted {
 		color: #516381;
 	}
 
-	.api-context-title {
+	.api-identity-title {
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -73,7 +73,7 @@
 		line-height: 24px;
 	}
 
-	.api-context-updown {
+	.api-identity-updown {
 		display: flex;
 		flex-shrink: 0;
 		width: 12px;
@@ -81,7 +81,7 @@
 		color: #516381;
 	}
 
-	.api-context-product-link {
+	.api-identity-product-link {
 		gap: 8px;
 	}
 
@@ -92,7 +92,7 @@
 		color: #0b64dd;
 	}
 
-	.api-context-menu-group-label {
+	.api-menu-group-label {
 		padding: 4px 8px;
 		font-size: 11px;
 		font-weight: 500;
@@ -103,7 +103,7 @@
 		user-select: none;
 	}
 
-	.api-context-menu-sep {
+	.api-menu-sep {
 		height: 1px;
 		margin: 6px 0;
 		background: #eeeff1;
@@ -152,7 +152,7 @@
 	}
 
 	/* The version sits beside the name, on its first line. A long name wraps and the version stays put. */
-	.api-context-name {
+	.api-identity-name {
 		display: flex;
 		flex: 1 1 auto;
 		align-items: flex-start;
@@ -160,7 +160,7 @@
 		min-width: 0;
 	}
 
-	.api-context-version-label {
+	.api-identity-version-label {
 		flex-shrink: 0;
 		padding: 0 6px;
 		border-radius: 4px;
@@ -172,7 +172,7 @@
 		line-height: 20px;
 	}
 
-	.api-context-product-trigger[aria-expanded='true'] .api-context-updown {
+	.api-identity-product-trigger[aria-expanded='true'] .api-identity-updown {
 		transform: rotate(180deg);
 	}
 
@@ -184,12 +184,12 @@
 		gap: 8px;
 		min-width: 0;
 	}
-	.api-sidebar-identity .api-context-product {
+	.api-sidebar-identity .api-identity-product {
 		flex-shrink: 0;
 		height: auto;
 	}
 	/* API names are long ("Elastic Cloud Connected API"), so the name wraps instead of truncating. */
-	.api-sidebar-identity .api-context-product-trigger {
+	.api-sidebar-identity .api-identity-product-trigger {
 		align-items: flex-start;
 		/* Padding gives the hover background room around the logo. The negative margin keeps the
 		   logo lined up with the filter box below. */
@@ -199,10 +199,10 @@
 		margin-inline: -8px;
 		padding: 6px 8px;
 	}
-	.api-sidebar-identity .api-context-logo {
+	.api-sidebar-identity .api-identity-logo {
 		margin-top: 2px;
 	}
-	.api-sidebar-identity .api-context-title {
+	.api-sidebar-identity .api-identity-title {
 		flex: 1 1 auto;
 		overflow: visible;
 		text-overflow: clip;
@@ -212,10 +212,10 @@
 		line-height: 1.25;
 	}
 	/* The version hugs the name instead of sitting at the far edge. */
-	.api-sidebar-identity .api-context-name .api-context-title {
+	.api-sidebar-identity .api-identity-name .api-identity-title {
 		flex: 0 1 auto;
 	}
-	.api-sidebar-identity .api-context-updown {
+	.api-sidebar-identity .api-identity-updown {
 		margin-top: 4px;
 	}
 }

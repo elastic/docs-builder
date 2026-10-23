@@ -91,9 +91,9 @@ else
 						</article>
 					</main>
 					<div class="api-page-rail">
-						@if (Model.ShowPageActions || Model.ApiContext is not null)
+						@if (Model.PageActions is not null)
 						{
-							@(await RenderPartialAsync(_PageActions.Create(new ApiPageActionsModel(Model.ShowPageActions ? Model.MarkdownUrl : null, Model.ApiContext?.Spec))))
+							@(await RenderPartialAsync(_PageActions.Create(Model.PageActions)))
 						}
 						@await RenderSectionAsync(ApiPageSections.Rail)
 					</div>

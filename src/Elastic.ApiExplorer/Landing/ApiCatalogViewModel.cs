@@ -178,7 +178,7 @@ public class ApiCatalogViewModel(ApiRenderContext context) : ApiViewModel(contex
 		new(
 			entry.Key,
 			entry.Title,
-			entry.LatestUrl ?? entry.Url,
+			entry.OpenUrl,
 			entry.IconSvg ?? FallbackIconSvg,
 			ApiSeoDescription.Excerpt(entry.Description),
 			DeploymentsOf(entry),

@@ -19,14 +19,15 @@ public static class ApiVersionSwitcher
 		if (monikers.Count <= 1)
 			return [];
 
-		var latest = LatestMajor(monikers);
+		var latest = ApiVersions.LatestMajor(monikers);
 		return monikers
-			.OrderByDescending(m => m == "main" ? int.MaxValue : ParseMajor(m))
+			.OrderByDescending(m => m == "main" ? int.MaxValue : ApiVersions.TryParseMajor(m) ?? 0)
 			.Select(
 				m => new ApiVersionSwitcherItem(
 					Label: LabelFor(m, latest),
 					Url: ApiUrlBuilder.ProductRoot(urlPathPrefix, ApiUrlBuilder.ProductSuffix(apiKey, m)),
-					Selected: m == currentMoniker
+					Selected: m == currentMoniker,
+					ShortLabel: ShortLabelFor(m)
 				)
 				{
 					PageNames = pageNames is not null && pageNames.TryGetValue(m, out var names)
@@ -37,9 +38,7 @@ public static class ApiVersionSwitcher
 			.ToArray();
 	}
 
-	/// <summary>The highest numeric major, or null when there is none.</summary>
-	private static string? LatestMajor(IReadOnlyList<string> monikers) =>
-		monikers.Where(static m => int.TryParse(m, out _)).OrderByDescending(ParseMajor).FirstOrDefault();
+	private static string ShortLabelFor(string moniker) => moniker == "main" ? moniker : $"v{moniker}";
 
 	/// <summary>The highest numeric major reads as the latest. <c>main</c> keeps its name and its unversioned link.</summary>
 	private static string LabelFor(string moniker, string? latest) =>
@@ -79,6 +78,4 @@ public static class ApiVersionSwitcher
 
 		return item;
 	}
-
-	private static int ParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : 0;
 }

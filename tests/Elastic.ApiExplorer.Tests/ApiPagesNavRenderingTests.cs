@@ -87,7 +87,6 @@ public partial class ApiPagesNavRenderingTests
 			.IndexOf("api-hub-switcher", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
-		html.Should().NotContain("api-context-bar");
 	}
 
 	[Test]
@@ -255,7 +254,7 @@ public partial class ApiPagesNavRenderingTests
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
-		ApiContextBar? apiContext = null,
+		ApiIdentity? apiContext = null,
 		FeatureFlags? features = null,
 		BuildType buildType = BuildType.Isolated
 	)
@@ -289,7 +288,7 @@ public partial class ApiPagesNavRenderingTests
 		};
 	}
 
-	private static ApiContextBar CreateApiContext(IReadOnlyList<NavigationSelectOption>? versions = null) =>
+	private static ApiIdentity CreateApiContext(IReadOnlyList<NavigationSelectOption>? versions = null) =>
 		new(
 			"Elasticsearch API",
 			IconSvg: null,
