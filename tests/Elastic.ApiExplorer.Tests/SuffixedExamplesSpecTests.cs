@@ -214,7 +214,7 @@ public class SuffixedExamplesSpecTests
 		);
 
 		scenarios.Select(s => s.Title).Should().Equal("First", "Second");
-		scenarios[1].Responses.Should().ContainSingle().Which.JsonValue.Should().Contain("\"r\":2");
+		scenarios[1].Responses.Should().ContainSingle().Which.Examples[0].JsonValue.Should().Contain("\"r\":2");
 	}
 
 	[Test]

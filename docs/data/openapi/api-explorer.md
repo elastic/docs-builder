@@ -388,9 +388,18 @@ When an operation has **no** `x-codeSamples`, the API Explorer synthesizes a min
 - **Generated note.** A sample docs-builder built ends its code block with a muted line, **Generated from the API spec**, whose tooltip says the sample was generated from the spec, not written by hand, and asks the reader to check placeholder values such as `string` or `INDEX` before running it. Samples written in the spec carry no note.
 - **Console only where it runs.** Console calls Elasticsearch, and Kibana with a `kbn:` prefix, so the **Console** sample appears only for the `elasticsearch`, `serverless-elasticsearch` and `kibana` products (and for specs without a product). Other products, such as Elastic Cloud, get curl only, and the language carousel opens on its first card.
 
-When the request body has an example, the samples carry its body (Console under the request line, curl as `-d` with a `Content-Type` header), so the body is not repeated in a block of its own. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses that declare a content type/schema but no example render **No example**.
+When the request body has an example, the samples carry its body (Console under the request line, curl as `-d` with a `Content-Type` header), so the body is not repeated in a block of its own. Author-provided `x-codeSamples` always win over these synthetic samples. When the rail has samples (or request examples) but the operation declares response status codes without example bodies, the rail still shows status-code tabs: responses with no content render **No body**, and responses without a usable explicit example or a JSON schema render **No example**. JSON schemas supply a [generated response example](#generated-response-examples).
 
 When there is only a single example, the rail skips the example chips. **Console is the default language**, because you can paste it straight into Kibana Dev Tools. Once a reader picks another language, with a dot, an arrow, the keyboard, or by swiping the strip, that choice is remembered in the browser and applies on every operation page, and the link in the address bar follows it. Links can open a specific example and language with `#example=<example>&lang=<language>`, for example `#example=search-slicing&lang=curl`. The link is always written in lowercase and read without regard to case, so `lang=Curl` works too.
+
+### Generated response examples
+
+When a response content type has no explicit example, {{dbuild}} builds a representative JSON body from its schema. Named and media-type examples take precedence over this fallback. Each response status keeps its own examples, including content types other than the first.
+
+Generated bodies use schema examples, defaults, constants, and enum values before type placeholders such as `"string"`, `0`, and `false`. They include optional and read-only properties and omit write-only properties. References, arrays, and `allOf` compositions are expanded. JSON and `+json` content types support generation; other content types retain their explicit examples.
+
+The **Generated from the API spec** note identifies generated bodies in the page and Markdown export. A union uses its first non-null variant. Schema expansion stops after six levels or 200 values and may omit fields. Generated bodies illustrate the response shape; they do not describe every possible response. Explicit schema examples are copied intact.
+
 
 ### Paths and methods [operation-paths]
 

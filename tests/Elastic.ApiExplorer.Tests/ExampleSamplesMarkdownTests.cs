@@ -46,6 +46,20 @@ public class ExampleSamplesMarkdownTests(ApiExplorerFixture fixture)
 		markdown.Split("#### Console").Should().HaveCount(2);
 	}
 
+	[Test]
+	public async Task Write_GeneratedResponse_StatesItsSourceAndMediaType()
+	{
+		var markdown = await WriteMarkdown(
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},"paths":{"/subscription":{"get":{"operationId":"getSubscription","responses":{"200":{"description":"ok","content":{"application/json":{"schema":{"$ref":"#/components/schemas/Subscription"}}}}}}}},"components":{"schemas":{"Subscription":{"type":"object","required":["state"],"properties":{"state":{"$ref":"#/components/schemas/SubscriptionState"}}},"SubscriptionState":{"type":"string","enum":["trial","active","inactive"]}}}}
+			"""
+		);
+
+		markdown.Should().Contain("Generated from the API spec");
+		markdown.Should().Contain("`application/json`");
+		markdown.Should().Contain("\"state\": \"trial\"");
+	}
+
 	private async Task<string> WriteMarkdownOfFixture(string fixtureFile) =>
 		await WriteMarkdown(
 			await File.ReadAllTextAsync(
