@@ -18,6 +18,9 @@ public sealed record ApiCatalogEntry(string Key, string Title, string Url, strin
 {
 	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
 
+	/// <summary>The highest frozen major's root, such as <c>/api/doc/kibana/v9</c>. Null when the API has no numbered version.</summary>
+	public string? LatestUrl { get; init; }
+
 	public string? IconSvg => ProductIcons.Get(ProductId ?? Key);
 }
 

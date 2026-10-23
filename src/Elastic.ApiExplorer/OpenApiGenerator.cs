@@ -306,9 +306,20 @@ public class OpenApiGenerator(
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{
-			CatalogCategories = apiConfig.CatalogCategories
+			CatalogCategories = apiConfig.CatalogCategories,
+			LatestUrl = LatestVersionUrl(prefix, resolved)
 		};
 	}
+
+	private string? LatestVersionUrl(string prefix, ResolvedProductDocuments resolved) =>
+		resolved
+			.Documents
+			.Select(static v => v.Version.Moniker)
+			.Where(static m => int.TryParse(m, out _))
+			.OrderByDescending(int.Parse)
+			.FirstOrDefault() is { } latest
+			? ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, ApiUrlBuilder.ProductSuffix(prefix, latest))
+			: null;
 
 	/// <summary>
 	/// Resolves every OpenAPI document to render for one API key, including canonical <c>main</c>
