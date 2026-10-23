@@ -43,6 +43,29 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 		html.Should().NotContain("secondary-nav-mobile-menu");
 	}
 
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task LandingPage_LinksToTheFourProductHubs(bool navigationPreviewEnabled)
+	{
+		var html = await RenderLanding(navigationPreviewEnabled);
+
+		html.Should().Contain("Docs by product");
+		foreach (var hub in new[] { "elastic-stack", "elasticsearch", "kibana", "logstash" })
+			html.Should().Contain($"href=\"/docs/products/{hub}\"");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task LandingPage_LinksToReleaseNotesFromTheUpgradeLine(bool navigationPreviewEnabled)
+	{
+		var html = await RenderLanding(navigationPreviewEnabled);
+
+		html.Should().Contain("href=\"/docs/release-notes\"");
+		html.Should().Contain("Upgrading from an earlier version?");
+	}
+
 	private async Task<string> RenderLanding(bool navigationPreviewEnabled)
 	{
 		var fileSystem = new MockFileSystem();
