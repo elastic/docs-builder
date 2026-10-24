@@ -158,7 +158,7 @@ public partial record OperationPageModel
 			});
 		}
 
-		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
+		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown, analyzer);
 		var scenarios = WithClientDocs(
 			WithOperationIdentity(
 				GeneratedCodeSamples.Fill(
