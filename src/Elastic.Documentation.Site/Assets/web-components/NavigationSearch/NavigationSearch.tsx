@@ -2,6 +2,10 @@ import { availableIcons } from '../../eui-icons-cache'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
+    navigableSearchResults,
+    type NavigableResult,
+} from './apiPropertyResults'
+import {
     useSearchTerm,
     useSearchActions,
     useSelectedIndex,
@@ -48,6 +52,7 @@ export const NavigationSearch = ({
         useNavigationSearchTelemetry(typeFilter)
 
     const results = data?.results ?? []
+    const navigableResults = navigableSearchResults(results)
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
@@ -67,7 +72,7 @@ export const NavigationSearch = ({
         handleInputKeyDown,
         handleMouseMove,
     } = useNavigationSearchKeyboardNavigation({
-        resultsCount: results.length,
+        resultsCount: navigableResults.length,
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
@@ -192,6 +197,8 @@ export const NavigationSearch = ({
             {hasContent && (
                 <div ref={popoverContentRef}>
                     <SearchDropdownContent
+                        results={navigableResults}
+                        isLoading={isSearching}
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
@@ -216,6 +223,8 @@ const API_KEYBOARD_SHORTCUTS = [
 ]
 
 interface SearchDropdownContentProps {
+    results: NavigableResult[]
+    isLoading: boolean
     isKeyboardNavigating: React.MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
@@ -223,6 +232,8 @@ interface SearchDropdownContentProps {
 }
 
 const SearchDropdownContent = ({
+    results,
+    isLoading,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
@@ -231,6 +242,8 @@ const SearchDropdownContent = ({
     return (
         <>
             <SearchResultsList
+                results={results}
+                isLoading={isLoading}
                 isKeyboardNavigating={isKeyboardNavigating}
                 onMouseMove={onMouseMove}
                 onResultClick={onResultClick}

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Elastic.Channels;
 using Elastic.Documentation.Configuration;
@@ -171,6 +172,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		};
 		_ = _orchestrator.AddPreBootstrapTask(async (_, ct) =>
 		{
+			await UpdateApiPropertyMapping(ct);
 			_logger.LogInformation("Initializing content date enrichment infrastructure...");
 			await _contentDateEnrichment.InitializeAsync(ct);
 			_logger.LogInformation("Content date enrichment infrastructure ready");
@@ -225,6 +227,30 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 				);
 			}
 		};
+	}
+
+	private async Task UpdateApiPropertyMapping(Cancel ctx)
+	{
+		var target = _semanticTypeContext.ResolveReadTarget();
+		var exists = await _transport.HeadAsync(target, ctx).ConfigureAwait(false);
+		if (exists.ApiCallDetails.HttpStatusCode == 404)
+			return;
+		if (!exists.ApiCallDetails.HasSuccessfulStatusCode)
+			throw new InvalidOperationException($"Could not check semantic index '{target}': {exists}");
+
+		var mapping = JsonNode.Parse(_semanticTypeContext.GetMappingsJson())!;
+		var properties = mapping["properties"]!["api"]!["properties"]!["properties"]!.DeepClone();
+		var update = new JsonObject
+		{
+			["properties"] = new JsonObject { ["api"] = new JsonObject { ["properties"] = new JsonObject { ["properties"] = properties } } }
+		};
+		var response = await _operations.WithRetryAsync(
+			() => _transport.PutAsync<StringResponse>($"{target}/_mapping", PostData.String(update.ToJsonString()), ctx),
+			$"PUT {target}/_mapping",
+			ctx
+		).ConfigureAwait(false);
+		if (!response.ApiCallDetails.HasSuccessfulStatusCode)
+			throw new InvalidOperationException($"Could not update API property mapping on '{target}': {response}");
 	}
 
 	/// <inheritdoc />

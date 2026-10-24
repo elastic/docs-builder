@@ -351,7 +351,11 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: color-mix(
+                        in srgb,
+                        var(--color-yellow-40) 40%,
+                        transparent
+                    );
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -376,7 +380,11 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: color-mix(
+                        in srgb,
+                        var(--color-yellow-40) 40%,
+                        transparent
+                    );
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}

@@ -47,10 +47,22 @@ public record NavigationSearchResultItemParent
 
 public record NavigationSearchResultItem
 {
+	public NavigationSearchProperty[] Properties { get; init; } = [];
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
 	public required NavigationSearchResultItemParent[] Parents { get; init; }
 	public float Score { get; init; }
+}
+
+public record NavigationSearchProperty
+{
+	public required string Name { get; init; }
+	public required string Path { get; init; }
+	public required string Type { get; init; }
+	public required string Description { get; init; }
+	public required string Anchor { get; init; }
+	public required string Location { get; init; }
+	public required string Url { get; init; }
 }

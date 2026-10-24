@@ -233,7 +233,7 @@ const FLASH_CLASS = 'api-link-target-flash'
 const FLASH_FALLBACK_MS = 3200
 const FLASH_SETTLE_MS = 200
 const FLASH_GIVE_UP_MS = 10000
-let initialHashFlashDone = false
+let initializedHashTarget: HTMLElement | null = null
 
 const flashCleanups = new WeakMap<HTMLElement, () => void>()
 
@@ -297,6 +297,7 @@ function flashTarget(target: HTMLElement): void {
 function onHashChange(): void {
     revealHashTarget()
     const target = hashTarget()
+    initializedHashTarget = target
     if (target) flashTarget(target)
 }
 
@@ -710,10 +711,8 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
-    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
-    if (!initialHashFlashDone) {
-        initialHashFlashDone = true
-        const target = hashTarget()
-        if (target) flashTarget(target)
-    }
+    // A replacement page gets a new target element, even when its fragment is unchanged.
+    const target = hashTarget()
+    if (target && target !== initializedHashTarget) flashTarget(target)
+    initializedHashTarget = target
 }

@@ -33,6 +33,7 @@ export type NavigationMethod = 'keyboard' | 'mouse'
 export type NavigationDirection = 'up' | 'down'
 
 interface ResultClickParams {
+    anchor?: string
     query: string
     position: number
     url: string
@@ -96,12 +97,15 @@ export const useNavigationSearchTelemetry = (
     )
 
     const trackResultClicked = useCallback(
-        ({ query, position, url, score }: ResultClickParams) => {
+        ({ query, position, url, score, anchor }: ResultClickParams) => {
             logInfo('navigation_search_result_clicked', {
                 [ATTR_NAVIGATION_SEARCH_QUERY]: query,
                 [ATTR_NAVIGATION_SEARCH_RESULT_POSITION]: position,
                 [ATTR_NAVIGATION_SEARCH_RESULT_URL]: url,
                 [ATTR_NAVIGATION_SEARCH_RESULT_SCORE]: score,
+                ...(anchor
+                    ? { 'navigation_search.result.anchor': anchor }
+                    : {}),
                 ...(surface
                     ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }
                     : {}),
