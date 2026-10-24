@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
@@ -55,7 +56,10 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
 			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
+			doc.Api is null
+				? string.Empty
+				: JsonSerializer.Serialize(doc.Api, Documentation.Search.Contract.SourceGenerationContext.Default.ApiOperationMetadata)
 		);
 		doc.Hash = hash;
 	}

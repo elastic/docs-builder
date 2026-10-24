@@ -179,19 +179,7 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
-		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
-		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
-		var pathParameters = BuildParameters(parameters, ParameterLocation.Path, parameterSource);
-		var queryParameters = BuildParameters(parameters, ParameterLocation.Query, parameterSource);
-		var headerParameters = BuildParameters(parameters, ParameterLocation.Header, parameterSource);
-		var requestScope = new PropertyTreeScope
-		{
-			Prefix = "req",
-			JsonPath = "",
-			IsRequest = true,
-			DescriptionOverrides = supplemental?.RequestBodyOverrides
-		};
-		var requestContents = BuildMediaContents(operation.RequestBody?.Content, requestScope, analyzer, builder);
+		var propertyTrees = BuildPropertyTrees(apiOperation, analyzer, new ParameterRowSource(builder, supplemental, endpoint));
 
 		return new OperationPageModel
 		{
@@ -203,13 +191,13 @@ public partial record OperationPageModel
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
-			PathParameters = pathParameters,
-			QueryParameters = queryParameters,
-			HeaderParameters = headerParameters,
-			RequestContents = requestContents,
+			PathParameters = propertyTrees.Path,
+			QueryParameters = propertyTrees.Query,
+			HeaderParameters = propertyTrees.Header,
+			RequestContents = propertyTrees.Request,
 			DescriptionMarkdown = privileges.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
-			Responses = BuildResponses(operation, analyzer, builder),
+			Responses = propertyTrees.Responses,
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,
 			ResponseExamples = responseExamples,

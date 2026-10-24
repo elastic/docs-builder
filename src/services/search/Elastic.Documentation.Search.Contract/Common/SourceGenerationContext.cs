@@ -16,6 +16,8 @@ namespace Elastic.Documentation.Search.Contract;
 [JsonSerializable(typeof(DocumentationDocument))]
 [JsonSerializable(typeof(AppliesToEntry))]
 [JsonSerializable(typeof(ApiOperationMetadata))]
+[JsonSerializable(typeof(ApiPropertyEntry))]
+[JsonSerializable(typeof(ApiPropertyEntry[]))]
 [JsonSerializable(typeof(IndexedProduct))]
 [JsonSerializable(typeof(IndexedProduct[]))]
 [JsonSerializable(typeof(ParentDocument))]

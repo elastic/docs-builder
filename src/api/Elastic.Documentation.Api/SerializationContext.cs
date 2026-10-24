@@ -26,6 +26,7 @@ public record OutputMessage(string Role, MessagePart[] Parts, string FinishReaso
 [JsonSerializable(typeof(PageFeedbackReason))]
 [JsonSerializable(typeof(NavigationSearchRequest))]
 [JsonSerializable(typeof(NavigationSearchResponse))]
+[JsonSerializable(typeof(NavigationSearchProperty))]
 [JsonSerializable(typeof(NavigationSearchAggregations))]
 [JsonSerializable(typeof(InputMessage))]
 [JsonSerializable(typeof(OutputMessage[]))]

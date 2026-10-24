@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Documentation.Search.Contract;
 
@@ -55,8 +56,27 @@ public static class SearchResultProcessor
 			Document = doc,
 			Title = title,
 			Description = description,
-			Score = (float)(hit.Score ?? 0.0)
+			Score = (float)(hit.Score ?? 0.0),
+			Properties = MatchedProperties(hit)
 		};
+	}
+
+	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit)
+	{
+		if (hit.InnerHits is null || !hit.InnerHits.TryGetValue(SearchQueryBuilder.ApiPropertyHits, out var matches))
+			return [];
+
+		return matches
+			.Hits
+			.Hits
+			.OrderByDescending(h => h.Score ?? 0)
+			.Select(
+				h => h.Source is JsonElement source ? source.Deserialize(Contract.SourceGenerationContext.Default.ApiPropertyEntry) : null
+			)
+			.OfType<ApiPropertyEntry>()
+			.DistinctBy(p => p.Anchor)
+			.Take(3)
+			.ToArray();
 	}
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(

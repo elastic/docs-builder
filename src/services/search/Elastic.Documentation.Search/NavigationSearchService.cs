@@ -52,6 +52,21 @@ public partial class NavigationSearchService(
 						Url = item.Document.Path,
 						Title = item.Title,
 						Description = item.Description,
+						Properties = item
+							.Properties
+							.Select(
+								property => new NavigationSearchProperty
+								{
+									Name = property.Name,
+									Path = property.Path,
+									Type = property.Type,
+									Description = property.Description,
+									Anchor = property.Anchor,
+									Location = property.Location,
+									Url = $"{item.Document.Path}#{property.Anchor}"
+								}
+							)
+							.ToArray(),
 						Parents = (item.Document.Parents ?? []).Select(
 							p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
 						).ToArray(),

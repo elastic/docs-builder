@@ -115,6 +115,7 @@ public partial class DefaultSearchService<TDocument>(
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
 		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
+		query = SearchQueryBuilder.ApplyApiPropertyQuery(query, request.Query, request.TypeFilter);
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>
