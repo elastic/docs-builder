@@ -44,6 +44,28 @@ public class ResponseBodyExampleTests
 	}
 
 	[Test]
+	[Arguments("oneOf", false)]
+	[Arguments("anyOf", false)]
+	[Arguments("oneOf", true)]
+	[Arguments("anyOf", true)]
+	public async Task Build_AllOfWithUnion_IncludesBaseAndSelectedVariant(string keyword, bool referenced)
+	{
+		var union = $$"""{"{{keyword}}":[{"type":"null"},{"$ref":"#/components/schemas/Cat"},{"$ref":"#/components/schemas/Dog"}]}""";
+		var member = referenced ? """{"$ref":"#/components/schemas/Animal"}""" : union;
+		var body = await BuildFrom(
+			$$"""{"allOf":[{"$ref":"#/components/schemas/Base"},{{member}}]}""",
+			$$$$"""
+			"Base":{"type":"object","properties":{"id":{"type":"integer"},"kind":{"type":"string","default":"base"}}},
+			"Cat":{"type":"object","properties":{"kind":{"type":"string","const":"cat"},"meows":{"type":"boolean","example":true}}},
+			"Dog":{"type":"object","properties":{"barks":{"type":"boolean"}}},
+			"Animal":{{{{union}}}}
+			"""
+		);
+
+		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"kind":"cat","meows":true,"id":0}""");
+	}
+
+	[Test]
 	public async Task Build_ReferenceWithExampleSibling_PrefersTheSibling()
 	{
 		var body = await BuildFrom(

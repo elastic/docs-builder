@@ -69,6 +69,8 @@ public static class ResponseBodyExample
 				value = TryValue(schema.Items, depth + 1, out var item) ? new JsonArray(item) : [];
 				return true;
 			}
+			if (schema.AllOf is { Count: > 0 } allOf && AllOfUnion.TrySplit(allOf, analyzer, out var split))
+				return TryUnion(schema, split.Variants, depth, out value);
 			var effective = analyzer.Flatten(schema);
 			if (effective.Properties.Count > 0 || effective.MapValue is not null || schema.Type?.HasFlag(JsonSchemaType.Object) == true)
 			{
