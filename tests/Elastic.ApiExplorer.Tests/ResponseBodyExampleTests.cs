@@ -66,6 +66,22 @@ public class ResponseBodyExampleTests
 	}
 
 	[Test]
+	[Arguments("oneOf")]
+	[Arguments("anyOf")]
+	public async Task Build_AllOfWithUnconstrainedFirstVariant_PreservesBaseFields(string keyword)
+	{
+		var body = await BuildFrom(
+			$$"""{"allOf":[{"$ref":"#/components/schemas/Base"},{"{{keyword}}":[{},{"type":"object"}]}]}""",
+			"""
+			"Base":{"type":"object","properties":{"id":{"type":"integer"}}}
+			"""
+		);
+
+		body.Should().NotBeNull();
+		JsonNode.Parse(body!)!.ToJsonString().Should().Be("""{"id":0}""");
+	}
+
+	[Test]
 	public async Task Build_ReferenceWithExampleSibling_PrefersTheSibling()
 	{
 		var body = await BuildFrom(
