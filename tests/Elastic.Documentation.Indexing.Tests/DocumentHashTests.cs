@@ -28,8 +28,13 @@ public class DocumentHashTests
 			Applies = [new AppliesToEntry { Type = "stack", SubType = "all", Lifecycle = "beta", Version = "9.0" }]
 		};
 
-	private static string Hash(DocumentationDocument doc, DocumentHashInputs inputs) =>
-		ElasticsearchMarkdownExporter.ComputeDocumentHash(doc, inputs);
+	private static string Hash(DocumentationDocument doc, DocumentHashInputs inputs) => AssignHash(doc, inputs);
+
+	private static string AssignHash(DocumentationDocument doc, DocumentHashInputs inputs)
+	{
+		ElasticsearchMarkdownExporter.AssignDocumentMetadata(doc, inputs);
+		return doc.Hash;
+	}
 
 	[Test]
 	public void ComputeDocumentHash_UnchangedDocumentWithoutForce_IsStable() =>
