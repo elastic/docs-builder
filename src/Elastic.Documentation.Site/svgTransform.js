@@ -25,7 +25,10 @@ module.exports = {
     const babel = require('@babel/core')
     const result = babel.transformSync(jsxCode, {
       presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
+        [
+          '@babel/preset-env',
+          { targets: { node: 'current' }, modules: 'commonjs' },
+        ],
         ['@babel/preset-react', { runtime: 'automatic' }],
       ],
       filename: sourcePath,
@@ -44,6 +47,6 @@ module.exports.__esModule = true;
   },
 
   getCacheKey() {
-    return 'svgTransform-v2'
+    return 'svgTransform-v3'
   },
 }

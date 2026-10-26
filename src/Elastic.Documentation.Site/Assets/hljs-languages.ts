@@ -1,5 +1,5 @@
 import esql from '@elastic/highlightjs-esql'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'

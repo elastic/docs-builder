@@ -1,5 +1,5 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
 
 // highlight.js language modules and the esql plugin default-export the LanguageFn.

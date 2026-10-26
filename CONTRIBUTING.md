@@ -5,7 +5,7 @@
 ### Native (recommended for active development)
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
-- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
+- [Node.js 22.18.0 (LTS)](https://nodejs.org/en/blog/release/v22.18.0)
 
 The Aspire toolchain is bundled as a local dotnet tool — no workload install required.
 

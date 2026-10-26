@@ -6,11 +6,27 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
   transform: {
     '^.+\\.svg$': '<rootDir>/svgTransform.js',
-    '^.+\\.(ts|tsx)$': [
+    // .ts must not get preset-react: JSX parsing would break generic arrows like `<T>(x: T) => x`
+    '^.+\\.ts$': [
       'babel-jest',
       {
         presets: [
-          ['@babel/preset-env', { targets: { node: 'current' } }],
+          [
+            '@babel/preset-env',
+            { targets: { node: 'current' }, modules: 'commonjs' },
+          ],
+          '@babel/preset-typescript',
+        ],
+      },
+    ],
+    '^.+\\.tsx$': [
+      'babel-jest',
+      {
+        presets: [
+          [
+            '@babel/preset-env',
+            { targets: { node: 'current' }, modules: 'commonjs' },
+          ],
           ['@babel/preset-react', { runtime: 'automatic' }],
           '@babel/preset-typescript',
         ],
@@ -20,7 +36,10 @@ module.exports = {
       'babel-jest',
       {
         presets: [
-          ['@babel/preset-env', { targets: { node: 'current' } }],
+          [
+            '@babel/preset-env',
+            { targets: { node: 'current' }, modules: 'commonjs' },
+          ],
           ['@babel/preset-react', { runtime: 'automatic' }],
         ],
       },
