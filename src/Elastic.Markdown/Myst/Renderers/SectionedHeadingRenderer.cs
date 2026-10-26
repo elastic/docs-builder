@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Helpers;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Myst.InlineParsers;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -20,14 +20,7 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 		var headings = HeadingTexts;
 		var headingText = ((uint)index < (uint)headings.Length) ? headings[index] : $"h{obj.Level}";
 
-		var header = obj.GetData("header") as string;
-		var anchor = obj.GetData("anchor") as string;
-
-		var slugTarget = (anchor ?? header) ?? string.Empty;
-		if (slugTarget.Contains('$'))
-			slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
-
-		var slug = slugTarget.Slugify();
+		var slug = Slug(obj);
 
 		_ = renderer
 			.Write(@"<div class=""heading-wrapper"" id=""")
@@ -45,5 +38,18 @@ public class SectionedHeadingRenderer : HtmlObjectRenderer<HeadingBlock>
 			.WriteLine('>')
 			.Write("</div>")
 			.EnsureLine();
+	}
+
+	/// <summary>The anchor id the renderer writes for <paramref name="heading"/>.</summary>
+	public static string Slug(HeadingBlock heading)
+	{
+		var header = heading.GetData("header") as string;
+		var anchor = heading.GetData("anchor") as string;
+
+		var slugTarget = (anchor ?? header) ?? string.Empty;
+		if (slugTarget.Contains('$'))
+			slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
+
+		return slugTarget.Slugify();
 	}
 }

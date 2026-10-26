@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Extensions;
@@ -22,7 +23,7 @@ namespace Elastic.ApiExplorer.Navigation;
 /// <summary>
 /// Builds the navigation tree for one API product: tags, operations, and intro/outro markdown pages.
 /// </summary>
-public class ApiNavigationBuilder(ILogger logger, BuildContext context)
+public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdownStringRenderer markdownRenderer)
 {
 	private const string TagOnlyClassificationKey = "__api_explorer_tag_only__";
 	private const string UnknownTagGroupName = "unknown";
@@ -230,7 +231,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
-			tagNavigationItem.ApplyIntroHeadings(tag.Description, postSections: []);
+			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
+				markdownRenderer,
+				tag.Description,
+				rootNavigation.Url,
+				postSections: []
+			));
 		}
 	}
 
