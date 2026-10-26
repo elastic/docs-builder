@@ -344,19 +344,20 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}).ToArray();
 
 		// Collect headings from standard markdown (already have the list — no second traversal)
-		var headingTocs = headings
-			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
-			.Where(h => h.Item1 is not null)
-			.Select(h =>
-			{
-				var header = h.Item1!.StripMarkdown();
-				return new
+		// Same slug as the id SectionedHeadingRenderer writes, so TOC links and anchor validation match the page.
+		var headingTocs = headings.Where(block => block is { Level: >= 2 } && block.GetData("header") is string).Select(
+			h =>
+				new
 				{
-					TocItem = new PageTocItem { Heading = header, Slug = (h.Item2 ?? h.Item1).Slugify(), Level = h.Level },
+					TocItem = new PageTocItem
+					{
+						Heading = RenderedHeadings.Title(h),
+						Slug = SectionedHeadingRenderer.Slug(h),
+						Level = h.Level
+					},
 					h.Line
-				};
-			});
+				}
+		);
 
 		// Collect headings from Stepper steps (filter from already-collected directives)
 		var stepperTocs = directives
