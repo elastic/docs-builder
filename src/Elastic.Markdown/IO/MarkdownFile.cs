@@ -8,6 +8,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
@@ -20,6 +21,7 @@ using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
@@ -534,7 +536,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
 		{
-			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			var h1 = RenderedHeadings.FirstLevel1(document);
 			if (h1 is not null)
 				_ = document.Remove(h1);
 		}

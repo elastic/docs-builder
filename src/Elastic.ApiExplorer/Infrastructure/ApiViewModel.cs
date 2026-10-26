@@ -17,11 +17,9 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-public record ApiTocItem(string Heading, string Slug, int Level = 2);
-
 public record ApiLayoutViewModel : GlobalLayoutViewModel
 {
-	public required IReadOnlyList<ApiTocItem> TocItems { get; init; }
+	public required IReadOnlyList<TocItem> TocItems { get; init; }
 
 	public required INavigationItem[] Breadcrumbs { get; init; }
 
@@ -67,9 +65,9 @@ public abstract class ApiViewModel(ApiRenderContext context)
 
 	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
 
-	public IReadOnlyList<ApiTocItem> TocItems => field ??= GetTocItems();
+	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
 
-	protected virtual IReadOnlyList<ApiTocItem> GetTocItems() => [];
+	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
 
 	protected virtual bool ShowPageActions => true;
 

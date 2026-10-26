@@ -47,7 +47,7 @@ public class ApiDescriptionHtmlRenderingTests
 
 			Get a space by its identifier.
 			""";
-		var html = ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline));
+		var html = ApiHtmlSanitizer.Sanitize(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline));
 
 		html.Should().Contain("Spaces method and path for this operation:");
 		html.Should().Contain("operation-path");

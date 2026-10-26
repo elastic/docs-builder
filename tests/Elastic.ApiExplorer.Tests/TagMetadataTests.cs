@@ -18,7 +18,6 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
-using Elastic.Markdown.Helpers;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -328,7 +327,24 @@ public class TagMetadataTests
 		tagNavItem.Id.Should().NotBe("Machine Learning Anomaly Detection APIs"); // Not the display name
 	}
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(string openApiJson)
+	/// <summary>Returns fixed headings so navigation tests cover plumbing; the heading parser has its own tests.</summary>
+	private sealed class HeadingsRenderer(IReadOnlyList<TocItem> headings) : IMarkdownStringRenderer
+	{
+		public List<string> Markdown { get; } = [];
+
+		public string Render(string markdown, IFileInfo? source) => string.Empty;
+
+		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+		{
+			Markdown.Add(markdown);
+			return headings;
+		}
+	}
+
+	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
+		string openApiJson,
+		IMarkdownStringRenderer? markdownRenderer = null
+	)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
@@ -338,7 +354,7 @@ public class TagMetadataTests
 			configurationContext
 		);
 
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, markdownRenderer ?? NoopMarkdownStringRenderer.Instance);
 
 		// Parse the OpenAPI spec directly from JSON using a stream
 		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
@@ -1062,15 +1078,20 @@ public class TagMetadataTests
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var renderer = new HeadingsRenderer([
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("What's supported", "whats-supported", 2)
+		]);
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson, renderer);
 		var navigation = generator.CreateNavigation("kibana", document);
 		var tag = FindTagNavigationItem(navigation, "dashboards");
 		tag.Should().NotBeNull();
 
+		renderer.Markdown.Should().ContainSingle().Which.Should().Contain("## Panel types");
 		var headings = tag.NavigationItems.OfType<IntroHeadingNavigationItem>().ToArray();
 		headings.Select(heading => heading.NavigationTitle).Should().Equal("Panel types", "What's supported");
-		headings[0].Url.Should().Be($"{tag.Url}#{"Panel types".Slugify()}");
-		headings[1].Url.Should().Be($"{tag.Url}#{"What's supported".Slugify()}");
+		headings[0].Url.Should().Be($"{tag.Url}#panel-types");
+		headings[1].Url.Should().Be($"{tag.Url}#whats-supported");
 		tag
 			.NavigationItems
 			.Select(item => item.GetType())
@@ -1103,10 +1124,16 @@ public class TagMetadataTests
 		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
 		tag.Should().NotBeNull();
 
-		tag.ApplyIntroHeadings(
+		var renderer = new HeadingsRenderer([
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("What's supported", "whats-supported", 2)
+		]);
+		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
+			renderer,
 			"## Panel types\n\n## What's supported\n",
+			tag.NavigationRoot.Url,
 			[new ApiSupplementalSection("Panel types", "Owned by the post section.")]
-		);
+		));
 
 		tag
 			.NavigationItems

@@ -230,7 +230,7 @@ public class ResponsesBlockRenderingTests
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		return new HtmlString(ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
+		return new HtmlString(ApiHtmlSanitizer.Sanitize(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
 	}
 
 	private static ApiResponse Response(
