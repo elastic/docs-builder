@@ -53,7 +53,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
@@ -91,7 +91,7 @@ jobs:
           persist-credentials: false
 
       - name: Lint
-        uses: nullean/curb@c399bcd201b5ca466cfbcf5776825a629abf4f4b # 0.7.1
+        uses: nullean/curb@747187f178444c46e0098a9e50241b523bf7b9f8 # 0.8.1
         with:
           command: check
           path: .
@@ -161,7 +161,7 @@ jobs:
         uses: ./.github/actions/bootstrap
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-integration-tests
           aws-region: us-east-1
