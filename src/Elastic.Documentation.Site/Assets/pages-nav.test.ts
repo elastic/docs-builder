@@ -395,6 +395,66 @@ describe('markCurrentPage', () => {
         ).toBe(true)
     })
 
+    it('does not mark in-page heading links on the current page', () => {
+        const path = window.location.pathname
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Reference">
+                    <ul id="nav-tree-ref">
+                        <li><a class="sidebar-link" href="${path}">Group</a></li>
+                        <li><a class="sidebar-link" href="${path}#get-started">Get started</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+
+        markCurrentPage(document.querySelector('#pages-nav')!)
+
+        expect(
+            document
+                .querySelector(`a[href="${path}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(`a[href="${path}#get-started"]`)
+                ?.classList.contains('current')
+        ).toBe(false)
+    })
+
+    it('leaves a click on an in-page heading link to the browser', () => {
+        const path = window.location.pathname
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Reference">
+                    <ul id="nav-tree-ref">
+                        <li><a class="sidebar-link current" href="${path}">Group</a></li>
+                        <li><a class="sidebar-link" href="${path}#get-started">Get started</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        initNav()
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${path}#get-started"]`
+        )!
+        const click = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+        })
+
+        link.dispatchEvent(click)
+
+        expect(click.defaultPrevented).toBe(false)
+        expect(link.classList.contains('current')).toBe(false)
+        expect(
+            document
+                .querySelector(`a[href="${path}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+    })
+
     it('delays the current text color without applying it immediately', () => {
         jest.useFakeTimers()
         const path = window.location.pathname
