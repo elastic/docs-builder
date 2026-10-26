@@ -46,7 +46,7 @@
     "@babel/core": "7.29.6",
     "@babel/preset-env": "7.29.0",
     "@babel/preset-react": "7.28.5",
-    "@babel/preset-typescript": "7.28.5",
+    "@babel/preset-typescript": "8.0.7",
     "@elastic/synthetics": "1.26.3",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.0",
