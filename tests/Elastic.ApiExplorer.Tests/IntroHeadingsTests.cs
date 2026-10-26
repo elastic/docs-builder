@@ -4,6 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
+using Elastic.Markdown.Helpers;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -34,5 +35,17 @@ public class IntroHeadingsTests
 		var headings = IntroHeadings.Parse(markdown);
 
 		headings.Select(h => h.Title).Should().Equal("Real heading", "Another real heading");
+	}
+
+	[Test]
+	[Arguments("When to use this API")]
+	[Arguments("ES|QL visualizations")]
+	[Arguments("Panel type `availability`")]
+	[Arguments("Café & résumé: v1.2_beta")]
+	public void Parse_Slug_MatchesRenderedHeadingId(string title)
+	{
+		var headings = IntroHeadings.Parse($"## {title}");
+
+		headings.Should().ContainSingle().Which.Slug.Should().Be(title.Replace("`", "").Slugify());
 	}
 }

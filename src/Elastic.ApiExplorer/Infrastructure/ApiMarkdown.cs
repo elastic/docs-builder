@@ -101,7 +101,11 @@ public static partial class ApiMarkdown
 	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
 	private static readonly HtmlSanitizer Sanitizer = new();
 
-	static ApiMarkdown() => Sanitizer.AllowedAttributes.Add("class");
+	static ApiMarkdown()
+	{
+		_ = Sanitizer.AllowedAttributes.Add("class");
+		Sanitizer.RemovingAttribute += (_, e) => e.Cancel = IsHeadingAnchor(e.Tag, e.Attribute);
+	}
 
 	/// <summary>
 	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
@@ -109,6 +113,17 @@ public static partial class ApiMarkdown
 	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
 	/// </summary>
 	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
+
+	// Sidebar and headerlinks target the slug id on the Myst heading wrapper. Ids stay disallowed elsewhere so
+	// description HTML cannot reuse ids the page layout depends on.
+	private static bool IsHeadingAnchor(IElement tag, IAttr attribute) =>
+		attribute.Name == "id"
+			&& tag.LocalName == "div"
+			&& tag.ClassList.Contains("heading-wrapper")
+			&& HeadingSlugPattern().IsMatch(attribute.Value);
+
+	[GeneratedRegex(@"^[a-z0-9._-]+$")]
+	private static partial Regex HeadingSlugPattern();
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
