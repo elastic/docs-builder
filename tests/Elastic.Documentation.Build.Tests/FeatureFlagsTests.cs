@@ -10,6 +10,8 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// The environment-variable override test mutates process-wide state that every flag-reading test here depends on
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class FeatureFlagsTests
 {
 	[Test]
