@@ -12,7 +12,9 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
+using FakeItEasy;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -34,11 +36,66 @@ public class ApiLayoutVersionDropdownTests
 	}
 
 	[Test]
+	public void CreateGlobalLayoutModel_OffersTheSpecDownloadInTheDesignSystemRailWhenNoDocsBarHasIt()
+	{
+		var isolated = CreateLayout();
+		var assembler = CreateLayout(buildType: BuildType.Assembler);
+
+		isolated.DesignSystemPageActions!
+			.Downloads
+			.Select(d => d.Url)
+			.Should()
+			.Equal("/api/doc/elasticsearch.json", "/api/doc/elasticsearch.yaml");
+		isolated.PageActions!.Spec.Should().NotBeNull();
+		// The assembler's docs bar carries the download.
+		assembler.DesignSystemPageActions!.Downloads.Should().BeEmpty();
+	}
+
+	[Test]
 	public void CreateGlobalLayoutModel_HasNoVersionsToPickWhenThereIsOne()
 	{
 		var layout = CreateLayout(items: []);
 
 		layout.ApiContext!.Versions.Should().BeEmpty();
+	}
+
+	[Test]
+	[Arguments("main", "Elasticsearch API main")]
+	[Arguments("9", "Elasticsearch API v9")]
+	[Arguments("8", "Elasticsearch API v8")]
+	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheBreadcrumb(string selectedMoniker, string expected)
+	{
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], selectedMoniker);
+
+		var layout = CreateLayout(items: items);
+
+		layout.StructuredBreadcrumbsJson.Should().Contain($"\"name\": \"{expected}\"");
+	}
+
+	[Test]
+	public void CreateGlobalLayoutModel_NamesTheSelectedVersionInTheTrailOfADeepPage()
+	{
+		var landing = new LandingNavigationItem("/api/doc/elasticsearch/v9/");
+		var operation = A.Fake<INavigationItem>();
+		A.CallTo(() => operation.Url).Returns("/api/doc/elasticsearch/v9/operation/search");
+		A.CallTo(() => operation.NavigationTitle).Returns("Run a search");
+		A.CallTo(() => operation.Parent).Returns(landing);
+		A.CallTo(() => operation.NavigationRoot).Returns(landing);
+		var items = ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "9");
+
+		var layout = CreateLayout(items: items, current: operation);
+
+		layout.Breadcrumbs.Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs", "Elasticsearch API v9");
+	}
+
+	[Test]
+	public void CreateGlobalLayoutModel_KeepsTheUnversionedNameWhenThereIsOneVersion()
+	{
+		var layout = CreateLayout(items: []);
+
+		layout.StructuredBreadcrumbsJson.Should().Contain("\"name\": \"Elasticsearch API\"");
+		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API v");
+		layout.StructuredBreadcrumbsJson.Should().NotContain("Elasticsearch API main");
 	}
 
 	[Test]
@@ -75,7 +132,8 @@ public class ApiLayoutVersionDropdownTests
 	private static ApiLayoutViewModel CreateLayout(
 		IReadOnlyList<ApiVersionSwitcherItem>? items = null,
 		BuildType buildType = BuildType.Isolated,
-		IReadOnlyList<ApiCatalogEntry>? catalogEntries = null
+		IReadOnlyList<ApiCatalogEntry>? catalogEntries = null,
+		INavigationItem? current = null
 	)
 	{
 		var fs = new FileSystem();
@@ -95,7 +153,7 @@ public class ApiLayoutVersionDropdownTests
 		)
 		{
 			NavigationHtml = string.Empty,
-			CurrentNavigation = new LandingNavigationItem("/api/doc/elasticsearch/").Index,
+			CurrentNavigation = current ?? new LandingNavigationItem("/api/doc/elasticsearch/").Index,
 			MarkdownRenderer = PassthroughMarkdownRenderer.Instance,
 			VersionSwitcherItems = switcherItems,
 			Product = product,

@@ -4,6 +4,10 @@
 	{
 		<li><a class="page-actions__link" href="@markdown" target="_blank" rel="noopener">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "document", Size = IconSize.Small }))<span>View as Markdown</span></a></li>
 	}
+	@foreach (var download in Model.Downloads)
+	{
+		<li><a class="page-actions__link" href="@download.Url" download hx-boost="false">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "download", Size = IconSize.Small }))<span>@download.Label</span></a></li>
+	}
 	@if (Model.ReportIssueUrl is { } issue)
 	{
 		<li><a class="page-actions__link" href="@issue" target="_blank" rel="noopener">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "flag", Size = IconSize.Small }))<span>Report a docs issue</span></a></li>

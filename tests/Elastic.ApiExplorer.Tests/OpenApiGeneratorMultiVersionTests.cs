@@ -129,6 +129,66 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
+	public async Task CatalogEntry_MultiMajorIndex_OpensTheHighestNumericMajor()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		entry.Should().NotBeNull();
+		entry!.Url.Should().Be("/api/doc/elasticsearch");
+		entry.LatestUrl.Should().Be("/api/doc/elasticsearch/v9");
+		entry.OpenUrl.Should().Be("/api/doc/elasticsearch/v9");
+	}
+
+	[Test]
+	public async Task CatalogEntry_VersionlessProduct_KeepsTheUnversionedUrl()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var versionless = TestHelpers.CreateVersionlessConfiguration();
+		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
+		var context = CreateContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(
+			BaseUri,
+			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var generator = CreateGenerator(context, versionIndexClient, CreateVersionedReader(("main", SpecDocument("Serverless main"))));
+		var apiConfig = ApiConfig(
+			product,
+			specFileName: "elastic-cloud-serverless.yml",
+			repository: "elastic/serverless-api-specification"
+		);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"cloud-serverless",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("cloud-serverless", apiConfig, resolved);
+
+		entry.Should().NotBeNull();
+		entry!.LatestUrl.Should().BeNull();
+		entry.OpenUrl.Should().Be("/api/doc/cloud-serverless");
+	}
+
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
 	{
 		var collector = new DiagnosticsCollector([]);

@@ -569,7 +569,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
 		if (expected)
 		{
-			html.Should().Contain("<navigation-search type=\"api\" variant=\"sidebar\"></navigation-search>");
+			html.Should().Contain("<navigation-search type=\"api\" variant=\"hero\"></navigation-search>");
 			Count(html, "<navigation-search").Should().Be(1);
 		}
 		else

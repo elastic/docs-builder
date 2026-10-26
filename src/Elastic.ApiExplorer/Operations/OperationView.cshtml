@@ -32,19 +32,6 @@
 	<div class="api-page-heading">
 		<h1>@operation.Summary</h1>
 	</div>
-	@if (pageModel.Availability is not null || operation.Deprecated)
-	{
-		<div class="api-title-badges">
-			@if (pageModel.Availability is { } availability)
-			{
-				<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
-			}
-			@if (operation.Deprecated)
-			{
-				<span class="deprecated-badge type-status">deprecated</span>
-			}
-		</div>
-	}
 	@if (Model.Servers.Count > 0)
 	{
 		<dl class="api-rail-facts api-rail-facts--inline">
@@ -66,6 +53,7 @@
 			</li>
 		}
 	</ul>
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, operation.Deprecated)))
 </header>
 <section id="elastic-api-v3">
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)

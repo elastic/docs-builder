@@ -187,6 +187,20 @@
 	); /* docs h1 mt-6; API headings set margin: 0 */
 }
 
+/* Beside the sidebar the breadcrumb row is centred on the first line of the API selector's name.
+   Its own 24px top padding and the page's pt-6 would put it about 22px lower. */
+@media (width >= 1024px) {
+	.api-page-main .api-page-toolbar {
+		margin-top: calc(var(--spacing) * -2.5);
+	}
+
+	.api-page-main .api-page-toolbar #breadcrumbs {
+		box-sizing: border-box;
+		min-height: 36px;
+		padding-top: 0;
+	}
+}
+
 .api-page-actions {
 	position: relative;
 	z-index: 6;
@@ -238,6 +252,16 @@
 	border-left: 1px solid #cad3e2;
 	border-radius: 0 7px 7px 0;
 	list-style: none;
+}
+
+/* No Copy page beside it, so the summary is the whole control. */
+.api-page-actions-chevron--labeled {
+	width: auto;
+	gap: 8px;
+	padding: 0 12px;
+	border-left: 0;
+	border-radius: 7px;
+	white-space: nowrap;
 }
 
 .api-page-actions-chevron::-webkit-details-marker {
@@ -485,6 +509,13 @@
 	min-width: 0;
 }
 
+/* On an operation page the badges sit under the path, as a row of their own. */
+.api-page-intro .api-title-badges {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
 .api-group-heading .api-title-badges {
 	display: inline-flex;
 	flex-wrap: wrap;
@@ -543,36 +574,6 @@
 	margin: 32px 0 8px;
 	font-size: 20px;
 	line-height: 28px;
-}
-
-/* Quiet outlined link: the spec downloads in the landing facts (rail and under the intro). */
-.api-rail-facts a.api-chip-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 12px;
-	border: 1px solid var(--color-grey-20);
-	border-radius: 8px;
-	color: inherit;
-	font-size: 14px;
-	line-height: 20px;
-	text-decoration: none;
-}
-
-.api-chip-link svg {
-	width: 14px;
-	height: 14px;
-}
-
-.api-rail-facts a.api-chip-link:hover,
-.api-rail-facts a.api-chip-link:focus-visible {
-	border-color: var(--color-grey-80);
-	color: var(--color-blue-elastic, #0b64dd);
-}
-
-.api-rail-facts a.api-chip-link:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
 }
 
 .api-index-group {
@@ -1210,6 +1211,9 @@ button.response-status-toggle:focus {
 	padding: 4px 12px 8px;
 	border-radius: 8px;
 	background-color: #f5f7fb;
+
+	/* The toggle's label cuts the box line, so it must match this background. */
+	--expand-toggle-bg: #f5f7fb;
 }
 
 .response-panel-body > .property-list > :first-child > dt {
@@ -2318,7 +2322,7 @@ a.docs-reference-btn::after {
 		z-index: 1;
 		margin-left: -0.375rem;
 		padding: 0 0.375rem;
-		background: var(--color-white, #fff);
+		background: var(--expand-toggle-bg, var(--color-white, #fff));
 	}
 }
 
@@ -2903,7 +2907,7 @@ button.example-response-tab:focus-visible {
 		grid-row: 2;
 	}
 
-	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
+	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector's name. */
 	.api-page-rail {
 		grid-column: 2;
 		grid-row: 1;
@@ -2912,7 +2916,7 @@ button.example-response-tab:focus-visible {
 		align-items: stretch;
 		gap: 16px;
 		min-width: 0;
-		padding-top: 24px;
+		padding-top: 16px;
 		padding-bottom: 48px;
 	}
 
@@ -3208,6 +3212,12 @@ button.example-response-tab:focus-visible {
 navigation-search[variant='sidebar'] {
 	display: block;
 	min-height: 34px;
+}
+
+/* The landing box is a little larger: 20px line, 24px padding, 2px border. */
+navigation-search[variant='hero'] {
+	display: block;
+	min-height: 46px;
 }
 
 .api-catalog-finder navigation-search {

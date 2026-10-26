@@ -82,7 +82,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Generate_LandingHtmlContainsDownloadSourceLinks()
+	public async Task Generate_LandingHtmlOffersTheSpecDownloadInThePageActions()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-html-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -106,10 +106,12 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				TestContext.Current!.Execution.CancellationToken
 			);
 
-		html.Should().Contain("Download spec");
+		html.Should().Contain("Download OpenAPI spec (JSON)");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.yaml\"");
 		html.Should().Contain("download");
+		// One place for the download: the old landing fact is gone.
+		html.Should().NotContain("<dt>Download spec</dt>");
 	}
 
 	[Test]

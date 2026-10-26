@@ -55,9 +55,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     it('requests navigation-search with type=api when type is api', async () => {
         render(<NavigationSearchWrapper type="api" />)
 
-        const input = await screen.findByPlaceholderText(
-            'Type ❲/❳ to explore API'
-        )
+        const input = await screen.findByPlaceholderText('Explore APIs')
         await userEvent.type(input, '_bulk')
 
         await waitFor(() => {
@@ -72,7 +70,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             <NavigationSearchWrapper type="api" variant="sidebar" />
         )
 
-        await screen.findByPlaceholderText('Type ❲/❳ to explore API')
+        await screen.findByPlaceholderText('Explore APIs')
 
         expect(container.querySelector('.sticky')).toBeNull()
         expect(container.querySelector('hr')).toBeNull()
@@ -105,7 +103,7 @@ describe('NavigationSearchWrapper type attribute', () => {
 })
 
 describe('NavigationSearchWrapper slash shortcut', () => {
-    const apiPlaceholder = 'Type ❲/❳ to explore API'
+    const apiPlaceholder = 'Explore APIs'
 
     beforeEach(() => {
         sharedQueryClient.clear()
@@ -200,11 +198,47 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         expect(input).toHaveAttribute('aria-keyshortcuts', '/ s')
     })
 
+    it('shows a "/" key chip on the idle api input', async () => {
+        const { container } = render(<NavigationSearchWrapper type="api" />)
+        await screen.findByPlaceholderText(apiPlaceholder)
+
+        expect(container.querySelector('kbd')).toHaveTextContent('/')
+    })
+
+    it('hides the key chip while the api input is focused or has text', async () => {
+        const { container } = render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(apiPlaceholder)
+
+        await userEvent.click(input)
+        expect(container.querySelector('kbd')).toBeNull()
+
+        await userEvent.type(input, 'search')
+        await userEvent.tab()
+        expect(input).toHaveValue('search')
+        expect(container.querySelector('kbd')).toBeNull()
+    })
+
+    it('renders the hero variant with the same placeholder and the key chip', async () => {
+        const { container } = render(
+            <NavigationSearchWrapper type="api" variant="hero" />
+        )
+        await screen.findByPlaceholderText(apiPlaceholder)
+
+        expect(container.querySelector('kbd')).toHaveTextContent('/')
+    })
+
+    it('shows no key chip on the docs input', async () => {
+        const { container } = render(<NavigationSearchWrapper />)
+        await screen.findByPlaceholderText('Jump to page')
+
+        expect(container.querySelector('kbd')).toBeNull()
+    })
+
     it('names the api input and describes it on hover', async () => {
         render(<NavigationSearchWrapper type="api" />)
         await screen.findByPlaceholderText(apiPlaceholder)
 
-        const input = screen.getByRole('textbox', { name: 'Explore API' })
+        const input = screen.getByRole('textbox', { name: 'Explore APIs' })
 
         expect(input).toHaveAttribute(
             'title',
