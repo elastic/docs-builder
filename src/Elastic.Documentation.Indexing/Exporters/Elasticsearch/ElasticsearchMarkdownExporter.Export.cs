@@ -57,7 +57,7 @@ public partial class ElasticsearchMarkdownExporter
 			_fixedSynonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
 		);
-		doc.Hash = hash;
+		doc.Hash = ForceReindexSalt.Apply(hash, _forceReindexSalt);
 	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
