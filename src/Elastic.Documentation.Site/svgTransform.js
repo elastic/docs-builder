@@ -5,7 +5,7 @@
 /**
  * Jest transformer for SVG files.
  * Converts SVG files into React components using @svgr/core,
- * matching the behavior of @parcel/transformer-svg-react.
+ * matching the behavior of vite-plugin-svgr.
  *
  * Based on: https://stackoverflow.com/questions/58603201/jest-cannot-load-svg-file
  */
@@ -25,7 +25,10 @@ module.exports = {
     const babel = require('@babel/core')
     const result = babel.transformSync(jsxCode, {
       presets: [
-        ['@babel/preset-env', { targets: { node: 'current' } }],
+        [
+          '@babel/preset-env',
+          { targets: { node: 'current' }, modules: 'commonjs' },
+        ],
         ['@babel/preset-react', { runtime: 'automatic' }],
       ],
       filename: sourcePath,
@@ -44,6 +47,6 @@ module.exports.__esModule = true;
   },
 
   getCacheKey() {
-    return 'svgTransform-v2'
+    return 'svgTransform-v3'
   },
 }
