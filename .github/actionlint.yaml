@@ -1,0 +1,14 @@
+self-hosted-runner:
+  labels:
+    - docs-builder-latest-16
+    - docs-internal-latest-16
+
+paths:
+  .github/workflows/pr-review.yml:
+    ignore:
+      # copilot-requests is a valid GitHub permission scope not yet known to actionlint.
+      - 'unknown permission scope "copilot-requests"'
+  .github/workflows/ci.yml:
+    ignore:
+      # integration job is temporarily disabled on purpose (see TODO in the workflow).
+      - 'constant expression "false" in condition'

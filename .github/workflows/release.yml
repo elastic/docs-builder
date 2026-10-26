@@ -368,7 +368,7 @@ jobs:
         run: |
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-released \
-            -F client_payload[tag_name]="$TAG_NAME"
+            -F "client_payload[tag_name]=$TAG_NAME"
 
   # Build and publish the release-notes bundle for this tag.
   #
