@@ -4,6 +4,7 @@
 
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
@@ -139,7 +140,17 @@ public record GitRangeEntryResolutionResult
 /// (release-note text from the PR body, label-mapped type/areas/products); PRs whose metadata
 /// cannot be fetched are reported as missing rather than silently dropped.
 /// </summary>
-public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, DecisionLog decisions)
+/// <param name="summaries">Reads the metadata of the pull requests in a range.</param>
+/// <param name="decisions">Records per-PR decisions.</param>
+/// <param name="addedFiles">
+/// Lists the files a pull request added. Used for an entry format whose file names don't carry the PR
+/// (<c>files: any</c>) to find the pull request of a pool entry that names none. Null skips that lookup.
+/// </param>
+public partial class GitRangeEntryResolver(
+	IPullRequestSummaryProvider summaries,
+	DecisionLog decisions,
+	Func<string, string, int, Cancel, Task<IReadOnlyList<string>?>>? addedFiles = null
+)
 {
 	/// <summary>
 	/// Resolves entries for every PR in <paramref name="resolution"/> against the candidate pool
@@ -154,18 +165,25 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		Cancel ctx
 	)
 	{
-		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content)).ToList();
+		var parsedCandidates = candidates.Select(c => ParseCandidate(c.FileName, c.Content, config?.EntryFormat)).ToList();
+		if (config?.EntryFormat is { FileNamesCarryPr: false } && addedFiles != null)
+			parsedCandidates = await AttributeEntriesWithoutPrAsync(parsedCandidates, resolution, options, ctx);
 
 		var rows = new List<GitRangePrReportRow>();
 		var entries = new List<MatchedChangelogFile>();
 		var includedFileNames = new HashSet<string>(StringComparer.Ordinal);
 		var success = true;
 
-		// Pull requests without a pool entry need their metadata. It is read up front, in batches, and everything after
-		// that runs in range order, so the report and diagnostics stay stable.
+		// Pull requests without a pool entry need their metadata, and so do those whose pool entry has no products: their
+		// labels decide the products. It is read up front, in batches, and everything after that runs in range order, so
+		// the report and diagnostics stay stable.
 		var needSummary = resolution
 			.PullRequests
-			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
+			.Where(pr =>
+			{
+				var matches = parsedCandidates.Where(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)).ToList();
+				return matches.Count == 0 || matches.Any(c => c.Entry is { Data.Products: null or { Count: 0 } });
+			})
 			.ToList();
 		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
 		if (prSummaries is null)
@@ -207,7 +225,7 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 						continue;
 					}
 
-					entries.Add(match.Entry);
+					entries.Add(WithProductsFromConfiguration(match.Entry, prSummaries.GetValueOrDefault(pr.Number), config, options));
 				}
 
 				rows.Add(new GitRangePrReportRow
@@ -266,18 +284,22 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		IReadOnlyList<string> Prs
 	);
 
-	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content)
+	/// <param name="entryFormat">
+	/// The repository's entry format (<c>entry_format</c>), or null. A pool entry that is not in the docs-builder format
+	/// is read in this format: files uploaded before the repository set it are still in their original format.
+	/// </param>
+	internal static ChangelogPoolCandidate ParseCandidate(string fileName, string content, ChangelogEntryFormat? entryFormat = null)
 	{
 		var numbers = ChangelogPrIdentity.ParseLeadingPrNumbers(fileName);
 		try
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
-				normalized,
-				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
-			)
-				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
+			var (dto, converted) = DeserializePoolEntry(fileName, content, entryFormat);
+
+			// In a format whose file names don't carry the PR (files: any), a leading number is a timestamp, not a PR, and
+			// the entry matches by its prs only. A docs-builder entry named <pr>.yaml keeps its file-name match.
+			if (entryFormat is { FileNamesCarryPr: false } && (converted || !PrOnlyFileNameRegex().IsMatch(fileName)))
+				numbers = [];
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),
@@ -292,6 +314,78 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			return new ChangelogPoolCandidate(fileName, content, numbers, null, ex.Message, []);
 		}
+	}
+
+	/// <summary>
+	/// Pool entries in a format whose file names don't carry the PR, uploaded before the upload looked the PR up, name no
+	/// pull request. A pull request in the range that added a file with the same name owns that entry; a pull request that
+	/// only edited it does not. Pull requests are asked for their added files, one API call each, until every such entry
+	/// has an owner.
+	/// </summary>
+	private async Task<List<ChangelogPoolCandidate>> AttributeEntriesWithoutPrAsync(
+		List<ChangelogPoolCandidate> candidates,
+		CommitRangeResolution resolution,
+		GitRangeEntryResolutionOptions options,
+		Cancel ctx
+	)
+	{
+		var orphans = candidates
+			.Select((candidate, index) => (candidate, index))
+			.Where(c => c.candidate.Entry != null && c.candidate.FileNameNumbers.Count == 0 && c.candidate.Prs.Count == 0)
+			.ToDictionary(c => c.candidate.FileName, c => c.index, StringComparer.Ordinal);
+		if (orphans.Count == 0)
+			return candidates;
+
+		var result = candidates.ToList();
+		foreach (var pr in resolution.PullRequests)
+		{
+			if (orphans.Count == 0)
+				break;
+
+			// A pull request that already has a pool entry can still have added another fragment that names no PR.
+			var files = await addedFiles!(options.Owner, options.Repo, pr.Number, ctx);
+			foreach (var name in (files ?? []).Select(f => f[(f.LastIndexOf('/') + 1)..]))
+			{
+				if (!orphans.Remove(name, out var index))
+					continue;
+				var candidate = result[index];
+				result[index] = candidate with
+				{
+					Prs = [pr.Url],
+					Entry = candidate.Entry! with { Data = candidate.Entry.Data with { Prs = [pr.Url] } }
+				};
+				decisions.Record("entries", "pool by changed file", $"#{pr.Number}", name);
+			}
+		}
+
+		return result;
+	}
+
+	[GeneratedRegex(@"^\d+\.ya?ml$")]
+	private static partial Regex PrOnlyFileNameRegex();
+
+	/// <summary>Reads a pool entry in the docs-builder format, else in the repository's entry format.</summary>
+	private static (ChangelogEntryDto Dto, bool Converted) DeserializePoolEntry(
+		string fileName,
+		string content,
+		ChangelogEntryFormat? entryFormat
+	)
+	{
+		try
+		{
+			return (Deserialize(content), false);
+		}
+		catch (YamlException) when (entryFormat != null)
+		{
+			return (Deserialize(entryFormat.ToEntryYaml(content, fileName)), true);
+		}
+
+		ChangelogEntryDto Deserialize(string yaml) =>
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				ReleaseNotesSerialization.NormalizeYaml(yaml),
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 	}
 
 	/// <summary>
@@ -431,6 +525,28 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var kind = description != null ? GitRangePrSourceKind.InferredPrBody : GitRangePrSourceKind.InferredTitle;
 		decisions.Record("entries", "inferred", $"#{pr.Number}", kind == GitRangePrSourceKind.InferredPrBody ? "PR body" : "title");
 		return (Row(pr, kind, fileName), entry, false);
+	}
+
+	/// <summary>
+	/// A pool entry without <c>products</c>, such as one in the Elasticsearch changelog format, takes the products
+	/// of its pull request from the configuration, the same way an entry synthesized from the pull request does.
+	/// An entry that has products keeps them.
+	/// </summary>
+	private static MatchedChangelogFile WithProductsFromConfiguration(
+		MatchedChangelogFile entry,
+		PullRequestSummary? summary,
+		ChangelogConfiguration? config,
+		GitRangeEntryResolutionOptions options
+	)
+	{
+		if (entry.Data.Products is { Count: > 0 })
+			return entry;
+
+		var labelProducts = config != null && summary != null ? ProductResolution.FromLabels([.. summary.Labels], config) : [];
+		var products = ResolveProductsFromConfiguration(labelProducts, config, options);
+		return products.Count == 0
+			? entry
+			: entry with { Data = entry.Data with { Products = products.Select(p => p.ToProductReference()).ToList() } };
 	}
 
 	/// <summary>

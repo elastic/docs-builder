@@ -28,6 +28,76 @@ public class ChangelogEntryValidatorTests
 	) => ChangelogEntryValidator.Validate("docs/changelog/42.yaml", entry, Config, labelDerivedType, knownProducts);
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
+	// entry_format: entries have no products field, products.default supplies them
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
+
+	private const string ElasticsearchFormatEntry = "pr: 42\nsummary: Limit size of sql query\narea: SQL\ntype: bug\nissues: []\n";
+
+	private static ChangelogEntryDto ParseElasticsearch(string yaml) =>
+		ParseYaml(ChangelogEntryFormat.All["elasticsearch"].ToEntryYaml(yaml));
+
+	[Test]
+	public void Validate_ElasticsearchFormatWithProductsDefault_HasNoFindings()
+	{
+		var config = Config with
+		{
+			ProductsConfiguration = new ProductsConfig { Default = [new DefaultProduct { Product = "elasticsearch" }] }
+		};
+
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			ParseElasticsearch(ElasticsearchFormatEntry),
+			config,
+			ChangelogEntryType.BugFix,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().BeEmpty();
+	}
+
+	[Test]
+	public void Validate_ElasticsearchFormatWithSourceRepo_AcceptsTheFileNamePr()
+	{
+		var config = Config with
+		{
+			ProductsConfiguration = new ProductsConfig { Default = [new DefaultProduct { Product = "elasticsearch" }] }
+		};
+		var entry = ParseElasticsearch(ElasticsearchFormatEntry + "source_repo: elasticsearch-serverless\n");
+
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			entry,
+			config,
+			null,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().BeEmpty();
+		entry.Pr.Should().BeNull();
+		entry.Prs.Should().Equal("elastic/elasticsearch-serverless#42");
+	}
+
+	[Test]
+	public void Validate_ElasticsearchFormatWithoutProductsDefault_RequiresProducts()
+	{
+		var findings = ChangelogEntryValidator.Validate(
+			"docs/changelog/42.yaml",
+			ParseElasticsearch(ElasticsearchFormatEntry),
+			Config,
+			null,
+			null,
+			42,
+			productsFromDefaults: true
+		);
+
+		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("sets no products.default"));
+	}
+
+	// ─────────────────────────────────────────────────────────────────────────────────────────────
 	// Title rules
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 

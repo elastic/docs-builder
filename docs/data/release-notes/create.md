@@ -124,6 +124,46 @@ Some of the fields in the schema accept only a specific set of values:
 You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 :::
 
+### Other entry formats [entry-formats]
+
+Some repositories write changelog files in their own format.
+docs-builder reads them when the repository names the format in its changelog configuration file:
+
+```yaml
+entry_format: elasticsearch
+```
+
+The formats are defined as data in [changelog-entry-formats.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog-entry-formats.yml):
+
+| Format | Used by |
+|---|---|
+| `elasticsearch` | `elastic/elasticsearch` and `elastic/elasticsearch-serverless` (`summary`, `area`, `type`, and `breaking`, `deprecation`, and `highlight` blocks) |
+| `elastic-agent-changelog-tool` | Repositories that use elastic-agent-changelog-tool, such as `elastic/beats` and `elastic/elastic-agent` (`kind`, `summary`, `component`, `pr`, `issue`) |
+
+Each format maps the fields of the schema above to fields of the source file, and can translate values such as type names.
+To support another format, add it to that file. No code change is needed.
+
+docs-builder converts the files where it reads the repository's own files:
+
+- `changelog validate` checks the converted entry.
+- `changelog upload` uploads the converted entry, so the changelog pool holds the docs-builder format.
+- A commit-range bundle (`release unified bundle`, `release serverless`, or `changelog bundle` with a git range) reads pool entries that are still in the repository's format.
+
+A key that the format doesn't know is an error.
+
+Some formats name their files by timestamp, not by pull request (`files: any` in the format definition).
+For those, docs-builder finds the pull request instead:
+
+- `changelog validate` assigns a file to the pull request that adds it.
+- `changelog upload` looks up the pull request that added each file that names none, and writes it to the entry's `prs`. The file keeps its name in the changelog pool, so several files from one pull request don't overwrite each other. This needs a `GITHUB_TOKEN`.
+- A commit-range bundle matches a pool entry that still names no pull request to the pull request in the range that added a file with the same name. A pull request that only edited the file doesn't count.
+
+The converted entries have no `products`:
+
+- `changelog validate` accepts them when the changelog configuration file sets `products.default`.
+- A commit-range bundle gives each of them the products that its pull request's labels map to, or else `products.default`.
+- Other bundles don't add products. A `changelog bundle` that reads these files directly, for example with `--files`, fails with "missing required field: products".
+
 ## Examples
 
 ### Control changelog creation [rules]

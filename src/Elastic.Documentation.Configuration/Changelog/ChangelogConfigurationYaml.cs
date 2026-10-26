@@ -16,6 +16,13 @@ public sealed record ChangelogConfigurationYaml
 	public string? Filename { get; set; }
 
 	/// <summary>
+	/// The format of the repository's changelog entry files when it is not the docs-builder one: a name from
+	/// config/changelog-entry-formats.yml, such as <c>elasticsearch</c>.
+	/// </summary>
+	[SharpYaml.Serialization.YamlPropertyName("entry_format")]
+	public string? EntryFormat { get; set; }
+
+	/// <summary>
 	/// Pivot configuration for types, subtypes, and areas with label mappings.
 	/// </summary>
 	public PivotConfigurationYaml? Pivot { get; set; }

@@ -45,5 +45,6 @@
     <EmbeddedResource Include="$(SolutionRoot)\config\legacy-url-mappings.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\search.yml" />
     <EmbeddedResource Include="$(SolutionRoot)\config\related-learning.yml" />
+    <EmbeddedResource Include="$(SolutionRoot)\config\changelog-entry-formats.yml" LogicalName="changelog-entry-formats.yml" />
   </ItemGroup>
 </Project>

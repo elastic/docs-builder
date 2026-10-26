@@ -16,6 +16,7 @@ These are the main configuration sections:
 | Section                   | Purpose                                                                           |
 | ------------------------- | --------------------------------------------------------------------------------- |
 | [bundle](#bundle)         | Sets directory paths, GitHub defaults, and named profiles for bundling.           |
+| [entry_format](#entry-format) | Names the format of the repository's changelog files when it is not the docs-builder format. |
 | [extract](#extract)       | Configures automatic extraction of release notes and issues from PR descriptions. |
 | [filename](#filename)     | Controls how `changelog add` names generated files.                               |
 | [lifecycles](#lifecycles) | Specifies allowed lifecycle values.                                               |
@@ -215,6 +216,13 @@ When `extract.strip_title_prefix` is `true`:
 - The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
 - Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
 - The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
+
+## Entry format [entry-format]
+
+Names the format of the repository's changelog entry files when they don't use the docs-builder schema, for example `entry_format: elasticsearch`.
+The value is a format defined in [changelog-entry-formats.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog-entry-formats.yml).
+An unknown name is an error.
+Refer to [Other entry formats](/data/release-notes/create.md#entry-formats).
 
 ## Filename [filename]
 
