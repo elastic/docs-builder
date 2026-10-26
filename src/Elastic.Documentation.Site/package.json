@@ -61,7 +61,7 @@
     "@types/testing-library__jest-dom": "6.0.0",
     "@vitejs/plugin-react": "^6.1.1",
     "babel-jest": "30.5.2",
-    "eslint": "10.11.0",
+    "eslint": "10.12.0",
     "globals": "17.13.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "30.5.2",
@@ -74,7 +74,7 @@
     "react-dom": "18.3.1",
     "text-diff": "1.0.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "8.70.0",
+    "typescript-eslint": "8.71.1",
     "vite": "^8.3.2",
     "vite-plugin-svgr": "^5.2.0",
     "wait-on": "9.5.1"
