@@ -123,7 +123,22 @@ public static partial class ApiMarkdown
 	{
 		var sanitizer = new HtmlSanitizer();
 		_ = sanitizer.AllowedAttributes.Add("class");
+		sanitizer.PostProcessNode += (_, e) => DropSelfLinkWithoutAnchor(e.Node);
 		return sanitizer;
+	}
+
+	// A heading that lost its id would otherwise link to nothing, or to a page section that owns the same slug.
+	private static void DropSelfLinkWithoutAnchor(INode node)
+	{
+		if (
+			node is not IElement { LocalName: "div" } wrapper
+			|| !wrapper.ClassList.Contains("heading-wrapper")
+			|| wrapper.HasAttribute("id")
+		)
+			return;
+
+		foreach (var link in wrapper.QuerySelectorAll("a.headerlink"))
+			_ = link.RemoveAttribute("href");
 	}
 
 	/// <summary>

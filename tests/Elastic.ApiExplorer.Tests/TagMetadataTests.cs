@@ -11,6 +11,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
@@ -1079,6 +1080,40 @@ public class TagMetadataTests
 		var html = await RenderTagAsync(tag);
 		html.Should().Contain("class=\"api-tag-description docs-measure\"");
 		html.Should().Contain("api-overview");
+	}
+
+	[Test]
+	public async Task GroupIntro_HeadingSharingAPostSectionAnchor_IsLeftOutOfTheSidebar()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": { "operationId": "get-dashboards", "tags": ["dashboards"], "responses": { "200": { "description": "ok" } } }
+			    }
+			  },
+			  "tags": [ { "name": "dashboards", "x-displayName": "Dashboards" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
+		tag.Should().NotBeNull();
+
+		tag.ApplyIntroHeadings(
+			"## Panel types\n\n## What's supported\n",
+			[new ApiSupplementalSection("Panel types", "Owned by the post section.")]
+		);
+
+		tag
+			.NavigationItems
+			.OfType<IntroHeadingNavigationItem>()
+			.Select(heading => heading.NavigationTitle)
+			.Should()
+			.Equal("What's supported");
 	}
 
 	[Test]

@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -165,10 +166,10 @@ public class TagNavigationItem(
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
-	internal void ApplyIntroHeadings(string? markdown)
+	internal void ApplyIntroHeadings(string? markdown, IReadOnlyList<ApiSupplementalSection> postSections)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
-		var headings = IntroHeadings.Parse(markdown).Select(heading => new IntroHeadingNavigationItem(this, heading));
+		var headings = IntroHeadings.ForPage(markdown, postSections).Select(heading => new IntroHeadingNavigationItem(this, heading));
 		NavigationItems = [.. headings, .. operations];
 	}
 

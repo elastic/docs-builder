@@ -62,6 +62,20 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public void SanitizeHtml_HeadingLink_KeepsHrefOnlyWhenTheHeadingKeepsItsId(bool listed)
+	{
+		const string input =
+			"<div class=\"heading-wrapper\" id=\"responses\"><h2><a class=\"headerlink\" href=\"#responses\">Responses</a></h2></div>";
+		var result = ApiMarkdown.SanitizeHtml(input, listed ? Anchors("responses") : null);
+		if (listed)
+			result.Should().Contain("href=\"#responses\"");
+		else
+			result.Should().NotContain("href=").And.Contain("Responses");
+	}
+
+	[Test]
 	public void SanitizeHtml_HeadingWrapperIdByDefault_IsStripped()
 	{
 		// Operation and schema pages own ids such as "responses" that a description heading could duplicate.

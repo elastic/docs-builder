@@ -455,7 +455,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 			### Getting started
 
-			<div class="heading-wrapper" id="getting-started"></div>
+			<div class="heading-wrapper" id="getting-started"><a class="headerlink" href="#getting-started">Getting started</a></div>
 
 			## Getting started
 
@@ -468,6 +468,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().NotContain("id=\"sneaky\"", "raw HTML cannot claim an id the sidebar does not link to");
 		html.Split("id=\"getting-started\"").Length.Should().Be(2, "the post section owns its anchor");
 		html.Should().Contain("<h3 id=\"getting-started\">");
+		html.Should().NotContain("href=\"#getting-started\"", "the intro heading's own link would land on the post section");
 	}
 
 	[Test]
