@@ -38,13 +38,22 @@ public partial class ElasticsearchMarkdownExporter
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
 	/// </summary>
-	private void AssignDocumentMetadata(DocumentationDocument doc)
+	private void AssignDocumentMetadata(DocumentationDocument doc) =>
+		doc.Hash = ComputeDocumentHash(
+			doc,
+			new DocumentHashInputs(
+				_semanticTypeContext?.Hash ?? string.Empty,
+				_lexicalTypeContext.Hash,
+				_fixedSynonymsHash,
+				_forceReindexSalt
+			)
+		);
+
+	internal static string ComputeDocumentHash(DocumentationDocument doc, DocumentHashInputs inputs)
 	{
-		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
-		var lexicalHash = _lexicalTypeContext.Hash;
 		var hash = HashedBulkUpdate.CreateHash(
-			semanticHash,
-			lexicalHash,
+			inputs.SemanticHash,
+			inputs.LexicalHash,
 			doc.Path,
 			doc.Type,
 			doc.Body ?? string.Empty,
@@ -54,11 +63,11 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.Depth.ToString("N0"),
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
-			_fixedSynonymsHash,
+			inputs.FixedSynonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
 			DocumentMetadataFingerprint.Create(doc)
 		);
-		doc.Hash = ForceReindexSalt.Apply(hash, _forceReindexSalt);
+		return ForceReindexSalt.Apply(hash, inputs.ForceReindexSalt);
 	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
