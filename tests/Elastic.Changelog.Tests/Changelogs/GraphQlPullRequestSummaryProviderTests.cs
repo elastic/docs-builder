@@ -128,7 +128,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 	{
 		var github = new FakeGitHub();
 		github.PullRequests[7] =
-			("Faster search", "Some context.\n\nFixes #123\n\n## Release Note\nSearch is faster.\n\nInternal details.", [
+			("Faster search", "Some context.\n\nFixes #123\n\n## Release Note\nSearch is faster.\n\nInternal details.\n\n## Impact\nSlow queries time out sooner.\n\n## Action\nRaise the timeout.", [
 				">enhancement",
 				"v9.5.0"
 			]);
@@ -142,6 +142,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 		summary.ReleaseNote.Content.Should().Be("Search is faster.");
 		summary.ReleaseNote.WasTruncated.Should().BeTrue();
 		summary.LinkedIssues.Should().Equal("https://github.com/elastic/widget/issues/123");
+		summary.Impact.Should().Be("Slow queries time out sooner.");
+		summary.Action.Should().Be("Raise the timeout.");
 	}
 
 	[Test]
@@ -154,6 +156,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 
 		result![7]!.ReleaseNote.Content.Should().BeNull();
 		result[7]!.LinkedIssues.Should().BeEmpty();
+		result[7]!.Impact.Should().BeNull();
+		result[7]!.Action.Should().BeNull();
 	}
 
 	[Test]
