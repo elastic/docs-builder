@@ -54,10 +54,10 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Test]
-	public void SanitizeHtml_HeadingWrapperIdWhenKeepingAnchors_IsKept()
+	public void SanitizeHtml_ListedHeadingWrapperId_IsKept()
 	{
 		const string input = "<div class=\"heading-wrapper\" id=\"when-to-use-this-api\"><h2>When to use this API</h2></div>";
-		var result = ApiMarkdown.SanitizeHtml(input, keepHeadingAnchors: true);
+		var result = ApiMarkdown.SanitizeHtml(input, Anchors("when-to-use-this-api"));
 		result.Should().Contain("id=\"when-to-use-this-api\"");
 	}
 
@@ -73,10 +73,10 @@ public class ApiMarkdownSanitizationTests
 	[Test]
 	[Arguments("<p id=\"markdown-content\">x</p>")]
 	[Arguments("<span class=\"heading-wrapper\" id=\"pages-nav\">x</span>")]
-	[Arguments("<div class=\"heading-wrapper\" id=\"Not A Slug\">x</div>")]
-	public void SanitizeHtml_IdOutsideHeadingWrapper_IsStripped(string input)
+	[Arguments("<div class=\"heading-wrapper\" id=\"some-section\">x</div>")]
+	public void SanitizeHtml_IdNotListedOnAHeadingWrapper_IsStripped(string input)
 	{
-		var result = ApiMarkdown.SanitizeHtml(input, keepHeadingAnchors: true);
+		var result = ApiMarkdown.SanitizeHtml(input, Anchors("get-started"));
 		result.Should().NotContain("id=");
 	}
 
@@ -140,4 +140,6 @@ public class ApiMarkdownSanitizationTests
 		var result = ApiMarkdown.StripHtml("No HTML here.");
 		result.Should().Be("No HTML here.");
 	}
+
+	private static HashSet<string> Anchors(params string[] slugs) => [.. slugs];
 }

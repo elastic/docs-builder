@@ -26,16 +26,17 @@ public static partial class ApiMarkdown
 	/// <summary>An HTML description cut before its first heading. <see cref="Remainder"/> is null when it has none.</summary>
 	public sealed record HtmlSplit(string Lead, string? Remainder);
 
-	public static HtmlString Render(ApiRenderContext context, string? markdown) => Render(context, markdown, keepHeadingAnchors: false);
+	public static HtmlString Render(ApiRenderContext context, string? markdown) => Render(context, markdown, headingAnchors: null);
 
 	/// <summary>
-	/// Renders a group intro and keeps the heading anchor ids that its sidebar links target. Other pages strip them,
-	/// because an operation or schema page owns ids such as <c>responses</c> that a description heading could duplicate.
+	/// Renders a group intro and keeps the heading anchor ids in <paramref name="headingAnchors"/>, the slugs its sidebar
+	/// links target. Other pages strip them, because an operation or schema page owns ids such as <c>responses</c> that a
+	/// description heading could duplicate.
 	/// </summary>
-	public static HtmlString RenderWithHeadingAnchors(ApiRenderContext context, string? markdown) =>
-		Render(context, markdown, keepHeadingAnchors: true);
+	public static HtmlString RenderWithHeadingAnchors(ApiRenderContext context, string? markdown, IReadOnlySet<string> headingAnchors) =>
+		Render(context, markdown, headingAnchors);
 
-	private static HtmlString Render(ApiRenderContext context, string? markdown, bool keepHeadingAnchors)
+	private static HtmlString Render(ApiRenderContext context, string? markdown, IReadOnlySet<string>? headingAnchors)
 	{
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
@@ -48,8 +49,8 @@ public static partial class ApiMarkdown
 
 		// Each group intro renders once, so only the shared descriptions go through the cache.
 		return new HtmlString(
-			keepHeadingAnchors
-				? SanitizeHtml(html, keepHeadingAnchors: true)
+			headingAnchors is { Count: > 0 }
+				? SanitizeHtml(html, headingAnchors)
 				: context.SanitizedHtmlCache.GetOrAdd(html, static h => SanitizeHtml(h))
 		);
 	}
@@ -116,15 +117,12 @@ public static partial class ApiMarkdown
 
 	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
 	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
-	private static readonly HtmlSanitizer Sanitizer = CreateSanitizer(keepHeadingAnchors: false);
-	private static readonly HtmlSanitizer HeadingAnchorSanitizer = CreateSanitizer(keepHeadingAnchors: true);
+	private static readonly HtmlSanitizer Sanitizer = CreateSanitizer();
 
-	private static HtmlSanitizer CreateSanitizer(bool keepHeadingAnchors)
+	private static HtmlSanitizer CreateSanitizer()
 	{
 		var sanitizer = new HtmlSanitizer();
 		_ = sanitizer.AllowedAttributes.Add("class");
-		if (keepHeadingAnchors)
-			sanitizer.RemovingAttribute += (_, e) => e.Cancel = IsHeadingAnchor(e.Tag, e.Attribute);
 		return sanitizer;
 	}
 
@@ -132,21 +130,27 @@ public static partial class ApiMarkdown
 	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
 	/// <see cref="HtmlString"/>. Relies on <see cref="HtmlSanitizer"/> defaults (99 allowed
 	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
-	/// <paramref name="keepHeadingAnchors"/> also keeps slug ids on heading wrappers.
+	/// A heading wrapper keeps its <c>id</c> only when <paramref name="headingAnchors"/> lists it.
 	/// </summary>
-	internal static string SanitizeHtml(string html, bool keepHeadingAnchors = false) =>
-		string.IsNullOrEmpty(html) ? html : (keepHeadingAnchors ? HeadingAnchorSanitizer : Sanitizer).Sanitize(html);
+	internal static string SanitizeHtml(string html, IReadOnlySet<string>? headingAnchors = null)
+	{
+		if (string.IsNullOrEmpty(html))
+			return html;
+		if (headingAnchors is not { Count: > 0 })
+			return Sanitizer.Sanitize(html);
 
-	// Sidebar and headerlinks target the slug id on the Myst heading wrapper. Ids stay disallowed on every other
-	// element so description HTML cannot reuse ids the page layout depends on.
-	private static bool IsHeadingAnchor(IElement tag, IAttr attribute) =>
+		// The kept ids differ per page, so the attribute hook needs its own sanitizer; group intros are few.
+		var sanitizer = CreateSanitizer();
+		sanitizer.RemovingAttribute += (_, e) => e.Cancel = IsHeadingAnchor(e.Tag, e.Attribute, headingAnchors);
+		return sanitizer.Sanitize(html);
+	}
+
+	// Only ids the sidebar links to survive, so raw description HTML cannot claim any other id on the page.
+	private static bool IsHeadingAnchor(IElement tag, IAttr attribute, IReadOnlySet<string> headingAnchors) =>
 		attribute.Name == "id"
 			&& tag.LocalName == "div"
 			&& tag.ClassList.Contains("heading-wrapper")
-			&& HeadingSlugPattern().IsMatch(attribute.Value);
-
-	[GeneratedRegex(@"^[a-z0-9._-]+$")]
-	private static partial Regex HeadingSlugPattern();
+			&& headingAnchors.Contains(attribute.Value);
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.

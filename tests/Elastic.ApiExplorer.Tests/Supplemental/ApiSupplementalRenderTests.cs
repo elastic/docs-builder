@@ -437,6 +437,40 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Tag_IntroHeadingIds_KeepOnlySidebarSlugsThatNoPostSectionOwns()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			### Get started
+
+			<div class="heading-wrapper" id="get-started"></div>
+			<div class="heading-wrapper" id="sneaky"></div>
+
+			### Getting started
+
+			<div class="heading-wrapper" id="getting-started"></div>
+
+			## Getting started
+
+			SUPP_TAG_GETTING_STARTED
+			"""
+			)
+		);
+
+		html.Should().Contain("id=\"get-started\"");
+		html.Should().NotContain("id=\"sneaky\"", "raw HTML cannot claim an id the sidebar does not link to");
+		html.Split("id=\"getting-started\"").Length.Should().Be(2, "the post section owns its anchor");
+		html.Should().Contain("<h3 id=\"getting-started\">");
+	}
+
+	[Test]
 	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
 	{
 		var nav = SearchTag();

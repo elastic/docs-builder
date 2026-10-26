@@ -51,13 +51,15 @@ public partial class IntroHeadingsTests
 
 		// The same parser, h1 drop and sanitizer as a group intro page, so a lost or renamed id fails here.
 		var parsed = Markdig.Markdown.Parse(markdown, MarkdownParser.ApiDescriptionPipeline);
+		var slugs = IntroHeadings.Parse(markdown).Select(h => h.Slug).ToArray();
 		var html = ApiMarkdown.SanitizeHtml(
 			MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline),
-			keepHeadingAnchors: true
+			slugs.ToHashSet()
 		);
 		var renderedIds = HeadingWrapperId().Matches(html).Select(m => m.Groups[1].Value);
 
-		IntroHeadings.Parse(markdown).Select(h => h.Slug).Should().Equal(renderedIds);
+		// The sanitizer drops an id the sidebar does not list, so a slug mismatch leaves the link without a target.
+		renderedIds.Should().Equal(slugs);
 	}
 
 	[GeneratedRegex("<div class=\"heading-wrapper\" id=\"([^\"]+)\">")]

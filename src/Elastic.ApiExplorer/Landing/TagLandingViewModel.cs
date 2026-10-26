@@ -34,11 +34,25 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 		}
 	}
 
-	/// <summary>The intro keeps its heading anchor ids, because the sidebar links to them.</summary>
-	public HtmlString RenderDescription() => ApiMarkdown.RenderWithHeadingAnchors(RenderContext, DescriptionMarkdown);
+	/// <summary>
+	/// The intro keeps the heading anchor ids the sidebar links to. A post section below it owns its anchor, so an intro
+	/// heading with the same slug loses its id.
+	/// </summary>
+	public HtmlString RenderDescription()
+	{
+		var postAnchors = PostSections.Select(section => section.Anchor).ToHashSet(StringComparer.Ordinal);
+		var headingAnchors = IntroHeadings
+			.Parse(DescriptionMarkdown)
+			.Select(heading => heading.Slug)
+			.Where(slug => !postAnchors.Contains(slug))
+			.ToHashSet(StringComparer.Ordinal);
+		return ApiMarkdown.RenderWithHeadingAnchors(RenderContext, DescriptionMarkdown, headingAnchors);
+	}
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
-		RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? ApiPostSection.From(RenderContext, doc.PostSections) : [];
+		field ??= RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc)
+			? ApiPostSection.From(RenderContext, doc.PostSections)
+			: [];
 
 	public TagExternalDocsDisplay? ExternalDocsDisplay =>
 		Tag.ExternalDocs is null
