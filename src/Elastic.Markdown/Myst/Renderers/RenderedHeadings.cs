@@ -4,6 +4,7 @@
 
 using Elastic.Documentation;
 using Elastic.Markdown.Helpers;
+using Elastic.Markdown.Myst.InlineParsers;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Renderers;
@@ -27,5 +28,12 @@ public static class RenderedHeadings
 		];
 	}
 
-	private static string Title(HeadingBlock heading) => ((heading.GetData("header") as string) ?? string.Empty).StripMarkdown();
+	/// <summary>The plain-text title of <paramref name="heading"/>, without markup or <c>$$$anchor$$$</c> markers.</summary>
+	public static string Title(HeadingBlock heading)
+	{
+		var header = heading.GetData("header") as string ?? string.Empty;
+		if (header.Contains('$'))
+			header = HeadingAnchorParser.InlineAnchors().Replace(header, "");
+		return header.StripMarkdown().Trim();
+	}
 }
