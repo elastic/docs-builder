@@ -54,11 +54,20 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Test]
-	public void SanitizeHtml_HeadingWrapperId_IsKept()
+	public void SanitizeHtml_HeadingWrapperIdWhenKeepingAnchors_IsKept()
 	{
 		const string input = "<div class=\"heading-wrapper\" id=\"when-to-use-this-api\"><h2>When to use this API</h2></div>";
-		var result = ApiMarkdown.SanitizeHtml(input);
+		var result = ApiMarkdown.SanitizeHtml(input, keepHeadingAnchors: true);
 		result.Should().Contain("id=\"when-to-use-this-api\"");
+	}
+
+	[Test]
+	public void SanitizeHtml_HeadingWrapperIdByDefault_IsStripped()
+	{
+		// Operation and schema pages own ids such as "responses" that a description heading could duplicate.
+		const string input = "<div class=\"heading-wrapper\" id=\"responses\"><h2>Responses</h2></div>";
+		var result = ApiMarkdown.SanitizeHtml(input);
+		result.Should().NotContain("id=");
 	}
 
 	[Test]
@@ -67,7 +76,7 @@ public class ApiMarkdownSanitizationTests
 	[Arguments("<div class=\"heading-wrapper\" id=\"Not A Slug\">x</div>")]
 	public void SanitizeHtml_IdOutsideHeadingWrapper_IsStripped(string input)
 	{
-		var result = ApiMarkdown.SanitizeHtml(input);
+		var result = ApiMarkdown.SanitizeHtml(input, keepHeadingAnchors: true);
 		result.Should().NotContain("id=");
 	}
 

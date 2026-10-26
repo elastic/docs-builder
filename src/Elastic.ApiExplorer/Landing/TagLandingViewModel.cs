@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Landing;
 
@@ -32,6 +33,9 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 			return Tag.Description;
 		}
 	}
+
+	/// <summary>The intro keeps its heading anchor ids, because the sidebar links to them.</summary>
+	public HtmlString RenderDescription() => ApiMarkdown.RenderWithHeadingAnchors(RenderContext, DescriptionMarkdown);
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
 		RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? ApiPostSection.From(RenderContext, doc.PostSections) : [];

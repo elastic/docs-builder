@@ -2,13 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.Markdown.Helpers;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class IntroHeadingsTests
+public partial class IntroHeadingsTests
 {
 	[Test]
 	public void Parse_SkipsHeadingsInsideFences_IncludingListAndQuoteNested()
@@ -42,10 +45,21 @@ public class IntroHeadingsTests
 	[Arguments("ES|QL visualizations")]
 	[Arguments("Panel type `availability`")]
 	[Arguments("Café & résumé: v1.2_beta")]
-	public void Parse_Slug_MatchesRenderedHeadingId(string title)
+	public void Parse_Slug_MatchesSanitizedHeadingId(string title)
 	{
-		var headings = IntroHeadings.Parse($"## {title}");
+		var markdown = $"# Page title\n\nIntro.\n\n## {title}\n\nBody.";
 
-		headings.Should().ContainSingle().Which.Slug.Should().Be(title.Replace("`", "").Slugify());
+		// The same parser, h1 drop and sanitizer as a group intro page, so a lost or renamed id fails here.
+		var parsed = Markdig.Markdown.Parse(markdown, MarkdownParser.ApiDescriptionPipeline);
+		var html = ApiMarkdown.SanitizeHtml(
+			MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline),
+			keepHeadingAnchors: true
+		);
+		var renderedIds = HeadingWrapperId().Matches(html).Select(m => m.Groups[1].Value);
+
+		IntroHeadings.Parse(markdown).Select(h => h.Slug).Should().Equal(renderedIds);
 	}
+
+	[GeneratedRegex("<div class=\"heading-wrapper\" id=\"([^\"]+)\">")]
+	private static partial Regex HeadingWrapperId();
 }
