@@ -1,8 +1,4 @@
 rules:
-  # actionlint does not understand the `$/` self-repository syntax, so keep `./` refs.
-  self-repository:
-    disable: true
-
   unpinned-uses:
     config:
       policies:
