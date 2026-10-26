@@ -68,7 +68,7 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 				"elastic",
 				"test-repo",
 				42,
-				A<string>.That.Contains("docs/changelog/42.yaml"),
+				A<string>.That.Contains("https://github.com/elastic/test-repo/blob/feature%2Ftest/docs/changelog/42.yaml"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();

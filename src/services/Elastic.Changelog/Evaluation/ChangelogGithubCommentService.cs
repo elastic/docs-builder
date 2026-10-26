@@ -184,12 +184,7 @@ public class ChangelogGithubCommentService(
 		if (metadata.CommitOutcome == CommitOutcome.Committed && !string.IsNullOrWhiteSpace(metadata.CommittedFile))
 		{
 			_logger.LogInformation("Rendering entry-committed body for PR #{PrNumber}", metadata.PrNumber);
-			return ChangelogCommentRenderer.RenderEntryCommitted(
-				metadata.HeadRepo ?? "",
-				metadata.HeadRepo ?? "",
-				metadata.HeadRef,
-				metadata.CommittedFile
-			);
+			return ChangelogCommentRenderer.RenderEntryCommitted(owner, repo, metadata.HeadRef, metadata.CommittedFile);
 		}
 
 		// Commit failed: comment-only body, commit-failed variant.
