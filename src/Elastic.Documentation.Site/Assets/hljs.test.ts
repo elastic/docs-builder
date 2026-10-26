@@ -169,10 +169,10 @@ describe('highlightCodeBlocks', () => {
 })
 
 describe('toLanguageFn', () => {
-    // Parcel's dynamic import() resolves a language module to the LanguageFn directly,
+    // A bundler's dynamic import() can resolve a language module to the LanguageFn directly,
     // while Babel/Jest wrap it as { default: fn }. Both must yield the function; a
-    // regression here silently breaks highlighting only in the Parcel production build.
-    it('returns the function when the module is the function itself (Parcel)', async () => {
+    // regression here silently breaks highlighting only in the production bundle.
+    it('returns the function when the module is the function itself (bundler)', async () => {
         const { toLanguageFn } = await loadModule()
         const fn = () => ({ contains: [] })
 
