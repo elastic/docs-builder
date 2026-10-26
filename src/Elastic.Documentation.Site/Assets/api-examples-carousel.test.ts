@@ -200,7 +200,7 @@ describe('API examples carousel', () => {
 
             // Later, any scroll that settles on another card is a pick, whether a swipe or find-in-page.
             const now = Date.now()
-            const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 5000)
+            const clock = vi.spyOn(Date, 'now').mockReturnValue(now + 5000)
             settle('Python')
             clock.mockRestore()
 
@@ -276,7 +276,7 @@ describe('API examples carousel', () => {
     })
 
     it('keeps every pick smooth, snaps off while gliding, and lands on the target afterwards', () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         initApiExamples()
         const strip = document.querySelector<HTMLElement>(
             '[data-scenario="term"] [data-carousel-strip]'
@@ -286,7 +286,7 @@ describe('API examples carousel', () => {
             .forEach((card, i) =>
                 Object.defineProperty(card, 'offsetLeft', { value: i * 400 })
             )
-        const scrollTo = jest.fn()
+        const scrollTo = vi.fn()
         strip.scrollTo = scrollTo as unknown as typeof strip.scrollTo
         const dot = (lang: string) =>
             document.querySelector<HTMLElement>(
@@ -308,7 +308,7 @@ describe('API examples carousel', () => {
             value: 800,
             configurable: true,
         })
-        jest.advanceTimersByTime(900)
+        vi.advanceTimersByTime(900)
 
         expect(strip.style.scrollSnapType).toBe('')
         expect(scrollTo.mock.calls[scrollTo.mock.calls.length - 1][0]).toEqual({
@@ -316,7 +316,7 @@ describe('API examples carousel', () => {
             behavior: 'auto',
         })
         expect(activeLang('term')).toBe('Java')
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     it('gives the dots a fast tooltip instead of a native title', () => {
@@ -463,7 +463,7 @@ describe('API examples carousel', () => {
             .querySelector('dialog.api-code-preview')!
             .dispatchEvent(new Event('close'))
 
-        const writeText = jest.fn(() => Promise.resolve())
+        const writeText = vi.fn(() => Promise.resolve())
         Object.defineProperty(navigator, 'clipboard', {
             value: { writeText },
             configurable: true,
@@ -477,7 +477,7 @@ describe('API examples carousel', () => {
             .dispatchEvent(new Event('close'))
 
         // A denied write is reported, not left as an unhandled rejection.
-        const error = jest.spyOn(console, 'error').mockImplementation(() => {})
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {})
         Object.defineProperty(navigator, 'clipboard', {
             value: { writeText: () => Promise.reject(new Error('denied')) },
             configurable: true,
@@ -522,7 +522,7 @@ describe('API examples carousel', () => {
         const dialog = document.querySelector<HTMLDialogElement>(
             'dialog.api-code-preview'
         )!
-        dialog.close = jest.fn(() => dialog.remove())
+        dialog.close = vi.fn(() => dialog.remove())
 
         dialog
             .querySelector('button')!
@@ -556,7 +556,7 @@ describe('API examples carousel', () => {
                 'a.api-code-carousel-card-client'
             )?.href
         ).toBe('https://example.test/Console')
-        dialog.close = jest.fn(() => dialog.remove())
+        dialog.close = vi.fn(() => dialog.remove())
         dialog.querySelector<HTMLElement>('[aria-label="Close"]')!.click()
         expect(dialog.close).toHaveBeenCalled()
     })
@@ -719,7 +719,7 @@ describe('API examples chip overflow', () => {
         window.localStorage.clear()
         window.history.replaceState(null, '', '#')
         document.body.innerHTML = overflowMarkup()
-        proto.hidePopover = jest.fn()
+        proto.hidePopover = vi.fn()
         stubWidths(250)
     })
 

@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
@@ -26,6 +27,25 @@ export default defineConfig({
     ],
     define: {
         'process.env.DOCS_BUILDER_VERSION': JSON.stringify(docsBuilderVersion),
+    },
+    test: {
+        environment: 'jsdom',
+        globals: true,
+        environmentOptions: { jsdom: { url: 'http://localhost/' } },
+        // Inlined so vi.resetModules() also resets it; externalized deps stay cached by Node.
+        server: { deps: { inline: ['highlight.js'] } },
+        setupFiles: ['./setupTests.ts'],
+        include: ['**/*.test.{ts,tsx}'],
+        exclude: [
+            '**/node_modules/**',
+            '_static/**',
+            'visual/**',
+            'synthetics/**',
+        ],
+        reporters:
+            process.env.CI === 'true'
+                ? ['github-actions', 'dot']
+                : ['default', 'github-actions'],
     },
     build: {
         // The design system's floor, which Vite lowers nesting and other newer CSS to. The legacy bundle is lowered the same way.

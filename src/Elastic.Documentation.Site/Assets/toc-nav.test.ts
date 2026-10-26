@@ -1,4 +1,5 @@
 import { initTocNav } from './toc-nav'
+import type { MockInstance } from 'vitest'
 
 function createRect(top: number, height: number): DOMRect {
     return {
@@ -16,7 +17,7 @@ function createRect(top: number, height: number): DOMRect {
 
 interface TocFixture {
     headings: HTMLElement[]
-    headingRects: jest.SpyInstance<DOMRect, []>[]
+    headingRects: MockInstance<() => DOMRect>[]
     links: HTMLAnchorElement[]
     indicator: HTMLElement
 }
@@ -73,7 +74,7 @@ function createTocFixture(documentTops: number[]): TocFixture {
         document.querySelectorAll<HTMLElement>('#markdown-content h2')
     )
     const headingRects = headingElements.map((heading, index) =>
-        jest
+        vi
             .spyOn(heading, 'getBoundingClientRect')
             .mockImplementation(() =>
                 createRect(documentTops[index] - window.scrollY, 30)
@@ -83,12 +84,12 @@ function createTocFixture(documentTops: number[]): TocFixture {
         document.querySelectorAll<HTMLAnchorElement>('#toc-nav a')
     )
     linkElements.forEach((link, index) => {
-        jest.spyOn(
+        vi.spyOn(
             link.closest('li')!,
             'getBoundingClientRect'
         ).mockImplementation(() => createRect(20 + index * 30, 24))
     })
-    jest.spyOn(
+    vi.spyOn(
         document.querySelector('.toc-progress-container')!,
         'getBoundingClientRect'
     ).mockReturnValue(createRect(10, documentTops.length * 30))
@@ -110,7 +111,7 @@ describe('TOC navigation', () => {
             configurable: true,
             value: 2000,
         })
-        jest.spyOn(window, 'requestAnimationFrame').mockImplementation(
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
             (callback) => {
                 animationFrames.push(callback)
                 return animationFrames.length
@@ -119,7 +120,7 @@ describe('TOC navigation', () => {
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('marks a stepper heading with its own id as current', () => {
@@ -144,13 +145,13 @@ describe('TOC navigation', () => {
         const heading = document.querySelector('h2')!
         const tocContainer = document.querySelector('.toc-progress-container')!
         const tocItem = document.querySelector('#toc-nav li')!
-        jest.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
+        vi.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
             createRect(100, 30)
         )
-        jest.spyOn(tocContainer, 'getBoundingClientRect').mockReturnValue(
+        vi.spyOn(tocContainer, 'getBoundingClientRect').mockReturnValue(
             createRect(10, 100)
         )
-        jest.spyOn(tocItem, 'getBoundingClientRect').mockReturnValue(
+        vi.spyOn(tocItem, 'getBoundingClientRect').mockReturnValue(
             createRect(20, 24)
         )
 
@@ -180,15 +181,15 @@ describe('TOC navigation', () => {
                 </div>
             </nav>
         `
-        jest.spyOn(
+        vi.spyOn(
             document.querySelector('h2')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(100, 30))
-        jest.spyOn(
+        vi.spyOn(
             document.querySelector('.toc-progress-container')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(10, 100))
-        jest.spyOn(
+        vi.spyOn(
             document.querySelector('#toc-nav li')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(20, 24))
@@ -215,16 +216,16 @@ describe('TOC navigation', () => {
             </nav>
         `
         document.querySelectorAll('h4').forEach((heading) => {
-            jest.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
+            vi.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
                 createRect(100, 30)
             )
         })
-        jest.spyOn(
+        vi.spyOn(
             document.querySelector('.toc-progress-container')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(10, 100))
         document.querySelectorAll('#toc-nav li').forEach((item) => {
-            jest.spyOn(item, 'getBoundingClientRect').mockReturnValue(
+            vi.spyOn(item, 'getBoundingClientRect').mockReturnValue(
                 createRect(20, 24)
             )
         })
@@ -302,7 +303,7 @@ describe('TOC navigation', () => {
         const fixture = createTocFixture([100, 300, 500])
         initTocNav()
         fixture.headingRects.forEach((mock) => mock.mockClear())
-        jest.mocked(window.requestAnimationFrame).mockClear()
+        vi.mocked(window.requestAnimationFrame).mockClear()
 
         window.dispatchEvent(new Event('scroll'))
         window.dispatchEvent(new Event('scroll'))
@@ -329,10 +330,10 @@ describe('TOC navigation', () => {
         const fixture = createTocFixture([100, 300, 500])
         initTocNav()
         const removeSpies = fixture.links.map((link) =>
-            jest.spyOn(link.classList, 'remove')
+            vi.spyOn(link.classList, 'remove')
         )
         const addSpies = fixture.links.map((link) =>
-            jest.spyOn(link.classList, 'add')
+            vi.spyOn(link.classList, 'add')
         )
 
         scrollTo(10)

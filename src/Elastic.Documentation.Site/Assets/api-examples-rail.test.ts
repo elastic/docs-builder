@@ -1,8 +1,9 @@
 import { initExamplesRailSteadying } from './api-docs'
+import type { Mock } from 'vitest'
 
 describe('examples rail steadying', () => {
     let railTop: number
-    let animate: jest.Mock
+    let animate: Mock
     let frames: FrameRequestCallback[]
 
     const originalMatchMedia = window.matchMedia
@@ -14,7 +15,7 @@ describe('examples rail steadying', () => {
         desktop: boolean
         reduced: boolean
     }) => {
-        window.matchMedia = jest.fn((query: string) => ({
+        window.matchMedia = vi.fn((query: string) => ({
             matches: query.includes('reduced-motion') ? reduced : desktop,
         })) as unknown as typeof window.matchMedia
     }
@@ -28,20 +29,20 @@ describe('examples rail steadying', () => {
             <button id="outside">outside</button>
         `
         railTop = -285
-        animate = jest.fn()
+        animate = vi.fn()
         const rail = document.getElementById('api-examples-panel')!
         rail.getBoundingClientRect = () => ({ top: railTop }) as DOMRect
         rail.animate = animate
         setMedia({ desktop: true, reduced: false })
         frames = []
-        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+        vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
             frames.push(cb)
             return 0
         })
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
         window.matchMedia = originalMatchMedia
     })
 
@@ -91,10 +92,10 @@ describe('examples rail steadying', () => {
     })
 
     it('cancels its own previous slide, not other animations on the rail', () => {
-        const cancel = jest.fn()
+        const cancel = vi.fn()
         const rail = document.getElementById('api-examples-panel')!
-        rail.animate = jest.fn(() => ({ cancel }) as unknown as Animation)
-        rail.getAnimations = jest.fn(() => [])
+        rail.animate = vi.fn(() => ({ cancel }) as unknown as Animation)
+        rail.getAnimations = vi.fn(() => [])
 
         clickAndMoveRail('toggle', 64)
         expect(cancel).not.toHaveBeenCalled()
@@ -111,7 +112,7 @@ describe('examples rail steadying', () => {
         let drawnOffset = 0
         rail.getBoundingClientRect = () =>
             ({ top: railTop + drawnOffset }) as DOMRect
-        const slide = jest.fn(() => ({ cancel: () => (drawnOffset = 0) }))
+        const slide = vi.fn(() => ({ cancel: () => (drawnOffset = 0) }))
         rail.animate = slide as unknown as typeof rail.animate
 
         clickAndMoveRail('toggle', 64) // starts a slide from -285
