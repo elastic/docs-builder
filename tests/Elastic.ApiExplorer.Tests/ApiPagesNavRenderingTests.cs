@@ -242,6 +242,32 @@ public partial class ApiPagesNavRenderingTests
 		link.Should().NotContain("icon-api-x");
 	}
 
+	[Test]
+	[Arguments("/api/doc/kibana/group/endpoint-dashboards#get-started", true)]
+	[Arguments("/api/doc/kibana/group/endpoint-dashboards", false)]
+	public async Task Render_InPageLeaf_OptsOutOfHtmxBoost(string url, bool optsOut)
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = false, NavigationTitle = "Get started", Url = url }
+		];
+		var ct = TestContext.Current!.Execution.CancellationToken;
+
+		foreach (var html in new[]
+		{
+			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+		})
+		{
+			var link = OperationLink(html);
+			link.Should().NotContain("&quot;");
+			if (optsOut)
+				link.Should().Contain(" hx-boost=\"false\">");
+			else
+				link.Should().NotContain("hx-boost");
+		}
+	}
+
 	private static string OperationLink(string html)
 	{
 		var start = html.IndexOf("<a ", StringComparison.Ordinal);

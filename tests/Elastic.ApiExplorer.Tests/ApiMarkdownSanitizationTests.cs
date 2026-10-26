@@ -54,6 +54,47 @@ public class ApiMarkdownSanitizationTests
 	}
 
 	[Test]
+	public void SanitizeHtml_ListedHeadingWrapperId_IsKept()
+	{
+		const string input = "<div class=\"heading-wrapper\" id=\"when-to-use-this-api\"><h2>When to use this API</h2></div>";
+		var result = ApiMarkdown.SanitizeHtml(input, Anchors("when-to-use-this-api"));
+		result.Should().Contain("id=\"when-to-use-this-api\"");
+	}
+
+	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public void SanitizeHtml_HeadingLink_KeepsHrefOnlyWhenTheHeadingKeepsItsId(bool listed)
+	{
+		const string input =
+			"<div class=\"heading-wrapper\" id=\"responses\"><h2><a class=\"headerlink\" href=\"#responses\">Responses</a></h2></div>";
+		var result = ApiMarkdown.SanitizeHtml(input, listed ? Anchors("responses") : null);
+		if (listed)
+			result.Should().Contain("href=\"#responses\"");
+		else
+			result.Should().NotContain("href=").And.Contain("Responses");
+	}
+
+	[Test]
+	public void SanitizeHtml_HeadingWrapperIdByDefault_IsStripped()
+	{
+		// Operation and schema pages own ids such as "responses" that a description heading could duplicate.
+		const string input = "<div class=\"heading-wrapper\" id=\"responses\"><h2>Responses</h2></div>";
+		var result = ApiMarkdown.SanitizeHtml(input);
+		result.Should().NotContain("id=");
+	}
+
+	[Test]
+	[Arguments("<p id=\"markdown-content\">x</p>")]
+	[Arguments("<span class=\"heading-wrapper\" id=\"pages-nav\">x</span>")]
+	[Arguments("<div class=\"heading-wrapper\" id=\"some-section\">x</div>")]
+	public void SanitizeHtml_IdNotListedOnAHeadingWrapper_IsStripped(string input)
+	{
+		var result = ApiMarkdown.SanitizeHtml(input, Anchors("get-started"));
+		result.Should().NotContain("id=");
+	}
+
+	[Test]
 	public void SanitizeHtml_IframeTag_IsRemovedWithContent()
 	{
 		var result = ApiMarkdown.SanitizeHtml("<p>Before</p><iframe src=\"evil.com\"></iframe><p>After</p>");
@@ -113,4 +154,6 @@ public class ApiMarkdownSanitizationTests
 		var result = ApiMarkdown.StripHtml("No HTML here.");
 		result.Should().Be("No HTML here.");
 	}
+
+	private static HashSet<string> Anchors(params string[] slugs) => [.. slugs];
 }

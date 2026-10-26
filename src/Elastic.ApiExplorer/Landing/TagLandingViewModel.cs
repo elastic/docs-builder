@@ -9,7 +9,9 @@ using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation.Navigation;
+using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Landing;
 
@@ -31,6 +33,17 @@ public class TagLandingViewModel(ApiRenderContext context) : ApiViewModel(contex
 				return doc.DescriptionOr(Tag.Description);
 			return Tag.Description;
 		}
+	}
+
+	/// <summary>The intro keeps the heading anchor ids the sidebar links to, from <see cref="IntroHeadings.ForPage"/>.</summary>
+	public HtmlString RenderDescription()
+	{
+		var postSections = RenderContext.TagSupplemental.TryGetValue(Tag.Name, out var doc) ? doc.PostSections : [];
+		var headingAnchors = IntroHeadings
+			.ForPage(DescriptionMarkdown, postSections)
+			.Select(heading => heading.Slug)
+			.ToHashSet(StringComparer.Ordinal);
+		return ApiMarkdown.RenderWithHeadingAnchors(RenderContext, DescriptionMarkdown, headingAnchors);
 	}
 
 	public IReadOnlyList<ApiPostSection> PostSections =>
@@ -55,6 +68,20 @@ public sealed record IntroHeading(string Title, string Slug) : INavigationModel;
 
 internal static partial class IntroHeadings
 {
+	/// <summary>
+	/// The intro headings that get an anchor on the group page, and so a sidebar entry. A post section owns its anchor,
+	/// so an intro heading with the same slug is left out rather than linking to the post section.
+	/// </summary>
+	public static IReadOnlyList<IntroHeading> ForPage(string? markdown, IReadOnlyList<ApiSupplementalSection> postSections)
+	{
+		var headings = Parse(markdown);
+		if (postSections.Count == 0)
+			return headings;
+
+		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
+		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
+	}
+
 	public static IReadOnlyList<IntroHeading> Parse(string? markdown)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))

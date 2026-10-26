@@ -550,12 +550,9 @@ public class OpenApiGenerator(
 			return;
 
 		var children = node.NavigationItems.ToArray();
-		if (
-			item is TagNavigationItem tag
-			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
-			&& !string.IsNullOrWhiteSpace(doc.Description)
-		)
-			tag.ApplyIntroHeadings(doc.Description);
+		// Same description and post sections as TagLandingViewModel, so the sidebar links only to anchors the page keeps.
+		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
+			tag.ApplyIntroHeadings(doc.DescriptionOr(tag.Index.Model.Description), doc.PostSections);
 
 		foreach (var child in children)
 			ApplySupplementalIntroHeadings(child, tags);

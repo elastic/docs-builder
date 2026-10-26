@@ -127,7 +127,8 @@ public static class NavigationCurrentMarker
 		if (!isDesignSystemLink && !ElementHasClass(tag, "sidebar-link"))
 			return;
 
-		if (!TryGetQuotedAttribute(tag, "href", out var href) || !NormalizePath(href).SequenceEqual(target))
+		// A link to a heading on the page is not the page itself, so only the page's own row is current.
+		if (!TryGetQuotedAttribute(tag, "href", out var href) || href.Contains('#') || !NormalizePath(href).SequenceEqual(target))
 			return;
 
 		var marked = isDesignSystemLink ? WithAriaCurrent(tag) : WithCurrentClass(tag);

@@ -230,7 +230,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context)
 			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
 			parentNavigationItems.Add(tagNavigationItem);
 			tagNavigationItem.NavigationItems = endpointNavigationItems;
-			tagNavigationItem.ApplyIntroHeadings(tag.Description);
+			tagNavigationItem.ApplyIntroHeadings(tag.Description, postSections: []);
 		}
 	}
 
