@@ -17,7 +17,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ConfigurationFileExcludeTests
 {
-	[Fact]
+	[Test]
 	public void IsExcluded_DocsetGlob_MatchesNestedKibanaDocsPath()
 	{
 		var docSet = new DocumentationSetFile
@@ -31,7 +31,7 @@ public class ConfigurationFileExcludeTests
 		config.IsExcluded("reference/query-languages/esql/kibana/docs/functions/mv_slice.md").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void IsExcluded_DocsetGlob_DoesNotMatchOutsideTree()
 	{
 		var docSet = new DocumentationSetFile

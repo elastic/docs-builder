@@ -41,66 +41,111 @@ public class ChangelogLabelValidationService(
 	public async Task<bool> ValidateLabels(IDiagnosticsCollector collector, ValidateLabelsArguments input, Cancel ctx)
 	{
 		var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx) ?? ChangelogConfiguration.Default;
+		var defaultBranch = config.Bundle?.Branch ?? "main";
 
 		// Label-based skip check: all products blocked → skipped
 		var skipLabels = ChangelogPrEvaluationService.CollectExcludeLabels(config.Rules?.Create);
 		if (PrInfoProcessor.AreAllProductsBlocked(input.PrLabels, config.Rules?.Create))
 		{
 			_logger.LogInformation("All products blocked by label rules; skipping");
-			await Finish("skipped", skipLabels: skipLabels);
+			await Finish(
+				"skipped",
+				skipLabels: skipLabels,
+				outcome: new ReleaseNoteOutcome
+				{
+					Included = false,
+					Reason = PrInfoProcessor.DescribeBlockedReason(input.PrLabels, config.Rules?.Create)
+				}
+			);
 			return true;
 		}
 
-		// Resolve type
-		string? resolvedType = null;
-		if (config.LabelToType is { Count: > 0 })
-			resolvedType = PrInfoProcessor.MapLabelsToType(input.PrLabels, config.LabelToType);
+		var resolution = PrLabelResolver.Resolve(input.PrLabels, config);
+		var resolvedType = resolution.Type;
+		var ambiguousTypeLabels = resolution.AmbiguousTypeLabels;
+		var resolvedProducts = resolution.Products;
+		var productLabelTable = resolution.ProductLabelTable;
+		var areaLabelTable = resolution.AreaLabelTable;
 
-		// Resolve products
-		string? resolvedProducts = null;
-		string? productLabelTable = null;
-		if (config.LabelToProducts is { Count: > 0 } labelToProducts)
+		if (ambiguousTypeLabels != null)
 		{
-			var products = PrInfoProcessor.MapLabelsToProducts(input.PrLabels, labelToProducts);
-			if (products.Count > 0)
-			{
-				resolvedProducts = ProductArgument.FormatProductSpecs(products);
-			}
-			else
-			{
-				var distinctSpecs = labelToProducts.Values.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-				if (distinctSpecs.Count == 1)
-					resolvedProducts = ProductArgument.FormatProductSpecs(ProductArgument.ParseProductSpecs(distinctSpecs[0]));
-				else
-					productLabelTable = ChangelogPrEvaluationService.BuildProductLabelTable(labelToProducts);
-			}
+			_logger.LogInformation("Multiple type labels found on PR: {Labels}", ambiguousTypeLabels);
+			collector.EmitError(string.Empty, $"Multiple type labels found: {ambiguousTypeLabels}. Remove all but one.");
+			await Finish(
+				"no-label",
+				ambiguousTypeLabels: ambiguousTypeLabels,
+				skipLabels: skipLabels,
+				labelKeys: ChangelogPrEvaluationService.BuildLabelKeys(config.LabelToType)
+			);
+			return false;
 		}
 
 		if (resolvedType == null)
 		{
 			_logger.LogInformation("No type label found on PR");
+			var typeLabels = config.LabelToType is { Count: > 0 } ? string.Join(", ", config.LabelToType.Keys) : "(none configured)";
+			var skipHint = skipLabels != null ? $" To skip changelog generation add one of: {skipLabels}." : "";
 			collector.EmitError(
 				string.Empty,
-				"No matching changelog type label found on this PR. Add a label from your changelog.yml pivot.types, or a skip label."
+				$"No matching changelog type label found on this PR. Add one of the following labels: {typeLabels}.{skipHint}"
 			);
 			var labelTable = ChangelogPrEvaluationService.BuildLabelTable(config.LabelToType);
-			await Finish("no-label", labelTable: labelTable, productLabelTable: productLabelTable, skipLabels: skipLabels);
+			var labelKeys = ChangelogPrEvaluationService.BuildLabelKeys(config.LabelToType);
+			await Finish(
+				"no-label",
+				labelTable: labelTable,
+				labelKeys: labelKeys,
+				productLabelTable: productLabelTable,
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
+			);
 			return false;
 		}
 
-		if (productLabelTable != null && (config.ProductsConfiguration?.Default is null or { Count: 0 }))
+		if (resolution.MissingProduct || resolution.MissingArea)
 		{
-			_logger.LogInformation("Multiple products configured but no matching product label on PR");
-			collector.EmitError(
-				string.Empty,
-				"No matching product label found on this PR. Add a label from your changelog.yml pivot.products."
+			if (resolution.MissingProduct)
+			{
+				_logger.LogInformation("No matching product label on PR");
+				var productLabels = config.LabelToProducts is { Count: > 0 }
+					? string.Join(", ", config.LabelToProducts.Keys)
+					: "(none configured)";
+				collector.EmitError(
+					string.Empty,
+					$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
+				);
+			}
+
+			if (resolution.MissingArea)
+			{
+				_logger.LogInformation("No matching area label on PR");
+				collector.EmitError(string.Empty, AreaResolution.MissingAreaLabelMessage("this PR", config));
+			}
+
+			await Finish(
+				"no-label",
+				productLabelTable: resolution.MissingProduct ? productLabelTable : null,
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
 			);
-			await Finish("no-label", productLabelTable: productLabelTable, skipLabels: skipLabels);
 			return false;
 		}
 
 		_logger.LogInformation("Label validation complete: type={Type}, products={Products}", resolvedType, resolvedProducts);
-		await Finish("ok", type: resolvedType, products: resolvedProducts, skipLabels: skipLabels);
+		var areas = config.LabelToAreas is { Count: > 0 } ? PrInfoProcessor.MapLabelsToAreas(input.PrLabels, config.LabelToAreas) : [];
+		await Finish(
+			"ok",
+			type: resolvedType,
+			products: resolvedProducts,
+			skipLabels: skipLabels,
+			outcome: new ReleaseNoteOutcome
+			{
+				Included = true,
+				Type = resolvedType,
+				Products = resolvedProducts,
+				Areas = areas.Count > 0 ? string.Join(", ", areas) : null
+			}
+		);
 		return true;
 
 		async Task Finish(
@@ -108,16 +153,21 @@ public class ChangelogLabelValidationService(
 			string? type = null,
 			string? products = null,
 			string? labelTable = null,
+			string? labelKeys = null,
 			string? productLabelTable = null,
-			string? skipLabels = null
+			string? skipLabels = null,
+			string? ambiguousTypeLabels = null,
+			string? areaLabelTable = null,
+			ReleaseNoteOutcome? outcome = null
 		)
 		{
-			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels);
+			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels, ambiguousTypeLabels, areaLabelTable);
 
 			if (env?.IsRunningOnCI == true && input.PrNumber > 0)
 			{
 				var metadata = new GithubDecisionMetadata
 				{
+					Gate = ValidationGate.Labels,
 					PrNumber = input.PrNumber,
 					HeadRef = input.HeadRef,
 					HeadSha = input.HeadSha,
@@ -126,10 +176,15 @@ public class ChangelogLabelValidationService(
 					CanCommit = input.CanCommit,
 					MaintainerCanModify = input.MaintainerCanModify,
 					HeadRepo = input.HeadRepo,
-					LabelTable = labelTable,
+					LabelTable = labelKeys ?? labelTable,
 					ProductLabelTable = productLabelTable,
+					AreaLabelTable = areaLabelTable,
 					SkipLabels = skipLabels,
-					ConfigFile = input.ConfigFile
+					ConfigFile = input.ConfigFile,
+					AmbiguousTypeLabels = ambiguousTypeLabels,
+					DefaultBranch = defaultBranch,
+					CommentOnSuccess = input.CommentOnSuccess,
+					Outcome = input.CommentOnSuccess ? outcome : null
 				};
 				await _metadataWriter.WriteAsync(metadata, ctx);
 			}
@@ -142,7 +197,9 @@ public class ChangelogLabelValidationService(
 		string? products = null,
 		string? labelTable = null,
 		string? productLabelTable = null,
-		string? skipLabels = null
+		string? skipLabels = null,
+		string? ambiguousTypeLabels = null,
+		string? areaLabelTable = null
 	)
 	{
 		await coreService.SetOutputAsync("status", status);
@@ -160,8 +217,18 @@ public class ChangelogLabelValidationService(
 				"product-label-table",
 				OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength)
 			);
+		if (areaLabelTable != null)
+			await coreService.SetOutputAsync(
+				"area-label-table",
+				OutputSanitizer.SanitizeForOutput(areaLabelTable, OutputSanitizer.LabelTableMaxLength)
+			);
 		if (skipLabels != null)
 			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));
+		if (ambiguousTypeLabels != null)
+			await coreService.SetOutputAsync(
+				"ambiguous-type-labels",
+				OutputSanitizer.SanitizeForOutput(ambiguousTypeLabels, OutputSanitizer.LabelsMaxLength)
+			);
 		return true;
 	}
 }

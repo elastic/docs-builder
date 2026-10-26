@@ -16,8 +16,9 @@ namespace Elastic.SiteSearch.Cli.Commands;
 /// </summary>
 /// <remarks>
 /// These commands call the Contentstack Delivery/Preview APIs (per environment configuration) and target
-/// <c>site-*</c> search indices. They are separate from <c>labs</c> commands, which crawl elastic.co labs
-/// properties into <c>labs-*</c> indices.
+/// <c>site-*</c> search indices. elastic.co's Search/Security/Observability Labs properties are sourced
+/// here too — there is no HTML crawler for them anymore; the legacy <c>labs-*</c> indices they used to
+/// write to are handled solely by <c>indices</c> commands now (reindex/cleanup of already-existing data).
 /// </remarks>
 internal sealed class ContentStackCommands(
 	SyncCommand sync,
@@ -78,8 +79,10 @@ internal sealed class ContentStackCommands(
 	/// When <paramref name="outputDir"/> is omitted, a default directory under the machine temp path is used.
 	/// </remarks>
 	/// <param name="outputDir">Directory for <c>*.json</c> files; created if it does not exist.</param>
+	/// <param name="contentType">Comma-separated content type UIDs to sample; omit to sample every registered UID.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public Task Samples([StringLength(4096)] string? outputDir = null, Cancel ct = default) => samples.Samples(outputDir, ct);
+	public Task Samples([StringLength(4096)] string? outputDir = null, string? contentType = null, Cancel ct = default) =>
+		samples.Samples(outputDir, contentType, ct);
 
 	/// <summary>
 	/// Diagnostic: scan Contentstack's sync stream (the same paginated, cursor-based API

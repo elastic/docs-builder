@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class CheckoutsFileSystemTests
 {
-	[Fact]
+	[Test]
 	public void NestedExtensionRoot_DoesNotThrow()
 	{
 		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
@@ -26,7 +26,7 @@ public class CheckoutsFileSystemTests
 		scoped.File.Exists(configPath).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ExternalExtensionRoot_AllowsReadingExternalConfig()
 	{
 		var workingRoot = Paths.WorkingDirectoryRoot.FullName;
@@ -39,7 +39,7 @@ public class CheckoutsFileSystemTests
 		scoped.File.Exists(configPath).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AncestorExtensionRoot_DoesNotThrow()
 	{
 		// An ancestor of the working root would produce overlapping roots, the same class of
@@ -57,7 +57,7 @@ public class CheckoutsFileSystemTests
 		scoped.File.Exists(fileInWorkingRoot).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ExtraRunnerTempRoot_AllowsReadingStagedFile()
 	{
 		// Simulate the GitHub Actions hosted runner layout: RUNNER_TEMP and the checkout root

@@ -37,6 +37,7 @@ Named for what a reader *loses* when it breaks, not for the project that impleme
 | `Site UI` | `src/Elastic.Documentation.Site/` | Page chrome, layout, styling, client-side behaviour |
 | `API reference` | `src/Elastic.ApiExplorer/`, `src/Elastic.Documentation.OpenApiIndex/`, `src/infra/docs-lambda-openapi-index/` | OpenAPI-driven reference pages |
 | `Release notes` | `src/services/Elastic.Changelog/`, `src/infra/docs-lambda-changelog-scrubber/`, `docs/cli/changelog/` | Changelog entries, bundling, publishing |
+| `Content export` | `src/Elastic.Markdown/Exporters/` | The generated `llms.txt`, `.md` and `okf.zip` output — anyone consuming an export rather than the site |
 | `Search` | `src/Elastic.Documentation.Indexing/`, `src/services/search/`, `src/tooling/essc/`, `config/search.yml` | Docs search and elastic.co website search, indexing, ranking |
 | `Links & redirects` | `src/Elastic.Documentation.Links/`, `src/Elastic.Documentation.LinkIndex/`, `src/infra/docs-lambda-index-publisher/`, `docs/_redirects.yml`, `config/legacy-url-mappings.yml` | Cross-repo links, link validation, redirects |
 | `Assembler builds` | `src/services/Elastic.Documentation.Assembler/`, `src/tooling/docs-builder/Commands/Assembler/` | The multi-repo assembled site |

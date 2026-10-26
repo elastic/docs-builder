@@ -3,7 +3,6 @@ import { act } from 'react'
 
 describe('navigationSearch.store', () => {
     beforeEach(() => {
-        // Reset store state before each test
         act(() => {
             navigationSearchStore.getState().actions.clearSearchTerm()
         })

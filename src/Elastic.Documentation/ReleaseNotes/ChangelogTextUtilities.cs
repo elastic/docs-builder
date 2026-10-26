@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.ReleaseNotes;
 
@@ -11,7 +12,7 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// </summary>
 public static partial class ChangelogTextUtilities
 {
-	[GeneratedRegex(@"\d+$", RegexOptions.None)]
+	[GeneratedRegex(@"\d+$", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex TrailingNumberRegex();
 
 	/// <summary>
@@ -133,6 +134,34 @@ public static partial class ChangelogTextUtilities
 		return span.ToString();
 	}
 
+	[GeneratedRegex(@"^(?:feat|fix|docs|chore|refactor|perf|test|style|build|ci|revert)(?:\([^)\s]*\))?!?:\s+", RegexOptions.IgnoreCase
+		| RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 2000)]
+	private static partial Regex ConventionalCommitPrefixRegex();
+
+	/// <summary>
+	/// Strips a leading conventional-commit prefix such as <c>fix:</c>, <c>feat(cases):</c> or <c>fix(apm)!:</c>.
+	/// The prefix is removed only when text follows it. The type is already captured by the changelog entry type.
+	/// </summary>
+	public static string StripConventionalCommitPrefix(string title)
+	{
+		if (string.IsNullOrWhiteSpace(title))
+			return title;
+
+		var match = ConventionalCommitPrefixRegex().Match(title);
+		if (!match.Success)
+			return title;
+
+		var rest = title[match.Length..].TrimStart();
+		return rest.Length == 0 ? title : rest;
+	}
+
+	/// <summary>
+	/// Applies the <c>extract.strip_title_prefix</c> cleanup: square-bracket prefixes, then conventional-commit
+	/// prefixes, then first-letter capitalization.
+	/// </summary>
+	public static string StripTitlePrefix(string title) =>
+		StripConventionalCommitPrefix(StripSquareBracketPrefix(title)).CapitalizeFirstLetter();
+
 	/// <summary>
 	/// Whether a changelog title should be emitted as an explicitly quoted YAML scalar so unambiguous
 	/// plain scalars are not parsed as list markers. Does not change the semantic title string.
@@ -238,6 +267,35 @@ public static partial class ChangelogTextUtilities
 	}
 
 	private const string PrivateReferenceSentinelPrefix = "# PRIVATE:";
+
+	/// <summary>
+	/// Unwraps a <c># PRIVATE:</c> sentinel to the underlying PR or issue reference.
+	/// Returns the trimmed original when the value is not a sentinel.
+	/// </summary>
+	public static string? StripPrivateReferenceSentinel(string? reference)
+	{
+		if (string.IsNullOrWhiteSpace(reference))
+			return null;
+
+		var trimmed = reference.Trim();
+		if (!trimmed.StartsWith(PrivateReferenceSentinelPrefix, StringComparison.OrdinalIgnoreCase))
+			return trimmed;
+
+		var underlying = trimmed[PrivateReferenceSentinelPrefix.Length..].Trim();
+		return string.IsNullOrWhiteSpace(underlying) ? null : underlying;
+	}
+
+	/// <summary>
+	/// Unwraps <c># PRIVATE:</c> sentinels in a reference list. Empty after stripping are omitted.
+	/// </summary>
+	public static string[]? StripPrivateReferenceSentinels(IReadOnlyList<string>? references)
+	{
+		if (references is not { Count: > 0 })
+			return null;
+
+		var stripped = references.Select(StripPrivateReferenceSentinel).Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r!).ToArray();
+		return stripped.Length == 0 ? null : stripped;
+	}
 
 	/// <summary>
 	/// Returns the first repository segment from a bundle <paramref name="repo"/> string
@@ -532,7 +590,7 @@ public static partial class ChangelogTextUtilities
 		return parts.Length >= 2 ? (parts[0], parts[1]) : (null, parts[0]);
 	}
 
-	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None)]
+	[GeneratedRegex(@"[^a-z0-9]+", RegexOptions.None, matchTimeoutMilliseconds: 2000)]
 	private static partial Regex NonAlphanumericRegex();
 
 	/// <summary>

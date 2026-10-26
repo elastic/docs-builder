@@ -11,98 +11,93 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class InlineAnchorTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
-	output,
+[InheritsTests]
+public class InlineAnchorTests() : LeafTest<InlineAnchor>(
 	"""
 	this is regular text and this $$$is-an-inline-anchor$$$ and this continues to be regular text
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
 		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		Html.ShouldContainHtml(
 			"""<p>this is regular text and this <a id="is-an-inline-anchor"></a> and this continues to be regular text</p>"""
 		);
 }
 
-public class InlineAnchorAtStartTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
-	output,
+[InheritsTests]
+public class InlineAnchorAtStartTests() : LeafTest<InlineAnchor>(
 	"""
 	$$$is-an-inline-anchor$$$ and this continues to be regular text
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
 		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.Should().Be("""<p><a id="is-an-inline-anchor"></a> and this continues to be regular text</p>""");
 }
 
-public class InlineAnchorAtEndTests(ITestOutputHelper output) : LeafTest<InlineAnchor>(
-	output,
-	"""
+[InheritsTests]
+public class InlineAnchorAtEndTests() : LeafTest<InlineAnchor>("""
 	this is regular text and this $$$is-an-inline-anchor$$$
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock()
 	{
 		Block.Should().NotBeNull();
 		Block.Anchor.Should().Be("is-an-inline-anchor");
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p>this is regular text and this <a id="is-an-inline-anchor"></a></p>""");
 }
 
-public class BadStartInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(
-	output,
-	"""
+[InheritsTests]
+public class BadStartInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 	this is regular text and this $$is-an-inline-anchor$$$
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.Should().Contain("""<p>this is regular text and this $$is-an-inline-anchor$$$</p>""");
 }
 
-public class BadEndInlineAnchorTests(ITestOutputHelper output) : BlockTest<ParagraphBlock>(
-	output,
-	"""
+[InheritsTests]
+public class BadEndInlineAnchorTests() : BlockTest<ParagraphBlock>("""
 	this is regular text and this $$$is-an-inline-anchor$$
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p>this is regular text and this $$$is-an-inline-anchor$$</p>""");
 }
 
-public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<HeadingBlock>(output, """
+[InheritsTests]
+public class InlineAnchorInHeading() : BlockTest<HeadingBlock>("""
 	## Hello world $$$my-anchor$$$
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldBeHtml(
@@ -113,11 +108,12 @@ public class InlineAnchorInHeading(ITestOutputHelper output) : BlockTest<Heading
 		);
 }
 
-public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingBlock>(output, """
+[InheritsTests]
+public class ExplicitSlugInHeader() : BlockTest<HeadingBlock>("""
 	## Hello world [#my-anchor]
 	""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldBeHtml(
@@ -129,11 +125,8 @@ public class ExplicitSlugInHeader(ITestOutputHelper output) : BlockTest<HeadingB
 		);
 }
 
-public abstract class InlineAnchorLinkTestBase(
-	ITestOutputHelper output,
-	[LanguageInjection("markdown")] string content
-) : InlineTest<LinkInline>(
-	output,
+[InheritsTests]
+public abstract class InlineAnchorLinkTestBase([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
 	$"""
 ## Hello world
 
@@ -168,32 +161,31 @@ With a custom anchor that exists temporarily. $$$custom-anchor$$$
 	}
 }
 
-public class InlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(output, """
+[InheritsTests]
+public class InlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 [Hello](#same-page-anchor)
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p><a href="#same-page-anchor">Hello</a></p>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalPageInlineAnchorCanBeLinkedToo(ITestOutputHelper output) : InlineAnchorLinkTestBase(
-	output,
-	"""
+[InheritsTests]
+public class ExternalPageInlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase("""
 [Sub Requirements](testing/req.md#custom-anchor)
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		Html.ShouldContainHtml(
 			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

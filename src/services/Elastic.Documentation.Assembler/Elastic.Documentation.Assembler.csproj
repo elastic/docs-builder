@@ -20,6 +20,7 @@
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="SharpYaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,6 +31,7 @@
     <ProjectReference Include="..\..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Integrations\Elastic.Documentation.Integrations.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Deploying\Elastic.Documentation.Deploying.csproj" />

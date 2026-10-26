@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
@@ -13,9 +14,18 @@ namespace Documentation.Builder.Http;
 
 public static class HotReloadManager
 {
+	/// <summary>Raised when <c>dotnet watch</c> applies a code change, before the browser is refreshed.</summary>
+	public static event Action? ApplicationUpdated;
+
 	public static void ClearCache(Type[]? _) => LiveReloadMiddleware.RefreshWebSocketRequest();
 
-	public static void UpdateApplication(Type[]? _) =>
+	public static void UpdateApplication(Type[]? _)
+	{
+		ApplicationUpdated?.Invoke();
+		RefreshBrowserAfterDelay();
+	}
+
+	private static void RefreshBrowserAfterDelay() =>
 		Task.Run(async () =>
 		{
 			await Task.Delay(1000);
@@ -45,6 +55,7 @@ public sealed class ReloadGeneratorService(
 	}.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
 	private FileSystemWatcher? _watcher;
+	private FileSystemWatcher? _staticAssetsWatcher;
 	private CancellationTokenSource? _serviceCts;
 	private Task? _backgroundBuildTask;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
@@ -52,6 +63,7 @@ public sealed class ReloadGeneratorService(
 	private ILogger Logger { get; } = logger;
 
 	private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(500));
+	private readonly Debouncer _staticAssetsDebouncer = new(TimeSpan.FromMilliseconds(500));
 
 	public async Task StartAsync(Cancel cancellationToken)
 	{
@@ -100,7 +112,47 @@ public sealed class ReloadGeneratorService(
 		watcher.IncludeSubdirectories = true;
 		watcher.EnableRaisingEvents = true;
 		_watcher = watcher;
+
+		HotReloadManager.ApplicationUpdated += OnApplicationUpdated;
+		_staticAssetsWatcher = WatchStaticAssets();
 	}
+
+	// Generated API pages bake in the rendering code, so a hot-reloaded change only shows after regeneration.
+	private void OnApplicationUpdated() => ReloadableGenerator.InvalidateApiReferences();
+
+	// Under dotnet watch, Parcel rebuilds JS and CSS that debug builds serve from disk, so a rebuild only needs a browser refresh.
+	private FileSystemWatcher? WatchStaticAssets()
+	{
+		if (Environment.GetEnvironmentVariable("DOTNET_WATCH") is null || Paths.GetSolutionDirectory() is not { } solutionRoot)
+			return null;
+
+		var staticDirectory = Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
+		if (!Directory.Exists(staticDirectory))
+			return null;
+
+		Logger.LogInformation("Start static asset watch on: {Directory}", staticDirectory);
+		var watcher = new FileSystemWatcher(staticDirectory)
+		{
+			NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
+		};
+		watcher.Filters.Add("*.js");
+		watcher.Filters.Add("*.css");
+		watcher.Changed += OnStaticAssetChanged;
+		watcher.Created += OnStaticAssetChanged;
+		watcher.Renamed += OnStaticAssetChanged;
+		watcher.EnableRaisingEvents = true;
+		return watcher;
+	}
+
+	private void OnStaticAssetChanged(object sender, FileSystemEventArgs e) =>
+		_staticAssetsDebouncer.Schedule(
+			_ =>
+			{
+				Logger.LogInformation("Static assets changed, refreshing browser");
+				return LiveReloadMiddleware.RefreshWebSocketRequest();
+			},
+			_serviceCts?.Token ?? Cancel.None
+		);
 
 	private void Reload(bool reloadConfiguration = false)
 	{
@@ -150,7 +202,9 @@ public sealed class ReloadGeneratorService(
 			}
 		}
 
+		HotReloadManager.ApplicationUpdated -= OnApplicationUpdated;
 		_watcher?.Dispose();
+		_staticAssetsWatcher?.Dispose();
 	}
 
 	// Check if a path should be ignored (output directories, hidden folders, etc.)
@@ -246,9 +300,12 @@ public sealed class ReloadGeneratorService(
 
 	public void Dispose()
 	{
+		HotReloadManager.ApplicationUpdated -= OnApplicationUpdated;
 		_serviceCts?.Dispose();
 		_watcher?.Dispose();
+		_staticAssetsWatcher?.Dispose();
 		_debouncer.Dispose();
+		_staticAssetsDebouncer.Dispose();
 	}
 
 	/// <summary>

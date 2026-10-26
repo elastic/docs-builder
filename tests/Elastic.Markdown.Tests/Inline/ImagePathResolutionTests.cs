@@ -15,13 +15,12 @@ using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers;
 using Elastic.Markdown.Tests;
-using Xunit;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class ImagePathResolutionTests(ITestOutputHelper output)
+public class ImagePathResolutionTests()
 {
-	[Fact]
+	[Test]
 	public async Task UpdateRelativeUrlUsesNavigationPathWhenAssemblerBuildEnabled()
 	{
 		const string relativeAssetPath = "images/pic.png";
@@ -36,7 +35,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		assemblerResult.Should().AllBe("/docs/platform/setup/images/pic.png");
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpdateRelativeUrlWithoutPathPrefixKeepsGlobalPrefix()
 	{
 		var relativeAssetPath = "images/funny-image.png";
@@ -45,7 +44,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 		assemblerResult.Should().AllBe("/docs/setup/images/funny-image.png");
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpdateRelativeUrlAppliesCustomPathPrefix()
 	{
 		var relativeAssetPath = "images/image.png";
@@ -89,8 +88,8 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 
 		var fileSystem = new MockFileSystem(files, new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var buildContext = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext)
@@ -99,9 +98,9 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 			BuildType = buildType
 		};
 
-		var documentationSet = new DocumentationSet(buildContext, new TestLoggerFactory(output), new TestCrossLinkResolver());
+		var documentationSet = new DocumentationSet(buildContext, new TestLoggerFactory(), new TestCrossLinkResolver());
 
-		await documentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
+		await documentationSet.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
 
 		// Normalize path for cross-platform compatibility (Windows uses backslashes)
 		(string, string)[] pathsToTest =
@@ -146,7 +145,7 @@ public class ImagePathResolutionTests(ITestOutputHelper output)
 			toReturn.Add(DiagnosticLinkInlineParser.UpdateRelativeUrl(context, normalizedPath.Item2));
 		}
 
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		return toReturn.ToArray();
 	}

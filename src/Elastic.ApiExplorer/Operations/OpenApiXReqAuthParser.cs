@@ -15,7 +15,7 @@ public static class OpenApiXReqAuthParser
 {
 	public const string ExtensionKey = "x-req-auth";
 
-	public static IReadOnlyList<string>? TryGetPrerequisiteLines(
+	internal static IReadOnlyList<string>? TryGetPrerequisiteLines(
 		OpenApiOperation operation,
 		ILogger? log,
 		string? route,

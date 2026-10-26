@@ -15,38 +15,38 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public class ChangelogRepoOwnerResolverTests
 {
-	[Fact]
+	[Test]
 	public void ResolveOwner_ExplicitOwnerSet_ReturnsExplicitOwner() =>
 		ChangelogRepoOwnerResolver.ResolveOwner("acme-corp", "widget", "elastic").Should().Be("acme-corp");
 
-	[Fact]
+	[Test]
 	public void ResolveOwner_ExplicitOwnerSet_IgnoresCombinedRepoOwner() =>
 		ChangelogRepoOwnerResolver.ResolveOwner("acme-corp", "other-org/widget", "elastic").Should().Be("acme-corp");
 
-	[Fact]
+	[Test]
 	public void ResolveOwner_NoExplicitOwner_CombinedRepo_SplitsOwnerFromRepoPrefix() =>
 		ChangelogRepoOwnerResolver.ResolveOwner(owner: null, repo: "acme-corp/widget", fallback: "elastic").Should().Be("acme-corp");
 
-	[Fact]
+	[Test]
 	public void ResolveOwner_NoExplicitOwner_BareRepo_ReturnsFallback() =>
 		ChangelogRepoOwnerResolver.ResolveOwner(owner: null, repo: "widget", fallback: "elastic").Should().Be("elastic");
 
-	[Fact]
+	[Test]
 	public void ResolveOwner_NoExplicitOwnerOrRepo_ReturnsFallback() =>
 		ChangelogRepoOwnerResolver.ResolveOwner(owner: null, repo: null, fallback: "elastic").Should().Be("elastic");
 
-	[Fact]
+	[Test]
 	public void ResolveOwner_NoExplicitOwnerOrFallback_CombinedRepo_SplitsOwnerFromRepoPrefix() =>
 		ChangelogRepoOwnerResolver.ResolveOwner(owner: null, repo: "acme-corp/widget", fallback: null).Should().Be("acme-corp");
 
-	[Fact]
+	[Test]
 	public void NormalizeRepo_CombinedRepo_StripsOwnerPrefix() =>
 		ChangelogRepoOwnerResolver.NormalizeRepo("acme-corp/widget").Should().Be("widget");
 
-	[Fact]
+	[Test]
 	public void NormalizeRepo_BareRepo_ReturnsUnchanged() => ChangelogRepoOwnerResolver.NormalizeRepo("widget").Should().Be("widget");
 
-	[Fact]
+	[Test]
 	public void NormalizeRepo_NullOrEmpty_ReturnsUnchanged()
 	{
 		ChangelogRepoOwnerResolver.NormalizeRepo(null).Should().BeNull();
@@ -59,7 +59,7 @@ public class ChangelogRepoOwnerResolverTests
 	/// fallback (git remote owner for upload, a fixed default for CDN sourcing) is available — the combined
 	/// repo's owner prefix takes precedence over either fallback.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void ResolveOwner_CombinedRepoWithoutExplicitOwner_AgreesAcrossDifferentFallbacks()
 	{
 		const string repo = "acme-corp/widget";

@@ -25,7 +25,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// product IDs it publishes for — exactly the repo != product "moniker mismatch" that motivates Option
 /// AD. Product IDs are drawn from the test harness's products.yml allowlist.
 /// </summary>
-public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class CloudProfileFixtureTests() : ChangelogTestBase()
 {
 	private const string AuthoringRepo = "widget";
 
@@ -93,9 +93,9 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		});
 
 	private CdnChangelogEntryFetcher Fetcher(StubHandler handler) =>
-		new(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask);
+		new(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask);
 
-	[Fact]
+	[Test]
 	public async Task MonthlyProfile_SourcesFromRepoPool_ProducesSoundBundle()
 	{
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -107,17 +107,17 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "1-feature.yaml"),
 			FeatureEntry,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "2-docs.yaml"),
 			DocsEntry,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "3-other.yaml"),
 			OtherProductEntry,
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		// language=yaml
@@ -156,14 +156,14 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = RepoPoolHandler();
-		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, null, Fetcher(handler));
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, Fetcher(handler));
 
 		var input = new BundleChangelogsArguments { Profile = "wh-monthly", ProfileArgument = "2026-05", Config = configPath };
 
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue(
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
@@ -175,9 +175,9 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		outputFiles.Should().ContainSingle("the monthly profile writes a single bundle file");
-		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("cloud-hosted-2026-05.yaml");
+		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-05.yaml");
 
-		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Sound bundle: the matching feature is present and resolved; the docs entry and the other-product
 		// entry are excluded.
@@ -185,13 +185,10 @@ public class CloudProfileFixtureTests(ITestOutputHelper output) : ChangelogTestB
 		bundle.Should().NotContain("Tidy up the hosted docs", "rules.bundle.exclude_types drops docs entries");
 		bundle.Should().NotContain("Serverless-only change", "the cloud-hosted product filter excludes other products");
 
-		// Link allowlist: the allowlisted public PR is kept verbatim; the non-allowlisted repo reference is
-		// rewritten to a "# PRIVATE:" sentinel rather than left as a live link.
-		bundle.Should().Contain("- https://github.com/elastic/elasticsearch/pull/100");
-		bundle.Should().Contain(
-			"# PRIVATE: https://github.com/elastic/widget-internal/pull/7",
-			"non-allowlisted PR links must be scrubbed to a PRIVATE sentinel in bundle output"
-		);
+		// Link sanitization is now handled exclusively by the scrubber Lambda, not at bundle creation time.
+		// Both the public and private repo links pass through unscrubbed into the private S3 bundle.
+		bundle.Should().Contain("- \"https://github.com/elastic/elasticsearch/pull/100\"");
+		bundle.Should().Contain("- \"https://github.com/elastic/widget-internal/pull/7\"");
 
 		// release_dates: false → no auto-populated release date.
 		bundle.Should().NotContain("release_date");

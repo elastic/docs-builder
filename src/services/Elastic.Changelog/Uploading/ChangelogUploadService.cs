@@ -75,6 +75,13 @@ public record ChangelogUploadArguments
 	/// Useful to re-trigger downstream scrubbers without changing file content.
 	/// </summary>
 	public bool SkipEtagCheck { get; init; }
+
+	/// <summary>
+	/// When true, do not replace a remote object whose content differs from the local file.
+	/// New keys are still uploaded. Unchanged (ETag match) files are still skipped.
+	/// Mutually exclusive with <see cref="SkipEtagCheck"/>.
+	/// </summary>
+	public bool NoOverwrite { get; init; }
 }
 
 public class ChangelogUploadService(
@@ -98,25 +105,22 @@ public class ChangelogUploadService(
 			return true;
 		}
 
-		var directory = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
-			? await ResolveBundleDirectory(collector, args, ctx)
-			: await ResolveChangelogDirectory(collector, args, ctx);
+		var directories = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
+			? await ResolveBundleScanDirectories(collector, args, ctx)
+			: [await ResolveChangelogDirectory(collector, args, ctx) ?? "docs/changelog"];
 
-		if (directory == null)
-			return false;
-
-		if (!_fileSystem.Directory.Exists(directory))
+		var existing = directories.Where(d => !string.IsNullOrWhiteSpace(d) && _fileSystem.Directory.Exists(d)).ToList();
+		if (existing.Count == 0)
 		{
-			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"{ArtifactType} directory {Directory} does not exist; nothing to upload",
+				args.ArtifactType,
+				string.Join(", ", directories.Where(d => !string.IsNullOrWhiteSpace(d)))
+			);
 			return true;
 		}
 
-		var targets = args.ArtifactType switch
-		{
-			ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
-			ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
-			_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
-		};
+		var targets = DiscoverTargets(collector, args, existing);
 
 		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
 		// unscoped and a silent skip would look like "nothing to upload".
@@ -125,7 +129,11 @@ public class ChangelogUploadService(
 
 		if (targets.Count == 0)
 		{
-			_logger.LogInformation("No {ArtifactType} files found to upload in {Directory}", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"No {ArtifactType} files found to upload in {Directory}",
+				args.ArtifactType,
+				string.Join(", ", existing)
+			);
 			return true;
 		}
 
@@ -133,29 +141,119 @@ public class ChangelogUploadService(
 			"Found {Count} {ArtifactType} upload target(s) from {Directory}",
 			targets.Count,
 			args.ArtifactType,
-			directory
+			string.Join(", ", existing)
 		);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, args.SkipEtagCheck, ctx);
-
-		_logger.LogInformation(
-			"Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed",
-			result.Uploaded,
-			result.Skipped,
-			result.Failed
+		var result = await uploader.Upload(
+			targets,
+			new S3UploadOptions { SkipEtagCheck = args.SkipEtagCheck, NoOverwrite = args.NoOverwrite },
+			ctx
 		);
+
+		LogUploadComplete(result);
+
+		foreach (var conflict in result.Conflicts)
+			collector.EmitWarning(string.Empty, FormatNotOverwrittenWarning(args.S3BucketName, conflict));
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
+		if (result.NotOverwritten > 0)
+			collector.EmitError(string.Empty, FormatNotOverwrittenError(result));
+
 		// No registry refresh here: the scrubber Lambda is the sole producer of the public
 		// registry.json, reconciled from actual public bucket state on every S3 event this upload
 		// just emitted (elastic/docs-eng-team#688). A private-bucket registry no longer exists.
-		return result.Failed == 0;
+		return result.Failed == 0 && result.NotOverwritten == 0;
+	}
+
+	private void LogUploadComplete(UploadResult result)
+	{
+		if (result.NotOverwritten > 0)
+		{
+			_logger.LogInformation(
+				"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {NotOverwritten} not overwritten, {Failed} failed",
+				result.Uploaded,
+				result.New,
+				result.Replaced,
+				result.Skipped,
+				result.NotOverwritten,
+				result.Failed
+			);
+			return;
+		}
+
+		_logger.LogInformation(
+			"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {Failed} failed",
+			result.Uploaded,
+			result.New,
+			result.Replaced,
+			result.Skipped,
+			result.Failed
+		);
+	}
+
+	private static string FormatNotOverwrittenError(UploadResult result)
+	{
+		var markerCount = result.Conflicts.Count(static c => IsPrAliasMarker(c));
+		if (markerCount == result.NotOverwritten && markerCount > 0)
+			return $"{markerCount} PR-alias marker(s) already exist at the destination and were not overwritten.";
+
+		return $"{result.NotOverwritten} file(s) already exist at the destination and were not overwritten.";
+	}
+
+	private static string FormatNotOverwrittenWarning(string bucket, UploadConflict conflict)
+	{
+		var uri = $"s3://{bucket}/{conflict.S3Key}";
+		if (IsPrAliasMarker(conflict))
+			return FormatMarkerNotOverwrittenWarning(uri, conflict);
+
+		var local = string.IsNullOrEmpty(conflict.LocalPath) ? "local changelog" : conflict.LocalPath;
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Merge the products (and other fields) manually, or re-run without --no-overwrite to replace.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Could not fetch the existing remote changelog. Merge manually, or re-run without --no-overwrite to replace.";
+	}
+
+	private static string FormatMarkerNotOverwrittenWarning(string uri, UploadConflict conflict)
+	{
+		var canonicalPr = TryMarkerLink(conflict.RemoteContent) ?? TryMarkerLink(conflict.InlineContent);
+		var pointer = canonicalPr is null
+			? "The remote object is a pointer to another changelog, not a full entry."
+			: $"The remote object is a pointer to the canonical changelog for PR {canonicalPr}, not a full entry.";
+		var source = string.IsNullOrEmpty(conflict.LocalPath)
+			? "Upload writes this alias because a local changelog lists more than one PR."
+			: $"Upload writes this alias because {conflict.LocalPath} lists more than one PR.";
+		var body = conflict.RemoteContent is { Length: > 0 } remote
+			? $"\nExisting remote marker:\n{remote}"
+			: " Could not fetch the existing remote marker.";
+
+		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run without --no-overwrite to replace it.{body}";
+	}
+
+	private static bool IsPrAliasMarker(UploadConflict conflict) =>
+		conflict.InlineContent is not null || TryMarkerLink(conflict.RemoteContent) is not null;
+
+	private static string? TryMarkerLink(string? yaml)
+	{
+		if (string.IsNullOrWhiteSpace(yaml))
+			return null;
+
+		try
+		{
+			var entry = ReleaseNotesSerialization.DeserializeEntry(yaml);
+			return entry.IsMarker ? entry.Link : null;
+		}
+		catch (Exception)
+		{
+			return null;
+		}
 	}
 
 	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
@@ -244,7 +342,7 @@ public class ChangelogUploadService(
 			foreach (var (markerFileName, markerContent) in markerEntries)
 			{
 				var markerKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, markerFileName);
-				targets.Add(new UploadTarget(string.Empty, markerKey, markerContent));
+				targets.Add(new UploadTarget(filePath, markerKey, markerContent));
 			}
 		}
 
@@ -439,6 +537,76 @@ public class ChangelogUploadService(
 		}
 	}
 
+	private IReadOnlyList<UploadTarget> DiscoverTargets(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		IReadOnlyList<string> directories
+	)
+	{
+		var targets = new List<UploadTarget>();
+		foreach (var directory in directories)
+		{
+			var found = args.ArtifactType switch
+			{
+				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
+				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+			};
+			targets.AddRange(found);
+		}
+
+		return targets;
+	}
+
+	/// <summary>
+	/// Directories to scan for bundle/amend YAML: explicit <c>--directory</c>, else
+	/// <c>bundle.output_directory</c> plus each profile <c>output_directory</c>, else
+	/// <c>bundle.directory</c>, else <c>docs/releases</c>. Each directory is scanned
+	/// <see cref="SearchOption.TopDirectoryOnly"/>.
+	/// </summary>
+	internal static IReadOnlyList<string> CollectBundleScanDirectories(string? explicitDirectory, ChangelogConfiguration? config)
+	{
+		if (!string.IsNullOrWhiteSpace(explicitDirectory))
+			return [explicitDirectory];
+
+		var dirs = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		AddUnique(dirs, seen, config?.Bundle?.OutputDirectory);
+		if (config?.Bundle?.Profiles != null)
+		{
+#pragma warning disable CS0618
+			foreach (var profile in config.Bundle.Profiles.Values)
+				AddUnique(dirs, seen, profile.OutputDirectory);
+#pragma warning restore CS0618
+		}
+
+		if (dirs.Count == 0)
+			AddUnique(dirs, seen, config?.Bundle?.Directory);
+		if (dirs.Count == 0)
+			AddUnique(dirs, seen, "docs/releases");
+		return dirs;
+	}
+
+	private static void AddUnique(List<string> dirs, HashSet<string> seen, string? directory)
+	{
+		if (string.IsNullOrWhiteSpace(directory) || !seen.Add(directory))
+			return;
+		dirs.Add(directory);
+	}
+
+	private async Task<IReadOnlyList<string>> ResolveBundleScanDirectories(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		Cancel ctx
+	)
+	{
+		if (!string.IsNullOrWhiteSpace(args.Directory) || _configLoader == null)
+			return CollectBundleScanDirectories(args.Directory, null);
+
+		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx).ConfigureAwait(false);
+		return CollectBundleScanDirectories(null, config);
+	}
+
 	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
 		if (!string.IsNullOrWhiteSpace(args.Directory))
@@ -449,17 +617,5 @@ public class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
-	}
-
-	private async Task<string?> ResolveBundleDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
-	{
-		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return args.Directory;
-
-		if (_configLoader == null)
-			return "docs/releases";
-
-		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }

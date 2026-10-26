@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -10,7 +11,9 @@ namespace Elastic.Documentation.Site.Navigation;
 
 public class IsolatedBuildNavigationHtmlWriter(
 	BuildContext context,
-	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot,
+	IReadOnlyList<NavigationSelectOption>? versionSwitcher = null,
+	bool suppressNavigationDropdown = false
 ) : INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
@@ -54,8 +57,9 @@ public class IsolatedBuildNavigationHtmlWriter(
 		// Top-level items always come from the docset root (siteRoot) so the dropdown
 		// correctly lists all sections even when renderRoot is a nested island.
 		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
-		var isUsingDropdown = context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown;
-		return NavigationRenderModel.Create(
+		var isUsingDropdown = !suppressNavigationDropdown
+			&& (context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
+		var model = NavigationRenderModel.Create(
 			tree: renderRoot,
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
@@ -63,5 +67,6 @@ public class IsolatedBuildNavigationHtmlWriter(
 			isGlobalAssemblyBuild: false,
 			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
 		);
+		return versionSwitcher is { Count: > 0 } ? model with { VersionSwitcher = versionSwitcher } : model;
 	}
 }

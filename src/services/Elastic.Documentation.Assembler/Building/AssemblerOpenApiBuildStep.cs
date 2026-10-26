@@ -4,12 +4,15 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics;
+using System.Text;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown;
 using Microsoft.Extensions.Logging;
@@ -21,10 +24,11 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task BuildAsync(
+	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
+		TopNavRenderModel? siteTopNav,
 		Cancel ctx
 	)
 	{
@@ -37,31 +41,47 @@ public static class AssemblerOpenApiBuildStep
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return;
+			return [];
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return;
+			return [];
 		}
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
 		using var versionIndexClient = new VersionIndexClient();
 
+		var planned = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(owners.Count);
 		foreach (var owner in owners)
 		{
 			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
-			var generator = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
-			var openApiGenerator = new OpenApiGenerator(
-				logFactory,
-				owner.Set.BuildContext,
-				generator.MarkdownStringRenderer,
-				versionIndexClient
+			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
+			planned.Add(
+				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
+				{
+					SiteTopNav = siteTopNav
+				})
 			);
-			var entries = await openApiGenerator.GenerateProducts(ctx).ConfigureAwait(false);
+		}
+
+		var hubEntries = new List<ApiCatalogEntry>();
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var (_, generator) in planned)
+		{
+			foreach (var entry in await generator.ResolveCatalogEntries(ctx).ConfigureAwait(false))
+			{
+				if (seenKeys.Add(entry.Key))
+					hubEntries.Add(entry);
+			}
+		}
+
+		foreach (var (_, generator) in planned)
+		{
+			var entries = await generator.GenerateProducts(hubEntries: hubEntries, ctx).ConfigureAwait(false);
 			catalogEntries.AddRange(entries);
 		}
 
@@ -73,8 +93,10 @@ public static class AssemblerOpenApiBuildStep
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
 				versionIndexClient
-			);
+			)
+			{ SiteTopNav = siteTopNav };
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
+			await WriteApiLlmsTxt(assembleContext, catalogEntries, ctx).ConfigureAwait(false);
 		}
 
 		stopwatch.Stop();
@@ -83,6 +105,17 @@ public static class AssemblerOpenApiBuildStep
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds
 		);
+		return catalogEntries;
+	}
+
+	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
+	{
+		var canonicalBaseUrl = new Uri(assembleContext.Environment.Uri);
+		var content = new LlmsNavigationEnhancer().GenerateApiHubIndex(catalogEntries, canonicalBaseUrl);
+		var directory = assembleContext.WriteFileSystem.Path.Join(assembleContext.OutputWithPathPrefixDirectory.FullName, "api");
+		_ = assembleContext.WriteFileSystem.Directory.CreateDirectory(directory);
+		var path = assembleContext.WriteFileSystem.Path.Join(directory, "llms.txt");
+		await assembleContext.WriteFileSystem.File.WriteAllTextAsync(path, content, Encoding.UTF8, ctx).ConfigureAwait(false);
 	}
 
 	internal static IReadOnlyList<AssemblerApiOwner> DiscoverApiOwners(
@@ -99,8 +132,13 @@ public static class AssemblerOpenApiBuildStep
 			if (apiConfigurations is null || apiConfigurations.Count == 0)
 				continue;
 
+			var publishesApi = false;
 			foreach (var apiKey in apiConfigurations.Keys)
 			{
+				if (IsolatedApiAliases.IsFixtureKey(apiKey))
+					continue;
+
+				publishesApi = true;
 				if (keyOwners.TryGetValue(apiKey, out var existingRepository))
 				{
 					collector.EmitGlobalError(
@@ -112,7 +150,8 @@ public static class AssemblerOpenApiBuildStep
 				keyOwners[apiKey] = set.Checkout.Repository.Name;
 			}
 
-			owners.Add(new AssemblerApiOwner(set));
+			if (publishesApi)
+				owners.Add(new AssemblerApiOwner(set));
 		}
 
 		return owners;

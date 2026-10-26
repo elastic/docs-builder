@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>
+<h2 class="section-header api-param-section-header" id="@Model.Anchor" data-section="@Model.Anchor" aria-label="@Model.Title">
+	<a class="headerlink api-param-section-title" href="#@Model.Anchor">@Model.Title</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="@Model.Anchor-list"
+		aria-label="Toggle @Model.Title">
+		@(await RenderPartialAsync<_ParamSummary, Elastic.ApiExplorer.Infrastructure.ParamSectionHeader>(Model))
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>

@@ -20,6 +20,12 @@ public record ProductsConfig
 	/// Each entry has product ID and optional lifecycle.
 	/// </summary>
 	public IReadOnlyList<DefaultProduct>? Default { get; init; }
+
+	/// <summary>
+	/// Products that a label-derived product implies, keyed by product ID. When a label maps an entry to a
+	/// product, the entry also gets the products listed here for it. Keys compare case-insensitively.
+	/// </summary>
+	public IReadOnlyDictionary<string, IReadOnlyList<string>>? Implies { get; init; }
 }
 
 /// <summary>

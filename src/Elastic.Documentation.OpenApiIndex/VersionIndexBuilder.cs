@@ -10,7 +10,9 @@ namespace Elastic.Documentation.OpenApiIndex;
 /// Builds a <see cref="RootVersionIndex"/> from the object keys in the <c>elastic-docs-openapi-specs</c>
 /// bucket, keeping the highest minor published for each major. Keys are expected in the shape written by
 /// <c>elastic/docs-actions/openapi/upload</c>: <c>{org}/{repo}/{version}/{fileName}</c>, where
-/// <c>version</c> is either <c>main</c> or a validated <c>{major}.{minor}</c> release version.
+/// <c>version</c> is the publishing branch: <c>main</c>, <c>master</c>, or a validated
+/// <c>{major}.{minor}</c> release version. <c>master</c> indexes under the <c>main</c> moniker so
+/// a repo keeps its real branch name in the object key without every workflow overriding it.
 /// </summary>
 public static class VersionIndexBuilder
 {
@@ -69,10 +71,12 @@ public static class VersionIndexBuilder
 	/// <summary>Resolves the index key ("main", or the major number) and a sortable minor for a version segment.</summary>
 	private static bool TryParseVersion(string version, out string major, out int minor)
 	{
-		if (version == "main")
+		// Both default-branch names share the "main" key. If a repo somehow publishes from both,
+		// the higher minor wins like any other collision, so main beats master.
+		if (version is "main" or "master")
 		{
 			major = "main";
-			minor = 0;
+			minor = version == "main" ? 1 : 0;
 			return true;
 		}
 

@@ -7,8 +7,8 @@ using Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ApplicabilitySwitchTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(
-	output,
+[InheritsTests]
+public class ApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
 
@@ -34,10 +34,10 @@ This feature has been removed from Elastic Cloud Enterprise.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ParsesApplicabilitySwitchItems()
 	{
 		var items = Block!.OfType<AppliesItemBlock>().ToArray();
@@ -46,10 +46,10 @@ This feature has been removed from Elastic Cloud Enterprise.
 			items[i].Index.Should().Be(i);
 	}
 
-	[Fact]
+	[Test]
 	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesToDefinitions()
 	{
 		var items = Block!.OfType<AppliesItemBlock>().ToArray();
@@ -58,7 +58,7 @@ This feature has been removed from Elastic Cloud Enterprise.
 		items[2].AppliesToDefinition.Should().Be("ece: removed");
 	}
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType()
 	{
 		Block!.Directive.Should().Be("applies-switch");
@@ -70,8 +70,8 @@ This feature has been removed from Elastic Cloud Enterprise.
 
 // Reproduces the real-world case: a % comment block between {applies-switch} and
 // the first {applies-item} previously pushed all item indices to 1, 2, 3.
-public class ApplicabilitySwitchWithCommentTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(
-	output,
+[InheritsTests]
+public class ApplicabilitySwitchWithCommentTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
 
@@ -89,7 +89,7 @@ Content B
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ItemIndicesAreZeroBased()
 	{
 		var items = Block!.OfType<AppliesItemBlock>().ToArray();
@@ -98,12 +98,12 @@ Content B
 			items[i].Index.Should().Be(i);
 	}
 
-	[Fact]
+	[Test]
 	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
 }
 
-public class MultipleApplicabilitySwitchTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(
-	output,
+[InheritsTests]
+public class MultipleApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 :::::{applies-switch}
 ::::{applies-item} stack: ga 8.11
@@ -121,7 +121,7 @@ Content for preview version
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesMultipleApplicabilitySwitches()
 	{
 		var switches = Document.OfType<AppliesSwitchBlock>().ToArray();
@@ -139,8 +139,8 @@ Content for preview version
 	}
 }
 
-public class GroupApplicabilitySwitchTests(ITestOutputHelper output) : DirectiveTest<AppliesSwitchBlock>(
-	output,
+[InheritsTests]
+public class GroupApplicabilitySwitchTests() : DirectiveTest<AppliesSwitchBlock>(
 	"""
 ::::{applies-switch}
 :::{applies-item} stack: ga 8.11
@@ -174,7 +174,7 @@ Content for removed version
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesMultipleApplicabilitySwitches()
 	{
 		var switches = Document.OfType<AppliesSwitchBlock>().ToArray();
@@ -191,7 +191,7 @@ Content for removed version
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesGroup()
 	{
 		var switches = Document.OfType<AppliesSwitchBlock>().ToArray();
@@ -201,7 +201,7 @@ Content for removed version
 			s.GetGroupKey().Should().Be("applies-switches");
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesSyncKey()
 	{
 		var switchBlock = Document.OfType<AppliesSwitchBlock>().First();
@@ -218,7 +218,7 @@ Content for removed version
 		items[0].SyncKey.Should().NotBe(items[2].SyncKey, "Different applies_to definitions should produce different sync keys");
 	}
 
-	[Fact]
+	[Test]
 	public void NormalizesSyncKeyOrder()
 	{
 		// Test that different orderings of the same applies_to definition generate the same sync key
@@ -237,7 +237,7 @@ Content for removed version
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratesConsistentSyncKeysForYamlObjects()
 	{
 		// Test that YAML object syntax and simple syntax produce the same sync key
@@ -267,7 +267,7 @@ Content for removed version
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratesDeterministicSyncKeysAcrossMultipleRuns()
 	{
 		var expectedKeys = new Dictionary<string, string>

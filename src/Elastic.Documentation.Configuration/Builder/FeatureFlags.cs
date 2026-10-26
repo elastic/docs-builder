@@ -28,6 +28,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public string? WebsiteSearchScriptUrl { get; set; }
 
+	public string? WafIntegrationUrl { get; set; }
+
 	public bool AirGappedEnabled { get => IsEnabled("air-gapped"); set => _featureFlags["air-gapped"] = value; }
 
 	public bool DiagnosticsPanelEnabled { get => IsEnabled("diagnostics-panel"); set => _featureFlags["diagnostics-panel"] = value; }
@@ -41,6 +43,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 	public bool GuideNavEnabled { get => IsEnabled("guide-nav"); set => _featureFlags["guide-nav"] = value; }
 
 	public bool NavigationPreviewEnabled { get => IsEnabled("navigation-preview"); set => _featureFlags["navigation-preview"] = value; }
+
+	public bool PageFeedbackEnabled { get => IsEnabled("page-feedback"); set => _featureFlags["page-feedback"] = value; }
 
 	private bool IsEnabled(string key)
 	{

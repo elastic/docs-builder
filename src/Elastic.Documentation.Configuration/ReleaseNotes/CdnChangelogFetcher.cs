@@ -114,9 +114,12 @@ public sealed class CdnChangelogFetcher : IDisposable
 		string? version,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx
+		Cancel ctx,
+		Action<string>? emitNotFound = null
 	)
 	{
+		emitNotFound ??= emitError;
+
 		// Defense-in-depth mirroring the entry fetcher's pool validation: reject anything the producer
 		// would have refused to upload before building the URI, so normalization (e.g. a ".." product)
 		// cannot redirect the fetch outside the bundle layout.
@@ -140,9 +143,15 @@ public sealed class CdnChangelogFetcher : IDisposable
 				if (registry is not null && shallowToken is not null)
 					WriteCachedText(RegistryCacheKey(product, shallowToken), registryText);
 			}
-			catch (Exception ex) when (ex is not OperationCanceledException)
+			catch (Exception ex) when (ex is not OperationCanceledException || !ctx.IsCancellationRequested)
 			{
-				emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
+				// True caller cancellation (IsCancellationRequested == true) is re-thrown by the filter above.
+				// HttpClient.Timeout fires TaskCanceledException with IsCancellationRequested == false — treat
+				// it as a non-fatal fetch error so inferred-product builds don't fault on CDN timeouts.
+				if (ex is HttpRequestException { StatusCode: System.Net.HttpStatusCode.NotFound })
+					emitNotFound($"No CDN registry found for product '{product}' at {registryUri} (404).");
+				else
+					emitError($"Could not fetch changelog registry for product '{product}' from {registryUri}: {ex.Message}");
 				return [];
 			}
 

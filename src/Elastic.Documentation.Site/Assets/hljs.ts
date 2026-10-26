@@ -23,9 +23,16 @@ function ensureHighlightReady(): Promise<void> {
             hljs.registerLanguage(name, languageFn)
         }
         hljs.registerAliases(['sh'], { languageName: 'shell' })
+        hljs.registerAliases(['fish'], { languageName: 'bash' })
+        hljs.registerAliases(['batch'], { languageName: 'dos' })
     })
 
     return allLanguagesReady
+}
+
+/** Starts loading the languages early; pages with code call this before the first init step runs. */
+export function preloadHighlight(): void {
+    void ensureHighlightReady()
 }
 
 export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
@@ -40,9 +47,10 @@ export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
 }
 
 export async function initHighlight(): Promise<void> {
-    const root = document.querySelector('#markdown-content')
-    if (!root) return
-    await highlightCodeBlocks(root)
+    const roots = document.querySelectorAll(
+        '#markdown-content, #api-examples-panel'
+    )
+    for (const root of roots) await highlightCodeBlocks(root)
 }
 
 hljs.registerLanguage('apiheader', function () {
@@ -168,6 +176,87 @@ hljs.registerLanguage('kuery', function () {
     }
 })
 hljs.registerAliases(['kql'], { languageName: 'kuery' })
+
+// Elasticsearch Console samples: METHOD path + optional JSON body
+hljs.registerLanguage('console', function () {
+    return {
+        name: 'console',
+        aliases: ['es-console'],
+        contains: [
+            {
+                // `starts` so the path is highlighted after the method, rather than inside a
+                // rule whose `begin` has already consumed it.
+                className: 'keyword',
+                begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+                starts: {
+                    end: /$/,
+                    contains: [{ className: 'string', begin: /\S+/ }],
+                },
+            },
+            {
+                begin: /\{/,
+                // No `$`: highlight.js compiles regexes as multiline, so it would end the
+                // body after its first line. It runs to the next request or the end of the sample.
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)/,
+                subLanguage: 'json',
+                relevance: 0,
+            },
+        ],
+    }
+})
+
+// cURL samples: command, flags, HTTP methods, strings, line continuations
+hljs.registerLanguage('curl', function () {
+    const variable = {
+        className: 'variable',
+        begin: /\$(?:\{[^}\s"']*\}|[A-Za-z_]\w*)/,
+    }
+    return {
+        name: 'curl',
+        contains: [
+            {
+                className: 'built_in',
+                begin: /\bcurl\b/,
+            },
+            {
+                className: 'params',
+                begin: /--?[A-Za-z][\w-]*/,
+            },
+            {
+                className: 'keyword',
+                begin: /\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+            },
+            {
+                className: 'symbol',
+                begin: /\\$/,
+            },
+            {
+                className: 'string',
+                begin: /"/,
+                end: /"/,
+                contains: [{ begin: /\\./ }, variable],
+                relevance: 0,
+            },
+            {
+                // JSON request body, highlighted as JSON between the quotes
+                begin: /'(?=\s*[{[])/,
+                end: /'/,
+                subLanguage: 'json',
+                excludeBegin: true,
+                excludeEnd: true,
+                relevance: 0,
+            },
+            {
+                className: 'string',
+                begin: /'/,
+                end: /'/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            variable,
+        ],
+    }
+})
 
 hljs.addPlugin(mergeHTMLPlugin)
 

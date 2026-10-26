@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text;
+using Elastic.Changelog;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -13,7 +14,7 @@ namespace Elastic.Changelog.Evaluation;
 /// <list type="bullet">
 ///   <item><c>post-success-comment.js</c> → <see cref="RenderEntryCommitted"/></item>
 ///   <item><c>post-comment-only.js</c>     → <see cref="RenderCommentOnly"/></item>
-///   <item><c>post-failure-comment.js</c>  → <see cref="RenderCannotGenerate"/></item>
+///   <item><c>post-failure-comment.js</c>  → <see cref="RenderLabelsNeeded"/></item>
 /// </list>
 /// </para>
 /// <para>
@@ -37,6 +38,138 @@ internal static class ChangelogCommentRenderer
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Public render methods
 	// ──────────────────────────────────────────────────────────────────────────────────────────
+
+	/// <summary>
+	/// Renders the collapsible block echoing the Impact and Action captured for a breaking change,
+	/// so authors and reviewers can see what bundling will pick up. Values are fenced so author text
+	/// cannot close the <c>&lt;details&gt;</c> block or alter the comment layout.
+	/// </summary>
+	internal static string RenderBreakingChangeCaptured(string? impact, string? action) =>
+		string.Join(
+			"\n",
+			"<details><summary>Breaking change: captured Impact and Action</summary>",
+			"",
+			"**Impact**",
+			"",
+			string.IsNullOrWhiteSpace(impact) ? "_Not provided_" : WrapCodeFence(impact.Trim(), "text"),
+			"",
+			"**Action**",
+			"",
+			string.IsNullOrWhiteSpace(action) ? "_Not provided_" : WrapCodeFence(action.Trim(), "text"),
+			"",
+			"To change these, edit the `## Impact` and `## Action` sections in the PR description.",
+			"",
+			"</details>"
+		);
+
+	/// <summary>Appends the captured Impact/Action block to an already-rendered comment body.</summary>
+	internal static string AppendBreakingChangeCaptured(string body, string? impact, string? action) =>
+		Truncate(body + "\n\n" + RenderBreakingChangeCaptured(impact, action));
+
+	/// <summary>
+	/// Renders the body shown on success for a breaking change that has nothing else to say: a short confirmation plus
+	/// the captured Impact and Action. <paramref name="entryGenerated"/> is <c>true</c> only when the pipeline generated
+	/// an entry, which the validate-only run never does.
+	/// </summary>
+	internal static string RenderBreakingChangeResolved(string? impact, string? action, bool entryGenerated) =>
+		Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				entryGenerated
+					? "✅ **Changelog entry generated for this breaking change.**"
+					: "✅ **Breaking change: Impact and Action found in the PR description.**",
+				"",
+				RenderBreakingChangeCaptured(impact, action)
+			)
+		);
+
+	/// <summary>
+	/// Renders the conflicting-impact-action body: the PR has a changelog entry file, which is the source of Impact and Action,
+	/// and its description has sections that differ from it.
+	/// </summary>
+	internal static string RenderConflictingImpactAction(string? entryPath, string? conflictingSections, int prNumber)
+	{
+		var sections = (conflictingSections ?? "impact,action")
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")
+			.ToList();
+		var headings = string.Join(" and ", sections.Select(s => $"`## {s}`"));
+		var file = string.IsNullOrWhiteSpace(entryPath) ? "the changelog entry file" : $"the changelog entry {WrapInlineCode(entryPath)}";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"❌ PR #{prNumber} is a breaking change with {headings} in its description that differ from {file}.",
+				"",
+				"A changelog entry file on the PR is the source of Impact and Action. " +
+					"Make the description match the entry file exactly, or remove the section(s) from the description."
+			)
+		);
+	}
+
+	/// <summary>
+	/// Renders the missing-impact-action body: tells the author which sections their breaking-change PR
+	/// description lacks and shows a copy-pasteable template.
+	/// </summary>
+	internal static string RenderMissingImpactAction(string? missingSections, int prNumber, string? entryPath = null)
+	{
+		if (!string.IsNullOrWhiteSpace(entryPath))
+		{
+			var fields = (missingSections ?? "impact,action")
+				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+				.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "action" : "impact")
+				.ToList();
+			var snippet = string.Join(
+				"\n",
+				fields.Select(
+					f => f == "impact"
+						? "impact: Who and what is affected by this change."
+						: "action: The steps or workarounds users need to adapt."
+				)
+			);
+			return Truncate(
+				string.Join(
+					"\n",
+					Title,
+					"",
+					$"❌ PR #{prNumber} is a breaking change but its changelog entry {WrapInlineCode(entryPath)} is missing {string.Join(" and ", fields.Select(f => WrapInlineCode(f + ":")))}.",
+					"",
+					"The release notes publish these fields so users know who is affected and what to do. Add them to the entry file:",
+					"",
+					WrapCodeFence(snippet, "yaml")
+				)
+			);
+		}
+
+		var missing = (missingSections ?? "impact,action")
+			.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+			.Select(s => string.Equals(s, "action", StringComparison.OrdinalIgnoreCase) ? "Action" : "Impact")
+			.ToList();
+		var headings = string.Join(" and ", missing.Select(m => $"`## {m}`"));
+
+		var template = new List<string>();
+		if (missing.Contains("Impact"))
+			template.AddRange(["## Impact", "Who and what is affected by this change.", ""]);
+		if (missing.Contains("Action"))
+			template.AddRange(["## Action", "The steps or workarounds users need to adapt.", ""]);
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"❌ PR #{prNumber} is a breaking change but its description is missing {headings}.",
+				"",
+				"The release notes publish these sections so users know who is affected and what to do. Add the following to the PR description:",
+				"",
+				WrapCodeFence(string.Join("\n", template).TrimEnd(), "markdown")
+			)
+		);
+	}
 
 	/// <summary>
 	/// Renders the "entry committed" body: blob and edit links for the committed changelog file.
@@ -105,31 +238,68 @@ internal static class ChangelogCommentRenderer
 	}
 
 	/// <summary>
-	/// Renders the "cannot generate" body: the error headline plus optional label tables and skip-label
-	/// guidance, ported from <c>post-failure-comment.js</c>.
+	/// Renders the Step 1 (label gate) comment body: tells the author which labels are required
+	/// so the PR's release-notes status can be determined. Tone is "labels not set yet", not
+	/// "generation failed" — the author just hasn't told us what type of change this is.
+	/// <para>
+	/// Step 2 (changelog file invalid — <c>evaluate-pr</c>, <see cref="ValidationGate.File"/>)
+	/// and Step 3 (full require-changelog-file failure) will use separate render methods added
+	/// when those workflow paths are built.
+	/// </para>
 	/// </summary>
-	internal static string RenderCannotGenerate(string? labelTable, string? productLabelTable, string? skipLabels, string? configFile)
+	internal static string RenderLabelsNeeded(
+		string? labelTable,
+		string? productLabelTable,
+		string? skipLabels,
+		string? configFile,
+		string? ambiguousTypeLabels = null,
+		string? owner = null,
+		string? repo = null,
+		string? defaultBranch = null,
+		string? areaLabelTable = null
+	)
 	{
-		var configFileCode = WrapInlineCode(string.IsNullOrWhiteSpace(configFile) ? "docs/changelog.yml" : configFile);
+		// An absolute path is a runner location, not a repository path, so it cannot form a link.
+		var configFileName = string.IsNullOrWhiteSpace(configFile) || Path.IsPathRooted(configFile) ? "docs/changelog.yml" : configFile;
+		var configUrl = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+			? $"https://github.com/{owner}/{repo}/blob/{defaultBranch ?? "main"}/{configFileName}"
+			: null;
+		var configRef = configUrl != null ? $"[{configFileName}]({configUrl})" : WrapInlineCode(configFileName);
 
+		var hasAmbiguousType = !string.IsNullOrWhiteSpace(ambiguousTypeLabels);
 		var hasTypeIssue = !string.IsNullOrWhiteSpace(labelTable);
 		var hasProductIssue = !string.IsNullOrWhiteSpace(productLabelTable);
+		var hasAreaIssue = !string.IsNullOrWhiteSpace(areaLabelTable);
 
-		var headline = hasTypeIssue && hasProductIssue
-			? "⚠️ **Cannot generate changelog:** required type and product labels are missing on this PR."
-			: hasProductIssue
-				? "⚠️ **Cannot generate changelog:** no matching product label found on this PR."
-				: "⚠️ **Cannot generate changelog:** no matching type label found on this PR.";
+		var headline = hasAmbiguousType
+			? "🏷️ **Multiple type labels set** — a PR can only have one type. Remove all but one."
+			: BuildMissingLabelsHeadline(hasTypeIssue, hasProductIssue, hasAreaIssue);
 
 		var sections = new List<string>();
 
-		if (hasTypeIssue)
-			sections.Add(string.Join("\n", "", "🔖 Add one of these **type** labels to your PR:", "", labelTable));
-		else if (!hasProductIssue)
-			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configFileCode}.");
+		if (hasAmbiguousType)
+		{
+			var conflicting = ambiguousTypeLabels!.Split(
+				',',
+				StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+			).Select(WrapInlineCode);
+			sections.Add($"\n🔖 Conflicting type labels found: {string.Join(", ", conflicting)}. Keep only one.");
+		}
+		else if (hasTypeIssue)
+		{
+			var inlineLabels = labelTable!.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
+				WrapInlineCode
+			);
+			sections.Add($"\n🔖 Add one of these type labels to your PR: {string.Join(", ", inlineLabels)}");
+		}
+		else if (!hasProductIssue && !hasAreaIssue)
+			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configRef}.");
 
 		if (hasProductIssue)
 			sections.Add(string.Join("\n", "", "📦 Add one or more **product** labels to your PR:", "", productLabelTable));
+
+		if (hasAreaIssue)
+			sections.Add(string.Join("\n", "", "🗂️ Add one or more **area** labels to your PR:", "", areaLabelTable));
 
 		string skipSection;
 		if (!string.IsNullOrWhiteSpace(skipLabels))
@@ -137,28 +307,283 @@ internal static class ChangelogCommentRenderer
 			var formatted = skipLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(
 				WrapInlineCode
 			);
-			skipSection = $"\n⏭️ To skip changelog generation, add one of these labels: {string.Join(", ", formatted)}";
+			skipSection = $"\n⏭️ To exclude this PR from release notes, add one of these labels: {string.Join(", ", formatted)}";
 		}
 		else
 		{
-			skipSection = $"\n⏭️ No skip labels are configured. To allow skipping changelog generation, "
-				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configFileCode}.";
+			skipSection = $"\n⏭️ No exclude labels are configured. To allow excluding PRs from release notes, "
+				+ $"add a label to {WrapInlineCode("rules.create.exclude")} in {configRef}.";
 		}
 
 		var allParts = new List<string> { Title, "", headline };
 		allParts.AddRange(sections);
 		allParts.Add(skipSection);
 		allParts.Add("");
-		allParts.Add($"📄 See {configFileCode} for the full changelog configuration.");
+		var configFooter = configUrl != null
+			? $"📄 Inspect the [current changelog configuration]({configUrl})."
+			: $"📄 Inspect the current changelog configuration: {configRef}.";
+		allParts.Add(configFooter);
 
 		return Truncate(string.Join("\n", allParts));
 	}
 
 	/// <summary>
-	/// Renders the "resolved" body posted when a previously-failing PR is now valid, to avoid leaving
-	/// a stale failure comment.
+	/// Renders the opt-in success body: whether the PR will be part of the release notes and, when it will, its type, products and areas.
+	/// A breaking change's captured Impact and Action go into the same body so the PR never carries two comments.
 	/// </summary>
-	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ Changelog labels validated successfully.");
+	internal static string RenderReleaseNoteOutcome(ReleaseNoteOutcome outcome, string? impact = null, string? action = null)
+	{
+		if (!outcome.Included)
+		{
+			var reason = string.IsNullOrWhiteSpace(outcome.Reason) ? "of the changelog configuration" : outcome.Reason;
+			return Truncate(string.Join("\n", Title, "", $"⏭️ **This PR will not be part of the release notes** because {reason}."));
+		}
+
+		var parts = new List<string> { Title, "", "✅ **This PR will be part of the release notes.**", "" };
+		parts.AddRange(OutcomeFields(outcome));
+		if (impact is not null || action is not null)
+		{
+			parts.Add("");
+			parts.Add(RenderBreakingChangeCaptured(impact, action));
+		}
+		return Truncate(string.Join("\n", parts));
+	}
+
+	private static IEnumerable<string> OutcomeFields(ReleaseNoteOutcome outcome)
+	{
+		if (!string.IsNullOrWhiteSpace(outcome.Type))
+			yield return $"- **Type:** {WrapInlineCode(outcome.Type)}";
+		if (!string.IsNullOrWhiteSpace(outcome.Products))
+			yield return $"- **Products:** {WrapInlineCode(outcome.Products)}";
+		if (!string.IsNullOrWhiteSpace(outcome.Areas))
+			yield return $"- **Areas:** {WrapInlineCode(outcome.Areas)}";
+	}
+
+	/// <summary>
+	/// The single-pivot wordings are kept as they were; two or more missing pivots share one "labels needed" headline.
+	/// With nothing flagged, the type label is what the author has to add.
+	/// </summary>
+	private static string BuildMissingLabelsHeadline(bool hasTypeIssue, bool hasProductIssue, bool hasAreaIssue)
+	{
+		const string status = "so we can determine this PR's release-notes status.";
+		var missing = new List<string>();
+		if (hasTypeIssue)
+			missing.Add("type");
+		if (hasProductIssue)
+			missing.Add("product");
+		if (hasAreaIssue)
+			missing.Add("area");
+
+		return missing switch
+		{
+			[] or ["type"] => $"🏷️ **Changelog label needed** — add a type label {status}",
+			["product"] => $"🏷️ **Product label needed** — add a product label {status}",
+			["area"] => $"🏷️ **Area label needed** — add an area label {status}",
+			_ =>
+				$"🏷️ **Changelog labels needed** — add {string.Join(", ", missing.Take(missing.Count - 1))} and {missing[^1]} labels {status}"
+		};
+	}
+
+	/// <summary>
+	/// Renders the "resolved" body posted when a previously-failing PR now has the required labels,
+	/// clearing the stale Step 1 comment and confirming the release-notes status is determined.
+	/// </summary>
+	internal static string RenderResolved() => string.Join("\n", Title, "", "✅ **Changelog label set** — release-notes status confirmed.");
+
+	/// <summary>
+	/// Renders the "skipped" body posted when a PR carries a <c>changelog:skip</c> label,
+	/// clearing any stale failure comment left from before the skip label was added.
+	/// </summary>
+	internal static string RenderSkipped() =>
+		string.Join("\n", Title, "", "⏭️ **Excluded from release notes** — this PR will not appear in the changelog.");
+
+	/// <summary>
+	/// Renders the Step 2 (entry gate) body: one section per file listing errors first, then
+	/// warnings, each finding as a bullet. Files link to their GitHub blob URLs.
+	/// </summary>
+	internal static string RenderEntriesInvalid(IReadOnlyList<EntryFinding> findings, string? owner, string? repo, string? defaultBranch)
+	{
+		var branch = defaultBranch ?? "main";
+		var parts = new List<string> { Title, "", "📋 **Changelog entry file validation failed** — fix the issues below and push again." };
+
+		// Group by file, errors before warnings within each group
+		var byFile = findings.GroupBy(f => f.File).OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+		foreach (var group in byFile)
+		{
+			var filePath = group.Key;
+			var fileRef = !string.IsNullOrWhiteSpace(owner) && !string.IsNullOrWhiteSpace(repo)
+				? $"[{WrapInlineCode(filePath)}](https://github.com/{owner}/{repo}/blob/{branch}/{string.Join("/", filePath.Split('/').Select(Uri.EscapeDataString))})"
+				: WrapInlineCode(filePath);
+
+			parts.Add("");
+			parts.Add($"**{fileRef}**");
+
+			foreach (var finding in group.OrderBy(f => f.Severity))
+			{
+				var icon = finding.Severity == "Error" ? "❌" : "⚠️";
+				parts.Add($"- {icon} {finding.Message}");
+			}
+		}
+
+		return Truncate(string.Join("\n", parts));
+	}
+
+	/// <summary>
+	/// Renders the Step 2 (file gate) body: informs the author that no changelog entry file
+	/// was found for their PR and suggests the expected file path.
+	/// When <paramref name="isFork"/> is <c>true</c>, appends copy-pasteable bash and
+	/// docs-builder one-liner instructions so external contributors can add the file manually.
+	/// When <paramref name="canCommit"/> is <c>true</c> and <paramref name="isFork"/> is
+	/// <c>false</c>, the non-fork body tells the author automation will commit the entry.
+	/// </summary>
+	internal static string RenderMissingEntry(
+		string? changelogDir,
+		int prNumber,
+		bool isFork = false,
+		bool canCommit = true,
+		string? resolvedProducts = null
+	)
+	{
+		var dir = changelogDir ?? "docs/changelog";
+		var expectedPath = $"{dir}/{prNumber}.yaml";
+
+		if (isFork)
+		{
+			// Extract product IDs only — resolvedProducts can carry full specs like "elasticsearch 9.2 ga".
+			var parsedProducts = ProductArgument.ParseProductSpecs(resolvedProducts);
+			var productIds = parsedProducts.Select(p => p.Product).Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p!).ToList();
+
+			// Determine product line(s) for the YAML snippet and --products flag.
+			string productYamlLine;
+			string? productsFlag;
+			string? productsNote;
+			if (productIds.Count == 1)
+			{
+				productYamlLine = $"  - product: {productIds[0]}";
+				productsFlag = $"  --products {productIds[0]} \\";
+				productsNote = null;
+			}
+			else if (productIds.Count > 1)
+			{
+				var choices = string.Join(", ", productIds.Select(WrapInlineCode));
+				productYamlLine = $"  - product: your-product-id  # pick one of: {string.Join(", ", productIds)}";
+				productsFlag = null;
+				productsNote = $"Replace `your-product-id` with one of: {choices}.";
+			}
+			else
+			{
+				productYamlLine = "  - product: your-product-id";
+				productsFlag = null;
+				productsNote = null;
+			}
+
+			var docsBuilderLines = new List<string>
+			{
+				$"docs-builder changelog add \\",
+				$"  --concise \\",
+				$"  --pr {prNumber} \\",
+				"  --type enhancement \\",
+				"  --title \"Describe your change clearly\"",
+			};
+			if (productsFlag is not null)
+				docsBuilderLines.Insert(docsBuilderLines.Count - 1, productsFlag);
+
+			var bashScript = string.Join(
+				"\n",
+				$"mkdir -p -- \"{dir}\"",
+				$"cat > \"{expectedPath}\" << 'YAML'",
+				$"pr: {prNumber}",
+				"type: enhancement  # feature | enhancement | bug-fix | breaking-change",
+				"title: Describe your change clearly",
+				"products:",
+				productYamlLine,
+				"YAML"
+			);
+
+			var docsBuilderScript = string.Join("\n", docsBuilderLines);
+
+			var gitScript = string.Join(
+				"\n",
+				$"git add \"{expectedPath}\"",
+				$"git commit -m \"Add changelog entry for PR #{prNumber}\"",
+				"git push"
+			);
+
+			var parts = new List<string>
+			{
+				Title,
+				"",
+				$"📋 **Changelog entry needed** — this repository requires {WrapInlineCode(expectedPath)} for labeled PRs.",
+				"",
+				"As an external contributor the workflow cannot commit to your fork — add the entry manually and push.",
+				"",
+				"**Option 1 — create the file manually (no tooling required)**",
+				"",
+				WrapCodeFence(bashScript, "bash"),
+				"",
+				"**Option 2 — generate with `docs-builder`** (fetches title and type from the PR if `GITHUB_TOKEN` is set)",
+				"",
+				WrapCodeFence(docsBuilderScript, "bash"),
+			};
+			if (productsNote is not null)
+			{
+				parts.Add("");
+				parts.Add($"> ℹ️ {productsNote}");
+			}
+			parts.AddRange([
+				"",
+				"Then commit and push:",
+				"",
+				WrapCodeFence(gitScript, "bash"),
+				"",
+				"Adjust `type` and `title` to match your change. The changelog validation will re-run automatically once you push.",
+			]);
+
+			return Truncate(string.Join("\n", parts));
+		}
+
+		var nonForkBody = canCommit
+			? $"📋 **Changelog entry pending** — {WrapInlineCode(expectedPath)} will be committed automatically. "
+				+ $"If it does not appear shortly, add {WrapInlineCode(expectedPath)} to the PR branch manually."
+			: $"📋 **Changelog entry needed** — add {WrapInlineCode(expectedPath)} to the PR branch and push.";
+
+		return Truncate(string.Join("\n", Title, "", nonForkBody));
+	}
+
+	/// <summary>
+	/// Renders the "repository not onboarded" body: actionable error with copy-pasteable
+	/// <c>products.yml</c> snippet so the repository owner can self-serve registration.
+	/// </summary>
+	internal static string RenderRepositoryNotOnboarded(string repo)
+	{
+		var safeRepo = WrapInlineCode(repo);
+		var snippet =
+			$"""
+			  {repo}:
+			    display: '<human-readable name>'
+			    repository: '{repo}'
+			    features:
+			      release-notes: true
+			""";
+
+		return Truncate(
+			string.Join(
+				"\n",
+				Title,
+				"",
+				$"⚠️ **Repository {safeRepo} is not registered in `products.yml`** — the changelog pipeline cannot run until it is.",
+				"",
+				"Add a product entry to `config/products.yml` in `elastic/docs-builder` and wait for the next release:",
+				"",
+				WrapCodeFence(snippet, "yaml"),
+				"",
+				"See [`docs/documentation/catalog/products.md`](https://github.com/elastic/docs-builder/blob/main/docs/documentation/catalog/products.md) for the full product configuration reference.",
+				"",
+				"> **Note:** `config/products.yml` is embedded in the `docs-builder` binary. The change takes effect on the next `docs-builder` release, typically picked up by `release-notes.yml` workflows within a day."
+			)
+		);
+	}
 
 	// ──────────────────────────────────────────────────────────────────────────────────────────
 	// Injection-hardening helpers (ported from comment-helper.js)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using Elastic.Documentation.Site.Icons;
 using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
@@ -44,7 +45,7 @@ public partial class HeroBlock(DirectiveBlockParser parser, ParserContext contex
 		Icon = Prop("icon");
 		IconSvg = ProductIcons.Get(Icon);
 		Title = Prop("title");
-		Description = Prop("description");
+		Description = DirectiveLinkValidator.ResolveMarkdownLinks(Prop("description"), this, context);
 		(PrimaryActionLabel, PrimaryActionUrl) = ParseAction(Prop("primary-action"), context);
 		(SecondaryActionLabel, SecondaryActionUrl) = ParseAction(Prop("secondary-action"), context);
 		(TertiaryActionLabel, TertiaryActionUrl) = ParseAction(Prop("tertiary-action"), context);

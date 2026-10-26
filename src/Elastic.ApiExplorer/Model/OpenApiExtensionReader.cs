@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -24,11 +25,24 @@ public static class OpenApiExtensionReader
 {
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
-		extensions?.TryGetValue(key, out var value) == true && value is JsonNodeExtension json ? json.Node.GetValue<string>() : null;
+		extensions?.TryGetValue(key, out var value) == true
+			&& value is JsonNodeExtension { Node: JsonValue jsonValue }
+			&& jsonValue.TryGetValue<string>(out var text) ? text : null;
+
+	/// <summary>
+	/// Reads the raw <c>x-state</c> label (for example "Generally available; Added in 7.7.0") of an operation, a parameter or
+	/// a schema; null when absent or blank.
+	/// </summary>
+	public static string? GetState(IDictionary<string, IOpenApiExtension>? extensions) =>
+		TryGetString(extensions, "x-state") is { } state && !string.IsNullOrWhiteSpace(state) ? state.Trim() : null;
 
 	/// <summary>The <c>x-namespace</c> and <c>x-api-name</c> pair used to group operations into endpoints.</summary>
 	public static (string? Namespace, string? ApiName) GetNamespaceAndApiName(OpenApiOperation operation) =>
 		(TryGetString(operation.Extensions, "x-namespace"), TryGetString(operation.Extensions, "x-api-name"));
+
+	/// <summary>The operation summary, trimmed; null when absent or blank (specs sometimes emit <c>summary: ''</c>).</summary>
+	public static string? GetSummary(OpenApiOperation operation) =>
+		string.IsNullOrWhiteSpace(operation.Summary) ? null : operation.Summary.Trim();
 
 	/// <summary>Whether the operation is marked <c>x-beta: true</c>.</summary>
 	public static bool IsBeta(OpenApiOperation operation) =>
@@ -101,7 +115,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName;
+			var displayName = tagName.CapitalizeFirstLetter();
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;
@@ -124,10 +138,13 @@ public static class OpenApiExtensionReader
 	/// <summary>
 	/// Parses the <c>x-codeSamples</c> extension into code samples, ordered with Console first.
 	/// </summary>
-	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation) => ParseCodeSamples(operation.Extensions);
+
+	/// <summary>Parses the <c>x-codeSamples</c> extension of any extensible OpenAPI object, such as a request example.</summary>
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(IDictionary<string, IOpenApiExtension>? extensions)
 	{
 		if (
-			operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
+			extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
 			|| jsonExt.Node is not JsonArray samplesArray
 		)
@@ -145,21 +162,14 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(lang) || string.IsNullOrEmpty(source))
 				continue;
 
-			samples.Add(new CodeSample(lang, source, CodeSample.GetHighlightClass(lang)));
+			var (language, scenario) = CodeSample.SplitLanguage(lang);
+			var displaySource = string.Equals(language, "curl", StringComparison.OrdinalIgnoreCase)
+				? CurlSourceFormatter.Format(source)
+				: source;
+			samples.Add(new CodeSample(language, displaySource, CodeSample.GetHighlightClass(language)) { Scenario = scenario });
 		}
 
-		// Console first when present, then preserve spec order
-		samples.Sort(static (a, b) =>
-		{
-			var aIsConsole = string.Equals(a.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			var bIsConsole = string.Equals(b.Language, "Console", StringComparison.OrdinalIgnoreCase);
-			if (aIsConsole && !bIsConsole)
-				return -1;
-			if (!aIsConsole && bIsConsole)
-				return 1;
-			return 0;
-		});
-
-		return samples;
+		// Console first, then by language popularity; OrderBy is stable, so unranked languages keep spec order.
+		return [.. samples.OrderBy(static s => s.Rank)];
 	}
 }

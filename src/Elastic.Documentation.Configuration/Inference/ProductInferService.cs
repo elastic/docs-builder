@@ -13,18 +13,20 @@ namespace Elastic.Documentation.Configuration.Inference;
 public class ProductInferService(ProductsConfiguration productsConfiguration, GitCheckoutInformation? gitCheckout = null)
 {
 	/// <summary>
-	/// Infers a product from repository name.
-	/// Priority 1: Direct product match by repository name (products.yml key).
-	/// Priority 2: Product by repository configuration (product.repository).
+	/// Returns all products that map to <paramref name="repositoryName"/>.
+	/// One repo can map to many products (e.g., <c>cloud</c> → three cloud products).
+	/// </summary>
+	public IReadOnlyList<Product> InferProductsFromRepository(string repositoryName) =>
+		productsConfiguration.GetProductsByRepositoryName(repositoryName);
+
+	/// <summary>
+	/// Returns the single product for <paramref name="repositoryName"/>, or <c>null</c>
+	/// when there is no match or more than one match.
 	/// </summary>
 	public Product? InferProductFromRepository(string repositoryName)
 	{
-		// Priority 1: Direct product match by repository name
-		if (productsConfiguration.Products.TryGetValue(repositoryName, out var directMatch))
-			return directMatch;
-
-		// Priority 2: Product by repository configuration
-		return productsConfiguration.GetProductByRepositoryName(repositoryName);
+		var matches = InferProductsFromRepository(repositoryName);
+		return matches.Count == 1 ? matches[0] : null;
 	}
 
 	/// <summary>

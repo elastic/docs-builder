@@ -27,7 +27,7 @@ jobs:
     steps:
       - id: repo-basename
         run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Setup Pages
@@ -60,7 +60,7 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 

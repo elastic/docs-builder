@@ -1,0 +1,90 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text;
+using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+
+namespace Elastic.ApiExplorer.Types;
+
+internal static class SchemaCommonMark
+{
+	public static string Write(ApiSchema schema, SchemaPageModel page, ApiRenderContext context)
+	{
+		var markdown = new StringBuilder();
+		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
+		var openApiSchema = schema.Schema;
+		ApiCommonMark.Heading(markdown, 1, schema.DisplayName);
+
+		if (!string.IsNullOrEmpty(page.DictionaryTypeName))
+		{
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.DictionaryTypeName));
+			ApiCommonMark.Paragraph(
+				markdown,
+				$"This type represents a dictionary mapping string keys to {ApiCommonMark.CodeSpan(schema.DisplayName)} values."
+			);
+		}
+
+		if (!string.IsNullOrEmpty(openApiSchema.Description))
+		{
+			ApiCommonMark.Heading(markdown, 2, "Description");
+			ApiCommonMark.Prepared(markdown, openApiSchema.Description, apiBaseUrl);
+		}
+
+		if (page.ExternalDocs is { } docs)
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
+
+		if (page.EnumValues.Count > 0)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Enum values");
+			foreach (var enumValue in page.EnumValues)
+				_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(enumValue)}");
+			_ = markdown.AppendLine();
+		}
+
+		if (page.Requires is { } requires)
+			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+
+		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), page.UnionIntro, apiBaseUrl);
+
+		if (page.Properties is not null)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Properties");
+			ApiPropertyMarkdown.WriteList(markdown, page.Properties, apiBaseUrl);
+			_ = markdown.AppendLine();
+		}
+
+		if (page.AdditionalPropertiesType is not null)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Additional properties");
+			ApiPropertyMarkdown.WriteType(markdown, page.AdditionalPropertiesType);
+		}
+
+		if (openApiSchema.Examples is { Count: > 0 } examples)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Example");
+			ApiCommonMark.Fence(markdown, "json", examples[0].ToString());
+		}
+
+		return markdown.ToString();
+	}
+
+	/// <summary>The heading of a schema page's union section, naming the keyword the union came from.</summary>
+	public static string UnionHeading(UnionKeyword keyword) => $"Union types ({keyword.ToSchemaKeyword()})";
+
+	public static string UnionIntro(UnionKeyword keyword) =>
+		keyword == UnionKeyword.AnyOf ? "This type can be any of the following:" : "This type can be one of the following:";
+
+	private static void WriteUnion(StringBuilder markdown, ApiUnionVariants? variants, string heading, string intro, string apiBaseUrl)
+	{
+		if (variants is null)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, heading);
+		ApiCommonMark.Paragraph(markdown, intro);
+		ApiPropertyMarkdown.WriteVariants(markdown, variants, apiBaseUrl);
+		_ = markdown.AppendLine();
+	}
+}

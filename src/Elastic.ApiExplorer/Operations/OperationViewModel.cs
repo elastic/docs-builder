@@ -4,9 +4,28 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Structural;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+public record AuthorizationSectionModel(
+	IReadOnlyList<AuthRequirement> Requirements,
+	IReadOnlyList<PrivilegeRow> Privileges,
+	Func<string?, HtmlString> RenderMarkdown
+)
+{
+	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
+	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+
+	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
+	public SummaryStyle PrivilegeStyle =>
+		Privileges.Any(static r => r.Join == "or")
+			? SummaryStyle.Variants
+			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
+}
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -15,46 +34,49 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public IReadOnlyList<string>? RequiredAuthItems =>
-		OpenApiXReqAuthParser.TryGetPrerequisiteLines(
-			Operation.Operation,
-			RenderContext.ApiExplorerLog,
-			Operation.Route,
-			Operation.Operation.OperationId
-		);
+	public AuthorizationSectionModel Authorization =>
+		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
+
+	protected override string? LayoutPageTitle =>
+		OpenApiExtensionReader.GetSummary(Operation.Operation) ?? CurrentNavigationItem.NavigationTitle;
+
+	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
+	protected override string? LayoutPageDescription =>
+		DescriptionOrSummary(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
+
+	internal static string? DescriptionOrSummary(string? description, string? summary) =>
+		string.IsNullOrWhiteSpace(description) ? summary : description;
 
 	protected override IReadOnlyList<ApiTocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
 		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
 
-		if (RequiredAuthItems is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
+		if (Page.RequiredPrivileges.Count > 0)
+			tocItems.Add(new ApiTocItem("Required authorization", "required-authorization"));
 
-		if (!string.IsNullOrWhiteSpace(Page.DescriptionMarkdown))
-			tocItems.Add(new ApiTocItem("Description", "description"));
+		if (Page.AuthRequirements.Count > 0)
+			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
 
-		if (Page.QueryParameters.Count > 0)
-			tocItems.Add(new ApiTocItem("Query String Parameters", "query-params"));
+		// The path parameters have never had an entry: they sit right under the paths they belong to.
+		tocItems.AddRange(
+			Page
+				.ParameterSections
+				.Where(static s => s.Location != ParameterLocation.Path)
+				.Select(static s => new ApiTocItem(s.Header.Title, s.Header.Anchor))
+		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request Body", "request-body"));
+			tocItems.Add(new ApiTocItem("Request body", "request-body"));
 
 		if (operation.Responses is { Count: > 0 })
 			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
 
-		if (Page.CodeSamples.Count > 0)
-			tocItems.Add(new ApiTocItem("Code Examples", "code-examples"));
-
-		if (Page.ShowRequestExamples)
-			tocItems.Add(new ApiTocItem("Request Examples", "request-examples"));
-
-		if (Page.ShowResponseExamples)
-			tocItems.Add(new ApiTocItem("Response Examples", "response-examples"));
-
-		foreach (var section in Page.PostSections)
-			tocItems.Add(new ApiTocItem(section.Heading, section.Anchor));
-
 		return tocItems;
 	}
+
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ToDisplays(Page.Servers);
+
+	public OperationExamplesPanelModel? ExamplesPanel =>
+		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };
 }

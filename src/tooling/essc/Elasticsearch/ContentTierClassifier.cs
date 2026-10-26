@@ -8,10 +8,9 @@ namespace Elastic.SiteSearch.Cli.Elasticsearch;
 
 /// <summary>
 /// Derives <c>content_tier</c> (see <see cref="ContentTiers"/>) from the <c>navigation_section</c>
-/// values already computed by <c>ContentStackMapper.GetNavigationSection</c> and
-/// <c>LabsHtmlExtractor.GetNavigationSection</c>. Shared between both essc producers so
-/// site/labs content is tiered consistently; docs-builder classifies its own docs/api content
-/// separately (it agrees with essc only on the <see cref="ContentTiers"/> string values).
+/// values already computed by <c>ContentStackMapper.GetNavigationSection</c>; docs-builder
+/// classifies its own docs/api content separately (it agrees with essc only on the
+/// <see cref="ContentTiers"/> string values).
 /// </summary>
 internal static class ContentTierClassifier
 {

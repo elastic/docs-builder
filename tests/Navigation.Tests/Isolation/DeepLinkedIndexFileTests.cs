@@ -13,9 +13,9 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
 /// <summary>Regression coverage for https://github.com/elastic/docs-builder/issues/764: a childless <c>file: subdir/index.md</c> entry becomes its own single-page folder instead of being silently dropped from the navigation.</summary>
-public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class DeepLinkedIndexFileTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void ChildlessDeepLinkedIndexFileBecomesFolderRef()
 	{
 		// language=yaml
@@ -38,7 +38,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		index.PathRelativeToDocumentationSet.Should().Be("reference/1password/index.md");
 	}
 
-	[Fact]
+	[Test]
 	public void BareIndexFileIsNotConverted()
 	{
 		// language=yaml
@@ -60,7 +60,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		docSet.TableOfContents.OfType<FolderRef>().Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void DeepLinkedIndexFileWithChildrenStaysVirtualFile()
 	{
 		// language=yaml
@@ -85,7 +85,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileRef.Children.Should().ContainSingle();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ChildlessDeepLinkedIndexFileRendersAsSingleLinkFolder()
 	{
 		// language=yaml
@@ -101,11 +101,11 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var folder = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
 		folder.Url.Should().Be("/reference/1password");
@@ -114,7 +114,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		context.Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithChildlessIndexFileChildrenKeepsEveryEntry()
 	{
 		// language=yaml
@@ -134,11 +134,11 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var reference = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
 		reference.Url.Should().Be("/reference");
@@ -153,7 +153,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		context.Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ChildlessIndexFileChildrenUnderVirtualFileResolveWithoutPathDoubling()
 	{
 		// language=yaml
@@ -171,11 +171,11 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var intro = navigation.NavigationItems.OfType<VirtualFileNavigation<IDocumentationFile>>().Single();
 		intro.Url.Should().Be("/reference/apache-intro");
@@ -187,7 +187,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		context.Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ChildlessDeepLinkedIndexFileNestedUnderExplicitFolderResolvesParentRelative()
 	{
 		// Regression for a path-resolution bug flagged in review: a multi-segment sugar-expanded
@@ -208,11 +208,11 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var reference = navigation.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
 		var nested = reference.NavigationItems.OfType<FolderNavigation<IDocumentationFile>>().Single();
@@ -222,7 +222,7 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 
 	/// <summary>Baseline showing plain (non-sugar) file children under a virtual file already double a
 	/// redundantly-repeated path segment; the sugar-folder case is intentionally consistent with this.</summary>
-	[Fact]
+	[Test]
 	public async Task ProbePlainFileChildUnderVirtualFileWithFullPath()
 	{
 		// language=yaml
@@ -239,11 +239,11 @@ public class DeepLinkedIndexFileTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var intro = navigation.NavigationItems.OfType<VirtualFileNavigation<IDocumentationFile>>().Single();
 		var child = intro.NavigationItems.Single();

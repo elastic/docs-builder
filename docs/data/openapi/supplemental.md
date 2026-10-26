@@ -145,6 +145,8 @@ These slugs are reserved:
 | `types` | Schema type pages use `/types/` |
 | `group` | Tag landing pages use `/group/` |
 | `operation` | Operation pages use `/operation/` |
+| `authentication` | Each API product has an `/authentication` page |
+| `servers` | Each API product has a `/servers` page |
 
 Do not list `op-*.md` or `tag-*.md` under `children:`.
 
@@ -169,7 +171,7 @@ Unmatched base files are reported against `the latest spec`. Version-suffixed fi
 ```text
 Child page 'op-search.md' for API 'elasticsearch' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.
 Child page 'missing.md' for API 'elasticsearch' does not exist under 'api/elasticsearch/'.
-Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation
+Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation, authentication, servers
 Duplicate markdown slug 'getting-started' found in API product 'elasticsearch'.
 ```
 

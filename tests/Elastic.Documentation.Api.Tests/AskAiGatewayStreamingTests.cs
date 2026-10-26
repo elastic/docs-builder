@@ -11,7 +11,6 @@ using Elastic.Documentation.Api.Gcp;
 using FakeItEasy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Xunit;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -25,7 +24,7 @@ public class AskAiGatewayStreamingTests
 	private static IConfiguration CreateTestConfiguration(Dictionary<string, string?> values) =>
 		new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
-	[Fact]
+	[Test]
 	public async Task AgentBuilderGatewayDoesNotDisposeHttpResponsePrematurely()
 	{
 		// Arrange
@@ -58,7 +57,7 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test message", null);
 
 		// Act - get the response from the gateway
-		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - the stream should be readable (not disposed)
 		response.Should().NotBeNull();
@@ -66,7 +65,7 @@ data: {"type":"conversationEnd","id":"test"}
 
 		// Read the entire stream to verify it works
 		using var reader = new StreamReader(response.Stream);
-		var content = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+		var content = await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken);
 
 		content.Should().NotBeEmpty();
 		content.Should().Contain("conversationStart");
@@ -79,7 +78,7 @@ data: {"type":"conversationEnd","id":"test"}
 		mockHandler.CapturedRequest.Headers.GetValues("kbn-xsrf").Should().Contain("true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AgentBuilderGatewayAllowsMultipleReadsFromStream()
 	{
 		// Arrange
@@ -114,13 +113,19 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test", null);
 
 		// Act - get the response and read it in chunks
-		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current!.Execution.CancellationToken);
 
 		var chunks = new List<string>();
 		var buffer = new byte[16]; // Small buffer to force multiple reads
 		int bytesRead;
 
-		while ((bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
+		while (
+			(bytesRead = await response.Stream.ReadAsync(
+				buffer.AsMemory(0, buffer.Length),
+				TestContext.Current!.Execution.CancellationToken
+			))
+			> 0
+		)
 		{
 			var chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 			chunks.Add(chunk);
@@ -134,7 +139,7 @@ data: {"type":"conversationEnd","id":"test"}
 		completeContent.Should().Be(sseResponse);
 	}
 
-	[Fact]
+	[Test]
 	public async Task LlmGatewayDoesNotDisposeHttpResponsePrematurely()
 	{
 		// Arrange
@@ -171,7 +176,7 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test message", null);
 
 		// Act - get the response from the gateway
-		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - the stream should be readable (not disposed)
 		response.Should().NotBeNull();
@@ -179,7 +184,7 @@ data: {"type":"conversationEnd","id":"test"}
 
 		// Read the entire stream to verify it works
 		using var reader = new StreamReader(response.Stream);
-		var content = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+		var content = await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken);
 
 		content.Should().NotBeEmpty();
 		content.Should().Contain("conversationStart");
@@ -194,7 +199,7 @@ data: {"type":"conversationEnd","id":"test"}
 		mockHandler.CapturedRequest.Headers.Authorization.Parameter.Should().Be("mock-gcp-token");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LlmGatewayGatewayAllowsMultipleReadsFromStream()
 	{
 		// Arrange
@@ -233,13 +238,19 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test", null);
 
 		// Act - get the response and read it in chunks
-		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current!.Execution.CancellationToken);
 
 		var chunks = new List<string>();
 		var buffer = new byte[16]; // Small buffer to force multiple reads
 		int bytesRead;
 
-		while ((bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken)) > 0)
+		while (
+			(bytesRead = await response.Stream.ReadAsync(
+				buffer.AsMemory(0, buffer.Length),
+				TestContext.Current!.Execution.CancellationToken
+			))
+			> 0
+		)
 		{
 			var chunk = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 			chunks.Add(chunk);
@@ -253,7 +264,7 @@ data: {"type":"conversationEnd","id":"test"}
 		completeContent.Should().Be(sseResponse);
 	}
 
-	[Fact]
+	[Test]
 	public async Task AgentBuilderGatewayUsesResponseHeadersReadForStreaming()
 	{
 		// Arrange - verify that HttpCompletionOption.ResponseHeadersRead is used
@@ -274,7 +285,7 @@ data: {"type":"conversationEnd","id":"test"}
 		var request = new AskAiRequest("Test", null);
 
 		// Act
-		var response = await gateway.AskAi(request, TestContext.Current.CancellationToken);
+		var response = await gateway.AskAi(request, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		response.Should().NotBeNull();
@@ -283,7 +294,10 @@ data: {"type":"conversationEnd","id":"test"}
 		// The fact that we can immediately read from the stream indicates
 		// that ResponseHeadersRead was used (otherwise it would buffer)
 		var buffer = new byte[10];
-		var bytesRead = await response.Stream.ReadAsync(buffer.AsMemory(0, buffer.Length), TestContext.Current.CancellationToken);
+		var bytesRead = await response.Stream.ReadAsync(
+			buffer.AsMemory(0, buffer.Length),
+			TestContext.Current!.Execution.CancellationToken
+		);
 		bytesRead.Should().BeGreaterThan(0, "stream should be readable immediately");
 	}
 }

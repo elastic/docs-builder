@@ -1,14 +1,18 @@
 import { initAgentSkillCopy } from './agent-skill'
+import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
+import { initApiMenus } from './api-menu'
+import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initPrivacyConsent } from './privacy-consent'
 import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
 import { initTable } from './table'
@@ -31,7 +35,7 @@ import {
 } from './web-components/shared/htmx/utils'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import { $, $optional, $$optional } from 'select-dom'
+import { $optional, $$optional } from 'select-dom'
 import { UAParser } from 'ua-parser-js'
 
 // Injected at build time from MinVer
@@ -192,6 +196,9 @@ function initCtaImpressions() {
     )
 }
 
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
+
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
     runInitSteps([
@@ -238,7 +245,10 @@ function handleCtaActivation(event: MouseEvent) {
     logCtaEvent('cta_clicked', cta)
 }
 document.addEventListener('click', handleCtaActivation)
+initPrivacyConsent()
 initSecondaryNav()
+initApiMenus()
+initApiChromeSync()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.
@@ -292,24 +302,22 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     // hx-boost intercepts every same-origin link, but only internal docs URLs should
     // navigate through htmx (for assembler that means /docs/*; isolated and codex own
     // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load.
-    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
-    if (!docsPath || isExternalDocsUrl(docsPath)) {
+    // separate /docs/api app — gets a normal full page load. So does a move between a docs
+    // page and an API page, or to another API product: the swap would leave the previous
+    // header or context bar in place.
+    const targetPath = new URL(path, location.href).pathname
+    const docsPath = getPathFromUrl(targetPath)
+    if (
+        !docsPath ||
+        isExternalDocsUrl(docsPath) ||
+        changesPageChrome(
+            targetPath,
+            location.pathname,
+            config.rootPath.replace(/\/$/, '')
+        )
+    ) {
         event.preventDefault()
         window.location.assign(path)
-    }
-})
-
-// Boosted navigations swap #main-container. show:none on <body> stops HTMX
-// from scrolling the container into view (that jumps the page up to the
-// horizontal tabs). Instant window reset still matches a full page load.
-document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    const target = event.target
-    if (
-        target === document.body ||
-        (target instanceof Element && target.id === 'main-container')
-    ) {
-        window.scrollTo(0, 0)
     }
 })
 
@@ -323,36 +331,6 @@ document.body.addEventListener(
         // On previews, a generic 404 page is shown.
         if (event.detail.xhr.status === 404) {
             window.location.assign(event.detail.pathInfo.requestPath)
-        }
-    }
-)
-
-// We add a query string to the get request to make sure the requested page is up to date
-const docsBuilderVersion = $('body').dataset.docsBuilderVersion
-document.body.addEventListener(
-    'htmx:configRequest',
-    function (event: HtmxEvent) {
-        if (event.detail.verb === 'get' && docsBuilderVersion) {
-            event.detail.parameters['v'] = docsBuilderVersion
-        }
-    }
-)
-
-// Here we need to strip the v parameter from the URL so
-// that the browser doesn't show the v parameter in the address bar
-document.body.addEventListener(
-    'htmx:beforeHistoryUpdate',
-    function (event: HtmxEvent) {
-        const params = new URLSearchParams(
-            event.detail.history.path.split('?')[1] ?? ''
-        )
-        params.delete('v')
-        const pathWithoutQueryString = event.detail.history.path.split('?')[0]
-        if (params.size === 0) {
-            event.detail.history.path = pathWithoutQueryString
-        } else {
-            event.detail.history.path =
-                pathWithoutQueryString + '?' + params.toString()
         }
     }
 )

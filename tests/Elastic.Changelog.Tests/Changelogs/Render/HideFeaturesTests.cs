@@ -10,9 +10,9 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class HideFeaturesTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange
@@ -60,7 +60,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			("1755268130-hidden.yaml", changelog1),
 			("1755268140-visible.yaml", changelog2)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -73,7 +73,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -91,7 +91,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Hidden entry should be commented out with % prefix
 		indexContent.Should().Contain("% * Hidden feature");
 		// Visible entry should not be commented
@@ -99,7 +99,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_BreakingChange_UsesBlockComments()
 	{
 		// Arrange
@@ -132,7 +132,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""",
 			("1755268130-breaking.yaml", changelog)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -145,7 +145,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -154,7 +154,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var breakingFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
 		FileSystem.File.Exists(breakingFile).Should().BeTrue();
 
-		var breakingContent = await FileSystem.File.ReadAllTextAsync(breakingFile, TestContext.Current.CancellationToken);
+		var breakingContent = await FileSystem.File.ReadAllTextAsync(breakingFile, TestContext.Current!.Execution.CancellationToken);
 		// Should use block comments <!-- -->
 		breakingContent.Should().Contain("<!--");
 		breakingContent.Should().Contain("-->");
@@ -166,7 +166,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		breakingContent.Substring(commentStart, commentEnd - commentStart).Should().Contain("Hidden breaking change");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_Deprecation_UsesBlockComments()
 	{
 		// Arrange
@@ -197,7 +197,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""",
 			("1755268130-deprecation.yaml", changelog)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -210,7 +210,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -219,14 +219,17 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.2.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
 
-		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(
+			deprecationsFile,
+			TestContext.Current!.Execution.CancellationToken
+		);
 		// Should use block comments <!-- -->
 		deprecationsContent.Should().Contain("<!--");
 		deprecationsContent.Should().Contain("-->");
 		deprecationsContent.Should().Contain("Hidden deprecation");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CommaSeparated_CommentsOutMatchingEntries()
 	{
 		// Arrange
@@ -283,7 +286,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			("1755268140-second.yaml", changelog2),
 			("1755268150-visible.yaml", changelog3)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -296,21 +299,21 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("% * First hidden feature");
 		indexContent.Should().Contain("% * Second hidden feature");
 		indexContent.Should().Contain("* Visible feature");
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_FromFile_CommentsOutMatchingEntries()
 	{
 		// Arrange
@@ -340,7 +343,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""",
 			("1755268130-hidden.yaml", changelog)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create feature IDs file
 		var featureIdsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "feature-ids.txt");
@@ -348,7 +351,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		await FileSystem.File.WriteAllTextAsync(
 			featureIdsFile,
 			"feature:from-file\nfeature:another",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -362,18 +365,18 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("% * Hidden feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CaseInsensitive_MatchesFeatureIds()
 	{
 		// Arrange
@@ -403,7 +406,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			""",
 			("1755268130-hidden.yaml", changelog)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -416,19 +419,19 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Should match case-insensitively
 		indexContent.Should().Contain("% * Hidden feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithBundleHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange - Test that hide-features from bundle metadata are used to hide entries
@@ -474,7 +477,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			("1755268130-hidden.yaml", changelog1),
 			("1755268140-visible.yaml", changelog2)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -487,14 +490,14 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Entry from bundle hide-features should be commented out
 		indexContent.Should().Contain("% * Hidden from bundle");
 		// Visible entry should not be commented
@@ -502,7 +505,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_MergesCLIAndBundleHideFeatures()
 	{
 		// Arrange - Test that CLI and bundle hide-features are merged
@@ -562,7 +565,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			("1755268140-bundle.yaml", changelog2),
 			("1755268150-visible.yaml", changelog3)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -575,14 +578,14 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Both CLI and bundle hidden entries should be commented
 		indexContent.Should().Contain("% * Hidden from CLI");
 		indexContent.Should().Contain("% * Hidden from bundle");

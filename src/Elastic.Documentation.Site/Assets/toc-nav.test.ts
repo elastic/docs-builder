@@ -171,7 +171,7 @@ describe('TOC navigation', () => {
     it('marks an API heading using its data-section anchor as current', () => {
         document.body.innerHTML = `
             <main id="elastic-api-v3">
-                <h3 data-section="responses">Responses</h3>
+                <h2 data-section="responses">Responses</h2>
             </main>
             <nav id="toc-nav">
                 <div class="toc-progress-container">
@@ -181,7 +181,7 @@ describe('TOC navigation', () => {
             </nav>
         `
         jest.spyOn(
-            document.querySelector('h3')!,
+            document.querySelector('h2')!,
             'getBoundingClientRect'
         ).mockReturnValue(createRect(100, 30))
         jest.spyOn(
@@ -196,6 +196,47 @@ describe('TOC navigation', () => {
         initTocNav()
 
         expect(document.querySelector('#toc-nav a')).toHaveClass('toc-current')
+    })
+
+    it('includes Request and Response headings in the page link list', () => {
+        document.body.innerHTML = `
+            <main id="elastic-api-v3">
+                <h4 id="request-body" data-section="request-body">Request</h4>
+                <h4 id="responses" data-section="responses">Response</h4>
+            </main>
+            <nav id="toc-nav">
+                <div class="toc-progress-container">
+                    <div class="toc-progress-indicator"></div>
+                    <ul>
+                        <li><a href="#request-body">Request</a></li>
+                        <li><a href="#responses">Response</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        document.querySelectorAll('h4').forEach((heading) => {
+            jest.spyOn(heading, 'getBoundingClientRect').mockReturnValue(
+                createRect(100, 30)
+            )
+        })
+        jest.spyOn(
+            document.querySelector('.toc-progress-container')!,
+            'getBoundingClientRect'
+        ).mockReturnValue(createRect(10, 100))
+        document.querySelectorAll('#toc-nav li').forEach((item) => {
+            jest.spyOn(item, 'getBoundingClientRect').mockReturnValue(
+                createRect(20, 24)
+            )
+        })
+
+        initTocNav()
+
+        expect(document.querySelector('a[href="#request-body"]')).toHaveClass(
+            'toc-current'
+        )
+        expect(document.querySelector('a[href="#responses"]')).toHaveClass(
+            'toc-current'
+        )
     })
 
     it('tracks headings while scrolling forward and backward', () => {

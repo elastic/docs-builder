@@ -8,6 +8,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Changelog.GithubRelease;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
@@ -18,10 +19,11 @@ namespace Elastic.Changelog.Tests.Changelogs.Create;
 /// text from the PR body becomes the description and linked issues are carried over; title/link-only
 /// remains the last resort.
 /// </summary>
-public class GhReleaseExtractionParityTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 {
 	private readonly IGitHubReleaseService _releaseService = A.Fake<IGitHubReleaseService>();
 	private readonly IGitHubPrService _prService = A.Fake<IGitHubPrService>();
+	private readonly IGitHubCommitRangeService _commitRangeService = A.Fake<IGitHubCommitRangeService>();
 
 	// language=yaml
 	private const string PoolEntry =
@@ -34,15 +36,6 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		    lifecycle: ga
 		""";
 
-	private const string ReleaseBody =
-		"""
-		## What's Changed
-
-		* Fix query parsing edge case by @contributor1 in #12345
-
-		**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
-		""";
-
 	private GitHubReleaseChangelogService Service(StubHandler handler) =>
 		new(
 			LoggerFactory,
@@ -50,7 +43,8 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			FileSystem,
 			_releaseService,
 			_prService,
-			entryFetcher: new CdnChangelogEntryFetcher(new TestLoggerFactory(Output), handler, sleep: (_, _) => Task.CompletedTask)
+			commitRangeService: _commitRangeService,
+			entryFetcher: new CdnChangelogEntryFetcher(new TestLoggerFactory(), handler, sleep: (_, _) => Task.CompletedTask)
 		);
 
 	/// <summary>Pool with a single entry named after PR 12345 (the CI naming scheme).</summary>
@@ -83,13 +77,41 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 
-	private void ArrangeRelease() =>
+	private void ArrangeRelease(params int[] prNumbers)
+	{
+		if (prNumbers.Length == 0)
+			prNumbers = [12345];
+
 		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
 		{
 			TagName = "v9.2.0",
 			Name = "9.2.0",
-			Body = ReleaseBody
+			Body = ""
 		});
+
+		A.CallTo(() => _releaseService.FetchPreviousTagAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(
+			PreviousTagResult.Found("v9.1.0")
+		);
+
+		var prs = prNumbers.Select(
+			n => new CommitRangePullRequest
+			{
+				Number = n,
+				Url = $"https://github.com/elastic/elasticsearch/pull/{n}",
+				CommitShas = ["abc123"]
+			}
+		).ToList();
+
+		A.CallTo(
+			() => _commitRangeService.ResolvePullRequestsAsync(
+				A<IDiagnosticsCollector>._,
+				A<CommitRangeArguments>.That.Matches(
+					a => a.Owner == "elastic" && a.Repo == "elasticsearch" && a.StartRef == "v9.1.0" && a.EndRef == "v9.2.0"
+				),
+				A<Cancel>._
+			)
+		).Returns(new CommitRangeResolution { TotalCommits = prNumbers.Length, PullRequests = prs, CommitsWithoutPullRequest = [] });
+	}
 
 	private CreateChangelogsFromReleaseArguments Input(string outputDir, bool createBundle = false) =>
 		new() { Repository = "elastic/elasticsearch", Version = "v9.2.0", Output = outputDir, CreateBundle = createBundle };
@@ -101,7 +123,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		return dir;
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrWithCheckedInPoolEntry_UsesItVerbatimOverSynthesis()
 	{
 		ArrangeRelease();
@@ -110,19 +132,19 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var entryPath = FileSystem.Path.Join(outputDir, "12345.yaml");
 		FileSystem.File.Exists(entryPath).Should().BeTrue("the pool entry keeps its original file name");
-		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(entryPath, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Curated checked-in title", "checked-in entries win over synthesis");
 
 		A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrWithUnparseablePoolEntry_FallsBackToPrMetadataSynthesis()
 	{
 		// A pool file that matches the PR by name but fails to parse must not be treated as a
@@ -141,10 +163,10 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(PoolWithUnparseableEntry()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
+		result.Success.Should().BeTrue("synthesis from PR metadata still produces an entry even though the pool file was unusable");
 		FileSystem
 			.File
 			.Exists(FileSystem.Path.Join(outputDir, "12345.yaml"))
@@ -152,7 +174,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			.BeFalse("the malformed pool file is never written verbatim");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle("a synthesized entry must exist for the PR despite the unusable pool file");
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Fix query parsing edge case");
 		Collector
 			.Diagnostics
@@ -163,7 +185,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TwoPrsSharingAnUnparseablePoolEntry_BothFallBackToSynthesis()
 	{
 		// Regression for a follow-up bot review finding: WrittenPoolFiles must only remember a file
@@ -171,21 +193,7 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		// shared entry marks it "claimed", and a *second* PR matching the same still-unwritten file
 		// (via leading-number filename matching) is wrongly treated as already satisfied and silently
 		// dropped instead of falling back to PR-metadata synthesis.
-		const string sharedBody =
-			"""
-			## What's Changed
-
-			* Fix query parsing edge case by @contributor1 in #12345
-			* Improve indexing throughput by @contributor2 in #12346
-
-			**Full Changelog**: https://github.com/elastic/elasticsearch/compare/v9.1.0...v9.2.0
-			""";
-		A.CallTo(() => _releaseService.FetchReleaseAsync("elastic", "elasticsearch", "v9.2.0", A<Cancel>._)).Returns(new GitHubReleaseInfo
-		{
-			TagName = "v9.2.0",
-			Name = "9.2.0",
-			Body = sharedBody
-		});
+		ArrangeRelease(12345, 12346);
 
 		_ = A.CallTo(
 			() => _prService.FetchPrInfoAsync(
@@ -229,17 +237,23 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		});
 		var outputDir = OutputDir();
 
-		var result = await Service(handler).CreateChangelogsFromRelease(Collector, Input(outputDir), TestContext.Current.CancellationToken);
+		var result = await Service(handler).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		result.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
+		result.Success.Should().BeTrue("both PRs must fall back to PR-metadata synthesis despite the shared unparseable pool file");
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(2, "each PR must synthesize its own entry rather than one silently disappearing");
-		var contents = await Task.WhenAll(files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current.CancellationToken)));
+		var contents = await Task.WhenAll(
+			files.Select(f => FileSystem.File.ReadAllTextAsync(f, TestContext.Current!.Execution.CancellationToken))
+		);
 		contents.Should().Contain(c => c.Contains("Fix query parsing edge case", StringComparison.Ordinal));
 		contents.Should().Contain(c => c.Contains("Improve indexing throughput", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrBodyReleaseNote_BecomesEntryDescription()
 	{
 		ArrangeRelease();
@@ -255,17 +269,17 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().ContainSingle();
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Queries with trailing wildcards no longer fail.");
 	}
 
-	[Fact]
+	[Test]
 	public async Task LinkedIssues_AreCarriedOntoTheEntry()
 	{
 		ArrangeRelease();
@@ -281,16 +295,16 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("https://github.com/elastic/elasticsearch/issues/999");
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoReleaseNoteInBody_FallsBackToTitleOnly()
 	{
 		ArrangeRelease();
@@ -306,17 +320,41 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().NotContain("description:");
 		content.Should().Contain("Fix query parsing edge case");
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
-	[Fact]
+	[Test]
+	public async Task PrBodyReleaseNote_WithTrailingParagraph_EmitsHint()
+	{
+		ArrangeRelease();
+		_ = A.CallTo(() => _prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Fix query parsing edge case",
+			Body = "## Release note\nFirst paragraph.\n\nSecond paragraph.",
+			Labels = [],
+			LinkedIssues = []
+		});
+		var outputDir = OutputDir();
+
+		var result = await Service(EmptyPool()).CreateChangelogsFromRelease(
+			Collector,
+			Input(outputDir),
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Success.Should().BeTrue();
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
+	}
+
+	[Test]
 	public async Task Bundle_IncludesPoolEntriesWithScrubbedPrsReferences()
 	{
 		// The pool entry has no prs field (scrubbed); a PR-URL filter could never match it. The
@@ -327,14 +365,14 @@ public class GhReleaseExtractionParityTests(ITestOutputHelper output) : Changelo
 		var result = await Service(PoolWithEntry()).CreateChangelogsFromRelease(
 			Collector,
 			Input(outputDir, createBundle: true),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		result.Should().BeTrue();
+		result.Success.Should().BeTrue();
 		var bundlesDir = FileSystem.Path.Join(outputDir, "bundles");
 		var bundleFiles = FileSystem.Directory.GetFiles(bundlesDir, "*.yml");
 		bundleFiles.Should().ContainSingle();
-		var bundle = await FileSystem.File.ReadAllTextAsync(bundleFiles[0], TestContext.Current.CancellationToken);
+		var bundle = await FileSystem.File.ReadAllTextAsync(bundleFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("Curated checked-in title");
 		bundle.Should().Contain("name: 12345.yaml");
 	}

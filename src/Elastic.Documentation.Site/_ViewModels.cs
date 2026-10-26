@@ -13,6 +13,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Navigation;
 
 namespace Elastic.Documentation.Site;
 
@@ -29,18 +30,40 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false
+	bool AirGapped = false,
+	string? WafIntegrationUrl = null
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
 public record CodexBreadcrumb(string Title, string? Url);
 
+/// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
+public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
+
+/// <summary>One API product in the identity menu.</summary>
+public sealed record ApiIdentityProduct(string Label, string Url, bool Selected, string? IconSvg);
+
+/// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
+public sealed record ApiIdentityProductGroup(string? Title, IReadOnlyList<ApiIdentityProduct> Products);
+
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads. Rendered as the sidebar selector.</summary>
+public sealed record ApiIdentity(
+	string Title,
+	string? IconSvg,
+	IReadOnlyList<ApiIdentityProductGroup> ProductGroups,
+	string? HubUrl,
+	IReadOnlyList<NavigationSelectOption> Versions,
+	ApiSpecDownload Spec
+);
+
 public record GlobalLayoutViewModel
 {
-	public required string DocsBuilderVersion { get; init; }
 	public required string DocSetName { get; init; }
 	public string Title { get; set; } = "Elastic Documentation";
 	public required string Description { get; init; }
+
+	/// <summary>JSON-LD <c>BreadcrumbList</c>. Emitted from the shared head when set.</summary>
+	public string? StructuredBreadcrumbsJson { get; init; }
 
 	public required INavigationItem CurrentNavigationItem { get; init; }
 	public required INavigationItem? Previous { get; init; }
@@ -53,6 +76,9 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>The site's top navigation for pages that sit outside the site's navigation tree, such as the generated API pages.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	/// <summary>
 	/// The configured top navigation for assembler builds. Derived by walking the
 	/// <see cref="CurrentNavigationItem"/> parent chain to find a
@@ -63,12 +89,31 @@ public record GlobalLayoutViewModel
 	{
 		get
 		{
+			if (SiteTopNav is not null)
+				return SiteTopNav;
 			for (var item = (INavigationItem?)CurrentNavigationItem; item is not null; item = item.Parent)
 			{
 				if (item is ISiteNavigationRoot siteRoot)
 					return siteRoot.TopNav;
 			}
 			return null;
+		}
+	}
+
+	/// <summary>
+	/// True when the mobile pages drawer has something to show: a nav tree,
+	/// or (with <c>navigation-preview</c>) section tabs or a version picker.
+	/// </summary>
+	public bool HasMobilePagesNavContent
+	{
+		get
+		{
+			if (!string.IsNullOrWhiteSpace(NavigationHtml))
+				return true;
+			if (!Features.NavigationPreviewEnabled)
+				return false;
+			var hasTopNavLinks = TopNav?.Items.OfType<TopNavLinkItem>().Any() == true;
+			return hasTopNavLinks || ShowVersionDropdown;
 		}
 	}
 
@@ -79,6 +124,18 @@ public record GlobalLayoutViewModel
 	public string? AllVersionsUrl { get; init; }
 
 	public bool ShowVersionDropdown { get; init; }
+
+	/// <summary>False where the page brings its own bar in place of the shared secondary nav (API pages).</summary>
+	public bool ShowSecondaryNav { get; init; } = true;
+
+	/// <summary>
+	/// Which API the reader is looking at: product, versions and spec downloads. Null on Docs
+	/// pages and on the API catalog.
+	/// </summary>
+	public ApiIdentity? ApiContext { get; init; }
+
+	/// <summary>API catalog URL used by the API header's home link.</summary>
+	public string? ApiCatalogUrl { get; init; }
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
@@ -108,7 +165,12 @@ public record GlobalLayoutViewModel
 
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	public string PageFeedbackSurface { get; init; } = "docs";
+
 	public bool RenderHamburgerIcon { get; init; } = true;
+
+	/// <summary>Lays the page out at the full window width, up to the wide limit, instead of the width of the elastic.co header.</summary>
+	public bool FullWidth { get; init; }
 
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
@@ -137,22 +199,22 @@ public record GlobalLayoutViewModel
 	{
 		BuildType.Assembler when Features.AirGappedEnabled =>
 			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Assembler =>
+			new FrontendConfig(
+				"assembler",
+				"docs-frontend",
+				true,
+				StaticPathPrefix,
+				ApiBasePath,
+				WafIntegrationUrl: Features.WafIntegrationUrl
+			),
 		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 	};
 
 	public string FrontendConfigJson => JsonSerializer.Serialize(FrontendConfig, FrontendConfigJsonContext.Default.FrontendConfig);
 
-	public string Static(string path)
-	{
-		var staticPath = $"_static/{path.TrimStart('/')}";
-		var contentHash = StaticFileContentHashProvider.GetContentHash(path.TrimStart('/'));
-
-		var fullPath = string.IsNullOrEmpty(StaticPathPrefix) ? $"/{staticPath}" : $"{StaticPathPrefix}/{staticPath}";
-
-		return string.IsNullOrEmpty(contentHash) ? fullPath : $"{fullPath}?v={contentHash}";
-	}
+	public string Static(string path) => StaticFileContentHashProvider.GetUrl(path, StaticPathPrefix);
 
 	private string GetStaticPathPrefix()
 	{

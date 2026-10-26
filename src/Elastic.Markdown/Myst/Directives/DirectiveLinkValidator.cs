@@ -5,6 +5,9 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
+using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -26,6 +29,48 @@ internal static class DirectiveLinkValidator
 	/// </summary>
 	public static string? ValidateAndResolve(string? url, DirectiveBlock block, ParserContext context) =>
 		Resolve(url, block, context, allowRelative: false, checkFileExists: true);
+
+	private static readonly MarkdownPipeline InlineLinkPipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+
+	/// <summary>
+	/// Resolve every inline markdown link, such as <c>[label](/path/page.md)</c>, in a directive
+	/// option or YAML field that is rendered later as inline markdown. Each target goes through
+	/// <see cref="ValidateAndResolve"/>, then becomes a final href, so a <c>.md</c> path or a
+	/// cross-link works the same as in a link card. Anchors and external URLs stay as written.
+	/// The text is parsed first, so only real link destinations change. Code spans and escaped
+	/// link syntax stay literal, and a link title is kept.
+	/// </summary>
+	public static string? ResolveMarkdownLinks(string? markdown, DirectiveBlock block, ParserContext context)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return markdown;
+
+		var document = Markdig.Markdown.Parse(markdown, InlineLinkPipeline);
+		var edits = new List<(int Start, int Length, string Href)>();
+		foreach (var link in document.Descendants<LinkInline>())
+		{
+			if (link.IsImage || link.IsAutoLink || string.IsNullOrEmpty(link.Url))
+				continue;
+
+			var span = link.UrlSpan;
+			if (span.Start < 0 || span.End >= markdown.Length || span.Length <= 0)
+				continue;
+
+			// Only rewrite when the span holds the destination as written.
+			var written = markdown.Substring(span.Start, span.Length);
+			if (!string.Equals(written, link.Url, StringComparison.Ordinal))
+				continue;
+
+			var resolved = ValidateAndResolve(written, block, context);
+			edits.Add((span.Start, span.Length, ToHref(resolved, context.Build.UrlPathPrefix) ?? written));
+		}
+
+		// Apply from the end so earlier offsets stay valid.
+		var result = markdown;
+		foreach (var (start, length, href) in edits.OrderByDescending(edit => edit.Start))
+			result = result[..start] + href + result[(start + length)..];
+		return result;
+	}
 
 	/// <summary>
 	/// Resolve cross-link schemes only, and accept a path relative to the source file.
@@ -194,7 +239,7 @@ internal static class DirectiveLinkValidator
 		return true;
 	}
 
-	private static (string Path, string? Anchor) SplitAnchor(string url)
+	public static (string Path, string? Anchor) SplitAnchor(string url)
 	{
 		var hash = url.IndexOf('#');
 		return hash < 0 ? (url, null) : (url[..hash], url[hash..]);

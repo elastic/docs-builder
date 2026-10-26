@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Net;
+using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.Directives;
@@ -24,7 +25,7 @@ using Markdig.Extensions.Yaml;
 using Markdig.Renderers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using YamlDotNet.Core;
+using SharpYaml;
 using CodeBlock = Markdig.Syntax.CodeBlock;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -80,25 +81,7 @@ public static class LlmRenderingHelpers
 	/// <summary>
 	/// Converts relative URLs to absolute URLs for LLM consumption
 	/// </summary>
-	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url)
-	{
-		if (
-			string.IsNullOrEmpty(url)
-			|| baseUri == null
-			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
-			|| !Uri.IsWellFormedUriString(url, UriKind.Relative)
-		)
-			return url;
-		try
-		{
-			var absoluteUri = new Uri(baseUri, url);
-			return absoluteUri.ToString();
-		}
-		catch
-		{
-			return url;
-		}
-	}
+	public static string? MakeAbsoluteUrl(Uri? baseUri, string? url) => UrlPath.MakeAbsolute(baseUri, url);
 
 	/// <summary>
 	/// Renders a markdown table from a list of rows (each row is a list of cell values).
@@ -511,6 +494,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			case HeroBlock heroBlock:
 				WriteHeroBlock(renderer, heroBlock);
 				return;
+			case OnThisPageBlock:
+				// The export already carries every section as a heading, so a row of links to them adds nothing.
+				return;
 			case ExploreBlock exploreBlock:
 				WriteExploreBlock(renderer, exploreBlock);
 				return;
@@ -694,7 +680,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(block.Title))
 		{
-			renderer.WriteLine($"## {block.Title}");
+			renderer.WriteLine($"{new string('#', block.Level)} {block.Title}");
 			renderer.EnsureLine();
 		}
 		if (!string.IsNullOrEmpty(block.Intro))
@@ -710,7 +696,9 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		renderer.EnsureBlockSpacing();
 		if (!string.IsNullOrEmpty(block.Title))
 		{
-			renderer.WriteLine($"### {block.Title}");
+			// Inside {explore}, the heading sits one level below the section title.
+			var level = (HubExplore.FindAncestor(block)?.Level ?? 2) + 1;
+			renderer.WriteLine($"{new string('#', level)} {block.Title}");
 			renderer.EnsureLine();
 		}
 		if (!string.IsNullOrEmpty(block.Intro))
@@ -729,7 +717,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		if (!string.IsNullOrEmpty(data.Title))
 		{
 			var heading = string.IsNullOrEmpty(data.Link) ? data.Title : $"[{data.Title}]({HubLinkForLlm(renderer, data.Link)})";
-			renderer.WriteLine($"#### {heading}");
+			var level = (HubExplore.FindAncestor(block)?.Level ?? 2) + 2;
+			renderer.WriteLine($"{new string('#', level)} {heading}");
 			renderer.EnsureLine();
 		}
 

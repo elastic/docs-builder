@@ -15,10 +15,13 @@ public static class AmendDocumentBuilder
 	/// <summary>
 	/// Builds an amend bundle that copies the parent's products (so registry routing and
 	/// <c>:version:</c> selection work), records the supplied exclusions, and adds the supplied entries.
+	/// Pass <paramref name="description"/> to patch the parent intro: omit (<see langword="null"/>) inherits;
+	/// empty string clears; any other value replaces.
 	/// </summary>
 	public static Bundle Build(
 		IReadOnlyList<BundledProduct> parentProducts,
 		IReadOnlyList<BundledEntry> entriesToAdd,
-		IReadOnlyList<BundledEntry> exclusions
-	) => new() { Products = parentProducts, ExcludeEntries = exclusions, Entries = entriesToAdd };
+		IReadOnlyList<BundledEntry> exclusions,
+		string? description = null
+	) => new() { Products = parentProducts, ExcludeEntries = exclusions, Entries = entriesToAdd, Description = description };
 }

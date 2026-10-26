@@ -23,4 +23,25 @@ public static class UrlPath
 	/// Assumes both segments already use forward slashes.
 	/// </summary>
 	public static string JoinUrl(string left, string right) => $"{left.TrimEnd('/')}/{right.TrimStart('/')}";
+
+	/// <summary>Resolves a relative URL against the canonical base URL.</summary>
+	public static string? MakeAbsolute(Uri? baseUri, string? url)
+	{
+		if (
+			string.IsNullOrEmpty(url)
+			|| baseUri is null
+			|| Uri.IsWellFormedUriString(url, UriKind.Absolute)
+			|| !Uri.IsWellFormedUriString(url, UriKind.Relative)
+		)
+			return url;
+
+		try
+		{
+			return new Uri(baseUri, url).ToString();
+		}
+		catch
+		{
+			return url;
+		}
+	}
 }

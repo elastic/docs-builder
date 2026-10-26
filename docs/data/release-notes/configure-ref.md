@@ -48,11 +48,12 @@ These settings are relevant to one or all of the `changelog bundle`, `changelog 
 | ------------------------- | ----------- |
 | `bundle.branch`           | Branch whose CDN changelog pool (`changelog/{org}/{repo}/{branch}/...`) entries are sourced from when bundling (default: `main`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 | `bundle.directory`        | Input directory containing changelog YAML files (default: `docs/changelog`). |
+| `bundle.backports.labels` | Exact label names that mark a pull request as a backport, for example `[backport]`. When bundling a commit range, such a pull request is replaced by the original pull request it was backported from, so the entry and the links come from the original. Not a pattern: `backport*` would also match opt-out labels such as `backport-skip`. When omitted, no tracing happens. |
 | `bundle.link_allow_repos` | List of `owner/repo` pairs whose PR/issue links are preserved. When set (including empty `[]`), links to unlisted repos become `# PRIVATE:` sentinels. |
-| `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). |
+| `bundle.output_directory` | Output directory for bundled files (default: `docs/releases`). Conventional `{repo}-{product}-{version}.yaml` names are written here in profile mode (unless the profile sets `output_directory`) and in option mode when `--output` is omitted. Passing `--output` as a directory, or setting a profile `output_directory`, writes that same file name in the directory you specify instead. |
 | `bundle.owner`            | Default GitHub repository owner (for example, `elastic`). Also the org segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. |
 | `bundle.release_dates`    | When `true`, bundles include a `release-date` field (default: true). |
-| `bundle.repo`             | Default GitHub repository name (for example, `elasticsearch`). Used by the `{changelog}` directive to generate correct PR and issue links, and to scope uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Only needed when the product ID doesn't match the GitHub repository name (or to override the git remote). |
+| `bundle.repo`             | GitHub repository name for link and file name generation (for example, `elasticsearch`). Written to `products[].repo` so `{changelog}` can resolve bare PR and issue numbers. Also the `{repo}` segment of `{repo}-{product}-{version}.yaml` names, and the repo segment of uploaded changelog-entry keys (`changelog/{org}/{repo}/{branch}/...`) and CDN entry sourcing. Derived from `GITHUB_REPOSITORY` or git `origin` when omitted. |
 | `bundle.use_local_changelogs` | When `true`, always source entries from the local folder and never from the CDN (default: `false`). Refer to [Entry sourcing](#bundle-entry-sourcing). |
 
 :::
@@ -109,6 +110,10 @@ bundle:
 
 The `|` (pipe) preserves line breaks and is ideal for Markdown-formatted text. Avoid using `>` (greater than) for descriptions as it folds line breaks into spaces, making lists and paragraphs difficult to format correctly.
 
+Generated bundle YAML from `changelog bundle` and `changelog bundle-amend` writes multiline `description` values as `|` literals.
+
+To change the intro of an already-created bundle without re-running `changelog bundle`, use [](/cli/changelog/bundle-amend.md) with `--description` or `--description-file`.
+
 ### Bundle profiles [bundle-profiles]
 
 Named profiles enable you to run commands repeatedly with consistent options.
@@ -124,9 +129,13 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 :   When the bundle is rendered, entries with matching `feature-id` values are commented out.
 
 `output`
-:   Removed. Bundle output names are derived by convention as `{product}-{version}.yaml` from the profile's primary output product (the first product in `output_products`, or `products`) and the version argument. Setting `output` on any profile is a hard error at bundle time; remove the field.
-:   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
-:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{product}-{version}.yaml` target for any given version, which is also a hard error.
+:   Removed. Bundle output names are derived by convention as `{repo}-{product}-{version}.yaml` from the authoring repository (`--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product (the first product in `output_products`, or `products`), and the version argument. If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`. Setting `output` on any profile is a hard error at bundle time; remove the field.
+:   When no primary product or version resolves (for example, a promotion-report invocation without a version argument), the output path falls back in order to: the profile's [`output_directory`](#bundle-profiles) (if set), then `bundle.output_directory/changelog-bundle.yaml` (if `bundle.output_directory` is configured), then `changelog-bundle.yaml` in the input directory.
+:   No two profiles in the same configuration may share a primary output product — they would resolve to the same `{repo}-{product}-{version}.yaml` target for any given version, which is also a hard error.
+
+`output_directory`
+:   Directory for this profile's bundle file. Replaces [`bundle.output_directory`](#bundle-basic) for that profile the same way option-mode `--output` does when it is a directory: the conventional `{repo}-{product}-{version}.yaml` name is written in the folder you specify (for example `docs/releases/cloud-serverless`). The path is used as written (repo-relative); it is not joined as a child of the global `bundle.output_directory`.
+:   A `.yml` or `.yaml` file path is a hard error — that is what `output` used to allow. Omit this setting to keep writing under the global `bundle.output_directory`.
 
 `output_products`
 :   The bundle's `products` metadata, which affects the bundle rules that are applied and the product and version titles that ultimately appear in documentation.
@@ -154,7 +163,9 @@ These settings are located in the `bundle.profiles.<name>` section of the config
 
 `repo`
 :   Overrides [bundle.repo](#bundle-basic).
-:   Required when `source: github_release` is used and `bundle.repo` is not set.
+:   Required for `source: github_release` profiles, unless `bundle.repo` is already set. For all other profiles, it's optional.
+:   Also the `{repo}` segment of the conventional bundle file name and the `products[].repo` value in the bundle YAML.
+:   This is the GitHub repository you ran the command in, not `products.yml` `repository:`.
 
 `source`
 :   Derive the list of changelogs from the specified source.
@@ -182,7 +193,7 @@ Controls how the `changelog add` command extracts information from PR descriptio
 | ---------------------------- | ------------------------------------------------------------------- |
 | `extract.issues`             | Auto-extract linked issues/PRs from descriptions (default: `true`). |
 | `extract.release_notes`      | Auto-extract descriptions from GitHub (default: `true`). |
-| `extract.strip_title_prefix` | Remove square-bracket prefixes from PR titles; strip a single hyphen separator or colon after the prefix when it is followed by whitespace (default: `false`). |
+| `extract.strip_title_prefix` | Remove square-bracket prefixes and conventional-commit prefixes (such as `fix:` or `feat(scope):`) from PR titles, strip a single hyphen separator or colon after a bracket prefix when it is followed by whitespace, and capitalize the first letter of the result (default: `false`). |
 
 When `extract.issues` is `true`, the system looks for patterns like "Fixes #123" in PR bodies (when you're creating changelogs from PRs) or "Fixed by #123" in issue bodies (when you're creating changelogs from issues).
 
@@ -199,6 +210,8 @@ The extracted release note text is used in the changelog `description`.
 
 When `extract.strip_title_prefix` is `true`:
 
+- Conventional-commit prefixes (`feat`, `fix`, `docs`, `chore`, `refactor`, `perf`, `test`, `style`, `build`, `ci`, `revert`, with an optional scope and `!`) are removed only when text follows them. For example, `fix(apm): apply filter` becomes `Apply filter`.
+- The first letter is capitalized unless the first word looks like code (it contains digits, underscores, dots, backticks, or inner capitals).
 - The separator hyphen is removed only when at least one bracket prefix was stripped; PR titles that intentionally start with `-` followed by whitespace and have no bracket prefix are left unchanged.
 - Titles that still begin with `-`, `*`, `+`, an en dash (U+2013), or an em dash (U+2014) are surrounded in quotes so they're not parsed as list markers.
 - The title cleanup only occurs when the title is derived from GitHub. If you specify `--title` explicitly, that title is used as-is without any prefix stripping.
@@ -254,12 +267,13 @@ Also controls how the `changelog add` command maps GitHub labels to various chan
 | `pivot.features`  | Maps `feature-id` values to GitHub labels. When a PR or issue has a matching label, `changelog add` sets `feature-id` unless you pass `--feature-id`. If there are multiple feature labels, the first match is used and a warning is emitted. |
 | `pivot.highlight` | Defines labels that set the `highlight` flag on changelogs. |
 | `pivot.products`  | Maps product IDs (and optionally version and lifecycle) to GitHub labels. |
+| `pivot.required`  | Lists the pivots, besides the type, that every pull request must set a label for: `areas`, `products`, or both. Refer to [Required pivots](#pivot-required). |
 | `pivot.types`     | Lists the valid type values (at a minimum, `feature`, `bug-fix`, and `breaking-change`). Optionally maps types to GitHub labels (for example, `bug-fix: ">bug"`). You can also optionally define breaking change subtypes. |
 
 :::
 
 :::{note}
-Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs).
+Type and subtype values must match the available values defined in [ChangelogEntryType.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs) and [ChangelogEntrySubtype.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs).
 :::
 
 The following example demonstrates some GitHub label mappings in the `pivot` section of the changelog configuration file:
@@ -288,7 +302,7 @@ pivot:
 
 ## Products [products]
 
-Specifies the allowed product values and the default values used by the `changelog add` command.
+Specifies the allowed product values, the default products, and the products that a label-derived product implies.
 
 :::{note}
 The product values must exist in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml). All products in the catalog are valid for changelogs, including those that have `public-reference` disabled.
@@ -300,7 +314,8 @@ The product values must exist in [products.yml](https://github.com/elastic/docs-
 | Setting              | Description                                                                                           |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | `products.available` | List of allowed product IDs. Empty list or omitted means all products from `products.yml` are allowed |
-| `products.default`   | List of default products when `--products` is not specified.                                          |
+| `products.default`   | List of default products when `--products` is not specified and no label maps to a product.          |
+| `products.implies`   | Products that a label-derived product implies, keyed by product ID. Optional.                         |
 
 :::
 
@@ -313,6 +328,67 @@ products:
     - product: elasticsearch
       lifecycle: ga
 ```
+
+### Required pivots [pivot-required]
+
+Every pull request needs a type label. Set `pivot.required` to also require an area label, a product label, or both:
+
+```yaml
+pivot:
+  required: [areas, products]
+  areas:
+    Search: ":Search"
+  products:
+    'elasticsearch':
+      - ":stack/elasticsearch"
+    'kibana':
+      - ":stack/kibana"
+```
+
+When a listed pivot has no matching label on a pull request, `changelog validate-labels` and `changelog evaluate-pr` fail the check, and the sticky pull request comment lists the labels to add. The comment names every missing pivot, so one comment covers the type, product, and area labels. `changelog add` with `--prs` or `--issues` and bundles built from a git range report the same error.
+
+- `areas` and `products` each need labels in `pivot.areas` or `pivot.products`. Otherwise the configuration is invalid, because no pull request could satisfy it.
+- Listing `types` is allowed and changes nothing.
+- For `changelog add`, passing `--areas` or `--products` satisfies the requirement.
+- A required product label also applies when `products.default` is set or `pivot.products` maps a single product. The defaults and the single-product shortcut do not replace the label.
+- Without `products` in `pivot.required`, a product label is required only when `pivot.products` maps two or more distinct products and `products.default` is not set. That rule is unchanged.
+- Skip labels from `rules.create` still exclude a pull request from the checks.
+
+### Product resolution order [products-resolution]
+
+`changelog add`, the PR evaluation, and bundles built from a git range resolve the products of an entry in the same order:
+
+1. The `--products` option, when given. An explicit list is taken as given: `products.implies` does not apply to it.
+2. The products that the labels map to in `pivot.products`, plus the products that `products.implies` lists for each of them.
+3. `products.default`, with its lifecycle. This step does not apply when `pivot.required` lists `products`.
+4. Without a default, when `pivot.products` maps two or more distinct products: an error that names the pull request or issue and lists the labels to add. Otherwise, for `changelog add`, the product inferred from the repository name; for a git range bundle, the profile's output products.
+
+When `pivot.required` lists `products`, a pull request without a product label is always an error, so steps 3 and 4 never apply. A team that wants every pull request to name its product can set `pivot.required` or omit `products.default`.
+
+### Implied products [products-implies]
+
+A label in `pivot.products` maps to one product. With `products.implies`, an entry that gets a product from a label also gets the products listed for it. Use it when a label names a solution rather than a deployment target, so the entry still reaches the release notes of the products it ships in.
+
+```yaml
+products:
+  default:
+    - product: kibana
+    - product: cloud-serverless
+  implies:
+    observability: [kibana, cloud-serverless]
+    security: [kibana, cloud-serverless]
+
+pivot:
+  products:
+    observability: ['Team:obs-ux-logs']
+    security: ['Team:SecuritySolution']
+```
+
+With this configuration, a pull request labelled `Team:obs-ux-logs` gets the products `observability`, `kibana`, and `cloud-serverless`. A pull request with no product label gets the defaults. An implied product carries the product ID only, and `implies` applies one level: a product that `observability` implies does not imply further products. `implies` applies to label-derived products only, not to `--products`, `products.default`, or checked-in entries.
+
+Per-product `rules.create` blockers see the implied products. A blocker for `cloud-serverless` applies to every pull request whose label maps to a product that implies `cloud-serverless`.
+
+The loader warns about an `implies` key that no `pivot.products` label maps to, because it never applies.
 
 ## Rules
 
@@ -354,7 +430,7 @@ You cannot specify both `exclude` and `include`.
 :::
 
 Product keys in `rules.create.products` can be a single product ID or a comma-separated list of product IDs (for example, `'elasticsearch, kibana'`).
-Product-specific rules **override** the global create rules entirely.
+Product-specific rules **override** the global create rules entirely. They apply to the product they name: a pull request that resolves to no product, for example one without a product label and without `products.default`, uses the global rules.
 
 ```yaml
 rules:

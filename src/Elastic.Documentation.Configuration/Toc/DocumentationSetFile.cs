@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.IO.Abstractions;
 using DotNet.Globbing;
 using Elastic.Documentation.Configuration.Products;
@@ -12,21 +13,20 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Nullean.ScopedFileSystem;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-[YamlSerializable]
 public class DocumentationSetFile : TableOfContentsFile
 {
-	[YamlMember(Alias = "max_toc_depth")]
+	[YamlPropertyName("max_toc_depth")]
 	public int MaxTocDepth { get; set; } = 2;
 
-	[YamlMember(Alias = "dev_docs")]
+	[YamlPropertyName("dev_docs")]
 	public bool DevDocs { get; set; }
 
-	[YamlMember(Alias = "cross_links")]
+	[YamlPropertyName("cross_links")]
 	public List<string> CrossLinks { get; set; } = [];
 
 	/// <summary>
@@ -34,64 +34,64 @@ public class DocumentationSetFile : TableOfContentsFile
 	/// docs-builder prefetch its bundles at startup (consumed by the <c>{changelog}</c> <c>:cdn:</c> mode)
 	/// and lets <c>changelog bundle</c> source that product's entries from the CDN.
 	/// </summary>
-	[YamlMember(Alias = "release_notes")]
+	[YamlPropertyName("release_notes")]
 	public List<ReleaseNotesProductReference> ReleaseNotes { get; set; } = [];
 
-	[YamlMember(Alias = "exclude")]
+	[YamlPropertyName("exclude")]
 	public List<string> Exclude { get; set; } = [];
 
-	[YamlMember(Alias = "extensions")]
+	[YamlPropertyName("extensions")]
 	public List<string> Extensions { get; set; } = [];
 
-	[YamlMember(Alias = "subs")]
+	[YamlPropertyName("subs")]
 	public Dictionary<string, string> Subs { get; set; } = [];
 
 	[Obsolete("Use the index.md h1 heading instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "display_name")]
+	[YamlPropertyName("display_name")]
 	public string? DisplayName { get; set; }
 
 	[Obsolete("Use the index.md frontmatter description instead. This field will be removed in a future version.")]
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
-	[YamlMember(Alias = "registry")]
+	[YamlPropertyName("registry")]
 	public string? Registry { get; set; }
 
-	[YamlMember(Alias = "features")]
+	[YamlPropertyName("features")]
 	public DocumentationSetFeatures Features { get; set; } = new();
 
-	[YamlMember(Alias = "api")]
+	[YamlPropertyName("api")]
 	public Dictionary<string, ApiProductSequence> Api { get; set; } = [];
 
 	/// <summary>
 	/// Default products for this documentation set. These are merged with page-level frontmatter products.
 	/// </summary>
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public List<ProductLink> Products { get; set; } = [];
 
 	/// <summary>
 	/// Optional codex-specific metadata. Only contains <c>group</c> for codex navigation grouping.
 	/// </summary>
-	[YamlMember(Alias = "codex")]
+	[YamlPropertyName("codex")]
 	public CodexDocSetMetadata? Codex { get; set; }
 
 	/// <summary>
 	/// Optional white-label branding overrides. When present, all Elastic-specific chrome is suppressed.
 	/// </summary>
-	[YamlMember(Alias = "branding")]
+	[YamlPropertyName("branding")]
 	public BrandingConfiguration? Branding { get; set; }
 
-	[YamlMember(Alias = "storybook")]
+	[YamlPropertyName("storybook")]
 	public DocumentationSetStorybook? Storybook { get; set; }
 
 	/// <summary>
 	/// Named, reusable right-gutter CTA templates. Selected per-page via frontmatter <c>cta: &lt;name&gt;</c>;
 	/// pages that omit it fall back to the built-in <c>trial</c> default.
 	/// </summary>
-	[YamlMember(Alias = "cta")]
+	[YamlPropertyName("cta")]
 	public Dictionary<string, CtaDefinition> Cta { get; set; } = [];
 
 	public static FileRef[] GetFileRefs(ITableOfContentsItem item)
@@ -109,8 +109,15 @@ public class DocumentationSetFile : TableOfContentsFile
 		throw new Exception($"Unexpected item type {item.GetType().Name}");
 	}
 
-	private static new DocumentationSetFile Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(json);
+	private static DocumentationSetFile Deserialize(string json, string? sourceName = null) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetFile>(json, sourceName);
+
+	/// <summary>
+	/// Deserializes a <c>docset.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
+	/// silently skipping them.
+	/// </summary>
+	private static new DocumentationSetFile Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<DocumentationSetFile>(json, collector, sourceName);
 
 	/// <summary>
 	/// Loads a DocumentationSetFile from a file for reading metadata only (e.g. codex section).
@@ -119,7 +126,7 @@ public class DocumentationSetFile : TableOfContentsFile
 	public static DocumentationSetFile LoadMetadata(IFileInfo file)
 	{
 		var yaml = file.FileSystem.File.ReadAllText(file.FullName);
-		return Deserialize(yaml);
+		return Deserialize(yaml, file.FullName);
 	}
 
 	/// <summary>
@@ -150,6 +157,14 @@ public class DocumentationSetFile : TableOfContentsFile
 	public HashSet<string> FolderExcludedFiles { get; private set; } = [];
 
 	/// <summary>
+	/// Pages registered with a default CTA via <c>default_cta</c> on <c>docset.yml</c>, nested <c>toc.yml</c> files,
+	/// or individual <c>file:</c> / <c>folder:</c> entries.
+	/// Keys are docset-root-relative markdown paths; values are template names from the docset's <c>cta</c> map.
+	/// </summary>
+	[YamlIgnore]
+	public IReadOnlyDictionary<string, string> TocDefaultCtas { get; private set; } = FrozenDictionary<string, string>.Empty;
+
+	/// <summary>
 	/// Loads a DocumentationSetFile from YAML string and recursively resolves all IsolatedTableOfContentsRef items,
 	/// replacing them with their resolved children and ensuring file paths carry over parent paths.
 	/// Validates the table of contents structure and emits diagnostics for issues.
@@ -163,8 +178,8 @@ public class DocumentationSetFile : TableOfContentsFile
 	)
 	{
 		fileSystem ??= new CheckoutsFileSystem(sourceDirectory, inner: sourceDirectory.FileSystem);
-		var docSet = Deserialize(yaml);
 		var docsetPath = fileSystem.Path.Join(sourceDirectory.FullName, "docset.yml").OptionalWindowsReplace();
+		var docSet = Deserialize(yaml, collector, docsetPath);
 		docSet.SuppressDiagnostics.ExceptWith(noSuppress ?? []);
 		docSet.TableOfContents = ResolveTableOfContents(
 			collector,
@@ -178,6 +193,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		);
 		// Collect excluded paths so they can be skipped during file processing (not just navigation)
 		docSet.FolderExcludedFiles = CollectFolderExcludedFiles(docSet.TableOfContents);
+		docSet.TocDefaultCtas = CollectTocDefaultCtas(collector, docSet.TableOfContents, docSet.DefaultCta);
 		return docSet;
 	}
 
@@ -204,6 +220,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		{
 			var resolvedItem = item switch
 			{
+				InvalidTocItemRef invalid => EmitInvalidTocItem(collector, invalid, context),
 				IsolatedTableOfContentsRef tocRef =>
 					ResolveIsolatedToc(
 						collector,
@@ -258,6 +275,23 @@ public class DocumentationSetFile : TableOfContentsFile
 		}
 
 		return resolved;
+	}
+
+	private static ITableOfContentsItem? EmitInvalidTocItem(IDiagnosticsCollector collector, InvalidTocItemRef invalid, string context)
+	{
+		var raw = invalid.RawValue;
+		var isYmlFile = raw.EndsWith(".yml", StringComparison.OrdinalIgnoreCase)
+			|| raw.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase);
+
+		var hint = isYmlFile
+			? $" An adjacent '{raw}' next to docset.yml is not supported. Inline its entries directly in docset.yml, or use 'toc: <folder>' to point to a subdirectory that contains a toc.yml."
+			: string.Empty;
+
+		collector.EmitError(
+			context,
+			$"'{raw}' is not a valid toc entry. Each entry must be a mapping with a 'file:', 'folder:', or 'toc:' key.{hint}"
+		);
+		return null;
 	}
 
 	/// <summary>
@@ -332,7 +366,7 @@ public class DocumentationSetFile : TableOfContentsFile
 		EnsureNotSymlink(fileSystem, tocFilePath);
 
 		var tocYaml = fileSystem.File.ReadAllText(tocFilePath);
-		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml);
+		var nestedTocFile = TableOfContentsFile.Deserialize(tocYaml, collector, tocFilePath);
 
 		// this is temporary after this lands in main we can update these files to include
 		// suppress:
@@ -379,7 +413,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			tocPathRelativeToContainer,
 			resolvedChildren,
 			parentContext,
-			tocRef.Island || nestedTocFile.Island
+			tocRef.Island || nestedTocFile.Island,
+			nestedTocFile.DefaultCta
 		);
 	}
 
@@ -459,9 +494,10 @@ public class DocumentationSetFile : TableOfContentsFile
 			// Preserve specific types even when there are no children
 			return fileRef switch
 			{
-				FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context),
-				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context)
+				FolderIndexFileRef =>
+					new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta),
+				_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, [], context, fileRef.DefaultCta)
 			};
 		}
 
@@ -522,9 +558,11 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Preserve the specific type when creating the resolved reference
 		return fileRef switch
 		{
-			FolderIndexFileRef => new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			IndexFileRef => new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context),
-			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context)
+			FolderIndexFileRef =>
+				new FolderIndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			IndexFileRef =>
+				new IndexFileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta),
+			_ => new FileRef(fullPath, pathRelativeToContainer, fileRef.Hidden, resolvedChildren, context, fileRef.DefaultCta)
 		};
 	}
 
@@ -691,7 +729,8 @@ public class DocumentationSetFile : TableOfContentsFile
 			fullVirtualRoot,
 			pathRelativeToContainer,
 			context,
-			resolvedChildren
+			resolvedChildren,
+			cliRef.AppliesTo
 		);
 	}
 
@@ -761,7 +800,14 @@ public class DocumentationSetFile : TableOfContentsFile
 				suppressDiagnostics
 			);
 			// Exclude is intentionally not passed through — it only applies to auto-discovery
-			return new FolderRef(fullPath, pathRelativeToContainer, resolvedChildren, context, folderRef.Sort);
+			return new FolderRef(
+				fullPath,
+				pathRelativeToContainer,
+				resolvedChildren,
+				context,
+				folderRef.Sort,
+				DefaultCta: folderRef.DefaultCta
+			);
 		}
 
 		// No children defined - auto-discover .md files in the folder
@@ -777,7 +823,15 @@ public class DocumentationSetFile : TableOfContentsFile
 			explicitSortOrder,
 			folderRef.Exclude
 		);
-		return new FolderRef(fullPath, pathRelativeToContainer, autoDiscoveredChildren, context, folderRef.Sort, folderRef.Exclude);
+		return new FolderRef(
+			fullPath,
+			pathRelativeToContainer,
+			autoDiscoveredChildren,
+			context,
+			folderRef.Sort,
+			folderRef.Exclude,
+			folderRef.DefaultCta
+		);
 	}
 
 	/// <summary>
@@ -844,6 +898,97 @@ public class DocumentationSetFile : TableOfContentsFile
 		// Resolve the children with the folder path as parent to get correct full paths
 		// Auto-discovered items are in the same container as the folder
 		return ResolveTableOfContents(collector, children, baseDirectory, fileSystem, folderPath, containerPath, context);
+	}
+
+	/// <summary>
+	/// Traverses the resolved TOC and collects pages registered with a <c>default_cta</c> from
+	/// <c>docset.yml</c>, nested <c>toc.yml</c> files, or individual <c>file:</c> / <c>folder:</c> entries.
+	/// The nearest declaration wins.
+	/// </summary>
+	private static FrozenDictionary<string, string> CollectTocDefaultCtas(
+		IDiagnosticsCollector collector,
+		IReadOnlyCollection<ITableOfContentsItem> items,
+		string? inheritedDefault
+	)
+	{
+		var defaults = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+		CollectTocDefaultCtas(collector, items, inheritedDefault, defaults);
+		return defaults.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+	}
+
+	private static void CollectTocDefaultCtas(
+		IDiagnosticsCollector collector,
+		IReadOnlyCollection<ITableOfContentsItem> items,
+		string? inheritedDefault,
+		Dictionary<string, string> defaults
+	)
+	{
+		foreach (var item in items)
+		{
+			switch (item)
+			{
+				case FileRef file:
+					var fileDefault = file.DefaultCta ?? inheritedDefault;
+					RegisterTocDefaultCta(collector, file.PathRelativeToDocumentationSet, fileDefault, file.Context, defaults);
+					if (file.Children.Count > 0)
+						CollectTocDefaultCtas(collector, file.Children, fileDefault, defaults);
+					break;
+				case IsolatedTableOfContentsRef toc:
+					CollectTocDefaultCtas(collector, toc.Children, toc.DefaultCta ?? inheritedDefault, defaults);
+					break;
+				case FolderRef folder:
+					CollectTocDefaultCtas(collector, folder.Children, folder.DefaultCta ?? inheritedDefault, defaults);
+					break;
+				case CrossLinkRef crossLink when crossLink.Children.Count > 0:
+					CollectTocDefaultCtas(collector, crossLink.Children, inheritedDefault, defaults);
+					break;
+			}
+		}
+	}
+
+	private static void RegisterTocDefaultCta(
+		IDiagnosticsCollector collector,
+		string relativePath,
+		string? defaultCta,
+		string context,
+		Dictionary<string, string> defaults
+	)
+	{
+		if (string.IsNullOrWhiteSpace(defaultCta))
+			return;
+
+		var normalizedPath = NormalizeDocsetRelativePath(relativePath);
+		if (defaults.TryGetValue(normalizedPath, out var existing) && !existing.Equals(defaultCta, StringComparison.OrdinalIgnoreCase))
+		{
+			collector.EmitError(
+				context,
+				$"'{normalizedPath}' is registered with default CTA '{existing}' and '{defaultCta}'. Each page can only have one default CTA."
+			);
+			return;
+		}
+
+		defaults[normalizedPath] = defaultCta;
+	}
+
+	internal static string NormalizeDocsetRelativePath(string relativePath)
+	{
+		var segments = relativePath.Replace('\\', '/').TrimStart('/').Split('/');
+		var stack = new List<string>(segments.Length);
+		foreach (var segment in segments)
+		{
+			if (segment is "" or ".")
+				continue;
+			if (segment == "..")
+			{
+				if (stack.Count > 0)
+					stack.RemoveAt(stack.Count - 1);
+				continue;
+			}
+
+			stack.Add(segment);
+		}
+
+		return string.Join('/', stack);
 	}
 
 	/// <summary>
@@ -1109,41 +1254,37 @@ public class DocumentationSetFile : TableOfContentsFile
 	}
 }
 
-[YamlSerializable]
 public class DocumentationSetFeatures
 {
-	[YamlMember(Alias = "primary-nav", ApplyNamingConventions = false)]
+	[YamlPropertyName("primary-nav")]
 	public bool? PrimaryNav { get; set; }
-	[YamlMember(Alias = "disable-github-edit-link", ApplyNamingConventions = false)]
+	[YamlPropertyName("disable-github-edit-link")]
 	public bool? DisableGithubEditLink { get; set; }
-	[YamlMember(Alias = "guide-nav", ApplyNamingConventions = false)]
+	[YamlPropertyName("guide-nav")]
 	public bool? GuideNav { get; set; }
 }
 
-[YamlSerializable]
 public class DocumentationSetStorybook
 {
-	[YamlMember(Alias = "registry")]
+	[YamlPropertyName("registry")]
 	public string? Registry { get; set; }
 }
 
 /// <summary>
 /// A single <c>release_notes</c> entry declaring a product whose changelog content is CDN-backed.
 /// </summary>
-[YamlSerializable]
 public record ReleaseNotesProductReference
 {
-	[YamlMember(Alias = "product")]
+	[YamlPropertyName("product")]
 	public string Product { get; set; } = string.Empty;
 }
 
 /// <summary>
 /// Codex-specific metadata. Only contains <c>group</c> for navigation grouping in a codex environment.
 /// </summary>
-[YamlSerializable]
 public class CodexDocSetMetadata
 {
-	[YamlMember(Alias = "group")]
+	[YamlPropertyName("group")]
 	public string? Group { get; set; }
 }
 
@@ -1151,59 +1292,63 @@ public class CodexDocSetMetadata
 /// White-label branding overrides for isolated builds. Presence of this section removes all Elastic-specific chrome.
 /// All image paths are relative to the directory containing <c>docset.yml</c>.
 /// </summary>
-[YamlSerializable]
 public class BrandingConfiguration
 {
 	/// <summary>Path to the site icon image, relative to the docs source directory.</summary>
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
 	/// <summary>CSS colour value for the header background. Defaults to <c>#000000</c> when not specified.</summary>
-	[YamlMember(Alias = "header-bg", ApplyNamingConventions = false)]
+	[YamlPropertyName("header-bg")]
 	public string? HeaderBg { get; set; }
 
 	/// <summary>Path to the Open Graph image, relative to the docs source directory.</summary>
-	[YamlMember(Alias = "og-image", ApplyNamingConventions = false)]
+	[YamlPropertyName("og-image")]
 	public string? OgImage { get; set; }
 
 	/// <summary>
 	/// Path to the browser favicon, relative to the docs source directory.
 	/// When not set, auto-discovered from well-known filenames (favicon.ico, favicon.png, favicon.svg).
 	/// </summary>
-	[YamlMember(Alias = "favicon", ApplyNamingConventions = false)]
+	[YamlPropertyName("favicon")]
 	public string? Favicon { get; set; }
 
 	/// <summary>
 	/// Path to the Apple touch icon, relative to the docs source directory.
 	/// When not set, auto-discovered from apple-touch-icon.png if present.
 	/// </summary>
-	[YamlMember(Alias = "apple-touch-icon", ApplyNamingConventions = false)]
+	[YamlPropertyName("apple-touch-icon")]
 	public string? AppleTouchIcon { get; set; }
+
+	/// <summary>
+	/// The copyright line shown in the footer, for example <c>© 2026 Acme Inc.</c>.
+	/// When not set, branded builds have no footer.
+	/// </summary>
+	[YamlPropertyName("copyright")]
+	public string? Copyright { get; set; }
 }
 
 /// <summary>
 /// A single named right-gutter CTA template, as declared under <c>docset.yml</c>'s <c>cta</c> map.
 /// </summary>
-[YamlSerializable]
 public class CtaDefinition
 {
-	[YamlMember(Alias = "button")]
+	[YamlPropertyName("button")]
 	public CtaButton? Button { get; set; }
 
-	[YamlMember(Alias = "benefits")]
+	[YamlPropertyName("benefits")]
 	public List<string> Benefits { get; set; } = [];
 }
 
 /// <summary>
 /// The clickable button portion of a <see cref="CtaDefinition"/>.
 /// </summary>
-[YamlSerializable]
 public class CtaButton
 {
-	[YamlMember(Alias = "label")]
+	[YamlPropertyName("label")]
 	public string? Label { get; set; }
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string? Url { get; set; }
 }
 

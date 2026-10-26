@@ -4,6 +4,7 @@
 
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.GitHub;
 
@@ -20,6 +21,8 @@ public sealed class GitHubApiTransport : IDisposable
 	private const string GraphQlEndpoint = "https://api.github.com/graphql";
 
 	private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(60);
+	private static readonly TimeSpan MaxRateLimitWait = TimeSpan.FromSeconds(90);
+	private const int MaxRateLimitAttempts = 4;
 
 	/// <summary>
 	/// Process-wide client shared by every transport built for the production (no injected handler)
@@ -36,12 +39,23 @@ public sealed class GitHubApiTransport : IDisposable
 	/// </summary>
 	private readonly HttpClient? _ownedHttpClient;
 	private readonly string? _githubToken;
+	private readonly Func<TimeSpan, Cancel, Task> _delay;
+	private readonly ILogger? _logger;
 
 	/// <param name="handler">Optional HTTP handler override (tests). Owned by the caller.</param>
 	/// <param name="githubToken">Optional token override; defaults to the <c>GITHUB_TOKEN</c> environment variable.</param>
-	public GitHubApiTransport(HttpMessageHandler? handler = null, string? githubToken = null)
+	/// <param name="delay">Optional wait override (tests), used between retries of a rate-limited request.</param>
+	/// <param name="logger">Optional logger. Every wait before a retry is logged, so a run that waits is not mistaken for a hung one.</param>
+	public GitHubApiTransport(
+		HttpMessageHandler? handler = null,
+		string? githubToken = null,
+		Func<TimeSpan, Cancel, Task>? delay = null,
+		ILogger? logger = null
+	)
 	{
 		_githubToken = githubToken;
+		_delay = delay ?? Task.Delay;
+		_logger = logger;
 		if (handler is null)
 			_httpClient = SharedHttpClient;
 		else
@@ -69,13 +83,17 @@ public sealed class GitHubApiTransport : IDisposable
 	/// Issues an authenticated (when a token resolves) GET against the GitHub REST API.
 	/// The caller owns the response and its status-code policy.
 	/// </summary>
-	public async Task<HttpResponseMessage> GetAsync(string url, Cancel ctx = default)
-	{
-		using var request = new HttpRequestMessage(HttpMethod.Get, url);
-		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
-		AttachAuthorization(request);
-		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
-	}
+	public async Task<HttpResponseMessage> GetAsync(string url, Cancel ctx = default) =>
+		await SendWithRateLimitRetryAsync(
+			() =>
+			{
+				var request = new HttpRequestMessage(HttpMethod.Get, url);
+				request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+				AttachAuthorization(request);
+				return request;
+			},
+			ctx
+		).ConfigureAwait(false);
 
 	/// <summary>
 	/// Issues an authenticated POST against a GitHub REST API endpoint with a JSON body.
@@ -104,15 +122,190 @@ public sealed class GitHubApiTransport : IDisposable
 	}
 
 	/// <summary>
+	/// Issues an authenticated DELETE against a GitHub REST API endpoint.
+	/// The caller owns the response and its status-code policy.
+	/// </summary>
+	public async Task<HttpResponseMessage> DeleteAsync(string url, Cancel ctx = default)
+	{
+		using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+		AttachAuthorization(request);
+		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+	}
+
+	/// <summary>
 	/// Posts a JSON body to the GitHub GraphQL endpoint. The GraphQL API rejects anonymous
 	/// requests, so callers should verify <see cref="ResolveToken"/> before building queries.
 	/// </summary>
-	public async Task<HttpResponseMessage> PostGraphQlAsync(string jsonBody, Cancel ctx = default)
+	public async Task<HttpResponseMessage> PostGraphQlAsync(string jsonBody, Cancel ctx = default) =>
+		await SendWithRateLimitRetryAsync(
+			() =>
+			{
+				var request = new HttpRequestMessage(HttpMethod.Post, GraphQlEndpoint)
+				{
+					Content = new StringContent(jsonBody, Encoding.UTF8, "application/json")
+				};
+				AttachAuthorization(request);
+				return request;
+			},
+			ctx,
+			retryTransient: true
+		).ConfigureAwait(false);
+
+	/// <summary>
+	/// Like <see cref="PostGraphQlAsync"/>, but a request that still fails after its retries, because the connection dropped or
+	/// kept timing out, is reported to <paramref name="onFailure"/> and answered with <c>null</c> instead of an exception.
+	/// </summary>
+	public async Task<HttpResponseMessage?> PostGraphQlOrNullAsync(string jsonBody, Action<string> onFailure, Cancel ctx = default)
 	{
-		using var request = new HttpRequestMessage(HttpMethod.Post, GraphQlEndpoint);
-		request.Content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-		AttachAuthorization(request);
-		return await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+		try
+		{
+			return await PostGraphQlAsync(jsonBody, ctx).ConfigureAwait(false);
+		}
+		catch (Exception e) when (IsTransient(e, ctx))
+		{
+			onFailure(e is TaskCanceledException ? $"timed out after {MaxRateLimitAttempts} attempt(s): {e.Message}" : e.Message);
+			return null;
+		}
+	}
+
+	/// <summary>
+	/// Sends a read request and waits out a rate limit instead of failing. Bulk reads run several requests at once, so a
+	/// secondary limit can hit mid-run, and a failed read would drop an entry from the bundle. The wait is capped,
+	/// because a primary limit that resets in an hour cannot be waited out; that response goes back to the caller.
+	/// </summary>
+	private async Task<HttpResponseMessage> SendWithRateLimitRetryAsync(
+		Func<HttpRequestMessage> create,
+		Cancel ctx,
+		bool retryTransient = false
+	)
+	{
+		for (var attempt = 1; ; attempt++)
+		{
+			using var request = create();
+			HttpResponseMessage response;
+			try
+			{
+				response = await _httpClient.SendAsync(request, ctx).ConfigureAwait(false);
+			}
+			catch (Exception e) when (retryTransient && attempt < MaxRateLimitAttempts && IsTransient(e, ctx))
+			{
+				// A dropped connection or a request that timed out is as transient as a 502. The last attempt lets it through.
+				var pause = TransientWait(attempt);
+				_logger?.LogWarning(
+					"GitHub request failed ({Reason}); waiting {Wait}s before attempt {Next} of {Max}",
+					e.Message,
+					pause.TotalSeconds,
+					attempt + 1,
+					MaxRateLimitAttempts
+				);
+				await _delay(pause, ctx).ConfigureAwait(false);
+				continue;
+			}
+
+			var wait = attempt < MaxRateLimitAttempts
+				? await RetryWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false)
+				: null;
+			if (wait is null)
+				return response;
+
+			_logger?.LogWarning(
+				"GitHub answered {Status}; waiting {Wait}s before attempt {Next} of {Max}",
+				(int)response.StatusCode,
+				wait.Value.TotalSeconds,
+				attempt + 1,
+				MaxRateLimitAttempts
+			);
+			response.Dispose();
+			await _delay(wait.Value, ctx).ConfigureAwait(false);
+		}
+	}
+
+	/// <summary>A dropped connection, or a request that hit the client timeout while the caller did not cancel.</summary>
+	private static bool IsTransient(Exception e, Cancel ctx) =>
+		e is HttpRequestException || (e is TaskCanceledException && !ctx.IsCancellationRequested);
+
+	/// <summary>How long to wait before retrying a response, or <c>null</c> when it is final: a rate limit, then a transient failure.</summary>
+	private static async Task<TimeSpan?> RetryWaitAsync(HttpResponseMessage response, int attempt, bool retryTransient, Cancel ctx) =>
+		await RateLimitWaitAsync(response, attempt, ctx).ConfigureAwait(false)
+			?? await TransientFailureWaitAsync(response, attempt, retryTransient, ctx).ConfigureAwait(false);
+
+	/// <summary>
+	/// For GraphQL, a gateway error (502, 503, 504), a dropped connection, a successful response with no body, and GitHub's
+	/// "Something went wrong while executing your query" error, which it sends under load, are retried. Without this a long run over thousands of commits dies on one bad response.
+	/// REST reads keep the retries of their callers, so they are not retried twice.
+	/// </summary>
+	private static async Task<TimeSpan?> TransientFailureWaitAsync(
+		HttpResponseMessage response,
+		int attempt,
+		bool retryTransient,
+		Cancel ctx
+	)
+	{
+		if (!retryTransient)
+			return null;
+
+		if ((int)response.StatusCode is 502 or 503 or 504)
+			return TransientWait(attempt);
+
+		if (!response.IsSuccessStatusCode)
+			return null;
+
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return string.IsNullOrWhiteSpace(body) || IsInternalGraphQlError(body) ? TransientWait(attempt) : null;
+	}
+
+	/// <summary>
+	/// GitHub answers a query that it could not run, usually because it was too heavy at that moment, with a successful
+	/// response whose only content is this error and a request id. The same query often works a moment later.
+	/// </summary>
+	private static bool IsInternalGraphQlError(string body) =>
+		body.Contains("Something went wrong while executing your query", StringComparison.Ordinal);
+
+	private static TimeSpan TransientWait(int attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt));
+
+	/// <summary>
+	/// How long to wait before retrying a rate-limited response, or <c>null</c> when it is not one or waiting is no use.
+	/// <list type="bullet">
+	/// <item>A <c>Retry-After</c> header says how long.</item>
+	/// <item>An exhausted primary budget (<c>x-ratelimit-remaining: 0</c>) resets at <c>x-ratelimit-reset</c>.</item>
+	/// <item>A secondary limit has neither: a 429, or a 403 whose body says so. GitHub asks for at least a minute.</item>
+	/// </list>
+	/// The reset time only counts for an exhausted budget. A secondary limit can arrive with budget left and a reset an hour away.
+	/// </summary>
+	private static async Task<TimeSpan?> RateLimitWaitAsync(HttpResponseMessage response, int attempt, Cancel ctx)
+	{
+		var status = (int)response.StatusCode;
+		if (status is not (429 or 403))
+			return null;
+
+		TimeSpan wait;
+		if (response.Headers.RetryAfter is { } retryAfter && RetryAfterWait(retryAfter) is { } told)
+			wait = told;
+		else if (response.Headers.TryGetValues("x-ratelimit-remaining", out var remaining) && remaining.FirstOrDefault() == "0")
+			wait = ResetWait(response);
+		else if (status == 429 || await IsSecondaryLimitBodyAsync(response, ctx).ConfigureAwait(false))
+			wait = TimeSpan.FromSeconds(Math.Min(60 * attempt, MaxRateLimitWait.TotalSeconds));
+		else
+			return null;
+
+		return wait > MaxRateLimitWait ? null : wait < TimeSpan.Zero ? TimeSpan.Zero : wait;
+	}
+
+	private static TimeSpan? RetryAfterWait(System.Net.Http.Headers.RetryConditionHeaderValue retryAfter) =>
+		retryAfter.Delta ?? (retryAfter.Date is { } date ? date - DateTimeOffset.UtcNow : null);
+
+	private static TimeSpan ResetWait(HttpResponseMessage response) =>
+		response.Headers.TryGetValues("x-ratelimit-reset", out var reset) && long.TryParse(reset.FirstOrDefault(), out var resetAt)
+			? DateTimeOffset.FromUnixTimeSeconds(resetAt) - DateTimeOffset.UtcNow + TimeSpan.FromSeconds(1)
+			: TimeSpan.FromSeconds(60);
+
+	/// <summary>A 403 for a secondary limit says so in its body, unlike a 403 for a missing permission.</summary>
+	private static async Task<bool> IsSecondaryLimitBodyAsync(HttpResponseMessage response, Cancel ctx)
+	{
+		var body = await response.Content.ReadAsStringAsync(ctx).ConfigureAwait(false);
+		return body.Contains("secondary rate limit", StringComparison.OrdinalIgnoreCase)
+			|| body.Contains("abuse detection", StringComparison.OrdinalIgnoreCase);
 	}
 
 	private void AttachAuthorization(HttpRequestMessage request)

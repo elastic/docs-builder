@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
@@ -12,8 +14,53 @@ namespace Elastic.ApiExplorer.Model;
 /// <summary>
 /// Shared static utilities for OpenAPI schema rendering.
 /// </summary>
-public static class SchemaHelpers
+public static partial class SchemaHelpers
 {
+	/// <summary>
+	/// The example a schema states: the first of <c>examples</c> (OpenAPI 3.1), else its <c>example</c>. The reader keeps the
+	/// <c>example</c> of an OpenAPI 3.0 schema in <see cref="IOpenApiSchema.Example"/> and leaves <c>examples</c> empty.
+	/// </summary>
+#pragma warning disable CS0618
+	public static JsonNode? FirstExample(IOpenApiSchema? schema) =>
+		schema?.Examples?.FirstOrDefault(IsValue) ?? (IsValue(schema?.Example) ? schema!.Example : null);
+#pragma warning restore CS0618
+
+	/// <summary>A node that holds a value: not null, and not the sentinel string the reader stores for a literal JSON <c>null</c>.</summary>
+	public static bool IsValue(JsonNode? node) => node is not null && !JsonNullSentinel.IsJsonNullSentinel(node);
+
+	/// <summary>The first value a schema states for itself: an example, its default, its constant, or its first enum member.</summary>
+	public static JsonNode? StatedValue(IOpenApiSchema? schema) =>
+		schema is null
+			? null
+			: FirstExample(schema)
+				?? (IsValue(schema.Default) ? schema.Default : null)
+				?? Const(schema)
+				?? schema.Enum?.FirstOrDefault(IsValue);
+
+	/// <summary>
+	/// The reader keeps <c>const</c> as text and drops its JSON type. A schema typed string keeps the text. Otherwise a
+	/// boolean is told apart by the .NET spelling the reader gives it (<c>True</c>, where the string "true" stays lowercase),
+	/// a number is parsed back, and anything else stays a string. A number and the string of its digits cannot be told
+	/// apart without a type, so <c>{ "const": "7" }</c> reads as 7; a schema that means the string should say <c>type: string</c>.
+	/// </summary>
+	private static JsonNode? Const(IOpenApiSchema schema)
+	{
+		var text = schema.Const;
+		if (string.IsNullOrEmpty(text))
+			return null;
+		if (schema.Type?.HasFlag(JsonSchemaType.String) == true)
+			return JsonValue.Create(text);
+		if (text is "True" or "False")
+			return JsonValue.Create(text == "True");
+		if (schema.Type?.HasFlag(JsonSchemaType.Boolean) == true && bool.TryParse(text, out var flag))
+			return JsonValue.Create(flag);
+		// A JSON number is kept as its own token, so 1e30 or 1e-30 keep their range and precision.
+		return JsonNumber().IsMatch(text) ? JsonNode.Parse(text) : JsonValue.Create(text);
+	}
+
+	[GeneratedRegex(@"^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$", RegexOptions.CultureInvariant)]
+	private static partial Regex JsonNumber();
+
 	/// <summary>
 	/// Maximum depth for recursive property rendering.
 	/// </summary>
@@ -22,62 +69,64 @@ public static class SchemaHelpers
 	/// <summary>
 	/// Types that are known to be value types (resolve to primitives like string).
 	/// </summary>
-	public static readonly HashSet<string> KnownValueTypes =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"Field",
-		"Fields",
-		"Id",
-		"Ids",
-		"IndexName",
-		"Indices",
-		"Name",
-		"Names",
-		"Routing",
-		"VersionNumber",
-		"SequenceNumber",
-		"PropertyName",
-		"RelationName",
-		"TaskId",
-		"ScrollId",
-		"SuggestionName",
-		"Duration",
-		"DateMath",
-		"Fuzziness",
-		"GeoHashPrecision",
-		"Distance",
-		"TimeOfDay",
-		"MinimumShouldMatch",
-		"Script",
-		"ByteSize",
-		"Percentage",
-		"Stringifiedboolean",
-		"ExpandWildcards",
-		"float",
-		"Stringifiedinteger",
-		// Numeric value types
-		"uint",
-		"ulong",
-		"long",
-		"int",
-		"short",
-		"ushort",
-		"byte",
-		"sbyte",
-		"double",
-		"decimal"
-	];
+	public static readonly HashSet<string> KnownValueTypes = new(
+		[
+			"Field",
+			"Fields",
+			"Id",
+			"Ids",
+			"IndexName",
+			"Indices",
+			"Name",
+			"Names",
+			"Routing",
+			"VersionNumber",
+			"SequenceNumber",
+			"PropertyName",
+			"RelationName",
+			"TaskId",
+			"ScrollId",
+			"SuggestionName",
+			"Duration",
+			"DateMath",
+			"Fuzziness",
+			"GeoHashPrecision",
+			"Distance",
+			"TimeOfDay",
+			"MinimumShouldMatch",
+			"Script",
+			"ByteSize",
+			"Percentage",
+			"Stringifiedboolean",
+			"ExpandWildcards",
+			"float",
+			"Stringifiedinteger",
+			"uint",
+			"ulong",
+			"long",
+			"int",
+			"short",
+			"ushort",
+			"byte",
+			"sbyte",
+			"double",
+			"decimal"
+		],
+		StringComparer.OrdinalIgnoreCase
+	);
 
 	/// <summary>
 	/// Types that have dedicated pages we can link to.
 	/// Only container types get their own pages - individual queries/aggregations are rendered inline.
 	/// </summary>
-	public static readonly HashSet<string> LinkedTypes =
+	// Display order for a schema with several types; it matches how the specs list them, since the type flags keep no order.
+	private static readonly (JsonSchemaType Type, string Name)[] PrimitiveTypeOrder =
 	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"QueryContainer",
-		"AggregationContainer",
-		"Aggregate"
+		(JsonSchemaType.Boolean, "boolean"),
+		(JsonSchemaType.Integer, "integer"),
+		(JsonSchemaType.Number, "number"),
+		(JsonSchemaType.String, "string"),
+		(JsonSchemaType.Object, "object")
 	];
 
 	/// <summary>
@@ -85,50 +134,63 @@ public static class SchemaHelpers
 	/// These should not be considered for recursive type detection since they
 	/// represent generic types rather than specific schema references.
 	/// </summary>
-	public static readonly HashSet<string> PrimitiveTypeNames =
-	[
-		with(StringComparer.OrdinalIgnoreCase),
-		"boolean",
-		"number",
-		"string",
-		"integer",
-		"object",
-		"null",
-		"array"
-	];
+	/// <summary>An array of a shown type: <c>string[]</c>, or <c>(string | object)[]</c> so the suffix covers the whole formula.</summary>
+	public static string ArrayOf(string shown) => IsFormulaName(shown) ? $"({shown})[]" : $"{shown}[]";
 
-	/// <summary>
-	/// Gets the URL for a container type's dedicated page under the given API root
-	/// (e.g. <c>/api/elasticsearch</c>), matching the URLs built by <c>SchemaNavigationItem</c>.
-	/// </summary>
-	public static string? GetContainerPageUrl(string apiRootUrl, string typeName)
-	{
-		var schemaId = typeName switch
-		{
-			"QueryContainer" => "_types.query_dsl.QueryContainer",
-			"AggregationContainer" => "_types.aggregations.AggregationContainer",
-			"Aggregate" => "_types.aggregations.Aggregate",
-			_ => null
-		};
-		return schemaId is null ? null : $"{apiRootUrl.TrimEnd('/')}/types/{ApiUrlBuilder.SchemaMoniker(schemaId)}";
-	}
+	/// <summary>Whether a shown name joins several types (<c>string | object</c>).</summary>
+	public static bool IsFormulaName(string shown) => shown.Contains(" | ", StringComparison.Ordinal);
 
-	/// <summary>
-	/// Determines if a type should link to its container page.
-	/// </summary>
-	/// <param name="typeName">The type name to check.</param>
-	/// <param name="currentPageType">Optional current page type to prevent self-linking.</param>
-	public static bool ShouldLinkToContainerPage(string typeName, string? currentPageType = null)
-	{
-		if (!LinkedTypes.Contains(typeName))
-			return false;
+	/// <summary>What a type the spec names reads as when it has no page of its own, besides a primitive.</summary>
+	public static readonly HashSet<string> ShapeNames = new(["enum", "union", "oneOf", "anyOf", "array"], StringComparer.Ordinal);
 
-		// Prevent self-linking on schema pages
-		if (!string.IsNullOrEmpty(currentPageType) && typeName.Equals(currentPageType, StringComparison.OrdinalIgnoreCase))
-			return false;
+	public static readonly HashSet<string> PrimitiveTypeNames = new(
+		["boolean", "number", "string", "integer", "object", "null", "array"],
+		StringComparer.OrdinalIgnoreCase
+	);
 
-		return true;
-	}
+	/// <summary>CSS class for group-1 primitive atoms (<c>string</c>, <c>number</c>, …).</summary>
+	public const string PrimitiveCssClass = "type-primitive";
+
+	/// <summary>CSS class for group-2 value types (<c>string Field</c>, <c>number uint</c>, …).</summary>
+	public const string ValueCssClass = "type-value";
+
+	/// <summary>Group-2 class on the primitive keyword inside a value-type pair.</summary>
+	public const string ValueKeywordCssClass = "type-value value-type-keyword";
+
+	/// <summary>CSS class for group-3 named objects (<c>FieldCollapse</c>, <c>TaskSettings</c>, …).</summary>
+	public const string ObjectCssClass = "type-object";
+
+	/// <summary>CSS class for group-4 linked containers (<c>QueryContainer</c>, …).</summary>
+	public const string LinkedCssClass = "type-linked";
+
+	/// <summary>CSS class for group-5 wrappers (<c>array of</c>, <c>map</c>, <c>enum</c>, <c>{}</c>, …).</summary>
+	public const string WrapperCssClass = "type-wrapper";
+
+	public const string WrapperArrayKeywordCssClass = "type-wrapper array-keyword";
+	public const string WrapperMapKeywordCssClass = "type-wrapper map-keyword";
+	public const string WrapperEnumCssClass = "type-wrapper enum-icon";
+	public const string WrapperUnionCssClass = "type-wrapper union-icon";
+	public const string WrapperObjectIconCssClass = "type-wrapper object-icon";
+	public const string WrapperArrayIconCssClass = "type-wrapper array-icon";
+
+	/// <summary>CSS class for group-6 status chips (<c>required</c>, <c>deprecated</c>, <c>beta</c>).</summary>
+	public const string StatusCssClass = "type-status";
+
+	/// <summary>Inline constraint atom inside the type chip (<c>min: 1</c>, <c>default: 10</c>).</summary>
+	public const string ConstraintCssClass = "type-constraint";
+
+	private static readonly HashSet<string> PrimitiveDisplayNames = new(
+		["boolean", "number", "string", "integer", "object", "null", "array", "booleans", "numbers", "strings", "integers", "objects"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
+	private static readonly HashSet<string> NonObjectDisplayNames = new(
+		["unknown", "oneof", "anyof", "allof"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
+	/// <summary>The row label for a union: <c>anyOf</c> options can match together, so it says "Any of:".</summary>
+	public static string UnionLabel(UnionKeyword? keyword) => keyword == UnionKeyword.AnyOf ? "Any of:" : "One of:";
 
 	/// <summary>
 	/// Converts a JsonSchemaType to a human-readable primitive type name.
@@ -138,20 +200,11 @@ public static class SchemaHelpers
 		if (type is null)
 			return "";
 
-		if (type.Value.HasFlag(JsonSchemaType.Boolean))
-			return "boolean";
-		if (type.Value.HasFlag(JsonSchemaType.Integer))
-			return "integer";
-		if (type.Value.HasFlag(JsonSchemaType.String))
-			return "string";
-		if (type.Value.HasFlag(JsonSchemaType.Number))
-			return "number";
-		if (type.Value.HasFlag(JsonSchemaType.Null))
-			return "null";
-		if (type.Value.HasFlag(JsonSchemaType.Object))
-			return "object";
-
-		return "";
+		// OpenAPI 3.1 allows several types (`type: [number, string]`); show them all. Null only names a type on its own.
+		var names = PrimitiveTypeOrder.Where(t => type.Value.HasFlag(t.Type)).Select(t => t.Name).ToArray();
+		if (names.Length > 0)
+			return string.Join(" | ", names);
+		return type.Value.HasFlag(JsonSchemaType.Null) ? "null" : "";
 	}
 
 	/// <summary>
@@ -172,7 +225,86 @@ public static class SchemaHelpers
 	/// Checks if a type name is a primitive/generic type name (not a named schema type).
 	/// Primitive types like "object", "string", etc. should not be used for recursive type detection.
 	/// </summary>
-	public static bool IsPrimitiveTypeName(string typeName) => PrimitiveTypeNames.Contains(typeName);
+	public static bool IsPrimitiveTypeName(string typeName) =>
+		PrimitiveTypeNames.Contains(typeName)
+			|| (typeName.Contains(" | ", StringComparison.Ordinal) && typeName.Split(" | ").All(PrimitiveTypeNames.Contains));
+
+	/// <summary>True for JSON primitives and their plural array labels (<c>strings</c>, …).</summary>
+	public static bool IsPrimitiveDisplayName(string? name) => !string.IsNullOrEmpty(name) && PrimitiveDisplayNames.Contains(name);
+
+	public static string? PrimitiveCssClassOrNull(string? name) => IsPrimitiveDisplayName(name) ? PrimitiveCssClass : null;
+
+	public static string? ValueCssClassOrNull(string? name) => !string.IsNullOrEmpty(name) && IsValueType(name) ? ValueCssClass : null;
+
+	// Reached after the primitive, value and shape checks, so any other plain name is a schema.
+	private static string? ObjectCssClassOrNull(string? name) =>
+		string.IsNullOrEmpty(name) || NonObjectDisplayNames.Contains(name) || IsCompoundTypeName(name) ? null : ObjectCssClass;
+
+	public static bool IsCompoundTypeName(string? name) =>
+		!string.IsNullOrEmpty(name) && (name.Contains('|') || name.Contains(' ') || name.EndsWith("[]", StringComparison.Ordinal));
+
+	/// <summary>
+	/// Codegen schema ids keep underscores (<c>Security_Lists_API_ListMetadata</c>). Elasticsearch
+	/// display names are the last dotted segment and do not.
+	/// </summary>
+	public static bool IsInternalSchemaName(string? name) =>
+		!string.IsNullOrEmpty(name)
+			&& name.Contains('_', StringComparison.Ordinal)
+			&& !IsCompoundTypeName(name)
+			&& !IsPrimitiveDisplayName(name);
+
+	/// <summary>
+	/// True for all-lowercase snake_case ids (<c>bedrock_config</c>). They are already readable names, and
+	/// shortening them to the last segment would make sibling variants read alike.
+	/// </summary>
+	public static bool IsSnakeCaseName(string? name) =>
+		!string.IsNullOrEmpty(name)
+			&& name.Contains('_', StringComparison.Ordinal)
+			&& name.All(static c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_');
+
+	/// <summary>
+	/// Last meaningful segment of a PascalCase codegen id (<c>Security_Lists_API_PlatformErrorResponse</c> →
+	/// <c>PlatformErrorResponse</c>). Readable names and snake_case ids are returned unchanged.
+	/// </summary>
+	public static string ReadableSchemaName(string? typeName)
+	{
+		if (string.IsNullOrEmpty(typeName) || !IsInternalSchemaName(typeName) || IsSnakeCaseName(typeName))
+			return typeName ?? "";
+
+		var parts = typeName.Split('_', StringSplitOptions.RemoveEmptyEntries);
+		for (var i = parts.Length - 1; i >= 0; i--)
+		{
+			if (!parts[i].Equals("API", StringComparison.Ordinal))
+				return char.IsUpper(parts[i][0]) ? parts[i] : typeName;
+		}
+
+		return typeName;
+	}
+
+	/// <summary>Group class for a type atom: primitive → value → linked → named object.</summary>
+	public static string? TypeAtomCssClassOrNull(string? name) =>
+		PrimitiveCssClassOrNull(name) ?? ValueCssClassOrNull(name) ?? ShapeKeywordCssClassOrNull(name) ?? ObjectCssClassOrNull(name);
+
+	/// <summary>
+	/// A shape name (enum, union) is a keyword, not a schema. The annotation builder and the type atom classifier both
+	/// take its class from here so the keyword reads the same wherever it shows.
+	/// </summary>
+	public static string? ShapeKeywordCssClassOrNull(string? name) => name switch
+	{
+		"enum" => WrapperEnumCssClass,
+		"union" => WrapperUnionCssClass,
+		not null when ShapeNames.Contains(name) => WrapperCssClass,
+		_ => null
+	};
+
+	public static string UnionOptionClasses(bool isTypeOption, string text)
+	{
+		var kind = isTypeOption ? "union-type-option" : "union-option";
+		if (!isTypeOption)
+			return kind;
+		var atom = TypeAtomCssClassOrNull(text);
+		return atom is null ? kind : $"{kind} {atom}";
+	}
 
 	/// <summary>
 	/// Gets the primitive type base for a value type schema.
@@ -190,8 +322,9 @@ public static class SchemaHelpers
 	}
 
 	/// <summary>
-	/// Determines if a schema is a "primitive alias" - a named type that simply wraps a primitive type.
-	/// This detects types like "Cases_case_description" that are defined as just "type: string".
+	/// Determines if a schema is a named wrapper around a primitive (<c>type: string</c> with no
+	/// properties, composition, or enum). Kibana codegen ids such as
+	/// <c>Security_Lists_API_ListDescription</c> match this; they render as the primitive only.
 	/// </summary>
 	/// <param name="schema">The schema to check (typically a resolved schema reference).</param>
 	/// <returns>The primitive type name if this is a primitive alias, null otherwise.</returns>
@@ -205,7 +338,7 @@ public static class SchemaHelpers
 			return null;
 		if (schema.AdditionalProperties is not null)
 			return null;
-		if (schema.OneOf is { Count: > 0 } || schema.AnyOf is { Count: > 0 } || schema.AllOf is { Count: > 0 })
+		if (UnionSchemas.IsUnion(schema) || schema.AllOf is { Count: > 0 })
 			return null;
 		// Enums are not primitive aliases - they have special rendering
 		if (schema.Enum is { Count: > 0 })

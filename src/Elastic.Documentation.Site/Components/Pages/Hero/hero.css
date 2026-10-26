@@ -1,0 +1,111 @@
+/*
+ * The hero block: type and spacing for the hero variants. The backgrounds and the dark colour scope come from the theme
+ * (themes/surfaces.css and bold-minimal.css), keyed off the same hero-block and hero-block--* classes, so any hero can wear a variant.
+ */
+.hero-block__eyebrow {
+	margin: 0;
+	color: var(--palette-teal);
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.hero-block__title {
+	margin: var(--space-4) 0 0;
+	max-width: 47.5rem;
+	color: inherit;
+	font-family: var(--font-display);
+	font-size: clamp(2.375rem, 4vw, 3.5rem);
+	font-weight: var(--weight-medium);
+	letter-spacing: -0.0237em;
+	line-height: 1.2;
+}
+
+.hero-block__lead {
+	margin: var(--space-5) 0 0;
+	max-width: 37.5rem;
+	color: inherit;
+	font-size: var(--text-lg);
+	line-height: 1.55;
+	opacity: 0.85;
+}
+
+.hero-block__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	margin-top: var(--space-6);
+}
+
+.hero-block__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-5);
+	margin-top: var(--space-7);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+	opacity: 0.75;
+}
+
+.hero-block--spotlight {
+	text-align: center;
+}
+
+.hero-block--spotlight .hero-block__title,
+.hero-block--spotlight .hero-block__lead {
+	margin-inline: auto;
+}
+
+.hero-block--spotlight .hero-block__actions,
+.hero-block--spotlight .hero-block__meta {
+	justify-content: center;
+}
+
+.hero-block--paper .hero-block__eyebrow {
+	color: var(--color-accent);
+}
+
+.hero-block--paper .hero-block__lead {
+	color: var(--color-text);
+	opacity: 1;
+}
+
+.hero-block--stripe .hero-block__title,
+.hero-block--paper .hero-block__title {
+	font-size: clamp(2.375rem, 4.4vw, 3.75rem);
+}
+
+.hero-block--compact .hero-block__title {
+	font-size: clamp(2rem, 3vw, 2.5rem);
+}
+
+/* The aside sits beside the text from 860px; below it falls under. */
+.hero-block__aside-body {
+	font-family: var(--font-mono);
+}
+
+@media (max-width: 860px) {
+	.hero-block--aside .hero-block__inner {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* The call-to-action band closes a page; its title is in the display face like a hero's. */
+.cta-band h2 {
+	margin: 0;
+	color: inherit;
+	font-family: var(--font-display);
+	font-size: var(--text-3xl);
+	font-weight: var(--weight-medium);
+	letter-spacing: -0.0237em;
+	line-height: 1.2;
+}
+
+.cta-band p {
+	margin: var(--space-3) 0 0;
+	max-width: 32rem;
+	opacity: 0.9;
+}

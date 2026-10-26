@@ -8,9 +8,9 @@ using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Indexing;
+using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 using Elastic.Documentation.Services;
 using Elastic.Ingest.Elasticsearch.Enrichment;
-using Elastic.Markdown.Exporters.Elasticsearch;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Indexing;

@@ -9,20 +9,18 @@ using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
-public abstract class ConsoleCodeBlockTests(
-	ITestOutputHelper output,
-	[LanguageInjection("markdown")] string markdown
-) : BlockTest<EnhancedCodeBlock>(output, markdown)
+[InheritsTests]
+public abstract class ConsoleCodeBlockTests([LanguageInjection("markdown")] string markdown) : BlockTest<EnhancedCodeBlock>(markdown)
 {
-	[Fact]
+	[Test]
 	public void ParsesConsoleCodeBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("json");
 }
 
-public class SingleConsoleApiCallTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class SingleConsoleApiCallTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /mydocuments/_search
@@ -36,7 +34,7 @@ GET /mydocuments/_search
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesSingleApiSegment()
 	{
 		Block!.ApiSegments.Should().HaveCount(1);
@@ -51,12 +49,12 @@ GET /mydocuments/_search
 		segment.ContentLines[5].Should().Be("}");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class MultipleConsoleApiCallsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class MultipleConsoleApiCallsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /mydocuments/_search
@@ -76,7 +74,7 @@ POST /mydocuments/_doc
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesMultipleApiSegments()
 	{
 		Block!.ApiSegments.Should().HaveCount(2);
@@ -102,12 +100,12 @@ POST /mydocuments/_doc
 		secondSegment.ContentLines[3].Should().Be("}");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithDifferentHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithDifferentHttpVerbsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /api/users
@@ -126,7 +124,7 @@ DELETE /api/users/123
 """
 )
 {
-	[Fact]
+	[Test]
 	public void HandlesDifferentHttpVerbs()
 	{
 		Block!.ApiSegments.Should().HaveCount(3);
@@ -136,12 +134,12 @@ DELETE /api/users/123
 		Block.ApiSegments[2].Header.Should().Be("DELETE /api/users/123");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithCalloutsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /mydocuments/_search
@@ -163,19 +161,19 @@ POST /mydocuments/_doc
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesMultipleApiSegmentsWithCallouts()
 	{
 		Block!.ApiSegments.Should().HaveCount(2);
 		Block.CallOuts.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithEmptyLinesTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithEmptyLinesTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /api/test
@@ -191,7 +189,7 @@ POST /api/test
 """
 )
 {
-	[Fact]
+	[Test]
 	public void HandlesEmptyLinesBetweenApiCalls()
 	{
 		Block!.ApiSegments.Should().HaveCount(2);
@@ -199,12 +197,12 @@ POST /api/test
 		Block.ApiSegments[1].Header.Should().Be("POST /api/test");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithOnlyHeadersTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithOnlyHeadersTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /api/health
@@ -214,7 +212,7 @@ DELETE /api/cleanup
 """
 )
 {
-	[Fact]
+	[Test]
 	public void HandlesApiCallsWithoutBodies()
 	{
 		Block!.ApiSegments.Should().HaveCount(3);
@@ -225,12 +223,12 @@ DELETE /api/cleanup
 		Block.ApiSegments.Should().OnlyContain(s => s.ContentLines.Count == 0);
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsOnHttpVerbsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithCalloutsOnHttpVerbsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 GET /api/users <1>
@@ -249,14 +247,14 @@ POST /api/users <2>
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesMultipleApiSegmentsWithCalloutsOnHttpVerbs()
 	{
 		Block!.ApiSegments.Should().HaveCount(2);
 		Block.CallOuts.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersCalloutsInHttpVerbHeaders()
 	{
 		Block!.ApiSegments.Should().HaveCount(2);
@@ -265,7 +263,7 @@ POST /api/users <2>
 		Block.CallOuts.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersCalloutHtmlInConsoleCodeBlocks()
 	{
 		var viewModel = new CodeViewModel
@@ -283,12 +281,12 @@ POST /api/users <2>
 		calloutHtml.Value.Should().Contain("data-index=\"1\"");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithCalloutsInJsonContentTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithCalloutsInJsonContentTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 PUT my-index-000001
@@ -320,14 +318,14 @@ GET my-index-000001/_mapping <3>
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesMultipleApiSegmentsWithCalloutsInJsonContent()
 	{
 		Block!.ApiSegments.Should().HaveCount(4);
 		Block.CallOuts.Should().HaveCount(3);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersCalloutsInJsonContent()
 	{
 		// Test that callouts in JSON content are properly rendered
@@ -349,12 +347,12 @@ GET my-index-000001/_mapping <3>
 		contentHtml.Value.Should().NotContain("<1>");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ConsoleWithHtmlCharsTests(ITestOutputHelper output) : ConsoleCodeBlockTests(
-	output,
+[InheritsTests]
+public class ConsoleWithHtmlCharsTests() : ConsoleCodeBlockTests(
 	"""
 ```console
 POST /auth/login
@@ -367,7 +365,7 @@ POST /auth/login
 """
 )
 {
-	[Fact]
+	[Test]
 	public void CreatesApiSegmentWithHtmlChars()
 	{
 		Block!.ApiSegments.Should().HaveCount(1);
@@ -378,7 +376,7 @@ POST /auth/login
 		segment.ContentLines.Should().Contain(line => line.Contains("<api_token>"));
 	}
 
-	[Fact]
+	[Test]
 	public void EscapesHtmlCharsInRenderedOutput()
 	{
 		var viewModel = new CodeViewModel
@@ -404,7 +402,7 @@ POST /auth/login
 		contentHtml.Value.Should().NotContain("\"token\": \"<api_token>\"");
 	}
 
-	[Fact]
+	[Test]
 	public void EscapesHtmlCharsInHeader()
 	{
 		var viewModel = new CodeViewModel
@@ -425,6 +423,6 @@ POST /auth/login
 		headerHtml.Value.Should().NotContain("<resource>");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }

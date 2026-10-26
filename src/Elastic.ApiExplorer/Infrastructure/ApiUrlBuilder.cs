@@ -27,6 +27,7 @@ public static partial class ApiUrlBuilder
 	/// <summary>
 	/// Deterministic URL leaf for an operation page under <c>.../operation/</c>: lowercase
 	/// <c>operation-{id}</c> when an operation id is present, otherwise derived from the route.
+	/// Dots become hyphens so a trailing <c>.json</c> stays a path segment.
 	/// </summary>
 	public static string OperationMoniker(string? operationId, string route)
 	{
@@ -34,8 +35,39 @@ public static partial class ApiUrlBuilder
 			? operationId
 			: route.Replace("}", "").Replace("{", "").Replace('/', '-').Trim('-');
 
-		return $"operation-{id.ToLowerInvariant()}";
+		return $"operation-{id.Replace('.', '-').ToLowerInvariant()}";
 	}
+
+	/// <summary>
+	/// URL leaf for operations collapsed onto one page. Spec operation ids for one API share a base and differ by
+	/// a numeric suffix (<c>search</c>, <c>search-1</c>…), so the page keeps the primary operation's base id. The
+	/// suffix stays when no other operation in the group shares that base, or when the base moniker is already a
+	/// page outside the group (<paramref name="takenMonikers"/>: every operation's own moniker, plus the shared
+	/// pages created so far).
+	/// </summary>
+	public static string CanonicalOperationMoniker(
+		IReadOnlyList<ApiOperation> operations,
+		ApiOperation primary,
+		IReadOnlySet<string>? takenMonikers = null
+	)
+	{
+		var id = primary.Operation.OperationId;
+		if (string.IsNullOrWhiteSpace(id))
+			return OperationMoniker(id, primary.Route);
+
+		var baseId = NumericSuffix().Replace(id, "");
+		var shared = operations.Count(o => o.Operation.OperationId is { } other && NumericSuffix().Replace(other, "") == baseId) > 1;
+		if (!shared)
+			return OperationMoniker(id, primary.Route);
+
+		var candidate = OperationMoniker(baseId, primary.Route);
+		var ownedByGroup = operations.Any(o => OperationMoniker(o.Operation.OperationId, o.Route) == candidate);
+		var takenElsewhere = !ownedByGroup && takenMonikers?.Contains(candidate) == true;
+		return takenElsewhere ? OperationMoniker(id, primary.Route) : candidate;
+	}
+
+	[GeneratedRegex(@"-\d+$", RegexOptions.CultureInvariant)]
+	private static partial Regex NumericSuffix();
 
 	/// <summary>Deterministic URL segment for a schema type page under <c>.../types/</c>.</summary>
 	public static string SchemaMoniker(string schemaId) => schemaId.Replace('.', '-').ToLowerInvariant();
@@ -62,6 +94,21 @@ public static partial class ApiUrlBuilder
 
 	/// <summary>Deterministic URL leaf for <c>.../group/{segment}</c> from the canonical tag name.</summary>
 	public static string TagMoniker(string? tagName) => $"endpoint-{TagSlug(tagName)}";
+
+	public const string AuthenticationSegment = "authentication";
+	public const string ServersSegment = "servers";
+
+	/// <summary>Child markdown slugs that collide with generated API Explorer paths.</summary>
+	public static readonly string[] ReservedChildSegments = ["types", "group", "operation", AuthenticationSegment, ServersSegment];
+
+	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";
+
+	public static string ServersUrl(string? urlPathPrefix, string apiUrlSuffix) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{ServersSegment}";
+
+	public static string OperationUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
 
 	[GeneratedRegex(@"\s*\(([^)]+)\)")]
 	private static partial Regex ParentheticalSuffixPattern();

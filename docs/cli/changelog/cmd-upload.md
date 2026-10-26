@@ -2,6 +2,10 @@
 
 Upload changelog entries or bundle artifacts to S3 or Elasticsearch. The command discovers `.yaml` and `.yml` files in a local directory and uploads only files whose content hash changed since the last run. Changelog entries are uploaded once under `changelog/{org}/{repo}/{branch}/{file}`, keyed by the authoring owner, repository, and branch; bundles are uploaded under `bundle/{product}/{file}`, product-scoped from the bundle YAML.
 
+A downstream scrubber copies published objects to the public bucket and removes pull request and issue links that are not on the allowlist (unlike bundle-time `# PRIVATE:` sentinels on the private side). Those public bundles are less likely to work with [`changelog unpack`](/cli/changelog/unpack.md).
+
+Uploading a `note-*.yml` file can cause the scrubber to create or update `{parent}.amend-notes.yaml` on the **public** bucket. This command does not write that sidecar. The command does not delete objects. There is no `changelog` subcommand that unpublishes a pool file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+
 To create bundles first, use [](/cli/changelog/bundle.md).
 For the end-to-end workflow, see [](/data/release-notes/bundle.md).
 
@@ -35,8 +39,8 @@ Your IAM policy must allow these S3 actions on the target bucket:
 | Permission | Purpose |
 | ---------- | ------- |
 | `s3:PutObject` | Upload changelog and bundle YAML files and `registry.json` manifests |
-| `s3:GetObject` | Read existing `registry.json` for merge and compare remote content |
-| `s3:GetObject` (metadata) | Compare remote ETags to skip unchanged files |
+| `s3:GetObject` | Read existing objects for ETag comparison, and with `--no-overwrite` print the remote YAML body |
+| `s3:GetObject` (metadata) | HeadObject used to skip unchanged files and classify new versus replaced |
 
 `s3:ListBucket` is not required. The command uploads to known keys derived from local file names and product IDs — it does not enumerate the bucket.
 
@@ -74,12 +78,12 @@ Use `--artifact-type` to choose what to upload:
 
 | Value | Uploads | Default directory |
 | ----- | ------- | ----------------- |
-| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, or `docs/releases` |
+| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, each profile's `output_directory` when set, or `docs/releases` |
 | `changelog` | Individual changelog entry YAML files | `bundle.directory` from `changelog.yml`, or `docs/changelog` |
 
 Keying differs by artifact type:
 
-- **Changelog entries** are uploaded **once** under the authoring owner/repo/branch, regardless of how many products they list (or none). The owner is resolved from `--owner`, then `bundle.owner` in `changelog.yml`, then the git remote origin; the repo from `--repo`, then `bundle.repo`, then the git remote origin; the branch from `--branch`, then the current checkout's branch. The branch is stored verbatim, so a branch name containing `/` (for example `feature/foo`) becomes additional key segments.
+- **Changelog entries** are uploaded once under the authoring owner/repo/branch, regardless of how many products they list (or none). The owner is resolved from `--owner`, then `bundle.owner` in `changelog.yml`, then the git remote origin; the repo from `--repo`, then `bundle.repo`, then the git remote origin; the branch from `--branch`, then the current checkout's branch. The branch is stored verbatim, so a branch name containing `/` (for example `feature/foo`) becomes additional key segments.
 - **Bundles** are uploaded once per product listed in the bundle's `products[].product` field (a bundle that declares multiple products is written under each product prefix). Amend sidecars produced from a CDN parent (`changelog bundle-amend /bundle/{product}/{file}.yaml`) are uploaded like any other bundle YAML.
 
 ## Upload targets
@@ -109,26 +113,30 @@ reconciled from public bucket state on the S3 events each upload emits; the
 objects that only older CLI versions still write. See
 [Changelog bundle registry](/development/changelog-bundle-registry.md).
 
-When several repositories publish bundles for the same shared product (for example `cloud-serverless`), use a `{repo}-{dateOrVersion}.yaml` bundle filename convention so they don't overwrite each other under `bundle/{product}/`.
+Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
 :::{note}
-Upload uses content-hash–based incremental transfer. Unchanged files are skipped. Re-running the same command is safe and idempotent.
+Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
 If it's necessary to re-trigger downstream scrubbers without changing file content, pass `--skip-etag-check` to upload every discovered file even when its content hash matches the remote object.
+The completion log reports how many objects were **new** versus **replaced**. Pass `--no-overwrite` to refuse replacements: the command skips those Puts, warns with the existing remote YAML, and exits non-zero. New objects are written with `If-None-Match: *` so a concurrent upload cannot overwrite a key that appears between HeadObject and PutObject. `--no-overwrite` cannot be combined with `--skip-etag-check`.
 :::
 
 ## Options
 
 | Option | Purpose |
 | ------ | ------- |
-| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. |
+| `--skip-etag-check` | Upload every discovered file even when its content hash matches the remote object. Each upload emits `s3:ObjectCreated`, which re-triggers the scrubber Lambda on the private bucket. Default behavior (without this flag) skips unchanged files. Mutually exclusive with `--no-overwrite`. |
+| `--no-overwrite` | When a remote object already exists with different content, do not replace it. New keys are still uploaded, using a create-only S3 precondition (`If-None-Match: *`). The command warns with the existing remote YAML, reports `not overwritten` in the summary, and exits non-zero. Unchanged (ETag match) files and PR-alias markers are still skipped. A changelog that lists more than one PR also writes PR-alias markers (`link:` pointers at the extra PR numbers); `--no-overwrite` only refuses those markers when their bytes differ from the remote object, and the warning says they are pointers rather than full changelogs. Mutually exclusive with `--skip-etag-check`. |
 
 ## Configuration
 
 Directory resolution order:
 
-1. `--directory` — explicit override for this run
-2. `changelog.yml` — `bundle.output_directory` (bundles) or `bundle.directory` (changelog entries)
+1. `--directory` — explicit override for this run (that folder only)
+2. `changelog.yml` — for bundles, `bundle.output_directory` plus each profile `output_directory`; for changelog entries, `bundle.directory`
 3. Built-in default — `docs/releases` (bundles) or `docs/changelog` (changelog entries)
+
+Each bundle directory is scanned non-recursively. A profile that writes under `docs/releases/cloud-serverless` is included because that path is listed as the profile's `output_directory`, not because the global folder is walked.
 
 Use `--config` to point at a `changelog.yml` file other than `docs/changelog.yml`.
 
@@ -181,4 +189,16 @@ docs-builder changelog upload \
   --target s3 \
   --s3-bucket-name my-changelog-bundles \
   --config ./config/changelog.yml
+```
+
+### Refuse overwrites of existing objects
+
+Skip PutObject when the remote key already exists with different content (for example a `{pr}.yaml` that already lists `elasticsearch` while you are uploading a `cloud-serverless` variant). New keys still upload. The command prints the existing remote YAML and exits non-zero:
+
+```sh
+docs-builder changelog upload \
+  --artifact-type changelog \
+  --target s3 \
+  --s3-bucket-name my-changelog-bundles \
+  --no-overwrite
 ```

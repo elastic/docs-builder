@@ -14,7 +14,11 @@ public enum NavigationRenderNodeKind
 {
 	Leaf,
 	Node,
-	Island
+	Island,
+	/// <summary>OpenAPI <c>x-tagGroups</c> / docs <c>label:</c> — expand-only, no page URL.</summary>
+	Heading,
+	/// <summary>Visual divider between intro pages and the rest of the tree.</summary>
+	Separator
 }
 
 /// <summary>A fully resolved navigation tree node; the only tree data the nav templates consume.</summary>
@@ -26,6 +30,9 @@ public sealed record NavigationRenderNode
 	public required string Url { get; init; }
 	/// <summary>Badge parsed from a <c>[ns]</c>/<c>[cmd]</c>/<c>[alias]</c> title prefix; doubles as its CSS class suffix.</summary>
 	public string? Badge { get; init; }
+	/// <summary>Lowercase HTTP method for API operation leaves; drives the sidebar method glyph.</summary>
+	public string? HttpMethod { get; init; }
+	/// <summary>True when the row groups several HTTP operations under one endpoint.</summary>
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
@@ -36,6 +43,16 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 
 /// <summary>A single back-link in the island sidebar's breadcrumb trail.</summary>
 public sealed record IslandBackLink(string Title, string Url);
+
+/// <summary>One choice in a sidebar/rail <c>nav-select</c> (version switcher, examples, …).</summary>
+/// <summary><see cref="ShortLabel"/> is the label where the option stands alone, such as a trigger, when <see cref="Label"/> carries a hint for the list.</summary>
+public sealed record NavigationSelectOption(string Label, string Value, bool Selected, string? ShortLabel = null);
+
+/// <summary>Resolved data for <c>_NavSelect.cshtml</c>.</summary>
+public sealed record NavigationSelectModel(string Id, string AriaLabel, IReadOnlyList<NavigationSelectOption> Options, bool UseLinks = true)
+{
+	public NavigationSelectOption Current => Options.FirstOrDefault(static o => o.Selected) ?? Options[0];
+}
 
 /// <summary>
 /// Everything <c>_TocTree.cshtml</c> renders, resolved from the domain navigation up front.
@@ -57,6 +74,11 @@ public sealed record NavigationRenderModel
 	/// </summary>
 	public required IReadOnlyList<IslandBackLink> BackLinks { get; init; }
 	/// <summary>
+	/// API version choices carried with the nav model. The sidebar chrome renders the
+	/// control from the layout model, ahead of Jump to API, so the tree leaves this unused.
+	/// </summary>
+	public IReadOnlyList<NavigationSelectOption> VersionSwitcher { get; init; } = [];
+	/// <summary>
 	/// Root index link as the first sidebar row when primary nav is off.
 	/// Null when primary nav / global assembly already covers that role,
 	/// or when the index is flattened to an Overview row under <see cref="TreeHeading"/>.
@@ -74,6 +96,11 @@ public sealed record NavigationRenderModel
 	public required string ContentHash { get; init; }
 	/// <summary>Whether the NAVIGATION_PREVIEW feature flag is enabled; drives nav-v2 vs legacy tree rendering.</summary>
 	public bool NavigationPreviewEnabled { get; init; }
+	/// <summary>
+	/// True when <see cref="Tree"/> already owns a divider. <c>_TocTree</c> then skips the
+	/// automatic rule after <see cref="RootIndex"/> so overview stays with the intro pages.
+	/// </summary>
+	public bool TreeHasSeparator => Tree.Any(static n => n.Kind == NavigationRenderNodeKind.Separator);
 
 	public static NavigationRenderModel Create(
 		INodeNavigationItem<INavigationModel, INavigationItem> tree,
@@ -314,6 +341,18 @@ public sealed record NavigationRenderModel
 			if (item.Parent is not null && item.Parent.Index == item)
 				continue;
 
+			if (item is ISidebarSeparatorNavigationItem)
+			{
+				yield return new NavigationRenderNode
+				{
+					Kind = NavigationRenderNodeKind.Separator,
+					IsTopLevel = isTopLevel,
+					NavigationTitle = "",
+					Url = ""
+				};
+				continue;
+			}
+
 			if (item is INodeNavigationItem<INavigationModel, INavigationItem> { NavigationItems.Count: > 0 } node)
 				yield return CreateNode(node, isTopLevel);
 			else if (item is INodeNavigationItem<INavigationModel, INavigationItem> or ILeafNavigationItem<INavigationModel>)
@@ -336,13 +375,15 @@ public sealed record NavigationRenderModel
 				Id = node.Id
 			};
 		}
+
+		var isHeading = node is ISidebarHeadingNavigationItem;
 		return new NavigationRenderNode
 		{
-			Kind = NavigationRenderNodeKind.Node,
+			Kind = isHeading ? NavigationRenderNodeKind.Heading : NavigationRenderNodeKind.Node,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
-			Url = node.Url,
+			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
@@ -352,12 +393,16 @@ public sealed record NavigationRenderModel
 	private static NavigationRenderNode CreateLeaf(INavigationItem item, bool isTopLevel)
 	{
 		var (badge, navigationTitle) = ParseNavTitle(item.NavigationTitle);
+		var httpMethod = item is ILeafNavigationItem<INavigationModel> { Model: IHttpMethodNavigationModel method }
+			? method.HttpMethod
+			: null;
 		return new NavigationRenderNode
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
 			IsTopLevel = isTopLevel,
 			NavigationTitle = navigationTitle,
 			Badge = badge,
+			HttpMethod = httpMethod,
 			Url = item.Url
 		};
 	}
@@ -417,6 +462,7 @@ public sealed record NavigationRenderModel
 		AppendInt(hash, node.IsTopLevel ? 1 : 0);
 		Append(hash, node.NavigationTitle);
 		Append(hash, node.Badge ?? string.Empty);
+		Append(hash, node.HttpMethod ?? string.Empty);
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);

@@ -8,13 +8,13 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class GitHubRemoteParserTests
 {
-	[Theory]
-	[InlineData("https://github.com/elastic/kibana.git", "elastic", "kibana")]
-	[InlineData("https://github.com/elastic/kibana", "elastic", "kibana")]
-	[InlineData("http://github.com/elastic/kibana", "elastic", "kibana")]
-	[InlineData("https://github.com/elastic/some.repo.git", "elastic", "some.repo")]
-	[InlineData("git@github.com:elastic/kibana.git", "elastic", "kibana")]
-	[InlineData("ssh://git@github.com/elastic/kibana.git", "elastic", "kibana")]
+	[Test]
+	[Arguments("https://github.com/elastic/kibana.git", "elastic", "kibana")]
+	[Arguments("https://github.com/elastic/kibana", "elastic", "kibana")]
+	[Arguments("http://github.com/elastic/kibana", "elastic", "kibana")]
+	[Arguments("https://github.com/elastic/some.repo.git", "elastic", "some.repo")]
+	[Arguments("git@github.com:elastic/kibana.git", "elastic", "kibana")]
+	[Arguments("ssh://git@github.com/elastic/kibana.git", "elastic", "kibana")]
 	public void TryParseGitHubComOwnerRepo_ValidGitHubUrls_ReturnsOwnerRepo(string url, string expectedOwner, string expectedRepo)
 	{
 		var ok = GitHubRemoteParser.TryParseGitHubComOwnerRepo(url, out var owner, out var repo);
@@ -24,14 +24,14 @@ public class GitHubRemoteParserTests
 		repo.Should().Be(expectedRepo);
 	}
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData(" ")]
-	[InlineData("https://gitlab.com/elastic/kibana")]
-	[InlineData("https://github.com/elastic")]
-	[InlineData("https://github.com/")]
-	[InlineData("not-a-url")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments(" ")]
+	[Arguments("https://gitlab.com/elastic/kibana")]
+	[Arguments("https://github.com/elastic")]
+	[Arguments("https://github.com/")]
+	[Arguments("not-a-url")]
 	public void TryParseGitHubComOwnerRepo_Invalid_ReturnsFalse(string? url)
 	{
 		var ok = GitHubRemoteParser.TryParseGitHubComOwnerRepo(url, out var owner, out var repo);

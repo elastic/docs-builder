@@ -9,12 +9,12 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
-public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class LinkAllowlistSanitizerTests() : ChangelogTestBase()
 {
 	private static readonly string[] AllowElasticsearch = ["elastic/elasticsearch"];
 	private static readonly string[] AllowElasticsearchAndKibana = ["elastic/elasticsearch", "elastic/kibana"];
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_FullUrl_ParsesOwnerRepo()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
@@ -30,7 +30,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		repo.Should().Be("kibana-team");
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_ShortForm_ParsesOwnerRepo()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
@@ -46,7 +46,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		repo.Should().Be("security-team");
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_PullUrl_InvalidNumber_ReturnsFalse()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo(
@@ -60,7 +60,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		ok.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_ShortForm_NonNumericFragment_ReturnsFalse()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo("elastic/kibana-team#abc", "elastic", "elasticsearch", out _, out _);
@@ -68,7 +68,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		ok.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_ShortForm_TooManySlashes_ReturnsFalse()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo("a/b/c#123", "elastic", "elasticsearch", out _, out _);
@@ -76,7 +76,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		ok.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetGitHubRepo_BareNumber_UsesDefaults()
 	{
 		var ok = ChangelogTextUtilities.TryGetGitHubRepo("123", "elastic", "elasticsearch+kibana", out var owner, out var repo);
@@ -86,14 +86,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		repo.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void FormatPrLink_Sentinel_ReturnsEmpty()
 	{
 		var s = ChangelogTextUtilities.FormatPrLink("# PRIVATE: https://github.com/elastic/x/pull/1", "x", hidePrivateLinks: false);
 		s.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_AllowedRepo_KeepsUrl()
 	{
 		var bundle = new Bundle
@@ -127,7 +127,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_NullPrsAndIssues_PreservesNull_WhenUnchanged()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = null, Issues = null }] };
@@ -149,7 +149,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Issues.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_NotAllowed_ReplacesWithSentinel()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/secret-repo/pull/1"] }] };
@@ -171,7 +171,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_EmptyAllowlist_StripsAll()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["https://github.com/elastic/elasticsearch/pull/1"] }] };
@@ -191,7 +191,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Prs![0].Should().StartWith("# PRIVATE:");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_UnparseableRef_EmitsError()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["not-a-valid-ref"] }] };
@@ -210,7 +210,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Errors.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_SentinelAllowed_RestoresPlainRef()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["# PRIVATE: https://github.com/elastic/elasticsearch/pull/1"] }] };
@@ -230,7 +230,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Prs![0].Should().Be("https://github.com/elastic/elasticsearch/pull/1");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyBundle_SentinelNotAllowed_KeepsSentinel()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "t", Prs = ["# PRIVATE: https://github.com/elastic/other/pull/1"] }] };
@@ -250,7 +250,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Prs![0].Should().Be("# PRIVATE: https://github.com/elastic/other/pull/1");
 	}
 
-	[Fact]
+	[Test]
 	public void EmitAssemblerDiagnostics_MissingRepo_EmitsWarning()
 	{
 		var asm = AssemblyConfiguration.Deserialize("references: {}", skipPrivateRepositories: false);
@@ -258,7 +258,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void EmitAssemblerDiagnostics_PrivateRepo_EmitsWarning()
 	{
 		var yaml = """
@@ -271,45 +271,45 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_Null_ReturnsEmpty() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo(null).Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_Empty_ReturnsEmpty() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("").Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_Whitespace_ReturnsEmpty() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("   ").Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_SingleRepo_ReturnsSame() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("elasticsearch").Should().Be("elasticsearch");
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_MergedRepo_ReturnsFirst() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("elasticsearch+kibana").Should().Be("elasticsearch");
 
-	[Fact]
+	[Test]
 	public void GetFirstRepoSegmentFromBundleRepo_ThreeSegments_ReturnsFirst() =>
 		ChangelogTextUtilities.GetFirstRepoSegmentFromBundleRepo("a+b+c").Should().Be("a");
 
-	[Fact]
+	[Test]
 	public void FormatIssueLink_Sentinel_ReturnsEmpty()
 	{
 		var s = ChangelogTextUtilities.FormatIssueLink("# PRIVATE: https://github.com/elastic/x/issues/1", "x", hidePrivateLinks: false);
 		s.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void FormatPrLinkAsciidoc_Sentinel_ReturnsEmpty()
 	{
 		var s = ChangelogTextUtilities.FormatPrLinkAsciidoc("# PRIVATE: https://github.com/elastic/x/pull/1", "x", hidePrivateLinks: false);
 		s.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void FormatIssueLinkAsciidoc_Sentinel_ReturnsEmpty()
 	{
 		var s = ChangelogTextUtilities.FormatIssueLinkAsciidoc(
@@ -322,7 +322,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- BuildAllowReposFromAssembler ---
 
-	[Fact]
+	[Test]
 	public void BuildAllowReposFromAssembler_ExcludesOnlyPrivateRepos()
 	{
 		var yaml =
@@ -346,7 +346,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		allow.Should().Contain("elastic/old-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildAllowReposFromAssembler_PublicSkipRepo_IsAllowed()
 	{
 		// Mirrors elastic/roadmap in assembler.yml: a public repo that publishes no docs
@@ -368,7 +368,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		allow.Should().NotContain("elastic/kibana-team");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildAllowReposFromAssembler_DefaultsOwnerToElastic()
 	{
 		var yaml = """
@@ -381,7 +381,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		allow.Should().Contain("elastic/beats");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildAllowReposFromAssembler_EmptyReferences_ReturnsEmpty()
 	{
 		var asm = AssemblyConfiguration.Deserialize("references: {}", skipPrivateRepositories: false);
@@ -392,7 +392,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- TryApplyChangelogEntry ---
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_ScrubsPrsAndIssues()
 	{
 		var entry = new BundledEntry
@@ -419,7 +419,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Issues![0].Should().Be("https://github.com/elastic/elasticsearch/issues/200");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_ScrubsDescriptionText()
 	{
 		var entry = new BundledEntry
@@ -445,7 +445,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Description.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_ScrubsImpactAndAction()
 	{
 		var entry = new BundledEntry
@@ -472,7 +472,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Action.Should().NotContain("private-infra");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_AllAllowed_NoChanges()
 	{
 		var entry = new BundledEntry
@@ -501,7 +501,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Description.Should().Be("Relates to elastic/kibana#2");
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_NullFields_PreservesNulls()
 	{
 		var entry = new BundledEntry
@@ -532,7 +532,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Description.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_BarePrNumberWithoutDefaultRepo_KeptWithWarning()
 	{
 		// The scrubber Lambda calls TryApplyChangelogEntry with defaultRepo=null because per-entry
@@ -560,7 +560,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_BareIssueNumberWithoutDefaultRepo_KeptWithWarning()
 	{
 		var entry = new BundledEntry { Title = "Entry with bare issue", Prs = null, Issues = ["4274"] };
@@ -583,7 +583,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		Collector.Warnings.Should().BeGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_UnparseableNonNumericRef_StillErrors()
 	{
 		// Genuinely unparseable references (not bare numbers and not URL/short-form) should still
@@ -599,7 +599,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- ScrubText ---
 
-	[Fact]
+	[Test]
 	public void ScrubText_ReplacesPrivateGitHubUrl()
 	{
 		var changed = false;
@@ -614,7 +614,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().Contain("for details");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_ReplacesPrivateShortForm()
 	{
 		var changed = false;
@@ -624,7 +624,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().NotContain("private-team");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_PreservesAllowedReferences()
 	{
 		var changed = false;
@@ -639,7 +639,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().Contain("elastic/kibana#50");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_NullInput_ReturnsNull()
 	{
 		var changed = false;
@@ -649,7 +649,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_EmptyInput_ReturnsEmpty()
 	{
 		var changed = false;
@@ -659,7 +659,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_NoReferences_ReturnsUnchanged()
 	{
 		var changed = false;
@@ -669,7 +669,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result.Should().Be("This is plain text with no GitHub references.");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_MixedReferences_ScrubsOnlyPrivate()
 	{
 		var changed = false;
@@ -686,7 +686,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- Idempotency ---
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_Idempotent_SecondPassNoChanges()
 	{
 		var entry = new BundledEntry
@@ -716,7 +716,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		secondPass.Description.Should().Be(firstPass.Description);
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_Idempotent_SecondPassUnchanged()
 	{
 		var changed1 = false;
@@ -729,7 +729,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		result2.Should().Be(result1);
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubText_IssueUrl_ReplacesPrivate()
 	{
 		var changed = false;
@@ -745,7 +745,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- ScrubBundleForPublic ---
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_DropsPrivateRefsDirectly()
 	{
 		var bundle = new Bundle
@@ -781,7 +781,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Description.Should().NotContain("secret");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_AllPrivate_ReturnsEmptyLists()
 	{
 		var bundle = new Bundle
@@ -804,7 +804,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Issues.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_NullLists_PreservesNull()
 	{
 		var bundle = new Bundle { Entries = [new() { Title = "No refs", Prs = null, Issues = null }] };
@@ -825,7 +825,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Issues.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_MultipleEntries_ScrubsAll()
 	{
 		var bundle = new Bundle
@@ -853,7 +853,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[1].Issues![0].Should().Be("elastic/elasticsearch#3");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_NeverProducesSentinels()
 	{
 		var bundle = new Bundle
@@ -877,7 +877,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Entries[0].Description.Should().NotContain("secret");
 	}
 
-	[Fact]
+	[Test]
 	public void ScrubBundleForPublic_ScrubsBundleDescription()
 	{
 		var bundle = new Bundle { Description = "Release notes referencing elastic/secret#42", Entries = [new() { Title = "Entry" }] };
@@ -899,7 +899,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- ValidateNoPrivateReferences ---
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_CleanYaml_DoesNotThrow()
 	{
 		var yaml =
@@ -914,7 +914,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_PrivateUrl_Throws()
 	{
 		var yaml = """
@@ -927,7 +927,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		act.Should().Throw<InvalidOperationException>().WithMessage("*secret-repo*");
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_PrivateShortForm_Throws()
 	{
 		var yaml = """
@@ -938,7 +938,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		act.Should().Throw<InvalidOperationException>().WithMessage("*secret-team*");
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_ResidualSentinel_Throws()
 	{
 		var yaml = """
@@ -950,7 +950,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		act.Should().Throw<InvalidOperationException>().WithMessage("*PRIVATE*");
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_AllowedUrl_DoesNotThrow()
 	{
 		var yaml = "See https://github.com/elastic/elasticsearch/pull/100 and elastic/kibana#50";
@@ -959,14 +959,14 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_EmptyYaml_DoesNotThrow()
 	{
 		var act = () => LinkAllowlistSanitizer.ValidateNoPrivateReferences("", AllowElasticsearch);
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateNoPrivateReferences_MixedAllowedAndPrivate_Throws()
 	{
 		var yaml = "Public https://github.com/elastic/elasticsearch/pull/1 and private https://github.com/elastic/secret/issues/2";
@@ -977,7 +977,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 
 	// --- TryApplyChangelogEntry mixed scenarios ---
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_MixedPrs_KeepsAllowedDropsPrivate()
 	{
 		var entry = new BundledEntry
@@ -1009,7 +1009,7 @@ public class LinkAllowlistSanitizerTests(ITestOutputHelper output) : ChangelogTe
 		sanitized.Prs.Should().NotContain(r => r.Contains("secret-repo"));
 	}
 
-	[Fact]
+	[Test]
 	public void TryApplyChangelogEntry_PrivateRefsInAllFields_ScrubsEverything()
 	{
 		var entry = new BundledEntry

@@ -45,6 +45,12 @@ Required structure:
 
 **Affects:** <one to three surfaces from surfaces.md, most affected first>
 
+**Prompt summary:** <One paragraph, two to three sentences. What the author was asked
+ to do in their own framing — the goal behind the branch, not the diff. Present tense,
+ active voice. This is the ask; ## Why is the problem in the code. They are not
+ interchangeable and neither restates the other. Omit only when the branch has no
+ originating ask.>
+
 ## Why
 <Two to four sentences. The concrete failure or gap. Active voice, present tense
  for current behaviour. Do not open with the history of a prior PR.>
@@ -62,6 +68,25 @@ Required structure:
  If there is no clear local verification step, omit this section entirely.
  Do not list CI checks, YAML linting, or bash scripts an agent would run
  to prove their own work — those are not reviewer steps.>
+
+## Check on the preview
+<Only when the change shows on a built page. One bullet per page on this PR's preview,
+ `https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<PR number>/<path>`:
+ the link, a dash, then the one thing to look at there. Pick pages that each show a
+ different behaviour of the change, and one control page the change must leave alone.
+ The preview does not exist yet when the PR is created, so the links cannot be opened
+ then. Take each <path> from the page's own address instead: a Markdown page's docset
+ path, or `api/doc/<api>/operation/operation-<operation id>` for an API operation.
+ A local build (`.artifacts/docs/html/<path>/index.html`) confirms a path when one is
+ already at hand; do not build the site only for this. The preview serves the paths
+ once its workflow finishes. Omit when nothing renders differently.>
+```
+
+A **Check on the preview** entry reads like this:
+
+```
+- [Cloud Connect: Get subscription](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/cloud-connect/operation/operation-getsubscription) — path filled from the spec example, `Authorization: ApiKey ${API_KEY}`, no Console card.
+- [Elasticsearch: Delete async search](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/elasticsearch/operation/operation-async-search-delete) — control page: spec-written samples, unchanged.
 ```
 
 Conditional add-ons — each is one or two sentences with a bold lead-in, no heading:
@@ -69,7 +94,7 @@ Conditional add-ons — each is one or two sentences with a bold lead-in, no hea
 - **Breaking** — what a consumer must change and when it bites them. Pairs with the `breaking` label.
 - **Out of scope** — a gap this PR deliberately leaves, so a reviewer does not raise it as a finding.
 - **Risk** — shared or production state this touches. Required when the change reaches anything in `CLAUDE.md`'s "Boundaries: never touch / human-gated" list, or leaves state that a code revert will not undo.
-- **Stack** — position and links: `3 of 5, on top of #3855`. A bare `Stack: 3/5` with no links is not enough.
+- **Stack** — position and links: `3 of 5, on top of` [#3855](https://github.com/elastic/docs-builder/pull/3855). A bare `Stack: 3/5` with no links is not enough.
 
 **Do not** include bullet lists of changed files. Do not summarize what the diff already states plainly.
 
@@ -96,9 +121,47 @@ Never use `fix` (use `bug`) or `ci` (use `automation`) — both are release-draf
 
 **`breaking` guidance:** use it when an older `docs-builder` invocation or an existing repo config stops working. The canonical trigger is `Configuration` in the `**Affects:**` line plus a rename or removal — [#3856](https://github.com/elastic/docs-builder/pull/3856) removed `output:` from `changelog.yml` profiles and shipped as `feature`; it should have been `breaking`. Internal C# type renames and private method signature changes are not breaking.
 
-### 7. Create the PR
+### 7. Check whether a PR already exists
 
-One call — title, label, and body together. No follow-up `gh pr edit`:
+```bash
+gh pr view --json number,url,state,baseRefName --jq '{number,url,state,baseRefName}' 2>/dev/null
+```
+
+**Check `state` before doing anything.** If `state` is `"MERGED"` or `"CLOSED"`, the branch already landed; treat it as no PR and proceed to step 8 to create a new one. Never edit a merged or closed PR.
+
+**If `state` is `"OPEN"` — update it.**
+
+Rebuild the body from the cumulative diff against the PR's own base branch (not a hardcoded `main`):
+
+```bash
+git diff origin/<baseRefName>...HEAD --stat
+git diff origin/<baseRefName>...HEAD
+```
+
+Write the description of **the current diff against the base** — never a log of the commits on the branch and never an "update" or "addendum" appended to the old body. Any section of the old body that no longer matches the diff is wrong, not history. Replace it.
+
+- Preserve the original `**Prompt summary:**` verbatim unless the ask itself changed; extend it rather than replace it when scope was added.
+- Reassess `**Affects:**` and the label — added commits can shift a `chore` to a `bug`, or bring in a new surface.
+- Apply in one call:
+
+```bash
+gh pr edit --title "<title>" --body "$(cat <<'EOF'
+<new body>
+EOF
+)"
+```
+
+Add or remove the label only if it changed:
+
+```bash
+gh pr edit --add-label "<new-label>" --remove-label "<old-label>"
+```
+
+**If no PR exists — create it.** Proceed to step 8.
+
+### 8. Create the PR
+
+One call — title, label, and body together. When the change renders differently, one `gh pr edit` follows right away to add **Check on the preview**: the section needs the PR number, which exists only after creation, so read it from the URL `gh pr create` prints and build the links from it. Do not wait for the preview workflow and do not build the site for this; the paths come from the pages' own addresses, and the preview serves them once it has run.
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'
@@ -125,6 +188,6 @@ EOF
 )"
 ```
 
-### 8. Return the PR URL
+### 9. Return the PR URL
 
 Always print the URL so the user can open it directly.

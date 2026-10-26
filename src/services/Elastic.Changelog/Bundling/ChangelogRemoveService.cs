@@ -61,13 +61,11 @@ public record ChangelogRemoveArguments
 public class ChangelogRemoveService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
-	IConfigurationContext? configurationContext = null,
-	IGitHubReleaseService? releaseService = null
+	IConfigurationContext? configurationContext = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogRemoveService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
-	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -108,8 +106,7 @@ public class ChangelogRemoveService(
 					_fileSystem,
 					_logger,
 					ctx,
-					input.ProfileReport,
-					_releaseService
+					input.ProfileReport
 				);
 
 				if (filterResult == null)
@@ -169,7 +166,7 @@ public class ChangelogRemoveService(
 			}
 
 			var filterCriteria = BuildFilterCriteria(input, prsToMatch, issuesToMatch);
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -235,8 +232,10 @@ public class ChangelogRemoveService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		// Apply repo/owner: CLI takes precedence; fall back to bundle-level config defaults.
+#pragma warning disable CS0618
 		var repo = input.Repo ?? config?.Bundle?.Repo;
 		var owner = input.Owner ?? config?.Bundle?.Owner;
+#pragma warning restore CS0618
 
 		return input with { Directory = directory, Repo = repo, Owner = owner };
 	}

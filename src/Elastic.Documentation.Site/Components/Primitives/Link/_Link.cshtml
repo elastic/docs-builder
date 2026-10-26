@@ -1,0 +1,8 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Primitives.Link.LinkModel>
+<a class="@Model.CssClass" href="@Model.Href"@(Model.External ? new HtmlString(" rel=\"noopener\" target=\"_blank\"") : HtmlString.Empty)>
+	<span>@Model.Label</span>
+	@if (Model.Arrow)
+	{
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = Model.External ? "popout" : "arrow_right", Size = IconSize.Small }))
+	}
+</a>

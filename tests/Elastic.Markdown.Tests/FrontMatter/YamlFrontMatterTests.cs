@@ -2,16 +2,214 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FrontMatter;
 
-public class YamlFrontMatterTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+// Regression coverage for `layout:` front matter: MarkdownPageLayoutConverter must be looked up by
+// SharpYaml for the *nullable* enum type (YamlFrontMatter.Layout is `MarkdownPageLayout?`), not just
+// the non-nullable enum, or every hyphenated value below fails with "Invalid enum scalar".
+public class LayoutLandingPage() : DirectiveTest("""
+	---
+	layout: landing-page
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.LandingPage);
+	}
+}
+
+public class LayoutNotFound() : DirectiveTest("""
+	---
+	layout: not-found
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.NotFound);
+	}
+}
+
+public class LayoutArchive() : DirectiveTest("""
+	---
+	layout: archive
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.Archive);
+	}
+}
+
+public class LayoutFullSearch() : DirectiveTest("""
+	---
+	layout: full-search
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.FullSearch);
+	}
+}
+
+public class LayoutHub() : DirectiveTest("""
+	---
+	layout: hub
+	---
+
+	:::{hero}
+	:title: Test Page
+	:::
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.Hub);
+	}
+}
+
+public class LayoutOmitted() : DirectiveTest("""
+	# Test Page
+	""")
+{
+	[Test]
+	public void LayoutIsNull()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().BeNull();
+	}
+}
+
+// Regression coverage for the diagnostics wiring in `YamlSerialization.Deserialize`: an unmapped
+// front-matter key is an error reported at the key's file line (the body starts below the opening `---`).
+// Comment-only front matter deserializes to null. It must read as empty front matter, not fail the page.
+public class CommentOnlyFrontMatter() : DirectiveTest("""
+	---
+	# no keys yet
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsAsEmpty()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.Title.Should().Be("Test Page");
+	}
+}
+
+public class UnknownFrontMatterKeyIsAHint() : DirectiveTest(
+	"""
+	---
+	navigation_title: Test
+	navigaton_title: typo
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ReportsHintAtFileLineWithSuggestion()
+	{
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Line.Should().Be(3);
+		diagnostic.Column.Should().Be(1);
+		diagnostic.Length.Should().Be("navigaton_title".Length);
+		diagnostic.Message.Should().Contain("Unknown key 'navigaton_title'").And.Contain("Did you mean 'navigation_title'?");
+	}
+}
+
+public class UnknownFrontMatterKeyWithoutSuggestionListsValidKeys() : DirectiveTest(
+	"""
+	---
+	totally_unknown_key: some-value
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ListsValidKeys()
+	{
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Line.Should().Be(2);
+		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'").And.Contain("Valid keys:").And.Contain("navigation_title");
+	}
+}
+
+public class AllUnknownFrontMatterKeysAreHints() : DirectiveTest(
+	"""
+	---
+	type: connector
+	comment: Something
+	navigation_title: Test
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ReportsOneHintPerKeyAndNoErrors()
+	{
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().HaveCount(2).And.OnlyContain(d => d.Severity == Severity.Hint);
+		Collector
+			.Diagnostics
+			.Select(d => d.Message)
+			.Should()
+			.Contain(m => m.Contains("Unknown key 'type'"))
+			.And
+			.Contain(m => m.Contains("Unknown key 'comment'"));
+	}
+}
+
+public class YamlFrontMatterTests() : DirectiveTest(
 	"""
 ---
 navigation_title: "Documentation Guide"
+meta_title: "Elastic Docs for {{key}}"
 sub:
   key: "value"
 ---
@@ -20,13 +218,16 @@ sub:
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ReadsTitle() => File.Title.Should().Be("Elastic Docs v3");
 
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide");
 
-	[Fact]
+	[Test]
+	public void ReadsMetaTitle() => File.MetaTitle.Should().Be("Elastic Docs for value");
+
+	[Test]
 	public void ReadsSubstitutions()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -34,21 +235,20 @@ sub:
 	}
 }
 
-public class EmptyFileWarnsNeedingATitle(ITestOutputHelper output) : DirectiveTest(output, "")
+public class EmptyFileWarnsNeedingATitle() : DirectiveTest("")
 {
-	[Fact]
+	[Test]
 	public void ReadsTitle() => File.Title.Should().Be("index.md");
 
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("index.md");
 
-	[Fact]
+	[Test]
 	public void WarnsOfNoTitle() =>
 		Collector.Diagnostics.Should().NotBeEmpty().And.Contain(d => d.Message.Contains("Document has no title, using file name as title."));
 }
 
-public class NavigationTitleSupportReplacements(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class NavigationTitleSupportReplacements() : DirectiveTest(
 	"""
 ---
 title: Elastic Docs v3
@@ -59,11 +259,26 @@ sub:
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
 }
 
-public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, """
+public class MetaTitleEmptyAfterSubstitution() : DirectiveTest(
+	"""
+---
+title: Elastic Docs v3
+meta_title: "{{empty}}"
+sub:
+  empty: ""
+---
+"""
+)
+{
+	[Test]
+	public void TreatsAnEmptyResultAsNoOverride() => File.MetaTitle.Should().BeNull();
+}
+
+public class ProductsSingle() : DirectiveTest("""
 	---
 	products:
 	  - id: "apm"
@@ -72,7 +287,7 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, ""
 	# APM
 	""")
 {
-	[Fact]
+	[Test]
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -81,9 +296,7 @@ public class ProductsSingle(ITestOutputHelper output) : DirectiveTest(output, ""
 	}
 }
 
-public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsMultiple() : DirectiveTest("""
 	---
 	products:
 	  - id: "apm"
@@ -91,10 +304,9 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void ReadsProducts()
 	{
 		File.YamlFrontMatter.Should().NotBeNull();
@@ -104,19 +316,16 @@ public class ProductsMultiple(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenMispelled() : DirectiveTest("""
 	---
 	products:
 	  - id: aapm
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -127,19 +336,16 @@ public class ProductsSuggestionWhenMispelled(ITestOutputHelper output) : Directi
 	}
 }
 
-public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenMispelled2() : DirectiveTest("""
 	---
 	products:
 	  - id: apmagent
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -150,19 +356,16 @@ public class ProductsSuggestionWhenMispelled2(ITestOutputHelper output) : Direct
 	}
 }
 
-public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenCasingError() : DirectiveTest("""
 	---
 	products:
 	  - id: Apm
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -173,19 +376,16 @@ public class ProductsSuggestionWhenCasingError(ITestOutputHelper output) : Direc
 	}
 }
 
-public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class ProductsSuggestionWhenEmpty() : DirectiveTest("""
 	---
 	products:
 	  - id: ""
 	---
 
 	# APM
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -196,8 +396,7 @@ public class ProductsSuggestionWhenEmpty(ITestOutputHelper output) : DirectiveTe
 	}
 }
 
-public class MappedPagesValidUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesValidUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -208,12 +407,11 @@ public class MappedPagesValidUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void NoErrors() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesInvalidUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -224,7 +422,7 @@ public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrors()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -239,8 +437,7 @@ public class MappedPagesInvalidUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesMixedUrls() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -253,7 +450,7 @@ public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForInvalidUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -268,19 +465,16 @@ public class MappedPagesMixedUrls(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesEmptyUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MappedPagesEmptyUrl() : DirectiveTest("""
 	---
 	mapped_pages:
 	  - ""
 	---
 
 	# Test Page
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void NoErrorsForEmptyUrl()
 	{
 		// Empty URLs are ignored, no validation error should occur
@@ -288,8 +482,7 @@ public class MappedPagesEmptyUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesExternalUrl() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -300,7 +493,7 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForExternalUrl()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -315,8 +508,7 @@ public class MappedPagesExternalUrl(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesMalformedUri() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -327,7 +519,7 @@ public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForMalformedUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -342,8 +534,7 @@ public class MappedPagesMalformedUri(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MappedPagesInvalidScheme() : DirectiveTest(
 	"""
 	---
 	mapped_pages:
@@ -354,7 +545,7 @@ public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForInvalidScheme()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);
@@ -369,19 +560,16 @@ public class MappedPagesInvalidScheme(ITestOutputHelper output) : DirectiveTest(
 	}
 }
 
-public class MappedPagesNotAbsoluteUri(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MappedPagesNotAbsoluteUri() : DirectiveTest("""
 	---
 	mapped_pages:
 	  - "not-a-uri-at-all"
 	---
 
 	# Test Page
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void HasErrorsForNotAbsoluteUri()
 	{
 		Collector.Diagnostics.Should().HaveCount(1);

@@ -1,0 +1,11 @@
+@inherits RazorSlice<IReadOnlyList<ApiServerDisplay>>
+@* Base URL as a rail fact. Reused by the landing facts and operation pages; callers wrap it in a dl.api-rail-facts. *@
+<div class="api-rail-fact">
+	<dt>Base URL@(Model.Count > 1 ? "s" : "")</dt>
+	<dd class="api-rail-fact-list">
+		@foreach (var server in Model)
+		{
+			@await RenderPartialAsync(_ServerUrlField.Create(server))
+		}
+	</dd>
+</div>

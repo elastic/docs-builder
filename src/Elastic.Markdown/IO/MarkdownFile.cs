@@ -81,6 +81,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public string? Description { get; private set; }
+	public string? MetaTitle { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public virtual string NavigationTitle
@@ -147,10 +148,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return document;
 	}
 
-	private IReadOnlyDictionary<string, string> GetSubstitutions()
+	private IReadOnlyDictionary<string, string> GetSubstitutions() => GetSubstitutions(_globalSubstitutions, YamlFrontMatter?.Properties);
+
+	private static IReadOnlyDictionary<string, string> GetSubstitutions(
+		IReadOnlyDictionary<string, string> globalSubstitutions,
+		IReadOnlyDictionary<string, string>? fileSubstitutions
+	)
 	{
-		var globalSubstitutions = _globalSubstitutions;
-		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
 
@@ -172,12 +176,44 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
 	}
 
+	internal static string? ReadTitle(MarkdownDocument document) =>
+		document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? FindNestedTitle(document);
+
+	internal static (string? Title, string? MetaTitle) ReadTitles(MarkdownDocument document, BuildContext build, IFileInfo source)
+	{
+		YamlFrontMatter? frontMatter = null;
+		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
+		{
+			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+			frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+		}
+		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
+
+		var rawTitle = ReadTitle(document);
+		if (rawTitle is not null && rawTitle.AsSpan().ReplaceSubstitutions(substitutions, build.Collector, out var replacement))
+			rawTitle = replacement;
+
+		return (rawTitle?.StripMarkdown(), NormalizeMetaTitle(frontMatter?.MetaTitle, substitutions, build.Collector));
+	}
+
+	private static string? NormalizeMetaTitle(
+		string? metaTitle,
+		IReadOnlyDictionary<string, string> substitutions,
+		IDiagnosticsCollector collector
+	)
+	{
+		if (string.IsNullOrWhiteSpace(metaTitle))
+			return null;
+
+		if (metaTitle.AsSpan().ReplaceSubstitutions(substitutions, collector, out var replacement))
+			metaTitle = replacement;
+		metaTitle = metaTitle.StripMarkdown();
+		return string.IsNullOrWhiteSpace(metaTitle) ? null : metaTitle;
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title = document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? Title;
-
-		if (Title == RelativePath)
-			Title = FindNestedTitle(document) ?? Title;
+		Title = ReadTitle(document) ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
@@ -196,6 +232,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
+
+		MetaTitle = NormalizeMetaTitle(yamlFrontMatter.MetaTitle, subs, Collector);
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
@@ -322,6 +360,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => step.RenderAsHeading)
 			.Where(step => !IsNestedInOtherDirective(step))
 			.Select(step =>
 			{
@@ -403,7 +442,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
 		fm.AppliesTo ??= FallbackAppliesTo;
 
 		if (fm.AppliesTo?.Diagnostics is not null)
@@ -445,25 +484,52 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw)
+	private YamlFrontMatter ReadYamlFrontMatter(string raw, int lineOffset) =>
+		ReadYamlFrontMatter(
+			raw,
+			Products,
+			Collector,
+			FilePath,
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterUnknownKeys())
+		);
+
+	// Content repositories carry many frontmatter keys we don't model (slug, status, last_updated, ...), so
+	// an unknown key is a hint with the usual message, not an error, until those repositories are cleaned up.
+	// internal: exercised directly by tests without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterUnknownKeys() =>
+		member => new YamlUnknownKeyOverride(Severity.Hint, $"{YamlUnmappedMemberDiagnostics.FormatMessage(member)} It is ignored.");
+
+	// reporting is null when the same front matter is only being read for its titles, so unknown keys
+	// are reported once, by the full page parse.
+	private static YamlFrontMatter ReadYamlFrontMatter(
+		string raw,
+		ProductsConfiguration products,
+		IDiagnosticsCollector collector,
+		string filePath,
+		YamlUnmappedMemberReporting? reporting = null
+	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
+			// Comment-only front matter deserializes to null; treat it as empty front matter.
+			var frontMatter = reporting is null
+				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
+				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
+			return frontMatter ?? new YamlFrontMatter();
 		}
 		catch (InvalidProductException e)
 		{
-			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			collector.EmitError(filePath, "Invalid product in yaml front matter.", e);
 			return new YamlFrontMatter();
 		}
 		catch (Exception e)
 		{
-			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			collector.EmitError(filePath, "Failed to parse yaml front matter block.", e);
 			return new YamlFrontMatter();
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true)
+	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true, MarkdownPipeline? renderPipeline = null)
 	{
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
@@ -473,7 +539,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 				_ = document.Remove(h1);
 		}
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(renderPipeline ?? MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);
 	}
 

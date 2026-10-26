@@ -18,7 +18,7 @@ public class ChangelogCiFileSystemTests
 {
 	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
 
-	[Fact]
+	[Test]
 	public void ChangelogFileSystem_AllowsArtifactsStagingAndArtifactDirs()
 	{
 		var mock = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Root });
@@ -42,7 +42,7 @@ public class ChangelogCiFileSystemTests
 		fs.File.Exists(artifactFile).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ChangelogFileSystem_BlocksOtherHiddenDirectories()
 	{
 		var mock = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Root });
@@ -54,7 +54,7 @@ public class ChangelogCiFileSystemTests
 		create.Should().Throw<ScopedFileSystemException>().WithMessage("*hidden*");
 	}
 
-	[Fact]
+	[Test]
 	public void RunnerTempFileSystem_BlocksOtherHiddenDirectories()
 	{
 		var mock = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Root });

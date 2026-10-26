@@ -13,8 +13,18 @@ internal static class ChangelogTableRenderers
 	internal static string BuildLabelTable(IReadOnlyDictionary<string, string>? labelToType) =>
 		BuildMappingTable(labelToType, "Label", "Type");
 
+	/// <summary>
+	/// Returns a comma-separated list of label keys for inline rendering in PR comments.
+	/// </summary>
+	internal static string BuildLabelKeys(IReadOnlyDictionary<string, string>? labelToType) =>
+		labelToType is { Count: > 0 } ? string.Join(",", labelToType.Keys) : "";
+
 	internal static string BuildProductLabelTable(IReadOnlyDictionary<string, string>? labelToProducts) =>
 		BuildMappingTable(labelToProducts, "Label", "Product");
+
+	/// <summary>A label can map to several areas, so the areas of one label share a cell.</summary>
+	internal static string BuildAreaLabelTable(IReadOnlyDictionary<string, IReadOnlyList<string>>? labelToAreas) =>
+		BuildMappingTable(labelToAreas?.ToDictionary(kvp => kvp.Key, kvp => string.Join(", ", kvp.Value)), "Label", "Area");
 
 	internal static string BuildMappingTable(IReadOnlyDictionary<string, string>? mapping, string keyHeader, string valueHeader)
 	{

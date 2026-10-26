@@ -55,7 +55,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 		var parents = navigation.GetParentsOfMarkdownFile(file).Reverse().ToArray();
 		var breadcrumbsMeta = BuildBreadcrumbsMeta(parents, fileContext.BuildContext.CanonicalBaseUrl);
 
-		var meta = new Dictionary<string, string> { ["title"] = file.Title ?? url };
+		var meta = new Dictionary<string, string> { ["title"] = ResolveTitle(file.MetaTitle, file.Title, url) };
 		if (!string.IsNullOrEmpty(breadcrumbsMeta))
 			meta["breadcrumbs"] = breadcrumbsMeta;
 
@@ -71,6 +71,9 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 
 		return ValueTask.FromResult(true);
 	}
+
+	internal static string ResolveTitle(string? metaTitle, string? title, string url) =>
+		string.IsNullOrWhiteSpace(metaTitle) ? title ?? url : metaTitle;
 
 	private const int MaxHeadings = 10;
 	private const int MaxBodySections = 5;

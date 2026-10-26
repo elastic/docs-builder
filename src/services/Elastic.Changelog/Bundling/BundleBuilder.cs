@@ -20,8 +20,8 @@ public class BundleBuilder
 	/// <param name="collector">The diagnostics collector.</param>
 	/// <param name="entries">Matched changelog files to bundle.</param>
 	/// <param name="outputProducts">Optional explicit products to set in the output.</param>
-	/// <param name="repo">Optional GitHub repository name to set on products for link generation.</param>
-	/// <param name="owner">Optional GitHub owner to set on products for link generation.</param>
+	/// <param name="repo">GitHub repository for link generation.</param>
+	/// <param name="owner">GitHub owner for link generation.</param>
 	/// <param name="hideFeatures">Optional feature IDs to mark as hidden in the bundle.</param>
 	public BundleBuildResult BuildBundle(
 		IDiagnosticsCollector collector,
@@ -32,16 +32,11 @@ public class BundleBuilder
 		HashSet<string>? hideFeatures = null
 	)
 	{
-		// Build products list
 		var bundledProducts = BuildProducts(collector, entries, outputProducts, repo, owner);
-
-		// Build entries list
 		var bundledEntries = BuildResolvedEntries(collector, entries);
 
 		if (bundledEntries == null)
-		{
 			return new BundleBuildResult { IsValid = false, Data = null };
-		}
 
 		var bundledData = new Bundle
 		{
@@ -117,7 +112,6 @@ public class BundleBuilder
 		else
 			bundledProducts = [];
 
-		// Check for products with same product ID but different versions
 		var productsByProductId = bundledProducts
 			.GroupBy(p => p.ProductId, StringComparer.OrdinalIgnoreCase)
 			.Where(g => g.Count() > 1)
@@ -184,7 +178,6 @@ public class BundleBuilder
 			return false;
 		}
 
-		// Validate type is not Invalid (missing or unrecognized)
 		if (data.Type == ChangelogEntryType.Invalid)
 		{
 			collector.EmitError(entry.FilePath, "Changelog file is missing required field: type");
@@ -197,7 +190,6 @@ public class BundleBuilder
 			return false;
 		}
 
-		// Validate products have required fields
 		if (data.Products.Any(product => string.IsNullOrWhiteSpace(product.ProductId)))
 		{
 			collector.EmitError(entry.FilePath, "Changelog file has product entry missing required field: product");

@@ -10,7 +10,7 @@ using Elastic.Changelog.GitHub;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class GitHubCommentServiceTests(ITestOutputHelper output)
+public class GitHubCommentServiceTests()
 {
 	private const string Owner = "elastic";
 	private const string Repo = "test";
@@ -19,16 +19,22 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 	private static HttpResponseMessage Json(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage Created() => new(HttpStatusCode.Created);
-	private static HttpResponseMessage Ok() => new(HttpStatusCode.OK);
+	private static HttpResponseMessage Created(string nodeId = "IC_test_node_id") =>
+		new(HttpStatusCode.Created)
+		{
+			Content = new StringContent($"{{\"id\":1,\"node_id\":\"{nodeId}\"}}", Encoding.UTF8, "application/json")
+		};
 
-	private static string CommentListJson(long id, string body, string login = "github-actions[bot]") =>
-		$"[{{\"id\":{id},\"body\":{JsonSerializer.Serialize(body)},\"user\":{{\"login\":\"{login}\"}}}}]";
+	private static HttpResponseMessage Ok(string nodeId = "IC_test_node_id") =>
+		new(HttpStatusCode.OK) { Content = new StringContent($"{{\"id\":1,\"node_id\":\"{nodeId}\"}}", Encoding.UTF8, "application/json") };
+
+	private static string CommentListJson(long id, string body, string login = "github-actions[bot]", string nodeId = "IC_test_node_id") =>
+		$"[{{\"id\":{id},\"node_id\":\"{nodeId}\",\"body\":{JsonSerializer.Serialize(body)},\"user\":{{\"login\":\"{login}\"}}}}]";
 
 	private GitHubCommentService Service(StubHandler handler) =>
-		new(new TestLoggerFactory(output), new GitHubApiTransport(handler, "test-token"));
+		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"));
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_NoExistingComment_CreatesNewComment()
 	{
 		var requests = new List<(string method, string path)>();
@@ -40,11 +46,11 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\n\nHello");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "POST" && r.path.Contains($"/issues/{PrNumber}/comments"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_ExistingCommentWithMarker_UpdatesExisting()
 	{
 		const long existingId = 99;
@@ -60,12 +66,12 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 		requests.Should().NotContain(r => r.method == "POST");
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_ExistingCommentWithLegacyPrefix_UpdatesExisting()
 	{
 		const long existingId = 77;
@@ -81,11 +87,11 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_ExistingCommentOnPage2_UpdatesExisting()
 	{
 		const long existingId = 55;
@@ -109,21 +115,21 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "### 📋 Changelog\nNew");
 
-		result.Should().BeTrue();
+		result.Should().NotBeNull();
 		requests.Should().ContainSingle(r => r.method == "PATCH" && r.path.Contains($"/issues/comments/{existingId}"));
 	}
 
-	[Fact]
-	public async Task UpsertStickyComment_ApiReturns403_ReturnsFalseDoesNotThrow()
+	[Test]
+	public async Task UpsertStickyComment_ApiReturns403_ReturnsNullDoesNotThrow()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.Forbidden));
 
 		var result = await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "body");
 
-		result.Should().BeFalse();
+		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_RenderedBody_StartsWithTitle()
 	{
 		string? postedBody = null;
@@ -140,10 +146,10 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 		postedBody.Should().NotBeNull();
 		// The posted body is JSON; System.Text.Json encodes the emoji as Unicode escapes,
 		// so assert on the surrounding ASCII text instead of the emoji character itself.
-		postedBody!.Should().Contain("Changelog").And.Contain("Content");
+		postedBody.Should().Contain("Changelog").And.Contain("Content");
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertStickyComment_PostedJson_UsesLowercaseBodyKey()
 	{
 		// GitHub's API requires lowercase "body" — PascalCase "Body" triggers HTTP 422.
@@ -159,7 +165,7 @@ public class GitHubCommentServiceTests(ITestOutputHelper output)
 		await Service(handler).UpsertStickyCommentAsync(Owner, Repo, PrNumber, "hello");
 
 		postedJson.Should().NotBeNull();
-		postedJson!.Should().Contain("\"body\"").And.NotContain("\"Body\"");
+		postedJson.Should().Contain("\"body\"").And.NotContain("\"Body\"");
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
