@@ -56,6 +56,9 @@ public class FeatureFlagsTests
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
 
 	[Test]
+	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
+
+	[Test]
 	public void EdgeEnvironment_DoesNotAllowIndexing()
 	{
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
