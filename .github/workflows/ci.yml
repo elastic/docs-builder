@@ -210,10 +210,8 @@ jobs:
 
       - name: Test
         if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true' }}
-        # --single-target skips the compile dependency; the Compile step above already built everything.
-        # --test-parallelism=1: on 3-4 core runners, concurrent test projects starve the thread pool and
-        # time out the concurrency tests in Elastic.Changelog.Tests.
-        run: dotnet run --project build -c release -- unit-test --single-target --test-parallelism=1
+        # --single-target skips the compile dependency; the Compile step above already built everything
+        run: dotnet run --project build -c release -- unit-test --single-target
 
       - name: Publish AOT
         if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
