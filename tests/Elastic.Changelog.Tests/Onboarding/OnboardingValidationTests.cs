@@ -17,7 +17,7 @@ namespace Elastic.Changelog.Tests.Onboarding;
 
 /// <summary>
 /// Tests for <c>changelog validate-onboarding</c>: every product registered as
-/// <c>features.release-notes: prestage</c> must carry the Prestage scaffolding in its repository.
+/// <c>features.release-notes: dra</c> must carry the DRA scaffolding in its repository.
 /// </summary>
 public class OnboardingValidationTests() : ChangelogTestBase()
 {
@@ -41,7 +41,7 @@ public class OnboardingValidationTests() : ChangelogTestBase()
 			Id = id,
 			DisplayName = id,
 			Repository = repository ?? id,
-			Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.Prestage }
+			Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.DailyReleasableArtifacts }
 		};
 
 	private ChangelogOnboardingValidationService Service(IConfigurationContext context, StubHandler handler) =>

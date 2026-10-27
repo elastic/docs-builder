@@ -45,6 +45,60 @@ public class IsolatedBuildService(
 		return strict.HasValue && strict.Value;
 	}
 
+	private sealed record BuildSettings(
+		bool Strict,
+		IReadOnlySet<Exporter> Exporters,
+		string? PathPrefix,
+		bool Force,
+		bool AllowIndexing,
+		Uri CanonicalBaseUri,
+		bool SkipOpenApi,
+		bool SkipCrossLinks,
+		bool RunningOnCi
+	);
+
+	private BuildSettings ResolveSettings(IsolatedBuildOptions options)
+	{
+		var strict = IsStrict(options.Strict);
+		var metadataOnly = options.MetadataOnly;
+
+		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
+			metadataOnly ??= metaValue;
+
+		var exporters = options.Exporters ?? (metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default);
+		var pathPrefix = options.PathPrefix ?? githubActionsService.GetInput("prefix");
+		var runningOnCi = _env.IsRunningOnCI;
+		var force = options.Force;
+
+		if (runningOnCi)
+		{
+			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
+			force = true;
+		}
+
+		return new BuildSettings(
+			strict,
+			exporters,
+			pathPrefix,
+			force ?? false,
+			options.AllowIndexing ?? false,
+			options.CanonicalBaseUrl ?? new Uri("https://docs-v3-preview.elastic.dev"),
+			options.SkipApi,
+			options.SkipCrossLinks,
+			runningOnCi
+		);
+	}
+
+	private BuildContext CreateContext(IDiagnosticsCollector collector, DocumentationFileSystem docFs, BuildSettings settings) =>
+		new(collector, docFs, configurationContext)
+		{
+			AvailableExporters = settings.Exporters,
+			UrlPathPrefix = settings.PathPrefix,
+			Force = settings.Force,
+			AllowIndexing = settings.AllowIndexing,
+			CanonicalBaseUrl = settings.CanonicalBaseUri,
+		};
+
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
 		IsolatedBuildOptions options,
@@ -54,35 +108,8 @@ public class IsolatedBuildService(
 	{
 		var path = options.Path?.FullName;
 		var output = options.Output?.FullName;
-		var pathPrefix = options.PathPrefix;
-		var force = options.Force;
-		var strict = options.Strict;
-		var allowIndexing = options.AllowIndexing;
-		var metadataOnly = options.MetadataOnly;
-		var exporters = options.Exporters;
-		var canonicalBaseUri = options.CanonicalBaseUrl;
-		var skipOpenApi = options.SkipApi;
-		var skipCrossLinks = options.SkipCrossLinks;
-
-		strict = IsStrict(strict);
-
-		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
-			metadataOnly ??= metaValue;
-
-		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
-
-		pathPrefix ??= githubActionsService.GetInput("prefix");
-
-		var runningOnCi = _env.IsRunningOnCI;
+		var settings = ResolveSettings(options);
 		BuildContext context;
-
-		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
-
-		if (runningOnCi)
-		{
-			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
-			force = true;
-		}
 
 		try
 		{
@@ -90,19 +117,12 @@ public class IsolatedBuildService(
 				path,
 				new DocumentationScopeOptions { Output = options.Output?.FullName, InnerWrite = writeFileSystem }
 			);
-			context = new BuildContext(collector, docFs, configurationContext)
-			{
-				AvailableExporters = exporters,
-				UrlPathPrefix = pathPrefix,
-				Force = force ?? false,
-				AllowIndexing = allowIndexing ?? false,
-				CanonicalBaseUrl = canonicalBaseUri,
-			};
+			context = CreateContext(collector, docFs, settings);
 		}
 		// On CI, we are running on a merge commit which may have changes against an older
 		// docs folder (this can happen on out-of-date PR's).
 		// At some point in the future we can remove this try catch
-		catch (DocumentationPathException e) when (runningOnCi)
+		catch (DocumentationPathException e) when (settings.RunningOnCi)
 		{
 			// Derive the default output from `path` so it stays within the write FS scope.
 			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
@@ -125,11 +145,34 @@ public class IsolatedBuildService(
 			return true;
 		}
 
+		return await GenerateAsync(context, settings, ctx);
+	}
+
+	/// <summary>
+	/// Builds from an already-resolved documentation file system, for callers that synthesize the docset
+	/// (for example from an in-memory file system) instead of pointing at a directory on disk.
+	/// </summary>
+	public async Task<bool> BuildFrom(
+		IDiagnosticsCollector collector,
+		IsolatedBuildOptions options,
+		DocumentationFileSystem docFs,
+		Cancel ctx = default
+	)
+	{
+		var settings = ResolveSettings(options);
+		return await GenerateAsync(CreateContext(collector, docFs, settings), settings, ctx);
+	}
+
+	private async Task<bool> GenerateAsync(BuildContext context, BuildSettings settings, Cancel ctx)
+	{
+		var runningOnCi = settings.RunningOnCi;
+		var exporters = settings.Exporters;
+
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 
 		ICrossLinkResolver crossLinkResolver;
-		if (skipCrossLinks)
+		if (settings.SkipCrossLinks)
 		{
 			_logger.LogInformation("Skipping cross-link fetching for fast validation build");
 			crossLinkResolver = NoopCrossLinkResolver.Instance;
@@ -183,7 +226,7 @@ public class IsolatedBuildService(
 		);
 		var result = await generator.GenerateAll(ctx);
 
-		if (!skipOpenApi)
+		if (!settings.SkipOpenApi)
 		{
 			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
 			await openApiGenerator.Generate(ctx);
@@ -202,7 +245,7 @@ public class IsolatedBuildService(
 		await Task.WhenAll(tasks);
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
-		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+		return settings.Strict ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
 	}
 
 	private async Task WriteRedirectsAsync(IReadOnlyDictionary<string, LinkRedirect> redirects, BuildContext context, Cancel ctx)

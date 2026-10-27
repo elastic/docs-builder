@@ -21,7 +21,7 @@ public class ReaderTests
 	private static IFileInfo LocalSpecFile()
 	{
 		var fileSystem = new FileSystem();
-		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
+		var path = fileSystem.Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		return fileSystem.FileInfo.New(path);
 	}
 
@@ -101,6 +101,23 @@ public class ReaderTests
 
 		doc.Should().NotBeNull("a quoted '2.0' YAML scalar must not be coerced to the JSON number 2");
 		doc!.Info.Title.Should().Be("QuotedVersion");
+	}
+
+	[Test]
+	public async Task ReadsYamlSpec_WithQuotedPathKeys()
+	{
+		// Quoted mapping keys ('/path/{id}') must reach Microsoft.OpenApi as the bare path, not as the
+		// quoted YAML representation, otherwise every path is rejected as "not a valid property".
+		const string yaml =
+			"openapi: 3.0.3\ninfo:\n  title: Quoted\n  version: '1'\npaths:\n  '/items/{item_id}':\n    get:\n      responses:\n        '200':\n          description: ok\n";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml", collector);
+
+		document.Should().NotBeNull();
+		document!.Paths.Should().ContainKey("/items/{item_id}");
+		collector.Errors.Should().Be(0);
 	}
 
 	[Test]

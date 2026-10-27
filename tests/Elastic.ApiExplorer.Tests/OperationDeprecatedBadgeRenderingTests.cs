@@ -23,8 +23,12 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		html.Should().Contain("Get the source of a document by id");
 		html.Should().Contain("class=\"api-title-badges\"");
 
-		var titleBadges = Slice(html, "class=\"api-title-badges\"", "id=\"paths\"");
-		titleBadges.Should().Contain("deprecated-badge");
+		// The badges sit under the path listing, still inside the intro header.
+		html
+			.IndexOf("class=\"api-title-badges\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("id=\"paths\"", StringComparison.Ordinal));
+		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("deprecated-badge");
 
 		var listing = Slice(html, "id=\"paths\"", "</ul>");
 		listing.Should().Contain("api-url-list-item");

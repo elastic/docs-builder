@@ -1,34 +1,122 @@
 @using Elastic.ApiExplorer.Model
 @using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<ExampleScenario>
-@* Example OpenAPI descriptions are omitted from the rail — they often restate the call
-   or narrate the sample; the code blocks carry the useful content. *@
-
-@* Two widgets, one card: .api-code-card styles chrome + syntax for both.
-   1. .api-code-sample — multi-language x-codeSamples, or fallback request JSON
-   2. .example-block--response — response JSON (status-code tabs) *@
-@if (Model.CodeSamples.Count > 0)
-{
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}", Model.CodeSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
+@* One example: a carousel with one card per language (none hidden, so find-in-page reaches every sample),
+   the request body when no sample embeds it, and the response with status-code tabs. *@
+@{
+	var scenario = Model;
+	var samples = scenario.CodeSamples;
 }
-else if (Model.ShowRequest && Model.RequestJson is not null)
+@{
+	var hasRequest = samples.Count > 0 || scenario.ShowRequest;
+}
+@if (hasRequest)
 {
-	var requestSamples = new[]
+<div class="api-rail-request" data-rail-request>
+@if (samples.Count > 0)
+{
+	<div class="api-code-carousel" data-api-carousel>
+		<div class="api-code-carousel-head">
+			<span class="api-rail-label">Request</span>
+			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
+				<strong>@samples[0].Language</strong>
+				<span>1 / @samples.Count @(samples.Count == 1 ? "language" : "languages")</span>
+			</span>
+			@if (samples.Count > 1)
+			{
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="-1" aria-label="Previous language" disabled>&lsaquo;</button>
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
+			}
+		</div>
+		@if (scenario.RequestDescriptionHtml is { } requestCaption)
+		{
+			@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaption))
+		}
+		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="@scenario.Title code samples. Use the arrow keys to switch language.">
+			@for (var i = 0; i < samples.Count; i++)
+			{
+				var sample = samples[i];
+				<section class="api-code-card api-code-carousel-card@(i == 0 ? " is-active" : "")" data-code-card data-lang="@sample.Language" aria-label="@sample.Language"@(sample.Generated ? new HtmlString(" data-generated") : HtmlString.Empty)>
+					<header class="api-code-carousel-card-header">
+						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">@sample.Language</span>
+							@if (sample.ClientLabel.Length > 0 && sample.ClientDocsUrl is { } clientDocs)
+							{
+								<a class="api-code-carousel-card-client" href="@clientDocs">@sample.ClientLabel</a>
+							}
+							else if (sample.ClientLabel.Length > 0)
+							{
+								<span class="api-code-carousel-card-client">@sample.ClientLabel</span>
+							}
+						</span>
+						<span class="api-code-carousel-card-actions" data-code-actions></span>
+					</header>
+					<div class="api-code-carousel-card-body">
+						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(sample.HighlightClass, sample.Source, LineNumbers: true)))
+						@if (sample.Generated)
+						{
+							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
+						}
+					</div>
+				</section>
+			}
+		</div>
+		@if (samples.Count > 1)
+		{
+			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
+				@foreach (var sample in samples)
+				{
+					<button type="button" class="api-code-carousel-dot@(sample == samples[0] ? " is-active" : "")" data-carousel-dot="@sample.Language" aria-label="@sample.Language" data-tippy-content="@sample.Language" aria-current="@(sample == samples[0] ? "true" : "false")">
+						<span class="api-lang-badge" data-lang="@sample.Language" aria-hidden="true"></span>
+					</button>
+				}
+			</div>
+		}
+	</div>
+}
+@if (samples.Count == 0)
+{
+	<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	@if (scenario.RequestDescriptionHtml is { } requestCaptionWithoutSamples)
 	{
-		new CodeSample("JSON", Model.RequestJson, "language-json")
-	};
-	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(new ApiCodeSampleModel($"rail-{Model.TabId}-request", requestSamples, Model.HttpMethod, Model.Route, Model.ExampleOptions)))
+		@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaptionWithoutSamples))
+	}
+}
+@if (scenario.ShowRequest && scenario.RequestJson is not null)
+{
+	var requestSample = new CodeSample("JSON", scenario.RequestJson, "language-json");
+	var requestModel = samples.Count > 0
+		? new ApiCodeSampleModel(requestSample, Title: "Request example")
+		: new ApiCodeSampleModel(requestSample, scenario.HttpMethod, scenario.Route);
+	@if (samples.Count > 0)
+	{
+		<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
+	}
+	@(await RenderPartialAsync<_ApiCodeSample, ApiCodeSampleModel>(requestModel))
 }
 
-@if (Model.ShowRequest && !string.IsNullOrEmpty(Model.RequestExternalValue))
+@if (scenario.ShowRequest && !string.IsNullOrEmpty(scenario.RequestExternalValue))
 {
-	<p class="external-example">External example: <a href="@Model.RequestExternalValue">@Model.RequestExternalValue</a></p>
+	<p class="external-example">External example: <a href="@scenario.RequestExternalValue">@scenario.RequestExternalValue</a></p>
 }
-
-@if (Model.ShowResponse)
+</div>
+}
+@if (scenario.ShowResponse)
 {
-	var responses = Model.Responses;
-	<div class="api-code-card example-block example-block--response" data-api-response-samples>
+	var responses = scenario.Responses;
+	<div class="api-rail-response">
+	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
+	@for (var i = 0; i < responses.Count; i++)
+	{
+		if (responses[i].DescriptionHtml is { } responseCaption)
+		{
+			<div data-caption-status="@responses[i].StatusCode" hidden="@(i == 0 ? null : "hidden")">
+				@(await RenderPartialAsync<_ExampleCaption, HtmlString>(responseCaption))
+			</div>
+		}
+	}
+	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
 		<div class="example-block-header">
 			<div class="example-response-tabs" role="tablist" aria-label="Response status">
 				@for (var i = 0; i < responses.Count; i++)
@@ -41,32 +129,55 @@ else if (Model.ShowRequest && Model.RequestJson is not null)
 						class="example-response-tab@(selected ? " is-active" : "")"
 						data-status="@response.StatusCode"
 						aria-selected="@(selected ? "true" : "false")"
-						tabindex="@(selected ? "0" : "-1")">
+						tabindex="@(selected ? "0" : "-1")"
+						data-tippy-content="@response.StatusDescription">
 						<span class="example-response-tab-label">@response.StatusCode</span>
 					</button>
 				}
 			</div>
-			<div class="example-block-actions"></div>
+			<div class="example-block-actions" data-code-actions></div>
 		</div>
 		<div class="example-block-body">
 			@for (var i = 0; i < responses.Count; i++)
 			{
 				var response = responses[i];
-				<div class="example-response-panel" data-status="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
-					@if (response.JsonValue is not null)
+				<div class="example-response-panel" data-status="@response.StatusCode" data-code-panel="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
+					@foreach (var example in response.Examples)
 					{
-						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue)))
+						<div class="example-media-body"@(response.Examples.Count > 1 ? new HtmlString(" data-code-card") : HtmlString.Empty)>
+						@if (response.Examples.Count > 1)
+						{
+							<div class="example-block-header"><span class="api-rail-label">@example.MediaType</span><span data-code-actions></span></div>
+						}
+						@if (example != response.Examples[0] && example.DescriptionHtml is { } mediaCaption)
+						{
+							@(await RenderPartialAsync<_ExampleCaption, HtmlString>(mediaCaption))
+						}
+						@if (example.JsonValue is not null)
+						{
+							@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(example.JsonValue), example.JsonValue, LineNumbers: true)))
+						}
+						else if (!string.IsNullOrEmpty(example.ExternalValue))
+						{
+							<p class="external-example">External example: <a href="@example.ExternalValue">@example.ExternalValue</a></p>
+						}
+						@if (example.JsonValue is null && string.IsNullOrEmpty(example.ExternalValue))
+						{
+							<p class="example-empty">No example</p>
+						}
+						@if (example.Generated)
+						{
+							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tippy-content="@ResponseBodyExample.Note">Generated from the API spec</span></p>
+						}
+						</div>
 					}
-					else if (!string.IsNullOrEmpty(response.ExternalValue))
-					{
-						<p class="external-example">External example: <a href="@response.ExternalValue">@response.ExternalValue</a></p>
-					}
-					else
+					@if (response.Examples.Count == 0)
 					{
 						<p class="example-empty">@(response.IsNoBody ? "No body" : "No example")</p>
 					}
 				</div>
 			}
 		</div>
+	</div>
 	</div>
 }

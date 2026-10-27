@@ -1,0 +1,36 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<ApiIndexGroupModel>
+@{
+	var heading = Model.Group.Heading;
+}
+<section class="api-index-group">
+	@if (heading is not null)
+	{
+		<h3 class="api-index-group-title">
+			@if (heading.Url is not null)
+			{
+				<a href="@heading.Url" @(new HtmlString(Model.HxAttributes))>@heading.Title</a>
+			}
+			else
+			{
+				@heading.Title
+			}
+			<span class="api-index-count">@Model.Group.Items.Count</span>
+		</h3>
+	}
+	@* Every row stays in the page: the browser's find-in-page only matches what is rendered. *@
+	<ul class="api-index-list">
+		@foreach (var row in Model.Group.Items)
+		{
+			<li>
+				<a class="api-index-item" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
+					@if (row.Endpoint is { Rows.Count: > 0 } endpoint)
+					{
+						@(await RenderPartialAsync<_HttpMethodBadge, string>(endpoint.Rows[0].Method))
+					}
+					<span class="api-index-item-title">@row.Title</span>
+				</a>
+			</li>
+		}
+	</ul>
+</section>

@@ -1,11 +1,15 @@
 import { initAgentSkillCopy } from './agent-skill'
+import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
+import { initApiMenus } from './api-menu'
+import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
 import { initListing } from './listing'
+import { initMath } from './math'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
@@ -97,59 +101,6 @@ function applyEditParam() {
     }
 }
 
-/**
- * Initialize KaTeX math rendering for elements with class 'math'.
- * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
- */
-async function initMath() {
-    const mathElements = $$optional('.math:not([data-katex-processed])')
-    if (mathElements.length === 0) return
-
-    const [katex] = await Promise.all([import('katex'), import('./katex.css')])
-
-    mathElements.forEach((element) => {
-        try {
-            const content = element.textContent?.trim()
-            if (!content) return
-
-            // Determine if this is display math based on content and element type
-            const isDisplayMath =
-                element.tagName === 'DIV' ||
-                content.includes('\\[') ||
-                content.includes('$$') ||
-                content.includes('\\begin{') ||
-                content.includes('\n')
-
-            // Clean up common LaTeX delimiters
-            const cleanContent = content
-                .replace(/^\$\$|\$\$$/g, '') // Remove $$ delimiters
-                .replace(/^\\\[|\\\]$/g, '') // Remove \[ \] delimiters
-                .trim()
-
-            // Clear the element content before rendering
-            element.innerHTML = ''
-
-            katex.render(cleanContent, element, {
-                throwOnError: false,
-                displayMode: isDisplayMath,
-                strict: false, // Allow some LaTeX extensions
-                trust: false, // Security: don't trust arbitrary commands
-                output: 'mathml', // Only render MathML, not HTML
-                macros: {
-                    // Add common macros if needed
-                },
-            })
-
-            // Mark as processed to prevent double processing
-            element.setAttribute('data-katex-processed', 'true')
-        } catch (error) {
-            console.warn('KaTeX rendering error:', error)
-            // Fallback: keep the original content
-            element.innerHTML = element.textContent || ''
-        }
-    })
-}
-
 // Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
 function ctaAttributes(cta: HTMLAnchorElement) {
     return {
@@ -192,6 +143,9 @@ function initCtaImpressions() {
         ctaImpressionObserver?.observe(cta)
     )
 }
+
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
@@ -241,6 +195,8 @@ function handleCtaActivation(event: MouseEvent) {
 document.addEventListener('click', handleCtaActivation)
 initPrivacyConsent()
 initSecondaryNav()
+initApiMenus()
+initApiChromeSync()
 // 'auxclick' with button 1 covers middle-click (open in new tab), which does NOT
 // fire 'click' per the DOM spec - without this those opens went untracked. Button 2
 // (right-click / context menu) also fires auxclick but isn't a real engagement.
@@ -294,28 +250,22 @@ document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
     // hx-boost intercepts every same-origin link, but only internal docs URLs should
     // navigate through htmx (for assembler that means /docs/*; isolated and codex own
     // their whole origin). Anything else — marketing pages on the same domain, the
-    // separate /docs/api app — gets a normal full page load.
-    const docsPath = getPathFromUrl(new URL(path, location.href).pathname)
-    if (!docsPath || isExternalDocsUrl(docsPath)) {
+    // separate /docs/api app — gets a normal full page load. So does a move between a docs
+    // page and an API page, or to another API product: the swap would leave the previous
+    // header or context bar in place.
+    const targetPath = new URL(path, location.href).pathname
+    const docsPath = getPathFromUrl(targetPath)
+    if (
+        !docsPath ||
+        isExternalDocsUrl(docsPath) ||
+        changesPageChrome(
+            targetPath,
+            location.pathname,
+            config.rootPath.replace(/\/$/, '')
+        )
+    ) {
         event.preventDefault()
         window.location.assign(path)
-    }
-})
-
-// Boosted navigations swap #main-container. show:none on <body> stops HTMX
-// from scrolling the container into view (that jumps the page up to the
-// horizontal tabs). Instant window reset still matches a full page load.
-document.body.addEventListener('htmx:afterSwap', function (event: HtmxEvent) {
-    const target = event.target
-    if (
-        target === document.body ||
-        (target instanceof Element &&
-            (target.id === 'main-container' ||
-                target.id === 'content-container'))
-    ) {
-        if (window.scrollY !== 0) {
-            window.scrollTo(0, 0)
-        }
     }
 })
 

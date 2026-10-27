@@ -149,7 +149,7 @@ public class ChangelogCreationServiceTests() : ChangelogTestBase()
 	/// and the repo name doesn't match any product ID, the command fails.
 	/// </summary>
 	[Test]
-	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsWithProductRequired()
+	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsAndListsTheProductLabels()
 	{
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
@@ -183,7 +183,13 @@ public class ChangelogCreationServiceTests() : ChangelogTestBase()
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().Be(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one product is required"));
+		// Two products are mapped and no default is set, so the PR must name its product with a label.
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("No matching product label found on PR") && d.Message.Contains("Add one of the following labels")
+			);
 	}
 
 	/// <summary>

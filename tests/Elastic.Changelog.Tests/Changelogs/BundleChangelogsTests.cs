@@ -1598,7 +1598,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("€");
 
 		// Verify the content structure is correct
-		bundleContent.Should().Contain("title: Feature with special characters & symbols");
+		bundleContent.Should().Contain("title: \"Feature with special characters & symbols\"");
 		bundleContent.Should().Contain("type: feature");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.3.0");
@@ -1854,8 +1854,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is included in the bundle output
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:hidden-api");
-		bundleContent.Should().Contain("- feature:another-hidden");
+		bundleContent.Should().Contain("- \"feature:hidden-api\"");
+		bundleContent.Should().Contain("- \"feature:another-hidden\"");
 	}
 
 	[Test]
@@ -1946,8 +1946,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field contains feature IDs from the file
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-file");
-		bundleContent.Should().Contain("- feature:another");
+		bundleContent.Should().Contain("- \"feature:from-file\"");
+		bundleContent.Should().Contain("- \"feature:another\"");
 	}
 
 	[Test]
@@ -2427,14 +2427,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that hide-features from the profile are written to the bundle
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:profile-hidden");
-		bundleContent.Should().Contain("- feature:another-profile-hidden");
+		bundleContent.Should().Contain("- \"feature:profile-hidden\"");
+		bundleContent.Should().Contain("- \"feature:another-profile-hidden\"");
 	}
 
 	[Test]
@@ -2497,13 +2497,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that only the profile hide-features are present
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-profile");
+		bundleContent.Should().Contain("- \"feature:from-profile\"");
 	}
 
 	[Test]
@@ -2564,12 +2564,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("- feature:profile-one");
-		bundleContent.Should().Contain("- feature:profile-two");
+		bundleContent.Should().Contain("- \"feature:profile-one\"");
+		bundleContent.Should().Contain("- \"feature:profile-two\"");
 	}
 
 	[Test]
@@ -2900,7 +2900,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3084,7 +3084,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3153,7 +3153,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3218,7 +3218,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3306,7 +3306,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3372,7 +3372,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3438,7 +3438,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3501,7 +3501,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3602,7 +3602,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
 	[Test]
@@ -3669,7 +3673,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
 	// ─── Phase 3: URL list file and combined version+report ─────────────────────────────
@@ -4009,7 +4017,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 
 		// Output file name should use the version (not "unknown")
@@ -4393,7 +4401,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-cloud-feature.yaml");
 		// Verify warning was emitted for the excluded entry
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]"));
+		Logged.Should().Contain(l => l.Contains("global product filter, exclude"));
 	}
 
 	[Test]
@@ -4457,7 +4465,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-include]"));
+		Logged.Should().Contain(l => l.Contains("global product filter, include"));
 	}
 
 	[Test]
@@ -4709,10 +4717,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert - elasticsearch entry is excluded by exclude_products rule even with InputProducts
 		result.Should().BeFalse("Bundle should fail because all entries are excluded by rules.bundle");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Message.Contains("[-bundle-exclude]") && d.Message.Contains("1755268130-elasticsearch-feature.yaml"));
+		Logged.Should().Contain(l => l.Contains("global product filter, exclude") && l.Contains("1755268130-elasticsearch-feature.yaml"));
 		Collector.Errors.Should().BeGreaterThan(0, "Should have error about no entries remaining");
 	}
 
@@ -4777,7 +4782,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-enhancement.yaml");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
+		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
 
 	[Test]
@@ -5132,7 +5137,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			"name: 1755268161-kibana-other.yaml",
 			"kibana entry with a different area should pass the exclude_areas rule"
 		);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
+		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
 
 	[Test]
@@ -5266,8 +5271,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain(
-			"disjoint from rule context 'kibana'",
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'kibana'"),
 			"elasticsearch entry should be excluded as disjoint from kibana context"
 		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
@@ -5894,7 +5899,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
 
 		// Should be excluded by kibana product rule (alphabetical first-match)
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("multi-product"));
+		Logged.Should().Contain(l => l.Contains("per-product filter, context-exclude") && l.Contains("multi-product"));
 	}
 
 	[Test]
@@ -5960,7 +5965,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "disjoint entry should be excluded with informative message");
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'kibana'"),
+			"disjoint entry should be excluded with informative message"
+		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
@@ -6034,8 +6042,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain(
-			"disjoint from rule context 'security'",
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'security'"),
 			"disjoint entry should be excluded with informative message"
 		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
@@ -6449,7 +6457,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("CLI intro for 9.2.0");

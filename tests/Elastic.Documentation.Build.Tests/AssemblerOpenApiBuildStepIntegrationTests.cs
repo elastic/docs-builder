@@ -109,7 +109,13 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var stopwatch = Stopwatch.StartNew();
-		await AssemblerOpenApiBuildStep.BuildAsync(NullLoggerFactory.Instance, context, assembleSources, cancellationToken);
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			context,
+			assembleSources,
+			siteTopNav: null,
+			cancellationToken
+		);
 		stopwatch.Stop();
 
 		TestContext.Current?.Output.WriteLine($"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
@@ -125,6 +131,11 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.Exists(elasticsearchLanding)
 			.Should()
 			.BeTrue("staging assembler builds should emit the unversioned elasticsearch API landing page");
+		fileSystem
+			.File
+			.ReadAllText(elasticsearchLanding)
+			.Should()
+			.Contain("<meta name=\"robots\" content=\"noindex, nofollow\">", "API pages honor the environment's allow_indexing: false");
 
 		var versionedLanding = fileSystem
 			.Directory

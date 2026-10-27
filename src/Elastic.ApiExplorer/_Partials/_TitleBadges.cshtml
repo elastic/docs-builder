@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Infrastructure.TitleBadgesModel>
+@if (Model.Any)
+{
+	<span class="api-title-badges">
+		@if (Model.Availability is { } availability)
+		{
+			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
+		}
+		@if (Model.Deprecated)
+		{
+			<span class="deprecated-badge type-status">deprecated</span>
+		}
+	</span>
+}

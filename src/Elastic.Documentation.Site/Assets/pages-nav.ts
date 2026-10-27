@@ -1,3 +1,5 @@
+import { changesApiTree } from './api-navigation'
+import { prefersReducedMotion } from './motion'
 import { initPagesNavScroll } from './pages-nav-scroll'
 import { throttle } from 'lodash'
 import { $optional, $$optional } from 'select-dom'
@@ -156,13 +158,6 @@ function beginUserFolderGesture(nav: HTMLElement) {
     userFolderGesture = true
     suppressFolderSnapUntil = Date.now() + FOLDER_ANIM_MS + 80
     ensureSubtreeClips(nav)
-}
-
-function prefersReducedMotion() {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
 }
 
 function clearFolderAnim(panel: HTMLElement) {
@@ -505,6 +500,12 @@ function getNavScrollContainer(nav: HTMLElement) {
     return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
 }
 
+// The smaller golden-ratio share (0.382) puts the active row a little above centre.
+const NAV_FOCUS_RATIO = 1 - 1 / ((1 + Math.sqrt(5)) / 2)
+
+// A fresh page or a replaced tree places the row even when it is already visible.
+let placeCurrentEvenIfVisible = true
+
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const currentNavItem = currentInNav(nav)
 
@@ -527,19 +528,25 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
 
     const effectiveNavTop = navRect.top + stickyHeight
 
+    const force = placeCurrentEvenIfVisible
+    placeCurrentEvenIfVisible = false
+
     // Check if the item is already fully visible in the nav container's viewport
     // Account for sticky element that may be covering the top portion
     if (
+        !force &&
         currentNavItemRect.top >= effectiveNavTop &&
         currentNavItemRect.bottom <= navRect.bottom
     ) {
         return
     }
 
-    // Calculate target position: center of nav container (accounting for sticky area)
+    // Calculate target position: golden-ratio point of the visible nav area (accounting for sticky area)
     const visibleNavHeight = navRect.height - stickyHeight
     const targetPosition =
-        stickyHeight + visibleNavHeight / 2 - currentNavItemRect.height / 2
+        stickyHeight +
+        visibleNavHeight * NAV_FOCUS_RATIO -
+        currentNavItemRect.height / 2
 
     // Calculate how much we need to scroll to position the item at the target
     const currentPositionInNav = currentNavItemRect.top - navRect.top
@@ -587,9 +594,15 @@ function normalizeNavPathname(pathname: string) {
     return p === '' ? '/' : p
 }
 
+// A link to a heading on its page (an API group intro heading) is not a page of its own:
+// it never becomes current, and clicking it leaves the jump to the browser.
+function isInPageLink(anchor: HTMLAnchorElement) {
+    return anchor.getAttribute('href')?.includes('#') ?? false
+}
+
 function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
     const href = anchor.getAttribute('href')
-    if (!href) {
+    if (!href || isInPageLink(anchor)) {
         return false
     }
     try {
@@ -643,12 +656,12 @@ function applyAncestorHighlight(nav: HTMLElement) {
     })
 }
 
-export function markCurrentPage(nav: HTMLElement) {
+export function markCurrentPage(nav: HTMLElement, activePathname?: string) {
     const pathname = window.location.pathname.replace(/\/$/, '')
     const navActiveMeta = document.querySelector<HTMLMetaElement>(
         'meta[name="docs:nav-active"]'
     )
-    const activePathname = navActiveMeta?.content ?? pathname
+    activePathname ??= navActiveMeta?.content ?? pathname
 
     const next = new Set<Element>()
     const consider = (el: Element) => {
@@ -833,6 +846,7 @@ export function syncPagesNavFromResponse(
         return false
     }
     canRecenterNav = true
+    placeCurrentEvenIfVisible = true
     pinnedNavScrollTop = null
     pendingFolderReset = true
     navJustReplaced = true
@@ -911,6 +925,7 @@ export function shouldRetargetApiContentSwap(
 }
 
 type HtmxSwapDetail = {
+    pathInfo?: { requestPath?: string }
     target?: EventTarget
     selectOverride?: string
     serverResponse?: string
@@ -950,6 +965,9 @@ function retargetArticleSwap(event: Event) {
     ) {
         return
     }
+    if (changesApiTree(detail.pathInfo?.requestPath ?? '', location.pathname)) {
+        return
+    }
     tryRetargetSwap(
         detail,
         html,
@@ -987,16 +1005,93 @@ function keepLiveNav() {
     restorePagesNavScroll()
 }
 
+/** Article scroll reset for boosted swaps. API pages retarget `#api-content-grid`. */
+export function shouldResetPageScroll(target: EventTarget | null): boolean {
+    if (target === document.body) {
+        return true
+    }
+    return (
+        target instanceof Element &&
+        (target.id === 'main-container' ||
+            target.id === 'content-container' ||
+            target.id === 'api-content-grid')
+    )
+}
+
+export function resetArticleScroll(target: EventTarget | null): void {
+    if (!shouldResetPageScroll(target) || window.scrollY === 0) {
+        return
+    }
+    window.scrollTo(0, 0)
+}
+
+export function activePathFromResponse(html: string): string | null {
+    const tag =
+        /<meta\b[^>]*\bname=["']docs:nav-active["'][^>]*>/i.exec(html)?.[0] ??
+        /<meta\b[^>]*\bcontent=["'][^"']+["'][^>]*\bname=["']docs:nav-active["'][^>]*>/i.exec(
+            html
+        )?.[0]
+    if (!tag) {
+        return null
+    }
+    const content = /\bcontent=["']([^"']+)["']/i.exec(tag)?.[1]
+    return content?.replace(/&amp;/g, '&') ?? null
+}
+
+function revealCurrentPage(nav: HTMLElement, activePath: string | null) {
+    markCurrentPage(nav, activePath ?? undefined)
+    const currentNavItem = currentInNav(nav)
+    if (!currentNavItem) {
+        return
+    }
+    expandAllParents(currentNavItem)
+    applyAncestorHighlight(nav)
+    syncFolderPanels(nav)
+}
+
+function onApiNavKey(event: KeyboardEvent) {
+    // Space scrolls the page. It does not activate an <a>, so resetting here
+    // would jump to the top without navigating.
+    if (event.key !== 'Enter') {
+        return
+    }
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+        return
+    }
+    if (!(event.target instanceof Element)) {
+        return
+    }
+    const link = event.target.closest('#pages-nav a.sidebar-link')
+    if (!(link instanceof HTMLAnchorElement)) {
+        return
+    }
+    if (
+        isInPageLink(link) ||
+        anchorMatchesPath(link, window.location.pathname)
+    ) {
+        return
+    }
+    const grid = document.getElementById('api-content-grid')
+    if (grid) {
+        resetArticleScroll(grid)
+    }
+}
+
 function onAfterSwap(event: Event) {
+    resetArticleScroll(event.target)
     const html = responseHtmlFromSwap(event) || lastSwapHtml
     lastSwapHtml = ''
     const current = document.querySelector('#pages-nav')
     if (
-        current &&
+        current instanceof HTMLElement &&
         html &&
         incomingNavSurfaceKey(html) === navSurfaceKey(current)
     ) {
-        keepLiveNav()
+        scrollCurrentNaviItemIntoView.cancel()
+        revealCurrentPage(current, activePathFromResponse(html))
+        // htmx:load runs initNav next. A fully visible row stays put.
+        canRecenterNav = true
+        pinnedNavScrollTop = null
         return
     }
     const apply = () => {
@@ -1020,6 +1115,7 @@ if (typeof document !== 'undefined') {
     clearHtmxHistoryCache()
     document.addEventListener('htmx:beforeSwap', onBeforeSwap, true)
     document.addEventListener('htmx:afterSwap', onAfterSwap, true)
+    document.addEventListener('keydown', onApiNavKey, true)
 }
 
 /**
@@ -1053,7 +1149,7 @@ function ensureFolderRowClick() {
             const a = e.target.closest(
                 '#pages-nav a.sidebar-link'
             ) as HTMLAnchorElement | null
-            if (!a) {
+            if (!a || isInPageLink(a)) {
                 return
             }
 
@@ -1076,6 +1172,11 @@ function ensureFolderRowClick() {
                 e.preventDefault()
                 e.stopPropagation()
                 return
+            }
+
+            const apiGrid = document.getElementById('api-content-grid')
+            if (apiGrid) {
+                resetArticleScroll(apiGrid)
             }
 
             previewCurrentLink(a)

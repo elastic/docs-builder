@@ -21,9 +21,9 @@ public class GetStartedWithATitleAndIntro : MarkdownTest
 	public async Task RendersHeading() =>
 		await Docs.ConvertsToContainingHtml("""<h2 class="hub-get-started-title">Get started in 3 steps</h2>""");
 
-	[Test, DisplayName("numbers steps from one, zero padded")]
+	[Test, DisplayName("numbers steps from one")]
 	public async Task NumbersStepsFromOne() =>
-		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">01</span>""");
+		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-step-num" aria-hidden="true">1</span>""");
 
 	// Nothing renders between the intro and the numbered list. The section is the steps.
 	[Test, DisplayName("renders nothing above the steps")]
@@ -47,8 +47,11 @@ public class GetStartedWithALinkStep : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("makes the whole step clickable")]
-	public async Task MakesStepClickable() => await Docs.ConvertsToContainingHtml("""<span>Start writing</span>""");
+	[Test, DisplayName("renders the step link")]
+	public async Task RendersStepLink() => await Docs.ConvertsToContainingRawHtml("""Start <span class="hub-get-started-nowrap">writing""");
+
+	[Test, DisplayName("keeps the arrow with the last word")]
+	public async Task KeepsArrowWithLastWord() => await Docs.ConvertsToContainingRawHtml("""writing<svg class="hub-arrow" viewBox""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -113,9 +116,23 @@ public class GetStartedWithoutABody : MarkdownTest
 	public async Task Errors() => await Docs.HasError("{get-started}");
 }
 
-// The section is not fixed at three steps. The track count follows the steps that flow in
-// columns, so the last row is never short. A step carrying options spans the full row and
-// takes no track.
+// A body that is only a YAML comment is not null, so it reaches the deserializer rather than the
+// "requires a YAML body" check above. SharpYaml deserializes it to null, which must still fall back
+// to GetStartedData.Empty and report the usual missing-title error, not throw.
+public class GetStartedWithACommentOnlyBody : MarkdownTest
+{
+	protected override string Markdown => """
+		:::{get-started}
+		# title: Get started
+		:::
+		""";
+
+	[Test, DisplayName("errors on the missing title instead of throwing")]
+	public async Task ErrorsOnMissingTitle() => await Docs.HasError("requires a `title` field");
+}
+
+// The section is not fixed at three steps. The first step sits in its own box. The column
+// count follows the steps after it, so the last row is never short.
 public class GetStartedWithFourSteps : MarkdownTest
 {
 	protected override string Markdown =>
@@ -136,11 +153,43 @@ public class GetStartedWithFourSteps : MarkdownTest
 		""";
 
 	[Test, DisplayName("lays the three remaining steps across three tracks")]
-	public async Task LaysRemainingStepsAcrossThreeTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 3">""");
+	public async Task LaysRemainingStepsAcrossThreeTracks() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
+
+	[Test, DisplayName("continues the list count after the first step")]
+	public async Task ContinuesTheListCountAfterTheFirstStep() =>
+		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-grid has-three-columns" start="2">""");
+
+	[Test, DisplayName("puts the first step in its own box")]
+	public async Task PutsTheFirstStepInItsOwnBox() =>
+		await Docs.ConvertsToContainingRawHtml("""<li class="hub-get-started-box is-fork">""");
+
+	[Test, DisplayName("marks exactly two options as a fork")]
+	public async Task MarksExactlyTwoOptionsAsAFork() => await Docs.ConvertsToContainingHtml("""is-fork""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithThreeOptions : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Install
+		    options:
+		      - label: Source
+		        code: dotnet build
+		      - label: Container
+		        url: /index.md
+		      - label: Package
+		        url: /index.md
+		:::
+		""";
+
+	[Test, DisplayName("does not use the two-option fork layout")]
+	public async Task DoesNotUseTheTwoOptionForkLayout() => await Docs.DoesNotConvertToContainingHtml("is-fork");
 }
 
 public class GetStartedWithFiveSteps : MarkdownTest
@@ -157,11 +206,56 @@ public class GetStartedWithFiveSteps : MarkdownTest
 		:::
 		""";
 
-	// Four steps divide evenly into two rows of two, so they take two tracks rather than
-	// three with a single step stranded on the last row.
-	[Test, DisplayName("pairs four steps into two tracks")]
-	public async Task PairsFourStepsIntoTwoTracks() =>
-		await Docs.ConvertsToContainingRawHtml("""<ol class="hub-get-started-steps" style="--hub-step-columns: 2">""");
+	// The first of four steps sits in the box, and the three after it take three columns.
+	[Test, DisplayName("lays the steps after the first across three columns")]
+	public async Task LaysStepsAfterTheFirstAcrossThreeColumns() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 3""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithFiveStepsAfterTheBox : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: One
+		  - title: Two
+		  - title: Three
+		  - title: Four
+		  - title: Five
+		:::
+		""";
+
+	// Four steps after the first divide evenly into two rows of two, so they take two columns
+	// rather than three with a single step stranded on the last row.
+	[Test, DisplayName("pairs four remaining steps into two columns")]
+	public async Task PairsFourRemainingStepsIntoTwoColumns() => await Docs.ConvertsToContainingRawHtml("""--hub-step-columns: 2""");
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithAFirstStepThatHasNoOptions : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Install
+		    description: Download the binary.
+		    link: /index.md
+		    link-label: See the install guide
+		  - title: Configure
+		    description: Write a config.
+		:::
+		""";
+
+	[Test, DisplayName("still puts the first step in the box")]
+	public async Task StillPutsTheFirstStepInTheBox() => await Docs.ConvertsToContainingRawHtml("""<li class="hub-get-started-box">""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

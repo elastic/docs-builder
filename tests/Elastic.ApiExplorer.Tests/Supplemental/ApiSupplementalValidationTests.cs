@@ -130,6 +130,25 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void Validate_RequestBodyFieldOfASecondaryContentType_EmitsNoError()
+	{
+		var collector = Validate(
+			FolderWith(
+				("op-search.md", """
+			## Request body
+
+			: `only_in_ndjson`
+			  A field of the second content type, which the page also renders and describes.
+			""")
+			),
+			SpecWithTwoRequestContentTypes("search", "query", "only_in_ndjson"),
+			"main"
+		);
+
+		collector.Errors.Should().Be(0);
+	}
+
+	[Test]
 	public void Validate_ListedRealParameter_EmitsNoError()
 	{
 		var collector = Validate(
@@ -363,6 +382,30 @@ public class ApiSupplementalValidationTests(ApiExplorerFixture fixture)
 						}
 					}
 				}
+			}
+		};
+		return document;
+	}
+
+	private static OpenApiDocument SpecWithTwoRequestContentTypes(string operationId, string firstField, string secondField)
+	{
+		var document = SpecWith(operationId);
+
+		static OpenApiMediaType Media(string field) =>
+			new()
+			{
+				Schema = new OpenApiSchema
+				{
+					Properties = new Dictionary<string, IOpenApiSchema> { [field] = new OpenApiSchema { Type = JsonSchemaType.String } }
+				}
+			};
+
+		document.Paths["/x"].Operations![HttpMethod.Get].RequestBody = new OpenApiRequestBody
+		{
+			Content = new Dictionary<string, IOpenApiMediaType>
+			{
+				["application/json"] = Media(firstField),
+				["application/x-ndjson"] = Media(secondField)
 			}
 		};
 		return document;

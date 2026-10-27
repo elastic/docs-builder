@@ -61,7 +61,8 @@ public class NotesIndexReconcilerTests
 	[Test]
 	public void DirectYamlParse_NoteYaml_HasVersions()
 	{
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(NoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(NoteYaml, ReleaseNotesSerialization.GetEntryDeserializerOptions())!;
 		dto.Products.Should().NotBeNullOrEmpty("YAML has products");
 		dto.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
 	}
@@ -70,7 +71,11 @@ public class NotesIndexReconcilerTests
 	public void DirectYamlParse_LegacyTargetField_FallsBackToVersions()
 	{
 		// Existing notes in pools still carry `target:` — the reconciler must still read them.
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(LegacyNoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				LegacyNoteYaml,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions()
+			)!;
 		dto.Products.Should().NotBeNullOrEmpty();
 #pragma warning disable CS0618 // testing backward-compat read of obsolete Target
 		dto.Products?[0].Target.Should().Be("9.0.0");

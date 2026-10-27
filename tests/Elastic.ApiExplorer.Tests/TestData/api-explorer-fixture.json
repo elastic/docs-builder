@@ -246,6 +246,45 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "description": "Lookup mode, referenced via allOf so the description can be overridden.",
+            "schema": {
+              "allOf": [
+                { "$ref": "#/components/schemas/_types.SearchMode" }
+              ]
+            }
+          },
+          {
+            "name": "stored_states",
+            "in": "query",
+            "description": "States to include, each element one of the allowed values.",
+            "schema": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["open", "closed"] }
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "deepObject",
+            "explode": true,
+            "description": "Only documents with these tags and values.",
+            "schema": { "$ref": "#/components/schemas/fixture.Tags" }
+          },
+          {
+            "name": "X-Opaque-Id",
+            "in": "header",
+            "description": "Traces the request in logs and tasks.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "description": "Ignored: the response media types describe it.",
+            "schema": { "type": "string" }
           }
         ],
         "responses": {
@@ -269,7 +308,7 @@
       "get": {
         "operationId": "docs-get-source",
         "x-namespace": "docs",
-        "x-api-name": "get",
+        "x-api-name": "get_source",
         "tags": ["documents"],
         "summary": "Get the source of a document by id",
         "description": "Retrieves only the `_source` of the document with the specified id.",
@@ -350,7 +389,8 @@
       "apiKey": {
         "type": "apiKey",
         "in": "header",
-        "name": "Authorization"
+        "name": "Authorization",
+        "description": "Send the encoded key with the ApiKey prefix."
       },
       "basicAuth": {
         "type": "http",
@@ -660,6 +700,19 @@
           }
         }
       },
+      "fixture.Tags": {
+        "type": "object",
+        "description": "Tags as key-value pairs.",
+        "minProperties": 1,
+        "maxProperties": 64,
+        "additionalProperties": { "$ref": "#/components/schemas/fixture.TagValue" }
+      },
+      "fixture.TagValue": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z0-9][a-z0-9_-]*$"
+      },
       "fixture.ErrorResponse": {
         "type": "object",
         "description": "An error response.",
@@ -735,6 +788,54 @@
           },
           "type": {
             "$ref": "#/components/schemas/Security_Lists_API_ListType"
+          }
+        }
+      },
+      "fixture.EnumAllOfBody": {
+        "type": "object",
+        "description": "Exercises the allOf-wraps-enum-ref pattern (OpenAPI 3.1 adds description alongside $ref via allOf).",
+        "properties": {
+          "mode": {
+            "allOf": [
+              { "$ref": "#/components/schemas/_types.SearchMode" }
+            ],
+            "description": "Search mode, referenced via allOf so the description can be overridden."
+          }
+        }
+      },
+      "fixture.InlineArrayEnumBody": {
+        "type": "object",
+        "description": "Exercises the array-of-inline-enum pattern where items has an inline enum rather than a $ref.",
+        "properties": {
+          "recipient_group": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["organization-admins", "billing-admins", "resource-viewers"]
+            },
+            "description": "Groups to notify, each element must be one of the allowed values."
+          }
+        }
+      },
+      "fixture.EnumShapesBody": {
+        "type": "object",
+        "description": "Exercises enum literals reached through inline enums, oneOf and anyOf.",
+        "properties": {
+          "weekday": {
+            "type": "string",
+            "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+          },
+          "literal_union": {
+            "oneOf": [
+              { "type": "string", "enum": ["red", "green"] },
+              { "type": "string", "enum": ["blue"] }
+            ]
+          },
+          "open_enum": {
+            "anyOf": [
+              { "type": "string", "enum": ["known_a", "known_b"] },
+              { "type": "string" }
+            ]
           }
         }
       }

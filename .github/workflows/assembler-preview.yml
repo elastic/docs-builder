@@ -19,6 +19,9 @@ concurrency:
   group: assembler-preview-${{ github.event.pull_request.number || inputs.pr_number }}
   cancel-in-progress: true
 
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -131,7 +134,7 @@ jobs:
             --distribution-id EKT7LT5PM8RKS \
             --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json

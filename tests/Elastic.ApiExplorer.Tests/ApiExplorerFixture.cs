@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -28,6 +29,17 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 	public static PassthroughMarkdownRenderer Instance { get; } = new();
 
 	public string Render(string markdown, IFileInfo? source) => $"<p>{markdown}</p>";
+
+	/// <summary>Reads ATX headings line by line, enough for tests that check which heading ids a page keeps.</summary>
+	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) =>
+		[
+			.. markdown
+				.ReplaceLineEndings("\n")
+				.Split('\n')
+				.Select(line => (Level: line.TakeWhile(c => c == '#').Count(), Line: line))
+				.Where(h => h.Level is >= 2 and <= 6 && h.Line.Length > h.Level && h.Line[h.Level] == ' ')
+				.Select(h => new TocItem(h.Line[h.Level..].Trim(), h.Line[h.Level..].Trim().Slugify(), h.Level))
+		];
 }
 
 /// <summary>
@@ -52,7 +64,6 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 			?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, Context, PassthroughMarkdownRenderer.Instance);
-		Context.Configuration.Features.ApiNavGroupingEnabled = true;
 		Navigation = generator.CreateNavigation("fixture", Document);
 	}
 
@@ -60,7 +71,7 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 
 	public IEnumerable<INavigationItem> Walk() => Walk(Navigation);
 
-	private static IEnumerable<INavigationItem> Walk(INavigationItem item)
+	public static IEnumerable<INavigationItem> Walk(INavigationItem item)
 	{
 		yield return item;
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)

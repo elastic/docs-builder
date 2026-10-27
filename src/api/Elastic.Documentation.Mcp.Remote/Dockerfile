@@ -12,10 +12,12 @@ RUN dnf update -y \
 
 # dotnet-install.sh requires tar and findutils, not present in the AL2023 base image
 # see: https://github.com/amazonlinux/amazon-linux-2023/issues/1025
+# global.json is the single source of the SDK version, so it is copied before the install.
+COPY global.json .
 RUN dnf install -y tar findutils \
     && curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh \
     && chmod +x ./dotnet-install.sh \
-    && ./dotnet-install.sh
+    && ./dotnet-install.sh --jsonfile global.json
 ENV PATH="$PATH:/root/.dotnet"
 
 COPY . .

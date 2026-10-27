@@ -1,0 +1,11 @@
+@inherits RazorSlice<LayoutDeviceModel>
+@using Elastic.Documentation.Site.StyleGuide
+<figure class="sg-device" style="--w: @(Model.WindowWidth)px; --h: @(Model.WindowHeight)px; --sg-scale: @Model.Scale">
+	<figcaption>@Model.Title</figcaption>
+	<div class="sg-device__frame">
+		<div class="sg-device__screen@(Model.Full ? " layout-full" : "")">
+			<div class="sg-device__header"><div class="band__content"><div class="sg-slot">Header content · --layout-max</div></div></div>
+			@await RenderPartialAsync(_LayoutSlots.Create(new LayoutSlotsModel(Model.Kind, Drawer: false)))
+		</div>
+	</div>
+</figure>

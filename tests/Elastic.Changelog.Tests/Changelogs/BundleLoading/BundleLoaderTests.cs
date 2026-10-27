@@ -1293,7 +1293,8 @@ public class BundleLoaderTests()
 			Description = ""
 		});
 
-		yaml.Should().Contain("description: \"\"");
+		// SharpYaml's writer uses '' (single-quoted) rather than YamlDotNet's "" for empty scalars.
+		yaml.Should().Contain("description: ''");
 		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
 	}
 
@@ -1302,7 +1303,8 @@ public class BundleLoaderTests()
 	{
 		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle { Description = "" });
 
-		yaml.Should().Contain("description: \"\"");
+		// SharpYaml's writer uses '' (single-quoted) rather than YamlDotNet's "" for empty scalars.
+		yaml.Should().Contain("description: ''");
 		yaml.Should().NotContain("{");
 		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
 	}
@@ -1331,8 +1333,9 @@ public class BundleLoaderTests()
 		var bundlesFolder = "/docs/changelog/bundles";
 		_fileSystem.Directory.CreateDirectory(bundlesFolder);
 
-		var multilineDescription =
-			"""
+		// Normalize line endings: a raw string literal keeps whatever the checked-out source file uses,
+		// and SharpYaml only picks the literal block style for a string that is free of '\r'.
+		var multilineDescription = """
 			This is a test description with multiple paragraphs.
 
 			It includes:
@@ -1341,7 +1344,9 @@ public class BundleLoaderTests()
 			- And a [link](https://example.com) for testing
 
 			This ensures proper YAML serialization and deserialization.
-			""";
+			""".ReplaceLineEndings(
+			"\n"
+		);
 
 		var originalBundle = new Bundle
 		{
@@ -1360,7 +1365,6 @@ public class BundleLoaderTests()
 
 		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
 		serializedYaml.Should().Contain("description: |");
-		serializedYaml.Should().NotContain("description: >");
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
 
 		var service = CreateService();

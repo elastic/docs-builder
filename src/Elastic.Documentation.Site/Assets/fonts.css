@@ -25,3 +25,12 @@
 	font-weight: 600;
 	font-display: swap;
 }
+
+/* Space Grotesk, Latin subset of the variable font (SIL OFL 1.1, see fonts/SpaceGrotesk-OFL.txt). The Elastic
+   brand guide names it for developer marketing headlines; the API catalog title is the one place it is used. */
+@font-face {
+	font-family: 'Space Grotesk';
+	font-weight: 300 700;
+	src: url('./fonts/SpaceGrotesk-Variable.woff2') format('woff2');
+	font-display: swap;
+}
