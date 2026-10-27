@@ -4,7 +4,7 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-	globalIgnores(['_static/main.js', 'tailwind.config.js']),
+	globalIgnores(['tailwind.config.js']),
 	{ files: ['**/*.{js,mjs,cjs,ts}'] },
 	{
 		files: ['**/*.{js,mjs,cjs,ts}'],
@@ -25,6 +25,14 @@ export default defineConfig([
 					allow: ['warn', 'error'],
 				},
 			],
+		},
+	},
+	{
+		// Visual regression tooling runs under Node (hosts, preparation scripts, Playwright config)
+		files: ['visual/**/*.{mjs,ts}'],
+		languageOptions: { globals: { ...globals.node } },
+		rules: {
+			'no-console': 'off',
 		},
 	},
 	{

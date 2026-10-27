@@ -187,8 +187,8 @@ public class CloudProfileFixtureTests() : ChangelogTestBase()
 
 		// Link sanitization is now handled exclusively by the scrubber Lambda, not at bundle creation time.
 		// Both the public and private repo links pass through unscrubbed into the private S3 bundle.
-		bundle.Should().Contain("- https://github.com/elastic/elasticsearch/pull/100");
-		bundle.Should().Contain("- https://github.com/elastic/widget-internal/pull/7");
+		bundle.Should().Contain("- \"https://github.com/elastic/elasticsearch/pull/100\"");
+		bundle.Should().Contain("- \"https://github.com/elastic/widget-internal/pull/7\"");
 
 		// release_dates: false → no auto-populated release date.
 		bundle.Should().NotContain("release_date");

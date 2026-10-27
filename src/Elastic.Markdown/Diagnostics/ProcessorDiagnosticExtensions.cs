@@ -193,3 +193,13 @@ public static class ProcessorDiagnosticExtensions
 	public static void EmitHint(this InlineProcessor processor, Inline inline, int length, string message) =>
 		Emit(processor, Severity.Hint, inline, length, message);
 }
+
+public static class YamlReportingExtensions
+{
+	/// <summary>
+	/// Reports unknown keys found in a directive's YAML at the directive's own position: the body's
+	/// offset within the file isn't tracked, and the message already carries the key's YAML path.
+	/// </summary>
+	public static YamlUnmappedMemberReporting YamlReporting(this IBlockExtension block, YamlUnknownKeyPolicy? policy = null) =>
+		new(d => block.Emit(d.Severity, d.Message), block.CurrentFile.FullName, Policy: policy);
+}

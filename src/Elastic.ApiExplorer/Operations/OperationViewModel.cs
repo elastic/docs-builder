@@ -4,9 +4,29 @@
 
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+public record AuthorizationSectionModel(
+	IReadOnlyList<AuthRequirement> Requirements,
+	IReadOnlyList<PrivilegeRow> Privileges,
+	Func<string?, HtmlString> RenderMarkdown
+)
+{
+	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
+	public IReadOnlyList<string> PrivilegeNames => [.. Privileges.SelectMany(static r => r.Values)];
+
+	/// <summary>Alternatives read <c>a | b</c> and privileges needed together <c>a + b</c>, as with the credentials.</summary>
+	public SummaryStyle PrivilegeStyle =>
+		Privileges.Any(static r => r.Join == "or")
+			? SummaryStyle.Variants
+			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
+}
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
@@ -15,47 +35,49 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required OperationPageModel Page { get; init; }
 
-	public IReadOnlyList<PrerequisiteRow>? Prerequisites =>
-		OpenApiXReqAuthParser.TryGetPrerequisiteRows(
-			Operation.Operation,
-			RenderContext.ApiExplorerLog,
-			Operation.Route,
-			Operation.Operation.OperationId
-		);
+	public AuthorizationSectionModel Authorization =>
+		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
 
-	public IReadOnlyList<string> PrerequisiteNames =>
-		[.. (Prerequisites ?? []).Select(static r => r.Label).Where(static l => l.Length > 0)];
+	protected override string? LayoutPageTitle =>
+		OpenApiExtensionReader.GetSummary(Operation.Operation) ?? CurrentNavigationItem.NavigationTitle;
 
-	protected override string? LayoutPageTitle => Operation.Operation.Summary ?? CurrentNavigationItem.NavigationTitle;
+	// Lifting the authorization text out can leave nothing in the description, and a page with no meta description is worse.
+	protected override string? LayoutPageDescription =>
+		DescriptionOrSummary(Page.DescriptionMarkdown, OpenApiExtensionReader.GetSummary(Operation.Operation));
 
-	protected override string? LayoutPageDescription => Page.DescriptionMarkdown;
+	internal static string? DescriptionOrSummary(string? description, string? summary) =>
+		string.IsNullOrWhiteSpace(description) ? summary : description;
 
-	protected override IReadOnlyList<ApiTocItem> GetTocItems()
+	protected override IReadOnlyList<TocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
-		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
+		var tocItems = new List<TocItem> { new("Paths", "paths", 2) };
 
-		if (Prerequisites is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Prerequisites", "prerequisites"));
+		if (Page.RequiredPrivileges.Count > 0)
+			tocItems.Add(new TocItem("Required authorization", "required-authorization", 2));
 
-		if (Page.QueryParameters.Count > 0)
-			tocItems.Add(new ApiTocItem("Query Parameters", "query-params"));
+		if (Page.AuthRequirements.Count > 0)
+			tocItems.Add(new TocItem("Authentication", "authentication", 2));
+
+		// The path parameters have never had an entry: they sit right under the paths they belong to.
+		tocItems.AddRange(
+			Page
+				.ParameterSections
+				.Where(static s => s.Location != ParameterLocation.Path)
+				.Select(static s => new TocItem(s.Header.Title, s.Header.Anchor, 2))
+		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request", "request-body"));
+			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
+			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
 
 		return tocItems;
 	}
 
-	public new ApiLayoutViewModel CreateGlobalLayoutModel()
-	{
-		var layout = base.CreateGlobalLayoutModel();
-		if (Page.ExamplesAnchor is null)
-			return layout;
+	public IReadOnlyList<ApiServerDisplay> Servers => field ??= StructuralViewModel.ToDisplays(Page.Servers);
 
-		return layout with { ExamplesPanel = new OperationExamplesPanelModel { Scenarios = Page.Scenarios } };
-	}
+	public OperationExamplesPanelModel? ExamplesPanel =>
+		Page.Scenarios.Count == 0 ? null : new OperationExamplesPanelModel { Scenarios = Page.Scenarios };
 }

@@ -7,6 +7,7 @@ using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.AspNetCore.Html;
@@ -76,7 +77,8 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public string Id { get; }
 	public ApiStructuralPage Model { get; }
 	public string Url { get; }
-	public bool Hidden => false;
+	// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
+	public bool Hidden => true;
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
@@ -106,8 +108,8 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
-	protected override IReadOnlyList<ApiTocItem> GetTocItems() =>
-		Page.Kind == ApiStructuralKind.Authentication ? Schemes.Select(scheme => new ApiTocItem(scheme.Heading, scheme.Slug)).ToArray() : [];
+	protected override IReadOnlyList<TocItem> GetTocItems() =>
+		Page.Kind == ApiStructuralKind.Authentication ? Schemes.Select(scheme => new TocItem(scheme.Heading, scheme.Slug, 2)).ToArray() : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context) =>
 		page.Kind == ApiStructuralKind.Authentication
@@ -136,7 +138,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		var displays = new List<AuthenticationSchemeDisplay>(schemes.Count);
 		foreach (var (id, scheme) in schemes)
 		{
-			var resolved = Resolve(scheme, context.Model);
+			var resolved = OpenApiAuthSchemeResolver.Target(scheme, context.Model);
 			var label = OpenApiAuthSchemeResolver.LabelFor(resolved) ?? id;
 			var description = resolved?.Description;
 			displays.Add(
@@ -146,7 +148,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 					id.ToLowerInvariant(),
 					string.IsNullOrEmpty(description) ? null : ApiMarkdown.Render(context, description),
 					description,
-					CredentialExample(resolved)
+					OpenApiAuthSchemeResolver.CredentialExample(resolved)
 				)
 			);
 		}
@@ -154,35 +156,13 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		return displays;
 	}
 
-	internal static IReadOnlyList<ApiServerDisplay> ReadServers(OpenApiDocument document) =>
-		(document.Servers ?? [])
+	internal static IReadOnlyList<ApiServerDisplay> ReadServers(OpenApiDocument document) => ToDisplays(document.Servers);
+
+	internal static IReadOnlyList<ApiServerDisplay> ToDisplays(IEnumerable<OpenApiServer>? servers) =>
+		(servers ?? [])
 			.Where(server => !string.IsNullOrEmpty(server.Url))
 			.Select(server => new ApiServerDisplay(server.Url!, server.Description))
 			.ToArray();
-
-	private static IOpenApiSecurityScheme? Resolve(IOpenApiSecurityScheme scheme, OpenApiDocument document)
-	{
-		if (
-			scheme is OpenApiSecuritySchemeReference { Reference.Id: { Length: > 0 } id }
-			&& document.Components?.SecuritySchemes?.TryGetValue(id, out var listed) == true
-		)
-			return listed;
-		return scheme;
-	}
-
-	private static string? CredentialExample(IOpenApiSecurityScheme? scheme) => scheme?.Type switch
-	{
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Header && !string.IsNullOrEmpty(scheme.Name) =>
-			$"{scheme.Name}: <value>",
-		SecuritySchemeType.ApiKey when scheme.In == ParameterLocation.Query && !string.IsNullOrEmpty(scheme.Name) =>
-			$"?{scheme.Name}=<value>",
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "basic", StringComparison.OrdinalIgnoreCase) =>
-			"Authorization: Basic <credentials>",
-		SecuritySchemeType.Http when string.Equals(scheme.Scheme, "bearer", StringComparison.OrdinalIgnoreCase) =>
-			"Authorization: Bearer <token>",
-		SecuritySchemeType.Http when !string.IsNullOrEmpty(scheme.Scheme) => $"Authorization: {scheme.Scheme} <token>",
-		_ => null
-	};
 }
 
 internal static class StructuralCommonMark
@@ -226,7 +206,7 @@ internal static class StructuralCommonMark
 
 		foreach (var server in page.Servers)
 		{
-			var line = $"`{server.Url}`";
+			var line = ApiCommonMark.CodeSpan(server.Url);
 			if (!string.IsNullOrEmpty(server.Description))
 				line += $" ({server.Description})";
 			_ = markdown.AppendLine($"- {line}");

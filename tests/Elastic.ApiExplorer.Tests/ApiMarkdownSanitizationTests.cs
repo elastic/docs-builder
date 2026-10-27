@@ -9,12 +9,12 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiMarkdownSanitizationTests
 {
-	// ── SanitizeHtml ──────────────────────────────────────────────────────────
+	// ── ApiHtmlSanitizer.Sanitize ─────────────────────────────────────────────
 
 	[Test]
 	public void SanitizeHtml_ScriptTag_IsRemovedWithContent()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<p>Hello</p><script>alert(1)</script><p>World</p>");
+		var result = ApiHtmlSanitizer.Sanitize("<p>Hello</p><script>alert(1)</script><p>World</p>");
 		result.Should().NotContain("<script");
 		result.Should().NotContain("alert(1)");
 		result.Should().Contain("Hello");
@@ -24,7 +24,7 @@ public class ApiMarkdownSanitizationTests
 	[Test]
 	public void SanitizeHtml_OnErrorAttribute_IsStripped()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<img src=\"x\" onerror=\"alert(1)\">");
+		var result = ApiHtmlSanitizer.Sanitize("<img src=\"x\" onerror=\"alert(1)\">");
 		result.Should().NotContain("onerror");
 		result.Should().NotContain("alert(1)");
 		result.Should().Contain("<img");
@@ -33,7 +33,7 @@ public class ApiMarkdownSanitizationTests
 	[Test]
 	public void SanitizeHtml_JavascriptHref_IsRemoved()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<a href=\"javascript:alert(1)\">click</a>");
+		var result = ApiHtmlSanitizer.Sanitize("<a href=\"javascript:alert(1)\">click</a>");
 		result.Should().NotContain("javascript:");
 		result.Should().Contain("click");
 	}
@@ -41,7 +41,7 @@ public class ApiMarkdownSanitizationTests
 	[Test]
 	public void SanitizeHtml_DataUriInSrc_IsRemoved()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<img src=\"data:text/html,payload\">");
+		var result = ApiHtmlSanitizer.Sanitize("<img src=\"data:text/html,payload\">");
 		result.Should().NotContain("data:");
 	}
 
@@ -49,14 +49,55 @@ public class ApiMarkdownSanitizationTests
 	public void SanitizeHtml_BumpShFormatting_IsKeptIntact()
 	{
 		const string input = "<span class=\"operation-verb get\">GET</span> <span class=\"operation-path\">/index</span>";
-		var result = ApiMarkdown.SanitizeHtml(input);
+		var result = ApiHtmlSanitizer.Sanitize(input);
 		result.Should().Be(input);
+	}
+
+	[Test]
+	public void SanitizeHtml_ListedHeadingWrapperId_IsKept()
+	{
+		const string input = "<div class=\"heading-wrapper\" id=\"when-to-use-this-api\"><h2>When to use this API</h2></div>";
+		var result = ApiHtmlSanitizer.Sanitize(input, Anchors("when-to-use-this-api"));
+		result.Should().Contain("id=\"when-to-use-this-api\"");
+	}
+
+	[Test]
+	[Arguments(true)]
+	[Arguments(false)]
+	public void SanitizeHtml_HeadingLink_KeepsHrefOnlyWhenTheHeadingKeepsItsId(bool listed)
+	{
+		const string input =
+			"<div class=\"heading-wrapper\" id=\"responses\"><h2><a class=\"headerlink\" href=\"#responses\">Responses</a></h2></div>";
+		var result = ApiHtmlSanitizer.Sanitize(input, listed ? Anchors("responses") : null);
+		if (listed)
+			result.Should().Contain("href=\"#responses\"");
+		else
+			result.Should().NotContain("href=").And.Contain("Responses");
+	}
+
+	[Test]
+	public void SanitizeHtml_HeadingWrapperIdByDefault_IsStripped()
+	{
+		// Operation and schema pages own ids such as "responses" that a description heading could duplicate.
+		const string input = "<div class=\"heading-wrapper\" id=\"responses\"><h2>Responses</h2></div>";
+		var result = ApiHtmlSanitizer.Sanitize(input);
+		result.Should().NotContain("id=");
+	}
+
+	[Test]
+	[Arguments("<p id=\"markdown-content\">x</p>")]
+	[Arguments("<span class=\"heading-wrapper\" id=\"pages-nav\">x</span>")]
+	[Arguments("<div class=\"heading-wrapper\" id=\"some-section\">x</div>")]
+	public void SanitizeHtml_IdNotListedOnAHeadingWrapper_IsStripped(string input)
+	{
+		var result = ApiHtmlSanitizer.Sanitize(input, Anchors("get-started"));
+		result.Should().NotContain("id=");
 	}
 
 	[Test]
 	public void SanitizeHtml_IframeTag_IsRemovedWithContent()
 	{
-		var result = ApiMarkdown.SanitizeHtml("<p>Before</p><iframe src=\"evil.com\"></iframe><p>After</p>");
+		var result = ApiHtmlSanitizer.Sanitize("<p>Before</p><iframe src=\"evil.com\"></iframe><p>After</p>");
 		result.Should().NotContain("<iframe");
 		result.Should().Contain("Before");
 		result.Should().Contain("After");
@@ -113,4 +154,6 @@ public class ApiMarkdownSanitizationTests
 		var result = ApiMarkdown.StripHtml("No HTML here.");
 		result.Should().Be("No HTML here.");
 	}
+
+	private static HashSet<string> Anchors(params string[] slugs) => [.. slugs];
 }

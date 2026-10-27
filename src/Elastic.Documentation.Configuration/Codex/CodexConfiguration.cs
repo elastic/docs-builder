@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Codex;
 
@@ -17,42 +17,42 @@ public record CodexConfiguration
 	/// All documentation sets will be served under this prefix.
 	/// Set to "/" or empty for no prefix (site hosted at root, e.g., codex.elastic.dev).
 	/// </summary>
-	[YamlMember(Alias = "site_prefix")]
+	[YamlPropertyName("site_prefix")]
 	public string SitePrefix { get; set; } = "/";
 
 	/// <summary>
 	/// The environment name for this codex (e.g., "internal", "security").
 	/// Used as part of the Elasticsearch index namespace.
 	/// </summary>
-	[YamlMember(Alias = "environment")]
+	[YamlPropertyName("environment")]
 	public string? Environment { get; set; }
 
 	/// <summary>
 	/// The title displayed on the codex index page.
 	/// </summary>
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string Title { get; set; } = "Elastic Internal Docs";
 
 	/// <summary>
 	/// Predefined groups with id, name, description, and icon. Documentation sets reference groups by id.
 	/// </summary>
-	[YamlMember(Alias = "groups")]
+	[YamlPropertyName("groups")]
 	public IReadOnlyList<CodexGroupDefinition> Groups { get; set; } = [];
 
 	/// <summary>
 	/// The base URL for canonical links and frontmatter URLs (e.g., "https://codex.elastic.dev").
 	/// Used by the LLM markdown exporter, canonical link tags, and report-issue links.
 	/// </summary>
-	[YamlMember(Alias = "canonical_base_url")]
+	[YamlPropertyName("canonical_base_url")]
 	public string? CanonicalBaseUrl { get; set; }
 
 	/// <summary>
 	/// Deserializes a codex configuration from YAML content.
 	/// </summary>
-	public static CodexConfiguration Deserialize(string yaml)
+	public static CodexConfiguration Deserialize(string yaml, string? sourceName = null)
 	{
 		using var input = new StringReader(yaml);
-		var config = ConfigurationFileProvider.Deserializer.Deserialize<CodexConfiguration>(input);
+		var config = ConfigurationFileProvider.Deserialize<CodexConfiguration>(input, sourceName);
 		return NormalizeConfiguration(config);
 	}
 
@@ -62,7 +62,7 @@ public record CodexConfiguration
 	public static CodexConfiguration Load(IFileInfo file)
 	{
 		var yaml = file.OpenText().ReadToEnd();
-		return Deserialize(yaml);
+		return Deserialize(yaml, file.FullName);
 	}
 
 	/// <summary>

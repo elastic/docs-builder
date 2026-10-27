@@ -21,7 +21,30 @@ public record ApiOperation(
 	string ApiName
 ) : IApiModel<OperationPageModel>, IHttpMethodNavigationModel
 {
-	string IHttpMethodNavigationModel.HttpMethod => OperationType.Method.ToLowerInvariant();
+	// The page header leads with the dominant method, which can come from the description's method listing
+	// rather than the spec; the sidebar badge must agree with it.
+	string IHttpMethodNavigationModel.HttpMethod => OperationEndpoint.Build(this, Operation.Description, []).Rows[0].Method;
+
+	/// <summary>The title shown for the operation; an operationId used as the grouping key is shown as readable words.</summary>
+	public string DisplayName =>
+		!string.IsNullOrWhiteSpace(Operation.OperationId) && string.Equals(ApiName, Operation.OperationId, StringComparison.Ordinal)
+			? ApiName.TitleCaseFromSlug()
+			: ApiName;
+
+	/// <summary>
+	/// The operation's parameters and the path item's, which apply to every operation on the path unless the operation
+	/// declares one of the same name and location itself.
+	/// </summary>
+	public IOpenApiParameter[] Parameters { get; } = MergeParameters(Operation, Path);
+
+	private static IOpenApiParameter[] MergeParameters(OpenApiOperation operation, IOpenApiPathItem path)
+	{
+		var own = operation.Parameters ?? [];
+		var inherited = (path.Parameters ?? []).Where(
+			p => !own.Any(o => o.In == p.In && string.Equals(o.Name, p.Name, StringComparison.Ordinal))
+		);
+		return [.. own, .. inherited];
+	}
 
 	public OperationPageModel? CreatePageModel(ApiRenderContext context) => OperationPageModel.Create(this, context);
 
@@ -36,8 +59,7 @@ public record ApiOperation(
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, OperationPageModel? pageModel, Cancel ctx = default)
 	{
 		var page = pageModel ?? OperationPageModel.Create(this, context);
-		var prerequisites = OpenApiXReqAuthParser.TryGetPrerequisiteLines(Operation, context.ApiExplorerLog, Route, Operation.OperationId);
-		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, prerequisites, context));
+		return Task.FromResult<string?>(OperationCommonMark.Write(this, page, context));
 	}
 }
 
@@ -48,15 +70,19 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 		string apiUrlSuffix,
 		ApiOperation apiOperation,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		string? moniker = null
 	)
 	{
 		NavigationRoot = root;
 		Model = apiOperation;
-		NavigationTitle = apiOperation.ApiName;
+		NavigationTitle = apiOperation.DisplayName;
 		Parent = parent;
-		var moniker = ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route);
-		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/operation/{moniker}";
+		Url = ApiUrlBuilder.OperationUrl(
+			urlPathPrefix,
+			apiUrlSuffix,
+			moniker ?? ApiUrlBuilder.OperationMoniker(apiOperation.Operation.OperationId, apiOperation.Route)
+		);
 		Id = ShortId.Create(Url);
 	}
 
@@ -66,6 +92,12 @@ public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpo
 	public ApiOperation Model { get; }
 	public string Url { get; }
 	public bool Hidden { get; set; }
+
+	/// <summary>Other operations of the same API collapsed onto this page (other methods and routes).</summary>
+	public IReadOnlyList<ApiOperation> Siblings { get; init; } = [];
+
+	/// <summary>Former per-operation URLs of <see cref="Siblings"/> that now redirect to <see cref="Url"/>.</summary>
+	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 
 	public string NavigationTitle { get; }
 

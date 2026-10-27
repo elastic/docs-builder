@@ -113,6 +113,7 @@ public class IncrementalDeployService(
 	{
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
+		_logger.LogInformation("Total stale hashed assets retained: {RetainCount}", plan.RetainedPaths.Count);
 		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
 		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
 		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);

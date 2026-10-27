@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ public static class AssemblerOpenApiBuildStep
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
+		TopNavRenderModel? siteTopNav,
 		Cancel ctx
 	)
 	{
@@ -59,7 +61,10 @@ public static class AssemblerOpenApiBuildStep
 			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
 			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
 			planned.Add(
-				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient))
+				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
+				{
+					SiteTopNav = siteTopNav
+				})
 			);
 		}
 
@@ -88,7 +93,8 @@ public static class AssemblerOpenApiBuildStep
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
 				versionIndexClient
-			);
+			)
+			{ SiteTopNav = siteTopNav };
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
 			await WriteApiLlmsTxt(assembleContext, catalogEntries, ctx).ConfigureAwait(false);
 		}

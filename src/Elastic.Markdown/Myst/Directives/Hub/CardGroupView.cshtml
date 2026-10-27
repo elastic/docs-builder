@@ -9,16 +9,16 @@
 			@* A heading, not a span. Without it the accordion group is missing from the page
 			   outline, and a reader navigating by heading jumps from the section straight into the
 			   column titles inside it. *@
-			<h3 class="hub-accordion-title">@Model.Title</h3>
+			@(new HtmlString($"<h{Model.AccordionHeadingLevel} class=\"hub-accordion-title\">"))@Model.Title@(new HtmlString($"</h{Model.AccordionHeadingLevel}>"))
 			<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
 				<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 				<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
 			</svg>
 		</summary>
 		<div class="hub-accordion-body">
-			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
 			{
-				<p class="hub-accordion-intro">@Model.Intro</p>
+				<p class="hub-accordion-intro">@(new HtmlString(Model.IntroHtml))</p>
 			}
 			<ul class="hub-explore-cols">
 				@Model.RenderBlock()
@@ -32,9 +32,9 @@ else
 	{
 		<div class="hub-zone" id="@Model.Anchor">
 			<h2 class="hub-zone-title">@Model.Title</h2>
-			@if (!string.IsNullOrWhiteSpace(Model.Intro))
+			@if (!string.IsNullOrWhiteSpace(Model.IntroHtml))
 			{
-				<p class="hub-zone-intro">@Model.Intro</p>
+				<p class="hub-zone-intro">@(new HtmlString(Model.IntroHtml))</p>
 			}
 		</div>
 	}

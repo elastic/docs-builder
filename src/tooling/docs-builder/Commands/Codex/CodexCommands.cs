@@ -164,16 +164,18 @@ internal sealed class CodexCommands(ILoggerFactory logFactory, IDiagnosticsColle
 	/// <remarks>Run after <c>codex build</c>. Does not rebuild on file changes.</remarks>
 	/// <param name="port">Port to listen on. Default: 4000.</param>
 	/// <param name="path">Path to the portal output. Defaults to <c>.artifacts/codex/docs/</c>.</param>
+	/// <param name="watch">Refresh open pages when the server restarts after a rebuild. Used by <c>./dev.sh codex-watch</c>.</param>
 	[NoOptionsInjection]
 	public async Task Serve(
 		int port = 4000,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? path = null,
+		bool watch = false,
 		CancellationToken ct = default
 	)
 	{
 		var servePath = path?.FullName ?? Path.Join(Environment.CurrentDirectory, ".artifacts", "codex", "docs");
 
-		var host = new StaticWebHost(port, servePath);
+		var host = new StaticWebHost(port, servePath, watch);
 		await host.RunAsync(ct);
 		await host.StopAsync(ct);
 		await collector.StopAsync(ct);

@@ -3,34 +3,26 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Versions;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 // ReSharper disable once CheckNamespace — intentionally preserving the original namespace so consumers need no using changes
 #pragma warning disable IDE0130
 namespace Elastic.Documentation.AppliesTo;
 
-public class SemVersionConverter : IYamlTypeConverter
+public class SemVersionConverter : YamlConverter<SemVersion>
 {
-	public bool Accepts(Type type) => type == typeof(SemVersion);
-
-	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override SemVersion? Read(YamlReader reader)
 	{
-		var value = parser.Consume<Scalar>();
-		if (string.IsNullOrWhiteSpace(value.Value))
+		var value = reader.GetScalarValue();
+		_ = reader.Read();
+		if (string.IsNullOrWhiteSpace(value))
 			return AllVersions.Instance;
-		if (string.Equals(value.Value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
+		if (string.Equals(value.Trim(), "all", StringComparison.OrdinalIgnoreCase))
 			return AllVersions.Instance;
-		return (SemVersion)value.Value;
+		return (SemVersion)value;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
-	{
-		if (value == null)
-			return;
-		emitter.Emit(new Scalar(value.ToString()!));
-	}
+	public override void Write(YamlWriter writer, SemVersion value) => writer.WriteScalar(value.ToString());
 
 	public static bool TryParse(string? value, out SemVersion? version)
 	{

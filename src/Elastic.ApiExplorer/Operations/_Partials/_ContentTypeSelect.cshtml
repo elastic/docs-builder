@@ -1,0 +1,13 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.MediaContentsModel>
+@if (Model.HasChoice)
+{
+	<div class="content-type-picker">
+		<label for="@Model.SelectId">Content type</label>
+		<select id="@Model.SelectId" class="content-type-select" data-content-type-select="@Model.IdPrefix" aria-controls="@Model.IdPrefix">
+			@for (var i = 0; i < Model.Contents.Count; i++)
+			{
+				<option value="@Model.PanelId(i)" selected="@(i == 0 ? "selected" : null)">@Model.Contents[i].ContentType</option>
+			}
+		</select>
+	</div>
+}

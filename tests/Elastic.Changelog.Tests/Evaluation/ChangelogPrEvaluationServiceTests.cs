@@ -525,6 +525,25 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		ChangelogPrEvaluationService.ContentReferencesPr(content, "42").Should().Be(expected);
 
 	[Test]
+	public async Task EvaluatePr_WithImpliedProducts_OutputsTheImpliedProductsToo()
+	{
+		await WriteMinimalConfig(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			ConfigWithProducts + "\nproducts:\n  implies:\n    cloud-hosted: [cloud-serverless]\n"
+		);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prLabels: [">enhancement", "@Product:ECH"],
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("products", "cloud-hosted, cloud-serverless");
+	}
+
+	[Test]
 	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -1006,5 +1025,324 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "proceed");
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
+	}
+
+	private const string ImpactActionBody =
+		"""
+		## Release note
+		Removes a parameter.
+
+		## Impact
+		Callers that pass it get a 400.
+
+		## Action
+		Stop sending it.
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithoutSections_FailsWithMissingImpactAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().Be(1);
+		VerifyOutputSet("status", "missing-impact-action");
+		VerifyOutputSet("should-generate", "false");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_OnlyImpactPresent_ErrorNamesAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## Impact\nUsers are affected.") with { RequireImpactAction = true };
+
+		_ = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		Collector.Errors.Should().Be(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("`## Action`") && !d.Message.Contains("`## Impact`"));
+		VerifyOutputSet("status", "missing-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithSections_ProceedsAndSetsOutputs()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("impact", "Callers that pass it get a 400.");
+		VerifyOutputSet("action", "Stop sending it.");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_NonBreakingWithoutSections_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"], prBody: "Just a feature.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingWithoutSections_GateOff_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	private async Task WriteHumanEntry(string type, string? impact = null, string? action = null, bool humanAuthor = true)
+	{
+		var yaml = $"type: {type}\ntitle: Remove simulate\nprs:\n  - \"42\"\nproducts:\n  - product: elasticsearch\n";
+		if (impact != null)
+			yaml += $"impact: {impact}\n";
+		if (action != null)
+			yaml += $"action: {action}\n";
+
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"),
+			yaml,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		if (!humanAuthor)
+			return;
+
+		A.CallTo(
+			() => _mockGitHub.FetchLastFileCommitAuthorAsync(
+				"elastic",
+				"test-repo",
+				"docs/changelog/42.yaml",
+				"feature/test",
+				A<CancellationToken>._
+			)
+		).Returns("human-user");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodyMatchesFileExactly_NoConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodySectionMissingFromFile_FailsWithConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_MatchingBody_Proceeds()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_DifferentBody_FailsWithConflict()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Old impact.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_BodyAlsoHasSections_FailsWithConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().Be(1);
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_ConflictAppliesWithoutTheGateFlag()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "## Impact\nRepeated here.");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_MissingFieldsWithGate_FailsWithMissingImpactAction()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("`action:`") && !d.Message.Contains("`impact:`"));
+		VerifyOutputSet("status", "missing-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_MissingFieldsWithoutGate_StaysManuallyEdited()
+	{
+		await WriteHumanEntry("breaking-change");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: "Nothing relevant."), CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_CompleteWithGate_StaysManuallyEdited()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanNonBreakingEntry_BodySections_NoConflict()
+	{
+		await WriteHumanEntry("feature");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_BodyHasNoSections_FileValuesGoToEntryOutputs()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "File impact.", action: "File action.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("entry-impact", "File impact.");
+		A.CallTo(() => _mockCore.SetOutputAsync("impact", A<string>._)).MustNotHaveHappened();
+		VerifyOutputSet("entry-action", "File action.");
+	}
+
+	private const string ConfigWithRequiredAreas =
+		"""
+		pivot:
+		  required: [areas]
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement: ">enhancement"
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		  areas:
+		    Search: ":Search"
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaMissing_ReturnsNoLabelAndOutputsAreaLabelTable()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>.That.Contains(":Search"))).MustHaveHappened();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("No matching area label found"));
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaPresent_Proceeds()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature", ":Search"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
 	}
 }

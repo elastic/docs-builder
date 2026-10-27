@@ -11,8 +11,16 @@ public class GetStartedViewModel : HubDirectiveViewModel
 	public required IReadOnlyList<GetStartedStepViewModel> Steps { get; init; }
 
 	/// <summary>
-	/// Track count for the step grid. A step carrying options spans the full row, so only the
-	/// remaining steps compete for columns. The count is picked to divide them evenly and leave
+	/// The first step. It sits in its own tinted box above the others, whatever it contains,
+	/// because it is the one step with a choice to make before the rest can happen.
+	/// </summary>
+	public GetStartedStepViewModel? First => Steps.Count > 0 ? Steps[0] : null;
+
+	/// <summary>The steps after the first. They share one grid and line up across its columns.</summary>
+	public IReadOnlyList<GetStartedStepViewModel> Rest => Steps.Count > 1 ? [.. Steps.Skip(1)] : [];
+
+	/// <summary>
+	/// Column count for the steps after the first. It is picked to divide them evenly and leave
 	/// no short last row: three across when they divide by three, two when they are even,
 	/// otherwise as many as there are, up to three.
 	/// </summary>
@@ -20,12 +28,12 @@ public class GetStartedViewModel : HubDirectiveViewModel
 	{
 		get
 		{
-			var inFlow = Steps.Count(s => s.Options.Count == 0);
-			if (inFlow == 0)
+			var count = Rest.Count;
+			if (count == 0)
 				return 1;
-			if (inFlow % 3 == 0)
+			if (count % 3 == 0)
 				return 3;
-			return inFlow % 2 == 0 ? 2 : inFlow < 3 ? inFlow : 3;
+			return count % 2 == 0 ? 2 : count < 3 ? count : 3;
 		}
 	}
 }
