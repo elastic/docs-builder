@@ -79,6 +79,12 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    # Node is pinned to the 22.x LTS line in .nvmrc, build/dev/Dockerfile and
+    # @types/node. Move the major deliberately, in all three places at once.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types:
+          - 'version-update:semver-major'
     labels:
       - chore
   - package-ecosystem: nuget
@@ -116,5 +122,19 @@ updates:
       interval: 'weekly'
       day: 'monday'
       time: '08:00'
+    labels:
+      - chore
+  # Keeps the Node image in build/dev/Dockerfile current within 22.x. Dependabot
+  # cannot read .nvmrc, so bump it by hand to the same version.
+  - package-ecosystem: docker
+    directory: '/build/dev'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    ignore:
+      - dependency-name: 'node'
+        update-types:
+          - 'version-update:semver-major'
     labels:
       - chore
