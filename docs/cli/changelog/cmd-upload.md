@@ -78,7 +78,7 @@ Use `--artifact-type` to choose what to upload:
 
 | Value | Uploads | Default directory |
 | ----- | ------- | ----------------- |
-| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml`, each profile's `output_directory` when set, or `docs/releases` |
+| `bundle` | Consolidated bundle YAML files | `bundle.output_directory` from `changelog.yml` and its `{product}/` folders, each profile's `output_directory` when set, or `docs/releases` |
 | `changelog` | Individual changelog entry YAML files | `bundle.directory` from `changelog.yml`, or `docs/changelog` |
 
 Keying differs by artifact type:
@@ -113,7 +113,7 @@ reconciled from public bucket state on the S3 events each upload emits; the
 objects that only older CLI versions still write. See
 [Changelog bundle registry](/development/changelog-bundle-registry.md).
 
-Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written under `bundle.output_directory`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
+Profile-mode and option-mode bundle files are named `{repo}-{product}-{version}.yaml` (for example `kibana-cloud-serverless-2026-08-27.yaml` and `elasticsearch-cloud-serverless-2026-08-27.yaml`) so several repositories can publish the same product and version without overwriting each other under `bundle/{product}/`. In option mode, an explicit `--output` file path (a path ending in `.yml` or `.yaml`) is used as-is. When `--output` is omitted, that `{repo}-{product}-{version}.yaml` name is written to `{bundle.output_directory}/{product}/`. When `--output` is a directory (any path that does not end in `.yml` or `.yaml`), the file is written in that directory. If the authoring repo cannot be resolved, the command warns and falls back to `{product}-{version}.yaml`, which can collide. If product or version cannot be resolved, the command warns and writes `changelog-bundle.yaml`.
 
 :::{note}
 Upload uses content-hash–based incremental transfer. Unchanged files and unchanged PR-alias markers are skipped. Re-running the same command is safe and idempotent.
@@ -133,10 +133,12 @@ The completion log reports how many objects were **new** versus **replaced**. Pa
 Directory resolution order:
 
 1. `--directory` — explicit override for this run (that folder only)
-2. `changelog.yml` — for bundles, `bundle.output_directory` plus each profile `output_directory`; for changelog entries, `bundle.directory`
+2. `changelog.yml` — for bundles, `bundle.output_directory`, its `{product}/` folders, and each profile `output_directory` (without `bundle.output_directory`, `bundle.directory` and its `{product}/` folders); for changelog entries, `bundle.directory`
 3. Built-in default — `docs/releases` (bundles) or `docs/changelog` (changelog entries)
 
-Each bundle directory is scanned non-recursively. A profile that writes under `docs/releases/cloud-serverless` is included because that path is listed as the profile's `output_directory`, not because the global folder is walked.
+Each bundle directory is scanned non-recursively. The `{product}/` folders one level below the bundle output directory are added as directories of their own, because bundling writes there by default. Deeper folders are not walked, and a `{product}/` folder that is a symlink or hidden is skipped. A profile that writes under another folder is included because that path is listed as the profile's `output_directory`.
+
+While you move to the `{product}/` layout, an old bundle at the top of the output directory and its new copy in the `{product}/` folder map to the same upload key. The upload keeps the `{product}/` copy and warns about the other one. Delete the old file.
 
 Use `--config` to point at a `changelog.yml` file other than `docs/changelog.yml`.
 

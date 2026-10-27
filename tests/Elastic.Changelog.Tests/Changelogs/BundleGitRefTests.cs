@@ -538,11 +538,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem
-			.Directory
-			.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories)
-			.Should()
-			.BeEmpty("dry-run must not write a bundle");
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().BeEmpty("dry-run must not write a bundle");
 	}
 
 	[Test]

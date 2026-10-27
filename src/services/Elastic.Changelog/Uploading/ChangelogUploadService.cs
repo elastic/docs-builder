@@ -595,8 +595,10 @@ public class ChangelogUploadService(
 	/// Directories to scan for bundle/amend YAML: explicit <c>--directory</c>, else
 	/// <c>bundle.output_directory</c> plus its immediate subdirectories (the per-product folders
 	/// written by the conventional <c>{output_directory}/{product}/{file}</c> layout) plus each
-	/// deprecated profile <c>output_directory</c>, else <c>bundle.directory</c>, else
-	/// <c>docs/releases</c>. Each directory is scanned <see cref="SearchOption.TopDirectoryOnly"/>.
+	/// deprecated profile <c>output_directory</c>. Without <c>bundle.output_directory</c>, bundles land in
+	/// <c>bundle.directory</c>, so its product folders are scanned too, and its top level when nothing else
+	/// is configured. Last, <c>docs/releases</c>. Each directory is scanned <see cref="SearchOption.TopDirectoryOnly"/>.
+	/// A product folder that is a symlink or hidden is not scanned.
 	/// </summary>
 	internal static IReadOnlyList<string> CollectBundleScanDirectories(
 		string? explicitDirectory,
@@ -611,18 +613,7 @@ public class ChangelogUploadService(
 		var seen = new HashSet<string>(StringComparer.Ordinal);
 		var globalOutputDir = config?.Bundle?.OutputDirectory;
 		AddUnique(dirs, seen, globalOutputDir);
-
-		// Conventional layout writes per-product subfolders under output_directory.
-		// Enumerate immediate subdirectories so bundles in {output_directory}/{product}/ are found
-		// without requiring a deprecated profile output_directory entry for each product.
-		if (!string.IsNullOrWhiteSpace(globalOutputDir) && fileSystem != null)
-		{
-			if (fileSystem.Directory.Exists(globalOutputDir))
-			{
-				foreach (var subDir in fileSystem.Directory.EnumerateDirectories(globalOutputDir))
-					AddUnique(dirs, seen, subDir);
-			}
-		}
+		AddProductFolders(dirs, seen, globalOutputDir, fileSystem);
 
 		if (config?.Bundle?.Profiles != null)
 		{
@@ -632,11 +623,35 @@ public class ChangelogUploadService(
 #pragma warning restore CS0618
 		}
 
-		if (dirs.Count == 0)
-			AddUnique(dirs, seen, config?.Bundle?.Directory);
+		if (string.IsNullOrWhiteSpace(globalOutputDir))
+		{
+			var bundleDir = config?.Bundle?.Directory;
+			if (dirs.Count == 0)
+				AddUnique(dirs, seen, bundleDir);
+			AddProductFolders(dirs, seen, bundleDir, fileSystem);
+		}
+
 		if (dirs.Count == 0)
 			AddUnique(dirs, seen, "docs/releases");
 		return dirs;
+	}
+
+	/// <summary>
+	/// Adds the immediate subdirectories of <paramref name="root"/>, the per-product folders of the conventional
+	/// layout. A subdirectory that is a symlink or hidden is skipped: the upload guard only checks the path below
+	/// a scan root, so a symlinked root would let it read files outside the bundle directory.
+	/// </summary>
+	private static void AddProductFolders(List<string> dirs, HashSet<string> seen, string? root, IFileSystem? fileSystem)
+	{
+		if (string.IsNullOrWhiteSpace(root) || fileSystem == null || !fileSystem.Directory.Exists(root))
+			return;
+
+		var rootInfo = fileSystem.DirectoryInfo.New(root);
+		foreach (var subDir in rootInfo.EnumerateDirectories())
+		{
+			if (!subDir.Name.StartsWith('.') && SymlinkValidator.ValidateDirectoryAccess(subDir, rootInfo) is null)
+				AddUnique(dirs, seen, fileSystem.Path.Join(root, subDir.Name));
+		}
 	}
 
 	private static void AddUnique(List<string> dirs, HashSet<string> seen, string? directory)

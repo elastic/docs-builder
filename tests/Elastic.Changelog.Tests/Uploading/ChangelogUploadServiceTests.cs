@@ -777,6 +777,53 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 	}
 
 	/// <summary>
+	/// Without <c>bundle.output_directory</c>, bundling writes to <c>{bundle.directory}/{product}/</c>, so the
+	/// upload scans that directory and its product folders.
+	/// </summary>
+	[Test]
+	public void CollectBundleScanDirectories_NoOutputDirectory_IncludesBundleDirectoryProductFolders()
+	{
+		var bundleDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "docs", "changelog");
+		var esDir = _mockFileSystem.Path.Join(bundleDir, "elasticsearch");
+		_mockFileSystem.Directory.CreateDirectory(esDir);
+
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { Directory = bundleDir } };
+
+		ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem).Should().Equal(bundleDir, esDir);
+	}
+
+	/// <summary>
+	/// The upload guard only checks the path below a scan root, so a symlinked product folder would let it read
+	/// files outside the bundle directory. Symlinked and hidden folders are not scanned.
+	/// </summary>
+	[Test]
+	public void CollectBundleScanDirectories_SymlinkedOrHiddenProductFolder_IsSkipped()
+	{
+		var fileSystem = new System.IO.Abstractions.FileSystem();
+		var root = fileSystem.Directory.CreateTempSubdirectory("bundle-scan-");
+		try
+		{
+			var outputDir = fileSystem.Path.Join(root.FullName, "releases");
+			var esDir = fileSystem.Path.Join(outputDir, "elasticsearch");
+			var drafts = fileSystem.Path.Join(root.FullName, "drafts");
+			var linked = fileSystem.Path.Join(outputDir, "kibana");
+			var hidden = fileSystem.Path.Join(outputDir, ".cache");
+			_ = fileSystem.Directory.CreateDirectory(esDir);
+			_ = fileSystem.Directory.CreateDirectory(drafts);
+			_ = fileSystem.Directory.CreateDirectory(hidden);
+			_ = fileSystem.Directory.CreateSymbolicLink(linked, drafts);
+
+			var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = outputDir } };
+
+			ChangelogUploadService.CollectBundleScanDirectories(null, config, fileSystem).Should().Equal(outputDir, esDir);
+		}
+		finally
+		{
+			root.Delete(recursive: true);
+		}
+	}
+
+	/// <summary>
 	/// During the move to <c>{output_directory}/{product}/</c>, a stale flat bundle in the root and the new
 	/// bundle in the product folder map to the same S3 key. Only the product-folder file is uploaded.
 	/// </summary>
