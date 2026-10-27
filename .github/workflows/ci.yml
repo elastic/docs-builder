@@ -210,7 +210,8 @@ jobs:
 
       - name: Test
         if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true' }}
-        run: dotnet run --project build -c release -- unit-test
+        # --single-target skips the compile dependency; the Compile step above already built everything
+        run: dotnet run --project build -c release -- unit-test --single-target
 
       - name: Publish AOT
         if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
