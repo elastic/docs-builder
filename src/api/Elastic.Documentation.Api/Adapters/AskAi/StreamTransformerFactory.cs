@@ -14,7 +14,8 @@ namespace Elastic.Documentation.Api.Adapters.AskAi;
 public class StreamTransformerFactory(
 	IServiceProvider serviceProvider,
 	AskAiProviderResolver providerResolver,
-	ILogger<StreamTransformerFactory> logger) : IStreamTransformer
+	ILogger<StreamTransformerFactory> logger
+) : IStreamTransformer
 {
 	private IStreamTransformer? _resolvedTransformer;
 
@@ -39,7 +40,12 @@ public class StreamTransformerFactory(
 	public string AgentId => GetTransformer().AgentId;
 	public string AgentProvider => GetTransformer().AgentProvider;
 
-	public async Task<Stream> TransformAsync(Stream rawStream, Guid? generatedConversationId, System.Diagnostics.Activity? parentActivity, Cancel cancellationToken = default)
+	public async Task<Stream> TransformAsync(
+		Stream rawStream,
+		Guid? generatedConversationId,
+		System.Diagnostics.Activity? parentActivity,
+		Cancel cancellationToken = default
+	)
 	{
 		var transformer = GetTransformer();
 		return await transformer.TransformAsync(rawStream, generatedConversationId, parentActivity, cancellationToken);

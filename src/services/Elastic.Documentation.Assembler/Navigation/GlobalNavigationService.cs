@@ -27,7 +27,7 @@ public class GlobalNavigationService(
 
 		var navigationFileInfo = assembleContext.ConfigurationFileProvider.NavigationFile;
 		var navigationYaml = await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
+		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml, collector, navigationFileInfo.FullName);
 
 		// this validates all path prefixes are unique, early exit if duplicates are detected
 		if (!SiteNavigationFile.ValidatePathPrefixes(collector, siteNavigationFile, navigationFileInfo) || collector.Errors > 0)
@@ -43,8 +43,12 @@ public class GlobalNavigationService(
 		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 
 		var root = fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
-		var repository = GitCheckoutInformationFactory.Create(root, fileSystem, logFactory.CreateLogger(nameof(GitCheckoutInformation))).RepositoryName
-						 ?? throw new Exception("Unable to determine repository name");
+		var repository = GitCheckoutInformationFactory.Create(
+			root,
+			fileSystem,
+			logFactory.CreateLogger(nameof(GitCheckoutInformation))
+		).RepositoryName
+			?? throw new Exception("Unable to determine repository name");
 
 		var namespaceChecker = new NavigationPrefixChecker(logFactory, assembleContext);
 

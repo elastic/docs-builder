@@ -2,24 +2,24 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Elastic.Changelog.Tests;
 
-public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutput
+public class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 		else
-			output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper output)
-	: DiagnosticsCollector([new TestDiagnosticsOutput(output)])
+public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnosticsOutput()])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 
@@ -39,7 +39,7 @@ public class TestDiagnosticsCollector(ITestOutputHelper output)
 	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }
 
-public class TestLogger(ITestOutputHelper? output) : ILogger
+public class TestLogger(ConcurrentQueue<string>? messages = null) : ILogger
 {
 	private sealed class NullScope : IDisposable
 	{
@@ -50,23 +50,37 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 
 	public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Trace;
 
-	public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-		output?.WriteLine(formatter(state, exception));
+	public void Log<TState>(
+		LogLevel logLevel,
+		EventId eventId,
+		TState state,
+		Exception? exception,
+		Func<TState, Exception?, string> formatter
+	)
+	{
+		var message = formatter(state, exception);
+		messages?.Enqueue(message);
+		TestContext.Current?.Output.WriteLine(message);
+	}
 }
 
-public class TestLoggerProvider(ITestOutputHelper? output) : ILoggerProvider
+public class TestLoggerProvider : ILoggerProvider
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName) => new TestLogger();
 }
 
-public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
+public class TestLoggerFactory : ILoggerFactory
 {
+	private readonly ConcurrentQueue<string> _messages = new();
+
+	/// <summary>Everything the loggers of this factory wrote, in order, so a test can assert on log lines.</summary>
+	public IReadOnlyCollection<string> Messages => _messages;
+
 	public void Dispose() => GC.SuppressFinalize(this);
 
 	public void AddProvider(ILoggerProvider provider) { }
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName) => new TestLogger(_messages);
 }
-

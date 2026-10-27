@@ -12,13 +12,14 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FileNavigationTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void FileWithNoChildrenCreatesFileNavigationLeaf()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: getting-started.md
@@ -36,11 +37,12 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		fileNav.Url.Should().Be("/getting-started");
 	}
 
-	[Fact]
+	[Test]
 	public void FileWithChildrenCreatesFileNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -70,11 +72,12 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		section2.Parent.Should().BeSameAs(fileNav);
 	}
 
-	[Fact]
+	[Test]
 	public void FileWithChildrenDeeplinksPreservesPaths()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: nest/guide.md
@@ -104,11 +107,12 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		section2.Parent.Should().BeSameAs(fileNav);
 	}
 
-	[Fact]
+	[Test]
 	public void FileWithNestedChildrenBuildsCorrectly()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -140,11 +144,12 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		subsection.Parent.Should().BeSameAs(chapter1);
 	}
 
-	[Fact]
+	[Test]
 	public void FileNavigationUrlUpdatesWhenRootChanges()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -173,11 +178,12 @@ public class FileNavigationTests(ITestOutputHelper output) : DocumentationSetNav
 		child.Url.Should().Be("/v2/section1");
 	}
 
-	[Fact]
+	[Test]
 	public void FileNavigationMixedWithFolderChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md

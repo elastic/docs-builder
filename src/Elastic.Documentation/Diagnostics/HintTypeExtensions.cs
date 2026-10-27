@@ -15,6 +15,5 @@ public static class HintTypeExtensions
 	/// <param name="suppressions">The set of suppressed hint types.</param>
 	/// <param name="hintType">The hint type to check.</param>
 	/// <returns>True if the hint should be suppressed, false otherwise.</returns>
-	public static bool ShouldSuppress(this HashSet<HintType>? suppressions, HintType hintType) =>
-		suppressions?.Contains(hintType) == true;
+	public static bool ShouldSuppress(this HashSet<HintType>? suppressions, HintType hintType) => suppressions?.Contains(hintType) == true;
 }

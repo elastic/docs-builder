@@ -6,7 +6,6 @@ using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
-using Xunit.Internal;
 
 namespace Elastic.Markdown.Tests;
 
@@ -20,7 +19,8 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 	public TestCodexCrossLinkResolver(bool useRelativePaths)
 	{
 		// language=json
-		var json = """
+		var json =
+			"""
 		           {
 		              "content_source": "current",
 		           	  "origin": {
@@ -49,18 +49,22 @@ public class TestCodexCrossLinkResolver : ICrossLinkResolver
 		var declaredRepositories = new HashSet<string>();
 		linkReferences.Add("docs-content", reference);
 		linkReferences.Add("kibana", reference);
-		declaredRepositories.AddRange(["docs-content", "kibana"]);
+		foreach (var r in new[] { "docs-content", "kibana" })
+			declaredRepositories.Add(r);
 
 		var codexRepositories = new HashSet<string> { "docs-content", "kibana" }.ToFrozenSet();
 
-		var indexEntries = linkReferences.ToDictionary(e => e.Key, e => new LinkRegistryEntry
-		{
-			Repository = e.Key,
-			Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
-			Branch = "main",
-			ETag = Guid.NewGuid().ToString(),
-			GitReference = Guid.NewGuid().ToString()
-		});
+		var indexEntries = linkReferences.ToDictionary(
+			e => e.Key,
+			e => new LinkRegistryEntry
+			{
+				Repository = e.Key,
+				Path = $"elastic/docs-builder-tests/{e.Key}/links.json",
+				Branch = "main",
+				ETag = Guid.NewGuid().ToString(),
+				GitReference = Guid.NewGuid().ToString()
+			}
+		);
 		_crossLinks = new FetchedCrossLinks
 		{
 			DeclaredRepositories = declaredRepositories,

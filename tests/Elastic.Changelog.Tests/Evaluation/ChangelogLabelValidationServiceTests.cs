@@ -1,0 +1,301 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Actions.Core.Services;
+using AwesomeAssertions;
+using Elastic.Changelog.Evaluation;
+using Elastic.Changelog.Tests.Changelogs;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using FakeItEasy;
+
+namespace Elastic.Changelog.Tests.Evaluation;
+
+public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
+{
+	private static readonly string Root = Paths.WorkingDirectoryRoot.FullName;
+	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
+
+	// All three required types must be present or the config loader emits an error and falls back to Default.
+	private const string MinimalConfig =
+		"""
+		pivot:
+		  types:
+		    feature: "type:feature"
+		    bug-fix:
+		    breaking-change:
+		""";
+
+	private const string ConfigWithExcludeRule =
+		"""
+		pivot:
+		  types:
+		    feature: "type:feature"
+		    bug-fix:
+		    breaking-change:
+		rules:
+		  create:
+		    exclude: "changelog:skip"
+		""";
+
+	private string ConfigPath => Path.Join(Root, "changelog.yml");
+
+	private string MetadataPath => Path.Join(Root, GithubDecisionMetadataWriter.ArtifactDir, GithubDecisionMetadataWriter.MetadataFilename);
+
+	private async Task WriteConfig(string content)
+	{
+		FileSystem.Directory.CreateDirectory(Root);
+		await FileSystem.File.WriteAllTextAsync(ConfigPath, content);
+	}
+
+	private async Task<GithubDecisionMetadata?> ReadMetadata()
+	{
+		var reader = new GithubDecisionMetadataWriter(LoggerFactory, RunnerTempFileSystem);
+		return await reader.ReadAsync(MetadataPath, CancellationToken.None);
+	}
+
+	private ChangelogLabelValidationService CreateService(IEnvironmentVariables? env = null) =>
+		new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem, env);
+
+	private ValidateLabelsArguments DefaultArgs(string[]? labels = null, int prNumber = 0) =>
+		new()
+		{
+			Config = ConfigPath,
+			PrLabels = labels ?? ["type:feature"],
+			PrNumber = prNumber,
+			HeadRef = "feature/test",
+			HeadSha = "abc123",
+			CanCommit = true
+		};
+
+	private void VerifyOutputSet(string name, string value) => A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
+
+	[Test]
+	public async Task ValidateLabels_MatchingTypeLabel_ReturnsTrue()
+	{
+		await WriteConfig(MinimalConfig);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature"]), CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "ok");
+	}
+
+	[Test]
+	public async Task ValidateLabels_NoMatchingLabel_ReturnsFalse()
+	{
+		await WriteConfig(MinimalConfig);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs([]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+	}
+
+	[Test]
+	public async Task ValidateLabels_SkipLabelPresent_ReturnsSkipped()
+	{
+		await WriteConfig(ConfigWithExcludeRule);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["changelog:skip"]), CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "skipped");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OnCI_WithPrNumber_WritesMetadataFile()
+	{
+		await WriteConfig(MinimalConfig);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+
+		await CreateService(env).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 42), CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata.Should().NotBeNull();
+		metadata.PrNumber.Should().Be(42);
+		metadata.HeadRef.Should().Be("feature/test");
+		metadata.Status.Should().Be("ok");
+	}
+
+	[Test]
+	public async Task ValidateLabels_NotOnCI_DoesNotWriteMetadataFile()
+	{
+		await WriteConfig(MinimalConfig);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(false);
+
+		await CreateService(env).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 42), CancellationToken.None);
+
+		RunnerTempFileSystem.File.Exists(MetadataPath).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task ValidateLabels_OnCI_NoPrNumber_DoesNotWriteMetadataFile()
+	{
+		await WriteConfig(MinimalConfig);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+
+		await CreateService(env).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 0), CancellationToken.None);
+
+		RunnerTempFileSystem.File.Exists(MetadataPath).Should().BeFalse();
+	}
+
+	[Test]
+	public async Task ValidateLabels_NoLabel_OnCI_WritesMetadataWithNoLabelStatus()
+	{
+		await WriteConfig(MinimalConfig);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+
+		await CreateService(env).ValidateLabels(Collector, DefaultArgs([], prNumber: 42), CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata.Should().NotBeNull();
+		metadata.PrNumber.Should().Be(42);
+		metadata.Status.Should().Be("no-label");
+	}
+
+	private static IEnvironmentVariables CiEnv()
+	{
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		return env;
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptIn_WritesIncludedOutcomeWithType()
+	{
+		await WriteConfig(MinimalConfig);
+		var args = DefaultArgs(["type:feature"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeTrue();
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeTrue();
+		metadata.Outcome.Type.Should().Be("feature");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInAndSkipLabel_WritesExcludedOutcomeNamingTheLabel()
+	{
+		await WriteConfig(ConfigWithExcludeRule);
+		var args = DefaultArgs(["changelog:skip"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.Status.Should().Be("skipped");
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeFalse();
+		metadata.Outcome.Reason.Should().Contain("changelog:skip");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInOff_WritesNoOutcome()
+	{
+		await WriteConfig(MinimalConfig);
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 42), CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeFalse();
+		metadata.Outcome.Should().BeNull();
+	}
+
+	private const string ConfigWithRequiredPivots =
+		"""
+		pivot:
+		  required: [areas, products]
+		  types:
+		    feature: "type:feature"
+		    bug-fix:
+		    breaking-change:
+		  areas:
+		    Search: ":Search"
+		  products:
+		    'elasticsearch': "product:es"
+		    'kibana': "product:kb"
+		products:
+		  default:
+		    - product: elasticsearch
+		""";
+
+	[Test]
+	public async Task ValidateLabels_RequiredAreaMissing_ReturnsFalseWithAreaTable()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature", "product:es"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>.That.Contains(":Search"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No matching area label found on this PR"));
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredProductMissingDespiteDefaults_ReturnsFalse()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature", ":Search"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredProductAndAreaMissing_ReportsBothInOneFailure()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>._)).MustHaveHappened();
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredPivotsAllPresent_ReturnsTrue()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(
+			Collector,
+			DefaultArgs(["type:feature", ":Search", "product:kb"]),
+			CancellationToken.None
+		);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "ok");
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredAreaMissing_OnCI_WritesAreaLabelTableToMetadata()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+
+		await CreateService(env).ValidateLabels(
+			Collector,
+			DefaultArgs(["type:feature", "product:es"], prNumber: 42),
+			CancellationToken.None
+		);
+
+		var metadata = await ReadMetadata();
+		metadata.Should().NotBeNull();
+		metadata.Status.Should().Be("no-label");
+		metadata.AreaLabelTable.Should().Contain(":Search");
+	}
+}

@@ -43,7 +43,10 @@ public sealed record ChangelogRegistryBundle
 	public string? ETag { get; init; }
 }
 
+// Dictionary<string, string> is the shallow per-tree map (bundle/registry.json): folder → opaque
+// change token, maintained by the scrubber's ShallowRegistryReconciler.
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(ChangelogRegistry))]
 [JsonSerializable(typeof(ChangelogRegistryBundle))]
-internal sealed partial class ChangelogRegistryJsonContext : JsonSerializerContext;
+[JsonSerializable(typeof(Dictionary<string, string>))]
+public sealed partial class ChangelogRegistryJsonContext : JsonSerializerContext;

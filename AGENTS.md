@@ -10,7 +10,7 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 | `src/tooling/docs-builder/` | CLI — entry point `Program.cs`, commands in `Commands/` |
 | `src/tooling/essc/` | AOT CLI indexing elastic.co content (Contentstack, Labs) into Elasticsearch; ships as `ghcr.io/elastic/website-search-essc` |
 | `src/services/search/Elastic.Documentation.Search.Contract/` | Shared search document/mapping/API contract used by docs search and essc |
-| `src/Elastic.Documentation.Site/` | Frontend (TypeScript · React · Parcel) |
+| `src/Elastic.Documentation.Site/` | Frontend (TypeScript · React · Vite) |
 | `src/Elastic.Documentation.Configuration/` | YAML config schema and loading |
 | `src/Elastic.Documentation.Navigation/` | Nav tree assembly and validation |
 | `src/Elastic.Documentation.Links/` | Cross-repo link index and resolution |
@@ -28,7 +28,7 @@ dotnet run --project src/tooling/docs-builder   # run CLI locally
 ./build.sh integrate                            # integration tests (slow — needs cloned repos)
 ./build.sh lint                                 # C# format check (read-only)
 ./build.sh clean                                # remove .artifacts/
-dotnet format                                   # auto-fix C# formatting
+dotnet curb format .                            # auto-fix C# formatting
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
 ```
 
@@ -47,7 +47,7 @@ cd src/Elastic.Documentation.Site
 npm ci
 npm run build           # production build
 npm run watch           # dev with live reload
-npm run test            # Jest
+npm run test            # Vitest
 npm run lint            # ESLint
 npm run fmt:write       # Prettier auto-fix
 npm run compile:check   # TypeScript type check only
@@ -57,23 +57,23 @@ npm run compile:check   # TypeScript type check only
 
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
-- **C#**: xUnit v3 · AwesomeAssertions · FakeItEasy is the current stack across every test project. TUnit is the elastic/dotnet org's target standard and the intended destination for a future migration, but no project has moved yet — don't write new tests against TUnit APIs until that migration actually happens.
-- **TypeScript**: Jest
-- **F# authoring**: `tests/authoring/`
+- **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All test projects (unit and integration) use TUnit (wired centrally via `tests/Directory.Build.props` and `tests-integration/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`.
+- **TypeScript**: Vitest
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):
 
 | Changed path | Test project / command |
 |---|---|
-| `src/Elastic.Markdown/` | `dotnet test tests/Elastic.Markdown.Tests/` |
-| `src/Elastic.Documentation.Configuration/` | `dotnet test tests/Elastic.Documentation.Configuration.Tests/` |
-| `src/Elastic.Documentation.Navigation/` | `dotnet test tests/Navigation.Tests/` (prefix dropped) |
-| `src/Elastic.Documentation.Indexing/` | `dotnet test tests/Elastic.Documentation.Indexing.Tests/` |
-| `src/authoring/Elastic.LegacyDocs.Migration/` | `dotnet test tests/Elastic.LegacyDocs.Migration.Tests/` |
-| `src/tooling/essc/` | `dotnet test tests/Elastic.SiteSearch.Tests/` (essc's root namespace is `Elastic.SiteSearch.Cli`) |
-| `src/Elastic.ApiExplorer/` | `dotnet test tests/Elastic.ApiExplorer.Tests/` |
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test` |
+| `src/Elastic.Markdown/` | `./build.sh unit-test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
+| `src/Elastic.Documentation.Configuration/` | `./build.sh unit-test` (targets `Elastic.Documentation.Configuration.Tests`) |
+| `src/Elastic.Documentation.Navigation/` | `./build.sh unit-test` (targets `Navigation.Tests`) |
+| `src/Elastic.Documentation.Indexing/` | `./build.sh unit-test` (targets `Elastic.Documentation.Indexing.Tests`) |
+| `src/authoring/Elastic.LegacyDocs.Migration/` | `./build.sh unit-test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
+| `src/tooling/essc/` | `./build.sh unit-test` (targets `Elastic.SiteSearch.Tests`) |
+| `src/Elastic.ApiExplorer/` | `./build.sh unit-test` (targets `Elastic.ApiExplorer.Tests`) |
+| `src/services/Elastic.Documentation.Deploying/` | `./build.sh unit-test` (targets `Elastic.Documentation.Deploying.Tests`) |
+| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; design-system, style-guide and `_Head` changes also run `./build.sh unit-test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
 | `tests-integration/` | `./build.sh integrate` |
 | Multiple / uncertain | `./build.sh unit-test` |
 
@@ -105,7 +105,16 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 
 ## Code Style
 
-Mechanical formatting is fully enforced by `.editorconfig` and the Husky.Net pre-commit/pre-push hooks — run `dotnet format` or `/lint` to fix before committing. Never use `--no-verify`.
+Mechanical formatting is fully enforced by `.editorconfig` and [curb](https://curb.nullean.net) via the MSBuild integration (auto-rewrites on `dotnet build` in Debug mode) and the Husky.Net pre-commit hook (`curb check`). To fix manually: `dotnet curb format .`. Never use `--no-verify`.
+
+**After a build that produces only errors curb natively handles** (IDE0005, IDE0007, IDE0034, IDE0040, IDE0044, IDE0071, IDE0090, IDE0240, IDE0250, IDE0251), run:
+```bash
+curb cleanup
+```
+If the build also has style errors/warnings outside that set, add `--forward` to hand remaining diagnostics to `dotnet format style`:
+```bash
+curb cleanup --forward
+```
 
 Beyond what `.editorconfig` can check:
 
@@ -115,10 +124,19 @@ Beyond what `.editorconfig` can check:
 - **Early returns**: guard clauses first, happy path last.
 - **Parameters**: max 4 — use a record/options object beyond that. Boolean params must be named at call sites.
 - **Collections**: never return `null` — return `[]`. Use the TryGet pattern for lookups.
-- **Testing**: xUnit v3 with AwesomeAssertions fluent style is the current standard (see Testing section — TUnit is a future migration target, not yet used). Method naming: `Method_Scenario_Expected`.
+- **Testing**: TUnit with AwesomeAssertions fluent style. Method naming: `Method_Scenario_Expected`.
 - **Comments**: only when *why* is non-obvious. No `#region`. No multi-paragraph docstrings.
 
 Use `/style-review` to check a diff against these rules.
+
+## Agentic skills
+
+Always invoke the skill for the following tasks — never substitute your own format:
+
+- **Commits** — use `/commit` before creating any git commit.
+- **Pull requests** — use `/pr` before running `gh pr create`. Never write your own PR body or title without going through the skill first.
+- **Issues** — use `/issue` before running `gh issue create`. Never file an issue without going through the skill first.
+- **Feature flags** — use `/feature-flag` when you add or extend a flag. Flag-off must match the previous default.
 
 ## Documentation
 

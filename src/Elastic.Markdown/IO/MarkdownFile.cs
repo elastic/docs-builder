@@ -4,9 +4,11 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
@@ -14,10 +16,12 @@ using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
@@ -30,13 +34,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 
 	private readonly IReadOnlyDictionary<string, string> _globalSubstitutions;
 
-	public MarkdownFile(
-		IFileInfo sourceFile,
-		IDirectoryInfo rootPath,
-		MarkdownParser parser,
-		BuildContext build
-	)
-		: base(sourceFile, rootPath, build.Git.RepositoryName)
+	public MarkdownFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build) : base(
+			sourceFile,
+			rootPath,
+			build.Git.RepositoryName
+		)
 	{
 		FileName = sourceFile.Name;
 		FilePath = sourceFile.FullName;
@@ -62,6 +64,12 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	public string? UrlPathPrefix { get; }
 	protected MarkdownParser MarkdownParser { get; }
 	public YamlFrontMatter? YamlFrontMatter { get; private set; }
+
+	/// <summary>
+	/// When set, provides a default <see cref="ApplicableTo"/> used for generated pages that have no
+	/// <c>applies_to</c> in their YAML front matter. Page-level front matter always takes priority.
+	/// </summary>
+	protected ApplicableTo? FallbackAppliesTo { get; set; }
 	public string? TitleRaw { get; protected set; }
 
 	public string Title
@@ -75,6 +83,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public string? Description { get; private set; }
+	public string? MetaTitle { get; private set; }
 
 	[field: AllowNull, MaybeNull]
 	public virtual string NavigationTitle
@@ -84,7 +93,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	}
 
 	public virtual string? RedirectUrl => null;
-
 
 	//indexed by slug
 	private readonly Dictionary<string, PageTocItem> _pageTableOfContent = [with(StringComparer.OrdinalIgnoreCase)];
@@ -138,13 +146,17 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			_ = await MinimalParseAsync(documentationFileLookup, ctx);
 
 		var document = await GetParseDocumentAsync(ctx);
+		RelatedLearningBlock.InsertHeadings(document);
 		return document;
 	}
 
-	private IReadOnlyDictionary<string, string> GetSubstitutions()
+	private IReadOnlyDictionary<string, string> GetSubstitutions() => GetSubstitutions(_globalSubstitutions, YamlFrontMatter?.Properties);
+
+	private static IReadOnlyDictionary<string, string> GetSubstitutions(
+		IReadOnlyDictionary<string, string> globalSubstitutions,
+		IReadOnlyDictionary<string, string>? fileSubstitutions
+	)
 	{
-		var globalSubstitutions = _globalSubstitutions;
-		var fileSubstitutions = YamlFrontMatter?.Properties;
 		if (fileSubstitutions is not { Count: >= 0 })
 			return globalSubstitutions;
 
@@ -166,14 +178,44 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return string.IsNullOrWhiteSpace(heroTitle) ? null : heroTitle;
 	}
 
+	internal static string? ReadTitle(MarkdownDocument document) =>
+		document.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?.GetData("header") as string ?? FindNestedTitle(document);
+
+	internal static (string? Title, string? MetaTitle) ReadTitles(MarkdownDocument document, BuildContext build, IFileInfo source)
+	{
+		YamlFrontMatter? frontMatter = null;
+		if (document.FirstOrDefault() is YamlFrontMatterBlock yaml)
+		{
+			var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
+			frontMatter = ReadYamlFrontMatter(raw, build.ProductsConfiguration, build.Collector, source.FullName);
+		}
+		var substitutions = GetSubstitutions(build.Configuration.Substitutions, frontMatter?.Properties);
+
+		var rawTitle = ReadTitle(document);
+		if (rawTitle is not null && rawTitle.AsSpan().ReplaceSubstitutions(substitutions, build.Collector, out var replacement))
+			rawTitle = replacement;
+
+		return (rawTitle?.StripMarkdown(), NormalizeMetaTitle(frontMatter?.MetaTitle, substitutions, build.Collector));
+	}
+
+	private static string? NormalizeMetaTitle(
+		string? metaTitle,
+		IReadOnlyDictionary<string, string> substitutions,
+		IDiagnosticsCollector collector
+	)
+	{
+		if (string.IsNullOrWhiteSpace(metaTitle))
+			return null;
+
+		if (metaTitle.AsSpan().ReplaceSubstitutions(substitutions, collector, out var replacement))
+			metaTitle = replacement;
+		metaTitle = metaTitle.StripMarkdown();
+		return string.IsNullOrWhiteSpace(metaTitle) ? null : metaTitle;
+	}
+
 	protected void ReadDocumentInstructions(MarkdownDocument document, Func<string, DocumentationFile?> documentationFileLookup)
 	{
-		Title = document
-			.FirstOrDefault(block => block is HeadingBlock { Level: 1 })?
-			.GetData("header") as string ?? Title;
-
-		if (Title == RelativePath)
-			Title = FindNestedTitle(document) ?? Title;
+		Title = ReadTitle(document) ?? Title;
 
 		var yamlFrontMatter = ProcessYamlFrontMatter(document);
 		YamlFrontMatter = yamlFrontMatter;
@@ -181,7 +223,10 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// The hub layout suppresses the page H1, so {hero} is the only thing that can title the
 		// page. Without it the page renders with no title at all and falls back to its file path.
 		if (yamlFrontMatter.Layout == MarkdownPageLayout.Hub && !document.Descendants<HeroBlock>().Any())
-			Collector.EmitError(FilePath, "A page with `layout: hub` requires a {hero} directive. Without it the page renders without a title.");
+			Collector.EmitError(
+				FilePath,
+				"A page with `layout: hub` requires a {hero} directive. Without it the page renders without a title."
+			);
 
 		if (yamlFrontMatter.NavigationTitle is not null)
 			NavigationTitle = yamlFrontMatter.NavigationTitle;
@@ -189,6 +234,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Description = yamlFrontMatter.Description;
 
 		var subs = GetSubstitutions();
+
+		MetaTitle = NormalizeMetaTitle(yamlFrontMatter.MetaTitle, subs, Collector);
 
 		if (!string.IsNullOrEmpty(NavigationTitle))
 		{
@@ -201,12 +248,13 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		else if (Title.AsSpan().ReplaceSubstitutions(subs, Collector, out var replacement))
 			Title = replacement;
 
+		RelatedLearningBlock.InsertHeadings(document);
+
 		var toc = GetAnchors(Collector, documentationFileLookup, MarkdownParser, YamlFrontMatter, document, subs, out var anchors);
 
 		_pageTableOfContent.Clear();
 		foreach (var t in toc)
 			_pageTableOfContent[t.Slug] = t;
-
 
 		foreach (var label in anchors)
 			_ = _anchors.Add(label);
@@ -221,7 +269,8 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		YamlFrontMatter? frontMatter,
 		MarkdownDocument document,
 		IReadOnlyDictionary<string, string> subs,
-		out string[] anchors)
+		out string[] anchors
+	)
 	{
 		// Single traversal — collects typed lists in DFS order.
 		// We also track the last heading seen so that IncludeBlocks can be annotated
@@ -274,53 +323,47 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.Where(i => i is not null)
 			.ToArray();
 
-		var includedTocs = includes
-			.SelectMany(i =>
-			{
-				var precedingLevel = i!.PrecedingHeadingLevel;
+		var includedTocs = includes.SelectMany(i =>
+		{
+			var precedingLevel = i!.PrecedingHeadingLevel;
 
-				return i.Anchors!.TableOfContentItems
-					.Select(item =>
-					{
-						// Only adjust stepper steps, not regular headings
-						// Stepper steps default to level 2 when parsed in isolation (no preceding heading in snippet),
-						// but should be relative to the preceding heading in the parent document
-						var adjustedItem = item;
-						if (item.IsStepperStep && precedingLevel.HasValue && item.Level == 2)
-						{
-							// The step was parsed without context (defaulted to h2)
-							// Adjust it to be one level deeper than the preceding heading
-							adjustedItem = item with { Level = Math.Min(precedingLevel.Value + 1, 6) };
-						}
-						return new { TocItem = adjustedItem, i.Block.Line };
-					});
-			})
-			.ToArray();
+			return i.Anchors!.TableOfContentItems.Select(item =>
+			{
+				// Only adjust stepper steps, not regular headings
+				// Stepper steps default to level 2 when parsed in isolation (no preceding heading in snippet),
+				// but should be relative to the preceding heading in the parent document
+				var adjustedItem = item;
+				if (item.IsStepperStep && precedingLevel.HasValue && item.Level == 2)
+				{
+					// The step was parsed without context (defaulted to h2)
+					// Adjust it to be one level deeper than the preceding heading
+					adjustedItem = item with { Level = Math.Min(precedingLevel.Value + 1, 6) };
+				}
+				return new { TocItem = adjustedItem, i.Block.Line };
+			});
+		}).ToArray();
 
 		// Collect headings from standard markdown (already have the list — no second traversal)
-		var headingTocs = headings
-			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
-			.Where(h => h.Item1 is not null)
-			.Select(h =>
-			{
-				var header = h.Item1!.StripMarkdown();
-				return new
+		// Same slug as the id SectionedHeadingRenderer writes, so TOC links and anchor validation match the page.
+		var headingTocs = headings.Where(block => block is { Level: >= 2 } && block.GetData("header") is string).Select(
+			h =>
+				new
 				{
 					TocItem = new PageTocItem
 					{
-						Heading = header,
-						Slug = (h.Item2 ?? h.Item1).Slugify(),
+						Heading = RenderedHeadings.Title(h),
+						Slug = SectionedHeadingRenderer.Slug(h),
 						Level = h.Level
 					},
 					h.Line
-				};
-			});
+				}
+		);
 
 		// Collect headings from Stepper steps (filter from already-collected directives)
 		var stepperTocs = directives
 			.OfType<StepBlock>()
 			.Where(step => !string.IsNullOrEmpty(step.Title))
+			.Where(step => step.RenderAsHeading)
 			.Where(step => !IsNestedInOtherDirective(step))
 			.Select(step =>
 			{
@@ -336,6 +379,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 						Heading = processedTitle,
 						Slug = step.Anchor,
 						Level = step.HeadingLevel, // Use dynamic heading level
+
 						IsStepperStep = true
 					},
 					step.Line
@@ -343,17 +387,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			});
 
 		// Collect headings from Changelog directives
-		var changelogTocs = directives
-			.OfType<ChangelogBlock>()
-			.SelectMany(changelog => changelog.GeneratedTableOfContent
-				.Select(tocItem => new { TocItem = tocItem, changelog.Line }));
+		var changelogTocs = directives.OfType<ChangelogBlock>().SelectMany(
+			changelog => changelog.GeneratedTableOfContent.Select(tocItem => new { TocItem = tocItem, changelog.Line })
+		);
 
 		// Collect settings group headings (h2) from {settings} directives
 		var settingsTocs = directives
 			.OfType<SettingsBlock>()
 			.Where(settings => !IsNestedInOtherDirective(settings))
-			.SelectMany(settings => settings.GeneratedTableOfContent
-				.Select(tocItem => new { TocItem = tocItem, settings.Line }));
+			.SelectMany(settings => settings.GeneratedTableOfContent.Select(tocItem => new { TocItem = tocItem, settings.Line }));
 
 		var toc = headingTocs
 			.Concat(stepperTocs)
@@ -362,17 +404,17 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			.Concat(includedTocs)
 			.OrderBy(item => item.Line)
 			.Select(item => item.TocItem)
-			.Select(toc => subs.Count == 0
-				? toc
-				: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r)
-					? toc with { Heading = r }
-					: toc)
+			.Select(
+				toc => subs.Count == 0
+					? toc
+					: toc.Heading.AsSpan().ReplaceSubstitutions(subs, collector, out var r) ? toc with { Heading = r } : toc
+			)
 			.ToList();
 
 		var includedAnchors = includes.SelectMany(i => i!.Anchors!.Anchors).ToArray();
 		anchors =
 		[
-			..directives
+			.. directives
 				.Select(b => b.CrossReferenceName)
 				.Where(l => !string.IsNullOrWhiteSpace(l))
 				.Select(s => s.Slugify())
@@ -400,10 +442,11 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 	private YamlFrontMatter ProcessYamlFrontMatter(MarkdownDocument document)
 	{
 		if (document.FirstOrDefault() is not YamlFrontMatterBlock yaml)
-			return new YamlFrontMatter { Title = Title };
+			return new YamlFrontMatter { Title = Title, AppliesTo = FallbackAppliesTo };
 
 		var raw = string.Join(Environment.NewLine, yaml.Lines.Lines);
-		var fm = ReadYamlFrontMatter(raw);
+		var fm = ReadYamlFrontMatter(raw, yaml.Line + 1);
+		fm.AppliesTo ??= FallbackAppliesTo;
 
 		if (fm.AppliesTo?.Diagnostics is not null)
 		{
@@ -416,8 +459,15 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		{
 			foreach (var url in fm.MappedPages)
 			{
-				if (!string.IsNullOrEmpty(url) && (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase) || !Uri.IsWellFormedUriString(url, UriKind.Absolute)))
-					Collector.EmitError(FilePath, $"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide.");
+				if (
+					!string.IsNullOrEmpty(url)
+					&& (!url.StartsWith("https://www.elastic.co/guide", StringComparison.OrdinalIgnoreCase)
+						|| !Uri.IsWellFormedUriString(url, UriKind.Absolute))
+				)
+					Collector.EmitError(
+						FilePath,
+						$"Invalid mapped_pages URL: \"{url}\". All mapped_pages URLs must start with \"https://www.elastic.co/guide\". Please update the URL to reference content under the Elastic documentation guide."
+					);
 			}
 		}
 
@@ -437,35 +487,62 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		return fm;
 	}
 
-	private YamlFrontMatter ReadYamlFrontMatter(string raw)
+	private YamlFrontMatter ReadYamlFrontMatter(string raw, int lineOffset) =>
+		ReadYamlFrontMatter(
+			raw,
+			Products,
+			Collector,
+			FilePath,
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterUnknownKeys())
+		);
+
+	// Content repositories carry many frontmatter keys we don't model (slug, status, last_updated, ...), so
+	// an unknown key is a hint with the usual message, not an error, until those repositories are cleaned up.
+	// internal: exercised directly by tests without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterUnknownKeys() =>
+		member => new YamlUnknownKeyOverride(Severity.Hint, $"{YamlUnmappedMemberDiagnostics.FormatMessage(member)} It is ignored.");
+
+	// reporting is null when the same front matter is only being read for its titles, so unknown keys
+	// are reported once, by the full page parse.
+	private static YamlFrontMatter ReadYamlFrontMatter(
+		string raw,
+		ProductsConfiguration products,
+		IDiagnosticsCollector collector,
+		string filePath,
+		YamlUnmappedMemberReporting? reporting = null
+	)
 	{
 		try
 		{
-			return YamlSerialization.Deserialize<YamlFrontMatter>(raw, Products);
+			// Comment-only front matter deserializes to null; treat it as empty front matter.
+			var frontMatter = reporting is null
+				? YamlSerialization.Deserialize<YamlFrontMatter>(raw, products)
+				: YamlSerialization.Deserialize<YamlFrontMatter>(raw, products, reporting);
+			return frontMatter ?? new YamlFrontMatter();
 		}
 		catch (InvalidProductException e)
 		{
-			Collector.EmitError(FilePath, "Invalid product in yaml front matter.", e);
+			collector.EmitError(filePath, "Invalid product in yaml front matter.", e);
 			return new YamlFrontMatter();
 		}
 		catch (Exception e)
 		{
-			Collector.EmitError(FilePath, "Failed to parse yaml front matter block.", e);
+			collector.EmitError(filePath, "Failed to parse yaml front matter block.", e);
 			return new YamlFrontMatter();
 		}
 	}
 
-	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true)
+	public static string CreateHtml(MarkdownDocument document, bool stripFirstHeadingLevel1 = true, MarkdownPipeline? renderPipeline = null)
 	{
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
 		{
-			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			var h1 = RenderedHeadings.FirstLevel1(document);
 			if (h1 is not null)
 				_ = document.Remove(h1);
 		}
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(renderPipeline ?? MarkdownParser.Pipeline);
 		return InsertFootnotesHeading(html);
 	}
 

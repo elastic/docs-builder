@@ -3,20 +3,19 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
 /// <summary>
 /// A single declared child page under <c>api/&lt;key&gt;/</c>, referenced by <c>children:</c>.
 /// </summary>
-[YamlSerializable]
 public class ApiEntryChild
 {
 	/// <summary>
 	/// Path to a Markdown file, relative to <c>api/&lt;key&gt;/</c>.
 	/// </summary>
-	[YamlMember(Alias = "file")]
+	[YamlPropertyName("file")]
 	public string? File { get; set; }
 }
 
@@ -37,21 +36,20 @@ public class ApiEntryChild
 /// segment looked up in the root version index. <c>repository</c> is optional and only needed when
 /// the spec-publishing repository differs from the current checkout's own GitHub remote.
 /// </summary>
-[YamlSerializable]
 public class ApiProductEntry
 {
 	/// <summary>
 	/// Path to an OpenAPI specification file, relative to the docset. Required: its basename is
 	/// used to resolve the remote version index even when no file exists at this path locally.
 	/// </summary>
-	[YamlMember(Alias = "spec")]
+	[YamlPropertyName("spec")]
 	public string? Spec { get; set; }
 
 	/// <summary>
 	/// Required product id. Must match a key in <c>products.yml</c> and binds this API to that
 	/// product's versioning system.
 	/// </summary>
-	[YamlMember(Alias = "product")]
+	[YamlPropertyName("product")]
 	public string? Product { get; set; }
 
 	/// <summary>
@@ -61,14 +59,21 @@ public class ApiProductEntry
 	/// OpenAPI spec is published from <c>elastic/elasticsearch-specification</c>). When omitted, the
 	/// current checkout's GitHub remote is used instead.
 	/// </summary>
-	[YamlMember(Alias = "repository")]
+	[YamlPropertyName("repository")]
 	public string? Repository { get; set; }
 
 	/// <summary>
 	/// Explicit child pages rendered under <c>api/&lt;key&gt;/</c>, in declared order.
 	/// </summary>
-	[YamlMember(Alias = "children")]
+	[YamlPropertyName("children")]
 	public List<ApiEntryChild> Children { get; set; } = [];
+
+	/// <summary>
+	/// Optional catalog grouping. Categories identify filter chips only; they do not
+	/// claim versioned availability.
+	/// </summary>
+	[YamlPropertyName("catalog")]
+	public ApiCatalogSettings? Catalog { get; set; }
 
 	/// <summary>
 	/// 1-based line of this entry's mapping start in the source YAML. Populated by
@@ -120,10 +125,24 @@ public class ApiProductEntry
 }
 
 /// <summary>
+/// Category-only catalog metadata under <c>catalog:</c> on an API entry.
+/// </summary>
+public class ApiCatalogSettings
+{
+	[YamlPropertyName("categories")]
+	public List<string> Categories { get; set; } = [];
+
+	[YamlIgnore]
+	public int? Line { get; set; }
+
+	[YamlIgnore]
+	public int? Column { get; set; }
+}
+
+/// <summary>
 /// The YAML sequence bound to each <c>api: &lt;key&gt;</c> entry. The RFC schema always contains
 /// exactly one <see cref="ApiProductEntry"/>; the sequence wrapper mirrors the wire format.
 /// </summary>
-[YamlSerializable]
 public class ApiProductSequence
 {
 	public List<ApiProductEntry> Entries { get; set; } = [];
@@ -180,11 +199,65 @@ public class ResolvedApiConfiguration
 	public List<IFileInfo> Children { get; init; } = [];
 
 	/// <summary>
-	/// Gets all child Markdown file paths that should be excluded from normal HTML generation.
+	/// The <c>api/&lt;key&gt;/</c> directory for this product, whether or not it exists yet.
+	/// Supplemental <c>op-*.md</c> / <c>tag-*.md</c> files are discovered from here.
+	/// </summary>
+	public IDirectoryInfo? ApiContentDirectory { get; init; }
+
+	/// <summary>
+	/// Normalized catalog categories (<c>ece</c>, <c>ess</c>, <c>self</c>, <c>serverless</c>).
+	/// Empty when the API is unclassified and appears only under All.
+	/// </summary>
+	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>
+	/// Whether <paramref name="fileName"/> is an auto-discovered supplemental file
+	/// (<c>op-*.md</c> or <c>tag-*.md</c>), including version-suffixed names.
+	/// </summary>
+	public static bool IsSupplementalFileName(string fileName)
+	{
+		var name = Path.GetFileName(fileName);
+		return name.StartsWith("op-", StringComparison.OrdinalIgnoreCase) || name.StartsWith("tag-", StringComparison.OrdinalIgnoreCase);
+	}
+
+	/// <summary>
+	/// Markdown paths that must not be rendered by the normal HTML pipeline:
+	/// explicit <c>children:</c> pages and convention supplemental files.
 	/// </summary>
 	public IEnumerable<string> GetMarkdownPathsToExclude(string documentationSourceDirectoryFullName)
 	{
+		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var file in Children)
-			yield return Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
+		{
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
+
+		foreach (var file in EnumerateApiMarkdownFiles())
+		{
+			if (!IsSupplementalFileName(file.Name))
+				continue;
+			var relative = ToRelativeMarkdownPath(file, documentationSourceDirectoryFullName);
+			if (seen.Add(relative))
+				yield return relative;
+		}
 	}
+
+	/// <summary>Top-level Markdown files under <see cref="ApiContentDirectory"/>, when the folder exists.</summary>
+	public IEnumerable<IFileInfo> EnumerateApiMarkdownFiles()
+	{
+		if (ApiContentDirectory is not { } dir)
+			yield break;
+
+		dir.Refresh();
+		if (!dir.Exists)
+			yield break;
+
+		foreach (var file in dir.EnumerateFiles("*.md"))
+			yield return file;
+	}
+
+	private static string ToRelativeMarkdownPath(IFileInfo file, string documentationSourceDirectoryFullName) =>
+		Path.GetRelativePath(documentationSourceDirectoryFullName, file.FullName).Replace(Path.DirectorySeparatorChar, '/');
 }

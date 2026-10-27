@@ -9,8 +9,9 @@ using Elastic.Markdown.Myst.Directives.Image;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselBlockTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 :max-height: medium
 
@@ -31,16 +32,13 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 		fileSystem.AddFile(@"docs/img/image2.png", "");
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void ParsesCarouselProperties()
-	{
-		Block!.MaxHeight.Should().Be("medium");
-	}
+	[Test]
+	public void ParsesCarouselProperties() => Block!.MaxHeight.Should().Be("medium");
 
-	[Fact]
+	[Test]
 	public void ProcessesNestedImages()
 	{
 		Block!.Images.Should().HaveCount(2);
@@ -50,7 +48,7 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 		Block!.Images[1].ImageUrl.Should().Be("/img/image2.png");
 	}
 
-	[Fact]
+	[Test]
 	public void AllImagesFoundSoNoErrorIsEmitted()
 	{
 		Block!.Images.Should().AllSatisfy(img => img.Found.Should().BeTrue());
@@ -58,8 +56,9 @@ public class ImageCarouselBlockTests(ITestOutputHelper output) : DirectiveTest<I
 	}
 }
 
-public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselWithSmallHeightTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 :max-height: small
 
@@ -70,10 +69,9 @@ public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : Direc
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/small.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/small.png", "");
 
-	[Fact]
+	[Test]
 	public void ParsesSmallMaxHeight()
 	{
 		Block!.MaxHeight.Should().Be("small");
@@ -81,8 +79,9 @@ public class ImageCarouselWithSmallHeightTests(ITestOutputHelper output) : Direc
 	}
 }
 
-public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselWithAutoHeightTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 :max-height: none
 
@@ -93,10 +92,9 @@ public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : Direct
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/auto.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/auto.png", "");
 
-	[Fact]
+	[Test]
 	public void ParsesNoneMaxHeight()
 	{
 		Block!.MaxHeight.Should().Be("none");
@@ -104,8 +102,9 @@ public class ImageCarouselWithAutoHeightTests(ITestOutputHelper output) : Direct
 	}
 }
 
-public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselWithInvalidHeightTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 :max-height: large
 
@@ -116,16 +115,14 @@ public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : Dir
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/invalid.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/invalid.png", "");
 
-	[Fact]
+	[Test]
 	public void WarnsOnInvalidMaxHeight()
 	{
 		Block!.MaxHeight.Should().Be("large");
 
-		Collector.Diagnostics.Should().HaveCount(1)
-			.And.OnlyContain(d => d.Severity == Severity.Warning);
+		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Warning);
 
 		var warning = Collector.Diagnostics.First();
 		warning.Message.Should().Contain("Invalid max-height value 'large'");
@@ -133,28 +130,27 @@ public class ImageCarouselWithInvalidHeightTests(ITestOutputHelper output) : Dir
 	}
 }
 
-public class ImageCarouselWithoutImagesTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselWithoutImagesTests() : DirectiveTest<ImageCarouselBlock>("""
 :::{carousel}
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForEmptyCarousel()
 	{
 		Block!.Images.Should().BeEmpty();
 
-		Collector.Diagnostics.Should().HaveCount(1)
-			.And.OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Error);
 
 		var error = Collector.Diagnostics.First();
 		error.Message.Should().Be("carousel directive requires nested image directives");
 	}
 }
 
-public class ImageCarouselMinimalTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselMinimalTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 
 ```{image} img/minimal.png
@@ -164,10 +160,9 @@ public class ImageCarouselMinimalTests(ITestOutputHelper output) : DirectiveTest
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/minimal.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/minimal.png", "");
 
-	[Fact]
+	[Test]
 	public void ParsesMinimalCarousel()
 	{
 		Block!.MaxHeight.Should().BeNull();
@@ -177,8 +172,9 @@ public class ImageCarouselMinimalTests(ITestOutputHelper output) : DirectiveTest
 	}
 }
 
-public class ImageCarouselWithMissingImageTests(ITestOutputHelper output) : DirectiveTest<ImageCarouselBlock>(output,
-"""
+[InheritsTests]
+public class ImageCarouselWithMissingImageTests() : DirectiveTest<ImageCarouselBlock>(
+	"""
 :::{carousel}
 
 ```{image} img/missing.png
@@ -192,18 +188,16 @@ public class ImageCarouselWithMissingImageTests(ITestOutputHelper output) : Dire
 """
 )
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/img/exists.png", "");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/img/exists.png", "");
 
-	[Fact]
+	[Test]
 	public void HandlesPartiallyMissingImages()
 	{
 		Block!.Images.Should().HaveCount(2);
 		Block!.Images[0].Found.Should().BeFalse(); // missing.png
-		Block!.Images[1].Found.Should().BeTrue();  // exists.png
+		Block!.Images[1].Found.Should().BeTrue(); // exists.png
 
 		// Should have diagnostics for the missing image
-		Collector.Diagnostics.Should().HaveCount(1)
-			.And.OnlyContain(d => d.Severity == Severity.Error);
+		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Error);
 	}
 }

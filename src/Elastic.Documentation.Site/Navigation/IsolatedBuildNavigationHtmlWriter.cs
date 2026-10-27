@@ -2,30 +2,38 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
 
 namespace Elastic.Documentation.Site.Navigation;
 
-public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNavigationItem<INavigationModel, INavigationItem> siteRoot)
-	: INavigationHtmlWriter
+public class IsolatedBuildNavigationHtmlWriter(
+	BuildContext context,
+	IRootNavigationItem<INavigationModel, INavigationItem> siteRoot,
+	IReadOnlyList<NavigationSelectOption>? versionSwitcher = null,
+	bool suppressNavigationDropdown = false
+) : INavigationHtmlWriter
 {
 	private readonly NavigationRenderCache _renderedNavigationCache = new();
 
 	public async Task<NavigationRenderResult> RenderNavigation(
 		IRootNavigationItem<INavigationModel, INavigationItem> currentRootNavigation,
 		INavigationItem currentNavigationItem,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var renderRoot = currentNavigationItem.FindIslandRoot() ?? SelectNavigationRoot(currentRootNavigation);
 
 		if (renderRoot is not INodeNavigationItem<INavigationModel, INavigationItem> group)
 			return NavigationRenderResult.Empty;
 
-		return await _renderedNavigationCache.GetOrRenderAsync(
+		var rendered = await _renderedNavigationCache.GetOrRenderAsync(
 			renderRoot,
-			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx));
+			() => ((INavigationHtmlWriter)this).Render(CreateNavigationModel(group), ctx)
+		);
+		return NavigationCurrentMarker.Apply(rendered, currentNavigationItem);
 	}
 
 	/// <summary>
@@ -34,7 +42,8 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 	/// or when primary nav/dropdown features are enabled.
 	/// </summary>
 	private IRootNavigationItem<INavigationModel, INavigationItem> SelectNavigationRoot(
-		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot)
+		IRootNavigationItem<INavigationModel, INavigationItem> requestedRoot
+	)
 	{
 		var useRequestedRoot = requestedRoot != siteRoot
 			|| context.Configuration.Features.PrimaryNavEnabled
@@ -48,12 +57,16 @@ public class IsolatedBuildNavigationHtmlWriter(BuildContext context, IRootNaviga
 		// Top-level items always come from the docset root (siteRoot) so the dropdown
 		// correctly lists all sections even when renderRoot is a nested island.
 		var topLevelItems = siteRoot.NavigationItems.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>().ToList();
-		var isUsingDropdown = context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown;
-		return NavigationRenderModel.Create(
+		var isUsingDropdown = !suppressNavigationDropdown
+			&& (context.Configuration.Features.PrimaryNavEnabled || siteRoot.IsUsingNavigationDropdown);
+		var model = NavigationRenderModel.Create(
 			tree: renderRoot,
 			topLevelItems: topLevelItems,
 			isUsingNavigationDropdown: isUsingDropdown,
 			isPrimaryNavEnabled: context.Configuration.Features.PrimaryNavEnabled,
-			isGlobalAssemblyBuild: false);
+			isGlobalAssemblyBuild: false,
+			navigationPreviewEnabled: context.Configuration.Features.NavigationPreviewEnabled
+		);
+		return versionSwitcher is { Count: > 0 } ? model with { VersionSwitcher = versionSwitcher } : model;
 	}
 }

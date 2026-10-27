@@ -13,11 +13,19 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 /// </summary>
 public static partial class BundleAmendMerger
 {
-	[GeneratedRegex(@"\.amend-(\d+)(\.ya?ml)$", RegexOptions.IgnoreCase)]
+	// Matches both numbered amends (.amend-1.yaml) and the reconciler-owned notes sidecar (.amend-notes.yaml).
+	[GeneratedRegex(@"\.amend-(\d+|notes)(\.ya?ml)$", RegexOptions.IgnoreCase)]
 	private static partial Regex AmendFileRegex();
 
-	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c>).</summary>
+	/// <summary>Whether a path is an amend sidecar (<c>{name}.amend-{N}.yaml</c> or <c>.amend-notes</c>).</summary>
 	public static bool IsAmendFile(string filePath) => AmendFileRegex().IsMatch(filePath);
+
+	/// <summary>Whether a path is the reconciler-owned <c>.amend-notes</c> sidecar.</summary>
+	public static bool IsNotesAmendFile(string filePath)
+	{
+		var match = AmendFileRegex().Match(filePath);
+		return match.Success && match.Groups[1].Value.Equals("notes", StringComparison.OrdinalIgnoreCase);
+	}
 
 	/// <summary>Numeric suffix from an amend file path; <c>0</c> when not an amend file.</summary>
 	public static int GetAmendFileNumber(string filePath)
@@ -29,6 +37,18 @@ public static partial class BundleAmendMerger
 	}
 
 	/// <summary>
+	/// Sort key for applying amend sidecars: numbered files in numeric order, then
+	/// <c>.amend-notes</c> (<see cref="GetAmendFileNumber"/> is <c>0</c> for notes).
+	/// Do not use this value to pick the next numbered sidecar; use
+	/// <see cref="GetAmendFileNumber"/> for that.
+	/// </summary>
+	public static int GetAmendMergeOrder(string filePath)
+	{
+		var number = GetAmendFileNumber(filePath);
+		return number == 0 ? int.MaxValue : number;
+	}
+
+	/// <summary>
 	/// Parent bundle path for an amend sidecar, keeping the amend's extension
 	/// (<c>repo-9.3.0.amend-1.yaml</c> → <c>repo-9.3.0.yaml</c>); null when
 	/// <paramref name="filePath"/> is not an amend file. Works on bare file names and full paths alike.
@@ -36,17 +56,30 @@ public static partial class BundleAmendMerger
 	public static string? GetParentBundlePath(string filePath)
 	{
 		var match = AmendFileRegex().Match(filePath);
-		return match.Success
-			? string.Concat(filePath.AsSpan(0, match.Index), match.Groups[2].Value)
-			: null;
+		return match.Success ? string.Concat(filePath.AsSpan(0, match.Index), match.Groups[2].Value) : null;
+	}
+
+	/// <summary>
+	/// Applies numbered-amend description patches to the parent intro.
+	/// An omitted <see cref="Bundle.Description"/> inherits; a non-null value (including empty) replaces.
+	/// Empty string clears the effective intro. Callers must pass only numbered amends — not <c>.amend-notes</c>.
+	/// </summary>
+	public static string? MergeDescription(string? parentDescription, IReadOnlyList<Bundle> numberedAmendsInOrder)
+	{
+		var current = parentDescription;
+		foreach (var amend in numberedAmendsInOrder)
+		{
+			if (amend.Description is null)
+				continue;
+			current = amend.Description.Length == 0 ? null : amend.Description;
+		}
+		return current;
 	}
 
 	/// <summary>
 	/// Applies amend bundles in order to parent entries and returns the effective entry list.
 	/// </summary>
-	public static List<BundledEntry> MergeEntries(
-		IReadOnlyList<BundledEntry> parentEntries,
-		IReadOnlyList<Bundle> amendBundlesInOrder)
+	public static List<BundledEntry> MergeEntries(IReadOnlyList<BundledEntry> parentEntries, IReadOnlyList<Bundle> amendBundlesInOrder)
 	{
 		var current = parentEntries.ToList();
 		foreach (var amend in amendBundlesInOrder)
@@ -57,8 +90,7 @@ public static partial class BundleAmendMerger
 	/// <summary>
 	/// Collects all exclusion keys already applied by prior amend files.
 	/// </summary>
-	public static HashSet<string> CollectAppliedExclusionKeys(
-		IReadOnlyList<Bundle> amendBundlesInOrder)
+	public static HashSet<string> CollectAppliedExclusionKeys(IReadOnlyList<Bundle> amendBundlesInOrder)
 	{
 		var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		foreach (var amend in amendBundlesInOrder)
@@ -102,16 +134,12 @@ public static partial class BundleAmendMerger
 		return result;
 	}
 
-	private static List<BundledEntry> ApplyExclusions(
-		IReadOnlyList<BundledEntry> entries,
-		IReadOnlyList<BundledEntry> exclusions)
+	private static List<BundledEntry> ApplyExclusions(IReadOnlyList<BundledEntry> entries, IReadOnlyList<BundledEntry> exclusions)
 	{
 		if (exclusions.Count == 0)
 			return entries.ToList();
 
-		return entries
-			.Where(entry => !exclusions.Any(exclusion => EntryMatchesExclusion(entry, exclusion)))
-			.ToList();
+		return entries.Where(entry => !exclusions.Any(exclusion => EntryMatchesExclusion(entry, exclusion))).ToList();
 	}
 
 	private static string? NormalizeFileName(string? fileName)

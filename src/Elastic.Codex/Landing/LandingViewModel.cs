@@ -21,15 +21,12 @@ public class LandingViewModel(CodexRenderContext context) : CodexViewModel(conte
 	/// Each group aggregates one or more documentation sets.
 	/// </summary>
 	public IEnumerable<GroupNavigation> Groups =>
-		CodexNavigation?.GroupNavigations?.OrderBy(g => g.DisplayTitle)
-		?? Enumerable.Empty<GroupNavigation>();
+		CodexNavigation?.GroupNavigations?.OrderBy(g => g.DisplayTitle) ?? Enumerable.Empty<GroupNavigation>();
 
 	/// <summary>
 	/// Documentation sets that are not part of any group, for rendering individual docset cards.
 	/// </summary>
 	public IEnumerable<CodexDocumentationSetInfo> UngroupedDocumentationSets =>
-		CodexNavigation?.DocumentationSetInfos?
-			.Where(ds => string.IsNullOrEmpty(ds.Group))
-			.OrderBy(ds => ds.Title)
-		?? Enumerable.Empty<CodexDocumentationSetInfo>();
+		CodexNavigation?.DocumentationSetInfos?.Where(ds => string.IsNullOrEmpty(ds.Group)).OrderBy(ds => ds.Title)
+			?? Enumerable.Empty<CodexDocumentationSetInfo>();
 }

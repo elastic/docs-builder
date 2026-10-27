@@ -9,13 +9,14 @@ using Elastic.Documentation.Extensions;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FolderExcludeTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void FolderWithoutExcludeIncludesAllFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -34,17 +35,15 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(
-			["docs/alpha.md", "docs/beta.md", "docs/gamma.md"],
-			options => options.WithStrictOrdering()
-		);
+		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/beta.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeFiltersOutSpecifiedFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -65,17 +64,15 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
 
 		var fileNames = folderItem.Children.Select(c => c.PathRelativeToDocumentationSet).ToList();
-		fileNames.Should().BeEquivalentTo(
-			["docs/alpha.md", "docs/gamma.md"],
-			options => options.WithStrictOrdering()
-		);
+		fileNames.Should().BeEquivalentTo(["docs/alpha.md", "docs/gamma.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeMultipleFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -100,11 +97,12 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/beta.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeIsCaseInsensitive()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -127,11 +125,12 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithExcludeCanExcludeIndexMd()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -157,11 +156,12 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		fileNames.Should().BeEquivalentTo(["docs/alpha.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void FolderExcludePopulatesFolderExcludedFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -183,11 +183,12 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["docs/draft.md", "docs/internal.md"]);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderExcludeCollectsFromNestedFolders()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: reference
@@ -215,8 +216,6 @@ public class FolderExcludeTests(ITestOutputHelper output) : DocumentationSetNavi
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		docSet.FolderExcludedFiles.Should().BeEquivalentTo(
-			["reference/api/main.md", "reference/deps/main.md"]
-		);
+		docSet.FolderExcludedFiles.Should().BeEquivalentTo(["reference/api/main.md", "reference/deps/main.md"]);
 	}
 }

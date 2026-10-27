@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-
 using AwesomeAssertions;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
@@ -12,7 +11,7 @@ namespace Elastic.Markdown.Tests.CodeBlocks;
 
 public class CodeBlockArgumentsClassTests
 {
-	[Fact]
+	[Test]
 	public void CanParseCodeBlockArguments()
 	{
 		const string codeBlockArguments = "callouts=true, subs=false";
@@ -24,7 +23,7 @@ public class CodeBlockArgumentsClassTests
 		parsedArgs.UseCallouts.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void CanHandleEmptyAndReturnsDefaultValues()
 	{
 		const string codeBlockArguments = "";
@@ -34,7 +33,7 @@ public class CodeBlockArgumentsClassTests
 		parsedArgs.UseCallouts.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void FailsOnTypo()
 	{
 		const string codeBlockArguments = "callout=what";
@@ -42,7 +41,7 @@ public class CodeBlockArgumentsClassTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesPartiallyAndUsesDefaultOtherwise()
 	{
 		const string codeBlockArguments = "callouts=false";
@@ -53,24 +52,25 @@ public class CodeBlockArgumentsClassTests
 	}
 }
 
-
+[InheritsTests]
 public abstract class CodeBlockArgumentsTests(
-	ITestOutputHelper output,
 	string language,
 	string arguments,
 	[LanguageInjection("csharp")] string code,
 	[LanguageInjection("markdown")] string? markdown = null
-)
-	: BlockTest<EnhancedCodeBlock>(output,
-		$"""
+) : BlockTest<EnhancedCodeBlock>(
+	$"""
 		 ```{language} {arguments}
 		 {code}
 		 ```
 		 {markdown}
 		 """
-	);
+);
 
-public class DisabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "callouts=false",
+[InheritsTests]
+public class DisabledCallouts() : CodeBlockArgumentsTests(
+	"csharp",
+	"callouts=false",
 	"""
 	var x = 1; <1>
 	var y = x - 2;
@@ -78,14 +78,17 @@ public class DisabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTest
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() => Html.Should().Contain("&lt;1&gt;");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "callouts=true",
+[InheritsTests]
+public class EnabledCallouts() : CodeBlockArgumentsTests(
+	"csharp",
+	"callouts=true",
 	"""
 	var x = 1; <1>
 	""",
@@ -94,14 +97,17 @@ public class EnabledCallouts(ITestOutputHelper output) : CodeBlockArgumentsTests
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() => Html.Should().Contain("<span class=\"code-callout\" data-index=\"1\"></span>");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class EnabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=true",
+[InheritsTests]
+public class EnabledSubstitutions() : CodeBlockArgumentsTests(
+	"csharp",
+	"subs=true",
 	"""
 	{{a-variable}}
 	""",
@@ -110,15 +116,17 @@ public class EnabledSubstitutions(ITestOutputHelper output) : CodeBlockArguments
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() => Html.Should().Contain("This is a variable");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-
-public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=false",
+[InheritsTests]
+public class DisabledSubstitutions() : CodeBlockArgumentsTests(
+	"csharp",
+	"subs=false",
 	"""
 	{{a-variable}}
 	""",
@@ -127,14 +135,17 @@ public class DisabledSubstitutions(ITestOutputHelper output) : CodeBlockArgument
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() => Html.Should().Contain("{{a-variable}}");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTests(output, "csharp", "subs=true, callouts=false",
+[InheritsTests]
+public class MultipleArguments() : CodeBlockArgumentsTests(
+	"csharp",
+	"subs=true, callouts=false",
 	"""
 	{{a-variable}} <1>
 	""",
@@ -143,11 +154,9 @@ public class MultipleArguments(ITestOutputHelper output) : CodeBlockArgumentsTes
 	"""
 )
 {
-	[Fact]
-	public void Render() => Html
-		.Should().Contain("This is a variable")
-		.And.Contain("&lt;1&gt;");
+	[Test]
+	public void Render() => Html.Should().Contain("This is a variable").And.Contain("&lt;1&gt;");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

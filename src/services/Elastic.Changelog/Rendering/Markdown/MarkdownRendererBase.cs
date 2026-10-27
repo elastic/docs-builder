@@ -13,13 +13,7 @@ namespace Elastic.Changelog.Rendering.Markdown;
 /// <summary>
 /// Options for rendering PR and issue links
 /// </summary>
-public record PrIssueLinkOptions(
-	ChangelogEntry Entry,
-	string Repo,
-	string Owner,
-	bool HideLinks,
-	bool IndentForListItem = false
-);
+public record PrIssueLinkOptions(ChangelogEntry Entry, string Repo, string Owner, bool HideLinks, bool IndentForListItem = false);
 
 /// <summary>
 /// Abstract base class for changelog markdown renderers

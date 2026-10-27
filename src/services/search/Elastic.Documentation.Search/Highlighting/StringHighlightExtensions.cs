@@ -21,7 +21,8 @@ public static class StringHighlightExtensions
 		this string text,
 		ReadOnlySpan<string> tokens,
 		IReadOnlyDictionary<string, string[]>? synonyms = null,
-		bool wholeWordOnly = false)
+		bool wholeWordOnly = false
+	)
 	{
 		if (tokens.Length == 0 || string.IsNullOrEmpty(text))
 			return text;
@@ -56,9 +57,11 @@ public static class StringHighlightExtensions
 						continue;
 
 					var (source, target) = ParseHardReplacement(synonym);
-					if (!string.IsNullOrEmpty(source) &&
-						!string.IsNullOrEmpty(target) &&
-						source.Equals(token, StringComparison.OrdinalIgnoreCase))
+					if (
+						!string.IsNullOrEmpty(source)
+						&& !string.IsNullOrEmpty(target)
+						&& source.Equals(token, StringComparison.OrdinalIgnoreCase)
+					)
 					{
 						result = HighlightSingleToken(result, target, wholeWordOnly);
 					}
@@ -137,10 +140,7 @@ public static class StringHighlightExtensions
 				continue;
 			}
 
-			_ = sb.Append(remaining[..matchIndex])
-				.Append(MarkOpen)
-				.Append(remaining.Slice(matchIndex, tokenSpan.Length))
-				.Append(MarkClose);
+			_ = sb.Append(remaining[..matchIndex]).Append(MarkOpen).Append(remaining.Slice(matchIndex, tokenSpan.Length)).Append(MarkClose);
 
 			pos = absoluteIndex + token.Length;
 		}

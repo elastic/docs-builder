@@ -15,23 +15,23 @@ namespace Elastic.LegacyDocs.Migration.Tests;
 /// </summary>
 public class ChunkerTests
 {
-	private static MarkdownEmitter Emitter() =>
-		new(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
+	private static MarkdownEmitter Emitter() => new(new MarkdownEmitterOptions { BookPrefix = "test", Version = "1.0" });
 
-	private static Elastic.LegacyDocs.Migration.Asciidoc.Ast.AsciidocDocument Parse(string content, Dictionary<string, string>? files = null)
+	private static Elastic.LegacyDocs.Migration.Asciidoc.Ast.AsciidocDocument Parse(
+		string content,
+		Dictionary<string, string>? files = null
+	)
 	{
 		var opts = new AsciidocParserOptions
 		{
-			FileReader = files is not null
-				? path => files.TryGetValue(path, out var c) ? c : null
-				: null
+			FileReader = files is not null ? path => files.TryGetValue(path, out var c) ? c : null : null
 		};
 		return new AsciidocParser(opts).Parse(content, "/base");
 	}
 
 	// ── DocTitle becomes the index page ───────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void DocTitle_BecomesIndexPage_NoDuplicatePage()
 	{
 		// The Level-0 `= Book Title` section is the transparent wrapper; it becomes `index.md`.
@@ -51,7 +51,7 @@ public class ChunkerTests
 
 	// ── Discrete sections never become pages ──────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void DiscreteSection_IsNeverChunked()
 	{
 		// quickstart/index.asciidoc shape via include:
@@ -61,12 +61,14 @@ public class ChunkerTests
 		//       == Index and search…        (Level 1 ≤ 2 → child page)
 		var files = new Dictionary<string, string>
 		{
-			["/base/index.adoc"] = """
+			["/base/index.adoc"] =
+				"""
                 = Elasticsearch Guide
 
                 include::quickstart.adoc[]
                 """,
-			["/base/quickstart.adoc"] = """
+			["/base/quickstart.adoc"] =
+				"""
                 [[quickstart]]
                 = Quick starts
 
@@ -98,7 +100,7 @@ public class ChunkerTests
 
 	// ── Section deeper than chunkLevel stays inline, rebased as ## ───────────
 
-	[Fact]
+	[Test]
 	public void Section_DeeperThanChunkLevel_StaysOnParentPage()
 	{
 		// setup/install/targz.asciidoc shape (chunk:1 → effectiveChunkLevel 2):
@@ -113,13 +115,15 @@ public class ChunkerTests
 
                 include::setup.adoc[]
                 """,
-			["/base/setup.adoc"] = """
+			["/base/setup.adoc"] =
+				"""
                 [[setup]]
                 == Installing Elasticsearch
 
                 include::targz.adoc[]
                 """,
-			["/base/targz.adoc"] = """
+			["/base/targz.adoc"] =
+				"""
                 [[targz]]
                 === Install from archive on Linux
 
@@ -140,14 +144,14 @@ public class ChunkerTests
 		setup.Children.Should().HaveCount(1);
 		var targz = setup.Children[0];
 		targz.Slug.Should().Be("targz");
-		targz.Children.Should().BeEmpty();                       // no further child pages
+		targz.Children.Should().BeEmpty(); // no further child pages
 		targz.MarkdownContent.Should().Contain("Intro text");
 		targz.MarkdownContent.Should().Contain("## Next steps"); // Level 3, rebased: effective=3-2=1 → ##
 	}
 
 	// ── TitleAbbrev emits navigation_title frontmatter ────────────────────────
 
-	[Fact]
+	[Test]
 	public void TitleAbbrev_EmitsNavigationTitleFrontmatter()
 	{
 		// `== ...` (Level 1) is the doc title in a bare file; use a book wrapper.
@@ -158,7 +162,8 @@ public class ChunkerTests
 
                 include::getting-started.adoc[]
                 """,
-			["/base/getting-started.adoc"] = """
+			["/base/getting-started.adoc"] =
+				"""
                 [[getting-started]]
                 == Index and search data using Elasticsearch APIs
 
@@ -177,7 +182,7 @@ public class ChunkerTests
 		page.MarkdownContent.Should().NotContain("<titleabbrev>");
 	}
 
-	[Fact]
+	[Test]
 	public void TitleAbbrev_MatchingTitle_DoesNotEmitFrontmatter()
 	{
 		var files = new Dictionary<string, string>
@@ -187,7 +192,8 @@ public class ChunkerTests
 
                 include::mypage.adoc[]
                 """,
-			["/base/mypage.adoc"] = """
+			["/base/mypage.adoc"] =
+				"""
                 [[mypage]]
                 == My Page
 
@@ -206,7 +212,7 @@ public class ChunkerTests
 
 	// ── Auto-id derivation ────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void IdLessSection_UsesAutoId()
 	{
 		var files = new Dictionary<string, string>
@@ -216,7 +222,8 @@ public class ChunkerTests
 
                 include::install.adoc[]
                 """,
-			["/base/install.adoc"] = """
+			["/base/install.adoc"] =
+				"""
                 == Install from Archive on Linux/MacOS
 
                 Content.
@@ -230,13 +237,14 @@ public class ChunkerTests
 		page.Slug.Should().Be("install_from_archive_on_linux_macos");
 	}
 
-	[Fact]
+	[Test]
 	public void DuplicateSlug_IsSuffixed()
 	{
 		// Two included files with the same section id would collide; the second gets _2.
 		var files = new Dictionary<string, string>
 		{
-			["/base/index.adoc"] = """
+			["/base/index.adoc"] =
+				"""
                 = Book
 
                 include::a.adoc[]
@@ -269,7 +277,7 @@ public class ChunkerTests
 
 	// ── Include-file cross-level nesting ─────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CrossInclude_Level1FollowingLevel0_NestedAsChildren()
 	{
 		// Mirrors the migration guide pattern:
@@ -283,24 +291,28 @@ public class ChunkerTests
 
                 include::migration/index.adoc[]
                 """,
-			["/base/migration/index.adoc"] = """
+			["/base/migration/index.adoc"] =
+				"""
                 include::intro.adoc[]
                 include::migrate-1.adoc[]
                 include::migrate-2.adoc[]
                 """,
-			["/base/migration/intro.adoc"] = """
+			["/base/migration/intro.adoc"] =
+				"""
                 [[migration-guide]]
                 = Migration guide
 
                 Intro text.
                 """,
-			["/base/migration/migrate-1.adoc"] = """
+			["/base/migration/migrate-1.adoc"] =
+				"""
                 [[migrating-1]]
                 == Migrating to 1.0
 
                 Migration 1 content.
                 """,
-			["/base/migration/migrate-2.adoc"] = """
+			["/base/migration/migrate-2.adoc"] =
+				"""
                 [[migrating-2]]
                 == Migrating to 2.0
 
@@ -323,7 +335,7 @@ public class ChunkerTests
 
 	// ── Nested toc.yml indentation ────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void WriteTocYaml_NestedChildren_IndentsCorrectly()
 	{
 		var entries = new List<TocEntry>
@@ -332,11 +344,7 @@ public class ChunkerTests
 			new()
 			{
 				File = "quickstart.md",
-				Children =
-				[
-					new TocEntry { File = "getting-started.md" },
-					new TocEntry { File = "full-text.md" }
-				]
+				Children = [new TocEntry { File = "getting-started.md" }, new TocEntry { File = "full-text.md" }]
 			},
 		};
 
@@ -352,7 +360,7 @@ public class ChunkerTests
 		yaml.Should().Contain("      - file: full-text.md\n");
 	}
 
-	[Fact]
+	[Test]
 	public void WriteTocYaml_IslandToc_EmitsIslandKey()
 	{
 		var entries = new List<TocEntry>

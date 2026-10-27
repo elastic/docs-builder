@@ -9,19 +9,26 @@ namespace Elastic.Documentation.Configuration.LegacyUrlMappings;
 
 public static class LegacyUrlMappingExtensions
 {
-	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(this ConfigurationFileProvider provider, ProductsConfiguration products)
+	public static LegacyUrlMappingConfiguration CreateLegacyUrlMappings(
+		this ConfigurationFileProvider provider,
+		ProductsConfiguration products
+	)
 	{
 		var legacyUrlMappingsFilePath = provider.LegacyUrlMappingsFile;
 
-		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserializer.Deserialize<LegacyUrlMappingConfigDto>(legacyUrlMappingsFilePath.OpenText());
+		var legacyUrlMappingsDto = ConfigurationFileProvider.Deserialize<LegacyUrlMappingConfigDto>(
+			legacyUrlMappingsFilePath.OpenText(),
+			legacyUrlMappingsFilePath.FullName
+		);
 
-		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(kvp =>
-			new LegacyUrlMapping
+		var legacyUrlMappings = legacyUrlMappingsDto.Mappings.Select(
+			kvp => new LegacyUrlMapping
 			{
 				BaseUrl = kvp.Key,
 				Product = products.Products[kvp.Value.Product],
 				LegacyVersions = kvp.Value.LegacyVersions.ToImmutableList()
-			});
+			}
+		);
 
 		return new LegacyUrlMappingConfiguration { Mappings = legacyUrlMappings.ToImmutableList() };
 	}
@@ -29,13 +36,13 @@ public static class LegacyUrlMappingExtensions
 
 // Private DTOs for deserialization. These match the YAML structure directly.
 
-internal sealed record LegacyUrlMappingConfigDto
+public sealed record LegacyUrlMappingConfigDto
 {
 	public IEnumerable<string> Stack { get; set; } = [];
 	public Dictionary<string, LegacyUrlMappingDto> Mappings { get; set; } = [];
 }
 
-internal sealed record LegacyUrlMappingDto
+public sealed record LegacyUrlMappingDto
 {
 	public string Product { get; set; } = string.Empty;
 	public IEnumerable<string> LegacyVersions { get; set; } = [];

@@ -1,5 +1,6 @@
 @inherits RazorLayoutSlice<MarkdownLayoutViewModel>
 @using Elastic.Markdown
+@using Elastic.Documentation.Configuration.Toc
 @implements IUsesLayout<Elastic.Documentation.Site._GlobalLayout, GlobalLayoutViewModel>
 @functions {
 	public GlobalLayoutViewModel LayoutModel => Model;
@@ -22,10 +23,24 @@
 			await RenderSectionAsync(GlobalSections.Head);
 		}
 	}
-	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch;
+	private bool RenderHeaderAndFooter => Model.Layout is not MarkdownPageLayout.FullSearch || Model.Features.NavigationPreviewEnabled;
+
+	private async Task RenderDesignSystemPage(bool hub)
+	{
+		var shell = new DesignSystemShellModel(Model, hub);
+		await RenderPartialAsync(_DesignSystemShellStart.Create(shell));
+		await RenderBodyAsync();
+		await RenderPartialAsync(_DesignSystemShellEnd.Create(shell));
+	}
 
 	private async Task RenderDefault()
 	{
+		if (Model.Features.NavigationPreviewEnabled)
+		{
+			await RenderDesignSystemPage(hub: false);
+			return;
+		}
+
 		<div class="relative">
 			
 			<div class="min-h-screen
@@ -34,14 +49,15 @@
 						mx-auto
 						md:px-4
 			">
-				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
 					<main id="content-container" class="min-w-0 flex flex-col lg:grid lg:grid-cols-[minmax(0,var(--max-text-width))_minmax(0,var(--max-sidebar-width))] lg:justify-end lg:gap-4 mx-4 md:col-start-2 md:row-start-1">
 						<div class="mb-9 mt-0 min-w-0 order-2 lg:order-1">
-							@await RenderPartialAsync(_Breadcrumbs.Create(Model))
+							@await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType)))
 							<article id="markdown-content" class="markdown-content min-w-0" data-pagefind-body>
 								<input type="checkbox" class="hidden" id="pages-nav-hamburger">
 								@await RenderBodyAsync()
 							</article>
+							@await RenderPartialAsync(_PageFeedback.Create(Model))
 							@await RenderPartialAsync(_PrevNextNav.Create(Model))
 							@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is not null)
 							{
@@ -64,6 +80,12 @@
 	   pages nav so a reader can move between sibling hubs. *@
 	private async Task RenderHub()
 	{
+		if (Model.Features.NavigationPreviewEnabled)
+		{
+			await RenderDesignSystemPage(hub: true);
+			return;
+		}
+
 		<div class="relative hub-page">
 			<div class="min-h-screen
 						w-full
@@ -71,7 +93,7 @@
 						mx-auto
 						md:px-4
 			">
-				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+				<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-6">
 					<main id="content-container" class="min-w-0 mx-4 md:col-start-2 md:row-start-1">
 						@* Keeps the markdown-content id, which hljs, smooth-scroll and toc-nav select on,
 						   but not the class. typography.css is unlayered and hub.css sits in @@layer
@@ -87,14 +109,47 @@
 			</div>
 		</div>
 	}
+
+	private async Task RenderLanding()
+	{
+		<div class="relative">
+			@if (Model.HasMobilePagesNavContent)
+			{
+				<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+				<label role="button" class="absolute left-4 top-3 z-10 md:hidden cursor-pointer" for="pages-nav-hamburger">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+					     stroke="currentColor" class="size-6">
+						<path stroke-linecap="round" stroke-linejoin="round"
+						      d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+					</svg>
+				</label>
+			}
+			@await RenderPartialAsync(_LandingPage.Create(Model))
+			@if (Model.HasMobilePagesNavContent)
+			{
+				<div class="md:hidden">
+					@await RenderPartialAsync(_PagesNav.Create(Model))
+				</div>
+			}
+		</div>
+	}
+
 }
 
 @if (RenderHeaderAndFooter)
 {
-	if (Model.BuildType == BuildType.Assembler)
+	if (Model.BuildType == BuildType.Assembler && Model.Features.NavigationPreviewEnabled)
+	{
+		@(await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model)))
+	}
+	else if (Model.BuildType == BuildType.Assembler)
 	{
 		@(await RenderPartialAsync(_AssemblerHeader.Create(Model)))
 
+	}
+	else if (Model.Features.NavigationPreviewEnabled)
+	{
+		@(await RenderPartialAsync(_DesignSystemHeader.Create(Model)))
 	}
 	else
 	{
@@ -104,14 +159,26 @@
 <div id="main-container">
 @switch (Model.Layout)
 {
+	case MarkdownPageLayout.NotFound when Model.Features.NavigationPreviewEnabled:
+		await RenderPartialAsync(_DesignSystemNotFound.Create(Model));
+		break;
 	case MarkdownPageLayout.NotFound:
 		await RenderPartialAsync(_NotFound.Create(Model));
 		break;
+	case MarkdownPageLayout.LandingPage when Model.Features.NavigationPreviewEnabled:
+		await RenderPartialAsync(_DesignSystemLandingPage.Create(Model));
+		break;
 	case MarkdownPageLayout.LandingPage:
-		await RenderPartialAsync(_LandingPage.Create(Model));
+		await RenderLanding();
+		break;
+	case MarkdownPageLayout.Archive when Model.Features.NavigationPreviewEnabled:
+		await RenderPartialAsync(_DesignSystemArchive.Create(Model));
 		break;
 	case MarkdownPageLayout.Archive:
 		await RenderPartialAsync(_Archive.Create(Model));
+		break;
+	case MarkdownPageLayout.FullSearch when Model.Features.NavigationPreviewEnabled:
+		await RenderPartialAsync(_DesignSystemFullSearch.Create(Model));
 		break;
 	case MarkdownPageLayout.FullSearch:
 		await RenderPartialAsync(_FullSearch.Create(Model));
@@ -135,7 +202,18 @@
 }
 @if (RenderHeaderAndFooter)
 {
-	if (Model.BuildType == BuildType.Assembler)
+	if (Model.Features.NavigationPreviewEnabled)
+	{
+		if (Model.Layout is MarkdownPageLayout.Archive)
+		{
+			@(await RenderPartialAsync(_DesignSystemDarkFooter.Create(Model)))
+		}
+		else
+		{
+			@(await RenderPartialAsync(_DesignSystemFooter.Create(Model)))
+		}
+	}
+	else if (Model.BuildType == BuildType.Assembler)
 	{
 		@(await RenderPartialAsync(_AssemblerFooter.Create(Model)))
 	}

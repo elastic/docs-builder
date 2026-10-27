@@ -3,6 +3,7 @@ max_toc_depth: 2
 dev_docs: true
 cross_links:
   - docs-content
+  - elasticsearch
 exclude:
   - '_*.md'
 subs:
@@ -35,8 +36,85 @@ subs:
   webhook-cm: "Case Management webhook"
   hosted-ems: "hosted Elastic Maps Service"
 
+release_notes:
+  - product: docs-builder
+
 features:
   primary-nav: false
+
+# Isolated fixtures. The prefix keeps these keys off the docs-content APIs.
+# Mirrors the api: block in elastic/docs-content docset.yml, including Kibana's children: page, so the
+# preview groups and counts the same way as production. Keep the two in sync.
+# Assembler builds omit them; this checkout is still loaded in preview (skip: true).
+# Isolated serve (no --watch) drops the prefix from URLs: /api/doc/elasticsearch/, /api/doc/kibana/, …
+api:
+  docs-builder-elasticsearch:
+    - spec: elasticsearch.json
+      product: elasticsearch
+      repository: elastic/elasticsearch-specification
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+  docs-builder-elasticsearch-serverless:
+    - spec: elasticsearch-serverless.json
+      product: serverless-elasticsearch
+      repository: elastic/elasticsearch-specification
+      catalog:
+        categories:
+          - serverless
+  docs-builder-kibana:
+    - spec: kibana.yaml
+      product: kibana
+      repository: elastic/kibana
+      children:
+        - file: kibana-api-overview.md
+      catalog:
+        categories:
+          - self
+          - ece
+          - ess
+  docs-builder-kibana-serverless:
+    - spec: kibana-serverless.yaml
+      product: kibana
+      repository: elastic/kibana
+      catalog:
+        categories:
+          - serverless
+  docs-builder-cloud:
+    - spec: cloud.json
+      product: cloud-hosted
+      repository: elastic/cloud
+  docs-builder-cloud-enterprise:
+    - spec: cloud-enterprise.json
+      product: cloud-enterprise
+      repository: elastic/cloud
+  docs-builder-cloud-billing:
+    - spec: cloud-billing.yaml
+      product: ess
+      repository: elastic/cloud
+      catalog:
+        categories:
+          - ess
+  docs-builder-cloud-connect:
+    - spec: cloud-connect.yml
+      product: ess
+      repository: elastic/cloud-connected-api
+  docs-builder-cloud-serverless:
+    - spec: elastic-cloud-serverless.yml
+      product: cloud-serverless
+      repository: elastic/serverless-api-specification
+      catalog:
+        categories:
+          - serverless
+  docs-builder-logstash:
+    - spec: logstash.yaml
+      product: logstash
+      repository: elastic/logstash
+      catalog:
+        categories:
+          - self
 
 cta:
   docs-builder:
@@ -54,6 +132,7 @@ suppress:
 
 toc:
   - file: index.md
+  - file: release-notes.md
   - hidden: 404.md
   - hidden: developer-notes.md
 
@@ -101,6 +180,8 @@ toc:
       - file: kbd.md
       - file: link-card.md
       - file: math.md
+      - file: on-this-page.md
+      - file: vector-sizing-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md
@@ -109,6 +190,7 @@ toc:
       - file: links.md
       - file: list-sub-pages.md
       - file: page-card.md
+      - file: related-learning.md
       - file: stepper.md
       - file: substitutions.md
       - file: version-variables.md
@@ -176,6 +258,7 @@ toc:
         children:
           - file: index.md
           - file: products.md
+          - file: related-learning.md
           - file: versions.md
           - file: synonyms.md
           - file: legacy-url-mappings.md
@@ -193,6 +276,7 @@ toc:
         children:
           - file: index.md
           - file: api-explorer.md
+          - file: supplemental.md
       - folder: cli-schema
         children:
           - file: index.md

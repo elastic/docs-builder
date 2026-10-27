@@ -23,8 +23,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// ::::
 /// </code>
 /// </example>
-public class CardGroupBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class CardGroupBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "card-group";
 
@@ -36,11 +35,10 @@ public class CardGroupBlock(DirectiveBlockParser parser, ParserContext context)
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Prop("title");
-		Intro = Prop("intro");
+		Intro = DirectiveLinkValidator.ResolveMarkdownLinks(Prop("intro"), this, context);
 		Anchor = Prop("id");
 		Variant = Prop("variant");
 	}
 
-	public override IEnumerable<string> GeneratedAnchors =>
-		string.IsNullOrWhiteSpace(Anchor) ? [] : [Anchor];
+	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Anchor) ? [] : [Anchor];
 }

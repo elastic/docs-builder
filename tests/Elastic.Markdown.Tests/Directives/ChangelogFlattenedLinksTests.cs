@@ -12,17 +12,22 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Regression tests for PR/issue link formatting in flattened separated-type changelog output
 /// (breaking changes, deprecations, known issues, highlights without <c>:dropdowns:</c>).
 /// </summary>
+[InheritsTests]
 public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogFlattenedLinksTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogFlattenedLinksTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -37,9 +42,11 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 		  - "202446"
 		  issues:
 		  - "199001"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void FlattenedDeprecationRendersMultipleLinksWithoutOuterBrackets()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -51,7 +58,7 @@ public class ChangelogFlattenedLinksTests : DirectiveTest<ChangelogBlock>
 		markdown.Should().NotContain("[#268942, #202446]");
 	}
 
-	[Fact]
+	[Test]
 	public void FlattenedDeprecationRendersClickableLinkHtml()
 	{
 		Html.Should().Contain("href=\"https://github.com/elastic/elasticsearch/pull/268942\"");

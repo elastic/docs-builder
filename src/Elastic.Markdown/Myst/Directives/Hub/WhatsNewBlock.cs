@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using Elastic.Markdown.Helpers;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
@@ -27,12 +29,13 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// etc. directly. Useful for one-offs that don't belong in the central
 /// feed.</para>
 /// </summary>
-public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	private const string WhatsNewFileName = "hub-whats-new.yml";
 
-	private static readonly ConcurrentDictionary<string, WhatsNewConfig?> CentralConfigCache = new();
+	private static readonly ConcurrentDictionary<string, CentralConfigEntry> CentralConfigCache = new();
+
+	private sealed record CentralConfigEntry(string Yaml, WhatsNewConfig? Config, IReadOnlyList<Diagnostic> Diagnostics);
 
 	public override string Directive => "whats-new";
 
@@ -47,11 +50,12 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 			var resolved = LoadFromCentralConfig(product);
 			if (resolved is null)
 			{
-				this.EmitError($"{{whats-new}} :product: '{product}' was not found in {WhatsNewFileName} at the root of this documentation set.");
+				this.EmitError(
+					$"{{whats-new}} :product: '{product}' was not found in {WhatsNewFileName} at the root of this documentation set."
+				);
 				return;
 			}
-			Data = resolved;
-			ValidateLinks(context);
+			Data = ResolveLinks(resolved, context);
 			return;
 		}
 
@@ -64,7 +68,8 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.ProductsConfiguration) ?? WhatsNewData.Empty;
+			Data = YamlSerialization.Deserialize<WhatsNewData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
+				?? WhatsNewData.Empty;
 		}
 		catch (YamlException ex)
 		{
@@ -72,18 +77,46 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 			return;
 		}
 
-		ValidateLinks(context);
+		Data = ResolveLinks(Data, context);
 	}
 
-	private void ValidateLinks(ParserContext context)
-	{
-		foreach (var link in Data.ReleaseLinks)
-			link.Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context);
-		if (Data.UpgradeLink is { } upgrade)
-			upgrade.Url = DirectiveLinkValidator.ValidateAndResolve(upgrade.Url, this, context);
-		foreach (var item in Data.Items)
-			item.Link = DirectiveLinkValidator.ValidateAndResolve(item.Link, this, context);
-	}
+	/// <summary>
+	/// Returns a copy of the panel with its links resolved and its substitutions replaced. The
+	/// source is never changed, because a <c>:product:</c> panel is shared through
+	/// <see cref="CentralConfigCache"/> and every page must resolve its own substitutions and
+	/// relative links from the original values.
+	/// </summary>
+	private WhatsNewData ResolveLinks(WhatsNewData source, ParserContext context) =>
+		source with
+		{
+			// A release link label can carry a substitution, for example `{{version.stack}}`, so a
+			// patch release does not mean editing the panel.
+			ReleaseLinks =
+			[
+				.. source.ReleaseLinks.Select(
+					link =>
+						link with
+						{
+							Label = link.Label?.ReplaceSubstitutions(context),
+							Url = DirectiveLinkValidator.ValidateAndResolve(link.Url, this, context)
+						}
+				)
+			],
+			UpgradeLink = source.UpgradeLink is { } upgrade
+				? upgrade with { Url = DirectiveLinkValidator.ValidateAndResolve(upgrade.Url, this, context) }
+				: null,
+			Items =
+			[
+				.. source.Items.Select(
+					item =>
+						item with
+						{
+							Link = DirectiveLinkValidator.ValidateAndResolve(item.Link, this, context),
+							Availability = [.. item.Availability.Select(entry => entry.ReplaceSubstitutions(context))]
+						}
+				)
+			]
+		};
 
 	/// <summary>
 	/// The panel content lives in the content repository, next to the pages that use it, so a
@@ -97,77 +130,104 @@ public class WhatsNewBlock(DirectiveBlockParser parser, ParserContext context)
 		if (!Build.ReadFileSystem.File.Exists(path))
 			return null;
 
-		var config = CentralConfigCache.GetOrAdd(path, p =>
-		{
-			try
-			{
-				var yaml = Build.ReadFileSystem.File.ReadAllText(p);
-				return YamlSerialization.Deserialize<WhatsNewConfig>(yaml, Build.ProductsConfiguration);
-			}
-			catch
-			{
-				return null;
-			}
-		});
+		// The parse is cached per path across builds (e.g. --watch) and keyed by the file's content, so
+		// an edit to the file, such as fixing a typo, is parsed again instead of replaying the old result.
+		// A rebuild that hits the cache must still see the diagnostics the parse produced, so every call
+		// replays them into the current Build.Collector rather than relying on whichever collector
+		// happened to trigger the parse.
+		var yaml = Build.ReadFileSystem.File.ReadAllText(path);
+		var entry = CentralConfigCache.AddOrUpdate(
+			path,
+			_ => ParseCentralConfig(path, yaml),
+			(_, cached) => cached.Yaml == yaml ? cached : ParseCentralConfig(path, yaml)
+		);
+		foreach (var diagnostic in entry.Diagnostics)
+			Build.Collector.Write(diagnostic);
 
+		var config = entry.Config;
 		if (config?.Products is null)
 			return null;
 		return config.Products.TryGetValue(productKey, out var data) ? data : null;
 	}
 
-	public override IEnumerable<string> GeneratedAnchors =>
-		string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
+	private CentralConfigEntry ParseCentralConfig(string path, string yaml)
+	{
+		var diagnostics = new List<Diagnostic>();
+		try
+		{
+			var config = YamlSerialization.Deserialize<WhatsNewConfig>(
+				yaml,
+				Build.ProductsConfiguration,
+				new YamlUnmappedMemberReporting(diagnostics.Add, path)
+			);
+			return new CentralConfigEntry(yaml, config, diagnostics);
+		}
+		catch (YamlException e)
+		{
+			var message = $"Unable to parse {WhatsNewFileName}: {e.Message}{Environment.NewLine}{e}"
+				+ (e.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+			diagnostics.Add(new Diagnostic { Severity = Severity.Error, File = path, Message = message });
+			return new CentralConfigEntry(yaml, null, diagnostics);
+		}
+	}
+
+	public override IEnumerable<string> GeneratedAnchors => string.IsNullOrWhiteSpace(Data.Id) ? [] : [Data.Id];
 }
 
-[YamlSerializable]
 public record WhatsNewConfig
 {
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public Dictionary<string, WhatsNewData> Products { get; set; } = [];
 }
 
-[YamlSerializable]
 public record WhatsNewData
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 
-	[YamlMember(Alias = "intro")]
+	[YamlPropertyName("intro")]
 	public string? Intro { get; set; }
 
-	[YamlMember(Alias = "release-links")]
+	[YamlPropertyName("release-links")]
 	public LinkCardLink[] ReleaseLinks { get; set; } = [];
 
-	[YamlMember(Alias = "upgrade-link")]
+	[YamlPropertyName("upgrade-link")]
 	public LinkCardLink? UpgradeLink { get; set; }
 
-	[YamlMember(Alias = "items")]
+	[YamlPropertyName("items")]
 	public WhatsNewItem[] Items { get; set; } = [];
 
+	[YamlIgnore]
 	public static WhatsNewData Empty { get; } = new();
 }
 
-[YamlSerializable]
 public record WhatsNewItem
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "link")]
+	[YamlPropertyName("link")]
 	public string? Link { get; set; }
 
-	[YamlMember(Alias = "date")]
+	/// <summary>
+	/// Where the item is available, for example <c>9.5</c> and <c>Serverless</c>. The card shows the
+	/// entries in order. When the list is empty the card falls back to <see cref="Date"/>.
+	/// </summary>
+	[YamlPropertyName("availability")]
+	public string[] Availability { get; set; } = [];
+
+	[YamlPropertyName("date")]
 	public string? Date { get; set; }
 
-	[YamlMember(Alias = "tag")]
+	[YamlPropertyName("tag")]
 	public string? Tag { get; set; }
 
-	[YamlMember(Alias = "featured")]
+	[YamlPropertyName("featured")]
 	public bool Featured { get; set; }
 }

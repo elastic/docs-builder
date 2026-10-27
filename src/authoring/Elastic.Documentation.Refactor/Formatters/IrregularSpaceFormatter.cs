@@ -21,39 +21,63 @@ public class IrregularSpaceFormatter : IFormatter
 	private static readonly char[] CharactersToRemove =
 	[
 		'\u000B', // Line Tabulation (\v) - <VT>
+
 		'\u000C', // Form Feed (\f) - <FF>
+
 		'\u0085', // Next Line
+
 		'\u1680', // Ogham Space Mark
+
 		'\u180E', // Mongolian Vowel Separator - <MVS>
+
 		'\ufeff', // Zero Width No-Break Space - <BOM>
+
 		'\u200B', // Zero Width Space - <ZWSP>
+
 		'\u2028', // Line Separator
-		'\u2029'  // Paragraph Separator
+
+		'\u2029' // Paragraph Separator
+
 	];
 
 	// Characters to preserve (semantically meaningful)
 	private static readonly char[] CharactersToPreserve =
 	[
 		'\u00A0', // No-Break Space - <NBSP>
+
 		'\u2007', // Figure Space
+
 		'\u202F', // Narrow No-Break Space
-		'\u205F'  // Medium Mathematical Space
+
+		'\u205F' // Medium Mathematical Space
+
 	];
 
 	// Characters to replace with regular spaces (visible but problematic)
 	private static readonly char[] CharactersToReplace =
 	[
 		'\u2000', // En Quad
+
 		'\u2001', // Em Quad
+
 		'\u2002', // En Space - <ENSP>
+
 		'\u2003', // Em Space - <EMSP>
+
 		'\u2004', // Tree-Per-Em
+
 		'\u2005', // Four-Per-Em
+
 		'\u2006', // Six-Per-Em
+
 		'\u2008', // Punctuation Space - <PUNCSP>
+
 		'\u2009', // Thin Space
+
 		'\u200A', // Hair Space
-		'\u3000'  // Ideographic Space
+
+		'\u3000' // Ideographic Space
+
 	];
 
 	private static readonly SearchValues<char> CharactersToRemoveValues = SearchValues.Create(CharactersToRemove);
@@ -64,9 +88,11 @@ public class IrregularSpaceFormatter : IFormatter
 	{
 		// Quick check - if no irregular space characters, return original
 		var span = content.AsSpan();
-		if (span.IndexOfAny(CharactersToRemoveValues) == -1 &&
-			span.IndexOfAny(CharactersToPreserveValues) == -1 &&
-			span.IndexOfAny(CharactersToReplaceValues) == -1)
+		if (
+			span.IndexOfAny(CharactersToRemoveValues) == -1
+			&& span.IndexOfAny(CharactersToPreserveValues) == -1
+			&& span.IndexOfAny(CharactersToReplaceValues) == -1
+		)
 			return new FormatResult(content, 0);
 
 		// Process each character with appropriate handling

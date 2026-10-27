@@ -1,38 +1,50 @@
-name: "Bug Report"
-description: "File a bug report."
-labels: ["bug"]
+name: Bug Report
+description: Something is broken or producing wrong output.
+labels: ["bug", "needs triage"]
 projects: ["elastic/1625"]
 body:
-  - type: "textarea"
-    id: description
+  - type: textarea
+    id: what-happened
     attributes:
-      label: "Describe the bug"
-      description: "A clear and concise description of what the bug is. If applicable, add screenshots to help explain your problem."
+      label: What happened?
+      description: >
+        What did you see? Include the command you ran and the exact output or error.
+        Expected behaviour is welcome too — one field is easier than two.
+      placeholder: |
+        I ran `docs-builder build` against a docset with a cross-repo link. The build
+        succeeded but the link resolved to a 404. I expected it to fail the build or
+        produce a working URL.
+
+        Error output:
+        ```
+        <paste here>
+        ```
     validations:
       required: true
-  - type: "textarea"
-    id: expected
-    attributes:
-      label: "Expected behavior"
-      description: "A clear and concise description of what you expected to happen."
-    validations:
-      required: true
-  - type: "textarea"
+
+  - type: textarea
     id: repro
     attributes:
-      label: "Steps to reproduce"
-      description: "If relevant, provide steps to reproduce the issue."
+      label: How can we reproduce it?
+      description: >
+        Minimal steps or a command plus the file it ran against.
+        Skip this if "What happened?" already covers it.
+      placeholder: |
+        ```bash
+        docs-builder build --path-prefix /docs
+        ```
+        Using `_docset.yml` with `cross_links: [elasticsearch]` and an `xref:` to a
+        missing anchor.
     validations:
       required: false
-  - type: "checkboxes"
-    id: tooling
+
+  - type: input
+    id: version
     attributes:
-      label: "Tooling"
-      description: "Select the tool this bug relates to."
-      options:
-      - label: "docs-builder"
-        required: false
-      - label: "migration tooling"
-        required: false
-      - label: "I'm not sure"
-        required: false
+      label: Version or commit
+      description: >
+        Output of `docs-builder --version`, or the commit SHA if building from source.
+        This is the most useful piece of triage data.
+      placeholder: "0.11.0 / abc1234"
+    validations:
+      required: false

@@ -42,22 +42,24 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 	private readonly BuildContext _context;
 	private readonly MarkdownParser _markdownParser;
 
-	public MarkdownFileFactory(BuildContext context, MarkdownParser markdownParser, IReadOnlyCollection<IDocsBuilderExtension> enabledExtensions)
+	public MarkdownFileFactory(
+		BuildContext context,
+		MarkdownParser markdownParser,
+		IReadOnlyCollection<IDocsBuilderExtension> enabledExtensions
+	)
 	{
 		_context = context;
 		_markdownParser = markdownParser;
 		EnabledExtensions = enabledExtensions;
 
 		var files = ScanDocumentationFiles(context, context.DocumentationSourceDirectory);
-		var additionalSources = enabledExtensions
-			.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling))
-			.ToArray();
+		var additionalSources = enabledExtensions.SelectMany(extension => extension.ScanDocumentationFiles(DefaultFileHandling)).ToArray();
 
-		Files = files.Concat(additionalSources)
+		Files = files
+			.Concat(additionalSources)
 			.Where(t => t.Item2 is not ExcludedFile)
 			.ToDictionary(kv => new FilePath(kv.Item1, context.DocumentationSourceDirectory), kv => kv.Item2)
 			.ToFrozenDictionary();
-
 	}
 
 	public FrozenDictionary<FilePath, DocumentationFile> Files { get; }
@@ -84,48 +86,60 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		// IDirectoryInfo wrapper and triggered a stat for every file).
 		var dirAttrCache = new Dictionary<string, FileAttributes>(StringComparer.Ordinal);
 
-		return [.. build.ReadFileSystem.Directory
-			.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
-			// Compute relative path once from the raw string before IFileInfo allocation.
-			// This also lets us do the hidden-folder dot-prefix check with zero metadata syscalls.
-			.Select(path => (path, relative: Path.GetRelativePath(sourceDirectory.FullName, path)))
-			// Skip dot-prefixed paths (Unix hidden dirs) — pure string, no stat
-			.Where(t => !t.relative.StartsWith('.'))
-			// Now create the IFileInfo (triggers stat on first property access)
-			.Select(t => (file: build.ReadFileSystem.FileInfo.New(t.path), t.relative))
-			.Where(t =>
-			{
-				// Single Attributes read covers hidden, system, and symlink (ReparsePoint) checks;
-				// the original code read Attributes twice for the file and twice more via Directory.
-				var fileAttr = t.file.Attributes;
-				if (fileAttr.HasFlag(FileAttributes.Hidden) || fileAttr.HasFlag(FileAttributes.System))
-					return false;
-				// Skip symlinks
-				if (t.file.LinkTarget != null)
-					return false;
-				// Check parent directory attributes with per-directory caching
-				var dirPath = Path.GetDirectoryName(t.file.FullName)!;
-				if (!dirAttrCache.TryGetValue(dirPath, out var dirAttr))
+		return [
+			.. build
+				.ReadFileSystem
+				.Directory
+				.EnumerateFiles(sourceDirectory.FullName, "*.*", SearchOption.AllDirectories)
+				// Compute relative path once from the raw string before IFileInfo allocation.
+				// This also lets us do the hidden-folder dot-prefix check with zero metadata syscalls.
+				.Select(path => (path, relative: Path.GetRelativePath(sourceDirectory.FullName, path)))
+				// Skip dot-prefixed paths (Unix hidden dirs) — pure string, no stat
+				.Where(t => !t.relative.StartsWith('.'))
+				// Now create the IFileInfo (triggers stat on first property access)
+				.Select(t => (file: build.ReadFileSystem.FileInfo.New(t.path), t.relative))
+				.Where(t =>
 				{
-					dirAttr = build.ReadFileSystem.DirectoryInfo.New(dirPath).Attributes;
-					dirAttrCache[dirPath] = dirAttr;
-				}
-				return !dirAttr.HasFlag(FileAttributes.Hidden) && !dirAttr.HasFlag(FileAttributes.System);
-			})
-			.Select<(IFileInfo file, string relative), (IFileInfo, DocumentationFile)>(t =>
-				t.file.Extension switch
-				{
-					".jpg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
-					".jpeg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
-					".gif" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/gif")),
-					".svg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/svg+xml")),
-					".png" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative)),
-					".md" => CreateMarkdownTuple(t.file, build),
-					_ => (t.file, DefaultFileHandling(t.file, sourceDirectory))
-				})];
+					// Single Attributes read covers hidden, system, and symlink (ReparsePoint) checks;
+					// the original code read Attributes twice for the file and twice more via Directory.
+					var fileAttr = t.file.Attributes;
+					if (fileAttr.HasFlag(FileAttributes.Hidden) || fileAttr.HasFlag(FileAttributes.System))
+						return false;
+					// Skip symlinks
+					if (t.file.LinkTarget != null)
+						return false;
+					// Check parent directory attributes with per-directory caching
+					var dirPath = Path.GetDirectoryName(t.file.FullName)!;
+					if (!dirAttrCache.TryGetValue(dirPath, out var dirAttr))
+					{
+						dirAttr = build.ReadFileSystem.DirectoryInfo.New(dirPath).Attributes;
+						dirAttrCache[dirPath] = dirAttr;
+					}
+					return !dirAttr.HasFlag(FileAttributes.Hidden) && !dirAttr.HasFlag(FileAttributes.System);
+				})
+				.Select<(IFileInfo file, string relative), (IFileInfo, DocumentationFile)>(
+					t =>
+						t.file.Extension switch
+						{
+							".jpg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
+							".jpeg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/jpeg")),
+							".gif" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/gif")),
+							".svg" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative, "image/svg+xml")),
+							".png" => (t.file, CreateImageFile(t.file, sourceDirectory, build, t.relative)),
+							".md" => CreateMarkdownTuple(t.file, build),
+							_ => (t.file, DefaultFileHandling(t.file, sourceDirectory))
+						}
+				)
+		];
 	}
 
-	private DocumentationFile CreateImageFile(IFileInfo file, IDirectoryInfo sourceDirectory, BuildContext context, string relativePath, string mimeType = "image/png")
+	private DocumentationFile CreateImageFile(
+		IFileInfo file,
+		IDirectoryInfo sourceDirectory,
+		BuildContext context,
+		string relativePath,
+		string mimeType = "image/png"
+	)
 	{
 		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
@@ -148,8 +162,10 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		if (context.Configuration.IsExcluded(relativePath))
 			return new ExcludedFile(file, sourceDirectory, context.Git.RepositoryName);
 
-		if (relativePath.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}")
-			|| relativePath.StartsWith($"_snippets{Path.DirectorySeparatorChar}"))
+		if (
+			relativePath.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}")
+			|| relativePath.StartsWith($"_snippets{Path.DirectorySeparatorChar}")
+		)
 			return new SnippetFile(file, sourceDirectory, context.Git.RepositoryName);
 
 		// we ignore files in folders that start with an underscore
@@ -177,7 +193,6 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		}
 	}
 
-
 	private DocumentationFile DefaultFileHandling(IFileInfo file, IDirectoryInfo sourceDirectory)
 	{
 		foreach (var extension in EnabledExtensions)
@@ -188,5 +203,4 @@ public class MarkdownFileFactory : IDocumentationFileFactory<MarkdownFile>
 		}
 		return new ExcludedFile(file, sourceDirectory, _context.Git.RepositoryName);
 	}
-
 }

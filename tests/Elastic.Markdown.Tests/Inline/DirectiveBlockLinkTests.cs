@@ -9,9 +9,9 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public abstract class DirectiveBlockLinkTests(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: InlineTest<LinkInline>(output,
-$$"""
+[InheritsTests]
+public abstract class DirectiveBlockLinkTests([LanguageInjection("markdown")] string content) : InlineTest<LinkInline>(
+	$$"""
 :::{warning}
 :name: caution_ref
 This is a 'warning' admonition
@@ -19,13 +19,13 @@ This is a 'warning' admonition
 
 {{content}}
 
-""")
+"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
-		var inclusion =
-"""
+		var inclusion = """
 # Special Requirements
 
 :::{important}
@@ -36,38 +36,30 @@ This is an 'important' admonition
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
 	}
-
 }
 
-public class InPageDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(output,
-"""
+[InheritsTests]
+public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Hello](#caution_ref)
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><a href="#caution_ref">Hello</a></p>"""
-		);
+		Html.ShouldContainHtml("""<p><a href="#caution_ref">Hello</a></p>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ExternalDirectiveLinkTests(ITestOutputHelper output) : DirectiveBlockLinkTests(output,
-"""
+[InheritsTests]
+public class ExternalDirectiveLinkTests() : DirectiveBlockLinkTests("""
 [Sub Requirements](testing/req.md#hint_ref)
-"""
-)
+""")
 {
-	[Fact]
-	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#hint_ref">Sub Requirements</a></p>"""
-		);
+	[Test]
+	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="/docs/testing/req#hint_ref">Sub Requirements</a></p>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

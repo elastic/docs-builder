@@ -11,15 +11,15 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.SettingsInclusion;
 
-public class IncludeTests(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-$$"""
+[InheritsTests]
+public class IncludeTests() : DirectiveTest<SettingsBlock>(
+	$$"""
 :::{settings} /{{SettingsPath.Replace("docs/", "")}}
 :::
 """
 )
 {
-	private static readonly string SettingsPath =
-		"docs/syntax/kibana-alerting-action-settings.yml";
+	private static readonly string SettingsPath = "docs/syntax/kibana-alerting-action-settings.yml";
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -29,23 +29,28 @@ $$"""
 		fileSystem.AddFile(SettingsPath, inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	[Test]
+	public void HasNoErrors()
+	{
+		// `platforms` is unmodelled: reported once per file as a hint, never as an error.
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Message.Should().Contain("'platforms' is not supported");
+		diagnostic.File.Should().EndWith("kibana-alerting-action-settings.yml");
+	}
 
-	[Fact]
-	public void IncludesInclusionHtml() =>
-		Html.Should()
-			.Contain("xpack.encryptedSavedObjects.encryptionKey");
+	[Test]
+	public void IncludesInclusionHtml() => Html.Should().Contain("xpack.encryptedSavedObjects.encryptionKey");
 }
-public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+
+[InheritsTests]
+public class RandomFileEmitsAnError() : DirectiveTest<SettingsBlock>("""
 :::{settings} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -54,28 +59,28 @@ public class RandomFileEmitsAnError(ITestOutputHelper output) : DirectiveTest<Se
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
 		Collector.Diagnostics.FirstOrDefault().File.Should().NotEndWith("test.md");
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("Can not be parsed as a valid settings file"));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("Can not be parsed as a valid settings file"));
 	}
 }
 
-public class NewSchemaRendersMetadataAndNestedSettings(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class NewSchemaRendersMetadataAndNestedSettings() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/new-schema.yml
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/new-schema.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/new-schema.yml",
+			"""
 product: Kibana
 collection: Test collection
 groups:
@@ -94,10 +99,11 @@ groups:
           - setting: "[n].url"
             description: Child setting description.
             datatype: string
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToAndMetadata()
 	{
 		Html.Should().Contain("applies-to-popover");
@@ -107,37 +113,32 @@ groups:
 		Html.Should().Contain("<strong>Options:</strong>");
 	}
 
-	[Fact]
-	public void RendersNestedSettingName()
-	{
-		Html.Should().Contain("xpack.actions.customHostSettings[n].url");
-	}
+	[Test]
+	public void RendersNestedSettingName() => Html.Should().Contain("xpack.actions.customHostSettings[n].url");
 
-	[Fact]
+	[Test]
 	public void DotsInSettingNamesAreHyphensInAnchors()
 	{
 		Html.Should().Contain("id=\"xpack-actions-customhostsettings\"");
 		Html.Should().NotContain("id=\"xpack.actions.customhostsettings\"");
 	}
 
-	[Fact]
-	public void NestedSettingAnchorIncludesParentPrefix()
-	{
-		Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
-	}
+	[Test]
+	public void NestedSettingAnchorIncludesParentPrefix() => Html.Should().Contain("id=\"xpack-actions-customhostsettingsn-url\"");
 }
 
-public class LegacySourceBlocksRenderAsMarkdownCode(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class LegacySourceBlocksRenderAsMarkdownCode() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/legacy-source.yml
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/legacy-source.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/legacy-source.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -150,10 +151,11 @@ groups:
           xpack.legacy.example:
             enabled: true
           --
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAsFencedCodeBlock()
 	{
 		Html.Should().Contain("language-yaml");
@@ -161,19 +163,20 @@ groups:
 	}
 }
 
-public class SettingsTopMatterAndTitlesRender(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class SettingsTopMatterAndTitlesRender() : DirectiveTest<SettingsBlock>("""
 :::{settings} _settings/top-matter.yml
 ::::
-"""
-)
+""")
 {
 	protected override IReadOnlyList<string>? GetDocsetProducts() => ["kibana"];
 
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/top-matter.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/top-matter.yml",
+			"""
 product: Kibana
 collection: Test collection
 page_description: |
@@ -185,10 +188,11 @@ groups:
     settings:
       - setting: xpack.sample.enabled
         description: "Enables sample behavior."
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersPageDescriptionNotesAndInterpolatedGroupTitle()
 	{
 		Html.Should().Contain("General Kibana settings");
@@ -198,8 +202,9 @@ groups:
 	}
 }
 
-public class SettingsApplicabilityRowsPreferUsefulBadges(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class SettingsApplicabilityRowsPreferUsefulBadges() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/applicability-rows.yml
 ::::
 """
@@ -208,7 +213,9 @@ public class SettingsApplicabilityRowsPreferUsefulBadges(ITestOutputHelper outpu
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/applicability-rows.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/applicability-rows.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -218,10 +225,11 @@ groups:
           stack: ga
           self: ga
           ech: unavailable
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderGenericStackBadgeOrUnavailableSupportedOnEntry()
 	{
 		var config = TestHelpers.CreateConfigurationContext(new MockFileSystem());
@@ -259,8 +267,9 @@ groups:
 /// - console.ui.enabled        → ech: unavailable, self: ga → ECH hidden
 /// Settings with no applies_to at all (universally available) are also visible.
 /// </summary>
-public class DeploymentFilterEchOnKibanaGeneralSettings(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-$$"""
+[InheritsTests]
+public class DeploymentFilterEchOnKibanaGeneralSettings() : DirectiveTest<SettingsBlock>(
+	$$"""
 :::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
 :deployment: ech
 :::
@@ -276,13 +285,11 @@ $$"""
 		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
 	}
 
-	[Fact]
-	public void ShowsEchGaSetting() =>
-		Html.Should().Contain("execution_context.enabled");
+	[Test]
+	public void ShowsEchGaSetting() => Html.Should().Contain("execution_context.enabled");
 
-	[Fact]
-	public void HidesEchUnavailableSetting() =>
-		Html.Should().NotContain("console.ui.enabled");
+	[Test]
+	public void HidesEchUnavailableSetting() => Html.Should().NotContain("console.ui.enabled");
 }
 
 /// <summary>
@@ -290,8 +297,9 @@ $$"""
 /// it must be treated as unavailable for ECH — "missing means unavailable".
 /// Uses the real kibana-general-settings.yml which has self-only and ech:unavailable patterns.
 /// </summary>
-public class DeploymentFilterEchMissingMeansUnavailable(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class DeploymentFilterEchMissingMeansUnavailable() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/self-only.yml
 :deployment: ech
 :::
@@ -301,7 +309,9 @@ public class DeploymentFilterEchMissingMeansUnavailable(ITestOutputHelper output
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/self-only.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/self-only.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -316,24 +326,23 @@ groups:
           self: ga
       - setting: no.applies.to.setting
         description: No applies_to at all — universally available.
-""");
+"""
+		);
 	}
 
-	[Fact]
-	public void HidesSettingWhenEchIsMissing() =>
-		Html.Should().NotContain("self.only.setting");
+	[Test]
+	public void HidesSettingWhenEchIsMissing() => Html.Should().NotContain("self.only.setting");
 
-	[Fact]
-	public void ShowsSettingWithExplicitEchGa() =>
-		Html.Should().Contain("ech.explicit.setting");
+	[Test]
+	public void ShowsSettingWithExplicitEchGa() => Html.Should().Contain("ech.explicit.setting");
 
-	[Fact]
-	public void ShowsSettingWithNoAppliesTo() =>
-		Html.Should().Contain("no.applies.to.setting");
+	[Test]
+	public void ShowsSettingWithNoAppliesTo() => Html.Should().Contain("no.applies.to.setting");
 }
 
-public class DeploymentFilterWithUnknownValueEmitsWarning(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-$$"""
+[InheritsTests]
+public class DeploymentFilterWithUnknownValueEmitsWarning() : DirectiveTest<SettingsBlock>(
+	$$"""
 :::{settings} /{{GeneralSettingsPath.Replace("docs/", "")}}
 :deployment: invalid-deployment
 :::
@@ -349,18 +358,17 @@ $$"""
 		fileSystem.AddFile(GeneralSettingsPath, System.IO.File.ReadAllText(fullPath));
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsWarning() =>
-		Collector.Diagnostics.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("invalid-deployment"));
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Warning && d.Message.Contains("invalid-deployment"));
 
-	[Fact]
-	public void StillRendersAllSettingsWhenFilterIsInvalid() =>
-		Html.Should().Contain("execution_context.enabled");
+	[Test]
+	public void StillRendersAllSettingsWhenFilterIsInvalid() => Html.Should().Contain("execution_context.enabled");
 }
 
-public class AppliesToInlineRoleInDescriptionRendersAsBadge(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class AppliesToInlineRoleInDescriptionRendersAsBadge() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/applies-to-in-description.yml
 ::::
 """
@@ -369,7 +377,9 @@ public class AppliesToInlineRoleInDescriptionRendersAsBadge(ITestOutputHelper ou
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/applies-to-in-description.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/applies-to-in-description.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -379,10 +389,11 @@ groups:
 
           * {applies_to}`stack: ga 9.2` Defaults to `model-a`.
           * {applies_to}`stack: ga 9.1` Defaults to `model-b`.
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToRoleAsBadgeNotLiteralText()
 	{
 		Html.Should().Contain("applies-to-popover");
@@ -398,8 +409,9 @@ groups:
 /// The test stack current is 8.0.0 (see <see cref="TestHelpers.CreateConfigurationContext"/>),
 /// so <c>stack: ga 9.5</c> is unreleased.
 /// </summary>
-public class HidesSupportedOnLineWhenStackIsFullyPlanned(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class HidesSupportedOnLineWhenStackIsFullyPlanned() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/stack-fully-planned.yml
 ::::
 """
@@ -408,7 +420,9 @@ public class HidesSupportedOnLineWhenStackIsFullyPlanned(ITestOutputHelper outpu
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/stack-fully-planned.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/stack-fully-planned.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -418,21 +432,21 @@ groups:
           stack: ga 99.99
           ech: ga
           self: ga
-""");
+"""
+		);
 	}
 
-	[Fact]
-	public void RendersPlannedStackBadge() =>
-		Html.Should().Contain("badge-key=\"Stack\"").And.Contain("Planned");
+	[Test]
+	public void RendersPlannedStackBadge() => Html.Should().Contain("badge-key=\"Stack\"").And.Contain("Planned");
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderSupportedOnLine()
 	{
 		Html.Should().NotContain("settings-supported-on");
 		Html.Should().NotContain("Supported on:");
 	}
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderEchOrSelfManagedBadges()
 	{
 		Html.Should().NotContain("badge-key=\"ECH\"");
@@ -444,8 +458,9 @@ groups:
 /// A setting whose stack is released today (<c>stack: ga 7.0</c> with test current 8.0.0)
 /// must continue to render the "Supported on" line with ECH and Self-managed badges.
 /// </summary>
-public class KeepsSupportedOnLineWhenStackIsReleased(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class KeepsSupportedOnLineWhenStackIsReleased() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/stack-released.yml
 ::::
 """
@@ -454,7 +469,9 @@ public class KeepsSupportedOnLineWhenStackIsReleased(ITestOutputHelper output) :
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/stack-released.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/stack-released.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -464,10 +481,11 @@ groups:
           stack: ga 7.0
           ech: ga
           self: ga
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersSupportedOnLineWithBothBadges()
 	{
 		Html.Should().Contain("settings-supported-on");
@@ -481,8 +499,9 @@ groups:
 /// (e.g. <c>stack: ga 7.0, deprecated 9.0</c>) is still usable today,
 /// so the "Supported on" line must remain visible.
 /// </summary>
-public class KeepsSupportedOnLineWhenStackHasMixedReleaseAndFutureVersions(ITestOutputHelper output) : DirectiveTest<SettingsBlock>(output,
-"""
+[InheritsTests]
+public class KeepsSupportedOnLineWhenStackHasMixedReleaseAndFutureVersions() : DirectiveTest<SettingsBlock>(
+	"""
 :::{settings} _settings/stack-mixed-versions.yml
 ::::
 """
@@ -491,7 +510,9 @@ public class KeepsSupportedOnLineWhenStackHasMixedReleaseAndFutureVersions(ITest
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=yaml
-		fileSystem.AddFile("docs/_settings/stack-mixed-versions.yml", """
+		fileSystem.AddFile(
+			"docs/_settings/stack-mixed-versions.yml",
+			"""
 groups:
   - group: Example
     settings:
@@ -501,14 +522,59 @@ groups:
           stack: ga 7.0, deprecated 99.0
           ech: ga
           self: ga
-""");
+"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersSupportedOnLine()
 	{
 		Html.Should().Contain("settings-supported-on");
 		Html.Should().Contain("badge-key=\"ECH\"");
 		Html.Should().Contain("badge-key=\"Self-managed\"");
+	}
+}
+
+/// <summary>
+/// Settings YAML anchors an <c>applies_to</c> block once and reuses it with an alias
+/// (<c>&amp;shared</c> / <c>*shared</c>) to avoid repeating it on every setting it covers.
+/// The generated reader must resolve the alias instead of throwing on it.
+/// </summary>
+[InheritsTests]
+public class SettingReusesAnAnchoredAppliesToBlock() : DirectiveTest<SettingsBlock>(
+	"""
+:::{settings} _settings/shared-applies-to.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile(
+			"docs/_settings/shared-applies-to.yml",
+			"""
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.one
+        description: First setting.
+        applies_to: &shared
+          stack: ga 7.0
+      - setting: xpack.sample.two
+        description: Second setting, reuses the same applies_to block as the one above.
+        applies_to: *shared
+"""
+		);
+	}
+
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Test]
+	public void RendersBothSettings()
+	{
+		Html.Should().Contain("xpack.sample.one");
+		Html.Should().Contain("xpack.sample.two");
 	}
 }

@@ -38,19 +38,14 @@ public record LinkRegistry
 		// onboarding new repository
 		else
 		{
-			copiedRepositories.Add(repository, new Dictionary<string, LinkRegistryEntry>
-			{
-				{ branch, entry }
-			});
+			copiedRepositories.Add(repository, new Dictionary<string, LinkRegistryEntry> { { branch, entry } });
 		}
 		return this with { Repositories = copiedRepositories };
 	}
 
-	public static LinkRegistry Deserialize(Stream json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
+	public static LinkRegistry Deserialize(Stream json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
 
-	public static LinkRegistry Deserialize(string json) =>
-		JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
+	public static LinkRegistry Deserialize(string json) => JsonSerializer.Deserialize(json, SourceGenerationContext.Default.LinkRegistry)!;
 
 	public static string Serialize(LinkRegistry registry) =>
 		JsonSerializer.Serialize(registry, SourceGenerationContext.Default.LinkRegistry);

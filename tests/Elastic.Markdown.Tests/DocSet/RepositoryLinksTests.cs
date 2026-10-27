@@ -11,27 +11,23 @@ namespace Elastic.Markdown.Tests.DocSet;
 
 public class RepositoryLinksTests : NavigationTestsBase
 {
-	public RepositoryLinksTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
+	public RepositoryLinksTests() : base() => Reference = Set.CreateLinkReference();
 
 	private RepositoryLinks Reference { get; }
 
-	[Fact]
-	public void ShouldNotBeNull() =>
-		Reference.Should().NotBeNull();
+	[Test]
+	public void ShouldNotBeNull() => Reference.Should().NotBeNull();
 
-	[Fact]
-	public void EmitsLinks() =>
-		Reference.Links.Should().NotBeNullOrEmpty();
+	[Test]
+	public void EmitsLinks() => Reference.Links.Should().NotBeNullOrEmpty();
 
-	[Fact]
-	public void ShouldNotIncludeSnippets() =>
-		Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
-
+	[Test]
+	public void ShouldNotIncludeSnippets() => Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
 }
 
-public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class GitCheckoutInformationTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void Create()
 	{
 		var root = FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
@@ -51,17 +47,12 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 
 public class LinkReferenceSerializationTests
 {
-	[Fact]
+	[Test]
 	public void SerializesCurrent()
 	{
 		var linkReference = new RepositoryLinks
 		{
-			Origin = new GitCheckoutInformation
-			{
-				Branch = "branch",
-				Remote = "remote",
-				Ref = "ref"
-			},
+			Origin = new GitCheckoutInformation { Branch = "branch", Remote = "remote", Ref = "ref" },
 			UrlPathPrefix = "",
 			Links = [],
 			CrossLinks = [],
@@ -83,10 +74,11 @@ public class LinkReferenceSerializationTests
 			  "cross_links": [],
 			  "redirects": null
 			}
-			""");
+			"""
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void Deserializes()
 	{
 		// language=json
@@ -109,5 +101,4 @@ public class LinkReferenceSerializationTests
 		var linkReference = RepositoryLinks.Deserialize(json);
 		linkReference.Origin.Ref.Should().Be("ref");
 	}
-
 }

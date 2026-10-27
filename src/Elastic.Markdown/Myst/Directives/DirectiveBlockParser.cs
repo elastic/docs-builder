@@ -16,12 +16,14 @@ using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -78,8 +80,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
-	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
-		UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
+	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup = UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
 
 	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
 	{
@@ -156,6 +157,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{whats-new}") > 0)
 			return new WhatsNewBlock(this, context);
 
+		if (info.IndexOf("{on-this-page}") > 0)
+			return new OnThisPageBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
@@ -177,6 +181,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 				return new VersionBlock(this, version[1..^1], context);
 		}
 
+		if (info.IndexOf("{related-learning}") > 0)
+			return new RelatedLearningBlock(this, context);
+
 		if (info.IndexOf("{page-card}") > 0)
 			return new PageCardBlock(this, context);
 
@@ -191,6 +198,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
+
+		if (info.IndexOf("{vector-sizing-calculator}") > 0)
+			return new VectorSizingBlock(this, context);
 
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);
@@ -258,10 +268,11 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
-		// Once a directive has opened a nested directive child, an option line belongs to
-		// that inner directive, not this ancestor. Without this guard the ancestor swallows
-		// every descendant's options (last one wins) and corrupts its own.
-		if (directiveBlock.LastChild is DirectiveBlock)
+		// Option lines belong to a nested directive, not this ancestor. A list or quote can
+		// sit between them, so search the child tree, not only LastChild (see
+		// https://github.com/elastic/docs-builder/issues/4540). Do not use IsOpen: Markdig
+		// sets every opened block to closed before it runs TryContinue from the outside in.
+		if (HasNestedDirective(directiveBlock))
 			return base.TryContinue(processor, block);
 
 		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
@@ -274,6 +285,18 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;
+	}
 
+	private static bool HasNestedDirective(ContainerBlock block)
+	{
+		foreach (var child in block)
+		{
+			if (child is DirectiveBlock)
+				return true;
+			if (child is ContainerBlock container && HasNestedDirective(container))
+				return true;
+		}
+
+		return false;
 	}
 }

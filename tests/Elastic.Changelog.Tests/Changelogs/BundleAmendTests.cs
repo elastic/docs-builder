@@ -17,7 +17,7 @@ public class BundleAmendTests : ChangelogTestBase
 	private ChangelogBundlingService BundleService { get; }
 	private readonly string _changelogDir;
 
-	public BundleAmendTests(ITestOutputHelper output) : base(output)
+	public BundleAmendTests() : base()
 	{
 		Service = new(LoggerFactory, FileSystem);
 		BundleService = new(LoggerFactory, FileSystem);
@@ -52,12 +52,7 @@ public class BundleAmendTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, ct);
 
 		var bundlePath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Output = bundlePath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = bundlePath };
 
 		var result = await BundleService.BundleChangelogs(Collector, input, ct);
 		result.Should().BeTrue("bundle creation should succeed");
@@ -96,21 +91,17 @@ public class BundleAmendTests : ChangelogTestBase
 		return newFile;
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_AddFile_WritesResolvedEntryWithProvenance()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 		var newFile = await CreateNewChangelogFile(ct);
 
 		// Reset collector for the amend operation
-		var amendCollector = new TestDiagnosticsCollector(Output);
+		var amendCollector = new TestDiagnosticsCollector();
 
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			AddFiles = [newFile]
-		};
+		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -131,20 +122,16 @@ public class BundleAmendTests : ChangelogTestBase
 		amendContent.Should().Contain("checksum:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_RemoveFromParent_CreatesExcludeEntries()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
-		var amendCollector = new TestDiagnosticsCollector(Output);
+		var amendCollector = new TestDiagnosticsCollector();
 
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			RemoveFiles = [changelogFile]
-		};
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -161,27 +148,19 @@ public class BundleAmendTests : ChangelogTestBase
 		amendContent.TrimStart().Should().StartWith("products:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_RemoveAfterAdd_ExcludesAmendedEntry()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 		var newFile = await CreateNewChangelogFile(ct);
 
-		var addCollector = new TestDiagnosticsCollector(Output);
-		var addInput = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			AddFiles = [newFile]
-		};
+		var addCollector = new TestDiagnosticsCollector();
+		var addInput = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 		(await Service.AmendBundle(addCollector, addInput, ct)).Should().BeTrue();
 
-		var removeCollector = new TestDiagnosticsCollector(Output);
-		var removeInput = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			RemoveFiles = [newFile]
-		};
+		var removeCollector = new TestDiagnosticsCollector();
+		var removeInput = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(removeCollector, removeInput, ct);
 
@@ -196,10 +175,10 @@ public class BundleAmendTests : ChangelogTestBase
 		removeAmendContent.Should().Contain("name: 1755268200-new-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_RemoveWithChecksumMismatch_WithoutForce_Fails()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 
@@ -214,36 +193,33 @@ public class BundleAmendTests : ChangelogTestBase
 			prs:
 			- "100"
 			""",
-			ct);
+			ct
+		);
 
-		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			RemoveFiles = [changelogFile]
-		};
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
 		result.Should().BeFalse();
-		amendCollector.Diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("different checksum"));
+		amendCollector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("different checksum"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_RemoveAndAdd_InSingleAmendFile()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 		var removeFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 		var addFile = await CreateNewChangelogFile(ct);
 
-		var amendCollector = new TestDiagnosticsCollector(Output);
+		var amendCollector = new TestDiagnosticsCollector();
 		var input = new AmendBundleArguments
 		{
 			BundlePath = bundlePath,
 			RemoveFiles = [removeFile],
-			AddFiles = [addFile]
+			AddFiles = [addFile],
+			ForceLocal = true
 		};
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
@@ -287,7 +263,9 @@ public class BundleAmendTests : ChangelogTestBase
 		FileSystem.Directory.CreateDirectory(bundleDir);
 		var bundlePath = FileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.yaml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(bundlePath, $"""
+		await FileSystem.File.WriteAllTextAsync(
+			bundlePath,
+			$"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -302,24 +280,22 @@ public class BundleAmendTests : ChangelogTestBase
 			  title: Existing feature
 			  prs:
 			  - "100"
-			""", ct);
+			""",
+			ct
+		);
 
 		return bundlePath;
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_Add_CopiesParentProductsIntoAmend()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundleWithFullProducts(ct);
 		var newFile = await CreateNewChangelogFile(ct);
 
-		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			AddFiles = [newFile]
-		};
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [newFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -334,29 +310,28 @@ public class BundleAmendTests : ChangelogTestBase
 
 		// The amend must be self-contained: complete parent products, including target, repo, and owner.
 		amend.Products.Should().ContainSingle();
-		amend.Products[0].Should().BeEquivalentTo(new BundledProduct
-		{
-			ProductId = "elasticsearch",
-			Target = "9.3.0",
-			Lifecycle = Lifecycle.Ga,
-			Repo = "elasticsearch",
-			Owner = "elastic"
-		});
+		amend
+			.Products[0]
+			.Should()
+			.BeEquivalentTo(new BundledProduct
+			{
+				ProductId = "elasticsearch",
+				Target = "9.3.0",
+				Lifecycle = Lifecycle.Ga,
+				Repo = "elasticsearch",
+				Owner = "elastic"
+			});
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_Remove_CopiesParentProductsIntoAmend()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundleWithFullProducts(ct);
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 
-		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			RemoveFiles = [changelogFile]
-		};
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile], ForceLocal = true };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
@@ -374,31 +349,88 @@ public class BundleAmendTests : ChangelogTestBase
 		amend.Products[0].Owner.Should().Be("elastic");
 	}
 
-	[Fact]
+	[Test]
+	public async Task AmendBundle_DescriptionOnly_WritesSidecarWithoutEntries()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundleWithFullProducts(ct);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "This release is based on {repo} {version}." };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
+		amendFiles.Should().HaveCount(1);
+
+		var amend = ReleaseNotesSerialization.DeserializeBundle(await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct));
+		amend.Entries.Should().BeEmpty();
+		amend.ExcludeEntries.Should().BeEmpty();
+		amend.Description.Should().Be("This release is based on elasticsearch 9.3.0.");
+		amend.Products[0].Target.Should().Be("9.3.0");
+	}
+
+	[Test]
+	public async Task AmendBundle_ClearDescription_WritesEmptyDescription()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, Description = "" };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeTrue();
+		amendCollector.Errors.Should().Be(0);
+
+		var yaml = await FileSystem.File.ReadAllTextAsync(ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath)[0], ct);
+		yaml.Should().Contain("description:");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task AmendBundle_NeitherEntriesNorDescription_Fails()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var bundlePath = await CreateBundle(ct);
+
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath };
+
+		var result = await Service.AmendBundle(amendCollector, input, ct);
+
+		result.Should().BeFalse();
+		amendCollector.Errors.Should().BeGreaterThan(0);
+		amendCollector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Test]
 	public async Task AmendBundle_CorruptExistingAmend_FailsWithoutWritingNewAmend()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		var bundlePath = await CreateBundle(ct);
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-existing.yaml");
 
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.ChangeExtension(bundlePath, ".amend-1.yaml"),
 			"exclude-entries:\n  - file: [invalid yaml",
-			ct);
+			ct
+		);
 
-		var amendCollector = new TestDiagnosticsCollector(Output);
-		var input = new AmendBundleArguments
-		{
-			BundlePath = bundlePath,
-			RemoveFiles = [changelogFile]
-		};
+		var amendCollector = new TestDiagnosticsCollector();
+		var input = new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = [changelogFile] };
 
 		var result = await Service.AmendBundle(amendCollector, input, ct);
 
 		result.Should().BeFalse();
-		amendCollector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Failed to deserialize amend file"));
+		amendCollector
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("Failed to deserialize amend file"));
 
 		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
 		amendFiles.Should().HaveCount(1, "corrupt amend should not produce a second amend file");

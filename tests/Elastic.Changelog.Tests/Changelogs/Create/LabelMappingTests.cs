@@ -5,28 +5,20 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.GitHub;
+using Elastic.Documentation.Diagnostics;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class LabelMappingTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionAndLabelMapping_MapsLabelsToType()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Fix memory leak in search",
-			Labels = ["type:bug"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Fix memory leak in search", Labels = ["type:bug"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -51,19 +43,19 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -74,11 +66,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithProductIdOnly_ParsesCorrectly()
 	{
 		// Arrange
@@ -89,10 +81,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = PrInfoProcessor.MapLabelsToProducts(
-			[":stack/elasticsearch", ":stack/kibana", "unrelated-label"],
-			labelToProducts
-		);
+		var result = PrInfoProcessor.MapLabelsToProducts([":stack/elasticsearch", ":stack/kibana", "unrelated-label"], labelToProducts);
 
 		// Assert
 		result.Should().HaveCount(2);
@@ -100,14 +89,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().Contain(p => p.Product == "kibana" && p.Target == null && p.Lifecycle == null);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithProductAndTarget_ParsesCorrectly()
 	{
 		// Arrange
-		var labelToProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-		{
-			[":feature/new"] = "elasticsearch 9.2.0"
-		};
+		var labelToProducts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [":feature/new"] = "elasticsearch 9.2.0" };
 
 		// Act
 		var result = PrInfoProcessor.MapLabelsToProducts([":feature/new"], labelToProducts);
@@ -119,7 +105,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Lifecycle.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithFullSpec_ParsesCorrectly()
 	{
 		// Arrange
@@ -138,7 +124,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Lifecycle.Should().Be("ga");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithDuplicateMatchingLabels_DeduplicatesProducts()
 	{
 		// Arrange
@@ -156,7 +142,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result[0].Product.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToProducts_WithNoMatchingLabels_ReturnsEmpty()
 	{
 		// Arrange
@@ -172,22 +158,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_DerviesProductsFromLabels()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Add new search feature",
-			Labels = ["type:feature", ":stack/elasticsearch"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Add new search feature", Labels = ["type:feature", ":stack/elasticsearch"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -219,13 +196,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -236,11 +213,11 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_MultipleMatchingLabels_AddsAllProducts()
 	{
 		// Arrange
@@ -250,12 +227,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Labels = ["type:feature", ":stack/elasticsearch", ":stack/kibana"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -286,7 +258,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -296,27 +268,180 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: elasticsearch");
 		yamlContent.Should().Contain("- product: kibana");
 	}
 
-	[Fact]
+	[Test]
+	public async Task CreateChangelog_WithLabelProductMapping_AddsTheImpliedProducts()
+	{
+		// Arrange — the team label maps to security, which implies kibana and cloud-serverless
+		var prInfo = new GitHubPrInfo { Title = "Add a new feature", Labels = ["type:feature", "Team:SecuritySolution"] };
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			products:
+			  implies:
+			    security: [kibana, cloud-serverless]
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			  products:
+			    'security':
+			      - "Team:SecuritySolution"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+
+		var outputDir = input.Output;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("- product: security");
+		yamlContent.Should().Contain("- product: kibana");
+		yamlContent.Should().Contain("- product: cloud-serverless");
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithTwoMappedProductsAndNoDefault_FailsAPrWithoutAProductLabel()
+	{
+		// Arrange — two products are mapped, no default is set, and the PR carries no product label
+		var prInfo = new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug"] };
+
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching product label found on PR https://github.com/elastic/elasticsearch/pull/12345"
+				) && d.Message.Contains(":stack/elasticsearch, :stack/kibana")
+			);
+		var outputDir = input.Output!;
+		if (!FileSystem.Directory.Exists(outputDir))
+			FileSystem.Directory.CreateDirectory(outputDir);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithTwoMappedProductsAndNoDefault_FailsAnIssueWithTitleAndTypeButNoProductLabel()
+	{
+		// Arrange — --title and --type are set, so the issue would not be fetched unless products are missing
+		A.CallTo(
+			() => MockGitHubService.FetchIssueInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubIssueInfo { Title = "Fix something", Labels = ["type:bug"] });
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix: "type:bug"
+			    breaking-change:
+			  products:
+			    'elasticsearch':
+			      - ":stack/elasticsearch"
+			    'kibana':
+			      - ":stack/kibana"
+			lifecycles:
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var service = CreateService();
+
+		var input = new CreateChangelogArguments
+		{
+			Issues = ["https://github.com/elastic/elasticsearch/issues/12345"],
+			Title = "Fix something",
+			Type = "bug-fix",
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		// Act
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching product label found on issue https://github.com/elastic/elasticsearch/issues/12345"
+				)
+			);
+	}
+
+	[Test]
 	public async Task CreateChangelog_WithLabelProductMapping_ExplicitProductsOverrideLabels()
 	{
 		// Arrange — PR has label for elasticsearch but --products specifies kibana
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Fix something",
-			Labels = ["type:bug", ":stack/elasticsearch"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/elasticsearch"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -340,13 +465,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			// Explicit product takes precedence over label mapping
-			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "kibana" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -356,12 +481,12 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- product: kibana");
 		yamlContent.Should().NotContain("- product: elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionAndAreaMapping_MapsLabelsToAreas()
 	{
 		// Arrange
@@ -371,12 +496,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			Labels = ["type:enhancement", "area:security", "area:search"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -404,19 +524,19 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -427,13 +547,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("areas:");
 		yamlContent.Should().Contain("- security");
 		yamlContent.Should().Contain("- search");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToAreas_WithAreaNameContainingCommas_PresservesFullName()
 	{
 		// Arrange
@@ -444,33 +564,21 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = PrInfoProcessor.MapLabelsToAreas(
-			["Team:Alerting Services", "Team:Search"],
-			labelToAreas
-		);
+		var result = PrInfoProcessor.MapLabelsToAreas(["Team:Alerting Services", "Team:Search"], labelToAreas);
 
 		// Assert
 		result.Should().HaveCount(2);
-		result.Should().Contain("Alerting, connectors, and reporting");  // Not split
+		result.Should().Contain("Alerting, connectors, and reporting"); // Not split
 		result.Should().Contain("Search");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithAreaNameContainingCommas_PreservesAreaName()
 	{
 		// Arrange: Area name contains commas
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Fix alerting issues",
-			Labels = ["type:bug", "Team:Alerting Services"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Fix alerting issues", Labels = ["type:bug", "Team:Alerting Services"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -495,19 +603,19 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -517,26 +625,17 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("- Alerting, connectors, and reporting");  // Full name, not split
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("- \"Alerting, connectors, and reporting\""); // Full name, not split
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithOneLabelMappedToMultipleAreas_AddsAllAreas()
 	{
 		// Arrange: Same label under multiple areas
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Cross-area change",
-			Labels = ["type:enhancement", "Team:Search"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Cross-area change", Labels = ["type:enhancement", "Team:Search"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -568,7 +667,7 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -578,12 +677,12 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("- Search");
 		yamlContent.Should().Contain("- Observability");
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithSingleMatch_ReturnsFeatureId()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -591,16 +690,13 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			["feature-flag:new-search-api"] = "feature:new-search-api"
 		};
 
-		var result = PrInfoProcessor.MapLabelsToFeatureId(
-			["feature-flag:new-search-api", "type:feature"],
-			labelToFeatures,
-			Collector);
+		var result = PrInfoProcessor.MapLabelsToFeatureId(["feature-flag:new-search-api", "type:feature"], labelToFeatures, Collector);
 
 		result.Should().Be("feature:new-search-api");
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithDuplicateMatchingLabels_ReturnsSameFeatureIdWithoutWarning()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -612,13 +708,14 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var result = PrInfoProcessor.MapLabelsToFeatureId(
 			["feature-flag:new-search-api", ":Feature/NewSearchApi"],
 			labelToFeatures,
-			Collector);
+			Collector
+		);
 
 		result.Should().Be("feature:new-search-api");
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithMultipleDistinctMatches_WarnsAndReturnsFirst()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -627,18 +724,14 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			["feature-flag:bar"] = "feature:bar"
 		};
 
-		var result = PrInfoProcessor.MapLabelsToFeatureId(
-			["feature-flag:foo", "feature-flag:bar"],
-			labelToFeatures,
-			Collector);
+		var result = PrInfoProcessor.MapLabelsToFeatureId(["feature-flag:foo", "feature-flag:bar"], labelToFeatures, Collector);
 
 		result.Should().Be("feature:foo");
 		Collector.Warnings.Should().Be(1);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Multiple feature-id values matched"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
 	}
 
-	[Fact]
+	[Test]
 	public void MapLabelsToFeatureId_WithNoMatchingLabels_ReturnsNull()
 	{
 		var labelToFeatures = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -646,30 +739,18 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 			["feature-flag:new-search-api"] = "feature:new-search-api"
 		};
 
-		var result = PrInfoProcessor.MapLabelsToFeatureId(
-			["type:feature", ">bug"],
-			labelToFeatures,
-			Collector);
+		var result = PrInfoProcessor.MapLabelsToFeatureId(["type:feature", ">bug"], labelToFeatures, Collector);
 
 		result.Should().BeNull();
 		Collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithLabelFeatureMapping_DerivesFeatureIdFromLabels()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Add new search API",
-			Labels = ["type:feature", "feature-flag:new-search-api"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Add new search API", Labels = ["type:feature", "feature-flag:new-search-api"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -691,42 +772,33 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:new-search-api");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("feature-id: \"feature:new-search-api\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExplicitFeatureId_IgnoresLabelMapping()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Add new search API",
-			Labels = ["type:feature", "feature-flag:new-search-api"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Add new search API", Labels = ["type:feature", "feature-flag:new-search-api"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -748,38 +820,29 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			FeatureId = "feature:cli-override",
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:cli-override");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("feature-id: \"feature:cli-override\"");
 		yamlContent.Should().NotContain("feature-id: feature:new-search-api");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultipleFeatureLabelMatches_WarnsAndUsesFirst()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Cross-feature change",
-			Labels = ["type:feature", "feature-flag:foo", "feature-flag:bar"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Cross-feature change", Labels = ["type:feature", "feature-flag:foo", "feature-flag:bar"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -803,39 +866,29 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Multiple feature-id values matched"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple feature-id values matched"));
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:foo");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("feature-id: \"feature:foo\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithNoMatchingFeatureLabels_OmitsFeatureId()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "Unrelated feature",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "Unrelated feature", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -857,20 +910,133 @@ public class LabelMappingTests(ITestOutputHelper output) : CreateChangelogTestBa
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Split('\n')
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Split('\n').Should().NotContain(line => line.TrimStart().StartsWith("feature-id:", StringComparison.Ordinal));
+	}
+
+	private const string RequiredAreaConfig =
+		"""
+		pivot:
+		  required: [areas]
+		  types:
+		    feature:
+		    bug-fix: "type:bug"
+		    breaking-change:
+		  areas:
+		    Search: ":Search"
+		  products:
+		    'kibana':
+		      - ":stack/kibana"
+		lifecycles:
+		  - ga
+		""";
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndNoAreaLabel_FailsAPr()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector
+			.Diagnostics
 			.Should()
-			.NotContain(line => line.TrimStart().StartsWith("feature-id:", StringComparison.Ordinal));
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching area label found on PR https://github.com/elastic/kibana/pull/12345"
+				) && d.Message.Contains("--areas")
+			);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndAreaLabel_WritesTheEntry()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana", ":Search"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndExplicitAreas_WritesTheEntry()
+	{
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":stack/kibana"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Products = [],
+			Areas = ["Search"],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+	}
+
+	[Test]
+	public async Task CreateChangelog_WithRequiredAreaAndTitleTypeProductsGiven_StillFetchesThePrForTheAreaLabel()
+	{
+		// The documented CI flow passes title, type and products, so nothing else would trigger the PR fetch
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).Returns(new GitHubPrInfo { Title = "Fix something", Labels = ["type:bug", ":Search"] });
+		var configPath = await CreateConfigDirectory(RequiredAreaConfig);
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/kibana/pull/12345"],
+			Title = "Fix something",
+			Type = "bug-fix",
+			Products = [new ProductArgument { Product = "kibana" }],
+			Config = configPath,
+			Output = CreateOutputDirectory()
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)
+		).MustHaveHappened();
 	}
 }

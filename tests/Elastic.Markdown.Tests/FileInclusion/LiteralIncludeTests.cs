@@ -10,14 +10,12 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
-
-public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class LiteralIncludeUsingPropertyTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.txt
 :literal: true
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -26,23 +24,18 @@ public class LiteralIncludeUsingPropertyTests(ITestOutputHelper output) : Direct
 		fileSystem.AddFile(@"docs/_snippets/test.txt", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void IncludesInclusionHtml() =>
-		Html.Should()
-			.Be("*Hello world*")
-		;
+	[Test]
+	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
-
-public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class LiteralIncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -51,71 +44,66 @@ public class LiteralIncludeTests(ITestOutputHelper output) : DirectiveTest<Inclu
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void IncludesInclusionHtml() =>
-		Html.Should()
-			.Be("*Hello world*");
+	[Test]
+	public void IncludesInclusionHtml() => Html.Should().Be("*Hello world*");
 }
 
-
-public class LiteralIncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class LiteralIncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} ../../../outside.txt
 :::
-"""
-)
+""")
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"outside.txt", "some content");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should()
+		Collector
+			.Diagnostics
+			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
 	}
 }
 
-
-public class LiteralIncludeAbsoluteTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class LiteralIncludeAbsoluteTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} /../../../outside.txt
 :::
-"""
-)
+""")
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"outside.txt", "some content");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should()
+		Collector
+			.Diagnostics
+			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
 	}
 }
 
-
-public class LiteralIncludeHiddenDirectoryBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class LiteralIncludeHiddenDirectoryBlocked() : DirectiveTest<IncludeBlock>("""
 :::{literalinclude} .config/data.txt
 :::
-"""
-)
+""")
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"docs/.config/data.txt", "some content");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"docs/.config/data.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should()
+		Collector
+			.Diagnostics
+			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must not traverse hidden directories"));
 	}
 }

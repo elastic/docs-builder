@@ -19,7 +19,14 @@ namespace Elastic.Documentation.Configuration.Tests;
 /// </summary>
 public class GitCheckoutResolutionTests
 {
-	private static MockFileSystem BuildFs(string root, string? branch = "main", string? sha = null, string? remote = null, bool worktree = false, string? worktreeGitDir = null)
+	private static MockFileSystem BuildFs(
+		string root,
+		string? branch = "main",
+		string? sha = null,
+		string? remote = null,
+		bool worktree = false,
+		string? worktreeGitDir = null
+	)
 	{
 		var fs = new MockFileSystem();
 		sha ??= "abc1234def5678";
@@ -37,7 +44,10 @@ public class GitCheckoutResolutionTests
 			if (branch is not null)
 				fs.AddFile($"{root}/.git/refs/heads/{branch}", new MockFileData($"{sha}\n"));
 			// config
-			fs.AddFile($"{root}/.git/config", new MockFileData($"""
+			fs.AddFile(
+				$"{root}/.git/config",
+				new MockFileData(
+					$"""
 				[core]
 					repositoryformatversion = 0
 				[remote "origin"]
@@ -45,7 +55,9 @@ public class GitCheckoutResolutionTests
 				[branch "{branch ?? "main"}"]
 					remote = origin
 					merge = refs/heads/{branch ?? "main"}
-				"""));
+				"""
+				)
+			);
 		}
 		else
 		{
@@ -56,7 +68,10 @@ public class GitCheckoutResolutionTests
 			fs.AddDirectory(realGitDir);
 			fs.AddFile($"{realGitDir}/HEAD", new MockFileData($"ref: refs/heads/{branch}\n"));
 			fs.AddFile($"{realGitDir}/refs/heads/{branch}", new MockFileData($"{sha}\n"));
-			fs.AddFile($"{realGitDir}/config", new MockFileData($"""
+			fs.AddFile(
+				$"{realGitDir}/config",
+				new MockFileData(
+					$"""
 				[core]
 					repositoryformatversion = 0
 				[remote "origin"]
@@ -64,13 +79,15 @@ public class GitCheckoutResolutionTests
 				[branch "{branch}"]
 					remote = origin
 					merge = refs/heads/{branch}
-				"""));
+				"""
+				)
+			);
 		}
 
 		return fs;
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_ReturnsGitInfo()
 	{
 		var fs = BuildFs("/repo", branch: "feature/my-branch", sha: "deadbeef1234");
@@ -88,7 +105,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("test-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_DetachedHead_NeverReturnsRandomGuid()
 	{
 		var fs = BuildFs("/repo", branch: null, sha: "cafebabe9876");
@@ -108,21 +125,29 @@ public class GitCheckoutResolutionTests
 		result.Branch.Should().Be(expectedBranch);
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithAbsoluteGitDir_ResolvesViaMainRepo()
 	{
 		var sha = "1a2b3c4d5e6f";
-		var fs = BuildFs("/worktree", branch: "my-feature", sha: sha, remote: "elastic/worktree-repo",
-			worktree: true, worktreeGitDir: "/main-repo/.git/worktrees/my-feature");
+		var fs = BuildFs(
+			"/worktree",
+			branch: "my-feature",
+			sha: sha,
+			remote: "elastic/worktree-repo",
+			worktree: true,
+			worktreeGitDir: "/main-repo/.git/worktrees/my-feature"
+		);
 
 		// Scope must cover both the worktree dir and the main .git
 		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/worktree"), inner: fs);
-		var extended = new Nullean.ScopedFileSystem.ScopedFileSystem(fs,
+		var extended = new Nullean.ScopedFileSystem.ScopedFileSystem(
+			fs,
 			new Nullean.ScopedFileSystem.ScopedFileSystemOptions(["/worktree", "/main-repo/.git/worktrees/my-feature"])
 			{
 				AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
 				AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-			});
+			}
+		);
 
 		var checkout = fs.DirectoryInfo.New("/worktree");
 		var result = GitCheckoutInformationFactory.Create(checkout, extended);
@@ -133,7 +158,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("worktree-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithRelativeGitDir_ResolvesAgainstGitFileDirectory()
 	{
 		var fs = new MockFileSystem();
@@ -142,21 +167,28 @@ public class GitCheckoutResolutionTests
 		fs.AddDirectory("/.git/worktrees/branch");
 		fs.AddFile("/.git/worktrees/branch/HEAD", new MockFileData("ref: refs/heads/feature\n"));
 		fs.AddFile("/.git/worktrees/branch/refs/heads/feature", new MockFileData("aabbccdd\n"));
-		fs.AddFile("/.git/worktrees/branch/config", new MockFileData("""
+		fs.AddFile(
+			"/.git/worktrees/branch/config",
+			new MockFileData(
+				"""
 			[remote "origin"]
 				url = https://github.com/elastic/relative-test.git
 			[branch "feature"]
 				remote = origin
 				merge = refs/heads/feature
-			"""));
+			"""
+			)
+		);
 
 		var checkout = fs.DirectoryInfo.New("/worktree");
-		var scoped = new Nullean.ScopedFileSystem.ScopedFileSystem(fs,
+		var scoped = new Nullean.ScopedFileSystem.ScopedFileSystem(
+			fs,
 			new Nullean.ScopedFileSystem.ScopedFileSystemOptions(["/worktree", "/.git"])
 			{
 				AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
 				AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-			});
+			}
+		);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
@@ -166,7 +198,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("relative-test");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithCommondir_ResolvesViaCommondir()
 	{
 		var fs = new MockFileSystem();
@@ -178,21 +210,28 @@ public class GitCheckoutResolutionTests
 		fs.AddDirectory("/main/.git");
 		fs.AddFile("/main/.git/HEAD", new MockFileData("ref: refs/heads/topic\n"));
 		fs.AddFile("/main/.git/refs/heads/topic", new MockFileData("fedcba987654\n"));
-		fs.AddFile("/main/.git/config", new MockFileData("""
+		fs.AddFile(
+			"/main/.git/config",
+			new MockFileData(
+				"""
 			[remote "origin"]
 				url = https://github.com/elastic/commondir-test.git
 			[branch "topic"]
 				remote = origin
 				merge = refs/heads/topic
-			"""));
+			"""
+			)
+		);
 
 		var checkout = fs.DirectoryInfo.New("/worktree");
-		var scoped = new Nullean.ScopedFileSystem.ScopedFileSystem(fs,
+		var scoped = new Nullean.ScopedFileSystem.ScopedFileSystem(
+			fs,
 			new Nullean.ScopedFileSystem.ScopedFileSystemOptions(["/worktree", "/main/.git"])
 			{
 				AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" },
 				AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git" }
-			});
+			}
+		);
 
 		var result = GitCheckoutInformationFactory.Create(checkout, scoped);
 
@@ -202,7 +241,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("commondir-test");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeMissingGitDir_ReturnsUnavailable()
 	{
 		var fs = new MockFileSystem();
@@ -216,7 +255,7 @@ public class GitCheckoutResolutionTests
 		result.IsAvailable.Should().BeFalse("a worktree pointer to a missing gitdir must yield Unavailable");
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_PackedRefWithoutLooseRefFile_ResolvesShaFromPackedRefs()
 	{
 		// actions/checkout (and `git gc`) can leave HEAD pointing at a symbolic ref with no
@@ -224,12 +263,20 @@ public class GitCheckoutResolutionTests
 		var fs = new MockFileSystem();
 		fs.AddDirectory("/repo/.git");
 		fs.AddFile("/repo/.git/HEAD", new MockFileData("ref: refs/heads/main\n"));
-		fs.AddFile("/repo/.git/packed-refs", new MockFileData("""
+		fs.AddFile(
+			"/repo/.git/packed-refs",
+			new MockFileData(
+				"""
 			# pack-refs with: peeled fully-peeled sorted
 			deadbeef1234567890deadbeef1234567890dead refs/heads/main
 			cafebabe0000000000cafebabe0000000000cafe refs/remotes/origin/main
-			"""));
-		fs.AddFile("/repo/.git/config", new MockFileData("""
+			"""
+			)
+		);
+		fs.AddFile(
+			"/repo/.git/config",
+			new MockFileData(
+				"""
 			[core]
 				repositoryformatversion = 0
 			[remote "origin"]
@@ -237,7 +284,9 @@ public class GitCheckoutResolutionTests
 			[branch "main"]
 				remote = origin
 				merge = refs/heads/main
-			"""));
+			"""
+			)
+		);
 
 		var checkout = fs.DirectoryInfo.New("/repo");
 		var scoped = new CheckoutsFileSystem(fs.DirectoryInfo.New("/repo"), inner: fs);
@@ -246,11 +295,16 @@ public class GitCheckoutResolutionTests
 
 		result.IsAvailable.Should().BeTrue();
 		result.Branch.Should().Be("main");
-		result.Ref.Should().Be("deadbeef1234567890deadbeef1234567890dead",
-			"the SHA must be resolved from packed-refs, never the literal HEAD contents like 'ref: refs/heads/main'");
+		result
+			.Ref
+			.Should()
+			.Be(
+				"deadbeef1234567890deadbeef1234567890dead",
+				"the SHA must be resolved from packed-refs, never the literal HEAD contents like 'ref: refs/heads/main'"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public void MockWithNoGitLayout_ReturnsCannedTestData()
 	{
 		// Back-compat: tests that seed no .git at all must continue to receive the canned

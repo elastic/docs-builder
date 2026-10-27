@@ -13,13 +13,14 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class ValidationTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsErrorWhenTableOfContentsHasNonTocChildrenAndNestedTocNotAllowed()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - toc: api
@@ -34,23 +35,24 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("may not contain children, define children in") &&
-			d.Message.Contains("toc.yml"));
+		diagnostics.Should().Contain(
+			d => d.Message.Contains("may not contain children, define children in") && d.Message.Contains("toc.yml")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsErrorWhenTableOfContentsHasNonTocChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - toc: api
@@ -62,25 +64,26 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Check using Errors count instead of Diagnostics collection
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("may not contain children, define children in") &&
-			d.Message.Contains("toc.yml"));
+		diagnostics.Should().Contain(
+			d => d.Message.Contains("may not contain children, define children in") && d.Message.Contains("toc.yml")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void ValidationEmitsErrorForNestedTocWithFileChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -102,16 +105,17 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 
 		// Nested TOC under a root-level TOC should not allow file children
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("may not contain children, define children in") &&
-			d.Message.Contains("toc.yml"));
+		diagnostics.Should().Contain(
+			d => d.Message.Contains("may not contain children, define children in") && d.Message.Contains("toc.yml")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsErrorForDeeplyNestedFolderWithInvalidTocStructure()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: docs
@@ -130,20 +134,20 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Nested TOC structure under folders should still validate correctly
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("may not contain children, define children in") &&
-			d.Message.Contains("toc.yml"));
+		diagnostics.Should().Contain(
+			d => d.Message.Contains("may not contain children, define children in") && d.Message.Contains("toc.yml")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsErrorWhenTocYmlFileNotFound()
 	{
 		// language=yaml
@@ -158,23 +162,24 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		// Note: not adding /docs/api/toc.yml file
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().ContainSingle(d =>
-			d.Message.Contains("Table of contents file not found") &&
-			d.Message.Contains("api/toc.yml"));
+		diagnostics.Should().ContainSingle(
+			d => d.Message.Contains("Table of contents file not found") && d.Message.Contains("api/toc.yml")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsHintForDeepLinkingVirtualFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: a/b/c/getting-started.md
@@ -187,26 +192,27 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Collector.Hints.Should().BeGreaterThan(0, "should have emitted a hint for deep-linking virtual file");
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Hint &&
-			d.Message.Contains("a/b/c/getting-started.md") &&
-			d.Message.Contains("deep-linking") &&
-			d.Message.Contains("folder"));
+		diagnostics.Should().Contain(
+			d => d.Severity == Severity.Hint && d.Message.Contains("a/b/c/getting-started.md") && d.Message.Contains(
+				"deep-linking"
+			) && d.Message.Contains("folder")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationEmitsHintForNestedPathVirtualFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guides/api/overview.md
@@ -219,25 +225,27 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Collector.Hints.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Hint &&
-			d.Message.Contains("guides/api/overview.md") &&
-			d.Message.Contains("Virtual files are primarily intended to group sibling files together"));
+		diagnostics.Should().Contain(
+			d => d.Severity == Severity.Hint && d.Message.Contains("guides/api/overview.md") && d.Message.Contains(
+				"Virtual files are primarily intended to group sibling files together"
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationDoesNotEmitHintForSimpleVirtualFiles()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: guide.md
@@ -250,21 +258,22 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Collector.Hints.Should().Be(0, "simple virtual files without deep-linking should not trigger hints");
 		context.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task BuildNavigationLookupsDoesNotThrowWhenTocReferencesMissingFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: missing.md
@@ -275,7 +284,7 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		// Note: /docs/missing.md is intentionally not created on disk
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, MissingFileDocumentationFileFactory.Instance);
 
@@ -283,20 +292,19 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		var buildLookups = () => navigation.BuildNavigationLookups(lookup);
 		buildLookups.Should().NotThrow("a missing toc file must surface a validation error, not crash the build");
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("missing.md") &&
-			d.Message.Contains("does not exist"));
+		diagnostics.Should().Contain(d => d.Message.Contains("missing.md") && d.Message.Contains("does not exist"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ValidationDoesNotEmitHintForFilesWithoutChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: a/b/c/getting-started.md
@@ -307,11 +315,11 @@ public class ValidationTests(ITestOutputHelper output) : DocumentationSetNavigat
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Collector.Hints.Should().Be(0, "files without children should not trigger hints, even with deep paths");
 		context.Diagnostics.Should().BeEmpty();

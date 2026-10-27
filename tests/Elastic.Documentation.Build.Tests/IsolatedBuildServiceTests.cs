@@ -77,10 +77,10 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class IsolatedBuildServiceTests : IDisposable
 {
-	private readonly TestLoggerFactory _loggerFactory = new(TestContext.Current.TestOutputHelper);
+	private readonly TestLoggerFactory _loggerFactory = new();
 	private readonly NullCoreService _coreService = new();
 
-	[Fact]
+	[Test]
 	public void Constructor_AcceptsIEnvironmentVariables()
 	{
 		// Arrange
@@ -95,7 +95,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		service.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void IsRunningOnCI_WhenGitHubActionsSet_ReturnsTrue()
 	{
 		// Arrange
@@ -105,7 +105,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void IsRunningOnCI_WhenGitHubActionsNotSet_ReturnsFalse()
 	{
 		// Arrange
@@ -115,11 +115,15 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeFalse();
 	}
 
-	[Theory]
-	[InlineData(true, true)]   // CI + force=true -> force should be true
-	[InlineData(true, false)]  // CI + force=false -> force should be true (CI override)
-	[InlineData(false, true)]  // Local + force=true -> force should be true
-	[InlineData(false, false)] // Local + force=false -> force should be false
+	[Test]
+	[Arguments(true, true)] // CI + force=true -> force should be true
+
+	[Arguments(true, false)] // CI + force=false -> force should be true (CI override)
+
+	[Arguments(false, true)] // Local + force=true -> force should be true
+
+	[Arguments(false, false)] // Local + force=false -> force should be false
+
 	public void Build_CIOverridesForceParameter_AsExpected(bool isCI, bool forceParam)
 	{
 		// This test validates the truth table rows for the 'Effective Force' column.
@@ -139,7 +143,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		expectedEffectiveForce.Should().Be(isCI || forceParam);
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_SetCI_SetsGitHubActions()
 	{
 		// Arrange
@@ -153,7 +157,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_SetCI_False_RemovesGitHubActions()
 	{
 		// Arrange
@@ -167,7 +171,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_Set_StoresValue()
 	{
 		// Arrange
@@ -180,7 +184,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.GetEnvironmentVariable("TEST_VAR").Should().Be("test_value");
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_Remove_ClearsValue()
 	{
 		// Arrange
@@ -194,7 +198,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.GetEnvironmentVariable("TEST_VAR").Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_Clear_RemovesAllValues()
 	{
 		// Arrange
@@ -212,7 +216,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_CreateCI_ReturnsConfiguredInstance()
 	{
 		// Act
@@ -222,7 +226,7 @@ public class IsolatedBuildServiceTests : IDisposable
 		env.IsRunningOnCI.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void MockEnvironmentVariables_CreateLocal_ReturnsCleanInstance()
 	{
 		// Act

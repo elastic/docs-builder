@@ -23,11 +23,12 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 
 	private readonly IFileSystem _inner;
 
-	public CheckoutsFileSystem(IDirectoryInfo root,
+	public CheckoutsFileSystem(
+		IDirectoryInfo root,
 		IDirectoryInfo? output = null,
 		IFileSystem? inner = null,
-		IEnumerable<string>? extraRoots = null)
-		: base(inner ?? Physical, BuildReadOptions(root, extraRoots))
+		IEnumerable<string>? extraRoots = null
+	) : base(inner ?? Physical, BuildReadOptions(root, extraRoots))
 	{
 		_inner = inner ?? Physical;
 		Write = new DocumentationWriteFileSystem(root, output, _inner);
@@ -64,7 +65,12 @@ public class CheckoutsFileSystem : ScopedFileSystem, ICheckoutsFileSystem
 		return new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".git", ".doc.state", ".pagefind-net-frontend-version" }
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				".git",
+				".doc.state",
+				".pagefind-net-frontend-version"
+			}
 		};
 	}
 

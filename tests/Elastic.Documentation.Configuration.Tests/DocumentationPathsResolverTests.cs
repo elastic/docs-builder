@@ -25,8 +25,7 @@ public class DocumentationPathsResolverTests
 	/// Normalises a Unix-style path through the mock filesystem so that assertions work on
 	/// Windows, where MockFileSystem converts <c>/repo</c> → <c>C:\repo</c>.
 	/// </summary>
-	private static string P(MockFileSystem fs, string unixPath) =>
-		fs.DirectoryInfo.New(unixPath).FullName;
+	private static string P(MockFileSystem fs, string unixPath) => fs.DirectoryInfo.New(unixPath).FullName;
 
 	/// <summary>
 	/// Builds a minimal regular-repo filesystem:
@@ -38,20 +37,26 @@ public class DocumentationPathsResolverTests
 		string docsRelative = "docs",
 		string branch = "main",
 		string sha = "abc1234",
-		string remote = "elastic/test-repo")
+		string remote = "elastic/test-repo"
+	)
 	{
 		var fs = new MockFileSystem();
 		var docsPath = $"{repoRoot}/{docsRelative}";
 		fs.AddDirectory($"{repoRoot}/.git");
 		fs.AddFile($"{repoRoot}/.git/HEAD", new MockFileData($"ref: refs/heads/{branch}\n"));
 		fs.AddFile($"{repoRoot}/.git/refs/heads/{branch}", new MockFileData($"{sha}\n"));
-		fs.AddFile($"{repoRoot}/.git/config", new MockFileData($"""
+		fs.AddFile(
+			$"{repoRoot}/.git/config",
+			new MockFileData(
+				$"""
 			[remote "origin"]
 				url = https://github.com/{remote}.git
 			[branch "{branch}"]
 				remote = origin
 				merge = refs/heads/{branch}
-			"""));
+			"""
+			)
+		);
 		fs.AddFile($"{docsPath}/docset.yml", new MockFileData("toc: []\n"));
 		return fs;
 	}
@@ -66,7 +71,8 @@ public class DocumentationPathsResolverTests
 		string branch = "topic",
 		string sha = "fedcba987654",
 		string remote = "elastic/worktree-repo",
-		string docsRelative = "docs")
+		string docsRelative = "docs"
+	)
 	{
 		var fs = new MockFileSystem();
 		var worktreeGitDir = $"{mainRoot}/.git/worktrees/wt";
@@ -84,13 +90,18 @@ public class DocumentationPathsResolverTests
 		fs.AddDirectory(mainGitDir);
 		fs.AddFile($"{mainGitDir}/HEAD", new MockFileData($"ref: refs/heads/{branch}\n"));
 		fs.AddFile($"{mainGitDir}/refs/heads/{branch}", new MockFileData($"{sha}\n"));
-		fs.AddFile($"{mainGitDir}/config", new MockFileData($"""
+		fs.AddFile(
+			$"{mainGitDir}/config",
+			new MockFileData(
+				$"""
 			[remote "origin"]
 				url = https://github.com/{remote}.git
 			[branch "{branch}"]
 				remote = origin
 				merge = refs/heads/{branch}
-			"""));
+			"""
+			)
+		);
 
 		fs.AddFile($"{docsPath}/docset.yml", new MockFileData("toc: []\n"));
 		return fs;
@@ -100,7 +111,7 @@ public class DocumentationPathsResolverTests
 	// Docset scan + checkout convergence
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void InvocationAtRepoRoot_ResolvesDocsetInDocsSubfolder()
 	{
 		var fs = RegularRepo();
@@ -112,7 +123,7 @@ public class DocumentationPathsResolverTests
 		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
 	}
 
-	[Fact]
+	[Test]
 	public void InvocationAtDocsSubfolder_ResolvesDocsetAndCheckout()
 	{
 		var fs = RegularRepo();
@@ -124,26 +135,32 @@ public class DocumentationPathsResolverTests
 		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"));
 	}
 
-	[Fact]
+	[Test]
 	public void PathRepoRoot_And_PathDocsSubfolder_ResolveIdenticalCheckoutAndSource()
 	{
 		var fs = RegularRepo();
 
-		var fromRoot = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/repo"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var fromRoot = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), new DocumentationScopeOptions { Inner = fs }, fs);
 
 		var fromDocs = DocumentationPathsResolver.Resolve(
 			fs.DirectoryInfo.New("/repo/docs"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+			new DocumentationScopeOptions { Inner = fs },
+			fs
+		);
 
-		fromRoot.CheckoutDirectory.FullName.Should().Be(fromDocs.CheckoutDirectory.FullName,
-			"--path /repo and --path /repo/docs must converge on the same checkout");
-		fromRoot.SourceDirectory.FullName.Should().Be(fromDocs.SourceDirectory.FullName,
-			"--path /repo and --path /repo/docs must converge on the same source");
+		fromRoot
+			.CheckoutDirectory
+			.FullName
+			.Should()
+			.Be(fromDocs.CheckoutDirectory.FullName, "--path /repo and --path /repo/docs must converge on the same checkout");
+		fromRoot
+			.SourceDirectory
+			.FullName
+			.Should()
+			.Be(fromDocs.SourceDirectory.FullName, "--path /repo and --path /repo/docs must converge on the same source");
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorTwoLevelsBelowInvocationRoot_StillResolvesCheckoutAtGitRoot()
 	{
 		// Mirrors the `elastic/infra` shape: no `--path` (invocation == repo root), and the only
@@ -157,12 +174,15 @@ public class DocumentationPathsResolverTests
 		var paths = DocumentationPathsResolver.Resolve(invocation, new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.SourceDirectory.FullName.Should().Be(P(fs, "/repo/docs/resilience-team"));
-		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"),
-			"the anchor's depth below the invocation root should widen the git-root search, not require --git-dir");
+		paths
+			.CheckoutDirectory
+			.FullName
+			.Should()
+			.Be(P(fs, "/repo"), "the anchor's depth below the invocation root should widen the git-root search, not require --git-dir");
 		paths.Git.IsAvailable.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorAtInvocationRoot_UnrelatedAncestorGit_StillOutOfReach()
 	{
 		// The depth-widening must stay anchored to the invocation, not become unbounded: when the
@@ -178,11 +198,17 @@ public class DocumentationPathsResolverTests
 
 		var paths = DocumentationPathsResolver.Resolve(invocation, opts, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/parent-repo/checkout/docs"),
-			"depth-widening is relative to the invocation, so an ancestor repo's .git outside the invocation must not be adopted");
+		paths
+			.CheckoutDirectory
+			.FullName
+			.Should()
+			.Be(
+				P(fs, "/parent-repo/checkout/docs"),
+				"depth-widening is relative to the invocation, so an ancestor repo's .git outside the invocation must not be adopted"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public void InvocationPath_StoredVerbatim_IndependentOfCheckout()
 	{
 		var fs = RegularRepo();
@@ -198,27 +224,22 @@ public class DocumentationPathsResolverTests
 	// Git directory resolution
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void RegularRepo_GitDirectories_ContainsOneEntry()
 	{
 		var fs = RegularRepo();
 
-		var paths = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/repo"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), new DocumentationScopeOptions { Inner = fs }, fs);
 
-		paths.GitDirectories.Should().ContainSingle()
-			.Which.Should().Be(P(fs, "/repo/.git"));
+		paths.GitDirectories.Should().ContainSingle().Which.Should().Be(P(fs, "/repo/.git"));
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_GitInfo_IsResolved()
 	{
 		var fs = RegularRepo(branch: "my-branch", sha: "deadbeef1234", remote: "elastic/my-repo");
 
-		var paths = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/repo"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.Git.IsAvailable.Should().BeTrue();
 		paths.Git.Branch.Should().Be("my-branch");
@@ -230,42 +251,37 @@ public class DocumentationPathsResolverTests
 	// Git worktree
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void Worktree_CheckoutIsWorktreeRoot_NotMainRepo()
 	{
 		var fs = WorktreeWithCommondir();
 
-		var paths = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/worktree"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/worktree"), new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/worktree"));
 	}
 
-	[Fact]
+	[Test]
 	public void Worktree_GitDirectories_ContainsPointerAndMainGit()
 	{
 		var fs = WorktreeWithCommondir();
 
-		var paths = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/worktree"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/worktree"), new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.GitDirectories.Should().HaveCount(2);
-		paths.GitDirectories.Should().Contain(P(fs, "/worktree/.git"),
-			"pointer file path must be in scope so the .git file is readable");
-		paths.GitDirectories.Should().Contain(P(fs, "/main/.git"),
-			"resolved commondir target must be included so config/HEAD are readable");
+		paths.GitDirectories.Should().Contain(P(fs, "/worktree/.git"), "pointer file path must be in scope so the .git file is readable");
+		paths
+			.GitDirectories
+			.Should()
+			.Contain(P(fs, "/main/.git"), "resolved commondir target must be included so config/HEAD are readable");
 	}
 
-	[Fact]
+	[Test]
 	public void Worktree_GitInfo_ResolvedFromMainDotGit()
 	{
 		var fs = WorktreeWithCommondir(branch: "topic", sha: "fedcba987654", remote: "elastic/worktree-repo");
 
-		var paths = DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/worktree"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/worktree"), new DocumentationScopeOptions { Inner = fs }, fs);
 
 		paths.Git.IsAvailable.Should().BeTrue();
 		paths.Git.Branch.Should().Be("topic");
@@ -273,28 +289,38 @@ public class DocumentationPathsResolverTests
 		paths.Git.RepositoryName.Should().Be("worktree-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void Worktree_InvocationAtDocsSubfolder_ResolvesIdenticallyToWorktreeRoot()
 	{
 		var fs = WorktreeWithCommondir();
 
 		var fromWorktreeRoot = DocumentationPathsResolver.Resolve(
 			fs.DirectoryInfo.New("/worktree"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+			new DocumentationScopeOptions { Inner = fs },
+			fs
+		);
 
 		var fromDocs = DocumentationPathsResolver.Resolve(
 			fs.DirectoryInfo.New("/worktree/docs"),
-			new DocumentationScopeOptions { Inner = fs }, fs);
+			new DocumentationScopeOptions { Inner = fs },
+			fs
+		);
 
-		fromWorktreeRoot.CheckoutDirectory.FullName.Should().Be(fromDocs.CheckoutDirectory.FullName,
-			"worktree: --path /worktree and --path /worktree/docs must resolve to the same checkout");
+		fromWorktreeRoot
+			.CheckoutDirectory
+			.FullName
+			.Should()
+			.Be(
+				fromDocs.CheckoutDirectory.FullName,
+				"worktree: --path /worktree and --path /worktree/docs must resolve to the same checkout"
+			);
 	}
 
 	// -----------------------------------------------------------------------
 	// Explicit --git-dir override
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void ExplicitGitDir_CheckoutIsGitDirParent()
 	{
 		// Layout: docset at /project/docs/, .git at /repo/.git (out-of-tree)
@@ -302,48 +328,49 @@ public class DocumentationPathsResolverTests
 		fs.AddDirectory("/repo/.git");
 		fs.AddFile("/repo/.git/HEAD", new MockFileData("ref: refs/heads/main\n"));
 		fs.AddFile("/repo/.git/refs/heads/main", new MockFileData("cafe1234\n"));
-		fs.AddFile("/repo/.git/config", new MockFileData("""
+		fs.AddFile(
+			"/repo/.git/config",
+			new MockFileData(
+				"""
 			[remote "origin"]
 				url = https://github.com/elastic/override-test.git
 			[branch "main"]
 				remote = origin
 				merge = refs/heads/main
-			"""));
+			"""
+			)
+		);
 		fs.AddFile("/project/docs/docset.yml", new MockFileData("toc: []\n"));
 
-		var opts = new DocumentationScopeOptions
-		{
-			Inner = fs,
-			GitDir = "/repo/.git"
-		};
+		var opts = new DocumentationScopeOptions { Inner = fs, GitDir = "/repo/.git" };
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project/docs"), opts, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"),
-			"--git-dir /repo/.git → checkout = /repo/.git.Parent = /repo");
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo"), "--git-dir /repo/.git → checkout = /repo/.git.Parent = /repo");
 	}
 
-	[Fact]
+	[Test]
 	public void ExplicitGitDir_GitInfo_ResolvedFromOverriddenGitDir()
 	{
 		var fs = new MockFileSystem();
 		fs.AddDirectory("/repo/.git");
 		fs.AddFile("/repo/.git/HEAD", new MockFileData("ref: refs/heads/main\n"));
 		fs.AddFile("/repo/.git/refs/heads/main", new MockFileData("aabbcc99\n"));
-		fs.AddFile("/repo/.git/config", new MockFileData("""
+		fs.AddFile(
+			"/repo/.git/config",
+			new MockFileData(
+				"""
 			[remote "origin"]
 				url = https://github.com/elastic/override-repo.git
 			[branch "main"]
 				remote = origin
 				merge = refs/heads/main
-			"""));
+			"""
+			)
+		);
 		fs.AddFile("/project/docs/docset.yml", new MockFileData("toc: []\n"));
 
-		var opts = new DocumentationScopeOptions
-		{
-			Inner = fs,
-			GitDir = "/repo/.git"
-		};
+		var opts = new DocumentationScopeOptions { Inner = fs, GitDir = "/repo/.git" };
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/project/docs"), opts, fs);
 
@@ -357,7 +384,7 @@ public class DocumentationPathsResolverTests
 	// Mock filesystem — no git layout (graceful fallback)
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void MockFsWithoutGit_DoesNotThrow_CheckoutFallsBackToSource()
 	{
 		var fs = new MockFileSystem();
@@ -366,12 +393,11 @@ public class DocumentationPathsResolverTests
 		var opts = new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable };
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo/docs"), opts, fs);
 
-		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo/docs"),
-			"mock FS fallback: no .git → checkout = source directory");
+		paths.CheckoutDirectory.FullName.Should().Be(P(fs, "/repo/docs"), "mock FS fallback: no .git → checkout = source directory");
 		paths.GitDirectories.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void MockFsWithoutGit_GitOverride_IsPreservedVerbatim()
 	{
 		var fs = new MockFileSystem();
@@ -388,7 +414,7 @@ public class DocumentationPathsResolverTests
 	// Output directory default
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void Output_DefaultsToCheckoutArtifacts()
 	{
 		var fs = RegularRepo();
@@ -400,7 +426,7 @@ public class DocumentationPathsResolverTests
 		paths.OutputDirectory.FullName.Should().StartWith(P(fs, "/repo/.artifacts"));
 	}
 
-	[Fact]
+	[Test]
 	public void Output_InvocationAtDocsSubfolder_StillAnchorsToCheckout()
 	{
 		// Regression: before this fix, --path /repo/docs/ wrote to /repo/docs/.artifacts
@@ -411,19 +437,18 @@ public class DocumentationPathsResolverTests
 		var fromRoot = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
 		var fromDocs = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo/docs"), opts, fs);
 
-		fromRoot.OutputDirectory.FullName.Should().Be(fromDocs.OutputDirectory.FullName,
-			"--path /repo and --path /repo/docs must produce the same default output directory");
+		fromRoot
+			.OutputDirectory
+			.FullName
+			.Should()
+			.Be(fromDocs.OutputDirectory.FullName, "--path /repo and --path /repo/docs must produce the same default output directory");
 	}
 
-	[Fact]
+	[Test]
 	public void Output_ExplicitOverride_IsRespected()
 	{
 		var fs = RegularRepo();
-		var opts = new DocumentationScopeOptions
-		{
-			Inner = fs,
-			Output = "/custom/output"
-		};
+		var opts = new DocumentationScopeOptions { Inner = fs, Output = "/custom/output" };
 
 		var paths = DocumentationPathsResolver.Resolve(fs.DirectoryInfo.New("/repo"), opts, fs);
 
@@ -434,7 +459,7 @@ public class DocumentationPathsResolverTests
 	// ConfigurationFile option (pre-discovered docset)
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void PreDiscoveredConfigFile_SkipsDocsetScan()
 	{
 		// Docset is at /project/docs/docset.yml, but invocation is the project root
@@ -452,26 +477,27 @@ public class DocumentationPathsResolverTests
 	// No docset found → throws
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void NoDocset_Throws_DocumentationPathException()
 	{
 		var fs = new MockFileSystem();
 		fs.AddDirectory("/empty");
 
-		var act = () => DocumentationPathsResolver.Resolve(
-			fs.DirectoryInfo.New("/empty"),
-			new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable },
-			fs);
+		var act =
+			() => DocumentationPathsResolver.Resolve(
+				fs.DirectoryInfo.New("/empty"),
+				new DocumentationScopeOptions { Inner = fs, Git = GitCheckoutInformation.Unavailable },
+				fs
+			);
 
-		act.Should().Throw<DocumentationPathException>()
-			.WithMessage("*docset.yml*");
+		act.Should().Throw<DocumentationPathException>().WithMessage("*docset.yml*");
 	}
 
 	// -----------------------------------------------------------------------
 	// DocumentationFileSystem.Resolve — integration (same scenarios via the public API)
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void DocumentationFileSystem_Resolve_RegularRepo_ExposesResolvedPaths()
 	{
 		var fs = RegularRepo(branch: "feature", sha: "001122", remote: "elastic/docs-builder");
@@ -485,7 +511,7 @@ public class DocumentationPathsResolverTests
 		docFs.Paths.Git.RepositoryName.Should().Be("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationFileSystem_Resolve_Worktree_ExposesMainGitInfo()
 	{
 		var fs = WorktreeWithCommondir(branch: "topic", sha: "99aabb", remote: "elastic/worktree-test");

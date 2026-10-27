@@ -53,17 +53,11 @@ public sealed partial class SharedPointInTimeManager(
 
 	private async Task<string> OpenPit(Cancel ctx)
 	{
-		var response = await clientAccessor.Client.OpenPointInTimeAsync(
-			clientAccessor.SearchIndex,
-			r => r.KeepAlive(PitKeepAlive),
-			ctx
-		);
+		var response = await clientAccessor.Client.OpenPointInTimeAsync(clientAccessor.SearchIndex, r => r.KeepAlive(PitKeepAlive), ctx);
 
 		if (!response.IsValidResponse)
 		{
-			throw new InvalidOperationException(
-				$"Failed to open PIT: {response.ElasticsearchServerError?.Error?.Reason ?? "Unknown"}"
-			);
+			throw new InvalidOperationException($"Failed to open PIT: {response.ElasticsearchServerError?.Error?.Reason ?? "Unknown"}");
 		}
 
 		LogPitOpened(logger, response.Id);

@@ -9,7 +9,7 @@ namespace Elastic.Documentation.LegacyDocs.Tests;
 
 public class LegacyPageServiceTests
 {
-	[Fact]
+	[Test]
 	public void TestVersions()
 	{
 		var legacyPageChecker = new LegacyPageService(NullLoggerFactory.Instance);
@@ -37,9 +37,7 @@ public class LegacyPageServiceTests
 		};
 		foreach (var (version, value) in expected)
 		{
-			var result = legacyPageChecker.PathExists(
-				$"/guide/en/elasticsearch/reference/{version}/elasticsearch-intro-what-is-es.html"
-			);
+			var result = legacyPageChecker.PathExists($"/guide/en/elasticsearch/reference/{version}/elasticsearch-intro-what-is-es.html");
 			_ = result.Should().Be(value, $"Expected {version} to be {value}");
 		}
 	}

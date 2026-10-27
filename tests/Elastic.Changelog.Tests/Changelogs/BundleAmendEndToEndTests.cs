@@ -21,12 +21,12 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// fetch returns the amend and the <c>exclude-entries</c> retraction (matched by <c>file</c>
 /// identity) applies.
 /// </summary>
-public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class BundleAmendEndToEndTests() : ChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task AmendLifecycle_FromCreationToVersionFilteredCdnConsumption()
 	{
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		// -- Authoring fixtures -------------------------------------------------------------
 		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -65,7 +65,9 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 		var parentPath = FileSystem.Path.Join(bundleDir, "elasticsearch-9.3.0.yaml");
 		// A resolved parent whose entry carries a file identity, so the retraction below can match it.
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(parentPath, $"""
+		await FileSystem.File.WriteAllTextAsync(
+			parentPath,
+			$"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -80,16 +82,17 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 			  title: Retracted fix
 			  prs:
 			  - "100"
-			""", ct);
+			""",
+			ct
+		);
 
 		// -- 1. bundle-amend materializes a self-contained amend -----------------------------
 		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
-		var amendResult = await amendService.AmendBundle(Collector, new AmendBundleArguments
-		{
-			BundlePath = parentPath,
-			AddFiles = [addedFile],
-			RemoveFiles = [retractedFile]
-		}, ct);
+		var amendResult = await amendService.AmendBundle(
+			Collector,
+			new AmendBundleArguments { BundlePath = parentPath, AddFiles = [addedFile], RemoveFiles = [retractedFile], ForceLocal = true },
+			ct
+		);
 
 		amendResult.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -104,13 +107,14 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 
 		// -- 2. upload destination discovery includes the amend ------------------------------
 		var s3 = new FakeS3("public-bucket");
-		var uploadCollector = new TestDiagnosticsCollector(Output);
+		var uploadCollector = new TestDiagnosticsCollector();
 		var uploadService = new ChangelogUploadService(NullLoggerFactory.Instance, fileSystem: FileSystem, s3Client: s3.Client);
 		var targets = uploadService.DiscoverBundleUploadTargets(uploadCollector, bundleDir);
 
-		targets.Select(t => t.S3Key).Should().BeEquivalentTo(
-			"bundle/elasticsearch/elasticsearch-9.3.0.yaml",
-			"bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
+		targets
+			.Select(t => t.S3Key)
+			.Should()
+			.BeEquivalentTo("bundle/elasticsearch/elasticsearch-9.3.0.yaml", "bundle/elasticsearch/elasticsearch-9.3.0.amend-1.yaml");
 		uploadCollector.Errors.Should().Be(0);
 		uploadCollector.Warnings.Should().Be(0);
 
@@ -153,15 +157,18 @@ public class BundleAmendEndToEndTests(ITestOutputHelper output) : ChangelogTestB
 			version: "9.3.0",
 			fetchErrors.Add,
 			fetchWarnings.Add,
-			ct);
+			ct
+		);
 
 		fetchErrors.Should().BeEmpty();
 		fetchWarnings.Should().BeEmpty();
 		bundles.Should().ContainSingle("the amend merges into its parent");
 		bundles[0].Version.Should().Be("9.3.0");
-		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo(
-			["Late addition"],
-			"the added entry is present and the file-identity retraction removed the original entry");
+		bundles[0]
+			.Entries
+			.Select(e => e.Title)
+			.Should()
+			.BeEquivalentTo(["Late addition"], "the added entry is present and the file-identity retraction removed the original entry");
 	}
 
 	private static HttpResponseMessage Response(string body, string mediaType) =>

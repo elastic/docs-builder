@@ -47,4 +47,10 @@ public record BundledEntry
 
 	/// <summary>Related issue URLs or references.</summary>
 	public IReadOnlyList<string>? Issues { get; init; }
+
+	/// <summary>
+	/// Marker reference: a bare PR number pointing to the authoritative entry in the same pool.
+	/// Preserved through the scrub round-trip so the public pool can resolve markers end-to-end.
+	/// </summary>
+	public string? Link { get; init; }
 }

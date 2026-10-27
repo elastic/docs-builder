@@ -16,8 +16,9 @@ namespace Elastic.SiteSearch.Cli.Commands;
 /// </summary>
 /// <remarks>
 /// These commands call the Contentstack Delivery/Preview APIs (per environment configuration) and target
-/// <c>site-*</c> search indices. They are separate from <c>labs</c> commands, which crawl elastic.co labs
-/// properties into <c>labs-*</c> indices.
+/// <c>site-*</c> search indices. elastic.co's Search/Security/Observability Labs properties are sourced
+/// here too — there is no HTML crawler for them anymore; the legacy <c>labs-*</c> indices they used to
+/// write to are handled solely by <c>indices</c> commands now (reindex/cleanup of already-existing data).
 /// </remarks>
 internal sealed class ContentStackCommands(
 	SyncCommand sync,
@@ -58,8 +59,8 @@ internal sealed class ContentStackCommands(
 		TimeSpan? maxAiTime = null,
 		bool noIndex = false,
 		[Range(0, int.MaxValue)] int pagePer = 0,
-		Cancel ct = default) =>
-		sync.Sync(cacheFolder, apiKey, endpoint, force, noAi, maxAiDocs, maxAiTime, noIndex, pagePer, ct);
+		Cancel ct = default
+	) => sync.Sync(cacheFolder, apiKey, endpoint, force, noAi, maxAiDocs, maxAiTime, noIndex, pagePer, ct);
 
 	/// <summary>
 	/// Discover all content types and whether each exposes a root URL field (sitemap and routing inputs).
@@ -68,10 +69,7 @@ internal sealed class ContentStackCommands(
 	/// <param name="cacheFolder">Disk folder for the survey state file.</param>
 	/// <param name="force">Delete saved survey progress and re-run discovery.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public Task Types(
-		[StringLength(4096)] string? cacheFolder = null,
-		bool force = false,
-		Cancel ct = default) =>
+	public Task Types([StringLength(4096)] string? cacheFolder = null, bool force = false, Cancel ct = default) =>
 		types.Types(cacheFolder, force, ct);
 
 	/// <summary>
@@ -81,11 +79,10 @@ internal sealed class ContentStackCommands(
 	/// When <paramref name="outputDir"/> is omitted, a default directory under the machine temp path is used.
 	/// </remarks>
 	/// <param name="outputDir">Directory for <c>*.json</c> files; created if it does not exist.</param>
+	/// <param name="contentType">Comma-separated content type UIDs to sample; omit to sample every registered UID.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public Task Samples(
-		[StringLength(4096)] string? outputDir = null,
-		Cancel ct = default) =>
-		samples.Samples(outputDir, ct);
+	public Task Samples([StringLength(4096)] string? outputDir = null, string? contentType = null, Cancel ct = default) =>
+		samples.Samples(outputDir, contentType, ct);
 
 	/// <summary>
 	/// Diagnostic: scan Contentstack's sync stream (the same paginated, cursor-based API
@@ -99,10 +96,7 @@ internal sealed class ContentStackCommands(
 	/// <param name="pathPrefix">Path fragment to search for, e.g. <c>/elasticon/archive/2020</c>.</param>
 	/// <param name="contentType">Restrict the scan to one content type uid; omit to scan all types.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public Task FindUrl(
-		[Argument] string pathPrefix,
-		string? contentType = null,
-		Cancel ct = default) =>
+	public Task FindUrl([Argument] string pathPrefix, string? contentType = null, Cancel ct = default) =>
 		findUrl.FindUrl(pathPrefix, contentType, ct);
 
 	/// <summary>
@@ -168,7 +162,8 @@ internal sealed class ContentStackCommands(
 				enableAiEnrichment: true
 			);
 
-			await AnsiConsole.Status()
+			await AnsiConsole
+				.Status()
 				.AutoRefresh(true)
 				.Spinner(Spinner.Known.Dots)
 				.StartAsync("[aqua]Bootstrapping Elasticsearch indices...[/]", async _ =>
@@ -189,7 +184,8 @@ internal sealed class ContentStackCommands(
 				exporter.AiEnrichmentEnabled,
 				(max, token) => exporter.RunAiEnrichmentAsync(max, token),
 				maxAiDocs,
-				effectiveToken);
+				effectiveToken
+			);
 			AiEnrichmentConsole.DisplaySummary(aiResult, maxAiTime, maxAiDocs);
 		}
 		catch (OperationCanceledException) when (deadline.TimedOut)

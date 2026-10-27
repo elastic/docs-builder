@@ -38,7 +38,10 @@ public static class VersionLifecycleInference
 			"alpha" => "preview",
 			"preview" => "preview",
 			"rc" => "ga", // Release candidate = GA
-			_ => "preview" // Unknown prerelease = preview
+
+			_ =>
+				"preview" // Unknown prerelease = preview
+
 		};
 	}
 }

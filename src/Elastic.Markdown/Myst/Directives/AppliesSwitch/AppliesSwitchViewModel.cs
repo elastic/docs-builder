@@ -5,4 +5,3 @@
 namespace Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
 public class AppliesSwitchViewModel : DirectiveViewModel;
-

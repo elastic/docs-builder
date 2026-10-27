@@ -6,10 +6,15 @@ using System.ComponentModel.DataAnnotations;
 using Amazon.DynamoDBv2;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.Adapters.AskAi;
+using Elastic.Documentation.Api.Adapters.PageFeedback;
 using Elastic.Documentation.Api.AskAi;
 using Elastic.Documentation.Api.Caching;
 using Elastic.Documentation.Api.Gcp;
+using Elastic.Documentation.Api.PageFeedback;
+using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Search;
+using Elastic.Ingest.Elasticsearch;
+using Elastic.Transport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
@@ -19,10 +24,14 @@ namespace Elastic.Documentation.Api;
 [EnumExtensions]
 public enum AppEnv
 {
-	[Display(Name = "dev")] Dev,
-	[Display(Name = "staging")] Staging,
-	[Display(Name = "edge")] Edge,
-	[Display(Name = "prod")] Prod
+	[Display(Name = "dev")]
+	Dev,
+	[Display(Name = "staging")]
+	Staging,
+	[Display(Name = "edge")]
+	Edge,
+	[Display(Name = "prod")]
+	Prod
 }
 
 public class AppEnvironment
@@ -46,11 +55,13 @@ public static class ServicesExtension
 		else
 		{
 			var logger = GetLogger(services);
-			logger?.LogWarning("Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev", appEnvironment);
+			logger?.LogWarning(
+				"Unable to parse environment {AppEnvironment} into AppEnvironment. Using default AppEnvironment.Dev",
+				appEnvironment
+			);
 			AddElasticDocsApiServices(services, AppEnv.Dev);
 		}
 	}
-
 
 	private static void AddElasticDocsApiServices(this IServiceCollection services, AppEnv appEnv)
 	{
@@ -68,8 +79,14 @@ public static class ServicesExtension
 		});
 		// Register AppEnvironment as a singleton for dependency injection
 		_ = services.AddSingleton(new AppEnvironment { Current = appEnv });
+		_ = services.AddSingleton<ITransport>(
+			serviceProvider => ElasticsearchTransportFactory.Create(
+				serviceProvider.GetRequiredService<DocumentationEndpoints>().Elasticsearch
+			)
+		);
 		AddDistributedCache(services, appEnv);
 		AddAskAiServices(services, appEnv);
+		AddPageFeedbackServices(services);
 		AddSearchServices(services, appEnv);
 	}
 
@@ -168,7 +185,9 @@ public static class ServicesExtension
 			// Register factory as interface implementation
 			_ = services.AddScoped<IAskAiService, AskAiGatewayFactory>();
 			_ = services.AddScoped<IStreamTransformer, StreamTransformerFactory>();
-			logger?.LogInformation("Service and transformer factories registered successfully - provider switchable via X-AI-Provider header");
+			logger?.LogInformation(
+				"Service and transformer factories registered successfully - provider switchable via X-AI-Provider header"
+			);
 
 			// Register message feedback service (singleton for connection reuse)
 			_ = services.AddSingleton<IAskAiMessageFeedbackService, ElasticsearchAskAiMessageFeedbackGateway>();
@@ -181,6 +200,20 @@ public static class ServicesExtension
 		}
 	}
 
+	private static void AddPageFeedbackServices(IServiceCollection services)
+	{
+		_ = services.AddSingleton<PageFeedbackIndex>();
+		_ = services.AddSingleton(serviceProvider =>
+		{
+			var transport = serviceProvider.GetRequiredService<ITransport>();
+			var index = serviceProvider.GetRequiredService<PageFeedbackIndex>();
+			var options = new IngestChannelOptions<PageFeedbackDocument>(transport, index.MappingContext);
+			return new IngestChannel<PageFeedbackDocument>(options);
+		});
+		_ = services.AddSingleton<IPageFeedbackService, ElasticsearchPageFeedbackGateway>();
+		_ = services.AddHostedService<PageFeedbackBootstrapService>();
+	}
+
 	private static void AddSearchServices(IServiceCollection services, AppEnv appEnv)
 	{
 		var logger = GetLogger(services);
@@ -190,5 +223,4 @@ public static class ServicesExtension
 		_ = services.AddSearchServices();
 		logger?.LogInformation("Full search service registered with hybrid RRF support");
 	}
-
 }

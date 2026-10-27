@@ -44,7 +44,7 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class SymlinkValidationTests
 {
-	[Fact]
+	[Test]
 	public void EnsureNotSymlink_WithRegularFile_DoesNotThrow()
 	{
 		// Arrange
@@ -58,7 +58,7 @@ public class SymlinkValidationTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void EnsureNotSymlink_WithFileSystem_RegularFile_DoesNotThrow()
 	{
 		// Arrange
@@ -71,7 +71,7 @@ public class SymlinkValidationTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void EnsureNotSymlink_WithNonExistentFile_DoesNotThrow()
 	{
 		// Arrange
@@ -84,32 +84,25 @@ public class SymlinkValidationTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void SymlinkValidator_ThrowsSecurityException_ForSymlinks()
 	{
 		// Note: MockFileSystem doesn't fully support symlinks, so we test the validator logic directly
 		// In a real environment, the IFileInfo.LinkTarget would be set for symlinks
-
 		// The validator checks: if (file.LinkTarget != null) throw SecurityException
 		// This test documents the expected behavior
-
 		// The actual symlink detection relies on IFileInfo.LinkTarget property
 		// which MockFileSystem may not fully support. Integration tests with
 		// real filesystem would be needed for full coverage.
 	}
 
-	[Fact]
+	[Test]
 	public void SymlinkValidator_SecurityMessage_DescribesRisk()
 	{
 		// Document that the security exception message explains the risk
 		// This helps developers understand why symlinks are rejected
 
-		var expectedMessageContains = new[]
-		{
-			"symlink",
-			"not allowed",
-			"security"
-		};
+		var expectedMessageContains = new[] { "symlink", "not allowed", "security" };
 
 		// The actual exception message format:
 		// "Control file '{file.FullName}' is a symlink, which is not allowed for security reasons.
@@ -123,12 +116,12 @@ public class SymlinkValidationTests
 		}
 	}
 
-	[Theory]
-	[InlineData("docset.yml")]
-	[InlineData("_docset.yml")]
-	[InlineData("toc.yml")]
-	[InlineData("redirects.yml")]
-	[InlineData("_redirects.yml")]
+	[Test]
+	[Arguments("docset.yml")]
+	[Arguments("_docset.yml")]
+	[Arguments("toc.yml")]
+	[Arguments("redirects.yml")]
+	[Arguments("_redirects.yml")]
 	public void ControlFiles_AreProtectedBySymlinkValidation(string fileName)
 	{
 		// Document which files are protected by symlink validation
@@ -137,7 +130,8 @@ public class SymlinkValidationTests
 		var protectedFiles = new[]
 		{
 			"docset.yml",
-			"_docset.yml",  // Alternative name with underscore prefix
+			"_docset.yml", // Alternative name with underscore prefix
+
 			"toc.yml",
 			"redirects.yml",
 			"_redirects.yml" // Alternative name with underscore prefix

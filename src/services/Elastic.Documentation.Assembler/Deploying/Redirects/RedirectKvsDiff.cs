@@ -19,21 +19,17 @@ internal static class RedirectKvsDiff
 	/// <param name="existingRedirects">Keys currently present in the live KVS.</param>
 	public static (PutKeyRequestListItem[] ToPut, DeleteKeyRequestListItem[] ToDelete) ComputeBatchUpdates(
 		IReadOnlyDictionary<string, string> sourcedRedirects,
-		IReadOnlyCollection<string> existingRedirects)
+		IReadOnlyCollection<string> existingRedirects
+	)
 	{
-		var toPut = sourcedRedirects
-			.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value })
-			.ToArray();
+		var toPut = sourcedRedirects.Select(kvp => new PutKeyRequestListItem { Key = kvp.Key, Value = kvp.Value }).ToArray();
 
 		// Stale entries = keys in KVS that no longer appear in the new sourced file.
 		// Operand order matters: it must be `existingRedirects.Except(sourcedRedirects.Keys)`.
 		// The reverse (sourcedRedirects.Keys.Except(existingRedirects)) computes the
 		// brand-new keys we are about to PUT, which makes the DELETE batch a no-op and
 		// causes stale redirects to live in the KVS forever.
-		var toDelete = existingRedirects
-			.Except(sourcedRedirects.Keys)
-			.Select(k => new DeleteKeyRequestListItem { Key = k })
-			.ToArray();
+		var toDelete = existingRedirects.Except(sourcedRedirects.Keys).Select(k => new DeleteKeyRequestListItem { Key = k }).ToArray();
 
 		return (toPut, toDelete);
 	}
@@ -45,6 +41,6 @@ internal static class RedirectKvsDiff
 	/// </summary>
 	public static bool WouldWipeAllExisting(
 		IReadOnlyDictionary<string, string> sourcedRedirects,
-		IReadOnlyCollection<string> existingRedirects) =>
-		sourcedRedirects.Count == 0 && existingRedirects.Count > 0;
+		IReadOnlyCollection<string> existingRedirects
+	) => sourcedRedirects.Count == 0 && existingRedirects.Count > 0;
 }

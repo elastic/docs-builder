@@ -12,7 +12,8 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 public class CdnChangelogEntryFetcherTests
 {
 	// language=yaml
-	private const string SampleEntry = """
+	private const string SampleEntry =
+		"""
 		title: Sample enhancement
 		type: enhancement
 		products:
@@ -33,17 +34,28 @@ public class CdnChangelogEntryFetcherTests
 		return (errors, warnings, errors.Add, warnings.Add);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_HappyPath_ReturnsAllEntriesFromRegistry()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req => req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-b.yaml" } ] }"""
+				)
+				: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -51,33 +63,50 @@ public class CdnChangelogEntryFetcherTests
 		entries.Should().OnlyContain(e => e.Content.Contains("Sample enhancement"));
 		// Artifact-root layout: entries and their registry live under changelog/{org}/{repo}/{branch}/...
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/registry.json");
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
+		handler
+			.RequestedPaths
+			.Should()
+			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/main/1-a.yaml", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_BranchWithSlashes_KeepsBranchSeparatorsInPath()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req => req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elastic/elasticsearch/feature/foo", "bundles": [ { "file": "1-a.yaml" } ] }"""
+				)
+				: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "feature/foo", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"feature/foo",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("1-a.yaml");
 		// The branch's '/' stays a real path separator (not percent-encoded into one segment).
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/feature/foo/registry.json");
-		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
+		handler
+			.RequestedPaths
+			.Should()
+			.Contain(p => p.EndsWith("/changelog/elastic/elasticsearch/feature/foo/1-a.yaml", StringComparison.Ordinal));
 	}
 
-	[Theory]
-	[InlineData("..")]
-	[InlineData("feature/..")]
-	[InlineData("")]
+	[Test]
+	[Arguments("..")]
+	[Arguments("feature/..")]
+	[Arguments("")]
 	public async Task FetchAsync_UnsafeBranch_EmitsErrorAndDoesNotHitCdn(string branch)
 	{
 		// A traversal/empty branch segment must be rejected before any request, so URI normalization
@@ -86,27 +115,43 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", branch, emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			branch,
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("Invalid changelog pool");
 		handler.RequestedPaths.Should().BeEmpty("validation must happen before any CDN request");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_RegistryNotFound_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("registry");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_EntryMissingAfterRetries_EmitsErrorAndReturnsEmpty()
 	{
 		// A registry-listed entry that never appears on the CDN is retried, then escalated to an error
@@ -114,7 +159,9 @@ public class CdnChangelogEntryFetcherTests
 		var handler = new StubHandler(req =>
 		{
 			if (req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }""");
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" }, { "file": "2-missing.yaml" } ] }"""
+				);
 			return req.RequestUri!.AbsolutePath.EndsWith("/2-missing.yaml", StringComparison.Ordinal)
 				? new HttpResponseMessage(HttpStatusCode.NotFound)
 				: Yaml(SampleEntry);
@@ -122,15 +169,26 @@ public class CdnChangelogEntryFetcherTests
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler, maxAttempts: 3);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("2-missing.yaml");
-		handler.RequestedPaths.Count(p => p.EndsWith("/2-missing.yaml", StringComparison.Ordinal))
-			.Should().Be(3, "the missing entry should be attempted up to the retry budget before failing");
+		handler
+			.RequestedPaths
+			.Count(p => p.EndsWith("/2-missing.yaml", StringComparison.Ordinal))
+			.Should()
+			.Be(3, "the missing entry should be attempted up to the retry budget before failing");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_EntryRecoversAfterRetry_ReturnsEntry()
 	{
 		// The common scrub/propagation race: the first GET 404s, a retry succeeds. No error, no skip.
@@ -139,17 +197,25 @@ public class CdnChangelogEntryFetcherTests
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path.EndsWith("/registry.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }""");
+				return Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "1-a.yaml" } ] }"""
+				);
 			if (path.EndsWith("/1-a.yaml", StringComparison.Ordinal))
-				return Interlocked.Increment(ref entryAttempts) == 1
-					? new HttpResponseMessage(HttpStatusCode.NotFound)
-					: Yaml(SampleEntry);
+				return Interlocked.Increment(ref entryAttempts) == 1 ? new HttpResponseMessage(HttpStatusCode.NotFound) : Yaml(SampleEntry);
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		errors.Should().BeEmpty();
 		warnings.Should().BeEmpty();
@@ -157,35 +223,155 @@ public class CdnChangelogEntryFetcherTests
 		entryAttempts.Should().Be(2, "the first 404 should be retried and then succeed");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_SchemaVersionTooNew_EmitsError()
 	{
-		var handler = new StubHandler(_ =>
-			Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }"""));
+		var handler = new StubHandler(
+			_ => Json(/*lang=json,strict*/ """{ "schema_version": 999, "product": "elasticsearch", "bundles": [] }""")
+		);
 		var (errors, _, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		entries.Should().BeEmpty();
 		errors.Should().ContainSingle().Which.Should().Contain("schema version");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchAsync_UnsafeFileName_EmitsWarningAndSkips()
 	{
-		var handler = new StubHandler(req =>
-			req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
-				? Json(/*lang=json,strict*/ """{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }""")
-				: Yaml(SampleEntry));
+		var handler = new StubHandler(
+			req => req.RequestUri!.AbsolutePath.EndsWith("/registry.json", StringComparison.Ordinal)
+				? Json(/*lang=json,strict*/
+					"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "../escape.yaml" }, { "file": "ok.yaml" } ] }"""
+				)
+				: Yaml(SampleEntry)
+		);
 		var (errors, warnings, emitError, emitWarning) = Diagnostics();
 
 		using var fetcher = CreateFetcher(handler);
-		var entries = await fetcher.FetchAsync(BaseUri, "elastic", "elasticsearch", "main", emitError, emitWarning, TestContext.Current.CancellationToken);
+		var entries = await fetcher.FetchAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"main",
+			emitError,
+			emitWarning,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		errors.Should().BeEmpty();
 		entries.Select(e => e.FileName).Should().BeEquivalentTo("ok.yaml");
 		warnings.Should().ContainSingle().Which.Should().Contain("escape.yaml");
+	}
+
+	[Test]
+	public async Task FetchNotesAsync_IndexAbsent_ReturnsEmptyWithNoError()
+	{
+		// A missing notes index means "no notes for this target" — not a pipeline error.
+		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		entries.Should().BeEmpty();
+		errors.Should().BeEmpty("a missing index is expected for targets with no notes");
+		handler.RequestedPaths.Should().ContainSingle().Which.Should().EndWith("/changelog/elastic/elasticsearch/notes-9.0.0.json");
+	}
+
+	[Test]
+	public async Task FetchNotesAsync_HappyPath_FetchesAllListedNotes()
+	{
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/
+					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0},{"path":"9.0/note-gap.yml","bundle_seq":0}]}"""
+				);
+			return Yaml(SampleEntry);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		errors.Should().BeEmpty();
+		entries.Select(e => e.FileName).Should().BeEquivalentTo("main/note-slow-rollover.yml", "9.0/note-gap.yml");
+		// Verify the actual note URLs contain branch segments
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/main/note-slow-rollover.yml", StringComparison.Ordinal));
+		handler.RequestedPaths.Should().Contain(p => p.EndsWith("/9.0/note-gap.yml", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task FetchNotesAsync_ListedNoteNotFound_EmitsErrorAndReturnsEmpty()
+	{
+		// A note listed in the index that cannot be fetched is a hard error — the index promises it exists.
+		var handler = new StubHandler(req =>
+		{
+			var path = req.RequestUri!.AbsolutePath;
+			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-missing.yml","bundle_seq":0}]}""");
+			return new HttpResponseMessage(HttpStatusCode.NotFound);
+		});
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler, maxAttempts: 2);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		entries.Should().BeEmpty();
+		errors.Should().ContainSingle().Which.Should().Contain("note-missing.yml");
+	}
+
+	[Test]
+	public async Task FetchNotesAsync_EmptyIndex_ReturnsEmpty()
+	{
+		var handler = new StubHandler(_ => Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[]}"""));
+		var (errors, _, emitError, _) = Diagnostics();
+
+		using var fetcher = CreateFetcher(handler);
+		var entries = await fetcher.FetchNotesAsync(
+			BaseUri,
+			"elastic",
+			"elasticsearch",
+			"9.0.0",
+			emitError,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		entries.Should().BeEmpty();
+		errors.Should().BeEmpty();
 	}
 
 	private static HttpResponseMessage Json(string body) =>

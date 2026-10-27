@@ -4,58 +4,51 @@
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
+
+	// What you need to call the API (server URLs, spec download) sits in the right rail, under Copy page.
+	// Below 1024px the rail drops under the whole catalog, so the same facts also sit under the intro (hidden on wide screens).
+	protected override async Task ExecuteSectionAsync(string name)
+	{
+		if (name != ApiPageSections.Rail)
+			return;
+		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "rail")))
+	}
 }
-<section id="elastic-docs-v3">
-	<h1>@Model.ApiInfo.Title</h1>
-	<p>@Model.RenderMarkdown(Model.ApiInfo.Description)</p>
-	<p>License: @Model.ApiInfo.License?.Name</p>
+@{
+	var apiHxAttrs = LayoutModel.HxAttributes;
+}
+<section id="elastic-docs-v3" class="api-landing">
+	<div class="api-landing-heading api-page-heading">
+		@if (Model.IconSvg is not null)
+		{
+			<span class="api-landing-icon">@(new HtmlString(Model.IconSvg))</span>
+		}
+		<h1>@Model.ApiInfo.Title</h1>
+	</div>
+	<div class="docs-measure">
+		<p>@Model.DescriptionLead</p>
+	</div>
+	@if (Model.HasFacts)
+	{
+		@await RenderPartialAsync(_LandingFacts.Create(new LandingFactsModel(Model, "inline")))
+	}
+	@if (Model.DescriptionRemainder is { } remainder)
+	{
+		<div class="docs-measure">
+			@remainder
+		</div>
+	}
 	<div class="api-overview">
-		<table>
-			@foreach (var row in Model.OverviewRows)
+		<div class="api-index">
+			@foreach (var group in Model.IndexSections)
 			{
-				switch (row.Kind)
+				if (group.Heading is { Kind: OverviewRowKind.ClassificationHeading } classification)
 				{
-					case OverviewRowKind.ClassificationHeading:
-					<tr>
-						<td colspan="2"><h2>@(row.Title)</h2></td>
-					</tr>
-						break;
-					case OverviewRowKind.TagHeading:
-					<tr>
-						<td colspan="2"><h3><a href="@row.Url" class="api-tag-landing-link">@row.Title</a></h3></td>
-					</tr>
-						break;
-					case OverviewRowKind.Endpoint:
-							<tr>
-								<td class="api-name">@(row.Title)</td>
-								<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
-							</tr>
-						break;
-					case OverviewRowKind.Operation:
-					<tr>
-						<td class="api-name">@(row.Title)</td>
-						<td>@(await RenderPartialAsync<_OperationUrlList, IReadOnlyCollection<OperationNavigationItem>>(row.Operations))</td>
-					</tr>
-						break;
-					case OverviewRowKind.SchemaCategoryHeading:
-					<tr>
-						<td colspan="2"><h3>@(row.Title)</h3></td>
-					</tr>
-						break;
-					case OverviewRowKind.Schema:
-					<tr>
-						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
-						<td><code>@row.SchemaId</code></td>
-					</tr>
-						break;
-					case OverviewRowKind.MarkdownPage:
-					<tr>
-						<td class="api-name"><a href="@row.Url">@(row.Title)</a></td>
-						<td>Additional documentation</td>
-					</tr>
-						break;
+					<h2 class="api-index-heading">@classification.Title</h2>
+					continue;
 				}
+				@(await RenderPartialAsync<_ApiIndexGroup, ApiIndexGroupModel>(new ApiIndexGroupModel(group, apiHxAttrs)))
 			}
-		</table>
+		</div>
 	</div>
 </section>

@@ -6,59 +6,102 @@ namespace Elastic.Markdown.Myst.CodeBlocks;
 
 public static class CodeBlock
 {
-
 	private static readonly IReadOnlyDictionary<string, string> LanguageMapping = new Dictionary<string, string>
 	{
 		{ "asciidoc", "adoc" }, // AsciiDoc
-		{ "bash", "sh, zsh" }, // Bash
+
+		{ "bash", "sh, zsh, fish" }, // Bash
+
 		{ "c", "h" }, // C
+
 		{ "csharp", "cs" }, // C#
+
+		{ "clojure", "clj, edn" }, // Clojure
+
 		{ "css", "" }, // CSS
+
+		{ "diff", "patch" }, // Diff
+
 		{ "dockerfile", "docker" }, // Dockerfile
-		{ "dos", "bat, cmd" }, // DOS
+
+		{ "dos", "bat, cmd, batch" }, // DOS
+
 		{ "ebnf", "" }, // EBNF
+
+		{ "gherkin", "feature" }, // Gherkin
+
 		{ "go", "golang" }, // Go
+
 		{ "gradle", "" }, // Gradle
+
+		{ "graphql", "gql" }, // GraphQL
+
 		{ "groovy", "" }, // Groovy
+
 		{ "handlebars", "hbs, html.hbs, html.handlebars" }, // Handlebars
+
 		{ "http", "https" }, // HTTP
+
 		{ "ini", "toml" }, // Ini, TOML
+
 		{ "java", "jsp" }, // Java
+
 		{ "javascript", "js, jsx" }, // JavaScript
+
 		{ "json", "jsonc" }, // JSON
+
 		{ "kotlin", "kt" }, // Kotlin
+
+		{ "makefile", "mk, mak, make" }, // Makefile
+
 		{ "markdown", "md, mkdown, mkd" }, // Markdown
+
 		{ "nginx", "nginxconf" }, // Nginx
+
 		{ "php", "" }, // PHP
+
 		{ "plaintext", "txt, text" }, // Plaintext
+
 		{ "powershell", "ps, ps1" }, // PowerShell
+
 		{ "properties", "" }, // Properties
+
 		{ "python", "py, gyp" }, // Python
+
 		{ "ruby", "rb, gemspec, podspec, thor, irb" }, // Ruby
+
 		{ "rust", "rs" }, // Rust
+
 		{ "scala", "" }, // Scala
+
 		{ "shell", "console" }, // Shell
+
 		{ "sql", "" }, // SQL
+
 		{ "swift", "" }, // Swift
+
 		{ "typescript", "ts, tsx, mts, cts" }, // TypeScript
+
 		{ "xml", "html, xhtml, rss, atom, xjb, xsd, xsl, plist, svg" }, // HTML, XML
+
 		{ "yml", "yaml" }, // YAML
 
-	//CUSTOM, Elastic language we wrote highlighters for
-	{ "apiheader", "" },
-	{ "eql", "" },
-	{ "esql", "" },
-	{ "kuery", "kql" },
-	{ "mermaid", "" },
-	{ "painless", "" }
+		//CUSTOM, Elastic language we wrote highlighters for
+		{
+			"apiheader",
+			""
+		},
+		{ "eql", "" },
+		{ "esql", "" },
+		{ "kuery", "kql" },
+		{ "mermaid", "" },
+		{ "painless", "" }
 	};
 
 	public static HashSet<string> Languages { get; } = new(
-		LanguageMapping.Keys
-			.Concat(LanguageMapping.Values
-				.SelectMany(v => v.Split(',').Select(a => a.Trim()))
-				.Where(v => !string.IsNullOrWhiteSpace(v))
-			)
-		, StringComparer.OrdinalIgnoreCase
+		LanguageMapping.Keys.Concat(
+			LanguageMapping.Values.SelectMany(v => v.Split(',').Select(a => a.Trim())).Where(v => !string.IsNullOrWhiteSpace(v))
+		),
+		StringComparer.OrdinalIgnoreCase
 	);
 }

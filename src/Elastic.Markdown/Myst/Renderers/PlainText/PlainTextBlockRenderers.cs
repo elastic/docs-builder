@@ -14,6 +14,7 @@ using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Myst.Directives.Math;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Renderers.LlmMarkdown;
@@ -77,7 +78,8 @@ public class PlainTextCodeBlockRenderer : MarkdownObjectRenderer<PlainTextRender
 			var appliesText = LlmApplicabilityHelper.RenderForLlm(
 				appliesTo.AppliesTo,
 				renderer.BuildContext.VersionsConfiguration,
-				useInlineTag: false);
+				useInlineTag: false
+			);
 			if (!string.IsNullOrEmpty(appliesText))
 			{
 				renderer.EnsureBlockSpacing();
@@ -192,9 +194,7 @@ public class PlainTextTableRenderer : MarkdownObjectRenderer<PlainTextRenderer, 
 		// Get headers from first row
 		if (table.Count > 0 && table[0] is TableRow headerRow)
 		{
-			headers = headerRow.Cast<TableCell>()
-				.Select(cell => RenderCellContent(renderer, cell))
-				.ToArray();
+			headers = headerRow.Cast<TableCell>().Select(cell => RenderCellContent(renderer, cell)).ToArray();
 		}
 
 		// Render each data row as header: value pairs
@@ -305,6 +305,10 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 					renderer.WriteLine(agentSkillBlock.Url);
 				renderer.EnsureLine();
 				return;
+
+			case RelatedLearningBlock relatedLearningBlock:
+				WriteRelatedLearningBlock(renderer, relatedLearningBlock);
+				return;
 		}
 
 		renderer.EnsureBlockSpacing();
@@ -333,6 +337,18 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		// Render directive content
 		renderer.WriteChildren(obj);
+		renderer.EnsureLine();
+	}
+
+	private static void WriteRelatedLearningBlock(PlainTextRenderer renderer, RelatedLearningBlock block)
+	{
+		if (block.Items.Count == 0)
+			return;
+
+		renderer.EnsureBlockSpacing();
+		renderer.WriteLine(block.Heading);
+		foreach (var item in block.Items)
+			renderer.WriteLine($"{item.Title} {item.Url}");
 		renderer.EnsureLine();
 	}
 
@@ -378,16 +394,21 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			try
 			{
 				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser.ParseSnippetAsync(
-					block.Build, block.Context, snippet, parentPath,
-					block.Context.YamlFrontMatter, Cancel.None, block.Line
-				).GetAwaiter().GetResult();
+				var document = MarkdownParser
+					.ParseSnippetAsync(
+						block.Build,
+						block.Context,
+						snippet,
+						parentPath,
+						block.Context.YamlFrontMatter,
+						Cancel.None,
+						block.Line
+					)
+					.GetAwaiter()
+					.GetResult();
 				_ = renderer.Render(document);
 			}
-			catch (Exception ex) when (ex is not OutOfMemoryException
-									   and not ThreadAbortException
-									   and not ThreadInterruptedException
-									   and not StackOverflowException)
+			catch (Exception ex) when (ex is not OutOfMemoryException and not ThreadAbortException and not ThreadInterruptedException and not StackOverflowException)
 			{
 				// Skip on error
 			}
@@ -438,7 +459,13 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		renderer.EnsureLine();
 	}
 
-	private static void WriteSettingPlainText(PlainTextRenderer renderer, SettingsBlock block, Setting setting, string? parentName, string? product)
+	private static void WriteSettingPlainText(
+		PlainTextRenderer renderer,
+		SettingsBlock block,
+		Setting setting,
+		string? parentName,
+		string? product
+	)
 	{
 		var displayName = SettingsViewModel.ComposeSettingName(parentName, setting.Name);
 		renderer.EnsureLine();
@@ -482,7 +509,13 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		renderer.EnsureBlockSpacing();
 	}
 
-	private static void WriteSettingsMarkdownSnippet(PlainTextRenderer renderer, SettingsBlock block, string? markdown, string? label = null, string? product = null)
+	private static void WriteSettingsMarkdownSnippet(
+		PlainTextRenderer renderer,
+		SettingsBlock block,
+		string? markdown,
+		string? label = null,
+		string? product = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(markdown))
 			return;
@@ -502,7 +535,8 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 			settingsSourceFile,
 			block.Context.YamlFrontMatter,
 			block.IncludeFrom,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 		_ = renderer.Render(document);
 		renderer.EnsureBlockSpacing();
 	}
@@ -522,9 +556,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		}
 
 		// Read CSV data
-		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem)
-			.Take(block.MaxRows)
-			.ToList();
+		var csvRows = CsvReader.ReadCsvFile(block.CsvFilePath, block.Separator, block.Build.ReadFileSystem).Take(block.MaxRows).ToList();
 
 		if (csvRows.Count == 0)
 			return;
@@ -554,7 +586,6 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 
 		renderer.EnsureLine();
 	}
-
 }
 
 /// <summary>

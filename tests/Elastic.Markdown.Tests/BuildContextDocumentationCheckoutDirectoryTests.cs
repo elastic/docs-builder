@@ -8,7 +8,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.FileSystems;
-using Xunit;
 
 namespace Elastic.Markdown.Tests;
 
@@ -25,9 +24,9 @@ namespace Elastic.Markdown.Tests;
 /// <c>FindGitRoot</c> can see <c>.git</c> within the default <c>maxParents</c> range.
 /// </para>
 /// </summary>
-public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper output)
+public class BuildContextDocumentationCheckoutDirectoryTests()
 {
-	[Fact]
+	[Test]
 	public void SourceAsRepositoryRoot_SetsDocumentationCheckoutDirectory()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -36,23 +35,20 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(repoPath, "docs", "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(repoPath),
-			new DocumentationScopeOptions
-			{
-				Inner = fs,
-				Output = Path.Join(root, "codex-checkout-dir-test-out")
-			});
+			new DocumentationScopeOptions { Inner = fs, Output = Path.Join(root, "codex-checkout-dir-test-out") }
+		);
 		var context = new BuildContext(collector, docFs, configurationContext);
 
 		Assert.NotNull(context.DocumentationCheckoutDirectory);
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
 	}
 
-	[Fact]
+	[Test]
 	public void SourceAsDocsSubtree_ResolvesCheckoutFromParent()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -62,16 +58,13 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(docsPath),
-			new DocumentationScopeOptions
-			{
-				Inner = fs,
-				Output = Path.Join(root, "codex-docs-only-test-out")
-			});
+			new DocumentationScopeOptions { Inner = fs, Output = Path.Join(root, "codex-docs-only-test-out") }
+		);
 		var context = new BuildContext(collector, docFs, configurationContext);
 
 		// --path repo/docs/ now resolves the same checkout as --path repo/:
@@ -80,7 +73,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
 	}
 
-	[Fact]
+	[Test]
 	public void PathAndDocsSubfolder_ResolveIdenticalCheckout()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -90,14 +83,10 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var opts = new DocumentationScopeOptions
-		{
-			Inner = fs,
-			Output = Path.Combine(root, "codex-equiv-test-out")
-		};
+		var opts = new DocumentationScopeOptions { Inner = fs, Output = Path.Combine(root, "codex-equiv-test-out") };
 
 		var fsFromRepoRoot = DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(repoPath), opts);
 		var fsFromDocsFolder = DocumentationFileSystem.Resolve(fs.DirectoryInfo.New(docsPath), opts);
@@ -106,11 +95,21 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 
 		contextFromRepoRoot.DocumentationCheckoutDirectory.Should().NotBeNull();
 		contextFromDocsFolder.DocumentationCheckoutDirectory.Should().NotBeNull();
-		contextFromRepoRoot.DocumentationCheckoutDirectory.FullName
-			.Should().Be(contextFromDocsFolder.DocumentationCheckoutDirectory.FullName,
-				"--path repo/ and --path repo/docs/ must resolve to the same CheckoutDirectory");
-		contextFromRepoRoot.DocumentationSourceDirectory.FullName
-			.Should().Be(contextFromDocsFolder.DocumentationSourceDirectory.FullName,
-				"--path repo/ and --path repo/docs/ must resolve to the same SourceDirectory");
+		contextFromRepoRoot
+			.DocumentationCheckoutDirectory
+			.FullName
+			.Should()
+			.Be(
+				contextFromDocsFolder.DocumentationCheckoutDirectory.FullName,
+				"--path repo/ and --path repo/docs/ must resolve to the same CheckoutDirectory"
+			);
+		contextFromRepoRoot
+			.DocumentationSourceDirectory
+			.FullName
+			.Should()
+			.Be(
+				contextFromDocsFolder.DocumentationSourceDirectory.FullName,
+				"--path repo/ and --path repo/docs/ must resolve to the same SourceDirectory"
+			);
 	}
 }

@@ -9,11 +9,12 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class SiteNavigationFileTests
 {
-	[Fact]
+	[Test]
 	public void DeserializesSiteNavigationFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           phantoms:
 		             - toc: elasticsearch://reference
 		             - toc: docs-content://
@@ -49,11 +50,12 @@ public class SiteNavigationFileTests
 		security.PathPrefix.Should().Be("/serverless/security");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesSiteNavigationFileWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: platform
 		               path_prefix: /platform
@@ -82,7 +84,7 @@ public class SiteNavigationFileTests
 		cloud.PathPrefix.Should().Be("/platform/cloud");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesWithMissingPath()
 	{
 		// language=yaml
@@ -99,11 +101,12 @@ public class SiteNavigationFileTests
 		ref1.PathPrefix.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PreservesSchemeWhenPresent()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: elasticsearch://reference/current
 		             - toc: kibana://reference/8.0
@@ -124,11 +127,12 @@ public class SiteNavigationFileTests
 		serverless.Source.ToString().Should().Be("docs-content://serverless/observability");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesIslandOnTocEntry()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: observability
@@ -148,7 +152,7 @@ public class SiteNavigationFileTests
 		security.Island.Should().BeFalse("island defaults to false when omitted");
 	}
 
-	[Fact]
+	[Test]
 	public void ThrowsExceptionForInvalidUri()
 	{
 		// language=yaml
@@ -159,12 +163,14 @@ public class SiteNavigationFileTests
 
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<YamlDotNet.Core.YamlException>()
+		act
+			.Should()
+			.Throw<SharpYaml.YamlException>()
 			.WithInnerException<InvalidOperationException>()
 			.WithMessage("Invalid TOC source: '://invalid' could not be parsed as a URI");
 	}
 
-	[Fact]
+	[Test]
 	public void UnknownKeyThrows()
 	{
 		// language=yaml
@@ -176,15 +182,15 @@ public class SiteNavigationFileTests
 		// A typo (no 'toc:' or 'section:' key) must throw rather than silently drop the entry.
 		var act = () => SiteNavigationFile.Deserialize(yaml);
 
-		act.Should().Throw<YamlDotNet.Core.YamlException>()
-			.WithMessage("*has no 'toc:' key*");
+		act.Should().Throw<SharpYaml.YamlException>().WithMessage("*has no 'toc:' key*");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesSectionWithChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - section: Guides
 		               children:
@@ -210,11 +216,12 @@ public class SiteNavigationFileTests
 		reference.Source.ToString().Should().Be("docs-content://reference/");
 	}
 
-	[Fact]
+	[Test]
 	public void DeserializesExternalSection()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - section: APIs
 		               external: https://www.elastic.co/docs/api/
@@ -234,7 +241,7 @@ public class SiteNavigationFileTests
 	/// <summary>
 	/// The shipped <c>config/navigation.yml</c> must deserialize cleanly.
 	/// </summary>
-	[Fact]
+	[Test]
 	public void ShippedNavigationYmlDeserializes()
 	{
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("Solution directory not found.");

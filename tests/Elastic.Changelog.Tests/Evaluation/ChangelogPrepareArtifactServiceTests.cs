@@ -15,7 +15,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogPrepareArtifactServiceTests() : ChangelogTestBase()
 {
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
 
@@ -24,7 +24,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	private static readonly string OutputDir = Path.Join(Root, "output");
 	private static readonly string ConfigPath = Path.Join(Root, "config/changelog.yml");
 
-	private const string MinimalConfig = """
+	private const string MinimalConfig =
+		"""
 		pivot:
 		  types:
 		    feature: "type:feature"
@@ -42,8 +43,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		    exclude: "changelog:skip"
 		""";
 
-	private ChangelogPrepareArtifactService CreateService() =>
-		new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
+	private ChangelogPrepareArtifactService CreateService() => new(LoggerFactory, ConfigurationContext, _mockCore, RunnerTempFileSystem);
 
 	private PrepareArtifactArguments DefaultArgs(
 		string evaluateStatus = "proceed",
@@ -78,13 +78,13 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		await FileSystem.File.WriteAllTextAsync(configPath, MinimalConfig);
 	}
 
-	private ChangelogArtifactMetadata ReadMetadata()
+	private GithubDecisionMetadata ReadMetadata()
 	{
 		var json = FileSystem.File.ReadAllText(Path.Join(OutputDir, "metadata.json"));
-		return JsonSerializer.Deserialize(json, ChangelogArtifactMetadataJsonContext.Default.ChangelogArtifactMetadata)!;
+		return JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_GenerateSuccess_CopiesYamlAndWritesMetadata()
 	{
 		await SetupStagingYaml();
@@ -104,19 +104,41 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		A.CallTo(() => _mockCore.SetOutputAsync("status", "success")).MustHaveHappened();
 	}
 
-	[Fact]
+	// Regression: docs-actions stages under `.artifacts/...` inside the checkout.
+	// Those paths are descendants of the working root (not added as extra roots), so
+	// RunnerTempFileSystem must allow the `.artifacts` hidden folder or prepare-artifact
+	// fails with "path must not traverse hidden directories" (elastic/cloud changelog-submit).
+	[Test]
+	public async Task PrepareArtifact_DotArtifactsPaths_CopiesYamlAndWritesMetadata()
+	{
+		var artifactsStaging = Path.Join(Root, ".artifacts", "changelog-staging");
+		var artifactsOutput = Path.Join(Root, ".artifacts", "changelog-artifact");
+
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		RunnerTempFileSystem.Directory.CreateDirectory(artifactsStaging);
+		await RunnerTempFileSystem.File.WriteAllTextAsync(Path.Join(artifactsStaging, "42.yaml"), "title: test changelog", ct);
+		await SetupConfig();
+
+		var service = CreateService();
+		var args = DefaultArgs() with { StagingDir = artifactsStaging, OutputDir = artifactsOutput };
+
+		var result = await service.PrepareArtifact(Collector, args, ct);
+
+		result.Should().BeTrue();
+		RunnerTempFileSystem.File.Exists(Path.Join(artifactsOutput, "42.yaml")).Should().BeTrue();
+		var json = RunnerTempFileSystem.File.ReadAllText(Path.Join(artifactsOutput, "metadata.json"));
+		var metadata = JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
+		metadata.Status.Should().Be("success");
+		metadata.ChangelogFilename.Should().Be("42.yaml");
+	}
+
+	[Test]
 	public async Task PrepareArtifact_ForkFields_PersistedInMetadata()
 	{
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = true,
-			MaintainerCanModify = true
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = true, MaintainerCanModify = true };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -127,19 +149,13 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.MaintainerCanModify.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ForkNoMaintainerEdits_CanCommitFalse()
 	{
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = true,
-			HeadRepo = "contributor/repo",
-			CanCommit = false,
-			MaintainerCanModify = false
-		};
+		var args = DefaultArgs() with { IsFork = true, HeadRepo = "contributor/repo", CanCommit = false, MaintainerCanModify = false };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -155,19 +171,13 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	// that to false in the persisted metadata so the downstream apply step does
 	// NOT attempt a commit+push. Failing closed on "unspecified" is the whole
 	// point of moving these flags to nullable bool.
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_NullableBoolsUnspecified_CoerceToFalseInMetadata()
 	{
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			IsFork = null,
-			CanCommit = null,
-			MaintainerCanModify = null,
-			HeadRepo = null
-		};
+		var args = DefaultArgs() with { IsFork = null, CanCommit = null, MaintainerCanModify = null, HeadRepo = null };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -177,17 +187,13 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.MaintainerCanModify.Should().BeFalse("an omitted --maintainer-can-modify flag must not be treated as granted");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ProductLabelTableAndSkipLabels_PersistedInMetadata()
 	{
 		await SetupStagingYaml();
 		await SetupConfig();
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			ProductLabelTable = "| Label | Product |\n| --- | --- |",
-			SkipLabels = "changelog:skip,skip-ci"
-		};
+		var args = DefaultArgs() with { ProductLabelTable = "| Label | Product |\n| --- | --- |", SkipLabels = "changelog:skip,skip-ci" };
 
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
 
@@ -196,7 +202,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.SkipLabels.Should().Be("changelog:skip,skip-ci");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_GenerateFailure_StatusError()
 	{
 		await SetupConfig();
@@ -211,7 +217,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.Status.Should().Be("error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_NoLabel_WritesMetadataWithoutYaml()
 	{
 		await SetupConfig();
@@ -228,7 +234,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_MetadataContainsCreateRules()
 	{
 		await SetupStagingYaml();
@@ -243,7 +249,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.CreateRules.Mode.Should().Be(FieldMode.Exclude);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ExistingFilename_RenamesStagingFileToMatch()
 	{
 		await SetupStagingYaml("1735700000-new-title.yaml");
@@ -260,7 +266,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("1735689600-old-title.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_EmptyExistingFilename_FallsBackToStagingFilename()
 	{
 		// Regression: CLI parsers (Argh) forward `--existing-changelog-filename ""`
@@ -280,7 +286,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("1735700000-new-title.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_MissingStagingYaml_StatusError()
 	{
 		await SetupConfig();
@@ -292,7 +298,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.Status.Should().Be("error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_WithBomPrefixedYaml_NormalizesOutput()
 	{
 		// Arrange
@@ -300,7 +306,8 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		FileSystem.Directory.CreateDirectory(StagingDir);
 
 		// Create YAML with BOM prefix
-		const string yamlContent = """
+		const string yamlContent =
+			"""
 			title: Test changelog
 			type: feature
 			products:
@@ -318,11 +325,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		ChangelogUtf8Normalization.HasUtf8Bom(stagingBytes).Should().BeTrue("staging file should contain BOM");
 
 		var service = CreateService();
-		var args = DefaultArgs() with
-		{
-			EvaluateStatus = "proceed",
-			GenerateOutcome = "success"
-		};
+		var args = DefaultArgs() with { EvaluateStatus = "proceed", GenerateOutcome = "success" };
 
 		// Act
 		await service.PrepareArtifact(Collector, args, CancellationToken.None);
@@ -345,14 +348,14 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("changelog.yaml");
 	}
 
-	[Theory]
-	[InlineData("proceed", "success", PrEvaluationResult.Success)]
-	[InlineData("proceed", "failure", PrEvaluationResult.Error)]
-	[InlineData("no-label", "success", PrEvaluationResult.NoLabel)]
-	[InlineData("no-title", "success", PrEvaluationResult.NoTitle)]
-	[InlineData("skipped", "success", PrEvaluationResult.Skipped)]
-	[InlineData("manually-edited", "success", PrEvaluationResult.ManuallyEdited)]
-	[InlineData("unknown", "success", PrEvaluationResult.Error)]
+	[Test]
+	[Arguments("proceed", "success", PrEvaluationResult.Success)]
+	[Arguments("proceed", "failure", PrEvaluationResult.Error)]
+	[Arguments("no-label", "success", PrEvaluationResult.NoLabel)]
+	[Arguments("no-title", "success", PrEvaluationResult.NoTitle)]
+	[Arguments("skipped", "success", PrEvaluationResult.Skipped)]
+	[Arguments("manually-edited", "success", PrEvaluationResult.ManuallyEdited)]
+	[Arguments("unknown", "success", PrEvaluationResult.Error)]
 	public void ResolveStatus_ReturnsExpected(string evaluateStatus, string generateOutcome, PrEvaluationResult expected)
 	{
 		var result = ChangelogPrepareArtifactService.ResolveStatus(evaluateStatus, generateOutcome);

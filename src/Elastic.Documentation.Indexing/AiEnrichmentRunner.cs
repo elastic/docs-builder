@@ -32,8 +32,7 @@ public static class AiEnrichmentRunner
 		ILogger logger,
 		CancellationToken ct,
 		Action<AiEnrichmentProgress>? onProgress = null
-	)
-		where TDoc : class
+	) where TDoc : class
 	{
 		var alias = context.SecondaryWriteAlias;
 		if (string.IsNullOrEmpty(alias))
@@ -47,7 +46,8 @@ public static class AiEnrichmentRunner
 		logger.LogInformation(
 			"Starting post-sync AI enrichment for {Alias} (max {MaxDocs} documents per run)...",
 			alias,
-			budget.EffectiveMaxDocs);
+			budget.EffectiveMaxDocs
+		);
 
 		var options = new AiEnrichmentOptions
 		{
@@ -64,7 +64,8 @@ public static class AiEnrichmentRunner
 				p.Enriched,
 				p.Failed,
 				p.TotalCandidates,
-				p.Message is not null ? $" — {p.Message}" : "");
+				p.Message is not null ? $" — {p.Message}" : ""
+			);
 			onProgress?.Invoke(p);
 		}
 	}

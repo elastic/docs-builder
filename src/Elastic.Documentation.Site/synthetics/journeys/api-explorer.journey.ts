@@ -31,14 +31,14 @@ if (isAssemblerApiExplorerEnabled()) {
         const host = params.baseUrl
         const catalogPath = '/docs/api/'
 
-        step('Open the API Explorer catalog', async () => {
+        step('Open the API catalog', async () => {
             const response = await page.goto(`${host}${catalogPath}`, {
                 timeout: 60000,
                 waitUntil: 'domcontentloaded',
             })
             expect(response?.ok()).toBeTruthy()
             await expect(
-                page.getByRole('heading', { name: 'API Explorer' })
+                page.getByRole('heading', { name: 'Elastic APIs' })
             ).toBeVisible()
         })
 
@@ -53,32 +53,28 @@ if (isAssemblerApiExplorerEnabled()) {
             )
         })
 
-        step('Switch API version with the sidebar dropdown', async () => {
-            const switcher = page.locator('#api-version-switcher')
-            await expect(switcher).toBeVisible()
+        step('Switch API version with the top-bar dropdown', async () => {
+            const picker = page.locator(
+                '[data-testid="docs-version-dropdown"]:visible'
+            )
+            await expect(picker).toBeVisible()
 
-            const optionCount = await switcher.locator('option').count()
-            expect(optionCount).toBeGreaterThan(1)
-
-            const currentValue = await switcher.inputValue()
-            const targetValue = await switcher.evaluate((select, current) => {
-                const option = Array.from(select.options).find(
-                    (entry) => entry.value !== current
-                )
-                return option?.value ?? null
-            }, currentValue)
-            expect(targetValue).toBeTruthy()
+            await picker.locator('button').click()
+            const target = page
+                .locator('a[href*="/docs/api/doc/elasticsearch/v"]')
+                .first()
+            await expect(target).toBeVisible()
 
             const currentUrl = page.url()
             await Promise.all([
                 page.waitForURL((url) => url.href !== currentUrl),
-                switcher.selectOption(targetValue!),
+                target.click(),
             ])
 
             await expect(page).toHaveURL(
                 /\/docs\/api\/doc\/elasticsearch\/v\d+\//
             )
-            await expect(switcher).toBeVisible()
+            await expect(picker).toBeVisible()
         })
 
         step('Open an operation page from the API sidebar', async () => {
@@ -90,7 +86,7 @@ if (isAssemblerApiExplorerEnabled()) {
             // first unexpanded branch until an operation link becomes clickable.
             const collapsedToggle = page
                 .locator(
-                    '#pages-nav li.nav-folder:visible > div.peer:has(input:not(:checked)) label'
+                    '#pages-nav li.nav-folder:visible > div.peer:has(input:not(:checked)) > a.sidebar-link'
                 )
                 .first()
             for (let depth = 0; depth < 8; depth++) {

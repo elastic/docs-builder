@@ -27,7 +27,6 @@ namespace Elastic.Documentation.Build.Tests;
 /// </summary>
 public class AssemblerOpenApiBuildStepIntegrationTests
 {
-
 	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
 	{
 		var gitDir = fileSystem.Path.Join(checkoutRoot, ".git");
@@ -35,8 +34,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(gitDir, "HEAD"), "ref: refs/heads/main\n");
 	}
 
-	[Fact]
-	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent()
+	[Test]
+	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
 	{
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
@@ -44,7 +43,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var assemblyConfig = AssemblyConfiguration.Deserialize("""
+		var assemblyConfig = AssemblyConfiguration.Deserialize(
+			"""
 			environments:
 			  staging:
 			    uri: https://staging-website.elastic.co
@@ -55,11 +55,14 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			narrative:
 			  checkout_strategy: full
 			references: {}
-			""");
+			"""
+		);
 		using var scopedWorkspace = new ScopedTempDirectory(fileSystem, "assembler-openapi-integration");
 		var workspaceRoot = scopedWorkspace.Directory;
 		var docsetPath = fileSystem.Path.Join(workspaceRoot.FullName, "docset.yml");
-		fileSystem.File.WriteAllText(docsetPath, """
+		fileSystem.File.WriteAllText(
+			docsetPath,
+			"""
 			project: test
 			toc:
 			  - file: index.md
@@ -68,7 +71,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			    - spec: elasticsearch.json
 			      product: elasticsearch
 			      repository: elastic/elasticsearch-specification
-			""");
+			"""
+		);
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(workspaceRoot.FullName, "index.md"), "# Test\n");
 		InitializeGitCheckout(fileSystem, workspaceRoot.FullName);
 		var outputDirectory = fileSystem.Path.Join(workspaceRoot.FullName, "output");
@@ -80,7 +84,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			collector,
 			assembleFs,
 			workspaceRoot.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var checkout = new Checkout
 		{
 			Repository = new Repository { Name = "docs-content", Origin = "elastic/docs-content" },
@@ -94,24 +99,26 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			NoopCrossLinkResolver.Instance,
 			new ReleaseNotesResolver(),
 			configurationContext,
-			ExportOptions.Default);
+			ExportOptions.Default
+		);
 		var assembleSources = AssembleSources.ForTests(
 			context,
-			new Dictionary<string, AssemblerDocumentationSet> { [checkout.Repository.Name] = documentationSet }
-				.ToFrozenDictionary());
+			new Dictionary<string, AssemblerDocumentationSet> { [checkout.Repository.Name] = documentationSet }.ToFrozenDictionary()
+		);
 
-		await documentationSet.DocumentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
+		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var stopwatch = Stopwatch.StartNew();
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken);
+			siteTopNav: null,
+			cancellationToken
+		);
 		stopwatch.Stop();
 
-		TestContext.Current.TestOutputHelper?.WriteLine(
-			$"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
+		TestContext.Current?.Output.WriteLine($"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
 
 		collector.Errors.Should().Be(0);
 
@@ -119,13 +126,21 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		fileSystem.Directory.Exists(apiRoot).Should().BeTrue();
 
 		var elasticsearchLanding = fileSystem.Path.Join(apiRoot, "doc", "elasticsearch", "index.html");
-		fileSystem.File.Exists(elasticsearchLanding).Should().BeTrue(
-			"staging assembler builds should emit the unversioned elasticsearch API landing page");
+		fileSystem
+			.File
+			.Exists(elasticsearchLanding)
+			.Should()
+			.BeTrue("staging assembler builds should emit the unversioned elasticsearch API landing page");
+		fileSystem
+			.File
+			.ReadAllText(elasticsearchLanding)
+			.Should()
+			.Contain("<meta name=\"robots\" content=\"noindex, nofollow\">", "API pages honor the environment's allow_indexing: false");
 
-		var versionedLanding = fileSystem.Directory
+		var versionedLanding = fileSystem
+			.Directory
 			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
 			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
-		versionedLanding.Should().NotBeNull(
-			"versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
+		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
 	}
 }

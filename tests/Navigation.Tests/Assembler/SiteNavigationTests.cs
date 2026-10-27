@@ -14,7 +14,7 @@ using Elastic.Documentation.Navigation.Tests.Isolation;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-public class SiteNavigationTests(ITestOutputHelper output)
+public class SiteNavigationTests()
 {
 	private TestDocumentationSetContext CreateContext(MockFileSystem? fileSystem = null)
 	{
@@ -23,14 +23,15 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var outputDir = fileSystem.DirectoryInfo.New("/output");
 		var configPath = fileSystem.FileInfo.New("/docs/navigation.yml");
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath);
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesSiteNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: /serverless/observability
@@ -42,30 +43,47 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation instances for the referenced repos
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			observabilityDocset,
+			observabilityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
-		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
-		var searchDocset = DocumentationSetFile.LoadAndResolve(searchContext.Collector, fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance);
+		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
+		var searchDocset = DocumentationSetFile.LoadAndResolve(
+			searchContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(
+			searchDocset,
+			searchContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be("/");
-		navigation.NavigationTitle.Should().Be("Elastic Docs");
+		navigation.NavigationTitle.Should().Be("Docs");
 		navigation.NavigationItems.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: platform://
 		               path_prefix: /platform
@@ -80,13 +98,21 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation for platform
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(
+			platformDocset,
+			platformContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		navigation.NavigationItems.Should().HaveCount(1);
@@ -95,21 +121,22 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		platform.Should().NotBeNull();
 	}
 
-	[Theory]
-	[InlineData(null, "/")]
-	[InlineData("", "/")]
-	[InlineData("docs", "/docs")]
-	[InlineData("/docs", "/docs")]
-	[InlineData("docs/", "/docs")]
-	[InlineData("/docs/", "/docs")]
-	[InlineData("api/docs", "/api/docs")]
-	[InlineData("/api/docs", "/api/docs")]
-	[InlineData("api/docs/", "/api/docs")]
-	[InlineData("/api/docs/", "/api/docs")]
+	[Test]
+	[Arguments(null, "/")]
+	[Arguments("", "/")]
+	[Arguments("docs", "/docs")]
+	[Arguments("/docs", "/docs")]
+	[Arguments("docs/", "/docs")]
+	[Arguments("/docs/", "/docs")]
+	[Arguments("api/docs", "/api/docs")]
+	[Arguments("/api/docs", "/api/docs")]
+	[Arguments("api/docs/", "/api/docs")]
+	[Arguments("/api/docs/", "/api/docs")]
 	public void SitePrefixNormalizesSlashes(string? sitePrefix, string expectedRootUrl)
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: observability
@@ -118,34 +145,43 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			observabilityDocset,
+			observabilityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.Should().NotBeNull();
 		navigation.Url.Should().Be(expectedRootUrl, $"sitePrefix '{sitePrefix}' should normalize to '{expectedRootUrl}'");
 	}
 
-	[Theory]
-	[InlineData(null, "/observability")]
-	[InlineData("", "/observability")]
-	[InlineData("docs", "/docs/observability")]
-	[InlineData("/docs", "/docs/observability")]
-	[InlineData("docs/", "/docs/observability")]
-	[InlineData("/docs/", "/docs/observability")]
-	[InlineData("api/docs", "/api/docs/observability")]
-	[InlineData("/api/docs", "/api/docs/observability")]
-	[InlineData("api/docs/", "/api/docs/observability")]
-	[InlineData("/api/docs/", "/api/docs/observability")]
+	[Test]
+	[Arguments(null, "/observability")]
+	[Arguments("", "/observability")]
+	[Arguments("docs", "/docs/observability")]
+	[Arguments("/docs", "/docs/observability")]
+	[Arguments("docs/", "/docs/observability")]
+	[Arguments("/docs/", "/docs/observability")]
+	[Arguments("api/docs", "/api/docs/observability")]
+	[Arguments("/api/docs", "/api/docs/observability")]
+	[Arguments("api/docs/", "/api/docs/observability")]
+	[Arguments("/api/docs/", "/api/docs/observability")]
 	public void SitePrefixAppliedToNavigationItemUrls(string? sitePrefix, string expectedObservabilityUrl)
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: observability
@@ -154,21 +190,32 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			observabilityDocset,
+			observabilityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.NavigationItems.Should().HaveCount(1);
 		var observabilityItem = navigation.NavigationItems.First();
-		observabilityItem.Url.Should().Be(expectedObservabilityUrl, $"sitePrefix '{sitePrefix}' should result in URL '{expectedObservabilityUrl}'");
+		observabilityItem
+			.Url
+			.Should()
+			.Be(expectedObservabilityUrl, $"sitePrefix '{sitePrefix}' should result in URL '{expectedObservabilityUrl}'");
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationNodeIdsAreUniqueAcrossDocsets()
 	{
 		// This test verifies that navigation node IDs are unique even when
@@ -181,7 +228,8 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Docset 1: product-a with getting-started folder
 		var productADir = "/checkouts/current/product-a";
 		// language=yaml
-		var productADocset = """
+		var productADocset =
+			"""
 		                     project: product-a
 		                     toc:
 		                       - file: index.md
@@ -198,7 +246,8 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// Docset 2: product-b with getting-started folder (same relative path!)
 		var productBDir = "/checkouts/current/product-b";
 		// language=yaml
-		var productBDocset = """
+		var productBDocset =
+			"""
 		                     project: product-b
 		                     toc:
 		                       - file: index.md
@@ -213,19 +262,33 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		fileSystem.AddFile($"{productBDir}/docs/getting-started/tutorial.md", new MockFileData("# Tutorial B"));
 
 		// Create navigation for both docsets
-		var productAContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir, output);
-		var productADocsetFile = DocumentationSetFile.LoadAndResolve(productAContext.Collector, fileSystem.FileInfo.New($"{productADir}/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var productANav = new DocumentationSetNavigation<IDocumentationFile>(productADocsetFile, productAContext, GenericDocumentationFileFactory.Instance);
+		var productAContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir);
+		var productADocsetFile = DocumentationSetFile.LoadAndResolve(
+			productAContext.Collector,
+			fileSystem.FileInfo.New($"{productADir}/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var productANav = new DocumentationSetNavigation<IDocumentationFile>(
+			productADocsetFile,
+			productAContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
-		var productBContext = SiteNavigationTestFixture.CreateContext(fileSystem, productBDir, output);
-		var productBDocsetFile = DocumentationSetFile.LoadAndResolve(productBContext.Collector, fileSystem.FileInfo.New($"{productBDir}/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var productBNav = new DocumentationSetNavigation<IDocumentationFile>(productBDocsetFile, productBContext, GenericDocumentationFileFactory.Instance);
+		var productBContext = SiteNavigationTestFixture.CreateContext(fileSystem, productBDir);
+		var productBDocsetFile = DocumentationSetFile.LoadAndResolve(
+			productBContext.Collector,
+			fileSystem.FileInfo.New($"{productBDir}/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var productBNav = new DocumentationSetNavigation<IDocumentationFile>(
+			productBDocsetFile,
+			productBContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		// Get the "getting-started" folders from each docset
-		var productAGettingStarted = productANav.NavigationItems.First()
-			.Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
-		var productBGettingStarted = productBNav.NavigationItems.First()
-			.Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+		var productAGettingStarted = productANav.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+		var productBGettingStarted = productBNav.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
 
 		// Both folders have the same relative path within their docsets
 		productAGettingStarted.FolderPath.Should().Be("getting-started");
@@ -234,13 +297,19 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		// But they MUST have different IDs because they resolve to different URLs
 		// Product A: /product-a/getting-started
 		// Product B: /product-b/getting-started
-		productAGettingStarted.Id.Should().NotBe(productBGettingStarted.Id,
-			"folders with the same relative path but in different docsets should have different IDs " +
-			"because they have different URLs");
+		productAGettingStarted
+			.Id
+			.Should()
+			.NotBe(
+				productBGettingStarted.Id,
+				"folders with the same relative path but in different docsets should have different IDs " +
+					"because they have different URLs"
+			);
 
 		// Also verify in assembled navigation context
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: product-a://
 		                      path_prefix: /product-a
@@ -249,32 +318,36 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		                  """;
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var documentationSets = new List<IDocumentationSetNavigation> { productANav, productBNav };
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir, output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, productADir);
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Use production YieldAll() to collect all navigation items
-		var allNodeItems = ((INavigationTraversable)siteNavigation).YieldAll()
+		var allNodeItems = ((INavigationTraversable)siteNavigation)
+			.YieldAll()
 			.OfType<INodeNavigationItem<INavigationModel, INavigationItem>>()
 			.ToList();
 
 		// Verify all IDs are unique
 		var allIds = allNodeItems.Select(n => n.Id).ToList();
 		var uniqueIds = allIds.Distinct().ToList();
-		uniqueIds.Should().HaveCount(allIds.Count,
+		uniqueIds.Should().HaveCount(
+			allIds.Count,
 			$"all navigation node IDs should be unique in assembled navigation. " +
-			$"Found duplicates: {string.Join(", ", allIds.GroupBy(id => id).Where(g => g.Count() > 1).Select(g => $"ID '{g.Key}' appears {g.Count()} times"))}");
+				$"Found duplicates: {string.Join(", ", allIds.GroupBy(id => id).Where(g => g.Count() > 1).Select(g => $"ID '{g.Key}' appears {g.Count()} times"))}"
+		);
 	}
 
-	[Theory]
-	[InlineData(null, "/observability", "/search")]
-	[InlineData("docs", "/docs/observability", "/docs/search")]
-	[InlineData("/docs", "/docs/observability", "/docs/search")]
-	[InlineData("docs/", "/docs/observability", "/docs/search")]
-	[InlineData("/docs/", "/docs/observability", "/docs/search")]
+	[Test]
+	[Arguments(null, "/observability", "/search")]
+	[Arguments("docs", "/docs/observability", "/docs/search")]
+	[Arguments("/docs", "/docs/observability", "/docs/search")]
+	[Arguments("docs/", "/docs/observability", "/docs/search")]
+	[Arguments("/docs/", "/docs/observability", "/docs/search")]
 	public void SitePrefixAppliedToMultipleNavigationItems(string? sitePrefix, string expectedObsUrl, string expectedSearchUrl)
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           toc:
 		             - toc: observability://
 		               path_prefix: observability
@@ -285,17 +358,33 @@ public class SiteNavigationTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(yaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			observabilityDocset,
+			observabilityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
-		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
-		var searchDocset = DocumentationSetFile.LoadAndResolve(searchContext.Collector, fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"), new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem));
-		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance);
+		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
+		var searchDocset = DocumentationSetFile.LoadAndResolve(
+			searchContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var searchNav = new DocumentationSetNavigation<IDocumentationFile>(
+			searchDocset,
+			searchContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		var documentationSets = new List<IDocumentationSetNavigation> { observabilityNav, searchNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var navigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix);
 
 		navigation.NavigationItems.Should().HaveCount(2);

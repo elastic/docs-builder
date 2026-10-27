@@ -21,21 +21,18 @@ public class VersionIndexClientTests
 	private static VersionIndexClient CreateClient(StubHandler handler, int maxAttempts = 3) =>
 		new(BaseUri, handler, maxAttempts, sleep: (_, _) => Task.CompletedTask);
 
-	private static GitCheckoutInformation GitFor(string? remote) => new()
-	{
-		Branch = "main",
-		Remote = remote ?? "unavailable",
-		Ref = "refs/heads/main"
-	};
+	private static GitCheckoutInformation GitFor(string? remote) =>
+		new() { Branch = "main", Remote = remote ?? "unavailable", Ref = "refs/heads/main" };
 
-	private static ResolvedApiConfiguration ApiConfig(IFileInfo? localSpecFile = null, string? repository = null) => new()
-	{
-		ProductKey = "elasticsearch",
-		Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
-		SpecFileName = "elasticsearch-openapi.json",
-		LocalSpecFile = localSpecFile,
-		Repository = repository
-	};
+	private static ResolvedApiConfiguration ApiConfig(IFileInfo? localSpecFile = null, string? repository = null) =>
+		new()
+		{
+			ProductKey = "elasticsearch",
+			Product = new Product { Id = "elasticsearch", DisplayName = "Elasticsearch" },
+			SpecFileName = "elasticsearch-openapi.json",
+			LocalSpecFile = localSpecFile,
+			Repository = repository
+		};
 
 	private static IFileInfo LocalSpecFile()
 	{
@@ -44,33 +41,45 @@ public class VersionIndexClientTests
 		return fs.FileInfo.New("/docs/elasticsearch-openapi.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_AlwaysFetchesTheRootIndexAtBucketRoot()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		_ = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		_ = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		handler.RequestedPaths.Should().ContainSingle().Which.Should().Be("/index.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_NoLocalSpec_NoRepository_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor(null), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor(null),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("its repository could not be determined"));
 		handler.RequestedPaths.Should().BeEmpty("no repository means there is nothing to look up, so the index is never fetched");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_LocalSpec_NoRepository_ReturnsLocalMainOnly()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -78,18 +87,31 @@ public class VersionIndexClientTests
 		var collector = new CapturingDiagnosticsCollector();
 		var localFile = LocalSpecFile();
 
-		var versions = await client.ResolveVersionsAsync(GitFor(null), "elasticsearch", ApiConfig(localFile), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor(null),
+			"elasticsearch",
+			ApiConfig(localFile),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		versions.Should().ContainSingle().Which.Should().Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
+		versions
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
 		collector.Errors.Should().Be(0);
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_MultipleRemoteVersions_ResolvesAllFromIndex()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
 			{
 				"elastic/elasticsearch": {
 					"elasticsearch-openapi.json": {
@@ -99,25 +121,37 @@ public class VersionIndexClientTests
 					}
 				}
 			}
-			"""));
+			"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().HaveCount(3);
-		versions.Should().ContainSingle(v => v.Moniker == "main" && !v.IsLocal && v.ObjectKey == "elastic/elasticsearch/main/elasticsearch-openapi.json");
+		versions.Should().ContainSingle(
+			v => v.Moniker == "main" && !v.IsLocal && v.ObjectKey == "elastic/elasticsearch/main/elasticsearch-openapi.json"
+		);
 		versions.Should().ContainSingle(v => v.Moniker == "9" && v.Version == "9.4");
 		versions.Should().ContainSingle(v => v.Moniker == "8" && v.Version == "8.19");
 		collector.Errors.Should().Be(0);
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_RepositoryOverride_UsedInsteadOfGitRemote()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
 			{
 				"elastic/elasticsearch-specification": {
 					"elasticsearch-openapi.json": {
@@ -125,39 +159,59 @@ public class VersionIndexClientTests
 					}
 				}
 			}
-			"""));
+			"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
 		// The git remote is a docs repo that never publishes this spec; only the explicit override
 		// (elastic/elasticsearch-specification) has a matching entry.
 		var versions = await client.ResolveVersionsAsync(
-			GitFor("https://github.com/elastic/docs-builder.git"), "elasticsearch",
-			ApiConfig(repository: "elastic/elasticsearch-specification"), collector, TestContext.Current.CancellationToken);
+			GitFor("https://github.com/elastic/docs-builder.git"),
+			"elasticsearch",
+			ApiConfig(repository: "elastic/elasticsearch-specification"),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		versions.Should().ContainSingle(v => v.Moniker == "main" && v.ObjectKey == "elastic/elasticsearch-specification/main/elasticsearch-openapi.json");
+		versions.Should().ContainSingle(
+			v => v.Moniker == "main" && v.ObjectKey == "elastic/elasticsearch-specification/main/elasticsearch-openapi.json"
+		);
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_RepositoryNotInIndex_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """{ "elastic/kibana": { "kibana.yaml": { "main": { "version": "main" } } } }"""));
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""{ "elastic/kibana": { "kibana.yaml": { "main": { "version": "main" } } } }"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("no entry for repository 'elastic/elasticsearch'"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_SpecNotUnderRepository_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
 			{
 				"elastic/elasticsearch": {
 					"elasticsearch-serverless.json": {
@@ -165,22 +219,34 @@ public class VersionIndexClientTests
 					}
 				}
 			}
-			"""));
+			"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().BeEmpty();
-		collector.ErrorMessages.Should().ContainSingle(m =>
-			m.Contains("no entry for spec 'elasticsearch-openapi.json'") && m.Contains("elastic/elasticsearch"));
+		collector
+			.ErrorMessages
+			.Should()
+			.ContainSingle(m => m.Contains("no entry for spec 'elasticsearch-openapi.json'") && m.Contains("elastic/elasticsearch"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_LocalSpecPresent_MainUsesLocalFileNotRemoteKey()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
 			{
 				"elastic/elasticsearch": {
 					"elasticsearch-openapi.json": {
@@ -189,12 +255,20 @@ public class VersionIndexClientTests
 					}
 				}
 			}
-			"""));
+			"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 		var localFile = LocalSpecFile();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(localFile), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(localFile),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var main = versions.Should().ContainSingle(v => v.Moniker == "main").Subject;
 		main.IsLocal.Should().BeTrue();
@@ -206,20 +280,26 @@ public class VersionIndexClientTests
 		v8.ObjectKey.Should().Be("elastic/elasticsearch/8.19/elasticsearch-openapi.json");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_EmptyIndex_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("declares no repositories"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_EmptyIndex_WithLocalSpec_ReturnsLocalMainWithWarning()
 	{
 		var handler = new StubHandler(_ => IndexResponse("{}"));
@@ -227,27 +307,39 @@ public class VersionIndexClientTests
 		var collector = new CapturingDiagnosticsCollector();
 		var localFile = LocalSpecFile();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(localFile), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(localFile),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().ContainSingle().Which.Should().Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal);
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("declares no repositories"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexFetchFails_NoLocalSpec_EmitsErrorAndReturnsEmpty()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().BeEmpty();
 		collector.ErrorMessages.Should().ContainSingle(m => m.Contains("could not be fetched"));
 		handler.RequestedPaths.Should().ContainSingle("a missing index is not a transient failure");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexFetchFails_WithLocalSpec_FallsBackToLocalMainWithWarning()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -255,36 +347,59 @@ public class VersionIndexClientTests
 		var collector = new CapturingDiagnosticsCollector();
 		var localFile = LocalSpecFile();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(localFile), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(localFile),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		versions.Should().ContainSingle().Which.Should().Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
+		versions
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Match<ResolvedApiVersion>(v => v.Moniker == "main" && v.IsLocal && v.LocalFile == localFile);
 		collector.Errors.Should().Be(0);
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains("could not be fetched"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_IndexRecoversAfterRetry_ReturnsVersions()
 	{
 		var attempts = 0;
-		var handler = new StubHandler(_ => Interlocked.Increment(ref attempts) == 1
-			? new HttpResponseMessage(HttpStatusCode.InternalServerError)
-			: IndexResponse(
-				/*lang=json,strict*/ """{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "main": { "version": "main" } } } }"""));
+		var handler = new StubHandler(
+			_ => Interlocked.Increment(ref attempts) == 1
+				? new HttpResponseMessage(HttpStatusCode.InternalServerError)
+				: IndexResponse(
+					/*lang=json,strict*/
+					"""{ "elastic/elasticsearch": { "elasticsearch-openapi.json": { "main": { "version": "main" } } } }"""
+				)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 
-		var versions = await client.ResolveVersionsAsync(GitFor("https://github.com/elastic/elasticsearch.git"), "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var versions = await client.ResolveVersionsAsync(
+			GitFor("https://github.com/elastic/elasticsearch.git"),
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		versions.Should().ContainSingle();
 		collector.Errors.Should().Be(0);
 		attempts.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveVersionsAsync_CalledForMultipleApis_FetchesTheRootIndexOnlyOnce()
 	{
-		var handler = new StubHandler(_ => IndexResponse(
-			/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			_ => IndexResponse(
+				/*lang=json,strict*/
+				"""
 			{
 				"elastic/elasticsearch": {
 					"elasticsearch-openapi.json": { "main": { "version": "main" } }
@@ -293,12 +408,20 @@ public class VersionIndexClientTests
 					"kibana.yaml": { "main": { "version": "main" } }
 				}
 			}
-			"""));
+			"""
+			)
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
 		var git = GitFor("https://github.com/elastic/elasticsearch.git");
 
-		var esVersions = await client.ResolveVersionsAsync(git, "elasticsearch", ApiConfig(), collector, TestContext.Current.CancellationToken);
+		var esVersions = await client.ResolveVersionsAsync(
+			git,
+			"elasticsearch",
+			ApiConfig(),
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 		var kibanaConfig = new ResolvedApiConfiguration
 		{
 			ProductKey = "kibana",
@@ -306,39 +429,108 @@ public class VersionIndexClientTests
 			SpecFileName = "kibana.yaml",
 			Repository = "elastic/kibana"
 		};
-		var kibanaVersions = await client.ResolveVersionsAsync(git, "kibana", kibanaConfig, collector, TestContext.Current.CancellationToken);
+		var kibanaVersions = await client.ResolveVersionsAsync(
+			git,
+			"kibana",
+			kibanaConfig,
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		esVersions.Should().ContainSingle();
 		kibanaVersions.Should().ContainSingle();
-		handler.RequestedPaths.Should().ContainSingle().Which.Should().Be("/index.json", "the second call should reuse the first call's cached root index");
+		handler
+			.RequestedPaths
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Be("/index.json", "the second call should reuse the first call's cached root index");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FetchSpecStreamAsync_HappyPath_ReturnsContent()
 	{
-		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(/*lang=json,strict*/ """{"openapi":"3.1.0"}""") });
+		var handler = new StubHandler(
+			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(/*lang=json,strict*/ """{"openapi":"3.1.0"}""") }
+		);
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
-		var version = new ResolvedApiVersion { Moniker = "8", Version = "8.19", IsLocal = false, ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json" };
+		var version = new ResolvedApiVersion
+		{
+			Moniker = "8",
+			Version = "8.19",
+			IsLocal = false,
+			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
+		};
 
-		var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, TestContext.Current.CancellationToken);
+		var stream = await client.FetchSpecStreamAsync(
+			"elasticsearch",
+			version,
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		stream.Should().NotBeNull();
 		using var reader = new StreamReader(stream);
-		(await reader.ReadToEndAsync(TestContext.Current.CancellationToken)).Should().Contain("openapi");
+		(await reader.ReadToEndAsync(TestContext.Current!.Execution.CancellationToken)).Should().Contain("openapi");
 		handler.RequestedPaths.Should().ContainSingle().Which.Should().Be("/elastic/elasticsearch/8.19/elasticsearch-openapi.json");
 		collector.Warnings.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
+	[Arguments(true, 1)]
+	[Arguments(false, 2)]
+	public async Task FetchSpecStreamAsync_TwoClients_DownloadOnceOnlyWithSharedCache(bool shareCache, int expectedRequests)
+	{
+		var handler = new StubHandler(
+			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(/*lang=json,strict*/ """{"openapi":"3.1.0"}""") }
+		);
+		var cache = shareCache ? new SpecBodyCache() : null;
+		var collector = new CapturingDiagnosticsCollector();
+		var version = new ResolvedApiVersion
+		{
+			Moniker = "8",
+			Version = "8.19",
+			IsLocal = false,
+			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
+		};
+		var ctx = TestContext.Current!.Execution.CancellationToken;
+
+		// One client per regeneration, as serve does, so only the spec cache carries over.
+		var bodies = new List<string>();
+		for (var i = 0; i < 2; i++)
+		{
+			using var client = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask) { SpecBodies = cache };
+			var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, ctx);
+			using var reader = new StreamReader(stream!);
+			bodies.Add(await reader.ReadToEndAsync(ctx));
+		}
+
+		bodies.Should().AllSatisfy(b => b.Should().Contain("openapi"));
+		handler.RequestedPaths.Should().HaveCount(expectedRequests);
+	}
+
+	[Test]
 	public async Task FetchSpecStreamAsync_PersistentFailure_EmitsWarningAndReturnsNull()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var client = CreateClient(handler);
 		var collector = new CapturingDiagnosticsCollector();
-		var version = new ResolvedApiVersion { Moniker = "8", Version = "8.19", IsLocal = false, ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json" };
+		var version = new ResolvedApiVersion
+		{
+			Moniker = "8",
+			Version = "8.19",
+			IsLocal = false,
+			ObjectKey = "elastic/elasticsearch/8.19/elasticsearch-openapi.json"
+		};
 
-		var stream = await client.FetchSpecStreamAsync("elasticsearch", version, collector, TestContext.Current.CancellationToken);
+		var stream = await client.FetchSpecStreamAsync(
+			"elasticsearch",
+			version,
+			collector,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		stream.Should().BeNull();
 		collector.WarningMessages.Should().ContainSingle(m => m.Contains('8') && m.Contains("Skipping this version"));

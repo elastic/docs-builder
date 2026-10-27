@@ -16,6 +16,8 @@
       "Bash(./build.sh:*)",
       "Bash(dotnet build:*)",
       "Bash(dotnet restore:*)",
+      "Bash(dotnet tool restore:*)",
+      "Bash(dotnet husky:*)",
       "Bash(dotnet test:*)",
       "Bash(dotnet run:*)",
       "Bash(dotnet format:*)",

@@ -22,98 +22,49 @@ using Microsoft.OpenApi.Reader;
 namespace Elastic.ApiExplorer.Export;
 
 /// <summary>
-/// Exports OpenAPI specifications from CloudFront URLs and converts them to DocumentationDocument instances.
+/// Converts the OpenAPI specifications the API explorer renders into DocumentationDocument instances.
 /// </summary>
-public partial class OpenApiDocumentExporter(
-	VersionsConfiguration versionsConfiguration,
-	IDocumentInferrerService? documentInferrer = null)
+public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfiguration, IDocumentInferrerService? documentInferrer = null)
 {
-	private static readonly HttpClient HttpClient = new();
+	[GeneratedRegex(@"\*\*[^*\n]*methods? and paths? for this operation:\*\*", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationListIntroRegex();
 
-	private const string ElasticsearchOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json";
-	private const string KibanaOpenApiUrl = "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json";
-
-	[GeneratedRegex(@"Added in (\d+\.\d+\.\d+)", RegexOptions.IgnoreCase)]
-	private static partial Regex AddedInVersionRegex();
-
-	[GeneratedRegex(@"<span class=""operation-verb (\w+)"">(\w+)</span>\s*<span class=""operation-path"">([^<]+)</span>", RegexOptions.IgnoreCase)]
-	private static partial Regex OperationVerbPathRegex();
+	[GeneratedRegex("""<span class="operation-path">(?<path>[^<]*)</span>""", RegexOptions.IgnoreCase)]
+	private static partial Regex OperationPathSpanRegex();
 
 	/// <summary>
-	/// Fetches and processes both Elasticsearch and Kibana OpenAPI specifications.
+	/// Converts the <c>main</c> spec of every API the generators render. When two generators declare the same
+	/// API key, the first one wins.
 	/// </summary>
-	/// <param name="limitPerSource">Optional limit of documents to return per source (Elasticsearch and Kibana)</param>
-	/// <param name="ctx">Cancellation token</param>
-	/// <returns>Enumerable of DocumentationDocument instances for all endpoints</returns>
-	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(int? limitPerSource = null, [EnumeratorCancellation] Cancel ctx = default)
+	public async IAsyncEnumerable<DocumentationDocument> ExportDocuments(
+		IEnumerable<OpenApiGenerator> generators,
+		[EnumeratorCancellation] Cancel ctx = default
+	)
 	{
-		// Process Elasticsearch API
-		var elasticsearchCount = 0;
-		await foreach (var doc in ExportFromUrl(ElasticsearchOpenApiUrl, "elasticsearch", ctx))
+		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		foreach (var generator in generators)
 		{
-			yield return doc;
-			elasticsearchCount++;
-			if (limitPerSource.HasValue && elasticsearchCount >= limitPerSource.Value)
-				break;
-		}
+			foreach (var (apiKey, productId, spec) in await generator.ResolveCanonicalDocuments(ctx).ConfigureAwait(false))
+			{
+				if (!seenKeys.Add(apiKey))
+					continue;
 
-		// Process Kibana API
-		var kibanaCount = 0;
-		await foreach (var doc in ExportFromUrl(KibanaOpenApiUrl, "kibana", ctx))
-		{
-			yield return doc;
-			kibanaCount++;
-			if (limitPerSource.HasValue && kibanaCount >= limitPerSource.Value)
-				break;
-		}
-	}
-
-	/// <summary>
-	/// Fetches OpenAPI spec from a URL and converts it to DocumentationDocument instances.
-	/// </summary>
-	private async IAsyncEnumerable<DocumentationDocument> ExportFromUrl(
-		string url,
-		string product,
-		[EnumeratorCancellation] Cancel ctx)
-	{
-		var openApiDocument = await FetchOpenApiDocument(url, ctx);
-		if (openApiDocument == null)
-			yield break;
-
-		foreach (var doc in ConvertToDocuments(openApiDocument, product))
-			yield return doc;
-	}
-
-	/// <summary>
-	/// Fetches and parses an OpenAPI document from a URL.
-	/// </summary>
-	private static async Task<OpenApiDocument?> FetchOpenApiDocument(string url, Cancel ctx)
-	{
-		try
-		{
-			var response = await HttpClient.GetAsync(url, ctx);
-			_ = response.EnsureSuccessStatusCode();
-
-			await using var stream = await response.Content.ReadAsStreamAsync(ctx);
-			var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-			var openApiDocument = await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx);
-
-			return openApiDocument.Document;
-		}
-		catch (Exception ex)
-		{
-			Console.Error.WriteLine($"Failed to fetch OpenAPI document from {url}: {ex.Message}");
-			return null;
+				foreach (var doc in ConvertToDocuments(spec, apiKey, productId))
+					yield return doc;
+			}
 		}
 	}
 
 	/// <summary>
 	/// Converts an OpenAPI document to DocumentationDocument instances.
-	/// Internal (rather than private) so tests can exercise it against an in-memory spec.
+	/// <paramref name="product"/> is the API key the explorer publishes the spec under. It builds URLs and labels.
+	/// <paramref name="productId"/> is the <c>products.yml</c> id the key binds to. It drives product metadata and defaults to the key.
 	/// </summary>
-	internal IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product)
+	public IEnumerable<DocumentationDocument> ConvertToDocuments(OpenApiDocument openApiDocument, string product, string? productId = null)
 	{
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
+		// All API products currently version against Stack
+		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 
 		foreach (var path in openApiDocument.Paths)
 		{
@@ -124,23 +75,22 @@ public partial class OpenApiDocumentExporter(
 			{
 				var operationId = operation.Value.OperationId ?? GenerateOperationId(operation.Key, path.Key);
 
-				// Check x-state extension for version filtering
-				if (!ShouldIncludeOperation(operation.Value))
+				// Skip APIs introduced in a Stack version that hasn't shipped yet
+				var applies = XStateApplicability.From(operation.Value.Extensions);
+				if (XStateApplicability.IsUnreleased(applies, currentStack))
 					continue;
 
 				var operationMoniker = ApiUrlBuilder.OperationMoniker(operationId, path.Key);
 				var url = $"{productUrl}/operation/{operationMoniker}";
 
-				var productName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product);
+				var productLabel = ProductApiLabel(product);
 				// Trim: spec summaries occasionally carry stray leading/trailing whitespace or a
 				// trailing newline, which would otherwise flow verbatim into the indexed title.
 				var summary = operation.Value.Summary?.Trim();
-				// inject product name into title to ensure differentiation and better scoring
-				var title = $"{(string.IsNullOrEmpty(summary) ? operationId : summary)} - {productName} API";
-				// append the raw operation id (e.g. "_bulk") so the REST endpoint name is searchable —
-				// keep it verbatim (no case/underscore normalization) since that's exactly what users type.
-				var searchTitle = $"{title} - {operationId}";
-				var description = TransformOperationListToMarkdown(operation.Value.Description);
+				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
+				var method = operation.Key.ToString().ToUpperInvariant();
+				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
+				var description = IndexedHitText(summary, operation.Value.Description, operationId);
 
 				// Build body content from operation details
 				var bodyBuilder = new StringBuilder();
@@ -169,17 +119,11 @@ public partial class OpenApiDocumentExporter(
 				var body = bodyBuilder.ToString();
 
 				// Extract tags as headings
-				var headings = operation.Value.Tags?
-					.Select(t => t.Name)
-					.Where(n => !string.IsNullOrEmpty(n))
-					.OfType<string>()
-					.ToArray() ?? [];
-
-				// Extract ApplicableTo from x-state
-				var applies = ExtractApplicableTo(operation.Value);
+				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
+					?? [];
 
 				// Infer product and repository metadata
-				var inference = documentInferrer?.InferForOpenApi(product);
+				var inference = documentInferrer?.InferForOpenApi(productId ?? product);
 
 				yield return new DocumentationDocument
 				{
@@ -194,16 +138,22 @@ public partial class OpenApiDocumentExporter(
 					Applies = applies?.ToAppliesTo(),
 					Parents =
 					[
-						new ParentDocument { Title = "API Reference", Path = "/docs/api" },
-						new ParentDocument { Title = product, Path = productUrl }
+						new ParentDocument { Title = "API", Path = "/docs/api" },
+						new ParentDocument { Title = productLabel, Path = productUrl }
 					],
+					Api = new ApiOperationMetadata
+					{
+						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
+						Method = method,
+						Path = path.Key,
+						OperationId = operationId
+					},
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
-						? inference.RelatedProducts.Select(p => new IndexedProduct
-						{
-							Id = p.Id,
-							Repository = p.Repository ?? inference.Repository
-						}).ToArray()
+						? inference
+							.RelatedProducts
+							.Select(p => new IndexedProduct { Id = p.Id, Repository = p.Repository ?? inference.Repository })
+							.ToArray()
 						: null
 				};
 			}
@@ -211,37 +161,99 @@ public partial class OpenApiDocumentExporter(
 	}
 
 	/// <summary>
-	/// Determines if an operation should be included based on its x-state extension.
+	/// Display label for the product crumb, e.g. <c>elasticsearch</c> → <c>Elasticsearch API</c>.
 	/// </summary>
-	private bool ShouldIncludeOperation(OpenApiOperation operation)
+	internal static string ProductApiLabel(string product) =>
+		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
+
+	/// <summary>
+	/// Search tokens users type for an operation: the product label, the raw operation id
+	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), and the HTTP method plus path
+	/// (e.g. <c>PUT /_bulk</c>). Keep ids and paths verbatim — no case or punctuation
+	/// rewriting — because that is what people paste. The product label lives here rather
+	/// than in <c>Title</c>, so result rows do not repeat "Elasticsearch API" on every hit.
+	/// </summary>
+	internal static string BuildSearchTitle(string title, string productLabel, string operationId, string methodAndPath)
 	{
-		// Try to get x-state extension
-		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
-			return true; // No x-state, safe to include
+		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
+		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
+	}
 
-		// Get the state string value from JsonNodeExtension
-		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
-			return true; // Not a JSON node, safe to include
+	/// <summary>
+	/// Search snippet for an operation. Prefer the spec prose, then the summary, then the
+	/// operation id so a hit is never blank. The generated "method and path" list is omitted
+	/// because it is the same sentence on every operation.
+	/// </summary>
+	private static string IndexedHitText(string? summary, string? rawDescription, string operationId)
+	{
+		var prose = ApiMarkdown.StripHtml(RemoveOperationListIntro(rawDescription));
+		if (!string.IsNullOrWhiteSpace(prose))
+			return prose;
+		if (!string.IsNullOrWhiteSpace(summary))
+			return summary;
+		return operationId;
+	}
 
-		var stateValue = jsonNodeExtension.Node.GetValue<string>();
-		if (string.IsNullOrEmpty(stateValue))
-			return true; // Empty state, safe to include
+	private static string RemoveOperationListIntro(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return string.Empty;
 
-		// Parse version from "Added in X.Y.Z"
-		var match = AddedInVersionRegex().Match(stateValue);
+		var match = OperationListIntroRegex().Match(description);
 		if (!match.Success)
-			return true; // No version found, safe to include
+			return description;
 
-		var versionString = match.Groups[1].Value;
-		if (!SemVersion.TryParse(versionString, out var addedInVersion))
-			return true; // Could not parse version, safe to include
+		var end = EndOfOperationList(description, match.Index + match.Length);
+		var before = description[..match.Index].Trim();
+		var after = end < description.Length ? description[end..].Trim() : string.Empty;
+		if (before.Length == 0)
+			return after;
+		if (after.Length == 0)
+			return before;
+		return $"{before}\n\n{after}";
+	}
 
-		// All API products currently version against Stack
-		var versioningSystem = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack);
-		var currentVersion = versioningSystem.Current;
+	/// <summary>
+	/// Paths listed in the description's "All methods and paths for this operation" block, verbatim.
+	/// Locates the block exactly as <see cref="RemoveOperationListIntro"/> does.
+	/// </summary>
+	internal static IEnumerable<string> AlternatePaths(string? description)
+	{
+		if (string.IsNullOrEmpty(description))
+			return [];
 
-		// Include if added version is <= current version
-		return addedInVersion <= currentVersion;
+		var match = OperationListIntroRegex().Match(description);
+		if (!match.Success)
+			return [];
+
+		var start = match.Index + match.Length;
+		var block = description[start..EndOfOperationList(description, start)];
+		return OperationPathSpanRegex().Matches(block).Select(m => m.Groups["path"].Value.Trim());
+	}
+
+	private static int EndOfOperationList(string description, int afterHeader)
+	{
+		var htmlStart = description.IndexOf("<div", afterHeader, StringComparison.OrdinalIgnoreCase);
+		if (htmlStart < 0)
+			return afterHeader;
+
+		var cursor = htmlStart;
+		while (true)
+		{
+			var close = description.IndexOf("</div>", cursor, StringComparison.OrdinalIgnoreCase);
+			if (close < 0)
+				return afterHeader;
+
+			var afterClose = close + "</div>".Length;
+			var next = afterClose;
+			while (next < description.Length && char.IsWhiteSpace(description[next]))
+				next++;
+
+			if (next >= description.Length || !description.AsSpan(next).StartsWith("<div", StringComparison.OrdinalIgnoreCase))
+				return afterClose;
+
+			cursor = afterClose;
+		}
 	}
 
 	/// <summary>
@@ -251,142 +263,5 @@ public partial class OpenApiDocumentExporter(
 	{
 		var cleanPath = path.TrimStart('/').Replace('/', '-').Replace('{', '-').Replace('}', '-');
 		return $"{method.ToString().ToLowerInvariant()}-{cleanPath}";
-	}
-
-	/// <summary>
-	/// Extracts ApplicableTo information from an operation's x-state extension.
-	/// </summary>
-	private static ApplicableTo? ExtractApplicableTo(OpenApiOperation operation)
-	{
-		// Try to get x-state extension
-		if (operation.Extensions == null || !operation.Extensions.TryGetValue("x-state", out var stateExtension))
-			return null;
-
-		// Get the state string value from JsonNodeExtension
-		if (stateExtension is not JsonNodeExtension jsonNodeExtension)
-			return null;
-
-		var stateValue = jsonNodeExtension.Node.GetValue<string>();
-		if (string.IsNullOrEmpty(stateValue))
-			return null;
-
-		// Parse lifecycle from state string (e.g., "Generally available; Added in 9.3.0")
-		var lifecycle = ParseLifecycle(stateValue);
-
-		// Parse version from "Added in X.Y.Z"
-		var version = ParseVersion(stateValue);
-
-		// Create Applicability instance
-		var applicability = new Applicability
-		{
-			Lifecycle = lifecycle,
-			Version = version
-		};
-
-		// Create AppliesCollection
-		var appliesCollection = new AppliesCollection([applicability]);
-
-		// Return ApplicableTo with Stack set
-		return new ApplicableTo
-		{
-			Stack = appliesCollection
-		};
-	}
-
-	/// <summary>
-	/// Parses the product lifecycle from the x-state string.
-	/// </summary>
-	private static ProductLifecycle ParseLifecycle(string stateValue)
-	{
-		var lower = stateValue.ToLowerInvariant();
-
-		if (lower.Contains("generally available"))
-			return ProductLifecycle.GenerallyAvailable;
-		if (lower.Contains("beta"))
-			return ProductLifecycle.Beta;
-		if (lower.Contains("experimental"))
-			return ProductLifecycle.Experimental;
-		if (lower.Contains("tech") && lower.Contains("preview"))
-			return ProductLifecycle.TechnicalPreview;
-		if (lower.Contains("deprecated"))
-			return ProductLifecycle.Deprecated;
-		if (lower.Contains("removed"))
-			return ProductLifecycle.Removed;
-
-		// Default to GA if we can't parse
-		return ProductLifecycle.GenerallyAvailable;
-	}
-
-	/// <summary>
-	/// Parses the version from "Added in X.Y.Z" pattern in the x-state string.
-	/// </summary>
-	private static VersionSpec? ParseVersion(string stateValue)
-	{
-		var match = AddedInVersionRegex().Match(stateValue);
-		if (!match.Success)
-			return null;
-
-		var versionString = match.Groups[1].Value;
-		return VersionSpec.TryParse(versionString, out var version) ? version : null;
-	}
-
-	/// <summary>
-	/// Transforms HTML operation lists in descriptions to markdown format.
-	/// Detects "**All methods and paths for this operation:**" followed by HTML divs/spans
-	/// and converts them to a markdown list appended at the end.
-	/// </summary>
-	private static string TransformOperationListToMarkdown(string? description)
-	{
-		if (string.IsNullOrEmpty(description))
-			return description ?? string.Empty;
-
-		// Check if description starts with the operations list header
-		if (!description.Contains("**All methods and paths for this operation:**"))
-			return description;
-
-		// Extract all operation verb and path pairs
-		var matches = OperationVerbPathRegex().Matches(description);
-		if (matches.Count == 0)
-			return description;
-
-		// Find where the HTML content starts and ends
-		var htmlStartIndex = description.IndexOf("<div>", StringComparison.Ordinal);
-		var lastMatchEnd = matches[^1].Index + matches[^1].Length;
-
-		// Find the last closing div after the last match
-		var htmlEndIndex = description.IndexOf("</div>", lastMatchEnd, StringComparison.Ordinal);
-		if (htmlEndIndex == -1 || htmlStartIndex == -1)
-			return description;
-
-		// Build the clean description without HTML
-		var beforeHtml = description[..htmlStartIndex].Trim();
-		var afterHtml = description[(htmlEndIndex + 6)..].Trim();
-
-		// Build markdown list
-		var markdownList = new StringBuilder();
-		_ = markdownList.AppendLine();
-		_ = markdownList.AppendLine();
-
-		foreach (Match match in matches)
-		{
-			var verb = match.Groups[2].Value.ToUpperInvariant();
-			var path = match.Groups[3].Value;
-			_ = markdownList.AppendLine($"- **{verb}** `{path}`");
-		}
-
-		// Combine: clean description (before + after HTML) + markdown list at the end
-		var result = new StringBuilder();
-		_ = result.Append(beforeHtml);
-		if (!string.IsNullOrWhiteSpace(afterHtml))
-		{
-			_ = result.AppendLine();
-			_ = result.AppendLine();
-			_ = result.Append(afterHtml);
-		}
-
-		// Append markdown list at the end
-		_ = result.Append(markdownList);
-
-		return result.ToString().Trim();
 	}
 }

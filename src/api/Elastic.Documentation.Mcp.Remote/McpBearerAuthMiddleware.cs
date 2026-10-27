@@ -45,9 +45,11 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		}
 
 		var pathValue = path.Value ?? "";
-		if (pathValue.Contains("/.well-known", StringComparison.Ordinal) ||
-			pathValue.EndsWith("/health", StringComparison.Ordinal) ||
-			pathValue.EndsWith("/alive", StringComparison.Ordinal))
+		if (
+			pathValue.Contains("/.well-known", StringComparison.Ordinal)
+			|| pathValue.EndsWith("/health", StringComparison.Ordinal)
+			|| pathValue.EndsWith("/alive", StringComparison.Ordinal)
+		)
 		{
 			await next(context);
 			return;
@@ -183,9 +185,12 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 				return (null, 401);
 			}
 
-			var allowedDomains = env.McpAllowedEmailDomains.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-			var domainAllowed = allowedDomains.Length == 0 ||
-				allowedDomains.Any(d => sub.EndsWith("@" + d.TrimStart('@'), StringComparison.OrdinalIgnoreCase));
+			var allowedDomains = env.McpAllowedEmailDomains.Split(
+				',',
+				StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+			);
+			var domainAllowed = allowedDomains.Length == 0
+				|| allowedDomains.Any(d => sub.EndsWith("@" + d.TrimStart('@'), StringComparison.OrdinalIgnoreCase));
 			if (!domainAllowed)
 			{
 				logger.LogWarning("MCP auth rejected: token valid but sub {Sub} not in allowed domains", sub);
@@ -201,14 +206,25 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		}
 		catch (SecurityTokenInvalidSignatureException ex)
 		{
-			logger.LogWarning("MCP auth validation failed: signature_invalid (kid={Kid}, jti={Jti}, iss={Iss}, aud={Aud}, err={Err})",
-				jwt.Header.Kid, jwt.Payload.Jti, jwt.Issuer, jwt.Audiences?.FirstOrDefault(), ex.Message);
+			logger.LogWarning(
+				"MCP auth validation failed: signature_invalid (kid={Kid}, jti={Jti}, iss={Iss}, aud={Aud}, err={Err})",
+				jwt.Header.Kid,
+				jwt.Payload.Jti,
+				jwt.Issuer,
+				jwt.Audiences?.FirstOrDefault(),
+				ex.Message
+			);
 			return (null, 401);
 		}
 		catch (SecurityTokenException ex)
 		{
-			logger.LogWarning("MCP auth validation failed: {Type} (kid={Kid}, jti={Jti}, err={Err})",
-				ex.GetType().Name, jwt.Header.Kid, jwt.Payload.Jti, ex.Message);
+			logger.LogWarning(
+				"MCP auth validation failed: {Type} (kid={Kid}, jti={Jti}, err={Err})",
+				ex.GetType().Name,
+				jwt.Header.Kid,
+				jwt.Payload.Jti,
+				ex.Message
+			);
 			return (null, 401);
 		}
 	}
@@ -231,6 +247,5 @@ public class McpBearerAuthMiddleware(RequestDelegate next, ILogger<McpBearerAuth
 		}
 	}
 
-	private void LogValidationFailure(string reason) =>
-		logger.LogWarning("MCP auth validation failed: {Reason}", reason);
+	private void LogValidationFailure(string reason) => logger.LogWarning("MCP auth validation failed: {Reason}", reason);
 }

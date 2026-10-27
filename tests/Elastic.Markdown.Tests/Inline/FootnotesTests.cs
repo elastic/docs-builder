@@ -7,16 +7,17 @@ using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesBasicTests() : InlineTest(
 	// language=markdown
 	"""
 	Here's a simple footnote[^1] and another[^2].
 
 	[^1]: This is the first footnote.
 	[^2]: This is the second footnote.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void ContainsFootnoteReferences()
 	{
 		Html.Should().Contain("footnote-ref");
@@ -24,13 +25,10 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 		Html.Should().Contain("href=\"#fn:2\"");
 	}
 
-	[Fact]
-	public void ContainsFootnoteContainer()
-	{
-		Html.Should().Contain("class=\"footnotes\"");
-	}
+	[Test]
+	public void ContainsFootnoteContainer() => Html.Should().Contain("class=\"footnotes\"");
 
-	[Fact]
+	[Test]
 	public void ContainsFootnoteDefinitions()
 	{
 		Html.Should().Contain("id=\"fn:1\"");
@@ -39,7 +37,7 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 		Html.Should().Contain("This is the second footnote.");
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsBackReferences()
 	{
 		Html.Should().Contain("footnote-back-ref");
@@ -47,13 +45,10 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 		Html.Should().Contain("href=\"#fnref:2\"");
 	}
 
-	[Fact]
-	public void RendersFootnotesHeading()
-	{
-		Html.Should().Contain("<h4>Footnotes</h4>");
-	}
+	[Test]
+	public void RendersFootnotesHeading() => Html.Should().Contain("<h4>Footnotes</h4>");
 
-	[Fact]
+	[Test]
 	public void FootnotesHeadingPrecedesFootnoteContainer()
 	{
 		var headingIndex = Html.IndexOf("<h4>Footnotes</h4>", StringComparison.Ordinal);
@@ -69,15 +64,16 @@ public class FootnotesBasicTests(ITestOutputHelper output) : InlineTest(output,
 	}
 }
 
-public partial class FootnotesMultipleReferencesTests(ITestOutputHelper output) : InlineTest(output,
+public partial class FootnotesMultipleReferencesTests() : InlineTest(
 	// language=markdown
 	"""
 	First reference[^1] and second reference[^1].
 
 	[^1]: This footnote is referenced twice.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void ContainsMultipleReferencesToSameFootnote()
 	{
 		Html.Should().Contain("href=\"#fn:1\"");
@@ -86,7 +82,7 @@ public partial class FootnotesMultipleReferencesTests(ITestOutputHelper output) 
 		count.Should().BeGreaterThanOrEqualTo(2);
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsMultipleBackReferences()
 	{
 		// Should have references back to both instances
@@ -98,7 +94,7 @@ public partial class FootnotesMultipleReferencesTests(ITestOutputHelper output) 
 	private static partial System.Text.RegularExpressions.Regex MyRegex();
 }
 
-public class FootnotesComplexContentTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesComplexContentTests() : InlineTest(
 	// language=markdown
 	"""
 	Here's a complex footnote[^complex].
@@ -111,9 +107,10 @@ public class FootnotesComplexContentTests(ITestOutputHelper output) : InlineTest
 
 	    - List item 1
 	    - List item 2
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void ContainsComplexFootnoteStructure()
 	{
 		Html.Should().Contain("href=\"#fn:1\"");
@@ -121,14 +118,14 @@ public class FootnotesComplexContentTests(ITestOutputHelper output) : InlineTest
 		Html.Should().Contain("It has multiple paragraphs.");
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsBlockquoteInFootnote()
 	{
 		Html.Should().Contain("blockquote");
 		Html.Should().Contain("And even a blockquote.");
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsListInFootnote()
 	{
 		Html.Should().Contain("List item 1");
@@ -136,7 +133,7 @@ public class FootnotesComplexContentTests(ITestOutputHelper output) : InlineTest
 	}
 }
 
-public class FootnotesWithCodeTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesWithCodeTests() : InlineTest(
 	// language=markdown
 	"""
 	See the code example[^code].
@@ -147,9 +144,10 @@ public class FootnotesWithCodeTests(ITestOutputHelper output) : InlineTest(outpu
 	    def hello():
 	        print("Hello, world!")
 	    ```
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void ContainsCodeBlockInFootnote()
 	{
 		Html.Should().Contain("Example code:");
@@ -157,7 +155,7 @@ public class FootnotesWithCodeTests(ITestOutputHelper output) : InlineTest(outpu
 	}
 }
 
-public class FootnotesConsecutiveDefinitionsTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesConsecutiveDefinitionsTests() : InlineTest(
 	// language=markdown
 	"""
 	First[^1], second[^2], third[^3].
@@ -165,9 +163,10 @@ public class FootnotesConsecutiveDefinitionsTests(ITestOutputHelper output) : In
 	[^1]: First footnote.
 	[^2]: Second footnote.
 	[^3]: Third footnote.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void HandlesConsecutiveFootnoteDefinitions()
 	{
 		Html.Should().Contain("First footnote.");
@@ -175,7 +174,7 @@ public class FootnotesConsecutiveDefinitionsTests(ITestOutputHelper output) : In
 		Html.Should().Contain("Third footnote.");
 	}
 
-	[Fact]
+	[Test]
 	public void AllFootnoteReferencesAreLinked()
 	{
 		Html.Should().Contain("href=\"#fn:1\"");
@@ -184,16 +183,17 @@ public class FootnotesConsecutiveDefinitionsTests(ITestOutputHelper output) : In
 	}
 }
 
-public class FootnotesInListTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesInListTests() : InlineTest(
 	// language=markdown
 	"""
 	- Item one
 	- Item two with footnote[^list]
 
 	[^list]: Footnote from list item.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void FootnoteWorksInListItem()
 	{
 		Html.Should().Contain("href=\"#fn:1\"");
@@ -201,15 +201,16 @@ public class FootnotesInListTests(ITestOutputHelper output) : InlineTest(output,
 	}
 }
 
-public class FootnotesWithNamedReferencesTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesWithNamedReferencesTests() : InlineTest(
 	// language=markdown
 	"""
 	Named reference[^my-footnote].
 
 	[^my-footnote]: This uses a named identifier.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void HandlesNamedFootnoteIdentifiers()
 	{
 		Html.Should().Contain("footnote-ref");
@@ -217,22 +218,23 @@ public class FootnotesWithNamedReferencesTests(ITestOutputHelper output) : Inlin
 	}
 }
 
-public partial class FootnotesInlineCodeNotParsedTests(ITestOutputHelper output) : InlineTest(output,
+public partial class FootnotesInlineCodeNotParsedTests() : InlineTest(
 	// language=markdown
 	"""
 	Real reference[^1]. Inline code example: `[^1]` should not be parsed.
 
 	[^1]: This is the footnote.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void InlineCodeFootnoteSyntaxNotParsed()
 	{
 		// The inline code `[^1]` should render as code, not as a footnote reference
 		Html.Should().Contain("<code>[^1]</code>");
 	}
 
-	[Fact]
+	[Test]
 	public void OnlyOneBackReference()
 	{
 		// Should have only ONE back-reference (inline code shouldn't create a reference)
@@ -244,7 +246,7 @@ public partial class FootnotesInlineCodeNotParsedTests(ITestOutputHelper output)
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
-public partial class FootnotesCodeBlockNotParsedTests(ITestOutputHelper output) : InlineTest(output,
+public partial class FootnotesCodeBlockNotParsedTests() : InlineTest(
 	// language=markdown
 	"""
 	Real reference[^1].
@@ -254,15 +256,13 @@ public partial class FootnotesCodeBlockNotParsedTests(ITestOutputHelper output) 
 	```
 
 	[^1]: This is the footnote.
-	""")
+	"""
+)
 {
-	[Fact]
-	public void CodeBlockRendered()
-	{
-		Html.Should().Contain("language-markdown");
-	}
+	[Test]
+	public void CodeBlockRendered() => Html.Should().Contain("language-markdown");
 
-	[Fact]
+	[Test]
 	public void OnlyOneBackReference()
 	{
 		// At document level, code blocks work correctly - only 1 back-reference
@@ -274,7 +274,7 @@ public partial class FootnotesCodeBlockNotParsedTests(ITestOutputHelper output) 
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
-public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output) : InlineTest(output,
+public partial class FootnotesCodeBlockInDirectiveTests() : InlineTest(
 	// language=markdown
 	"""
 	::::{tab-set}
@@ -300,25 +300,18 @@ public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output
 
 	[^1]: This is the first footnote.
 	[^2]: This is the second footnote.
-	""")
+	"""
+)
 {
-	private readonly ITestOutputHelper _output = output;
+	[Test]
+	public void CodeBlockRendered() => Html.Should().Contain("language-markdown");
 
-	[Fact]
-	public void CodeBlockRendered()
-	{
-		Html.Should().Contain("language-markdown");
-	}
-
-	[Fact]
+	[Test]
 	public void CorrectBackReferenceCount()
 	{
 		// Should have exactly 2 back-references (one for [^1] and one for [^2])
 		// If code block content is being parsed, we'd see 4 back-references
 		var count = BackRefRegex().Count(Html);
-		_output.WriteLine("=== HTML ===");
-		_output.WriteLine(Html);
-		_output.WriteLine("=== END ===");
 		count.Should().Be(2, $"Expected 2 back-refs (one per footnote), got {count}. Code block content may be parsed incorrectly.");
 	}
 
@@ -326,7 +319,7 @@ public partial class FootnotesCodeBlockInDirectiveTests(ITestOutputHelper output
 	private static partial System.Text.RegularExpressions.Regex BackRefRegex();
 }
 
-public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTest(output,
+public class FootnotesInsideDirectiveTests() : InlineTest(
 	// language=markdown
 	"""
 	::::{tab-set}
@@ -350,9 +343,10 @@ public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTes
 	::::
 
 	[^1]: Footnote definitions must be at the document level, not inside directives.
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void OtherInlineElementsWorkInsideDirectives()
 	{
 		// Do other inline elements work?
@@ -360,7 +354,7 @@ public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTes
 		Html.Should().Contain("href=\"https://example.com\"");
 	}
 
-	[Fact]
+	[Test]
 	public void FootnoteReferencesWorkInsideDirectives()
 	{
 		// Footnote REFERENCES work inside directives
@@ -368,7 +362,7 @@ public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTes
 		Html.Should().Contain("href=\"#fn:1\"");
 	}
 
-	[Fact]
+	[Test]
 	public void FootnoteDefinitionsAreAtDocumentLevel()
 	{
 		// Footnote DEFINITIONS are rendered at the document level
@@ -376,4 +370,3 @@ public class FootnotesInsideDirectiveTests(ITestOutputHelper output) : InlineTes
 		Html.Should().Contain("Footnote definitions must be at the document level");
 	}
 }
-

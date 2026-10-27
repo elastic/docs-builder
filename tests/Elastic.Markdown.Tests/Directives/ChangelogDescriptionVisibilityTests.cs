@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// <summary>Unit tests for <see cref="ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo"/>.</summary>
 public class ChangelogShouldHideEntryDescriptionsTests
 {
-	[Fact]
+	[Test]
 	public void HideDescriptions_AlwaysReturnsTrue()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" };
@@ -19,46 +19,46 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			privateRepos,
-			ChangelogDescriptionVisibility.HideDescriptions);
+			ChangelogDescriptionVisibility.HideDescriptions
+		);
 
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepDescriptions_AlwaysReturnsFalse()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			[],
-			ChangelogDescriptionVisibility.KeepDescriptions);
+			ChangelogDescriptionVisibility.KeepDescriptions
+		);
 
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepHighlightDescriptions_AlwaysReturnsTrue()
 	{
 		// Default path hides descriptions; Highlights section overrides separately in the renderer.
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			[],
-			ChangelogDescriptionVisibility.KeepHighlightDescriptions);
+			ChangelogDescriptionVisibility.KeepHighlightDescriptions
+		);
 
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithEmptyPrivateRepos_HidesBodies()
 	{
-		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
-			"kibana",
-			[],
-			ChangelogDescriptionVisibility.Auto);
+		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo("kibana", [], ChangelogDescriptionVisibility.Auto);
 
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPublicRepoOnly_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "secret-repo" };
@@ -66,12 +66,13 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			privateRepos,
-			ChangelogDescriptionVisibility.Auto);
+			ChangelogDescriptionVisibility.Auto
+		);
 
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPrivateRepo_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -79,12 +80,13 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			privateRepos,
-			ChangelogDescriptionVisibility.Auto);
+			ChangelogDescriptionVisibility.Auto
+		);
 
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_OnePrivateConstituent_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -92,12 +94,13 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"elasticsearch+kibana",
 			privateRepos,
-			ChangelogDescriptionVisibility.Auto);
+			ChangelogDescriptionVisibility.Auto
+		);
 
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_AllPublicConstituents_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-private" };
@@ -105,7 +108,8 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"elasticsearch+kibana",
 			privateRepos,
-			ChangelogDescriptionVisibility.Auto);
+			ChangelogDescriptionVisibility.Auto
+		);
 
 		result.Should().BeTrue();
 	}
@@ -114,15 +118,17 @@ public class ChangelogShouldHideEntryDescriptionsTests
 /// <summary>
 /// Omitting :description-visibility: defaults to <see cref="ChangelogDescriptionVisibility.Auto"/>.
 /// </summary>
-public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
-	"""
+[InheritsTests]
+public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
 	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -133,31 +139,32 @@ public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output
 			  - product: elasticsearch
 			    target: 9.3.0
 			  description: BODY_DEFAULT_AUTO_VISIBILITY
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void PropertyDefaultsToAuto() =>
-		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
+	[Test]
+	public void PropertyDefaultsToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
 	/// <summary>Public bundle with no assembler private repos ⇒ auto hides record bodies.</summary>
-	[Fact]
-	public void HtmlOmitsBodyTextForPublicBundle() =>
-		Html.Should().NotContain("BODY_DEFAULT_AUTO_VISIBILITY");
+	[Test]
+	public void HtmlOmitsBodyTextForPublicBundle() => Html.Should().NotContain("BODY_DEFAULT_AUTO_VISIBILITY");
 
-	[Fact]
-	public void HtmlStillRendersTitles() =>
-		Html.Should().Contain("Feature delta");
+	[Test]
+	public void HtmlStillRendersTitles() => Html.Should().Contain("Feature delta");
 }
 
-public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
-	"""
+[InheritsTests]
+public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
 	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -168,22 +175,24 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 			  - product: elasticsearch
 			    target: 9.3.0
 			  description: BODY_PRIVATE_VISIBILITY_TEST
-			"""));
+			"""
+			)
+		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		_ = Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownIncludesBodyTextWhenRepoIsPrivateForAutoMode()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
 		markdown.Should().Contain("BODY_PRIVATE_VISIBILITY_TEST");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitle()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -191,16 +200,20 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 	}
 }
 
-public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: keep-descriptions
 	:::
-	""")
+	"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -211,23 +224,28 @@ public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper o
 			  - product: elasticsearch
 			    target: 9.3.0
 			  description: BODY_KEEP_VISIBILITY
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void KeepsBodyOnFullyPublicRepos() =>
-		Html.Should().Contain("BODY_KEEP_VISIBILITY");
+	[Test]
+	public void KeepsBodyOnFullyPublicRepos() => Html.Should().Contain("BODY_KEEP_VISIBILITY");
 }
 
-public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: hide-descriptions
 	:::
-	""")
+	"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -238,13 +256,14 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 			  - product: elasticsearch
 			    target: 9.3.0
 			  description: BODY_HIDE_VISIBILITY
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void OmitBody() =>
-		Html.Should().NotContain("BODY_HIDE_VISIBILITY");
+	[Test]
+	public void OmitBody() => Html.Should().NotContain("BODY_HIDE_VISIBILITY");
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitlesWithoutBodies()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -253,16 +272,20 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 	}
 }
 
-public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: nonsense-value
 	:::
-	""")
+	"""
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			"""
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -273,17 +296,16 @@ public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output
 			  - product: elasticsearch
 			    target: 9.3.0
 			  description: BODY_INVALID_VISIBILITY
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void FallsBackToAuto() =>
-		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
+	[Test]
+	public void FallsBackToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
-	[Fact]
-	public void EmitsWarning() =>
-		Collector.Warnings.Should().BeGreaterThan(0);
+	[Test]
+	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
 
-	[Fact]
-	public void AutoTreatsFullyPublic_AsHideBody() =>
-		Html.Should().NotContain("BODY_INVALID_VISIBILITY");
+	[Test]
+	public void AutoTreatsFullyPublic_AsHideBody() => Html.Should().NotContain("BODY_INVALID_VISIBILITY");
 }

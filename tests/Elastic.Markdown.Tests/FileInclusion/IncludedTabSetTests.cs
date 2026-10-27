@@ -13,8 +13,9 @@ namespace Elastic.Markdown.Tests.FileInclusion;
 /// Tests that when the same snippet containing tab-set is included multiple times,
 /// each include generates unique IDs to avoid HTML ID collisions.
 /// </summary>
-public class IncludedTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludedTabSetTests() : DirectiveTest<IncludeBlock>(
+	"""
 :::{include} _snippets/tab-set.md
 :::
 
@@ -29,7 +30,7 @@ Some content between includes.
 	{
 		// language=markdown
 		var snippet =
-"""
+			"""
 ::::{tab-set}
 :::{tab-item} First
 Content for first tab
@@ -42,10 +43,10 @@ Content for second tab
 		fileSystem.AddFile(@"docs/_snippets/tab-set.md", snippet);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EachIncludeHasUniqueIds()
 	{
 		// First include at line 2: (2 * 1000) + 0 = 2000
@@ -63,18 +64,17 @@ Content for second tab
 /// <summary>
 /// Tests that a snippet with multiple tab-sets generates unique IDs for each one.
 /// </summary>
-public class IncludedMultipleTabSetTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludedMultipleTabSetTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/multi-tab-set.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
 		var snippet =
-"""
+			"""
 ::::{tab-set}
 :::{tab-item} First
 First tab set
@@ -92,10 +92,10 @@ Second tab set
 		fileSystem.AddFile(@"docs/_snippets/multi-tab-set.md", snippet);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EachTabSetHasUniqueIds()
 	{
 		// Include at line 2, first tab-set at line 0: (2 * 1000) + 0 = 2000

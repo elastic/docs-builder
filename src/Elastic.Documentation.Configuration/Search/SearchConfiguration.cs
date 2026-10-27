@@ -87,14 +87,14 @@ public record QueryRuleActions
 	public required IReadOnlyCollection<string> Ids { get; init; }
 }
 
-internal sealed record SearchConfigDto
+public sealed record SearchConfigDto
 {
 	public List<List<string>> Synonyms { get; set; } = [];
 	public List<QueryRuleDto> Rules { get; set; } = [];
 	public List<string> DiminishTerms { get; set; } = [];
 }
 
-internal sealed record QueryRuleDto
+public sealed record QueryRuleDto
 {
 	public string RuleId { get; set; } = string.Empty;
 	public string Type { get; set; } = string.Empty;
@@ -102,14 +102,14 @@ internal sealed record QueryRuleDto
 	public QueryRuleActionsDto Actions { get; set; } = new();
 }
 
-internal sealed record QueryRuleCriteriaDto
+public sealed record QueryRuleCriteriaDto
 {
 	public string Type { get; set; } = string.Empty;
 	public string Metadata { get; set; } = string.Empty;
 	public List<string> Values { get; set; } = [];
 }
 
-internal sealed record QueryRuleActionsDto
+public sealed record QueryRuleActionsDto
 {
 	public List<string> Ids { get; set; } = [];
 }
@@ -123,8 +123,9 @@ public static class SearchConfigurationExtensions
 		if (!searchFile.Exists)
 			return new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] };
 
-		var searchDto = ConfigurationFileProvider.Deserializer.Deserialize<SearchConfigDto>(searchFile.OpenText());
-		var synonyms = searchDto.Synonyms
+		var searchDto = ConfigurationFileProvider.Deserialize<SearchConfigDto>(searchFile.OpenText(), searchFile.FullName);
+		var synonyms = searchDto
+			.Synonyms
 			.Where(s => s.Count > 1)
 			.Select(s => s.ToArray())
 			.GroupBy(s => s[0], StringComparer.OrdinalIgnoreCase)
@@ -139,9 +140,7 @@ public static class SearchConfigurationExtensions
 		new()
 		{
 			RuleId = dto.RuleId,
-			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType)
-				? ruleType
-				: QueryRuleType.Pinned,
+			Type = Enum.TryParse<QueryRuleType>(dto.Type, ignoreCase: true, out var ruleType) ? ruleType : QueryRuleType.Pinned,
 			Criteria = dto.Criteria.Select(ParseCriteria).ToImmutableArray(),
 			Actions = new QueryRuleActions { Ids = dto.Actions.Ids.ToImmutableArray() }
 		};

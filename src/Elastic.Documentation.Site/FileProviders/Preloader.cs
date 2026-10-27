@@ -14,7 +14,8 @@ public static partial class FontPreloader
 	// For development: clear cache when needed
 	public static void ClearCache() => FontUriCache = null;
 
-	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync(string? urlPrefix) => FontUriCache ??= await LoadFontUrisAsync(urlPrefix);
+	public static async Task<IReadOnlyCollection<string>> GetFontUrisAsync(string? urlPrefix) =>
+		FontUriCache ??= await LoadFontUrisAsync(urlPrefix);
 	private static async Task<IReadOnlyCollection<string>> LoadFontUrisAsync(string? urlPrefix)
 	{
 		var cachedFontUris = new List<string>();

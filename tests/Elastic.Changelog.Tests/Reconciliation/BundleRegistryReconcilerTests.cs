@@ -27,7 +27,8 @@ public class BundleRegistryReconcilerTests
 			PublicBucket,
 			new FakeTimeProvider(FixedNow),
 			retryBaseDelay: TimeSpan.Zero,
-			_metrics);
+			_metrics
+		);
 
 	private static ChangelogScope BundleScope(string product = "elasticsearch")
 	{
@@ -42,7 +43,8 @@ public class BundleRegistryReconcilerTests
 	}
 
 	// language=yaml
-	private static string BundleYaml(string product, string target) => $"""
+	private static string BundleYaml(string product, string target) =>
+		$"""
 		products:
 		  - product: {product}
 		    target: {target}
@@ -57,7 +59,8 @@ public class BundleRegistryReconcilerTests
 		""";
 
 	// language=yaml
-	private const string AmendYaml = """
+	private const string AmendYaml =
+		"""
 		exclude-entries:
 		  - file:
 		      name: 1-feature.yaml
@@ -89,9 +92,9 @@ public class BundleRegistryReconcilerTests
 		return JsonSerializer.Deserialize(content, RegistryJsonContext.Default.Registry)!;
 	}
 
-	private Cancel Ctx => TestContext.Current.CancellationToken;
+	private Cancel Ctx => TestContext.Current!.Execution.CancellationToken;
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_HealsEntriesMissingFromManifest()
 	{
 		// Public bucket holds 1..4 but the manifest lists only 1 and 2 (3 was lost to a past gap;
@@ -101,33 +104,37 @@ public class BundleRegistryReconcilerTests
 		var etag2 = SeedBundle(scope, "es-9.2.0.yaml", "9.2.0");
 		_ = SeedBundle(scope, "es-9.3.0.yaml", "9.3.0");
 		_ = SeedBundle(scope, "es-9.4.0.yaml", "9.4.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = etag2 },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
 		outcome.Should().Be(GroupReconcileOutcome.Written);
 		var manifest = WrittenManifest();
-		manifest.Bundles.Select(b => b.File).Should().Equal(
-			"es-9.4.0.yaml", "es-9.3.0.yaml", "es-9.2.0.yaml", "es-9.1.0.yaml");
+		manifest.Bundles.Select(b => b.File).Should().Equal("es-9.4.0.yaml", "es-9.3.0.yaml", "es-9.2.0.yaml", "es-9.1.0.yaml");
 		manifest.Bundles.Should().OnlyContain(b => b.Target != null);
 		manifest.Producer.Should().Be(BundleRegistryReconciler.Producer);
 
 		// 1 and 2 were ETag-reused: only the manifest itself plus 3 and 4 were read.
-		_s3.GetsFor(PublicBucket).Should().BeEquivalentTo([
-			scope.RegistryKey, scope.Prefix + "es-9.3.0.yaml", scope.Prefix + "es-9.4.0.yaml"
-		]);
+		_s3
+			.GetsFor(PublicBucket)
+			.Should()
+			.BeEquivalentTo([scope.RegistryKey, scope.Prefix + "es-9.3.0.yaml", scope.Prefix + "es-9.4.0.yaml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_DropsEntriesWhoseObjectIsGone()
 	{
 		var scope = BundleScope();
 		var etag1 = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = "gone" },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -135,15 +142,17 @@ public class BundleRegistryReconcilerTests
 		WrittenManifest().Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ManifestAlreadyExact_SkipsWriteAndBundleReads()
 	{
 		var scope = BundleScope();
 		var etag1 = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
 		var etag2 = SeedBundle(scope, "es-9.2.0.yaml", "9.2.0");
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.2.0.yaml", Target = "9.2.0", ETag = etag2 },
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 });
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag1 }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -153,7 +162,7 @@ public class BundleRegistryReconcilerTests
 		_metrics.RegistryUnchanged.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_GeneratedAtAloneNeverCausesChurn()
 	{
 		// Same as above but the seeded generated_at differs from "now": still Unchanged.
@@ -167,7 +176,7 @@ public class BundleRegistryReconcilerTests
 		_s3.Puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_AmendIsAlwaysRecomputed_EvenWhenItsETagMatches()
 	{
 		// The parent moved from 9.3.0 to 9.4.0 without the amend's own ETag changing; an
@@ -175,9 +184,11 @@ public class BundleRegistryReconcilerTests
 		var scope = BundleScope();
 		var parentETag = SeedBundle(scope, "es-9.3.0.yaml", "9.4.0");
 		var amendETag = _s3.Seed(PublicBucket, scope.Prefix + "es-9.3.0.amend-1.yaml", AmendYaml);
-		SeedManifest(scope,
+		SeedManifest(
+			scope,
 			new RegistryBundle { File = "es-9.3.0.yaml", Target = "9.4.0", ETag = parentETag },
-			new RegistryBundle { File = "es-9.3.0.amend-1.yaml", Target = "9.3.0", ETag = amendETag });
+			new RegistryBundle { File = "es-9.3.0.amend-1.yaml", Target = "9.3.0", ETag = amendETag }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -186,7 +197,7 @@ public class BundleRegistryReconcilerTests
 		amend.Target.Should().Be("9.4.0", "the amend re-inherits the parent's current target on every reconcile");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_AmendWithoutParent_RecordsNullTarget()
 	{
 		var scope = BundleScope();
@@ -200,11 +211,12 @@ public class BundleRegistryReconcilerTests
 		entry.Target.Should().BeNull("the parent has not landed yet; a later reconcile self-corrects");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_MultiProductBundle_MatchesTheGroupProduct()
 	{
 		// language=yaml
-		const string multiProductYaml = """
+		const string multiProductYaml =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
@@ -232,7 +244,7 @@ public class BundleRegistryReconcilerTests
 		manifest.Bundles.Single().Target.Should().Be("9.4.0", "kibana's own target must win, never blindly Products[0]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ProducerMismatch_RecomputesEverythingAndWritesEvenWhenIdentical()
 	{
 		// A legacy (pass-through) manifest has no producer. Even when every entry would come out
@@ -240,8 +252,12 @@ public class BundleRegistryReconcilerTests
 		// every future reconcile keeps recomputing.
 		var scope = BundleScope();
 		var etag = SeedBundle(scope, "es-9.1.0.yaml", "9.1.0");
-		SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag });
+		SeedManifest(
+			scope,
+			producer: null,
+			Registry.CurrentSchemaVersion,
+			new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag }
+		);
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -252,7 +268,7 @@ public class BundleRegistryReconcilerTests
 		manifest.Bundles.Single().Should().BeEquivalentTo(new RegistryBundle { File = "es-9.1.0.yaml", Target = "9.1.0", ETag = etag });
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ListingPaginates()
 	{
 		var scope = BundleScope();
@@ -267,7 +283,7 @@ public class BundleRegistryReconcilerTests
 		_s3.ListCalls.Should().BeGreaterThanOrEqualTo(3);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ChangelogScope_IsRejected()
 	{
 		// Pool manifests are not reconciled: they stay client-authored pass-through until Phase 3
@@ -281,7 +297,7 @@ public class BundleRegistryReconcilerTests
 		_s3.Puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ExcludesTheManifestAndOtherNonYamlFromItsOwnListing()
 	{
 		var scope = BundleScope();
@@ -296,7 +312,7 @@ public class BundleRegistryReconcilerTests
 		WrittenManifest().Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_CorruptManifest_IsRebuiltWithItsLiveETagGuard()
 	{
 		var scope = BundleScope();
@@ -311,7 +327,7 @@ public class BundleRegistryReconcilerTests
 		WrittenManifest().Bundles.Should().ContainSingle();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_EmptyListing_DeletesTheManifestConditionally()
 	{
 		var scope = BundleScope();
@@ -326,7 +342,7 @@ public class BundleRegistryReconcilerTests
 		delete.IfMatch.Trim('"').Should().Be(manifestETag);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_EmptyListing_DeletesEvenAManifestWhoseBundlesAreAlreadyEmpty()
 	{
 		// Deletion must run before any equality short-circuit: absent ≠ empty for consumers.
@@ -339,7 +355,7 @@ public class BundleRegistryReconcilerTests
 		_s3.Exists(PublicBucket, scope.RegistryKey).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_EmptyListingAndNoManifest_IsANoOp()
 	{
 		var outcome = await _reconciler.ReconcileGroupAsync(BundleScope(), Ctx);
@@ -349,7 +365,7 @@ public class BundleRegistryReconcilerTests
 		_s3.Deletes.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_DeleteLosingTheRace_RereadsAndRetries()
 	{
 		// A concurrent reconciler replaces the manifest between our read and our delete: the
@@ -370,7 +386,7 @@ public class BundleRegistryReconcilerTests
 		_metrics.WriteConflicts.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_PutLosingTheRace_RereadsAndRetries()
 	{
 		var scope = BundleScope();
@@ -379,8 +395,12 @@ public class BundleRegistryReconcilerTests
 		_s3.BeforePut = call =>
 		{
 			if (call == 1)
-				SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-					new RegistryBundle { File = "concurrent.yaml", Target = null, ETag = "cc" });
+				SeedManifest(
+					scope,
+					producer: null,
+					Registry.CurrentSchemaVersion,
+					new RegistryBundle { File = "concurrent.yaml", Target = null, ETag = "cc" }
+				);
 		};
 
 		var outcome = await _reconciler.ReconcileGroupAsync(scope, Ctx);
@@ -390,7 +410,7 @@ public class BundleRegistryReconcilerTests
 		WrittenManifest().Bundles.Select(b => b.File).Should().Equal("es-9.1.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_ExhaustedConditionalRetries_Throws()
 	{
 		var scope = BundleScope();
@@ -398,8 +418,13 @@ public class BundleRegistryReconcilerTests
 		SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion);
 		// Every attempt loses: a concurrent writer lands between every read and write.
 		var counter = 0;
-		_s3.BeforePut = _ => SeedManifest(scope, producer: null, Registry.CurrentSchemaVersion,
-			new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" });
+		_s3.BeforePut =
+			_ => SeedManifest(
+				scope,
+				producer: null,
+				Registry.CurrentSchemaVersion,
+				new RegistryBundle { File = $"concurrent-{counter++}.yaml", Target = null, ETag = "cc" }
+			);
 
 		var act = async () => await _reconciler.ReconcileGroupAsync(scope, Ctx);
 
@@ -407,7 +432,7 @@ public class BundleRegistryReconcilerTests
 		_s3.Puts.Should().HaveCount(5, "the retry loop is bounded");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_NewerSchemaManifest_IsReportedAndLeftUntouched()
 	{
 		var scope = BundleScope();
@@ -423,7 +448,7 @@ public class BundleRegistryReconcilerTests
 		_s3.ContentOf(PublicBucket, scope.RegistryKey).Should().Be(before);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileGroup_SortsNewestTargetFirstWithFileNameTiebreak()
 	{
 		var scope = BundleScope();

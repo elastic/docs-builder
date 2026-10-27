@@ -24,8 +24,7 @@ public class SectionNavigation(string title) : IRootNavigationItem<IDocumentatio
 	public string Url { get; internal set; } = "/";
 
 	/// <inheritdoc />
-	public ILeafNavigationItem<IDocumentationFile> Index =>
-		_index ??= new SectionIndexLeaf(new SectionIndexPage(Title), Url, this);
+	public ILeafNavigationItem<IDocumentationFile> Index => _index ??= new SectionIndexLeaf(new SectionIndexPage(Title), Url, this);
 
 	/// <inheritdoc />
 	public string NavigationTitle => Title;
@@ -74,8 +73,7 @@ public record SectionIndexPage(string NavigationTitle) : IDocumentationFile
 
 /// <summary>Synthetic index leaf for a section landing page.</summary>
 [DebuggerDisplay("{Url}")]
-public class SectionIndexLeaf(SectionIndexPage model, string url, SectionNavigation sectionRoot)
-	: ILeafNavigationItem<IDocumentationFile>
+public class SectionIndexLeaf(SectionIndexPage model, string url, SectionNavigation sectionRoot) : ILeafNavigationItem<IDocumentationFile>
 {
 	/// <inheritdoc />
 	public IDocumentationFile Model { get; } = model;

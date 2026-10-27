@@ -1,14 +1,99 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Landing.ApiCatalogViewModel>
-@implements IUsesLayout<Elastic.ApiExplorer._Layout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
+@using Elastic.ApiExplorer.Landing;
+@implements IUsesLayout<Elastic.ApiExplorer._CatalogLayout, Elastic.ApiExplorer.Infrastructure.ApiLayoutViewModel>
 @functions {
 	public ApiLayoutViewModel LayoutModel => Model.CreateGlobalLayoutModel();
-}
-<section id="elastic-docs-v3">
-	<h1>API Explorer</h1>
-	<ul>
-		@foreach (var entry in Model.Entries.OrderBy(e => e.Key))
+
+	// The hero is a section so the layout can render it above its width-limited container. That is what lets
+	// the band behind the title run edge to edge instead of sitting in a box.
+	protected override Task ExecuteSectionAsync(string name)
+	{
+		if (name == ApiCatalog.HeroSection)
 		{
-			<li><a href="@entry.Url">@entry.Title</a> (<code>@entry.Key</code>)</li>
+			if (Model.BuildContext.Configuration.Features.NavigationPreviewEnabled)
+			{
+				@* The same intro as the landing page: the eyebrow, the title in the display face and the lead, on the hero gradient. *@
+				<section class="landing__hero" id="hero">
+					<div class="band__content landing__inner landing__hero-text">
+						<p class="landing__eyebrow">Reference</p>
+						<h1 class="landing__title">@ApiCatalog.PageTitle</h1>
+						<p class="landing__lead">@ApiCatalog.PageLede</p>
+						@if (LayoutModel.ShowJumpToPage)
+						{
+							<div class="api-catalog-finder"><navigation-search type="api" variant="hero"></navigation-search></div>
+						}
+					</div>
+				</section>
+				return Task.CompletedTask;
+			}
+
+			<div class="api-catalog api-catalog-band w-full">
+				<div class="mx-auto w-full max-w-(--max-layout-width) px-6">
+					<section class="hub-hero api-catalog-hero">
+						<div class="hub-hero-inner">
+							<div class="hub-hero-top">
+								<h1>@ApiCatalog.PageTitle</h1>
+							</div>
+							<p class="api-catalog-lede">@ApiCatalog.PageLede</p>
+							@if (LayoutModel.ShowJumpToPage)
+							{
+								<div class="api-catalog-finder"><navigation-search type="api" variant="hero"></navigation-search></div>
+							}
+						</div>
+					</section>
+				</div>
+			</div>
 		}
-	</ul>
+		return Task.CompletedTask;
+	}
+}
+@{
+	// Card titles sit under the group headings. A page without any (a lone group) puts them directly under the h1.
+	var cardHeadingLevel = Model.Groups.Any(g => g.Title is not null) ? 3 : 2;
+	var catalogClass = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled ? "api-catalog band band--soft band--wash-b" : "api-catalog";
+}
+<section id="elastic-docs-v3" class="@catalogClass">
+	@for (var i = 0; i < Model.Groups.Count; i++)
+	{
+		var group = Model.Groups[i];
+		var headingId = "api-catalog-group-" + i;
+		var featuredColumns = group.Featured.Count == 3 ? "min-[1024px]:grid-cols-3" : "min-[1024px]:grid-cols-2";
+		// Without featured cards the cards of a group sit three across, so a description has room to read as a sentence.
+		var otherColumns = group.Featured.Count > 0 ? featuredColumns : "min-[1024px]:grid-cols-2 lg:grid-cols-3";
+		var unattached = group.Unattached.ToList();
+		// Everything in a group that is not featured is compact. Only the APIs that no group covers keep the full-size card.
+		var otherKind = group.Grouped ? ApiCatalogCardKind.Compact : ApiCatalogCardKind.Standard;
+		<section class="api-catalog-group" aria-labelledby="@(group.Title is null ? null : headingId)">
+			@if (group.Title is not null)
+			{
+				<h2 id="@headingId" class="api-catalog-group-title">@group.Title</h2>
+			}
+			@if (group.Featured.Count > 0)
+			{
+				@* A tag-on follows its parent in the list, so it stays attached under it when the cards stack on narrow screens.
+				   From 1024px the cells are placed by column: parents in row 1, tag-ons in row 2. *@
+				<ul class="api-catalog-featured m-0 mb-4 grid list-none grid-cols-1 gap-6 p-0 @featuredColumns">
+					@for (var f = 0; f < group.Featured.Count; f++)
+					{
+						var item = group.Featured[f];
+						var hasVariant = group.TryGetVariant(item, out var variant);
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, ApiCatalogCardKind.Featured, HasVariant: hasVariant, Column: f + 1, HeadingLevel: cardHeadingLevel)))
+						if (hasVariant)
+						{
+							@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(variant, otherKind, Column: f + 1, HeadingLevel: cardHeadingLevel)))
+						}
+					}
+				</ul>
+			}
+			@if (unattached.Count > 0)
+			{
+				<ul class="m-0 grid list-none grid-cols-1 gap-x-6 gap-y-4 p-0 @otherColumns">
+					@foreach (var item in unattached)
+					{
+						@(await RenderPartialAsync<_ApiCatalogCard, ApiCatalogCard>(new ApiCatalogCard(item, otherKind, HeadingLevel: cardHeadingLevel)))
+					}
+				</ul>
+			}
+		</section>
+	}
 </section>

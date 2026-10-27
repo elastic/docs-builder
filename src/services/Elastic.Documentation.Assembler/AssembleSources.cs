@@ -16,7 +16,7 @@ using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links.CrossLinks;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.RepresentationModel;
+using SharpYaml.Model;
 
 namespace Elastic.Documentation.Assembler;
 
@@ -72,16 +72,45 @@ public class AssembleSources
 			availableExporters
 		);
 
-		var declaredProducts = sources.AssembleSets.Values
+		var declaredProducts = sources
+			.AssembleSets
+			.Values
 			.SelectMany(s => s.BuildContext.Configuration.ReleaseNotesProducts)
 			.Distinct(StringComparer.Ordinal)
 			.ToArray();
-		if (declaredProducts.Length > 0)
+
+		// Infer CDN products from each assembled repo's name — same logic as PrefetchAsync for single builds.
+		// Repos without a products.yml entry fall back to the repo name itself (which may or may not be a
+		// valid CDN product; IsValidCdnProductId filters out anything that could not be a real product path).
+		var inferredProducts = sources
+			.AssembleSets
+			.Values
+			.Select(
+				s => configurationContext.ProductsConfiguration.GetProductByRepositoryName(s.Checkout.Repository.Name)?.Id ?? s
+					.Checkout
+					.Repository
+					.Name
+			)
+			.Where(ReleaseNotesFetcher.IsValidCdnProductId)
+			.Except(declaredProducts, StringComparer.Ordinal)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+
+		if (declaredProducts.Length > 0 || inferredProducts.Length > 0)
 		{
 			var releaseNotesFetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
-			var fetched = await releaseNotesFetcher.FetchAsync(context.Collector, declaredProducts, ctx).ConfigureAwait(false);
+			var fetched = await releaseNotesFetcher.FetchAsync(
+				context.Collector,
+				declaredProducts,
+				inferredProducts.Length > 0 ? inferredProducts : null,
+				ctx
+			).ConfigureAwait(false);
 			releaseNotesResolver.Populate(fetched);
-			logger.LogInformation("  AssembleAsync: Fetched release notes for {Count} product(s)", declaredProducts.Length);
+			logger.LogInformation(
+				"  AssembleAsync: Fetched release notes for {Declared} declared + {Inferred} inferred product(s)",
+				declaredProducts.Length,
+				inferredProducts.Length
+			);
 		}
 
 		foreach (var (_, set) in sources.AssembleSets)
@@ -93,9 +122,8 @@ public class AssembleSources
 		return sources;
 	}
 
-	internal static AssembleSources ForTests(
-		AssembleContext context,
-		FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) => new(context, assembleSets);
+	internal static AssembleSources ForTests(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets) =>
+		new(context, assembleSets);
 
 	private AssembleSources(AssembleContext context, FrozenDictionary<string, AssemblerDocumentationSet> assembleSets)
 	{
@@ -127,7 +155,17 @@ public class AssembleSources
 		AssembleContext = assembleContext;
 		AssembleSets = checkouts
 			.Where(c => c.Repository is { Skip: false })
-			.Select(c => new AssemblerDocumentationSet(logFactory, assembleContext, c, crossLinkResolver, releaseNotesResolver, configurationContext, availableExporters))
+			.Select(
+				c => new AssemblerDocumentationSet(
+					logFactory,
+					assembleContext,
+					c,
+					crossLinkResolver,
+					releaseNotesResolver,
+					configurationContext,
+					availableExporters
+				)
+			)
 			.ToDictionary(s => s.Checkout.Repository.Name, s => s)
 			.ToFrozenDictionary();
 	}
@@ -155,27 +193,27 @@ public class AssembleSources
 		static void ReadTocBlocks(
 			List<KeyValuePair<Uri, NavigationTocMapping>> entries,
 			YamlStreamReader reader,
-			KeyValuePair<YamlNode, YamlNode> entry,
+			KeyValuePair<YamlElement, YamlElement?> entry,
 			string? parent,
 			int depth,
 			Uri? topLevelSource,
 			Uri? parentSource
 		)
 		{
-			if (entry.Key is not YamlScalarNode { Value: not null } scalarKey)
+			if (entry.Key is not YamlValue scalarKey)
 			{
 				reader.EmitWarning($"key '{entry.Key}' is not string");
 				return;
 			}
 
-			if (entry.Value is not YamlSequenceNode sequence)
+			if (entry.Value is not YamlSequence sequence)
 			{
 				reader.EmitWarning($"'{scalarKey.Value}' is not an array");
 				return;
 			}
 
 			var i = 0;
-			foreach (var tocEntry in sequence.Children.OfType<YamlMappingNode>())
+			foreach (var tocEntry in sequence.OfType<YamlMapping>())
 			{
 				ReadBlock(entries, reader, tocEntry, parent, depth, i, topLevelSource, parentSource);
 				i++;
@@ -185,10 +223,11 @@ public class AssembleSources
 		static void ReadBlock(
 			List<KeyValuePair<Uri, NavigationTocMapping>> entries,
 			YamlStreamReader reader,
-			YamlMappingNode tocEntry,
+			YamlMapping tocEntry,
 			string? parent,
 			int depth,
 			int order, //TODO Remove this parameter
+
 			Uri? topLevelSource,
 			Uri? parentSource
 		)
@@ -197,9 +236,9 @@ public class AssembleSources
 			string? source = null;
 			string? pathPrefix = null;
 			var isSection = false;
-			foreach (var entry in tocEntry.Children)
+			foreach (var entry in tocEntry)
 			{
-				var key = ((YamlScalarNode)entry.Key).Value;
+				var key = ((YamlValue)entry.Key).Value;
 				switch (key)
 				{
 					case "section":
@@ -238,9 +277,9 @@ public class AssembleSources
 				// sources are registered in NavigationTocMappings.
 				if (isSection)
 				{
-					foreach (var entry in tocEntry.Children)
+					foreach (var entry in tocEntry)
 					{
-						var key = ((YamlScalarNode)entry.Key).Value;
+						var key = ((YamlValue)entry.Key).Value;
 						if (key == "children")
 							ReadTocBlocks(entries, reader, entry, parent, depth, topLevelSource, parentSource);
 					}
@@ -257,22 +296,21 @@ public class AssembleSources
 
 			var sourcePrefix = $"{sourceUri.Host}/{sourceUri.AbsolutePath.TrimStart('/')}";
 			if (string.IsNullOrEmpty(pathPrefix))
-				reader.EmitError($"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect", tocEntry);
+				reader.EmitError(
+					$"Path prefix is not defined for: {source}, falling back to {sourcePrefix} which may be incorrect",
+					tocEntry
+				);
 
 			pathPrefix ??= sourcePrefix;
 			topLevelSource ??= sourceUri;
 			parentSource ??= sourceUri;
 
-			var tocTopLevelMapping = new NavigationTocMapping
-			{
-				Source = sourceUri,
-				SourcePathPrefix = pathPrefix,
-			};
+			var tocTopLevelMapping = new NavigationTocMapping { Source = sourceUri, SourcePathPrefix = pathPrefix, };
 			entries.Add(new KeyValuePair<Uri, NavigationTocMapping>(sourceUri, tocTopLevelMapping));
 
-			foreach (var entry in tocEntry.Children)
+			foreach (var entry in tocEntry)
 			{
-				var key = ((YamlScalarNode)entry.Key).Value;
+				var key = ((YamlValue)entry.Key).Value;
 				switch (key)
 				{
 					case "children":

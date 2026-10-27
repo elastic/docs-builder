@@ -11,7 +11,10 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Documentation.Links.InboundLinks;
 
 /// fetches cross-links for all the repositories defined in the publicized link-index.json file using the <see cref="ContentSource.Next"/> content source
-public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(logFactory, linkIndexProvider)
+public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexReader linkIndexProvider) : CrossLinkFetcher(
+	logFactory,
+	linkIndexProvider
+)
 {
 	public override async Task<FetchedCrossLinks> FetchCrossLinks(Cancel ctx)
 	{
@@ -37,5 +40,4 @@ public class LinksIndexCrossLinkFetcher(ILoggerFactory logFactory, ILinkIndexRea
 			LinkIndexEntries = linkEntries.ToFrozenDictionary(),
 		};
 	}
-
 }

@@ -18,10 +18,7 @@ public class ChangelogRenderer(IChangelogFileSystem fileSystem, ILogger logger)
 	/// <summary>
 	/// Renders changelog output based on the specified file type.
 	/// </summary>
-	public async Task RenderAsync(
-		ChangelogFileType fileType,
-		ChangelogRenderContext context,
-		Cancel ctx)
+	public async Task RenderAsync(ChangelogFileType fileType, ChangelogRenderContext context, Cancel ctx)
 	{
 		switch (fileType)
 		{

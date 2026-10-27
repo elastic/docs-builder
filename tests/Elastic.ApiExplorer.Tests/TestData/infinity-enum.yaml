@@ -1,0 +1,22 @@
+openapi: 3.1.0
+info:
+  title: Infinity enum fixture
+  version: "1.0"
+paths:
+  /flow:
+    get:
+      operationId: flow
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current:
+                    oneOf:
+                      - type: number
+                        format: double
+                      - type: string
+                        enum: ["Infinity", "NaN", "-Infinity"]

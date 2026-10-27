@@ -21,6 +21,24 @@ using Microsoft.Extensions.Logging;
 namespace Elastic.Changelog.GithubRelease;
 
 /// <summary>
+/// Result returned by <see cref="GitHubReleaseChangelogService.CreateChangelogsFromRelease"/>.
+/// </summary>
+/// <param name="Success">Whether the operation succeeded.</param>
+/// <param name="BundlePath">
+/// Absolute or repo-relative path of the bundle <c>.yml</c> file that was written, or <c>null</c>
+/// when no bundle was produced (zero entries, <see cref="CreateChangelogsFromReleaseArguments.CreateBundle"/> false,
+/// or an error occurred before the bundle step).
+/// </param>
+public record GitHubReleaseResult(bool Success, string? BundlePath)
+{
+	/// <summary>A failed result with no bundle path.</summary>
+	public static GitHubReleaseResult Failed { get; } = new(false, null);
+
+	/// <summary>A successful result with no bundle path (e.g. zero entries, CreateBundle disabled).</summary>
+	public static GitHubReleaseResult SucceededWithoutBundle { get; } = new(true, null);
+}
+
+/// <summary>
 /// Arguments for the CreateChangelogsFromRelease method
 /// </summary>
 public record CreateChangelogsFromReleaseArguments
@@ -51,11 +69,6 @@ public record CreateChangelogsFromReleaseArguments
 	public bool? StripTitlePrefix { get; init; }
 
 	/// <summary>
-	/// Whether to warn when Release Drafter type doesn't match label-derived type (defaults to true)
-	/// </summary>
-	public bool WarnOnTypeMismatch { get; init; } = true;
-
-	/// <summary>
 	/// Optional bundle description text with placeholder support.
 	/// Supports {version}, {lifecycle}, {owner}, and {repo} placeholders.
 	/// </summary>
@@ -83,7 +96,9 @@ public class GitHubReleaseChangelogService(
 	IChangelogFileSystem fileSystem,
 	IGitHubReleaseService? releaseService = null,
 	IGitHubPrService? prService = null,
-	ChangelogBundlingService? bundlingService = null
+	ChangelogBundlingService? bundlingService = null,
+	CdnChangelogEntryFetcher? entryFetcher = null,
+	IGitHubCommitRangeService? commitRangeService = null
 ) : IService
 {
 	/// <summary>
@@ -92,13 +107,17 @@ public class GitHubReleaseChangelogService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logFactory.CreateLogger<GitHubReleaseChangelogService>());
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly ChangelogBundlingService _bundlingService = bundlingService ?? new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
+	private readonly ChangelogBundlingService _bundlingService = bundlingService
+		?? new ChangelogBundlingService(logFactory, fileSystem, configurationContext);
+	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
 
-	public async Task<bool> CreateChangelogsFromRelease(
+	public async Task<GitHubReleaseResult> CreateChangelogsFromRelease(
 		IDiagnosticsCollector collector,
 		CreateChangelogsFromReleaseArguments input,
 		Cancel ctx
@@ -117,24 +136,34 @@ public class GitHubReleaseChangelogService(
 
 			_logger.LogInformation("Processing GitHub release from {Owner}/{Repo}", owner, repo);
 
-			// 2. Resolve product from repo name via products.yml
-			var product = configurationContext.ProductsConfiguration.GetProductByRepositoryName(repo);
-			if (product == null)
+			// 2. Resolve product(s) from repo name via products.yml
+			var products = configurationContext.ProductsConfiguration.GetProductsByRepositoryName(repo);
+			if (products.Count == 0)
 			{
-				collector.EmitError(string.Empty,
-					$"Could not find product for repository '{repo}' in products.yml. " +
-					"Ensure the repository name matches a product ID or a product has 'repository: {repo}' configured.");
-				return false;
+				collector.EmitError(
+					string.Empty,
+					$"Could not find a product for repository '{repo}' in products.yml. " +
+						$"Add a product to config/products.yml whose ID is '{repo}', " +
+						$"or set 'repository: {repo}' on one or more existing products."
+				);
+				return GitHubReleaseResult.Failed;
 			}
 
-			_logger.LogInformation("Resolved product: {ProductId} ({ProductDisplay})", product.Id, product.DisplayName);
+			// Use the first product for versioning context; multiple products (e.g., cloud) share the same versioning system.
+			var product = products[0];
+			_logger.LogInformation(
+				"Resolved {Count} product(s) for '{Repo}': {Products}",
+				products.Count,
+				repo,
+				string.Join(", ", products.Select(p => p.Id))
+			);
 
 			// 3. Load changelog configuration
 			var config = await _configLoader.LoadChangelogConfiguration(collector, input.Config, ctx);
 			if (config == null)
 			{
 				collector.EmitError(string.Empty, "Failed to load changelog configuration");
-				return false;
+				return GitHubReleaseResult.Failed;
 			}
 
 			// Resolve StripTitlePrefix from input or config default
@@ -144,24 +173,28 @@ public class GitHubReleaseChangelogService(
 			var release = await _releaseService.FetchReleaseAsync(owner, repo, input.Version, ctx);
 			if (release == null)
 			{
-				collector.EmitError(string.Empty,
+				collector.EmitError(
+					string.Empty,
 					$"Failed to fetch release for {owner}/{repo}@{input.Version}. " +
-					"Ensure the repository exists and the version tag is valid.");
-				return false;
+						"Ensure the repository exists and the version tag is valid."
+				);
+				return GitHubReleaseResult.Failed;
 			}
 
 			_logger.LogInformation("Fetched release: {TagName} ({Name})", release.TagName, release.Name);
 
-			// 5. Parse release notes
-			var parsedNotes = ReleaseNoteParser.Parse(release.Body);
-			_logger.LogInformation("Detected format: {Format}, found {Count} PR references",
-				parsedNotes.Format, parsedNotes.PrReferences.Count);
+			// 5. Resolve PRs via GitHub commit-range API (previous tag → current tag)
+			var pullRequests = await ResolvePrsFromRelease(collector, owner, repo, release.TagName, ctx);
+			if (pullRequests == null)
+				return GitHubReleaseResult.Failed;
 
-			if (parsedNotes.PrReferences.Count == 0)
+			if (pullRequests.Count == 0)
 			{
-				collector.EmitWarning(string.Empty, "No PR references found in release notes. No changelogs will be created.");
-				return true;
+				collector.EmitWarning(string.Empty, "No PRs found in commit range for this release. No changelogs will be created.");
+				return GitHubReleaseResult.SucceededWithoutBundle;
 			}
+
+			_logger.LogInformation("Processing {Count} PR(s) from commit range for release {Tag}", pullRequests.Count, release.TagName);
 
 			// 6. Infer lifecycle and target version from release tag
 			var lifecycle = ChangelogTextUtilities.InferLifecycleFromVersion(release.TagName);
@@ -170,78 +203,237 @@ public class GitHubReleaseChangelogService(
 			_logger.LogInformation("Inferred lifecycle: {Lifecycle}, target version: {Target}", lifecycle, targetVersion);
 
 			// Create product filter with inferred values
-			var productInfo = new ProductArgument
-			{
-				Product = product.Id,
-				Target = targetVersion,
-				Lifecycle = lifecycle
-			};
+			var productInfo = new ProductArgument { Product = product.Id, Target = targetVersion, Lifecycle = lifecycle };
 
-			// 7. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			// 7. Resolve CDN base URI for per-PR entry probing. Pool entries uploaded via
+			// changelog-upload take precedence over anything synthesized from PR metadata.
+			// We probe per-PR (GET {pr}.yaml) rather than fetching a registry upfront —
+			// the pool registry was retired and is no longer written to S3.
+			var cdnBaseUri = config.Bundle?.UseLocalChangelogs == true ? null : ChangelogCdn.ResolveBaseUri();
+#pragma warning disable CS0618
+			var cdnOwner = config.Bundle?.Owner ?? owner;
+#pragma warning restore CS0618
+			var cdnBranch = config.Bundle?.Branch ?? "main";
+
+			// 8. Process each PR and create changelog files
+			// Mirror the plan step's fallback chain so the actual output path matches what
+			// `changelog bundle --plan` predicts when --output is not supplied by the caller.
+			var outputDir = input.Output
+				?? config.Bundle?.OutputDirectory
+				?? config.Bundle?.Directory
+				?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
 			var createdFiles = new List<string>();
 			var successCount = 0;
-
-			foreach (var prRef in parsedNotes.PrReferences)
+			var entryContext = new GhReleaseEntryContext
 			{
-				var success = await ProcessPrReference(
-					collector, config, owner, repo, prRef,
-					productInfo, stripTitlePrefix, parsedNotes.Format, outputDir, createdFiles, input.WarnOnTypeMismatch, ctx);
+				Config = config,
+				Owner = owner,
+				CdnOwner = cdnOwner,
+				Repo = repo,
+				ProductInfo = productInfo,
+				StripTitlePrefix = stripTitlePrefix,
+				OutputDir = outputDir,
+				CdnBaseUri = cdnBaseUri,
+				CdnBranch = cdnBranch
+			};
+
+			foreach (var pr in pullRequests)
+			{
+				var success = await ProcessPr(collector, entryContext, pr, createdFiles, ctx);
 				if (success)
 					successCount++;
 			}
 
-			_logger.LogInformation("Created {Count} changelog files from release {Tag}", successCount, release.TagName);
+			_logger.LogInformation("Included {Count}/{Total} PR(s) from release {Tag}", successCount, pullRequests.Count, release.TagName);
+			if (successCount == 0 && pullRequests.Count > 0)
+				collector.EmitWarning(
+					string.Empty,
+					$"All {pullRequests.Count} PR(s) in the commit range for {release.TagName} were excluded by label rules; no changelog files created."
+				);
 
-			// 8. Optionally create bundle file if changelogs were created
+			// 9. Optionally create bundle file if changelogs were created
 			if (input.CreateBundle && createdFiles.Count > 0)
 			{
-				var bundlePath = await CreateBundleViaService(collector, outputDir, createdFiles, productInfo, owner, repo, input, release, ctx);
+				var bundlePath = await CreateBundleViaService(
+					collector,
+					outputDir,
+					createdFiles,
+					productInfo,
+					owner,
+					repo,
+					input,
+					release,
+					ctx
+				);
 				if (bundlePath != null)
 					_logger.LogInformation("Created bundle file: {BundlePath}", bundlePath);
+
+				// successCount == 0 here means all PRs were intentionally skipped by label rules
+				// (ProcessPr returns false only on explicit label-rule exclusions, never on errors).
+				// Intentional skips are not failures; the warnings per-PR are already emitted above.
+				return new GitHubReleaseResult(true, bundlePath);
 			}
 
-			return successCount > 0 || parsedNotes.PrReferences.Count == 0;
+			return GitHubReleaseResult.SucceededWithoutBundle;
 		}
 		catch (IOException ioEx)
 		{
 			collector.EmitError(string.Empty, $"IO error creating changelog: {ioEx.Message}", ioEx);
-			return false;
+			return GitHubReleaseResult.Failed;
 		}
 		catch (UnauthorizedAccessException uaEx)
 		{
 			collector.EmitError(string.Empty, $"Access denied creating changelog: {uaEx.Message}", uaEx);
-			return false;
+			return GitHubReleaseResult.Failed;
 		}
 	}
 
-	private async Task<bool> ProcessPrReference(
+	/// <summary>Per-release state shared by every PR while creating entry files.</summary>
+	private sealed record GhReleaseEntryContext
+	{
+		public required ChangelogConfiguration Config { get; init; }
+		public required string Owner { get; init; }
+		public required string CdnOwner { get; init; }
+		public required string Repo { get; init; }
+		public required ProductArgument ProductInfo { get; init; }
+		public required bool StripTitlePrefix { get; init; }
+		public required string OutputDir { get; init; }
+		public Uri? CdnBaseUri { get; init; }
+		public required string CdnBranch { get; init; }
+	}
+
+	private async Task<IReadOnlyList<CommitRangePullRequest>?> ResolvePrsFromRelease(
 		IDiagnosticsCollector collector,
-		ChangelogConfiguration config,
 		string owner,
 		string repo,
-		ExtractedPrReference prRef,
-		ProductArgument productInfo,
-		bool stripTitlePrefix,
-		ReleaseNoteFormat format,
-		string outputDir,
-		List<string> createdFiles,
-		bool warnOnTypeMismatch,
-		Cancel ctx)
+		string currentTag,
+		Cancel ctx
+	)
 	{
-		var prUrl = $"https://github.com/{owner}/{repo}/pull/{prRef.PrNumber}";
+		var lookup = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
 
-		// Fetch PR labels
-		var prInfo = await _prService.FetchPrInfoAsync(prUrl, owner, repo, ctx);
+		if (lookup.Status == PreviousTagStatus.LookupFailed)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo} " +
+					"due to an API or transport failure. Cannot derive PR list from commit range."
+			);
+			return null;
+		}
 
-		// Check block.create - skip PRs with blocking labels
-		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), productInfo, config, collector, prUrl))
+		if (lookup.Status == PreviousTagStatus.FirstReleaseInLine)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"'{currentTag}' is the first release in its major/prefix line in {owner}/{repo}, " +
+					"but earlier releases exist in the repository. Specify a start ref explicitly " +
+					"(e.g. the latest tag from the previous major) so the commit range does not " + "include unrelated history."
+			);
+			return null;
+		}
+
+		string previousTag;
+		if (lookup.Tag is not null)
+		{
+			previousTag = lookup.Tag;
+		}
+		else
+		{
+			// Genuine first release in the repository — fall back to the initial commit so the range
+			// covers all PR merges up to this tag rather than failing entirely.
+			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
+			if (initialCommit is null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"No previous release found for '{currentTag}' in {owner}/{repo}, " +
+						"and could not fetch the repository's initial commit as a fallback. " + "Cannot derive PR list from commit range."
+				);
+				return null;
+			}
+
+			_logger.LogInformation(
+				"No previous release found for {CurrentTag} in {Owner}/{Repo} — treating as first release; " +
+					"comparing all commits from initial commit {InitialSha}",
+				currentTag,
+				owner,
+				repo,
+				initialCommit
+			);
+			previousTag = initialCommit;
+		}
+
+		_logger.LogInformation(
+			"Resolving PRs via commit range {PrevTag}..{CurrentTag} for {Owner}/{Repo}",
+			previousTag,
+			currentTag,
+			owner,
+			repo
+		);
+
+		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
+			collector,
+			new CommitRangeArguments { Owner = owner, Repo = repo, StartRef = previousTag, EndRef = currentTag },
+			ctx
+		);
+
+		if (resolution == null)
+			return null;
+
+		_logger.LogInformation(
+			"Commit range {PrevTag}..{CurrentTag}: {TotalCommits} commit(s), {PrCount} PR(s), {UnattributedCount} commit(s) without a PR",
+			previousTag,
+			currentTag,
+			resolution.TotalCommits,
+			resolution.PullRequests.Count,
+			resolution.CommitsWithoutPullRequest.Count
+		);
+
+		if (resolution.CommitsWithoutPullRequest.Count > 0)
+			_logger.LogInformation("Commits without an associated PR: {Shas}", string.Join(", ", resolution.CommitsWithoutPullRequest));
+
+		return resolution.PullRequests;
+	}
+
+	private async Task<bool> ProcessPr(
+		IDiagnosticsCollector collector,
+		GhReleaseEntryContext context,
+		CommitRangePullRequest pr,
+		List<string> createdFiles,
+		Cancel ctx
+	)
+	{
+		_logger.LogInformation("PR #{PrNumber} ({PrUrl}): evaluating", pr.Number, pr.Url);
+
+		// A checked-in entry from the pool wins over anything synthesized from PR metadata.
+		if (await TryWritePoolEntries(collector, context, pr, createdFiles, ctx))
+		{
+			_logger.LogInformation("PR #{PrNumber}: included — using checked-in pool entry", pr.Number);
+			return true;
+		}
+
+		var config = context.Config;
+
+		// Fetch PR metadata (labels, body)
+		var prInfo = await _prService.FetchPrInfoAsync(pr.Url, context.Owner, context.Repo, ctx);
+		if (prInfo == null)
+		{
+			_logger.LogInformation("PR #{PrNumber}: included — PR info unavailable, defaulting to type 'other'", pr.Number);
+			collector.EmitWarning(pr.Url, $"Failed to fetch PR info for #{pr.Number}; type will default to 'other'.");
+		}
+
+		// Check rules.create — skip PRs with blocking labels
+		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), context.ProductInfo, config, pr.Url))
+		{
+			_logger.LogInformation("PR #{PrNumber}: excluded — matched label block rule", pr.Number);
 			return false;
+		}
 
-		// Derive type from labels
+		// Derive type and areas from labels
 		string? labelDerivedType = null;
 		List<string>? labelDerivedAreas = null;
 
@@ -253,71 +445,139 @@ public class GitHubReleaseChangelogService(
 			if (config.LabelToAreas != null && config.LabelToAreas.Count > 0)
 				labelDerivedAreas = MapLabelsToAreas(prInfo.Labels.ToArray(), config.LabelToAreas);
 		}
-		else
-			collector.EmitWarning(prUrl, $"Failed to fetch PR info for #{prRef.PrNumber}. Using inferred type from release notes.");
 
-		// Determine final type string (label-derived takes priority)
-		var finalTypeString = labelDerivedType ?? prRef.InferredType ?? ChangelogEntryType.Other.ToStringFast(true);
+		var finalTypeString = labelDerivedType ?? ChangelogEntryType.Other.ToStringFast(true);
+		var finalType = ChangelogEntryTypeExtensions.TryParse(
+			finalTypeString,
+			out var parsed,
+			ignoreCase: true,
+			allowMatchingMetadataAttribute: true
+		) ? parsed : ChangelogEntryType.Other;
 
-		// Parse to enum
-		var finalType = ChangelogEntryTypeExtensions.TryParse(finalTypeString, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true)
-			? parsed
-			: ChangelogEntryType.Other;
+		var typeSource = labelDerivedType != null
+			? $"label '{string.Join(", ", prInfo?.Labels ?? [])}'"
+			: "no matching type label — defaulting to 'other'";
+		_logger.LogInformation(
+			"PR #{PrNumber}: included — type '{Type}' from {TypeSource}",
+			pr.Number,
+			finalType.ToStringFast(true),
+			typeSource
+		);
 
-		// Warn on type mismatch if Release Drafter format and warning enabled
-		if (format == ReleaseNoteFormat.ReleaseDrafter &&
-			warnOnTypeMismatch &&
-			labelDerivedType != null &&
-			prRef.InferredType != null &&
-			!string.Equals(labelDerivedType, prRef.InferredType, StringComparison.OrdinalIgnoreCase))
+		var title = prInfo?.Title ?? $"PR #{pr.Number}";
+		if (context.StripTitlePrefix)
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
+
+		string? description = null;
+		if (config.Extract.ReleaseNotes)
 		{
-			collector.EmitWarning(prUrl,
-				$"Type mismatch for PR #{prRef.PrNumber}: " +
-				$"section header suggests '{prRef.InferredType}' but labels suggest '{labelDerivedType}'. " +
-				"Using label-derived type.");
+			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo?.Body);
+			description = extraction.Content;
+			ReleaseNoteExtractionDiagnostics.Record(_decisions, pr.Number, extraction);
 		}
+		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
-		// Build title
-		var title = prRef.Title ?? prInfo?.Title ?? $"PR #{prRef.PrNumber}";
-		if (stripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
-
-		// Create changelog data
 		var changelogData = new ChangelogEntry
 		{
 			Title = title,
 			Type = finalType,
-			Products = [new ProductReference
-			{
-				ProductId = productInfo.Product ?? "",
-				Target = productInfo.Target,
-				Lifecycle = !string.IsNullOrWhiteSpace(productInfo.Lifecycle)
-					? (LifecycleExtensions.TryParse(productInfo.Lifecycle, out var lc, ignoreCase: true, allowMatchingMetadataAttribute: true) ? lc : null)
-					: null
-			}],
+			Description = description,
+			Products =
+			[
+				new ProductReference
+				{
+					ProductId = context.ProductInfo.Product ?? "",
+#pragma warning disable CS0618
+					Versions = context.ProductInfo.Versions is { Count: > 0 }
+						? context.ProductInfo.Versions
+						: context.ProductInfo.Target is not null ? [context.ProductInfo.Target] : [],
+#pragma warning restore CS0618
+					Lifecycle = !string.IsNullOrWhiteSpace(context.ProductInfo.Lifecycle)
+						? (LifecycleExtensions.TryParse(
+							context.ProductInfo.Lifecycle,
+							out var lc,
+							ignoreCase: true,
+							allowMatchingMetadataAttribute: true
+						) ? lc : null)
+						: null
+				}
+			],
 			Areas = labelDerivedAreas,
-			Prs = [prUrl]
+			Prs = [pr.Url],
+			Issues = issues
 		};
 
-		// Generate YAML content
 		var yamlContent = GenerateYaml(changelogData);
-
-		// Write file with prettier name: <pr_number>-<type>-<slug>.yaml
 		var slug = ChangelogTextUtilities.GenerateSlug(title);
-		var filename = $"{prRef.PrNumber}-{finalType.ToStringFast(true)}-{slug}.yaml";
-		var filePath = _fileSystem.Path.Join(outputDir, filename);
-		// Strip any leading BOM to ensure clean UTF-8 output for tooling compatibility
+		var filename = $"{pr.Number}-{finalType.ToStringFast(true)}-{slug}.yaml";
+		var filePath = _fileSystem.Path.Join(context.OutputDir, filename);
 		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(yamlContent);
 		await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
 
 		createdFiles.Add(filename);
-		_logger.LogDebug("Created changelog: {FilePath}", filePath);
-
 		return true;
 	}
 
-	private static string GenerateYaml(ChangelogEntry data) =>
-		ReleaseNotesSerialization.SerializeEntry(data);
+	/// <summary>
+	/// Probes the CDN for a per-PR changelog entry and writes it verbatim when found.
+	/// Returns false when the PR has no uploaded entry (404) — synthesis from PR metadata follows.
+	/// </summary>
+	private async Task<bool> TryWritePoolEntries(
+		IDiagnosticsCollector collector,
+		GhReleaseEntryContext context,
+		CommitRangePullRequest pr,
+		List<string> createdFiles,
+		Cancel ctx
+	)
+	{
+		if (context.CdnBaseUri is null)
+			return false;
+
+		CdnChangelogEntry? entry;
+		try
+		{
+			entry = await _entryFetcher.FetchPrEntryAsync(
+				context.CdnBaseUri,
+				context.CdnOwner,
+				context.Repo,
+				context.CdnBranch,
+				pr.Number,
+				ctx
+			).ConfigureAwait(false);
+		}
+		catch (Exception ex) when (ex is not OperationCanceledException)
+		{
+			collector.EmitWarning(
+				string.Empty,
+				$"PR #{pr.Number}: could not fetch CDN changelog entry; will synthesize from PR metadata. {ex.Message}"
+			);
+			return false;
+		}
+
+		if (entry is not { } cdnEntry)
+			return false;
+
+		// Validate the fetched YAML before writing — an unparseable entry must surface as an error
+		// and fall through to synthesis rather than writing a malformed file verbatim.
+		var candidate = GitRangeEntryResolver.ParseCandidate(cdnEntry.FileName, cdnEntry.Content);
+		if (candidate.Entry is null)
+		{
+			collector.EmitError(
+				cdnEntry.FileName,
+				$"Checked-in changelog entry '{cdnEntry.FileName}' matches PR #{pr.Number} but could not be parsed: {candidate.ParseError}"
+			);
+			return false;
+		}
+
+		var filePath = _fileSystem.Path.Join(context.OutputDir, cdnEntry.FileName);
+		var normalizedContent = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(cdnEntry.Content);
+		await _fileSystem.File.WriteAllTextAsync(filePath, normalizedContent, Utf8NoBom, ctx);
+		createdFiles.Add(cdnEntry.FileName);
+		_logger.LogInformation("PR #{PrNumber}: pool entry '{FileName}' written verbatim from CDN", pr.Number, cdnEntry.FileName);
+		return true;
+	}
+
+	private static string GenerateYaml(ChangelogEntry data) => ReleaseNotesSerialization.SerializeEntry(data);
 
 	private async Task<string?> CreateBundleViaService(
 		IDiagnosticsCollector collector,
@@ -328,7 +588,8 @@ public class GitHubReleaseChangelogService(
 		string repo,
 		CreateChangelogsFromReleaseArguments input,
 		GitHubReleaseInfo release,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		// Build the bundles subfolder path (mirrors the previous CreateBundleFile convention)
 		var bundlesDir = _fileSystem.Path.Join(outputDir, "bundles");
@@ -339,13 +600,11 @@ public class GitHubReleaseChangelogService(
 		var bundleFilename = $"{productInfo.Target}-{productInfo.Product}-bundle.yml";
 		var bundlePath = _fileSystem.Path.Join(bundlesDir, bundleFilename);
 
-		// Build PR URL list from created file names — gh-release names files as <pr_number>-<type>-<slug>.yaml
-		var prUrls = createdFileNames
-			.Select(filename =>
-			{
-				var prNumber = filename.Split('-')[0];
-				return $"https://github.com/{owner}/{repo}/pull/{prNumber}";
-			})
+		// Select exactly the files this run created. A PR-URL filter would miss checked-in pool
+		// entries whose prs references were scrubbed from the public copies.
+		var files = createdFileNames
+			.Distinct(StringComparer.Ordinal)
+			.Select(filename => _fileSystem.Path.Join(outputDir, filename))
 			.ToArray();
 
 		// Use explicit release date if provided, otherwise GitHub release published date, otherwise fall back to auto-population
@@ -359,7 +618,7 @@ public class GitHubReleaseChangelogService(
 		{
 			Directory = outputDir,
 			Output = bundlePath,
-			Prs = prUrls,
+			Files = files,
 			Owner = owner,
 			Repo = repo,
 			Config = input.Config,
@@ -373,9 +632,9 @@ public class GitHubReleaseChangelogService(
 	}
 
 	private static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
-		labels
-			.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
-			.FirstOrDefault(mappedType => mappedType != null);
+		labels.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null).FirstOrDefault(
+			mappedType => mappedType != null
+		);
 
 	private static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
@@ -391,12 +650,7 @@ public class GitHubReleaseChangelogService(
 		return areas.ToList();
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
-		string[] prLabels,
-		ProductArgument productInfo,
-		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl)
+	private bool ShouldSkipPrDueToLabelBlockers(string[] prLabels, ProductArgument productInfo, ChangelogConfiguration config, string prUrl)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
@@ -406,34 +660,28 @@ public class GitHubReleaseChangelogService(
 
 		// Check product-specific overrides first
 		if (createRules.ByProduct is { Count: > 0 } && createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
-			return ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, productInfo.Product);
+			return ShouldSkipByCreateRules(prLabels, productRules, prUrl, _decisions);
 
 		// Fall back to global rules
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, _decisions);
 	}
 
-	private static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext)
+	private static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
-			var matchingLabel = rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase));
+			var matchingLabel = rules.Labels.FirstOrDefault(
+				blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase)
+			);
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -442,9 +690,7 @@ public class GitHubReleaseChangelogService(
 			var hasMatch = prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}

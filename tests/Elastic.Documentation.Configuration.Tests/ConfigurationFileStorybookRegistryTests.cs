@@ -20,7 +20,7 @@ public class ConfigurationFileStorybookRegistryTests
 	private const string Default = "https://ci-artifacts.kibana.dev/storybooks/main/storybook-docs/docs_registry.json";
 	private const string Expression = $"${{KIBANA_STORYBOOK_REGISTRY:-{Default}}}";
 
-	[Fact]
+	[Test]
 	public void UnsetVariable_ResolvesToCommittedDefault_WithNoFallback()
 	{
 		var config = CreateConfiguration(Expression, new MockEnvironment());
@@ -29,7 +29,7 @@ public class ConfigurationFileStorybookRegistryTests
 		config.StorybookRegistryFallback.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SetVariable_ResolvesToEnvironmentValue_AndExposesDefaultAsFallback()
 	{
 		const string prRegistry = "https://ci-artifacts.kibana.dev/storybooks/pr-42/storybook-docs/docs_registry.json";
@@ -39,26 +39,31 @@ public class ConfigurationFileStorybookRegistryTests
 		config.StorybookRegistryFallback.Should().Be(Default);
 	}
 
-	[Fact]
+	[Test]
 	public void DisallowedVariable_IsLeftLiteral_AndWarns()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var config = CreateConfiguration("${AWS_SECRET_ACCESS_KEY:-fallback}", new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" }, collector);
+		var config = CreateConfiguration(
+			"${AWS_SECRET_ACCESS_KEY:-fallback}",
+			new MockEnvironment { ["AWS_SECRET_ACCESS_KEY"] = "super-secret" },
+			collector
+		);
 
 		config.StorybookRegistry.Should().Be("${AWS_SECRET_ACCESS_KEY:-fallback}");
 		config.StorybookRegistry.Should().NotContain("super-secret");
 		collector.Warnings.Should().Be(1, "a disallowed interpolation variable must emit exactly one warning");
 	}
 
-	private static ConfigurationFile CreateConfiguration(string registry, IEnvironmentVariables environment, DiagnosticsCollector? collector = null)
+	private static ConfigurationFile CreateConfiguration(
+		string registry,
+		IEnvironmentVariables environment,
+		DiagnosticsCollector? collector = null
+	)
 	{
 		collector ??= new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
@@ -86,10 +91,7 @@ public class ConfigurationFileStorybookRegistryTests
 	{
 		private readonly Dictionary<string, string?> _variables = [with(StringComparer.Ordinal)];
 
-		public string? this[string name]
-		{
-			set => _variables[name] = value;
-		}
+		public string? this[string name] { set => _variables[name] = value; }
 
 		public string? GetEnvironmentVariable(string name) => _variables.GetValueOrDefault(name);
 
@@ -101,13 +103,15 @@ public class ConfigurationFileStorybookRegistryTests
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
 		IDirectoryInfo documentationSourceDirectory,
-		IEnvironmentVariables environment)
-		: IDocumentationSetContext
+		IEnvironmentVariables environment
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
 		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
-			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

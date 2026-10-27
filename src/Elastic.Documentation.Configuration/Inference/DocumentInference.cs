@@ -60,7 +60,8 @@ public interface IDocumentInferrerService
 		IReadOnlyCollection<string>? mappedPages,
 		HashSet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
-		ApplicableTo? applicableTo);
+		ApplicableTo? applicableTo
+	);
 
 	/// <summary>
 	/// Infers product, version system, and repository for an OpenAPI endpoint.
@@ -80,9 +81,13 @@ public class DocumentInferrerService(
 	LegacyUrlMappingConfiguration legacyUrlMappings,
 	ConfigurationFile? configurationFile = null,
 	GitCheckoutInformation? gitCheckout = null,
-	AssemblyConfiguration? assemblyConfiguration = null) : IDocumentInferrerService
+	AssemblyConfiguration? assemblyConfiguration = null
+) : IDocumentInferrerService
 {
-	private readonly IVersionInferrerService _versionInferrer = new ProductVersionInferrerService(productsConfiguration, versionsConfiguration);
+	private readonly IVersionInferrerService _versionInferrer = new ProductVersionInferrerService(
+		productsConfiguration,
+		versionsConfiguration
+	);
 	private readonly ProductInferService _productInferService = new(productsConfiguration, gitCheckout);
 
 	public ConfigurationFile? ConfigurationFile => configurationFile;
@@ -94,7 +99,8 @@ public class DocumentInferrerService(
 		IReadOnlyCollection<string>? mappedPages,
 		HashSet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
-		ApplicableTo? applicableTo)
+		ApplicableTo? applicableTo
+	)
 	{
 		var relatedProducts = new HashSet<Product>();
 
@@ -149,8 +155,7 @@ public class DocumentInferrerService(
 		var productId = productSlug.ToLowerInvariant();
 		var product = productsConfiguration.Products.GetValueOrDefault(productId);
 
-		var versioningSystem = product?.VersioningSystem
-			?? versionsConfiguration.VersioningSystems[VersioningSystemId.Stack];
+		var versioningSystem = product?.VersioningSystem ?? versionsConfiguration.VersioningSystems[VersioningSystemId.Stack];
 
 		// For OpenAPI, the product is always known
 		var relatedProducts = new List<Product>();
@@ -162,6 +167,7 @@ public class DocumentInferrerService(
 			Product = product,
 			ProductVersion = versioningSystem.IsVersionless ? null : versioningSystem.Current.ToString(),
 			Repository = productId, // For OpenAPI, repository matches product slug
+
 			RelatedProducts = relatedProducts
 		};
 	}
@@ -177,8 +183,9 @@ public class DocumentInferrerService(
 		var mappedPage = mappedPages.First();
 
 		// Find matching legacy URL mapping by BaseUrl
-		var legacyMapping = legacyUrlMappings.Mappings
-			.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase));
+		var legacyMapping = legacyUrlMappings.Mappings.FirstOrDefault(
+			x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)
+		);
 
 		return legacyMapping?.Product;
 	}
@@ -209,8 +216,9 @@ public class DocumentInferrerService(
 		var mappedPage = mappedPages.First();
 
 		// Find matching legacy URL mapping
-		var legacyMapping = legacyUrlMappings.Mappings
-			.FirstOrDefault(x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase));
+		var legacyMapping = legacyUrlMappings.Mappings.FirstOrDefault(
+			x => mappedPage.Contains(x.BaseUrl, StringComparison.OrdinalIgnoreCase)
+		);
 
 		if (legacyMapping is null)
 			return null;
@@ -244,7 +252,8 @@ public class NoopDocumentInferrer : IDocumentInferrerService
 		IReadOnlyCollection<string>? mappedPages,
 		HashSet<Product> docsetProducts,
 		IReadOnlyCollection<Product>? frontmatterProducts,
-		ApplicableTo? applicableTo) => new();
+		ApplicableTo? applicableTo
+	) => new();
 
 	public DocumentInferenceResult InferForOpenApi(string productSlug) => new();
 }

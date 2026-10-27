@@ -37,8 +37,12 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		var opts = SharedOptions.ResolveFilterOptions(dir, majors, all, minVersion, book, minors);
 		_logger.LogInformation(
 			"Filter: majors={Majors}, minors={Minors}, all={All}, minVersion={MinVersion}, book={Book}",
-			opts.Majors, opts.Minors.HasValue ? opts.Minors.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "all",
-			opts.All, opts.MinVersion ?? (object)"any", opts.Book ?? "all");
+			opts.Majors,
+			opts.Minors.HasValue ? opts.Minors.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "all",
+			opts.All,
+			opts.MinVersion ?? (object)"any",
+			opts.Book ?? "all"
+		);
 
 		var books = SharedOptions.FilterBooks(conf, opts.Book);
 
@@ -88,8 +92,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 					versionEntries.Add(new TocEntry { Toc = versionLabel, Island = true });
 					convertedVersions.Add(versionLabel);
 
-					_logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}",
-						pages.Count, b.Prefix, versionLabel);
+					_logger.LogInformation("Wrote {PageCount} pages for {Prefix}/{Version}", pages.Count, b.Prefix, versionLabel);
 				}
 				catch (Exception ex) when (ex is not OperationCanceledException)
 				{
@@ -103,10 +106,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 			tocRefs.Add(b.Prefix);
 			convertedBooks[b.Prefix] = convertedVersions;
 
-			YamlWriter.WriteTocYaml(Path.Combine(prefixDir, "toc.yml"), [
-				new TocEntry { File = "index.md" },
-				..versionEntries
-			]);
+			YamlWriter.WriteTocYaml(Path.Combine(prefixDir, "toc.yml"), [new TocEntry { File = "index.md" }, .. versionEntries]);
 
 			WriteBookVersionIndex(prefixDir, b, convertedVersions);
 		}
@@ -122,7 +122,12 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 	}
 
 	private async Task<IReadOnlyList<PageOutput>> ProcessBookVersion(
-		LegacyBook book, BranchRef version, SourceRepoManager repoManager, string workDir, CancellationToken ct)
+		LegacyBook book,
+		BranchRef version,
+		SourceRepoManager repoManager,
+		string workDir,
+		CancellationToken ct
+	)
 	{
 		var versionLabel = version.VersionLabel;
 		var sources = await repoManager.ResolveSourcesAsync(book, version, ct);
@@ -175,18 +180,13 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		var parser = new AsciidocParser(parserOptions);
 		var document = parser.Parse(content, basePath);
 
-		var emitterOptions = new MarkdownEmitterOptions
-		{
-			BookPrefix = book.Prefix,
-			Version = versionLabel
-		};
+		var emitterOptions = new MarkdownEmitterOptions { BookPrefix = book.Prefix, Version = versionLabel };
 		var emitter = new MarkdownEmitter(emitterOptions);
 
 		return PageChunker.Chunk(document, book.Chunk, emitter);
 	}
 
-	private static async Task<List<TocEntry>> WritePages(
-		IReadOnlyList<PageOutput> pages, string directory, CancellationToken ct)
+	private static async Task<List<TocEntry>> WritePages(IReadOnlyList<PageOutput> pages, string directory, CancellationToken ct)
 	{
 		var entries = new List<TocEntry>();
 		foreach (var page in pages)
@@ -224,8 +224,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 		File.WriteAllText(Path.Combine(prefixDir, "index.md"), sb.ToString());
 	}
 
-	private static void WriteGuideOverview(
-		string outputDir, LegacyConf conf, Dictionary<string, List<string>> convertedBooks)
+	private static void WriteGuideOverview(string outputDir, LegacyConf conf, Dictionary<string, List<string>> convertedBooks)
 	{
 		var sb = new StringBuilder();
 		_ = sb.AppendLine("# Elastic Docs");
@@ -233,9 +232,7 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 
 		foreach (var category in conf.Contents)
 		{
-			var categoryBooks = category.Sections
-				.Where(b => convertedBooks.ContainsKey(b.Prefix))
-				.ToList();
+			var categoryBooks = category.Sections.Where(b => convertedBooks.ContainsKey(b.Prefix)).ToList();
 
 			if (categoryBooks.Count == 0)
 				continue;
@@ -245,12 +242,19 @@ internal sealed class ConvertCommand(ILoggerFactory logFactory)
 			foreach (var b in categoryBooks)
 			{
 				var versions = convertedBooks[b.Prefix];
-				var current = !string.IsNullOrEmpty(b.Current) && versions.Contains(b.Current)
-					? b.Current
-					: versions[0];
-				_ = sb.Append("- [").Append(b.Title).Append(" [").Append(current).Append("]](")
-					.Append(b.Prefix).Append('/').Append(current).Append("/index.md) — [other versions](")
-					.Append(b.Prefix).AppendLine("/index.md)");
+				var current = !string.IsNullOrEmpty(b.Current) && versions.Contains(b.Current) ? b.Current : versions[0];
+				_ = sb
+					.Append("- [")
+					.Append(b.Title)
+					.Append(" [")
+					.Append(current)
+					.Append("]](")
+					.Append(b.Prefix)
+					.Append('/')
+					.Append(current)
+					.Append("/index.md) — [other versions](")
+					.Append(b.Prefix)
+					.AppendLine("/index.md)");
 			}
 
 			_ = sb.AppendLine();

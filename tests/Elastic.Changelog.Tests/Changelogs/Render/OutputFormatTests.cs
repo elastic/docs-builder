@@ -8,9 +8,9 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class OutputFormatTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithCustomConfigPath_UsesSpecifiedConfigFile()
 	{
 		// Arrange
@@ -42,7 +42,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 			lifecycles:
 			  - ga
 			""";
-		await FileSystem.File.WriteAllTextAsync(customConfigPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(customConfigPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create bundle file
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -50,14 +50,13 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Don't change directory - use custom config path via Config property
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -71,7 +70,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -80,12 +79,12 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Verify changelog entry is rendered
 		indexContent.Should().Contain("* Test feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithAsciidocFileType_CreatesSingleAsciidocFile()
 	{
 		// Arrange
@@ -107,14 +106,13 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -127,7 +125,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -138,7 +136,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		asciidocFiles.Should().HaveCount(1, "asciidoc render should create a single file");
 
 		var asciidocFile = asciidocFiles[0];
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current.CancellationToken);
+		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Verify valid asciidoc format elements
 		asciidocContent.Should().Contain("[[release-notes-", "should contain anchor");
@@ -153,7 +151,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		markdownFiles.Should().BeEmpty("asciidoc render should not create markdown files");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithAsciidocFileType_ValidatesAsciidocFormat()
 	{
 		// Arrange
@@ -205,17 +203,18 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
-		var bundleContent = CreateResolvedBundleContent(bundleHeader,
+		var bundleContent = CreateResolvedBundleContent(
+			bundleHeader,
 			("1755268130-feature.yaml", featureChangelog),
 			("1755268140-bugfix.yaml", bugFixChangelog),
-			("1755268150-breaking.yaml", breakingChangeChangelog));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			("1755268150-breaking.yaml", breakingChangeChangelog)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -228,7 +227,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -237,7 +236,7 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var asciidocFiles = FileSystem.Directory.GetFiles(outputDir, "*.asciidoc", SearchOption.AllDirectories);
 		asciidocFiles.Should().HaveCount(1);
 
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFiles[0], TestContext.Current.CancellationToken);
+		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify asciidoc structure
 		asciidocContent.Should().Contain("[[release-notes-9.2.0]]", "should contain main anchor");
@@ -261,8 +260,9 @@ public class OutputFormatTests(ITestOutputHelper output) : RenderChangelogTestBa
 
 		// Verify asciidoc list format (entries should start with *)
 		var lines = asciidocContent.Split('\n');
-		var entryLines = lines
-			.Where(l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)).ToList();
+		var entryLines = lines.Where(
+			l => l.TrimStart().StartsWith("* ", StringComparison.Ordinal) && !l.TrimStart().StartsWith("* *", StringComparison.Ordinal)
+		).ToList();
 		entryLines.Should().HaveCountGreaterThanOrEqualTo(3, "should have at least 3 changelog entries");
 
 		// Verify no invalid markdown syntax (like ##) is present

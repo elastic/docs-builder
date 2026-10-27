@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.Tabs;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class TabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+[InheritsTests]
+public class TabTests() : DirectiveTest<TabSetBlock>(
+	"""
 :::::{tab-set}
 
 ::::{tab-item} Admonition
@@ -39,10 +40,10 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ParsesTabItems()
 	{
 		var items = Block!.OfType<TabItemBlock>().ToArray();
@@ -52,8 +53,9 @@ Frank Herbert  |Dune           |604            |1965-06-01T00:00:00.000Z
 	}
 }
 
-public class MultipleTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+[InheritsTests]
+public class MultipleTabTests() : DirectiveTest<TabSetBlock>(
+	"""
 :::::{tab-set}
 ::::{tab-item} Admonition
 :::{tip}
@@ -74,7 +76,7 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesMultipleTabSets()
 	{
 		var sets = Document.OfType<TabSetBlock>().ToArray();
@@ -92,8 +94,9 @@ Tabs are easy. You can even embed other directives like the admonition you see h
 	}
 }
 
-public class GroupTabTests(ITestOutputHelper output) : DirectiveTest<TabSetBlock>(output,
-"""
+[InheritsTests]
+public class GroupTabTests() : DirectiveTest<TabSetBlock>(
+	"""
 ::::{tab-set}
 :group: languages
 :::{tab-item} Java
@@ -134,7 +137,7 @@ Content for C# tab
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesMultipleTabSets()
 	{
 		var sets = Document.OfType<TabSetBlock>().ToArray();
@@ -151,7 +154,7 @@ Content for C# tab
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesGroup()
 	{
 		var sets = Document.OfType<TabSetBlock>().ToArray();
@@ -161,7 +164,7 @@ Content for C# tab
 			t.GetGroupKey().Should().Be("languages");
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesSyncKey()
 	{
 		var set = Document.OfType<TabSetBlock>().First();

@@ -4,15 +4,16 @@
 
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Converters;
 using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration;
 
@@ -22,15 +23,71 @@ public partial class ConfigurationFileProvider
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
 
-	public static IDeserializer Deserializer { get; } = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.WithTypeConverter(new HintTypeSetConverter())
-		.WithTypeConverter(new TocItemCollectionYamlConverter())
-		.WithTypeConverter(new TocItemYamlConverter())
-		.WithTypeConverter(new SiteTableOfContentsCollectionYamlConverter())
-		.WithTypeConverter(new SiteTableOfContentsRefYamlConverter())
-		.WithTypeConverter(new ApiConfigurationConverter())
-		.Build();
+	public static YamlSerializerOptions DeserializerOptions { get; } = YamlStaticContext.Default.CreateOptions(
+		o => (o with
+		{
+			Converters =
+			[
+				new HintTypeSetConverter(),
+				new DurationYamlConverter(),
+				new ApplicableToYamlConverter([]),
+				new TocItemYamlConverter(new ApplicableToYamlConverter([])),
+				new TocItemCollectionYamlConverter(new TocItemYamlConverter(new ApplicableToYamlConverter([]))),
+				new SiteTableOfContentsRefYamlConverter(),
+				new SiteTableOfContentsCollectionYamlConverter(new SiteTableOfContentsRefYamlConverter()),
+				new ApiProductEntryConverter(),
+				new ApiProductSequenceConverter(new ApiProductEntryConverter())
+			],
+			// config/*.yml (assembler.yml, versions.yml, legacy-url-mappings.yml) use YAML anchors/aliases
+			// (e.g. `stack: &stack ... / beats: *stack`) to avoid repetition. Without this, the generated
+			// reader throws when it encounters an alias token for an object-typed member. Read-only options,
+			// so the write-side anchor-emission behavior this also enables never applies here.
+			ReferenceHandling = YamlReferenceHandling.Preserve
+		}).WithUnmappedKeysThrowing()
+	);
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>.
+	/// </summary>
+	public static T Deserialize<T>(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<T>(yaml, OptionsFor(sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>, reporting
+	/// unknown keys to <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	public static T Deserialize<T>(string yaml, IDiagnosticsCollector collector, string sourceName) =>
+		YamlSerializer.Deserialize<T>(yaml, OptionsWithDiagnostics(collector, sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>.
+	/// </summary>
+	public static T Deserialize<T>(TextReader reader, string? sourceName = null) =>
+		YamlSerializer.Deserialize<T>(reader, OptionsFor(sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	/// <summary>
+	/// Deserializes YAML content using the shared configuration <see cref="DeserializerOptions"/>, reporting
+	/// unknown keys to <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	public static T Deserialize<T>(TextReader reader, IDiagnosticsCollector collector, string sourceName) =>
+		YamlSerializer.Deserialize<T>(reader, OptionsWithDiagnostics(collector, sourceName))
+			?? throw new InvalidOperationException($"Failed to deserialize YAML into '{typeof(T)}'.");
+
+	// DeserializerOptions throws on unknown keys; only the file name needs adding for a useful message.
+	private static YamlSerializerOptions OptionsFor(string? sourceName) =>
+		sourceName is null ? DeserializerOptions : DeserializerOptions with { SourceName = sourceName };
+
+	/// <summary>
+	/// Clones <see cref="DeserializerOptions"/> with <see cref="YamlSerializerOptions.SourceName"/> and
+	/// <see cref="YamlSerializerOptions.UnmappedMemberCallback"/> set for a single call, so unknown keys
+	/// surface as file-qualified errors instead of failing the whole deserialization. See
+	/// <see cref="YamlUnmappedMemberDiagnostics"/>.
+	/// </summary>
+	private static YamlSerializerOptions OptionsWithDiagnostics(IDiagnosticsCollector collector, string sourceName) =>
+		DeserializerOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, sourceName));
 
 	public ConfigurationSource ConfigurationSource { get; }
 
@@ -63,19 +120,22 @@ public partial class ConfigurationFileProvider
 		else
 		{
 			string[] spotChecks = ["navigation.yml", "versions.yml", "products.yml", "assembler.yml", "search.yml"];
-			var defaultSource =
-				fileSystem.Directory.Exists(LocalConfigurationDirectory)
-					&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
+			var defaultSource = fileSystem.Directory.Exists(LocalConfigurationDirectory)
+				&& spotChecks.All(f => fileSystem.File.Exists(Path.Join(LocalConfigurationDirectory, f)))
 				? ConfigurationSource.Local
 				: ConfigurationSource.Embedded;
 			ConfigurationSource = defaultSource;
 		}
 
 		if (ConfigurationSource == ConfigurationSource.Local && !fileSystem.Directory.Exists(LocalConfigurationDirectory))
-			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist.");
+			throw new Exception(
+				$"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)} directory {LocalConfigurationDirectory} does not exist."
+			);
 
 		if (ConfigurationSource == ConfigurationSource.Remote && !fileSystem.Directory.Exists(AppDataConfigurationDirectory))
-			throw new Exception($"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist.");
+			throw new Exception(
+				$"Required directory form {nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)} directory {AppDataConfigurationDirectory} does not exist."
+			);
 
 		var path = GetAppDataPath("git-ref.txt");
 		if (_fileSystem.File.Exists(path))
@@ -85,19 +145,28 @@ public partial class ConfigurationFileProvider
 
 		if (ConfigurationSource == ConfigurationSource.Remote)
 		{
-			_logger.LogInformation("{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}", GitReference, AppDataConfigurationDirectory);
+			_logger.LogInformation(
+				"{ConfigurationSource}: git ref '{GitReference}', in {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Remote)}",
+				GitReference,
+				AppDataConfigurationDirectory
+			);
 		}
 
 		if (ConfigurationSource == ConfigurationSource.Local)
 		{
-			_logger.LogInformation("{ConfigurationSource}: located {Directory}",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}", LocalConfigurationDirectory);
+			_logger.LogInformation(
+				"{ConfigurationSource}: located {Directory}",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Local)}",
+				LocalConfigurationDirectory
+			);
 		}
 		if (ConfigurationSource == ConfigurationSource.Embedded)
 		{
-			_logger.LogInformation("{ConfigurationSource} using embedded in binary configuration",
-				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Embedded)}");
+			_logger.LogInformation(
+				"{ConfigurationSource} using embedded in binary configuration",
+				$"{nameof(ConfigurationSource)}.{nameof(ConfigurationSource.Embedded)}"
+			);
 		}
 
 		VersionFile = CreateTemporaryConfigurationFile("versions.yml");
@@ -107,6 +176,7 @@ public partial class ConfigurationFileProvider
 		LegacyUrlMappingsFile = CreateTemporaryConfigurationFile("legacy-url-mappings.yml");
 		// reading from synonyms.yml is temporary. If you spot this again as a future reader, feel free to remove it.
 		SearchFile = CreateTemporaryConfigurationFile("search.yml", "synonyms.yml");
+		RelatedLearningFile = CreateTemporaryConfigurationFile("related-learning.yml");
 	}
 
 	public bool SkipPrivateRepositories { get; }
@@ -124,6 +194,9 @@ public partial class ConfigurationFileProvider
 	public IFileInfo LegacyUrlMappingsFile { get; }
 
 	public IFileInfo SearchFile { get; }
+
+	public IFileInfo RelatedLearningFile { get; }
+
 	/// <summary>
 	/// Repoints <see cref="NavigationFile"/> at <c>config/navigation_preview.yml</c>.
 	/// Must be called before any reader accesses <see cref="NavigationFile"/> —
@@ -169,7 +242,6 @@ public partial class ConfigurationFileProvider
 				spacing = -1;
 				reindenting = -1;
 			}
-
 			else if (spacing != -1 && Regex.IsMatch(line, $@"^(\s{{{spacing + 3},}})\S"))
 			{
 				var matches = Regex.Match(line, $@"^(?<spacing>\s{{{spacing}}})(?<remainder>.+)$");
@@ -190,10 +262,14 @@ public partial class ConfigurationFileProvider
 				_fileSystem.File.AppendAllLines(tempFile, [line]);
 		}
 
-		if (configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository) && docsBuildRepository is { Skip: false, Path: not null })
+		if (
+			configuration.AvailableRepositories.TryGetValue("docs-builder", out var docsBuildRepository)
+			&& docsBuildRepository is { Skip: false, Path: not null }
+		)
 		{
 			// language=yaml
-			_fileSystem.File.AppendAllText(tempFile,
+			_fileSystem.File.AppendAllText(
+				tempFile,
 				"""
 
 						  - toc: docs-builder://
@@ -204,12 +280,11 @@ public partial class ConfigurationFileProvider
 						        children:
 						          - toc: docs-builder://development/link-validation
 						            path_prefix: reference/docs-builder/dev/link-val
-						""");
+						"""
+			);
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;
-
-
 	}
 
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
@@ -280,14 +355,21 @@ public partial class ConfigurationFileProvider
 
 public static class ConfigurationFileProviderServiceCollectionExtensions
 {
-	public static IServiceCollection AddConfigurationFileProvider(this IServiceCollection services,
+	public static IServiceCollection AddConfigurationFileProvider(
+		this IServiceCollection services,
 		bool skipPrivateRepositories,
 		ConfigurationSource? configurationSource,
-		Action<IServiceCollection, ConfigurationFileProvider> configure)
+		Action<IServiceCollection, ConfigurationFileProvider> configure
+	)
 	{
 		using var sp = services.BuildServiceProvider();
 		var logFactory = sp.GetRequiredService<ILoggerFactory>();
-		var provider = new ConfigurationFileProvider(logFactory, new ConfigurationFileSystem(), skipPrivateRepositories, configurationSource);
+		var provider = new ConfigurationFileProvider(
+			logFactory,
+			new ConfigurationFileSystem(),
+			skipPrivateRepositories,
+			configurationSource
+		);
 		_ = services.AddSingleton(provider);
 		configure(services, provider);
 		return services;

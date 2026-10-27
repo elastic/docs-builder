@@ -4,6 +4,16 @@
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
+/// <summary>Which pull requests are backports of an earlier pull request.</summary>
+public record BackportsConfiguration
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport. Globs are not supported: a pattern such as
+	/// <c>backport*</c> would also match opt-out labels like <c>backport-skip</c>.
+	/// </summary>
+	public required IReadOnlyList<string> Labels { get; init; }
+}
+
 /// <summary>
 /// Configuration for bundle operations
 /// </summary>
@@ -37,13 +47,22 @@ public record BundleConfiguration
 
 	/// <summary>
 	/// Default GitHub repository name applied to all profiles that do not specify their own.
-	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// <para>
+	/// <b>Deprecated.</b> The repository is now derived automatically from the <c>GITHUB_REPOSITORY</c>
+	/// environment variable or the git remote origin, so this field is redundant in almost every case.
+	/// Remove it from <c>changelog.yml</c> unless the repo name genuinely differs from the derived value.
+	/// Setting it to a <em>different</em> repository than where the command runs is a hard error, because
+	/// it would silently repoint the S3 upload pool and GitHub API calls.
+	/// </para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove bundle.repo from changelog.yml; a mismatch with the running repo is a hard error.")]
 	public string? Repo { get; init; }
 
 	/// <summary>
 	/// Default GitHub repository owner applied to all profiles that do not specify their own.
+	/// <para><b>Deprecated.</b> Derived automatically alongside <c>bundle.repo</c>. Remove from <c>changelog.yml</c>.</para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove bundle.owner from changelog.yml.")]
 	public string? Owner { get; init; }
 
 	/// <summary>
@@ -54,9 +73,10 @@ public record BundleConfiguration
 	public string? Branch { get; init; }
 
 	/// <summary>
-	/// When set (including an empty list), PR/issue references whose resolved <c>owner/repo</c> is not listed
-	/// are rewritten to <c># PRIVATE:</c> sentinels at bundle time. When absent, no link filtering is applied.
+	/// Obsolete — no longer read. Link sanitization is handled exclusively by the scrubber Lambda.
+	/// Remove <c>link_allow_repos</c> from <c>changelog.yml</c>.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read. Remove it from changelog.yml.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -65,9 +85,21 @@ public record BundleConfiguration
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
+	/// Which pull requests are backports. When set, a commit-range bundle replaces a pull request that has one of
+	/// these labels with the original pull request it was backported from. <c>null</c> leaves tracing off.
+	/// </summary>
+	public BackportsConfiguration? Backports { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
+
+	/// <summary>
+	/// Release trigger to profile mappings. <c>github</c> maps tag globs to profiles;
+	/// <c>products</c> maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// </summary>
+	public BundleReleases? Releases { get; init; }
 }
 
 /// <summary>
@@ -76,6 +108,11 @@ public record BundleConfiguration
 /// </summary>
 public record BundleProfile
 {
+	/// <summary>
+	/// Target product ID for this profile. Validated against products.yml. Replaces output_products.
+	/// </summary>
+	public string? Product { get; init; }
+
 	/// <summary>
 	/// Product filter pattern for input changelogs.
 	/// Format: "product {version} {lifecycle}" where placeholders are substituted at runtime.
@@ -86,18 +123,25 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// {version} is substituted at runtime.
-	/// Examples:
-	/// - "elasticsearch-{version}.yaml"
-	/// - "serverless-{version}.yaml"
+	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// convention as <c>{repo}-{product}-{version}.yaml</c> from the authoring repo and the profile's
+	/// primary output product (elastic/docs-builder#3774). Any profile setting this is a hard error
+	/// at bundle time; the field remains parseable for one release cycle so authors get an actionable
+	/// error rather than a YAML parse failure.
 	/// </summary>
+	[Obsolete("No longer supported: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Setting 'output' is a hard error at bundle time.")]
 	public string? Output { get; init; }
 
 	/// <summary>
-	/// Output products pattern. When set, overrides the products array derived from matched changelogs.
-	/// Supports {version} and {lifecycle} placeholders.
+	/// Profile-specific output directory. Deprecated: derived automatically as bundle.output_directory/{product}.
 	/// </summary>
+	[Obsolete("Profile output_directory is derived automatically as bundle.output_directory/{product}. Remove this field.")]
+	public string? OutputDirectory { get; init; }
+
+	/// <summary>
+	/// Output products pattern. Deprecated: use 'product' instead.
+	/// </summary>
+	[Obsolete("Use 'product' instead. 'output_products' will be removed in a future version.")]
 	public string? OutputProducts { get; init; }
 
 	/// <summary>
@@ -107,15 +151,20 @@ public record BundleProfile
 	public string? Description { get; init; }
 
 	/// <summary>
-	/// GitHub repository name stored on each product in the bundle output.
-	/// Used for generating correct PR/issue links when the product ID differs from the repo name.
+	/// GitHub repository name for link and file name generation.
+	/// <para>
+	/// <b>Deprecated.</b> Derived from <c>GITHUB_REPOSITORY</c> or git <c>origin</c> when omitted.
+	/// <c>--repo</c> and <c>bundle.repo</c> still override when set.
+	/// </para>
 	/// </summary>
+	[Obsolete("Derived from GITHUB_REPOSITORY or git origin when omitted. Remove from profile config.")]
 	public string? Repo { get; init; }
 
 	/// <summary>
 	/// GitHub repository owner stored on each product in the bundle output.
-	/// Used for generating correct PR/issue links. Defaults to "elastic" when not specified.
+	/// <para><b>Deprecated.</b> Derived automatically alongside <c>repo</c>. Remove from profile config.</para>
 	/// </summary>
+	[Obsolete("Derived automatically. Remove from profile config.")]
 	public string? Owner { get; init; }
 
 	/// <summary>
@@ -136,9 +185,25 @@ public record BundleProfile
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
-	/// Profile source type. When set to <c>"github_release"</c>, the profile fetches
-	/// PR references directly from a GitHub release and uses them as the bundle filter.
-	/// Mutually exclusive with <see cref="Products"/>.
+	/// Profile source type. Removed — use bundle.releases.github to map release tags to profiles.
 	/// </summary>
+	[Obsolete("'source: github_release' is removed. Use bundle.releases.github to map release tags to profiles.")]
 	public string? Source { get; init; }
+}
+
+/// <summary>
+/// Release trigger to profile mappings.
+/// </summary>
+public record BundleReleases
+{
+	/// <summary>
+	/// Maps GitHub release tag glob patterns to profiles. Key is the tag glob; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Github { get; init; }
+
+	/// <summary>
+	/// Maps product IDs to profiles for any product-scoped release (versioned stack or date-based).
+	/// Key is the product ID; value is the profile name.
+	/// </summary>
+	public IReadOnlyDictionary<string, string>? Products { get; init; }
 }

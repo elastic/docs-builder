@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
@@ -22,8 +22,7 @@ namespace Elastic.Markdown.Myst.Directives.Hub;
 /// :::
 /// </code>
 /// </example>
-public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "get-started";
 
@@ -40,7 +39,8 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<GetStartedData>(yaml, Build.ProductsConfiguration) ?? GetStartedData.Empty;
+			Data = YamlSerialization.Deserialize<GetStartedData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
+				?? GetStartedData.Empty;
 		}
 		catch (YamlException ex)
 		{
@@ -51,71 +51,73 @@ public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context)
 		if (string.IsNullOrWhiteSpace(Data.Title))
 			this.EmitError("{get-started} requires a `title` field in its YAML body.");
 
-
+		Data.Intro = DirectiveLinkValidator.ResolveMarkdownLinks(Data.Intro, this, context);
 		foreach (var step in Data.Steps)
 		{
 			if (!string.IsNullOrWhiteSpace(step.Link))
 				step.Link = DirectiveLinkValidator.ValidateAndResolve(step.Link, this, context);
+			step.Description = DirectiveLinkValidator.ResolveMarkdownLinks(step.Description, this, context);
 			foreach (var option in step.Options)
+			{
 				option.Url = DirectiveLinkValidator.ValidateAndResolve(option.Url, this, context);
+				option.Description = DirectiveLinkValidator.ResolveMarkdownLinks(option.Description, this, context);
+			}
 		}
 	}
 }
 
-[YamlSerializable]
 public record GetStartedData
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "intro")]
+	[YamlPropertyName("intro")]
 	public string? Intro { get; set; }
 
-	[YamlMember(Alias = "steps")]
+	[YamlPropertyName("steps")]
 	public GetStartedStep[] Steps { get; set; } = [];
 
+	[YamlIgnore]
 	public static GetStartedData Empty { get; } = new();
 }
 
-[YamlSerializable]
 public record GetStartedStep
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
 	/// <summary>When set, the whole step card links here.</summary>
-	[YamlMember(Alias = "link")]
+	[YamlPropertyName("link")]
 	public string? Link { get; set; }
 
-	[YamlMember(Alias = "link-label")]
+	[YamlPropertyName("link-label")]
 	public string? LinkLabel { get; set; }
 
 	/// <summary>Two-or-more equally-weighted start options rendered side by side.</summary>
-	[YamlMember(Alias = "options")]
+	[YamlPropertyName("options")]
 	public GetStartedStepOption[] Options { get; set; } = [];
 }
 
-[YamlSerializable]
 public record GetStartedStepOption
 {
-	[YamlMember(Alias = "label")]
+	[YamlPropertyName("label")]
 	public string? Label { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "code")]
+	[YamlPropertyName("code")]
 	public string? Code { get; set; }
 
-	[YamlMember(Alias = "language")]
+	[YamlPropertyName("language")]
 	public string? Language { get; set; }
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string? Url { get; set; }
 
-	[YamlMember(Alias = "url-label")]
+	[YamlPropertyName("url-label")]
 	public string? UrlLabel { get; set; }
 }

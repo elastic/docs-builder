@@ -9,6 +9,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Comments;
+using Elastic.Markdown.Myst.Directives;
 using Elastic.Markdown.Myst.Directives.AppliesTo;
 using Elastic.Markdown.Myst.Directives.Contributors;
 using Markdig;
@@ -86,10 +87,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 	}
 
-	private static IEnumerable<CallOut> FindCallouts(
-		IEnumerable<CallOut> callOuts,
-		int lineNumber
-	) => callOuts.Where(callOut => callOut.Line == lineNumber);
+	private static IEnumerable<CallOut> FindCallouts(IEnumerable<CallOut> callOuts, int lineNumber) =>
+		callOuts.Where(callOut => callOut.Line == lineNumber);
 
 	private static int GetCommonIndent(EnhancedCodeBlock block)
 	{
@@ -104,7 +103,6 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		}
 		return commonIndent;
 	}
-
 
 	private static int CountIndentation(StringSlice slice)
 	{
@@ -146,16 +144,22 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 		var callOuts = block.UniqueCallOuts;
 
-		var slice = Code.Create(new CodeViewModel
+		if (DesignSystemDirectives.IsEnabled(block.Build))
+			DesignSystemDirectives.WriteCodeBlock(renderer, block);
+		else
 		{
-			CrossReferenceName = string.Empty,// block.CrossReferenceName,
-			Language = block.Language,
-			Caption = block.Caption,
-			ApiSegments = block.ApiSegments,
-			EnhancedCodeBlock = block
-		});
+			var slice = Code.Create(new CodeViewModel
+			{
+				CrossReferenceName = string.Empty,// block.CrossReferenceName,
 
-		RenderRazorSlice(slice, renderer);
+				Language = block.Language,
+				Caption = block.Caption,
+				ApiSegments = block.ApiSegments,
+				EnhancedCodeBlock = block
+			});
+
+			RenderRazorSlice(slice, renderer);
+		}
 		if (!block.InlineAnnotations && callOuts.Count > 0)
 		{
 			var index = block.Parent!.IndexOf(block);
@@ -262,7 +266,8 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			callOut.Text,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline);
+			MarkdownParser.Pipeline
+		);
 
 		if (document.Count == 1 && document.FirstOrDefault() is ParagraphBlock paragraph && paragraph.Inline != null)
 			return RenderInlineMarkdown(paragraph);
@@ -293,11 +298,12 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 		if (appliesTo is null || appliesTo == ApplicableTo.All)
 			return;
 
-		var viewModel = new Components.ApplicableToViewModel
+		var viewModel = new Elastic.Documentation.Site.ApplicabilityBadges.ApplicableToViewModel
 		{
 			AppliesTo = appliesTo,
 			Inline = false,
-			VersionsConfig = appliesToDirective.Build.VersionsConfiguration
+			VersionsConfig = appliesToDirective.Build.VersionsConfiguration,
+			DesignSystem = appliesToDirective.Build.Configuration.Features.NavigationPreviewEnabled
 		};
 
 		var slice = AppliesToView.Create(viewModel);
@@ -306,10 +312,7 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 
 	private static void RenderContributorsHtml(HtmlRenderer renderer, ContributorsBlock block)
 	{
-		var slice = ContributorsView.Create(new ContributorsViewModel
-		{
-			Contributors = block.Contributors
-		});
+		var slice = ContributorsView.Create(new ContributorsViewModel { Contributors = block.Contributors });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -317,29 +320,53 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 	// Authors reference these via :::classname or `class Node classname` syntax.
 	private static readonly IReadOnlyList<DiagramClass> MermaidAllowedClasses =
 	[
-		new DiagramClass { Name = "note",      Fill = "#e8f1ff", Stroke = "#a3cbff", Color = "#154399" }, // blue-elastic ramp-10/40/120
-		new DiagramClass { Name = "tip",       Fill = "#e2f9f7", Stroke = "#77e5e0", Color = "#065b58" }, // teal ramp-10/40/120
-		new DiagramClass { Name = "warning",   Fill = "#fdf3d8", Stroke = "#facb3d", Color = "#6a4906" }, // yellow ramp-10/40/110
+		new DiagramClass { Name = "note", Fill = "#e8f1ff", Stroke = "#a3cbff", Color = "#154399" }, // blue-elastic ramp-10/40/120
+
+		new DiagramClass { Name = "tip", Fill = "#e2f9f7", Stroke = "#77e5e0", Color = "#065b58" }, // teal ramp-10/40/120
+
+		new DiagramClass { Name = "warning", Fill = "#fdf3d8", Stroke = "#facb3d", Color = "#6a4906" }, // yellow ramp-10/40/110
+
 		new DiagramClass { Name = "important", Fill = "#f3ecfe", Stroke = "#d1bafc", Color = "#52357e" }, // purple ramp-10/40/110
-		new DiagramClass { Name = "caution",   Fill = "#ffefe9", Stroke = "#ffc1aa", Color = "#8a3825" }, // poppy ramp-10/40/120
-		new DiagramClass { Name = "error",     Fill = "#ffe8e5", Stroke = "#ffb5ad", Color = "#7f1f27" }, // red ramp-10/40/120
-		new DiagramClass { Name = "success",   Fill = "#e2f8f0", Stroke = "#88e3c3", Color = "#0c5a3f" }, // green ramp-10/40/110
-		new DiagramClass { Name = "plain",     Fill = "#f6f9fc", Stroke = "#bdc2ca", Color = "#464c56" }, // grey ramp-10/40/110
-		new DiagramClass { Name = "highlight", Fill = "#d9e8ff", Stroke = "#3788ff", Color = "#123778" }, // blue-elastic ramp-20/70/130 — active/selected
+
+		new DiagramClass { Name = "caution", Fill = "#ffefe9", Stroke = "#ffc1aa", Color = "#8a3825" }, // poppy ramp-10/40/120
+
+		new DiagramClass { Name = "error", Fill = "#ffe8e5", Stroke = "#ffb5ad", Color = "#7f1f27" }, // red ramp-10/40/120
+
+		new DiagramClass { Name = "success", Fill = "#e2f8f0", Stroke = "#88e3c3", Color = "#0c5a3f" }, // green ramp-10/40/110
+
+		new DiagramClass { Name = "plain", Fill = "#f6f9fc", Stroke = "#bdc2ca", Color = "#464c56" }, // grey ramp-10/40/110
+
+		new DiagramClass
+		{
+			Name = "highlight",
+			Fill = "#d9e8ff",
+			Stroke = "#3788ff",
+			Color = "#123778"
+		}, // blue-elastic ramp-20/70/130 — active/selected
+
 	];
 
 	// Categorical data palette for pie/sankey/timeline etc. One vivid, distinct step per theme.css hue.
 	private static readonly string[] MermaidDataPalette =
 	[
 		"#3788ff", // blue-elastic-70
+
 		"#ee4c48", // red-70
+
 		"#04ae7e", // green-70
+
 		"#a36def", // purple-70
+
 		"#eaae01", // yellow-60
+
 		"#16c5c0", // teal-60
+
 		"#e54a91", // pink-70
+
 		"#ff8659", // poppy-70
+
 		"#36b9ff", // blue-sky
+
 	];
 
 	/// <summary>Renders a Mermaid code block as an external SVG file referenced via an img element.</summary>
@@ -357,15 +384,23 @@ public class EnhancedCodeBlockHtmlRenderer : HtmlObjectRenderer<EnhancedCodeBloc
 			{
 				AllowedClasses = MermaidAllowedClasses,
 				// Strip mode: stray styling is dropped and the diagram still renders; fires once per diagram.
-				OnStripped = violations => block.EmitHint(
-					$"Mermaid strict mode stripped {violations.Count} item(s): " +
-					string.Join(", ", violations.Select(v => $"{v.Kind} (line {v.Line})"))),
+				OnStripped =
+					violations => block.EmitHint(
+						$"Mermaid strict mode stripped {violations.Count} item(s): " + string.Join(
+							", ",
+							violations.Select(v => $"{v.Kind} (line {v.Line})")
+						)
+					),
 			},
 			// Logged as errors for now so SVG sanitizer removals cause build failures — downgrade to warnings
 			// once we're confident the sanitizer isn't stripping legitimate content.
-			OnSanitized = violations => block.EmitError(
-				$"Mermaid SVG sanitizer removed {violations.Count} item(s): " +
-				string.Join(", ", violations.Select(v => $"{v.Kind} '{v.Name}'"))),
+			OnSanitized =
+				violations => block.EmitError(
+					$"Mermaid SVG sanitizer removed {violations.Count} item(s): " + string.Join(
+						", ",
+						violations.Select(v => $"{v.Kind} '{v.Name}'")
+					)
+				),
 		};
 
 		string svg;

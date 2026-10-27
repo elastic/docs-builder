@@ -7,28 +7,39 @@ using Elastic.Markdown.Myst.Directives;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class AdmonitionUnsupportedTests(ITestOutputHelper output, string directive)
-	: DirectiveTest<UnsupportedDirectiveBlock>(output,
-$$"""
+[InheritsTests]
+public abstract class AdmonitionUnsupportedTests(string directive) : DirectiveTest<UnsupportedDirectiveBlock>(
+	$$"""
 :::{{{directive}}}
 This is an attention block
 :::
 A regular paragraph.
 """
-	)
+)
 {
-	[Fact]
+	[Test]
 	public void ParsesAsUnknown() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirective() => Block!.Directive.Should().Be(directive);
 }
 
+[InheritsTests]
 // ReSharper disable UnusedType.Global
-public class DangerTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "danger");
-public class ErrorTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "error");
-public class HintTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "hint");
-public class AttentionTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "attention");
-public class CautionTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "caution");
-public class SeeAlsoTests(ITestOutputHelper output) : AdmonitionUnsupportedTests(output, "seealso");
+public class DangerTests() : AdmonitionUnsupportedTests("danger");
+
+[InheritsTests]
+public class ErrorTests() : AdmonitionUnsupportedTests("error");
+
+[InheritsTests]
+public class HintTests() : AdmonitionUnsupportedTests("hint");
+
+[InheritsTests]
+public class AttentionTests() : AdmonitionUnsupportedTests("attention");
+
+[InheritsTests]
+public class CautionTests() : AdmonitionUnsupportedTests("caution");
+
+[InheritsTests]
+public class SeeAlsoTests() : AdmonitionUnsupportedTests("seealso");
 // ReSharper restore UnusedType.Global

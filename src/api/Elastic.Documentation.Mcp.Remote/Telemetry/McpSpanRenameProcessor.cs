@@ -22,8 +22,7 @@ internal sealed class McpSpanRenameProcessor : BaseProcessor<Activity>
 		if (activity.Kind != ActivityKind.Server)
 			return;
 
-		if (activity.GetTagItem("mcp.method.name") is string methodName
-			&& activity.GetTagItem("mcp.tool.name") is string toolName)
+		if (activity.GetTagItem("mcp.method.name") is string methodName && activity.GetTagItem("mcp.tool.name") is string toolName)
 			activity.DisplayName = $"{methodName} {toolName}";
 	}
 }

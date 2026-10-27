@@ -118,21 +118,48 @@ public interface ITableOfContentsItem
 	string Context { get; }
 }
 
-public record FileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: ITableOfContentsItem;
+/// <param name="DefaultCta">
+/// Optional <c>default_cta</c> declared on this entry. Applies to the file itself and every page beneath it
+/// unless a nearer entry, nested <c>toc.yml</c>, or page frontmatter selects another template.
+/// </param>
+public record FileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? DefaultCta = null
+) : ITableOfContentsItem;
 
-public record IndexFileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+public record IndexFileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? DefaultCta = null
+) : FileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
 /// <summary>
 /// Represents a file reference created from a folder+file combination in YAML (e.g., "folder: path/to/dir, file: index.md").
 /// Children of this file should resolve relative to the folder path, not the parent TOC path.
 /// </summary>
-public record FolderIndexFileRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context);
+public record FolderIndexFileRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? DefaultCta = null
+) : IndexFileRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Hidden, Children, Context, DefaultCta);
 
-public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOnlyCollection<ITableOfContentsItem> Children, string Context)
-	: ITableOfContentsItem
+public record CrossLinkRef(
+	Uri CrossLinkUri,
+	string? Title,
+	bool Hidden,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context
+) : ITableOfContentsItem
 {
 	//TODO ensure we pass these to cross-links to
 	// CrossLinks don't have a file system path, so we use the CrossLinkUri as the Path
@@ -144,8 +171,42 @@ public record CrossLinkRef(Uri CrossLinkUri, string? Title, bool Hidden, IReadOn
 
 /// <param name="Sort">Raw YAML sort value, parsed and validated during resolution via <see cref="SortOrderExtensions.TryParse"/>.</param>
 /// <param name="Exclude">File names to exclude from auto-discovery (like "draft.md", "internal.md").</param>
-public record FolderRef(string PathRelativeToDocumentationSet, string PathRelativeToContainer, IReadOnlyCollection<ITableOfContentsItem> Children, string Context, string? Sort = null, IReadOnlyCollection<string>? Exclude = null)
-	: ITableOfContentsItem;
+/// <param name="DefaultCta">Optional <c>default_cta</c> declared on this entry; applies to every page inside the folder.</param>
+public record FolderRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? Sort = null,
+	IReadOnlyCollection<string>? Exclude = null,
+	string? DefaultCta = null
+) : ITableOfContentsItem;
+
+/// <summary>
+/// A synthetic single-page folder created from the childless "file: subdir/index.md" sugar. Its path
+/// always resolves relative to the parent, exactly like the <see cref="FileRef"/> it was expanded from
+/// -- unlike an explicit "folder: a/b" entry, it never switches to context-relative resolution just
+/// because its path contains '/'.
+/// </summary>
+public record DeepLinkedFolderRef(
+	string PathRelativeToDocumentationSet,
+	string PathRelativeToContainer,
+	IReadOnlyCollection<ITableOfContentsItem> Children,
+	string Context,
+	string? DefaultCta = null
+) : FolderRef(PathRelativeToDocumentationSet, PathRelativeToContainer, Children, Context, DefaultCta: DefaultCta);
+
+/// <summary>
+/// Sentinel produced when a bare scalar (e.g. <c>- toc.yml</c>) is used as a toc entry.
+/// The converter consumes the token to prevent an infinite parse loop; this ref carries the
+/// raw value so <see cref="DocumentationSetFile"/> can emit a clear diagnostic.
+/// </summary>
+internal record InvalidTocItemRef(string RawValue) : ITableOfContentsItem
+{
+	public string PathRelativeToDocumentationSet => RawValue;
+	public string PathRelativeToContainer => RawValue;
+	public string Context => "";
+}
 
 /// <param name="Island">
 /// When <c>true</c>, this TOC renders as an island. Combines flags from both the inline
@@ -156,7 +217,8 @@ public record IsolatedTableOfContentsRef(
 	string PathRelativeToContainer,
 	IReadOnlyCollection<ITableOfContentsItem> Children,
 	string Context,
-	bool Island = false
+	bool Island = false,
+	string? DefaultCta = null
 ) : ITableOfContentsItem;
 
 /// <summary>Controls how much of the listing appears in the rendered navigation tree.</summary>

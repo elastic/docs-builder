@@ -6,9 +6,8 @@ using System.Collections.Immutable;
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
@@ -23,26 +22,37 @@ public interface ISiteNavigationEntry
 	IReadOnlyCollection<SiteTableOfContentsRef> Children { get; }
 }
 
+/// <summary>A link entry within a <c>dropdown:</c> section.</summary>
+public record SiteDropdownLinkRef(string Title, string Url);
+
 public record SiteSectionRef(
 	string Title,
 	string? ExternalUrl,
-	IReadOnlyCollection<SiteTableOfContentsRef> Children
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	IReadOnlyCollection<SiteDropdownLinkRef> DropdownLinks
 ) : ISiteNavigationEntry
 {
 	public bool IsExternal => ExternalUrl is not null;
+	/// <summary>True when the section carries a dropdown list instead of tree children.</summary>
+	public bool IsDropdown => DropdownLinks.Count > 0;
 }
 
-[YamlSerializable]
 public class SiteNavigationFile
 {
-	[YamlMember(Alias = "phantoms")]
+	[YamlPropertyName("phantoms")]
 	public IReadOnlyCollection<PhantomRegistration> Phantoms { get; set; } = [];
 
-	[YamlMember(Alias = "toc")]
+	[YamlPropertyName("toc")]
 	public SiteTableOfContents TableOfContents { get; set; } = [];
 
-	public static SiteNavigationFile Deserialize(string yaml) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<SiteNavigationFile>(yaml);
+	public static SiteNavigationFile Deserialize(string yaml) => ConfigurationFileProvider.Deserialize<SiteNavigationFile>(yaml);
+
+	/// <summary>
+	/// Deserializes <c>navigation.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
+	/// silently skipping them.
+	/// </summary>
+	public static SiteNavigationFile Deserialize(string yaml, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<SiteNavigationFile>(yaml, collector, sourceName);
 
 	public static bool ValidatePathPrefixes(IDiagnosticsCollector collector, SiteNavigationFile siteNavigation, IFileInfo navigationFile)
 	{
@@ -130,7 +140,7 @@ public class SiteNavigationFile
 
 public class PhantomRegistration
 {
-	[YamlMember(Alias = "toc")]
+	[YamlPropertyName("toc")]
 	public string Source { get; set; } = null!;
 }
 
@@ -140,8 +150,17 @@ public class SiteTableOfContents : List<ISiteNavigationEntry>;
 /// When <c>true</c>, the resolved navigation node is marked as an island from the assembler side.
 /// OR-ed with any <c>island: true</c> the content set already declares — can only enable, never disable.
 /// </param>
-public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCollection<SiteTableOfContentsRef> Children, bool Island = false)
-	: ISiteNavigationEntry, ITableOfContentsItem
+/// <param name="NavigationTitle">
+/// Optional assembler-side label for this TOC root. When set, replaces the index page title
+/// in the assembled navigation (dropdowns, back-links, sidebar root row). Does not change the page H1.
+/// </param>
+public record SiteTableOfContentsRef(
+	Uri Source,
+	string PathPrefix,
+	IReadOnlyCollection<SiteTableOfContentsRef> Children,
+	bool Island = false,
+	string? NavigationTitle = null
+) : ISiteNavigationEntry, ITableOfContentsItem
 {
 	// For site-level TOC refs, the Path is the path prefix (where it will be mounted in the site)
 	public string PathRelativeToDocumentationSet => PathPrefix;
@@ -155,178 +174,289 @@ public record SiteTableOfContentsRef(Uri Source, string PathPrefix, IReadOnlyCol
 	public string Context { get; init; } = "";
 }
 
-public class SiteTableOfContentsCollectionYamlConverter : IYamlTypeConverter
+public class SiteTableOfContentsCollectionYamlConverter(
+	SiteTableOfContentsRefYamlConverter refConverter
+) : YamlConverter<SiteTableOfContents>
 {
-	public bool Accepts(Type type) => type == typeof(SiteTableOfContents);
+	// Parameterless constructor required by the SharpYaml source generator for its static converter
+	// fallback field; the real instance is always supplied via YamlSerializerOptions.Converters at
+	// runtime, which the generator consults first.
+	public SiteTableOfContentsCollectionYamlConverter() : this(new SiteTableOfContentsRefYamlConverter()) { }
 
-	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	private static readonly string[] KnownEntryKeys =
+	[
+		"section",
+		"external",
+		"children",
+		"dropdown",
+		"toc",
+		"path_prefix",
+		"island",
+		"navigation_title"
+	];
+	private static readonly string[] KnownDropdownKeys = ["title", "url"];
+
+	public override SiteTableOfContents Read(YamlReader reader)
 	{
 		var collection = new SiteTableOfContents();
 
-		if (!parser.TryConsume<SequenceStart>(out _))
-			return collection;
-
-		while (!parser.TryConsume<SequenceEnd>(out _))
+		if (reader.TokenType != YamlTokenType.StartSequence)
 		{
-			var entry = ParseTopLevelEntry(parser, rootDeserializer);
+			reader.Skip();
+			return collection;
+		}
+
+		_ = reader.Read(); // consume StartSequence
+		while (reader.TokenType != YamlTokenType.EndSequence)
+		{
+			var entry = ParseTopLevelEntry(reader);
 			if (entry is not null)
 				collection.Add(entry);
 		}
+		_ = reader.Read(); // consume EndSequence
 
 		return collection;
 	}
 
-	private static ISiteNavigationEntry? ParseTopLevelEntry(IParser parser, ObjectDeserializer rootDeserializer)
+	private ISiteNavigationEntry? ParseTopLevelEntry(YamlReader reader)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType != YamlTokenType.StartMapping)
+		{
+			reader.Skip();
 			return null;
+		}
 
+		_ = reader.Read(); // consume StartMapping
 		var dictionary = new Dictionary<string, object?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
-			var key = parser.Consume<Scalar>();
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
+
+			if (!KnownEntryKeys.Contains(key))
+			{
+				reader.SkipOrReportUnmapped(typeof(ISiteNavigationEntry), KnownEntryKeys, key, null);
+				continue;
+			}
 
 			object? value = null;
-			if (parser.Accept<Scalar>(out var scalarValue))
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				value = scalarValue.Value;
-				_ = parser.MoveNext();
+				value = reader.ScalarValue;
+				_ = reader.Read();
 			}
-			else if (parser.Accept<SequenceStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartSequence)
 			{
-				if (key.Value is "children")
+				if (key is "children")
 				{
 					var childrenList = new List<SiteTableOfContentsRef>();
-					_ = parser.Consume<SequenceStart>();
-					while (!parser.TryConsume<SequenceEnd>(out _))
+					_ = reader.Read(); // consume StartSequence
+					while (reader.TokenType != YamlTokenType.EndSequence)
 					{
-						var child = rootDeserializer(typeof(SiteTableOfContentsRef));
-						if (child is SiteTableOfContentsRef childRef)
-							childrenList.Add(childRef);
+						var child = refConverter.Read(reader);
+						if (child is not null)
+							childrenList.Add(child);
 					}
+					_ = reader.Read(); // consume EndSequence
 					value = childrenList;
 				}
+				else if (key is "dropdown")
+				{
+					var dropdownList = new List<SiteDropdownLinkRef>();
+					_ = reader.Read(); // consume StartSequence
+					while (reader.TokenType != YamlTokenType.EndSequence)
+					{
+						if (reader.TokenType != YamlTokenType.StartMapping)
+						{
+							reader.Skip();
+							continue;
+						}
+						_ = reader.Read(); // consume MappingStart
+						string? itemTitle = null;
+						string? itemUrl = null;
+						while (reader.TokenType != YamlTokenType.EndMapping)
+						{
+							var itemKey = reader.GetScalarValue();
+							_ = reader.Read();
+							if (!KnownDropdownKeys.Contains(itemKey))
+								reader.SkipOrReportUnmapped(typeof(SiteDropdownLinkRef), KnownDropdownKeys, itemKey, null);
+							else if (reader.TokenType == YamlTokenType.Scalar)
+							{
+								var itemValue = reader.ScalarValue;
+								_ = reader.Read();
+								if (itemKey is "title")
+									itemTitle = itemValue;
+								else if (itemKey is "url")
+									itemUrl = itemValue;
+							}
+							else
+								reader.Skip();
+						}
+						_ = reader.Read(); // consume MappingEnd
+						if (itemTitle is not null && itemUrl is not null)
+							dropdownList.Add(new SiteDropdownLinkRef(itemTitle, itemUrl));
+					}
+					_ = reader.Read(); // consume EndSequence
+					value = dropdownList;
+				}
 				else
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 			}
-			else if (parser.Accept<MappingStart>(out _))
-				parser.SkipThisAndNestedEvents();
+			else if (reader.TokenType == YamlTokenType.StartMapping)
+				reader.Skip();
 
-			dictionary[key.Value] = value;
+			dictionary[key] = value;
 		}
+		_ = reader.Read(); // consume EndMapping
 
 		if (dictionary.TryGetValue("section", out var sectionTitleVal) && sectionTitleVal is string sectionTitle)
 		{
-			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e) ? e : null;
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> refs
-				? refs
-				: [];
-			return new SiteSectionRef(sectionTitle, externalUrl, children);
+			var externalUrl = dictionary.TryGetValue("external", out var extVal) && extVal is string e && !string.IsNullOrEmpty(e)
+				? e
+				: null;
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+				&& childrenObj is List<SiteTableOfContentsRef> refs ? refs : [];
+			IReadOnlyCollection<SiteDropdownLinkRef> dropdownLinks = dictionary.TryGetValue("dropdown", out var dropdownObj)
+				&& dropdownObj is List<SiteDropdownLinkRef> dLinks ? dLinks : [];
+			return new SiteSectionRef(sectionTitle, externalUrl, children, dropdownLinks);
 		}
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)
 		{
 			var uriString = sourceString.Contains("://") ? sourceString : $"docs-content://{sourceString}";
 
+			// Wrapped in a YamlException: unlike YamlDotNet, SharpYaml does not wrap exceptions
+			// thrown from custom converters, and callers throughout this codebase catch
+			// YamlException specifically to turn malformed config into diagnostics instead of
+			// crashing. The original InvalidOperationException is preserved as the inner exception.
 			if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
-				throw new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
+			{
+				var invalidUri = new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
+				throw new YamlException(invalidUri.Message, invalidUri);
+			}
 
-			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path
-				? path
-				: string.Empty;
+			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2) && childrenObj2 is List<SiteTableOfContentsRef> tocRefs
-				? tocRefs
-				: [];
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj2)
+				&& childrenObj2 is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj)
+				&& titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title) ? title : null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
-		throw new YamlException(
-			$"toc entry has no 'toc:' key and will be ignored. " +
-			$"Found keys: {keys}. Check for typos.");
+		throw new YamlException($"toc entry has no 'toc:' key and will be ignored. " + $"Found keys: {keys}. Check for typos.");
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, SiteTableOfContents value) =>
+		throw new NotSupportedException(
+			"SiteTableOfContents YAML serialization is not supported; navigation.yml is only ever read from YAML."
+		);
 }
 
-public class SiteTableOfContentsRefYamlConverter : IYamlTypeConverter
+public class SiteTableOfContentsRefYamlConverter : YamlConverter<SiteTableOfContentsRef>
 {
-	public bool Accepts(Type type) => type == typeof(SiteTableOfContentsRef);
+	private static readonly string[] KnownKeys = ["toc", "path_prefix", "children", "island", "navigation_title"];
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override SiteTableOfContentsRef? Read(YamlReader reader)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType != YamlTokenType.StartMapping)
+		{
+			reader.Skip();
 			return null;
+		}
 
+		_ = reader.Read(); // consume StartMapping
 		var dictionary = new Dictionary<string, object?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
-			var key = parser.Consume<Scalar>();
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
+
+			if (!KnownKeys.Contains(key))
+			{
+				reader.SkipOrReportUnmapped(typeof(SiteTableOfContentsRef), KnownKeys, key, null);
+				continue;
+			}
 
 			object? value = null;
-			if (parser.Accept<Scalar>(out var scalarValue))
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				value = scalarValue.Value;
-				_ = parser.MoveNext();
+				value = reader.ScalarValue;
+				_ = reader.Read();
 			}
-			else if (parser.Accept<SequenceStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartSequence)
 			{
-				if (key.Value == "children")
+				if (key == "children")
 				{
 					var childrenList = new List<SiteTableOfContentsRef>();
-					_ = parser.Consume<SequenceStart>();
-					while (!parser.TryConsume<SequenceEnd>(out _))
+					_ = reader.Read(); // consume StartSequence
+					while (reader.TokenType != YamlTokenType.EndSequence)
 					{
-						var child = rootDeserializer(typeof(SiteTableOfContentsRef));
-						if (child is SiteTableOfContentsRef childRef)
-							childrenList.Add(childRef);
+						var child = Read(reader);
+						if (child is not null)
+							childrenList.Add(child);
 					}
+					_ = reader.Read(); // consume EndSequence
 					value = childrenList;
 				}
 				else
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 			}
-			else if (parser.Accept<MappingStart>(out _))
-				parser.SkipThisAndNestedEvents();
+			else if (reader.TokenType == YamlTokenType.StartMapping)
+				reader.Skip();
 
-			dictionary[key.Value] = value;
+			dictionary[key] = value;
 		}
+		_ = reader.Read(); // consume EndMapping
 
 		if (dictionary.TryGetValue("toc", out var tocPath) && tocPath is string sourceString)
 		{
 			var uriString = sourceString.Contains("://") ? sourceString : $"docs-content://{sourceString}";
 
+			// Wrapped in a YamlException: unlike YamlDotNet, SharpYaml does not wrap exceptions
+			// thrown from custom converters, and callers throughout this codebase catch
+			// YamlException specifically to turn malformed config into diagnostics instead of
+			// crashing. The original InvalidOperationException is preserved as the inner exception.
 			if (!Uri.TryCreate(uriString, UriKind.Absolute, out var source))
-				throw new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
+			{
+				var invalidUri = new InvalidOperationException($"Invalid TOC source: '{sourceString}' could not be parsed as a URI");
+				throw new YamlException(invalidUri.Message, invalidUri);
+			}
 
-			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path
-				? path
-				: string.Empty;
+			var pathPrefix = dictionary.TryGetValue("path_prefix", out var pathValue) && pathValue is string path ? path : string.Empty;
 
-			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj) && childrenObj is List<SiteTableOfContentsRef> tocRefs
-				? tocRefs
-				: [];
+			IReadOnlyCollection<SiteTableOfContentsRef> children = dictionary.TryGetValue("children", out var childrenObj)
+				&& childrenObj is List<SiteTableOfContentsRef> tocRefs ? tocRefs : [];
 
-			var island = dictionary.TryGetValue("island", out var islandObj) && islandObj is string islandStr
-				&& bool.TryParse(islandStr, out var islandBool) && islandBool;
+			var island = dictionary.TryGetValue("island", out var islandObj)
+				&& islandObj is string islandStr
+				&& bool.TryParse(islandStr, out var islandBool)
+				&& islandBool;
 
-			return new SiteTableOfContentsRef(source, pathPrefix, children, island);
+			var navigationTitle = dictionary.TryGetValue("navigation_title", out var titleObj)
+				&& titleObj is string title
+				&& !string.IsNullOrWhiteSpace(title) ? title : null;
+
+			return new SiteTableOfContentsRef(source, pathPrefix, children, island, navigationTitle);
 		}
 
 		var keys = string.Join(", ", dictionary.Keys.Select(k => $"'{k}'"));
-		throw new YamlException(
-			$"toc entry has no 'toc:' key and will be ignored. " +
-			$"Found keys: {keys}. Check for typos.");
+		throw new YamlException($"toc entry has no 'toc:' key and will be ignored. " + $"Found keys: {keys}. Check for typos.");
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) =>
-		serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, SiteTableOfContentsRef value) =>
+		throw new NotSupportedException(
+			"SiteTableOfContentsRef YAML serialization is not supported; navigation.yml is only ever read from YAML."
+		);
 }

@@ -1,6 +1,6 @@
 # Elastic.ApiExplorer
 
-Renders API reference documentation (landing, operation, and schema type pages) from OpenAPI
+Renders API reference documentation (landing, authentication, servers, operation, and schema type pages) from OpenAPI
 specifications, using Microsoft.OpenAPI's normalized object model as input and RazorSlices for HTML.
 
 ## Structure
@@ -13,7 +13,8 @@ _Layout.cshtml           Razor conventions — stay at the project root.
 _ViewImports.cshtml
 
 Model/                   The semantic layer over Microsoft.OpenAPI. Spec loading (OpenApiReader),
-                         Elastic x-* extension parsing (OpenApiExtensionReader), schema
+                         Elastic x-* extension parsing (OpenApiExtensionReader; x-state → applies_to in
+                         XStateApplicability, shared by pages and the search export), schema
                          interpretation ($ref resolution, allOf flattening, type classification:
                          SchemaAnalyzer, TypeInfo, SchemaHelpers). No HTML, no URLs, no views.
 Infrastructure/          Shared rendering plumbing every page needs: ApiRenderContext, ApiViewModel
@@ -25,18 +26,27 @@ Navigation/              Navigation tree assembly (ApiNavigationBuilder) and nav
 Components/              Reusable View+ViewModel widgets embedded by more than one page.
   PropertyTree/          The collapsible property listing: ApiProperty view-model tree,
                          ApiPropertyTreeBuilder (maps Model → view models), TypeAnnotation.
-    _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType,
-                         _ValidationConstraints, _RecursiveBadge.
+    _Partials/           Its templates: _PropertyItem, _PropertyList, _UnionOptions, _SchemaType.
 
 Landing/                 Slice: product landing, tag landing and intro/outro markdown pages.
+Structural/              Slice: Bump.sh-compatible /authentication and /servers pages (generated for old links, hidden from nav).
 Operations/              Slice: operation pages (ApiOperation/ApiEndpoint, page model, view).
 Types/                   Slice: schema type pages under /api/{product}/types/.
 
-_Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBlock, _AppliesToBadge;
+_Partials/               Cross-slice partials only: _SectionHeader, _ApiCodeBlock;
                          Layout/_ApiToc. View-only — partial models live in Infrastructure/.
 
 Export/                  OpenApiDocumentExporter: search-index export, independent of page rendering.
 ```
+
+## Page layout
+
+Every page the layout renders has the same two columns inside `#api-content-grid`: the article and a right rail
+(`.api-page-grid` in `api-docs.css`). The layout puts Copy page at the top of the rail; a view adds the rest by
+overriding `ExecuteSectionAsync` for `ApiPageSections.Rail`. Only add what helps someone use the API: examples on
+operations, server URLs, license on the spec landing, the external docs link on groups, and
+"On this page" on schema and structural pages. Below 1024px the rail's content stacks under the article and
+Copy page moves up beside the menu button. The spec download lives in the Copy page menu, not in the rail.
 
 ## Rules
 

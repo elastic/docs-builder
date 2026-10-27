@@ -8,8 +8,9 @@ using Elastic.Markdown.Myst.InlineParsers.Substitution;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class SubstitutionTest(ITestOutputHelper output) : LeafTest<SubstitutionLeaf>(output,
-"""
+[InheritsTests]
+public class SubstitutionTest() : LeafTest<SubstitutionLeaf>(
+	"""
 ---
 sub:
   hello-world: "Hello World!"
@@ -19,21 +20,13 @@ not a comment
 """
 )
 {
-
-	[Fact]
+	[Test]
 	public void ReplacesSubsFromFrontMatter() =>
-		Html.Should().Contain(
-				"""Hello World!"""
-			).And.Contain(
-				"""not a comment"""
-			)
-			.And.NotContain(
-				"""{{hello-world}}"""
-			);
+		Html.Should().Contain("""Hello World!""").And.Contain("""not a comment""").And.NotContain("""{{hello-world}}""");
 }
 
-public class NeedsDoubleBrackets(ITestOutputHelper output) : InlineTest(output,
-"""
+public class NeedsDoubleBrackets() : InlineTest(
+	"""
 ---
 sub:
   hello-world: "Hello World!"
@@ -48,27 +41,25 @@ not a {substitution}
 """
 )
 {
-
-	[Fact]
+	[Test]
 	public void PreservesSingleBracket() =>
-		Html.Should().Contain(
-				"""Hello World!"""
-			).And.Contain(
-				"""not a comment"""
-			)
-			.And.NotContain(
-				"""{{hello-world}}"""
-			)
-			.And.Contain( // treated as attributes to the block
-				"""{substitution}"""
-			)
-			.And.Contain(
-				"""{{valid-key}}"""
-			);
+		Html
+			.Should()
+			.Contain("""Hello World!""")
+			.And
+			.Contain("""not a comment""")
+			.And
+			.NotContain("""{{hello-world}}""")
+			.And
+			.Contain( // treated as attributes to the block
+			"""{substitution}""")
+			.And
+			.Contain("""{{valid-key}}""");
 }
 
-public class SubstitutionInCodeBlockTest(ITestOutputHelper output) : BlockTest<EnhancedCodeBlock>(output,
-"""
+[InheritsTests]
+public class SubstitutionInCodeBlockTest() : BlockTest<EnhancedCodeBlock>(
+	"""
 ---
 sub:
   version: "7.17.0"
@@ -86,37 +77,37 @@ cd elasticsearch-{{version}}/ <2>
 """
 )
 {
-
-	[Fact]
-	public void ReplacesSubsInCode() =>
-		Html.Should().Contain("7.17.0");
+	[Test]
+	public void ReplacesSubsInCode() => Html.Should().Contain("7.17.0");
 }
 
-
-public class SupportsSubstitutionsFromDocSet(ITestOutputHelper output) : InlineTest(output,
-"""
+public class SupportsSubstitutionsFromDocSet() : InlineTest(
+	"""
 ---
 sub:
   hello-world: "Hello World!"
 ---
 The following should be subbed: {{hello-world}}
 The following should be subbed as well: {{global-var}}
-"""
-, new() { { "global-var", "A variable from docset.yml" } }
+""",
+	new() { { "global-var", "A variable from docset.yml" } }
 )
 {
-
-	[Fact]
+	[Test]
 	public void EmitsGlobalVariable() =>
-		Html.Should().Contain("Hello World!")
-			.And.NotContain("{{hello-world}}")
-			.And.Contain("A variable from docset.yml")
-			.And.NotContain("{{global-var}}");
+		Html
+			.Should()
+			.Contain("Hello World!")
+			.And
+			.NotContain("{{hello-world}}")
+			.And
+			.Contain("A variable from docset.yml")
+			.And
+			.NotContain("{{global-var}}");
 }
 
-
-public class CanNotShadeGlobalVariables(ITestOutputHelper output) : InlineTest(output,
-"""
+public class CanNotShadeGlobalVariables() : InlineTest(
+	"""
 ---
 sub:
   hello-world: "Hello World!"
@@ -126,24 +117,26 @@ sub:
 
 The following should be subbed: {{hello-world}}
 The following should be subbed as well: {{hello-world}}
-"""
-, new() { { "hello-world", "A variable from docset.yml" } }
+""",
+	new() { { "hello-world", "A variable from docset.yml" } }
 )
 {
-
-	[Fact]
+	[Test]
 	public void OnlySeesGlobalVariable() =>
-		Html.Should().NotContain("Hello World!<br />")
-			.And.NotContain("{{hello-world}}")
-			.And.Contain("A variable from docset.yml");
+		Html.Should().NotContain("Hello World!<br />").And.NotContain("{{hello-world}}").And.Contain("A variable from docset.yml");
 
-	[Fact]
-	public void HasError() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.Contain(d => d.Message.Contains("{hello-world} can not be redeclared in front matter as its a global substitution"));
+	[Test]
+	public void HasError() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.Contain(d => d.Message.Contains("{hello-world} can not be redeclared in front matter as its a global substitution"));
 }
 
-public class ReplaceInHeader(ITestOutputHelper output) : InlineTest(output,
-"""
+public class ReplaceInHeader() : InlineTest(
+	"""
 ---
 sub:
   hello-world: "Hello World!"
@@ -156,18 +149,16 @@ sub:
 """
 )
 {
-
-	[Fact]
+	[Test]
 	public void OnlySeesGlobalVariable() =>
 		Html.ShouldContainHtml("""<h2><a class="headerlink" href="#custom-anchor">Hello World!</a></h2>""");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
-
 }
 
-public class ReplaceInImageAlt(ITestOutputHelper output) : InlineTest(output,
-"""
+public class ReplaceInImageAlt() : InlineTest(
+	"""
 ---
 sub:
   hello-world: Hello World
@@ -179,15 +170,12 @@ sub:
 """
 )
 {
-
-	[Fact]
-	public void OnlySeesGlobalVariable() =>
-		Html.Should().NotContain("alt=\"{{hello-world}}\"")
-			.And.Contain("alt=\"Hello World\"");
+	[Test]
+	public void OnlySeesGlobalVariable() => Html.Should().NotContain("alt=\"{{hello-world}}\"").And.Contain("alt=\"Hello World\"");
 }
 
-public class ReplaceInImageTitle(ITestOutputHelper output) : InlineTest(output,
-"""
+public class ReplaceInImageTitle() : InlineTest(
+	"""
 ---
 sub:
   hello-world: Hello World
@@ -199,15 +187,12 @@ sub:
 """
 )
 {
-
-	[Fact]
-	public void OnlySeesGlobalVariable() =>
-		Html.Should().NotContain("title=\"{{hello-world}}\"")
-			.And.Contain("title=\"Observability\"");
+	[Test]
+	public void OnlySeesGlobalVariable() => Html.Should().NotContain("title=\"{{hello-world}}\"").And.Contain("title=\"Observability\"");
 }
 
-public class MutationOperatorTest(ITestOutputHelper output) : InlineTest(output,
-"""
+public class MutationOperatorTest() : InlineTest(
+	"""
 ---
 sub:
   version: "9.0.4"
@@ -228,28 +213,39 @@ Increase minor with space: {{version | M.M+1}}
 """
 )
 {
-	[Fact]
+	[Test]
 	public void MutationOperatorsWorkWithAndWithoutSpaces()
 	{
 		// Both versions with and without spaces should render the same way
-		Html.Should().Contain("Version: 9.0")
-			.And.Contain("Version with space: 9.0")
-			.And.Contain("Major only: 9")
-			.And.Contain("Major only with space: 9")
-			.And.Contain("Major.x: 9.x")
-			.And.Contain("Major.x with space: 9.x")
-			.And.Contain("Increase major: 10.0.0")
-			.And.Contain("Increase major with space: 10.0.0")
-			.And.Contain("Increase minor: 9.1.0")
-			.And.Contain("Increase minor with space: 9.1.0");
+		Html
+			.Should()
+			.Contain("Version: 9.0")
+			.And
+			.Contain("Version with space: 9.0")
+			.And
+			.Contain("Major only: 9")
+			.And
+			.Contain("Major only with space: 9")
+			.And
+			.Contain("Major.x: 9.x")
+			.And
+			.Contain("Major.x with space: 9.x")
+			.And
+			.Contain("Increase major: 10.0.0")
+			.And
+			.Contain("Increase major with space: 10.0.0")
+			.And
+			.Contain("Increase minor: 9.1.0")
+			.And
+			.Contain("Increase minor with space: 9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MultipleMutationOperatorsTest(ITestOutputHelper output) : InlineTest(output,
-"""
+public class MultipleMutationOperatorsTest() : InlineTest(
+	"""
 ---
 sub:
   version: "9.0.4"
@@ -265,22 +261,27 @@ Product with spaces: {{product | uc}}
 """
 )
 {
-	[Fact]
+	[Test]
 	public void MultipleMutationOperatorsWorkWithAndWithoutSpaces()
 	{
 		// Both versions with and without spaces should render the same way
-		Html.Should().Contain("Version: 9.0")
-			.And.Contain("Version with spaces: 9.0")
-			.And.Contain("Product: ELASTICSEARCH")
-			.And.Contain("Product with spaces: ELASTICSEARCH");
+		Html
+			.Should()
+			.Contain("Version: 9.0")
+			.And
+			.Contain("Version with spaces: 9.0")
+			.And
+			.Contain("Product: ELASTICSEARCH")
+			.And
+			.Contain("Product with spaces: ELASTICSEARCH");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MutationOperatorsInLinksTest(ITestOutputHelper output) : InlineTest(output,
-"""
+public class MutationOperatorsInLinksTest() : InlineTest(
+	"""
 ---
 sub:
   version: "9.0.4"
@@ -297,31 +298,32 @@ sub:
 """
 )
 {
-	[Fact]
+	[Test]
 	public void MutationOperatorsWorkInLinks()
 	{
 		// Check URL mutations
-		Html.Should().Contain("href=\"https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html\"")
-			.And.NotContain("{{version|M.M}}")
-			.And.NotContain("{{version | M.M}}");
+		Html
+			.Should()
+			.Contain("href=\"https://www.elastic.co/guide/en/elasticsearch/reference/9.0/index.html\"")
+			.And
+			.NotContain("{{version|M.M}}")
+			.And
+			.NotContain("{{version | M.M}}");
 
 		// Check link text mutations
-		Html.Should().Contain("ELASTICSEARCH 9.0")
-			.And.NotContain("{{product|uc}}")
-			.And.NotContain("{{version|M.M}}");
+		Html.Should().Contain("ELASTICSEARCH 9.0").And.NotContain("{{product|uc}}").And.NotContain("{{version|M.M}}");
 
 		// Check link text mutations with spaces
-		Html.Should().Contain("ELASTICSEARCH 9.0")
-			.And.NotContain("{{product | uc}}")
-			.And.NotContain("{{version | M.M}}");
+		Html.Should().Contain("ELASTICSEARCH 9.0").And.NotContain("{{product | uc}}").And.NotContain("{{version | M.M}}");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MutationOperatorsInCodeBlocksTest(ITestOutputHelper output) : BlockTest<EnhancedCodeBlock>(output,
-"""
+[InheritsTests]
+public class MutationOperatorsInCodeBlocksTest() : BlockTest<EnhancedCodeBlock>(
+	"""
 ---
 sub:
   version: "9.0.4"
@@ -340,15 +342,18 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{versio
 """
 )
 {
-	[Fact]
-	public void MutationOperatorsWorkInCodeBlocks()
-	{
-		Html.Should().Contain("# Install Elasticsearch 9.0")
-			.And.Contain("elasticsearch-9.0-linux-x86_64.tar.gz")
-			.And.NotContain("{{version|M.M}}")
-			.And.NotContain("{{version | M.M}}");
-	}
+	[Test]
+	public void MutationOperatorsWorkInCodeBlocks() =>
+		Html
+			.Should()
+			.Contain("# Install Elasticsearch 9.0")
+			.And
+			.Contain("elasticsearch-9.0-linux-x86_64.tar.gz")
+			.And
+			.NotContain("{{version|M.M}}")
+			.And
+			.NotContain("{{version | M.M}}");
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

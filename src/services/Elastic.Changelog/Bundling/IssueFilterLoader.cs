@@ -21,10 +21,15 @@ public class IssueFilterLoader(IFileSystem fileSystem)
 		string[]? issues,
 		string? owner,
 		string? repo,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var (isValid, matches) = await FilterLoaderUtilities.LoadValuesAsync(
-			fileSystem, collector, issues, owner, repo,
+			fileSystem,
+			collector,
+			issues,
+			owner,
+			repo,
 			exampleUrlSegment: "issues/123",
 			numericValidationMessage: "When --issues contains issue numbers (not URLs or owner/repo#number format), both --owner and --repo must be provided",
 			ctx

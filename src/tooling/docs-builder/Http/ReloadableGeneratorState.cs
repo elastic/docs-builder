@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 using System.IO.Abstractions;
 using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
@@ -33,7 +34,8 @@ public class ReloadableGeneratorState : IDisposable
 	private ILinkIndexReader? _codexReader;
 	private FetchedCrossLinks? _cachedCrossLinks;
 
-	public ReloadableGeneratorState(ILoggerFactory logFactory,
+	public ReloadableGeneratorState(
+		ILoggerFactory logFactory,
 		IDirectoryInfo sourcePath,
 		IDirectoryInfo outputPath,
 		BuildContext context,
@@ -60,19 +62,28 @@ public class ReloadableGeneratorState : IDisposable
 	// Track OpenAPI spec file modification times to detect changes
 	private readonly Dictionary<string, DateTimeOffset> _openApiSpecLastModified = [];
 
-	// Track intro/outro markdown file modification times to detect changes
+	// Track API markdown modification times so serve reloads on overlay and children: edits.
 	private readonly Dictionary<string, DateTimeOffset> _apiMarkdownFilesLastModified = [];
 
 	private volatile bool _apiReferencesStale = true;
+	// 1 when the next /api/ request must regenerate; consumed atomically so a concurrent invalidation is never lost.
+	private int _forceApiRegeneration;
 	private readonly SemaphoreSlim _apiSemaphore = new(1, 1);
+	// Outlives each regeneration so specs are not downloaded again; the version index is re-fetched each time.
+	private readonly SpecBodyCache _specBodies = new();
 	private CancellationTokenSource? _apiGenerationCts;
 
 	public async Task ReloadAsync(Cancel ctx, bool reloadConfiguration = true)
 	{
 		// Content-only changes (e.g. .md edits) don't need a full rebuild:
 		// RenderLayout -> ParseFullAsync reads fresh content from disk on each request.
+		// API overlay files are an exception: they are baked into generated HTML, so mark
+		// refs stale and let EnsureApiReferencesAsync re-check timestamps on the next /api request.
 		if (!reloadConfiguration && _cachedCrossLinks is not null)
+		{
+			_apiReferencesStale = true;
 			return;
+		}
 
 		SourcePath.Refresh();
 		OutputPath.Refresh();
@@ -83,7 +94,11 @@ public class ReloadableGeneratorState : IDisposable
 			_codexReader = _context.Configuration.Registry != DocSetRegistry.Public
 				? new GitLinkIndexReader(_context.Configuration.Registry.ToStringFast(true), new ApplicationDataFileSystem())
 				: null;
-			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(_logFactory, _context.Configuration, codexLinkIndexReader: _codexReader);
+			_crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
+				_logFactory,
+				_context.Configuration,
+				codexLinkIndexReader: _codexReader
+			);
 		}
 		var crossLinks = _cachedCrossLinks;
 		if (crossLinks is null || reloadConfiguration)
@@ -110,6 +125,16 @@ public class ReloadableGeneratorState : IDisposable
 		_apiReferencesStale = true;
 	}
 
+	/// <summary>
+	/// Regenerates API pages on the next /api/ request even when no spec changed. Hot reload calls
+	/// this because rendering code and static asset hashes are baked into the generated HTML.
+	/// </summary>
+	public void InvalidateApiReferences()
+	{
+		_ = Interlocked.Exchange(ref _forceApiRegeneration, 1);
+		_apiReferencesStale = true;
+	}
+
 	/// <summary>Lazily generates OpenAPI references on the first /api/ request, and regenerates when spec files change.</summary>
 	public async Task EnsureApiReferencesAsync(Cancel ctx)
 	{
@@ -129,14 +154,25 @@ public class ReloadableGeneratorState : IDisposable
 			if (!_apiReferencesStale)
 				return;
 
-			// Use the isolated token for actual generation
+			// Clear flags and snapshot timestamps before generating, so a code or file change that
+			// lands mid-generation marks the pages stale again instead of being lost.
 			var config = _generator.DocumentationSet.Configuration;
-			if (HaveOpenApiSpecsChanged(config))
-			{
-				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
-				UpdateOpenApiSpecTimestamps(config);
-			}
 			_apiReferencesStale = false;
+			var force = Interlocked.Exchange(ref _forceApiRegeneration, 0) == 1;
+			if (!force && !HaveOpenApiSpecsChanged(config))
+				return;
+
+			UpdateOpenApiSpecTimestamps(config);
+			try
+			{
+				// Use the isolated token for actual generation
+				await ReloadApiReferences(_generator.MarkdownStringRenderer, combinedCts.Token);
+			}
+			catch
+			{
+				InvalidateApiReferences();
+				throw;
+			}
 		}
 		finally
 		{
@@ -151,35 +187,55 @@ public class ReloadableGeneratorState : IDisposable
 		if (config.ApiConfigurations is null)
 			return false;
 
-		// First run - no timestamps yet
 		if (_openApiSpecLastModified.Count == 0 && _apiMarkdownFilesLastModified.Count == 0)
 			return true;
 
 		foreach (var apiConfig in config.ApiConfigurations.Values)
 		{
-			// The local spec override, when present. A spec with no local file resolves
-			// remotely and has nothing on disk to watch here.
 			if (apiConfig.LocalSpecFile is { } specFile)
 			{
 				specFile.Refresh();
 				if (!_openApiSpecLastModified.TryGetValue(specFile.FullName, out var lastModified))
-					return true; // New file
+					return true;
 				if (specFile.LastWriteTimeUtc > lastModified)
-					return true; // File modified
-			}
-
-			// Explicit children declared via 'children:'
-			foreach (var childFile in apiConfig.Children)
-			{
-				childFile.Refresh();
-				if (!_apiMarkdownFilesLastModified.TryGetValue(childFile.FullName, out var lastModified))
-					return true; // New file
-				if (childFile.LastWriteTimeUtc > lastModified)
-					return true; // File modified
+					return true;
 			}
 		}
 
+		return HaveApiMarkdownFilesChanged(config);
+	}
+
+	private bool HaveApiMarkdownFilesChanged(ConfigurationFile config)
+	{
+		var current = CurrentApiMarkdownTimestamps(config);
+		if (current.Count != _apiMarkdownFilesLastModified.Count)
+			return true;
+
+		foreach (var (path, time) in current)
+		{
+			if (!_apiMarkdownFilesLastModified.TryGetValue(path, out var lastModified) || time > lastModified)
+				return true;
+		}
+
 		return false;
+	}
+
+	private static Dictionary<string, DateTimeOffset> CurrentApiMarkdownTimestamps(ConfigurationFile config)
+	{
+		var current = new Dictionary<string, DateTimeOffset>(StringComparer.Ordinal);
+		if (config.ApiConfigurations is null)
+			return current;
+
+		foreach (var apiConfig in config.ApiConfigurations.Values)
+		{
+			foreach (var file in apiConfig.EnumerateApiMarkdownFiles().Concat(apiConfig.Children))
+			{
+				file.Refresh();
+				current[file.FullName] = file.LastWriteTimeUtc;
+			}
+		}
+
+		return current;
 	}
 
 	private void UpdateOpenApiSpecTimestamps(ConfigurationFile config)
@@ -197,13 +253,10 @@ public class ReloadableGeneratorState : IDisposable
 				specFile.Refresh();
 				_openApiSpecLastModified[specFile.FullName] = specFile.LastWriteTimeUtc;
 			}
-
-			foreach (var childFile in apiConfig.Children)
-			{
-				childFile.Refresh();
-				_apiMarkdownFilesLastModified[childFile.FullName] = childFile.LastWriteTimeUtc;
-			}
 		}
+
+		foreach (var (path, time) in CurrentApiMarkdownTimestamps(config))
+			_apiMarkdownFilesLastModified[path] = time;
 	}
 
 	public async Task ReloadApiReferences(Cancel ctx) => await ReloadApiReferences(_generator.MarkdownStringRenderer, ctx);
@@ -213,10 +266,12 @@ public class ReloadableGeneratorState : IDisposable
 		if (_isWatchBuild)
 			return;
 
-		if (ApiPath.Exists)
-			ApiPath.Delete(true);
+		// Serve writes to an in-memory file system where a recursive delete of the generated tree takes
+		// longer than regenerating it. Pages are overwritten in place instead; a page whose operation
+		// was removed from the spec stays reachable until the server restarts.
 		ApiPath.Create();
-		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer);
+		using var versionIndexClient = new VersionIndexClient { SpecBodies = _specBodies };
+		var generator = new OpenApiGenerator(_logFactory, _context, markdownStringRenderer, versionIndexClient);
 		await generator.Generate(ctx);
 	}
 

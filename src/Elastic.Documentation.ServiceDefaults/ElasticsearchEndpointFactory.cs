@@ -16,45 +16,31 @@ public static class ElasticsearchEndpointFactory
 	/// Creates <see cref="DocumentationEndpoints"/> from user secrets and environment variables.
 	/// Environment variables take priority over user secrets.
 	/// </summary>
-	public static DocumentationEndpoints Create(IConfiguration? appConfiguration = null, string? buildType = null, string? environment = null)
+	public static DocumentationEndpoints Create(
+		IConfiguration? appConfiguration = null,
+		string? buildType = null,
+		string? environment = null
+	)
 	{
 		var configBuilder = new ConfigurationBuilder();
 		_ = configBuilder.AddUserSecrets(UserSecretsId);
 		_ = configBuilder.AddEnvironmentVariables();
 		var config = configBuilder.Build();
 
-		var url =
-			config["DOCUMENTATION_ELASTIC_URL"]
-			?? config["Parameters:ElasticsearchUrl"];
+		var url = config["DOCUMENTATION_ELASTIC_URL"] ?? config["Parameters:ElasticsearchUrl"];
 
-		var apiKey =
-			config["DOCUMENTATION_ELASTIC_APIKEY"]
-			?? config["Parameters:ElasticsearchApiKey"];
+		var apiKey = config["DOCUMENTATION_ELASTIC_APIKEY"] ?? config["Parameters:ElasticsearchApiKey"];
 
-		var password =
-			config["DOCUMENTATION_ELASTIC_PASSWORD"]
-			?? config["Parameters:ElasticsearchPassword"];
+		var password = config["DOCUMENTATION_ELASTIC_PASSWORD"] ?? config["Parameters:ElasticsearchPassword"];
 
-		var username =
-			config["DOCUMENTATION_ELASTIC_USERNAME"]
-			?? config["Parameters:ElasticsearchUsername"]
-			?? "elastic";
+		var username = config["DOCUMENTATION_ELASTIC_USERNAME"] ?? config["Parameters:ElasticsearchUsername"] ?? "elastic";
 
 		if (string.IsNullOrEmpty(url))
 		{
-			return new DocumentationEndpoints
-			{
-				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") }
-			};
+			return new DocumentationEndpoints { Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("http://localhost:9200") } };
 		}
 
-		var endpoint = new ElasticsearchEndpoint
-		{
-			Uri = new Uri(url),
-			ApiKey = apiKey,
-			Password = password,
-			Username = username
-		};
+		var endpoint = new ElasticsearchEndpoint { Uri = new Uri(url), ApiKey = apiKey, Password = password, Username = username };
 
 		buildType ??= appConfiguration?["DOCS_BUILD_TYPE"] ?? config["DOCS_BUILD_TYPE"] ?? "isolated";
 		IEnvironmentValidator environmentValidator = buildType == "codex"
@@ -62,9 +48,7 @@ public static class ElasticsearchEndpointFactory
 			: new SiteEnvironmentValidator();
 		environment ??= environmentValidator.Resolve(appConfiguration?["ENVIRONMENT"] ?? config["ENVIRONMENT"]);
 
-		var searchIndexOverride =
-			config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"]
-			?? config["Parameters:ElasticsearchIndexOverride"];
+		var searchIndexOverride = config["DOCUMENTATION_ELASTIC_INDEX_OVERRIDE"] ?? config["Parameters:ElasticsearchIndexOverride"];
 
 		return new DocumentationEndpoints
 		{

@@ -7,11 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.SiteSearch.Cli.ContentStack;
 
-internal sealed class ContentStackClient(
-	HttpClient httpClient,
-	ContentStackConfiguration configuration,
-	ILogger<ContentStackClient> logger
-)
+internal sealed class ContentStackClient(HttpClient httpClient, ContentStackConfiguration configuration, ILogger<ContentStackClient> logger)
 {
 	private const int MaxBodyRetries = 5;
 
@@ -85,9 +81,7 @@ internal sealed class ContentStackClient(
 
 			progress?.Report(new SyncProgress(page, allItems.Count, response.TotalCount));
 
-			logger.LogDebug(
-				"Page {Page}: received {Count} items (total so far: {Total})",
-				page, response.Items.Count, allItems.Count);
+			logger.LogDebug("Page {Page}: received {Count} items (total so far: {Total})", page, response.Items.Count, allItems.Count);
 
 			if (onPage != null)
 				await onPage(response);
@@ -119,15 +113,18 @@ internal sealed class ContentStackClient(
 			try
 			{
 				var response = await httpClient.GetFromJsonAsync(url, SyncJsonContext.Default.SyncResponse, ct);
-				return response
-					?? throw new InvalidOperationException($"Received null response from Contentstack sync API at {url}");
+				return response ?? throw new InvalidOperationException($"Received null response from Contentstack sync API at {url}");
 			}
 			catch (HttpIOException ex) when (attempt < MaxBodyRetries)
 			{
 				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
 				logger.LogWarning(
 					"Response body truncated (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}",
-					attempt + 1, MaxBodyRetries, delay.TotalSeconds, ex.Message);
+					attempt + 1,
+					MaxBodyRetries,
+					delay.TotalSeconds,
+					ex.Message
+				);
 				await Task.Delay(delay, ct);
 			}
 		}
@@ -155,4 +152,5 @@ internal sealed class ContentStackClient(
 }
 
 internal sealed record SyncProgress(int PagesCompleted, int ItemsSoFar, int TotalCount);
+
 internal sealed record SyncResult(List<SyncItem> Items, string? SyncToken, int PagesCompleted);

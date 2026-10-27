@@ -13,15 +13,13 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 
 public class ProductApplicabilityToStringTests
 {
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringIncludesAllProperties()
 	{
 		// Create a ProductApplicability with all properties set
 		var productApplicability = new ProductApplicability();
 		var productType = typeof(ProductApplicability);
-		var properties = productType.GetProperties()
-			.Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null)
-			.ToList();
+		var properties = productType.GetProperties().Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null).ToList();
 
 		// Set all properties to a test value
 		var testValue = AppliesCollection.GenerallyAvailable;
@@ -37,21 +35,22 @@ public class ProductApplicabilityToStringTests
 		foreach (var property in properties)
 		{
 			var jsonName = property.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name;
-			result.Should().Contain($"{jsonName}=",
-				$"ToString should include the property {property.Name} with alias '{jsonName}'");
+			result.Should().Contain($"{jsonName}=", $"ToString should include the property {property.Name} with alias '{jsonName}'");
 		}
 
 		// Verify we have the expected number of properties
 		properties.Should().HaveCount(24, "ProductApplicability should have exactly 24 product properties");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringWithSomePropertiesOnlyIncludesSetProperties()
 	{
 		var productApplicability = new ProductApplicability
 		{
 			ApmAgentDotnet = AppliesCollection.GenerallyAvailable,
-			Ecctl = new AppliesCollection([new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }])
+			Ecctl = new AppliesCollection([
+				new Applicability { Lifecycle = ProductLifecycle.Beta, Version = VersionSpec.TryParse("1.0.0", out var v) ? v : null }
+			])
 		};
 
 		var result = productApplicability.ToString();
@@ -65,7 +64,7 @@ public class ProductApplicabilityToStringTests
 		result.Should().NotContain("curator=");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringEmptyReturnsEmptyString()
 	{
 		var productApplicability = new ProductApplicability();
@@ -75,7 +74,7 @@ public class ProductApplicabilityToStringTests
 		result.Should().Be("");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductApplicabilityToStringPropertyOrderMatchesReflectionOrder()
 	{
 		// This test ensures that properties appear in the order they are defined
@@ -90,7 +89,8 @@ public class ProductApplicabilityToStringTests
 
 		// Get the properties in reflection order
 		var productType = typeof(ProductApplicability);
-		var properties = productType.GetProperties()
+		var properties = productType
+			.GetProperties()
 			.Where(p => p.GetCustomAttribute<JsonPropertyNameAttribute>() != null)
 			.Select(p => p.GetCustomAttribute<JsonPropertyNameAttribute>()!.Name)
 			.ToList();
@@ -105,9 +105,7 @@ public class ProductApplicabilityToStringTests
 		}
 
 		// Verify that the properties appear in the correct order
-		positions["ecctl"].Should().BeLessThan(positions["curator"],
-			"ecctl should appear before curator");
-		positions["curator"].Should().BeLessThan(positions["apm-agent-android"],
-			"curator should appear before apm-agent-android");
+		positions["ecctl"].Should().BeLessThan(positions["curator"], "ecctl should appear before curator");
+		positions["curator"].Should().BeLessThan(positions["apm-agent-android"], "curator should appear before apm-agent-android");
 	}
 }

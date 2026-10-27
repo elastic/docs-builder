@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Indexing.Exporters.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
-using Elastic.Markdown.Exporters.Elasticsearch;
 
 namespace Elastic.Markdown.Tests.Search;
 
@@ -17,7 +17,7 @@ namespace Elastic.Markdown.Tests.Search;
 /// </summary>
 public class OpenApiSearchTitleTests
 {
-	[Fact]
+	[Test]
 	public void ApiDocs_PreserveTheExporterSSearchTitle()
 	{
 		var doc = new DocumentationDocument
@@ -34,7 +34,7 @@ public class OpenApiSearchTitleTests
 		doc.SearchTitle.Should().Contain("_bulk");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownDocs_StillGetTheDerivedSearchTitle()
 	{
 		var doc = new DocumentationDocument

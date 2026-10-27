@@ -22,7 +22,7 @@ public class SharedAnalysisFactoryTests
 		return doc.RootElement.Clone();
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsFixedAnalyzer_HasSymbolRewriteCharFilterBeforeTokenization()
 	{
 		var json = BuildAnalysisJson();
@@ -31,7 +31,7 @@ public class SharedAnalysisFactoryTests
 		charFilters.Should().Contain("symbol_rewrite_char_filter");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsAnalyzer_HasSymbolRewriteCharFilterBeforeTokenization()
 	{
 		var json = BuildAnalysisJson();
@@ -40,7 +40,7 @@ public class SharedAnalysisFactoryTests
 		charFilters.Should().Contain("symbol_rewrite_char_filter");
 	}
 
-	[Fact]
+	[Test]
 	public void SymbolRewriteCharFilter_IsPatternReplaceToDotnet()
 	{
 		var json = BuildAnalysisJson();
@@ -49,25 +49,35 @@ public class SharedAnalysisFactoryTests
 		charFilter.GetProperty("replacement").GetString().Should().Be("dotnet");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsFixedAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer").GetProperty("synonyms_fixed_analyzer")
-			.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).ToArray();
+		var filters = json
+			.GetProperty("analyzer")
+			.GetProperty("synonyms_fixed_analyzer")
+			.GetProperty("filter")
+			.EnumerateArray()
+			.Select(e => e.GetString())
+			.ToArray();
 		filters.Should().ContainInOrder("lowercase", "morphology_override_filter", "synonyms_fixed_filter", "kstem");
 	}
 
-	[Fact]
+	[Test]
 	public void SynonymsAnalyzer_HasMorphologyOverrideBeforeKstem()
 	{
 		var json = BuildAnalysisJson();
-		var filters = json.GetProperty("analyzer").GetProperty("synonyms_analyzer")
-			.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).ToArray();
+		var filters = json
+			.GetProperty("analyzer")
+			.GetProperty("synonyms_analyzer")
+			.GetProperty("filter")
+			.EnumerateArray()
+			.Select(e => e.GetString())
+			.ToArray();
 		filters.Should().ContainInOrder("lowercase", "morphology_override_filter", "synonyms_filter", "kstem");
 	}
 
-	[Fact]
+	[Test]
 	public void MorphologyOverrideFilter_IsStemmerOverrideWithCuratedRules()
 	{
 		var json = BuildAnalysisJson();
@@ -81,7 +91,7 @@ public class SharedAnalysisFactoryTests
 		]);
 	}
 
-	[Fact]
+	[Test]
 	public void ContentTagsAnalyzer_UsesKeywordTokenizerWithKstemAndAliasSynonyms()
 	{
 		var json = BuildAnalysisJson();
@@ -91,7 +101,7 @@ public class SharedAnalysisFactoryTests
 		filters.Should().ContainInOrder("lowercase", "kstem", "content_tags_synonyms_filter");
 	}
 
-	[Fact]
+	[Test]
 	public void ContentTagsSynonymsFilter_OnlyCoversWhatStemmingCannotFold()
 	{
 		var json = BuildAnalysisJson();

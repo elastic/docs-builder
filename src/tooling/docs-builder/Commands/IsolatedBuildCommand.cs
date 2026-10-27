@@ -46,7 +46,10 @@ internal sealed class IsolatedBuildCommand(
 		IFileSystem? writeFs = inMemory ? new MockFileSystem() : null;
 		var strictCommand = service.IsStrict(options.Strict);
 
-		serviceInvoker.AddCommand(service, (options, writeFs), strictCommand,
+		serviceInvoker.AddCommand(
+			service,
+			(options, writeFs),
+			strictCommand,
 			static async (s, col, state, ctx) => await s.Build(col, state.options, state.writeFs, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);

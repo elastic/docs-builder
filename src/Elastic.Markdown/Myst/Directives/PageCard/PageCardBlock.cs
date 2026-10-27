@@ -4,11 +4,11 @@
 
 using System.Text.RegularExpressions;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Myst.Directives.PageCard;
 
-public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "page-card";
 
@@ -33,8 +33,7 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 		Title = match.Groups[1].Value;
 		var url = match.Groups[2].Value;
 
-		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-			url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+		if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 		{
 			this.EmitError($"page-card url must be a local .md path or crosslink, not an absolute URL: {url}");
 			return;
@@ -46,9 +45,40 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 
 		// A cross-link resolves to a full URL and is already final. Anything else is a path that
 		// still needs normalizing against the docset root before it can become an href.
-		ResolvedUrl = Uri.IsWellFormedUriString(validated, UriKind.Absolute)
-			? validated
-			: DirectiveLinkValidator.ToHref(NormalizeToDocsetRoot(validated, context), context.Build.UrlPathPrefix) ?? validated;
+		if (Uri.IsWellFormedUriString(validated, UriKind.Absolute))
+		{
+			ResolvedUrl = validated;
+			return;
+		}
+
+		// The anchor is not part of the file path, so split it off before probing and re-append
+		// it to whichever URL wins.
+		var (path, anchor) = DirectiveLinkValidator.SplitAnchor(validated);
+		var normalized = NormalizeToDocsetRoot(path, context);
+
+		// Use the navigation lookup when available so assembled builds get the correct URL.
+		// In assembled mode a docset may be rehomed at a path_prefix (e.g. reference/elastic-cli/),
+		// and the docset-relative path alone does not include that prefix. FileNavigationLeaf.Url
+		// already bakes in the full assembled path, so using it here mirrors what
+		// DiagnosticLinkInlineParser.UpdateLinkUrl does for ordinary inline links.
+		var relPath = normalized.TrimStart('/');
+		foreach (var candidate in ProbeRelativePaths(relPath))
+		{
+			if (context.TryFindDocumentByRelativePath(candidate) is not MarkdownFile found)
+				continue;
+			if (!context.NavigationTraversable.NavigationDocumentationFileLookup.TryGetValue(found, out var navLeaf))
+				continue;
+			if (string.IsNullOrEmpty(navLeaf.Url))
+				continue;
+			var navUrl = navLeaf.Url;
+			var sitePrefix = context.Build.UrlPathPrefix ?? string.Empty;
+			if (!string.IsNullOrWhiteSpace(sitePrefix) && !navUrl.StartsWith(sitePrefix, StringComparison.OrdinalIgnoreCase))
+				navUrl = $"{sitePrefix.TrimEnd('/')}{navUrl}";
+			ResolvedUrl = navUrl + anchor;
+			return;
+		}
+
+		ResolvedUrl = DirectiveLinkValidator.ToHref(normalized + anchor, context.Build.UrlPathPrefix) ?? validated;
 	}
 
 	private static string NormalizeToDocsetRoot(string url, ParserContext context)
@@ -57,6 +87,13 @@ public partial class PageCardBlock(DirectiveBlockParser parser, ParserContext co
 		var includeFrom = url.StartsWith('/') ? sourceDirectory : context.MarkdownSourcePath.Directory!.FullName;
 		var resolvedDiskPath = Path.GetFullPath(Path.Join(includeFrom, url));
 		return "/" + Path.GetRelativePath(sourceDirectory, resolvedDiskPath).Replace('\\', '/');
+	}
+
+	private static string[] ProbeRelativePaths(string path)
+	{
+		if (path.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+			return [path];
+		return [path, path + ".md", path.TrimEnd('/') + "/index.md"];
 	}
 
 	[GeneratedRegex(@"^\[([^\]]+)\]\(([^)]+)\)$")]

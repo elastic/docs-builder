@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -52,6 +53,9 @@ public record ApplicableTo
 	[JsonIgnore]
 	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
 
+	// Static singletons, not YAML members — the source generator doesn't filter static properties
+	// on its own, so these must be explicitly ignored to avoid CS0176 in the generated (de)serializer.
+	[YamlIgnore]
 	public static ApplicableTo All { get; } = new()
 	{
 		Stack = AppliesCollection.GenerallyAvailable,
@@ -62,6 +66,7 @@ public record ApplicableTo
 
 	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
+	[YamlIgnore]
 	public static ApplicableTo Default { get; } = new()
 	{
 		Stack = new AppliesCollection([new Applicability { Version = DefaultVersion, Lifecycle = ProductLifecycle.GenerallyAvailable }]),
@@ -99,6 +104,8 @@ public record ApplicableTo
 				AddEntries(entries, "serverless", "observability", Serverless.Observability);
 			if (Serverless.Security is not null)
 				AddEntries(entries, "serverless", "security", Serverless.Security);
+			if (Serverless.VectorDatabase is not null)
+				AddEntries(entries, "serverless", "vectordb", Serverless.VectorDatabase);
 		}
 
 		if (Product is not null)
@@ -203,6 +210,7 @@ public record DeploymentApplicability
 
 	public AppliesCollection? Ess { get; set; }
 
+	[YamlIgnore]
 	public static DeploymentApplicability All { get; } = new()
 	{
 		Ece = AppliesCollection.GenerallyAvailable,
@@ -258,19 +266,22 @@ public record ServerlessProjectApplicability
 
 	public AppliesCollection? Security { get; set; }
 
+	public AppliesCollection? VectorDatabase { get; set; }
+
 	/// <summary>
-	/// Returns if all projects share the same applicability
+	/// Returns if all serverless project types share the same applicability.
+	/// <c>serverless: ga</c> expands to Elasticsearch, Observability, Security, and Vector Database.
 	/// </summary>
 	public AppliesCollection? AllProjects =>
-		Elasticsearch == Observability && Observability == Security
-			? Elasticsearch
-			: null;
+		Elasticsearch == Observability && Observability == Security && Security == VectorDatabase ? Elasticsearch : null;
 
+	[YamlIgnore]
 	public static ServerlessProjectApplicability All { get; } = new()
 	{
 		Elasticsearch = AppliesCollection.GenerallyAvailable,
 		Observability = AppliesCollection.GenerallyAvailable,
-		Security = AppliesCollection.GenerallyAvailable
+		Security = AppliesCollection.GenerallyAvailable,
+		VectorDatabase = AppliesCollection.GenerallyAvailable
 	};
 
 	/// <inheritdoc />
@@ -298,6 +309,14 @@ public record ServerlessProjectApplicability
 			if (hasContent)
 				_ = sb.Append(", ");
 			_ = sb.Append("security=").Append(Security);
+			hasContent = true;
+		}
+
+		if (VectorDatabase is not null)
+		{
+			if (hasContent)
+				_ = sb.Append(", ");
+			_ = sb.Append("vectordb=").Append(VectorDatabase);
 		}
 
 		return sb.ToString();

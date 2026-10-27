@@ -13,18 +13,22 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBasicTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogBasicTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") =>
+		"""
+		) =>
 		// Create the default bundles folder with a test bundle
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -49,24 +53,27 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 			  - Indexing
 			  prs:
 			  - "123457"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void ParsesChangelogBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("changelog");
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
-	[Fact]
-	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("changelog/bundles".Replace('/', Path.DirectorySeparatorChar));
+	[Test]
+	public void SetsCorrectBundlesFolderPath() =>
+		Block!.BundlesFolderPath.Should().EndWith("changelog/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(1);
 
-	[Fact]
+	[Test]
 	public void RendersMarkdownContent()
 	{
 		Html.Should().Contain("9.3.0");
@@ -77,18 +84,22 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogExcludeAmendTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogExcludeAmendTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -114,25 +125,31 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 			    checksum: excluded
 			  prs:
 			  - "123457"
-			"""));
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.amend-1.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.amend-1.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			exclude-entries:
 			- file:
 			    name: removed.yaml
 			    checksum: excluded
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersWithoutExcludedEntry()
 	{
 		Html.Should().Contain("Keep this feature");
 		Html.Should().NotContain("Remove this feature");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsMergedEntryCount()
 	{
 		Block!.LoadedBundles.Should().HaveCount(1);
@@ -141,19 +158,23 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultipleBundlesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMultipleBundlesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create multiple bundles with different versions
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -165,11 +186,15 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -181,11 +206,15 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.10.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.10.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.10.0
@@ -197,13 +226,15 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.10.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersInSemverOrder()
 	{
 		// Should be sorted by semver descending: 9.10.0 > 9.3.0 > 9.2.0
@@ -215,7 +246,7 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 		idx93.Should().BeLessThan(idx92, "9.3.0 should appear before 9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.10.0");
@@ -228,19 +259,23 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 /// Verifies the <c>:version:</c> option filters local-folder bundles down to the single matching
 /// target, leaving the others out of both the loaded set and the rendered output.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogVersionFilterTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogVersionFilterTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:version: 9.3.0
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -252,11 +287,15 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -268,16 +307,18 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void CapturesVersionOption() => Block!.VersionFilter.Should().Be("9.3.0");
 
-	[Fact]
+	[Test]
 	public void LoadsOnlyMatchingBundle() => Block!.LoadedBundles.Should().ContainSingle().Which.Version.Should().Be("9.3.0");
 
-	[Fact]
+	[Test]
 	public void RendersOnlyMatchingVersion()
 	{
 		Html.Should().Contain("Feature in 9.3.0");
@@ -289,17 +330,22 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 /// Verifies a <c>:version:</c> value that matches no bundle renders nothing and warns instead of
 /// silently falling back to all versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogVersionFilterNoMatchTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogVersionFilterNoMatchTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:version: 1.2.3
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -311,26 +357,33 @@ public class ChangelogVersionFilterNoMatchTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void LoadsNoBundles() => Block!.LoadedBundles.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void EmitsWarningForUnmatchedVersion() =>
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog bundle matches :version:"));
 }
 
+[InheritsTests]
 public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogCustomPathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog} release-notes/bundles
+	public ChangelogCustomPathTests() : base(
+			// language=markdown
+			"""
+		:::{changelog} /release-notes/bundles
 		:::
-		""") => FileSystem.AddFile("docs/release-notes/bundles/1.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/release-notes/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: my-product
 		  target: 1.0.0
@@ -342,15 +395,18 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 		    target: 1.0.0
 		  prs:
 		  - "1"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolder() => Block!.Found.Should().BeTrue();
 
-	[Fact]
-	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles".Replace('/', Path.DirectorySeparatorChar));
+	[Test]
+	public void SetsCorrectBundlesFolderPath() =>
+		Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void RendersContent()
 	{
 		Html.Should().Contain("1.0.0");
@@ -363,21 +419,23 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 /// assigned to the block and before any network access, so this test exercises the wiring without
 /// touching the CDN.
 /// </summary>
-public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnInvalidProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: invalid$product
 	:::
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void DoesNotCaptureInvalidCdnProduct() => Block!.CdnProduct.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void DoesNotSourceFromLocalFolder() => Block!.BundlesFolderPath.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForInvalidProduct()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -391,21 +449,24 @@ public class ChangelogCdnInvalidProductTests(ITestOutputHelper output) : Directi
 /// instead of hitting the network. Regression guard: the HTML renderer previously gated on the
 /// (CDN-null) local bundles folder path and silently emitted an empty body.
 /// </summary>
-public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnRenderTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: cdn-render-test
 	:::
-	""")
+	"""
+)
 {
 	private const string Product = "cdn-render-test";
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
-		ChangelogCdnTestResolver.For(Product,
+		ChangelogCdnTestResolver.For(
+			Product,
 			("9.4.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: cdn-render-test
 				  target: 9.4.0
@@ -419,12 +480,13 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 				    target: 9.4.0
 				  prs:
 				  - "999"
-				"""));
+				""")
+		);
 
-	[Fact]
+	[Test]
 	public void FoundFromCdn() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersCdnBundleBody()
 	{
 		Html.Should().Contain("9.4.0");
@@ -437,22 +499,25 @@ public class ChangelogCdnRenderTests(ITestOutputHelper output) : DirectiveTest<C
 /// Verifies <c>:cdn:</c> combined with <c>:version:</c> renders only the matching prefetched bundle.
 /// Version filtering is applied to the injected resolver's bundles, so no network access occurs.
 /// </summary>
-public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnVersionFilterTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: cdn-version-test
 	:version: 9.4.0
 	:::
-	""")
+	"""
+)
 {
 	private const string Product = "cdn-version-test";
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
-		ChangelogCdnTestResolver.For(Product,
+		ChangelogCdnTestResolver.For(
+			Product,
 			("9.4.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: cdn-version-test
 				  target: 9.4.0
@@ -468,8 +533,8 @@ public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : Directiv
 				  - "999"
 				"""),
 			("9.3.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: cdn-version-test
 				  target: 9.3.0
@@ -483,12 +548,13 @@ public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : Directiv
 				    target: 9.3.0
 				  prs:
 				  - "998"
-				"""));
+				""")
+		);
 
-	[Fact]
+	[Test]
 	public void CapturesVersionFilter() => Block!.VersionFilter.Should().Be("9.4.0");
 
-	[Fact]
+	[Test]
 	public void RendersOnlyMatchingVersion()
 	{
 		Block!.Found.Should().BeTrue();
@@ -502,13 +568,15 @@ public class ChangelogCdnVersionFilterTests(ITestOutputHelper output) : Directiv
 /// <c>.git</c> marker present the mock git checkout reports the repository as <c>docs-builder</c>, so
 /// the directive selects that product from the injected resolver.
 /// </summary>
-public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnInferredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn:
 	:::
-	""")
+	"""
+)
 {
 	private const string InferredProduct = "docs-builder";
 
@@ -518,10 +586,11 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 		fileSystem.AddDirectory(Path.Combine(Paths.WorkingDirectoryRoot.FullName, ".git"));
 
 	protected override IReleaseNotesResolver GetReleaseNotesResolver() =>
-		ChangelogCdnTestResolver.For(InferredProduct,
+		ChangelogCdnTestResolver.For(
+			InferredProduct,
 			("9.4.0.yaml",
-				// language=yaml
-				"""
+			// language=yaml
+			"""
 				products:
 				- product: docs-builder
 				  target: 9.4.0
@@ -535,12 +604,13 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 				    target: 9.4.0
 				  prs:
 				  - "999"
-				"""));
+				""")
+		);
 
-	[Fact]
+	[Test]
 	public void InfersProductFromRepository() => Block!.CdnProduct.Should().Be(InferredProduct);
 
-	[Fact]
+	[Test]
 	public void RendersInferredCdnBundleBody()
 	{
 		Block!.Found.Should().BeTrue();
@@ -552,18 +622,20 @@ public class ChangelogCdnInferredProductTests(ITestOutputHelper output) : Direct
 /// A valueless <c>:cdn:</c> must fail with a clear error when the product cannot be inferred (no git
 /// information available), rather than silently rendering empty.
 /// </summary>
-public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnInferredProductUnavailableTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn:
 	:::
-	""")
+	"""
+)
 {
 	// Force Unavailable so InferCdnProductFromRepository() returns null — the "could not be inferred" path.
 	protected override GitCheckoutInformation? GetGitCheckoutInformation() => GitCheckoutInformation.Unavailable;
 
-	[Fact]
+	[Test]
 	public void EmitsErrorWhenProductCannotBeInferred()
 	{
 		Block!.Found.Should().BeFalse();
@@ -575,20 +647,24 @@ public class ChangelogCdnInferredProductUnavailableTests(ITestOutputHelper outpu
 /// A <c>:cdn:</c> product that is not declared under <c>release_notes</c> in docset.yml must fail with a
 /// clear error (the bundles were never prefetched), pointing the author at the declaration to add.
 /// </summary>
-public class ChangelogCdnUndeclaredProductTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogCdnUndeclaredProductTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:cdn: not-declared
 	:::
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorWhenProductIsNotDeclared()
 	{
 		Block!.Found.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("not declared in docset.yml") && d.Message.Contains("release_notes"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("not declared in docset.yml") && d.Message.Contains("release_notes"));
 	}
 }
 
@@ -612,17 +688,19 @@ internal static class ChangelogCdnTestResolver
 	}
 }
 
-public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogNotFoundTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
-	:::{changelog} missing-bundles
+	:::{changelog} /missing-bundles
 	:::
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void ReportsFolderNotFound() => Block!.Found.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingFolder()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -630,14 +708,16 @@ public class ChangelogNotFoundTests(ITestOutputHelper output) : DirectiveTest<Ch
 	}
 }
 
-public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(output,
+[InheritsTests]
+public class ChangelogDefaultPathMissingTests() : DirectiveTest<ChangelogBlock>(
 	// language=markdown
 	"""
 	:::{changelog}
 	:::
-	""")
+	"""
+)
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorForMissingDefaultFolder()
 	{
 		// No bundles folder created, so it should emit an error
@@ -650,17 +730,22 @@ public class ChangelogDefaultPathMissingTests(ITestOutputHelper output) : Direct
 /// Tests for breaking changes rendering.
 /// Breaking changes should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogWithBreakingChangesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogWithBreakingChangesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -675,16 +760,18 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		  action: Follow the migration guide.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void RendersBreakingChangesSection()
 	{
 		Html.Should().Contain("Breaking changes");
 		Html.Should().Contain("Breaking change in API");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersImpactAndAction()
 	{
 		Html.Should().Contain("Impact");
@@ -698,17 +785,22 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 /// Tests for deprecations rendering.
 /// Deprecations should always render on the page when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogWithDeprecationsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogWithDeprecationsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -723,9 +815,11 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		  action: Use the new API instead.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void RendersDeprecationsSection()
 	{
 		Html.Should().Contain("Deprecations");
@@ -733,23 +827,30 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyBundleTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogEmptyBundleTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
 		entries: []
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("No new features, enhancements, or fixes");
@@ -757,21 +858,23 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyFolderTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogEmptyFolderTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") =>
+		"""
+		) =>
 		// Create the folder but don't add any YAML files
 		FileSystem.AddDirectory("docs/changelog/bundles");
 
-	[Fact]
+	[Test]
 	public void ReportsFolderEmpty() => Block!.Found.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForEmptyFolder()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -779,16 +882,21 @@ public class ChangelogEmptyFolderTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogAbsolutePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogAbsolutePathTests() : base(
+			// language=markdown
+			"""
 		:::{changelog} /release-notes/bundles
 		:::
-		""") => FileSystem.AddFile("docs/release-notes/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/release-notes/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -800,12 +908,14 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "444444"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void FindsBundlesFolderWithAbsolutePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectBundlesFolderPath() => Block!.BundlesFolderPath.Should().Contain("release-notes");
 }
 
@@ -813,17 +923,22 @@ public class ChangelogAbsolutePathTests : DirectiveTest<ChangelogBlock>
 /// Tests the section order - critical types (breaking changes, security, known issues, deprecations)
 /// should appear BEFORE features/fixes when using :type: all.
 /// </summary>
+[InheritsTests]
 public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSectionOrderTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSectionOrderTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -879,9 +994,11 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "666666"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void BreakingChangesAppearsFirst()
 	{
 		var breakingIdx = Html.IndexOf("Breaking changes", StringComparison.Ordinal);
@@ -892,7 +1009,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		breakingIdx.Should().BeLessThan(fixesIdx, "Breaking changes should appear before Fixes");
 	}
 
-	[Fact]
+	[Test]
 	public void SecurityAppearsBeforeFeatures()
 	{
 		var securityIdx = Html.IndexOf(">Security<", StringComparison.Ordinal);
@@ -901,7 +1018,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		securityIdx.Should().BeLessThan(featuresIdx, "Security should appear before Features");
 	}
 
-	[Fact]
+	[Test]
 	public void KnownIssuesAppearsBeforeFeatures()
 	{
 		var knownIssuesIdx = Html.IndexOf("Known issues", StringComparison.Ordinal);
@@ -910,7 +1027,7 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 		knownIssuesIdx.Should().BeLessThan(featuresIdx, "Known issues should appear before Features");
 	}
 
-	[Fact]
+	[Test]
 	public void DeprecationsAppearsBeforeFeatures()
 	{
 		var deprecationsIdx = Html.IndexOf("Deprecations", StringComparison.Ordinal);
@@ -923,16 +1040,21 @@ public class ChangelogSectionOrderTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests header levels: ## (h2) for versions, ### (h3) for sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHeaderLevelsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHeaderLevelsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -951,9 +1073,11 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void VersionHeaderIsH2()
 	{
 		// Version should be h2
@@ -961,7 +1085,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public void OnlyOneH2ForVersion()
 	{
 		// Only one h2 for the version header
@@ -969,7 +1093,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		h2Count.Should().Be(1, "Should have exactly one h2 for the version");
 	}
 
-	[Fact]
+	[Test]
 	public void SectionHeadersAreH3()
 	{
 		// Section headers should be h3 (children of version)
@@ -997,17 +1121,22 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 /// the rendered output does not concatenate them without a separator.
 /// Regression test for: "allowlist.This PR introduces..." (no space between title and description).
 /// </summary>
+[InheritsTests]
 public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTitleDescriptionSpacingTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTitleDescriptionSpacingTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:description-visibility: keep-descriptions
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -1018,35 +1147,39 @@ public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBloc
 		  - product: elasticsearch
 		    target: 9.3.0
 		  description: This PR introduces the following settings.
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void RendersTitleText() =>
-		Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
+	[Test]
+	public void RendersTitleText() => Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
 
-	[Fact]
-	public void RendersDescriptionText() =>
-		Html.Should().Contain("This PR introduces the following settings");
+	[Test]
+	public void RendersDescriptionText() => Html.Should().Contain("This PR introduces the following settings");
 
-	[Fact]
-	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() =>
-		Html.Should().NotContain("allowlist.This PR introduces");
+	[Test]
+	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() => Html.Should().NotContain("allowlist.This PR introduces");
 }
 
 /// <summary>
 /// Verifies that when a bundle has a release-date field, it is rendered in the output.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDateTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDateTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:release-dates:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.34.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: apm-agent-dotnet
 			  target: 1.34.0
@@ -1059,30 +1192,35 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 			    target: 1.34.0
 			  prs:
 			  - "500"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void RendersReleaseDate() =>
-		Html.Should().Contain("Released: April 9, 2026");
+	[Test]
+	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 
-	[Fact]
-	public void RendersEntries() =>
-		Html.Should().Contain("Add tracing improvements");
+	[Test]
+	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
 }
 
 /// <summary>
 /// Verifies that when a bundle has no release-date field, no "Released:" text appears.
 /// </summary>
+[InheritsTests]
 public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogNoReleaseDateTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogNoReleaseDateTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -1094,27 +1232,33 @@ public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 		    target: 9.3.0
 		  prs:
 		  - "100"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void DoesNotRenderReleaseDate() =>
-		Html.Should().NotContain("Released:");
+	[Test]
+	public void DoesNotRenderReleaseDate() => Html.Should().NotContain("Released:");
 }
 
 /// <summary>
 /// Verifies that both release-date and description render together.
 /// </summary>
+[InheritsTests]
 public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogReleaseDateWithDescriptionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogReleaseDateWithDescriptionTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:release-dates:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/1.34.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.34.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: apm-agent-dotnet
 			  target: 1.34.0
@@ -1129,17 +1273,61 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 			    target: 1.34.0
 			  prs:
 			  - "500"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void RendersReleaseDate() =>
-		Html.Should().Contain("Released: April 9, 2026");
+	[Test]
+	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
 
-	[Fact]
-	public void RendersDescription() =>
-		Html.Should().Contain("This release includes tracing improvements and bug fixes.");
+	[Test]
+	public void RendersDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
 
-	[Fact]
-	public void RendersEntries() =>
-		Html.Should().Contain("Add tracing improvements");
+	[Test]
+	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
+}
+
+/// <summary>
+/// Changelog entry titles or descriptions that contain <c>{{placeholder}}</c> template syntax
+/// must not be treated as substitution keys when the generated markdown is re-parsed.
+/// Regression test for: substitution parser matches {{hostname}} in changelog content and
+/// emits an error that causes Errata to crash when the column position exceeds the source
+/// line length.
+/// </summary>
+[InheritsTests]
+public class ChangelogDoubleBraceEscapeTests : DirectiveTest<ChangelogBlock>
+{
+	public ChangelogDoubleBraceEscapeTests() : base(
+			// language=markdown
+			"""
+		:::{changelog}
+		:::
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			  lifecycle: ga
+			entries:
+			- title: Fix ECE API ingestion blocked by {{hostname}} template placeholder
+			  type: bug-fix
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  prs:
+			  - "123"
+			"""
+			)
+		);
+
+	[Test]
+	public void RendersWithoutErrors() => Collector.Errors.Should().Be(0);
+
+	[Test]
+	public void RendersTitleWithLiteralBraces() => Html.Should().Contain("{{hostname}}");
 }

@@ -25,13 +25,14 @@ public record CodexCardModel
 	/// <summary>
 	/// Builds the card model for a documentation set, so every docset card renders the same fields.
 	/// </summary>
-	public static CodexCardModel FromDocumentationSet(CodexDocumentationSetInfo docSet) => new()
-	{
-		Url = docSet.Url,
-		Title = docSet.Title ?? docSet.Name,
-		Description = docSet.Description,
-		Icon = docSet.Icon,
-		PageCount = docSet.PageCount,
-		RepoPath = docSet.RepoPath,
-	};
+	public static CodexCardModel FromDocumentationSet(CodexDocumentationSetInfo docSet) =>
+		new()
+		{
+			Url = docSet.Url,
+			Title = docSet.Title ?? docSet.Name,
+			Description = docSet.Description,
+			Icon = docSet.Icon,
+			PageCount = docSet.PageCount,
+			RepoPath = docSet.RepoPath,
+		};
 }

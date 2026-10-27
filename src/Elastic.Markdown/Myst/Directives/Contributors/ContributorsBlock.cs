@@ -5,38 +5,31 @@
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Markdig.Parsers;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Contributors;
 
 /// <summary>YAML model for a single contributor entry.</summary>
 public class ContributorEntry
 {
-	[YamlMember(Alias = "gh")]
+	[YamlPropertyName("gh")]
 	public string? GitHub { get; set; }
 
-	[YamlMember(Alias = "name")]
+	[YamlPropertyName("name")]
 	public string? Name { get; set; }
 
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "location")]
+	[YamlPropertyName("location")]
 	public string? Location { get; set; }
 
-	[YamlMember(Alias = "image")]
+	[YamlPropertyName("image")]
 	public string? Image { get; set; }
 }
 
 /// <summary>Resolved contributor ready for rendering.</summary>
-public record Contributor(
-	string? GitHub,
-	string Name,
-	string? Title,
-	string? Location,
-	string AvatarUrl,
-	string? ProfileUrl
-);
+public record Contributor(string? GitHub, string Name, string? Title, string? Location, string AvatarUrl, string? ProfileUrl);
 
 /// <summary>
 /// A backtick-fenced directive that renders a grid of contributor cards from YAML content.
@@ -54,8 +47,7 @@ public record Contributor(
 ///   location: Bucharest, Romania
 /// ```
 /// </example>
-public class ContributorsBlock(BlockParser parser, ParserContext context)
-	: EnhancedCodeBlock(parser, context)
+public class ContributorsBlock(BlockParser parser, ParserContext context) : EnhancedCodeBlock(parser, context)
 {
 	/// <summary>Resolved contributor entries ready for rendering.</summary>
 	public IReadOnlyList<Contributor> Contributors => _contributors;
@@ -74,18 +66,9 @@ public class ContributorsBlock(BlockParser parser, ParserContext context)
 			}
 
 			var avatarUrl = ResolveAvatarUrl(parserContext, entry.GitHub, entry.Image);
-			var profileUrl = !string.IsNullOrWhiteSpace(entry.GitHub)
-				? $"https://github.com/{entry.GitHub}"
-				: null;
+			var profileUrl = !string.IsNullOrWhiteSpace(entry.GitHub) ? $"https://github.com/{entry.GitHub}" : null;
 
-			_contributors.Add(new Contributor(
-				entry.GitHub,
-				entry.Name,
-				entry.Title,
-				entry.Location,
-				avatarUrl,
-				profileUrl
-			));
+			_contributors.Add(new Contributor(entry.GitHub, entry.Name, entry.Title, entry.Location, avatarUrl, profileUrl));
 		}
 
 		if (_contributors.Count == 0)

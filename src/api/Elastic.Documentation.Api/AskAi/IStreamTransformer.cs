@@ -30,5 +30,10 @@ public interface IStreamTransformer
 	/// <param name="parentActivity">Parent activity to track the streaming operation (will be disposed when stream completes)</param>
 	/// <param name="cancellationToken">Cancellation token</param>
 	/// <returns>Stream containing SSE-formatted AskAiEvent objects</returns>
-	Task<Stream> TransformAsync(Stream rawStream, Guid? generatedConversationId, System.Diagnostics.Activity? parentActivity, CancellationToken cancellationToken = default);
+	Task<Stream> TransformAsync(
+		Stream rawStream,
+		Guid? generatedConversationId,
+		System.Diagnostics.Activity? parentActivity,
+		CancellationToken cancellationToken = default
+	);
 }

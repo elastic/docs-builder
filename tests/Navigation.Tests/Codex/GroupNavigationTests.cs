@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Navigation.Tests.Codex;
 
 public class GroupNavigationTests
 {
-	[Fact]
+	[Test]
 	public void GroupNavigation_SetsPropertiesCorrectly()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -22,7 +22,7 @@ public class GroupNavigationTests
 		groupNav.NavigationTitle.Should().Be("Observability");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_TrimsTrailingSlash()
 	{
 		var groupNav = new GroupNavigation("tools", "Tools", "/docs/g/tools/");
@@ -30,7 +30,7 @@ public class GroupNavigationTests
 		groupNav.Url.Should().Be("/docs/g/tools");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_HasIndexPage()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -40,7 +40,7 @@ public class GroupNavigationTests
 		groupNav.Index.NavigationTitle.Should().Be("Observability");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_IndexNavigationRootPointsToGroup()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -48,7 +48,7 @@ public class GroupNavigationTests
 		groupNav.Index.NavigationRoot.Should().BeSameAs(groupNav);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_IsItsOwnNavigationRoot()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -56,7 +56,7 @@ public class GroupNavigationTests
 		groupNav.NavigationRoot.Should().BeSameAs(groupNav);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_StartsWithEmptyNavigationItems()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -64,7 +64,7 @@ public class GroupNavigationTests
 		groupNav.NavigationItems.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_CanSetNavigationItems()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -75,7 +75,7 @@ public class GroupNavigationTests
 		groupNav.NavigationItems.Should().BeSameAs(mockItems);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_HasUniqueIdentifier()
 	{
 		var group1 = new GroupNavigation("observability", "Observability", "/g/observability");
@@ -85,7 +85,7 @@ public class GroupNavigationTests
 		group1.Identifier.Should().NotBe(group2.Identifier);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_IdentifierUsesCodexScheme()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/g/observability");
@@ -95,7 +95,7 @@ public class GroupNavigationTests
 		groupNav.Identifier.AbsolutePath.Should().Be("/observability");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupLinkLeaf_PropertiesSetCorrectly()
 	{
 		var codexNav = CreateMinimalCodexNavigation();
@@ -108,7 +108,7 @@ public class GroupNavigationTests
 		linkLeaf.Hidden.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void GroupIndexLeaf_PropertiesSetCorrectly()
 	{
 		var groupNav = new GroupNavigation("observability", "Observability", "/docs/g/observability");
@@ -124,20 +124,22 @@ public class GroupNavigationTests
 	private static CodexNavigation CreateMinimalCodexNavigation()
 	{
 		// Create a minimal codex navigation for testing GroupLinkLeaf
-		var config = new Documentation.Configuration.Codex.CodexConfiguration
-		{
-			Title = "Test Codex",
-			SitePrefix = "/docs"
-		};
+		var config = new Documentation.Configuration.Codex.CodexConfiguration { Title = "Test Codex", SitePrefix = "/docs" };
 
-		return new CodexNavigation(config, [], new MinimalCodexContext(), new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>());
+		return new CodexNavigation(
+			config,
+			[],
+			new MinimalCodexContext(),
+			new Dictionary<string, Navigation.Isolated.Node.IDocumentationSetNavigation>()
+		);
 	}
 
 	private sealed class MinimalCodexContext : ICodexDocumentationContext
 	{
 		private readonly System.IO.Abstractions.TestingHelpers.MockFileSystem _fs = new();
 		public System.IO.Abstractions.IFileInfo ConfigurationPath => _fs.FileInfo.New("/codex.yml");
-		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector => new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
+		public Elastic.Documentation.Diagnostics.IDiagnosticsCollector Collector =>
+			new Elastic.Documentation.Diagnostics.DiagnosticsCollector([]);
 		public DocumentationWriteFileSystem WriteFileSystem => new(_fs.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), null, _fs);
 		public System.IO.Abstractions.IDirectoryInfo OutputDirectory => _fs.DirectoryInfo.New("/output");
 		public BuildType BuildType => BuildType.Codex;

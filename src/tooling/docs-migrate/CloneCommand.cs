@@ -73,14 +73,12 @@ internal sealed class CloneCommand(ILoggerFactory logFactory)
 				}
 				catch (Exception ex) when (ex is not OperationCanceledException)
 				{
-					_logger.LogWarning("Failed to clone for {Prefix} {Version}: {Message}",
-						b.Prefix, version.VersionLabel, ex.Message);
+					_logger.LogWarning("Failed to clone for {Prefix} {Version}: {Message}", b.Prefix, version.VersionLabel, ex.Message);
 				}
 			}
 		}
 
-		_logger.LogInformation("Cloned {RepoCount} repos, {BranchCount} worktrees",
-			clonedRepos.Count, clonedBranches.Count);
+		_logger.LogInformation("Cloned {RepoCount} repos, {BranchCount} worktrees", clonedRepos.Count, clonedBranches.Count);
 		return 0;
 	}
 }

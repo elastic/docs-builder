@@ -8,7 +8,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.FileSystems;
-using Xunit;
 
 namespace Elastic.Markdown.Tests;
 
@@ -18,9 +17,9 @@ namespace Elastic.Markdown.Tests;
 /// `docs/docset.yml`. Build must honor that explicit choice instead of rediscovering `docs/` from
 /// the repository root via <see cref="Paths.FindDocsFolderFromRoot"/>.
 /// </summary>
-public class BuildContextConfigurationFileTests(ITestOutputHelper output)
+public class BuildContextConfigurationFileTests()
 {
-	[Fact]
+	[Test]
 	public void ExplicitConfigurationFile_OverridesDefaultDiscovery()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -33,8 +32,8 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		fs.AddFile(publicDocsetPath, new MockFileData("toc: []\n"));
 		fs.AddFile(internalDocsetPath, new MockFileData("registry: internal\ntoc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(repoPath),
@@ -43,7 +42,8 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 				Inner = fs,
 				ConfigurationFile = internalDocsetPath,
 				Output = Path.Join(root, "codex-configuration-file-test-out")
-			});
+			}
+		);
 
 		var context = new BuildContext(collector, docFs, configurationContext);
 
@@ -54,7 +54,7 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
 	}
 
-	[Fact]
+	[Test]
 	public void NoExplicitConfigurationFile_FallsBackToDefaultDiscovery()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -65,16 +65,13 @@ public class BuildContextConfigurationFileTests(ITestOutputHelper output)
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(publicDocsetPath, new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(repoPath),
-			new DocumentationScopeOptions
-			{
-				Inner = fs,
-				Output = Path.Join(root, "codex-configuration-file-fallback-test-out")
-			});
+			new DocumentationScopeOptions { Inner = fs, Output = Path.Join(root, "codex-configuration-file-fallback-test-out") }
+		);
 
 		var context = new BuildContext(collector, docFs, configurationContext);
 

@@ -9,8 +9,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
-public class LocalGitRepositoryTracker(ILoggerFactory logFactory, IDiagnosticsCollector collector, IDirectoryInfo workingDirectory, string lookupPath)
-	: ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
+public class LocalGitRepositoryTracker(
+	ILoggerFactory logFactory,
+	IDiagnosticsCollector collector,
+	IDirectoryInfo workingDirectory,
+	string lookupPath
+) : ExternalCommandExecutor(collector, workingDirectory), IRepositoryTracker
 {
 	/// <inheritdoc />
 	protected override ILogger Logger { get; } = logFactory.CreateLogger<LocalGitRepositoryTracker>();

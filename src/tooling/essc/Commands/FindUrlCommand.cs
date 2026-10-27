@@ -39,10 +39,7 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 	/// <param name="pathPrefix">Path fragment to search for (substring match against the resolved path, so locale-prefixed variants like <c>/pt/...</c> still match).</param>
 	/// <param name="contentType">Restrict the scan to one Contentstack content type uid; omit to scan all types (slower — pages through full content).</param>
 	/// <param name="ct">Cancellation token.</param>
-	public async Task FindUrl(
-		[Argument] string pathPrefix,
-		string? contentType = null,
-		Cancel ct = default)
+	public async Task FindUrl([Argument] string pathPrefix, string? contentType = null, Cancel ct = default)
 	{
 		var contentTypes = contentType is not null ? [contentType] : PageContentTypes.All;
 
@@ -58,7 +55,8 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 		var totalItems = 0;
 		var matchedItems = 0;
 
-		await AnsiConsole.Status()
+		await AnsiConsole
+			.Status()
 			.AutoRefresh(true)
 			.Spinner(Spinner.Known.Dots)
 			.StartAsync("[aqua]Scanning...[/]", async statusCtx =>
@@ -83,9 +81,7 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 									continue;
 
 								matchedItems++;
-								var uid = item.Data?.TryGetProperty("uid", out var uidEl) == true
-									? uidEl.GetString() ?? "?"
-									: "?";
+								var uid = item.Data?.TryGetProperty("uid", out var uidEl) == true ? uidEl.GetString() ?? "?" : "?";
 
 								var list = sightings.TryGetValue(doc.Path, out var existing) ? existing : [];
 								list.Add(new Sighting(type, uid, item.Type, item.EventAt, page, item.Data));
@@ -93,7 +89,8 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 							}
 
 							_ = statusCtx.Status(
-								$"[aqua]Scanning:[/] {Markup.Escape(type)} [dim](page {page}, {totalItems:N0} items seen, {matchedItems:N0} matched)[/]");
+								$"[aqua]Scanning:[/] {Markup.Escape(type)} [dim](page {page}, {totalItems:N0} items seen, {matchedItems:N0} matched)[/]"
+							);
 							return Task.CompletedTask;
 						},
 						ct: ct
@@ -116,15 +113,18 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 		foreach (var (path, list) in sightings.OrderBy(kvp => kvp.Key))
 		{
 			var isDuplicate = list.Count > 1;
-			AnsiConsole.MarkupLine(isDuplicate
-				? $"[red bold]DUPLICATE DELIVERY[/] [red]{Markup.Escape(path)}[/] [red]({list.Count} sightings in this pass)[/]"
-				: $"[aqua]{Markup.Escape(path)}[/] [dim](1 sighting)[/]");
+			AnsiConsole.MarkupLine(
+				isDuplicate
+					? $"[red bold]DUPLICATE DELIVERY[/] [red]{Markup.Escape(path)}[/] [red]({list.Count} sightings in this pass)[/]"
+					: $"[aqua]{Markup.Escape(path)}[/] [dim](1 sighting)[/]"
+			);
 
 			foreach (var s in list)
 			{
 				AnsiConsole.MarkupLine(
 					$"  [green]{Markup.Escape(s.ContentType)}[/] uid=[yellow]{Markup.Escape(s.Uid)}[/] " +
-					$"event={Markup.Escape(s.EventType)} eventAt=[dim]{Markup.Escape(s.EventAt ?? "?")}[/] page=[white]{s.Page}[/]");
+						$"event={Markup.Escape(s.EventType)} eventAt=[dim]{Markup.Escape(s.EventAt ?? "?")}[/] page=[white]{s.Page}[/]"
+				);
 			}
 		}
 
@@ -146,15 +146,18 @@ internal sealed class FindUrlCommand(ContentStackClient client)
 					continue;
 
 				AnsiConsole.MarkupLine(
-					$"  [dim]-- page={s.Page} eventAt={Markup.Escape(s.EventAt ?? "?")} event={Markup.Escape(s.EventType)} --[/]");
+					$"  [dim]-- page={s.Page} eventAt={Markup.Escape(s.EventAt ?? "?")} event={Markup.Escape(s.EventType)} --[/]"
+				);
 				AnsiConsole.WriteLine(ToIndentedJson(data));
 			}
 		}
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine($"[aqua]{sightings.Count}[/] distinct paths matched.");
-		AnsiConsole.MarkupLine(duplicates.Count > 0
-			? $"[red bold]{duplicates.Count}[/] [red]path(s) were delivered more than once in this single pass — this is the 409 root cause.[/]"
-			: "[green]No duplicate deliveries observed in this pass.[/] [dim](run again — a duplicate may only surface intermittently, e.g. under a retried/slow request.)[/]");
+		AnsiConsole.MarkupLine(
+			duplicates.Count > 0
+				? $"[red bold]{duplicates.Count}[/] [red]path(s) were delivered more than once in this single pass — this is the 409 root cause.[/]"
+				: "[green]No duplicate deliveries observed in this pass.[/] [dim](run again — a duplicate may only surface intermittently, e.g. under a retried/slow request.)[/]"
+		);
 	}
 }

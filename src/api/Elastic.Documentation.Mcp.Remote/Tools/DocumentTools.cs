@@ -23,23 +23,22 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, McpToolName("get_{scope}document_by_url"), Description(
-		"Retrieves a specific {docs} page by its URL. " +
-		"Use when the user provides a documentation URL, references a known page, " +
-		"or you need the full content and metadata of a specific doc. " +
-		"Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
+	[McpServerTool, McpToolName("get_{scope}document_by_url"), Description("Retrieves a specific {docs} page by its URL. "
+		+ "Use when the user provides a documentation URL, references a known page, "
+		+ "or you need the full content and metadata of a specific doc. "
+		+ "Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
 	public async Task<string> GetDocumentByUrl(
 		[Description("The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
 		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("get_{scope}document_by_url");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["url"] = url,
-			["includeBody"] = includeBody
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(
+			activity,
+			new Dictionary<string, object?> { ["url"] = url, ["includeBody"] = includeBody }
+		);
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -53,7 +52,8 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				McpToolTelemetry.MarkFailure(activity, "document_not_found", "Document not found for the requested URL");
 				return JsonSerializer.Serialize(
 					new ErrorResponse($"Document not found for URL: {url}"),
-					McpJsonContext.Default.ErrorResponse);
+					McpJsonContext.Default.ErrorResponse
+				);
 			}
 
 			var response = new DocumentResponse
@@ -69,22 +69,10 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				AiUseCases = result.AiUseCases,
 				LastUpdated = result.LastUpdated,
 				SourceUrl = result.SourceUrl,
-				Parents = result.Parents.Select(p => new ParentDto
-				{
-					Title = p.Title,
-					Url = p.Url
-				}).ToList(),
+				Parents = result.Parents.Select(p => new ParentDto { Title = p.Title, Url = p.Url }).ToList(),
 				Headings = result.Headings.ToList(),
-				Product = result.Product != null ? new ProductDto
-				{
-					Id = result.Product.Id,
-					Repository = result.Product.Repository
-				} : null,
-				RelatedProducts = result.RelatedProducts?.Select(p => new ProductDto
-				{
-					Id = p.Id,
-					Repository = p.Repository
-				}).ToList(),
+				Product = result.Product != null ? new ProductDto { Id = result.Product.Id, Repository = result.Product.Repository } : null,
+				RelatedProducts = result.RelatedProducts?.Select(p => new ProductDto { Id = p.Id, Repository = p.Repository }).ToList(),
 				Body = includeBody ? result.Body : null,
 				BodyLength = result.Body?.Length ?? 0
 			};
@@ -115,20 +103,17 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, McpToolName("analyze_{scope}document_structure"), Description(
-		"Analyzes the structure of a {docs} page. " +
-		"Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. " +
-		"Returns heading count, link count, parent pages, and whether AI summaries are present.")]
+	[McpServerTool, McpToolName("analyze_{scope}document_structure"), Description("Analyzes the structure of a {docs} page. "
+		+ "Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. "
+		+ "Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(
 		[Description("The URL of the document to analyze. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
-		CancellationToken cancellationToken = default)
+		CancellationToken cancellationToken = default
+	)
 	{
 		var toolName = McpToolTelemetry.ResolveToolName("analyze_{scope}document_structure");
 		using var activity = McpToolTelemetry.StartActivity(toolName);
-		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?>
-		{
-			["url"] = url
-		});
+		var payload = McpToolTelemetry.SetPayloadMetadata(activity, new Dictionary<string, object?> { ["url"] = url });
 		McpToolTelemetry.LogStart(logger, toolName, payload);
 		var duration = Stopwatch.StartNew();
 		var outcome = "failure";
@@ -142,7 +127,8 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				McpToolTelemetry.MarkFailure(activity, "document_not_found", "Document not found for the requested URL");
 				return JsonSerializer.Serialize(
 					new ErrorResponse($"Document not found for URL: {url}"),
-					McpJsonContext.Default.ErrorResponse);
+					McpJsonContext.Default.ErrorResponse
+				);
 			}
 
 			var response = new DocumentStructureResponse
@@ -154,11 +140,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				ParentCount = result.ParentCount,
 				BodyLength = result.BodyLength,
 				Headings = result.Headings.ToList(),
-				Parents = result.Parents.Select(p => new ParentDto
-				{
-					Title = p.Title,
-					Url = p.Url
-				}).ToList(),
+				Parents = result.Parents.Select(p => new ParentDto { Title = p.Title, Url = p.Url }).ToList(),
 				AiEnrichment = new AiEnrichmentStatusDto
 				{
 					HasSummary = result.HasAiSummary,

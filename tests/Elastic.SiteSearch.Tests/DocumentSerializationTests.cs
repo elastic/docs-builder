@@ -12,10 +12,7 @@ namespace Elastic.SiteSearch.Tests;
 
 public class DocumentSerializationTests
 {
-	private static readonly JsonSerializerOptions Options = new()
-	{
-		TypeInfoResolver = SourceGenerationContext.Default
-	};
+	private static readonly JsonSerializerOptions Options = new() { TypeInfoResolver = SourceGenerationContext.Default };
 
 	/// <summary>
 	/// Options that configure SearchDocumentBase as a fallback-safe polymorphic root.
@@ -23,15 +20,15 @@ public class DocumentSerializationTests
 	/// </summary>
 	private static readonly JsonSerializerOptions FallbackOptions = new()
 	{
-		TypeInfoResolver = JsonTypeInfoResolver.Combine(SourceGenerationContext.Default)
-			.WithAddedModifier(SearchDocumentPolymorphism.WithFallback())
+		TypeInfoResolver = JsonTypeInfoResolver.Combine(SourceGenerationContext.Default).WithAddedModifier(
+			SearchDocumentPolymorphism.WithFallback()
+		)
 	};
 
 	/// <summary>
 	/// <see cref="SearchDocumentBase.ContentType"/> is JSON-driven; AutoBogus would assign unrelated strings if populated.
 	/// </summary>
-	private static AutoFaker<T> CreateAutoFaker<T>()
-		where T : SearchDocumentBase =>
+	private static AutoFaker<T> CreateAutoFaker<T>() where T : SearchDocumentBase =>
 		new AutoFaker<T>().Configure(builder =>
 		{
 #pragma warning disable CA2263 // Skip path must match the concrete faker type T (inherited ContentType).
@@ -39,7 +36,7 @@ public class DocumentSerializationTests
 #pragma warning restore CA2263
 		});
 
-	[Fact]
+	[Test]
 	public void SiteDocument_Roundtrips()
 	{
 		var original = CreateAutoFaker<SiteDocument>().Generate();
@@ -52,7 +49,7 @@ public class DocumentSerializationTests
 		deserialized.Should().BeEquivalentTo(original);
 	}
 
-	[Fact]
+	[Test]
 	public void GuideDocument_Roundtrips()
 	{
 		var original = CreateAutoFaker<GuideDocument>().Generate();
@@ -65,7 +62,7 @@ public class DocumentSerializationTests
 		deserialized.Should().BeEquivalentTo(original);
 	}
 
-	[Fact]
+	[Test]
 	public void SiteDocument_Preserves_CrawlFields()
 	{
 		var original = CreateAutoFaker<SiteDocument>().Generate();
@@ -81,7 +78,7 @@ public class DocumentSerializationTests
 		deserialized.Http.LastModified.Should().Be(original.Http.LastModified);
 	}
 
-	[Fact]
+	[Test]
 	public void GuideDocument_Preserves_CrawlFields()
 	{
 		var original = CreateAutoFaker<GuideDocument>().Generate();
@@ -97,7 +94,7 @@ public class DocumentSerializationTests
 		deserialized.Http.LastModified.Should().Be(original.Http.LastModified);
 	}
 
-	[Fact]
+	[Test]
 	public void ConcreteRead_StaysFlat_IgnoringDiscriminator()
 	{
 		// Polymorphism is opt-in via the interface. A concrete-type read does NOT dispatch
@@ -112,14 +109,15 @@ public class DocumentSerializationTests
 		flat.Should().BeOfType<WebsiteSearchDocument>(); // no dispatch — stays the declared type
 	}
 
-	[Fact]
+	[Test]
 	public void MissingDiscriminator_ReadAs_ISearchDocument_Throws()
 	{
 		// Polymorphism on an interface is strict: missing $type is an unrecoverable error
 		// because the interface cannot be instantiated as a fallback.
 		// Callers that don't have a discriminator should read as SearchDocumentBase with
 		// WithFallback() — see MissingDiscriminator_ReadAs_SearchDocumentBase_ReturnsFallback.
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
@@ -132,12 +130,13 @@ public class DocumentSerializationTests
 		act.Should().Throw<NotSupportedException>().WithMessage("*type discriminator*");
 	}
 
-	[Fact]
+	[Test]
 	public void UnknownDiscriminator_ReadAs_ISearchDocument_Throws()
 	{
 		// An unknown $type on an interface root still throws because the interface cannot be
 		// instantiated as a fallback, even with IgnoreUnrecognizedTypeDiscriminators=true.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "unknown-future-type",
 			"title": "Some Page",
@@ -151,12 +150,13 @@ public class DocumentSerializationTests
 		act.Should().Throw<NotSupportedException>();
 	}
 
-	[Fact]
+	[Test]
 	public void MissingDiscriminator_ReadAs_SearchDocumentBase_ReturnsFallback()
 	{
 		// With WithFallback() applied, SearchDocumentBase is a concrete polymorphic root.
 		// A missing $type materializes a SearchDocumentBase instance rather than throwing.
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Getting Started",
 			"search_title": "Getting Started with Elasticsearch",
@@ -173,12 +173,13 @@ public class DocumentSerializationTests
 		fallback.Path.Should().Be("/docs/get-started");
 	}
 
-	[Fact]
+	[Test]
 	public void UnknownDiscriminator_ReadAs_SearchDocumentBase_ReturnsFallback()
 	{
 		// With WithFallback() applied, an unrecognized $type yields a SearchDocumentBase
 		// fallback instance instead of throwing.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "unknown-future-type",
 			"title": "Some Page",
@@ -195,11 +196,12 @@ public class DocumentSerializationTests
 		fallback.Title.Should().Be("Some Page");
 	}
 
-	[Fact]
+	[Test]
 	public void KnownDiscriminator_ReadAs_SearchDocumentBase_WithFallback_DispatchesToConcreteType()
 	{
 		// Even with WithFallback(), a known $type still dispatches to the correct concrete type.
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "site",
 			"title": "Blog Post",
@@ -215,10 +217,11 @@ public class DocumentSerializationTests
 		result.Should().BeOfType<SiteDocument>();
 	}
 
-	[Fact]
+	[Test]
 	public void ContentType_FromJson_Overrides_WhenPresent()
 	{
-		var json = """
+		var json =
+			"""
 		{
 			"title": "Legacy",
 			"search_title": "Legacy",
@@ -236,24 +239,25 @@ public class DocumentSerializationTests
 		deserialized.ContentType.Should().Be("archived-site");
 	}
 
-	[Fact]
+	[Test]
 	public void SiteDocument_Type_IsHardcoded()
 	{
 		var doc = CreateAutoFaker<SiteDocument>().Generate();
 		doc.Type.Should().Be("site");
 	}
 
-	[Fact]
+	[Test]
 	public void GuideDocument_Type_IsHardcoded()
 	{
 		var doc = CreateAutoFaker<GuideDocument>().Generate();
 		doc.Type.Should().Be("guide");
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationFields_Roundtrip()
 	{
-		var json = """
+		var json =
+			"""
 		{
 			"$type": "site",
 			"title": "Test",
@@ -281,16 +285,10 @@ public class DocumentSerializationTests
 		el.RootElement.GetProperty("navigation").GetProperty("table_of_contents").GetInt32().Should().Be(5);
 	}
 
-	[Fact]
+	[Test]
 	public void NavigationFields_DefaultPenaltyValues()
 	{
-		var doc = new SiteDocument
-		{
-			Title = "Test",
-			SearchTitle = "Test",
-			Path = "/x",
-			Hash = "h"
-		};
+		var doc = new SiteDocument { Title = "Test", SearchTitle = "Test", Path = "/x", Hash = "h" };
 
 		// rank_feature defaults to 50 so documents without explicit nav metadata are penalised
 		doc.Navigation.Depth.Should().Be(50);
@@ -304,7 +302,7 @@ public class DocumentSerializationTests
 		el.RootElement.TryGetProperty("ai_autocomplete_questions", out _).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void SiteDocument_IncludesDiscriminator_InJson()
 	{
 		var original = CreateAutoFaker<SiteDocument>().Generate();
@@ -318,7 +316,7 @@ public class DocumentSerializationTests
 		contentTypeProp.GetString().Should().Be("site");
 	}
 
-	[Fact]
+	[Test]
 	public void GuideDocument_IncludesDiscriminator_InJson()
 	{
 		var original = CreateAutoFaker<GuideDocument>().Generate();
@@ -332,7 +330,7 @@ public class DocumentSerializationTests
 		contentTypeProp.GetString().Should().Be("guide");
 	}
 
-	[Fact]
+	[Test]
 	public void ConcreteSerialize_Omits_Discriminator()
 	{
 		// Serialize<WebsiteSearchDocument>() (or any concrete type) doesn't emit $type because
@@ -347,7 +345,7 @@ public class DocumentSerializationTests
 		ct.GetString().Should().Be("website");
 	}
 
-	[Fact]
+	[Test]
 	public void Compose_WithFallback_CombinesContractAndConsumerContexts()
 	{
 		// Simulate a consumer (e.g. docs-builder) composing the contract resolver with its own
@@ -376,7 +374,7 @@ public class DocumentSerializationTests
 		missing.Should().BeOfType<SearchDocumentBase>();
 	}
 
-	[Fact]
+	[Test]
 	public void Compose_ViaISearchDocument_KnownTypeDispatchesCorrectly()
 	{
 		// Verify that ISearchDocument-based dispatch still works with the composed resolver.
@@ -408,7 +406,7 @@ public class DocumentSerializationTests
 		website.Should().BeOfType<WebsiteSearchDocument>();
 	}
 
-	[Fact]
+	[Test]
 	public void Compose_ViaISearchDocument_UnknownDiscriminator_Throws()
 	{
 		// ISearchDocument cannot be instantiated as a fallback (it is an interface), so an
@@ -425,7 +423,7 @@ public class DocumentSerializationTests
 		act.Should().Throw<NotSupportedException>();
 	}
 
-	[Fact]
+	[Test]
 	public void Compose_ViaISearchDocument_MissingDiscriminator_Throws()
 	{
 		// Same as above: ISearchDocument with no $type must throw because the interface cannot

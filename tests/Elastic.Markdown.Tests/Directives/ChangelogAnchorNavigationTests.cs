@@ -15,16 +15,21 @@ namespace Elastic.Markdown.Tests.Directives;
 /// The version heading anchor must therefore be the Slugify of the display name
 /// ("november-2025"), NOT the raw key ("2025-11").
 /// </summary>
+[InheritsTests]
 public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogYearMonthAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogYearMonthAnchorNavigationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/2025-11.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-11.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-11
@@ -43,9 +48,11 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 			    target: 2025-11
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void VersionHeadingTocSlugIsSlugifiedDisplayName()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -57,39 +64,45 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		versionItem.Slug.Should().NotBe("2025-11");
 	}
 
-	[Fact]
+	[Test]
 	public void VersionHeadingHtmlIdMatchesTocSlug()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}' so the right-nav link scrolls to the section");
+		Html.Should().Contain(
+			$"id=\"{versionItem.Slug}\"",
+			$"heading-wrapper id must match TOC slug '{versionItem.Slug}' so the right-nav link scrolls to the section"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void SubSectionTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"sub-section TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"sub-section TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void AllTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id in the rendered HTML");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id in the rendered HTML"
+			);
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void SubSectionSlugsUseYearMonthKeyNotDisplayName()
 	{
 		// Sub-section explicit anchors embed the raw yyyy-MM key (via titleSlug).
@@ -97,8 +110,7 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 		// sub-section slugs must contain "2025-11", not "november-2025".
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
-			item.Slug.Should().Contain("2025-11",
-				$"sub-section slug for a yyyy-MM bundle should retain the original date key");
+			item.Slug.Should().Contain("2025-11", $"sub-section slug for a yyyy-MM bundle should retain the original date key");
 	}
 }
 
@@ -108,16 +120,21 @@ public class ChangelogYearMonthAnchorNavigationTests : DirectiveTest<ChangelogBl
 /// Full-date versions display as "Month D, Year" (e.g. "August 5, 2025").
 /// The version heading anchor must be the Slugify of that display name ("august-5-2025").
 /// </summary>
+[InheritsTests]
 public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogFullDateAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogFullDateAnchorNavigationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -139,9 +156,11 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 			  action: Take action.
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void VersionHeadingTocSlugIsSlugifiedDisplayName()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -152,24 +171,25 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 		versionItem.Slug.Should().NotBe("2025-08-05");
 	}
 
-	[Fact]
+	[Test]
 	public void VersionHeadingHtmlIdMatchesTocSlug()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
-	[Fact]
+	[Test]
 	public void AllTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 }
@@ -182,16 +202,21 @@ public class ChangelogFullDateAnchorNavigationTests : DirectiveTest<ChangelogBlo
 /// dashes.  The TOC slug and heading-wrapper id must therefore both be "9-3-0",
 /// not "9.3.0".
 /// </summary>
+[InheritsTests]
 public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSemverAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSemverAnchorNavigationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -220,9 +245,11 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 			  action: Do this.
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void VersionHeadingTocSlugMatchesDisplayVersion()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -233,42 +260,41 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 		versionItem.Slug.Should().Be("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public void VersionHeadingHtmlIdMatchesTocSlug()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
-	[Fact]
+	[Test]
 	public void SubSectionTocSlugsContainVersionString()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc.Where(t => t.Level == 3))
-			item.Slug.Should().Contain("9.3.0",
-				$"sub-section slug should contain the version string — Slugify.Core preserves dots");
+			item.Slug.Should().Contain("9.3.0", $"sub-section slug should contain the version string — Slugify.Core preserves dots");
 	}
 
-	[Fact]
+	[Test]
 	public void AllTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public void GeneratedAnchorsContainVersionString()
 	{
 		// Slugify.Core preserves dots, so sub-section anchors retain "9.3.0".
 		var anchors = Block!.GeneratedAnchors.ToList();
 		foreach (var anchor in anchors)
-			anchor.Should().Contain("9.3.0",
-				$"generated anchor '{anchor}' should contain the semver version string");
+			anchor.Should().Contain("9.3.0", $"generated anchor '{anchor}' should contain the semver version string");
 	}
 }
 
@@ -279,16 +305,21 @@ public class ChangelogSemverAnchorNavigationTests : DirectiveTest<ChangelogBlock
 /// as both the display text and the slug base.  Slugify should preserve safe
 /// characters (alphanumeric + hyphens) so the TOC slug and HTML id agree.
 /// </summary>
+[InheritsTests]
 public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogRawVersionAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogRawVersionAnchorNavigationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/release-alpha.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-alpha.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-alpha
@@ -300,9 +331,11 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 			    target: release-alpha
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void VersionHeadingTocSlugMatchesRawVersion()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -312,24 +345,25 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 		versionItem.Slug.Should().Be("release-alpha");
 	}
 
-	[Fact]
+	[Test]
 	public void VersionHeadingHtmlIdMatchesTocSlug()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		var versionItem = toc.Single(t => t.Level == 2);
 
-		Html.Should().Contain($"id=\"{versionItem.Slug}\"",
-			$"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
+		Html.Should().Contain($"id=\"{versionItem.Slug}\"", $"heading-wrapper id must match TOC slug '{versionItem.Slug}'");
 	}
 
-	[Fact]
+	[Test]
 	public void AllTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 }
@@ -341,18 +375,22 @@ public class ChangelogRawVersionAnchorNavigationTests : DirectiveTest<ChangelogB
 /// version-level and sub-section-level TOC item must independently link to a
 /// real heading in the HTML.  This is the end-to-end "right-nav works" check.
 /// </summary>
+[InheritsTests]
 public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultiVersionAnchorNavigationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMultiVersionAnchorNavigationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -364,11 +402,15 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-11.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-11.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 2025-11
@@ -380,21 +422,25 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 			    target: 2025-11
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void AllTocSlugsHaveMatchingHtmlIds()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in toc)
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void SemverVersionHeadingSlugPreservesDots()
 	{
 		// Slugify.Core preserves dots, so "9.3.0" remains "9.3.0" as the slug.
@@ -404,7 +450,7 @@ public class ChangelogMultiVersionAnchorNavigationTests : DirectiveTest<Changelo
 		semverItem.Slug.Should().Be("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public void DateVersionHeadingSlugUsesDisplayName()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();

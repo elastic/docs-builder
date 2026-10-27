@@ -18,8 +18,7 @@ public class ApiSegment
 	public List<(string Content, int LineNumber)> ContentLinesWithNumbers { get; set; } = [];
 }
 
-public class EnhancedCodeBlock(BlockParser parser, ParserContext context)
-	: FencedCodeBlock(parser), IBlockExtension
+public class EnhancedCodeBlock(BlockParser parser, ParserContext context) : FencedCodeBlock(parser), IBlockExtension
 {
 	public BuildContext Build { get; } = context.Build;
 

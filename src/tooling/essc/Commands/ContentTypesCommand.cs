@@ -7,9 +7,7 @@ using Spectre.Console;
 
 namespace Elastic.SiteSearch.Cli.Commands;
 
-internal sealed class ContentTypesCommand(
-	ContentStackClient client
-)
+internal sealed class ContentTypesCommand(ContentStackClient client)
 {
 	private const string StateFile = "content-types-state.json";
 
@@ -22,19 +20,14 @@ internal sealed class ContentTypesCommand(
 	/// <param name="cacheFolder">On-disk folder for the survey cache.</param>
 	/// <param name="force">Discard saved survey state and restart.</param>
 	/// <param name="ct">Cancellation token.</param>
-	public async Task Types(
-		string? cacheFolder = null,
-		bool force = false,
-		Cancel ct = default
-	)
+	public async Task Types(string? cacheFolder = null, bool force = false, Cancel ct = default)
 	{
 		var store = new StateManager(cacheFolder);
 
 		if (force)
 			store.Delete(StateFile);
 
-		var state = store.Load(StateFile, StateJsonContext.Default.ContentTypesState)
-			?? new ContentTypesState();
+		var state = store.Load(StateFile, StateJsonContext.Default.ContentTypesState) ?? new ContentTypesState();
 
 		AnsiConsole.MarkupLine("[aqua bold]Contentstack Content Type Survey[/]");
 		AnsiConsole.MarkupLine($"[dim]Cache: {Markup.Escape(store.CacheFolder)}[/]");
@@ -44,7 +37,8 @@ internal sealed class ContentTypesCommand(
 		{
 			AnsiConsole.MarkupLine(
 				$"[dim]Loaded [white]{state.ContentTypes.Count}[/] previously discovered content types " +
-				$"([white]{state.TotalItemsSeen:N0}[/] items seen)[/]");
+					$"([white]{state.TotalItemsSeen:N0}[/] items seen)[/]"
+			);
 
 			if (state.Completed)
 			{
@@ -63,16 +57,12 @@ internal sealed class ContentTypesCommand(
 			AnsiConsole.WriteLine();
 		}
 
-		await AnsiConsole.Progress()
+		await AnsiConsole
+			.Progress()
 			.AutoRefresh(true)
 			.AutoClear(false)
 			.HideCompleted(false)
-			.Columns(
-				new SpinnerColumn(),
-				new TaskDescriptionColumn(),
-				new ProgressBarColumn(),
-				new PercentageColumn()
-			)
+			.Columns(new SpinnerColumn(), new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn())
 			.StartAsync(async ctx =>
 			{
 				var task = ctx.AddTask("[aqua]Syncing content[/]", maxValue: 100);
@@ -88,8 +78,8 @@ internal sealed class ContentTypesCommand(
 							task.MaxValue = p.TotalCount;
 							task.Value = p.ItemsSoFar;
 						}
-						task.Description = $"[aqua]Page {p.PagesCompleted}[/] — [white]{p.ItemsSoFar:N0}[/] items " +
-							$"([white]{state.ContentTypes.Count}[/] types)";
+						task.Description = $"[aqua]Page {p.PagesCompleted}[/] — [white]{p.ItemsSoFar:N0}[/] items "
+							+ $"([white]{state.ContentTypes.Count}[/] types)";
 					}),
 					onPage: response =>
 					{
@@ -122,10 +112,13 @@ internal sealed class ContentTypesCommand(
 	/// </summary>
 	private static void ExitIfUnregistered(ContentTypesState state)
 	{
-		var unregistered = state.ContentTypes.Keys
-			.Where(uid => !PageContentTypes.All.Contains(uid)
-				&& !PageContentTypes.Blocked.Contains(uid)
-				&& !PageContentTypes.KnownNonPages.Contains(uid))
+		var unregistered = state
+			.ContentTypes
+			.Keys
+			.Where(
+				uid => !PageContentTypes.All.Contains(uid) && !PageContentTypes.Blocked.Contains(uid) &&
+					!PageContentTypes.KnownNonPages.Contains(uid)
+			)
 			.OrderBy(uid => uid, StringComparer.Ordinal)
 			.ToList();
 
@@ -134,10 +127,12 @@ internal sealed class ContentTypesCommand(
 
 		AnsiConsole.WriteLine();
 		AnsiConsole.MarkupLine(
-			$"[red bold]{unregistered.Count} unregistered content type(s) found:[/] {Markup.Escape(string.Join(", ", unregistered))}");
+			$"[red bold]{unregistered.Count} unregistered content type(s) found:[/] {Markup.Escape(string.Join(", ", unregistered))}"
+		);
 		AnsiConsole.MarkupLine(
 			"[red]Add each to PageContentTypes.All (to sync it), PageContentTypes.Blocked (to ignore it for now), " +
-			"or PageContentTypes.KnownNonPages (if it's a component/taxonomy type, not a page).[/]");
+				"or PageContentTypes.KnownNonPages (if it's a component/taxonomy type, not a page).[/]"
+		);
 		Environment.Exit(1);
 	}
 
@@ -168,9 +163,7 @@ internal sealed class ContentTypesCommand(
 			return;
 		}
 
-		var groups = state.ContentTypes.Values
-			.OrderByDescending(e => e.Total)
-			.ToList();
+		var groups = state.ContentTypes.Values.OrderByDescending(e => e.Total).ToList();
 
 		var table = new Table()
 			.Border(TableBorder.Rounded)

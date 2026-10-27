@@ -10,9 +10,8 @@ using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -23,18 +22,40 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
-	private static readonly IDeserializer ConfigurationDeserializer =
-		new StaticDeserializerBuilder(new YamlStaticContext())
-			.WithNamingConvention(UnderscoredNamingConvention.Instance)
-			.WithTypeConverter(new YamlLenientListConverter())
-			.WithTypeConverter(new TypeEntryYamlConverter())
-			.Build();
+	private static readonly YamlSerializerOptions ConfigurationOptions = YamlStaticContext.Default.CreateOptions(
+		o => (o with { Converters = [new YamlLenientListConverter(), new TypeEntryYamlConverter()] }).WithUnmappedKeysThrowing()
+	);
 
 	/// <summary>
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
-	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
+	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<ChangelogConfigurationYaml>(
+			yaml,
+			sourceName is null ? ConfigurationOptions : ConfigurationOptions with { SourceName = sourceName }
+		)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content, reporting unknown keys to
+	/// <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	private static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, IDiagnosticsCollector collector, string configPath)
+	{
+		var options = ConfigurationOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, configPath));
+		return YamlSerializer.Deserialize<ChangelogConfigurationYaml>(yaml, options)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+	}
+
+	/// <summary>
+	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
+	/// in definition order. Returns an empty list when the YAML has no <c>bundle.profiles</c> block.
+	/// </summary>
+	public static IReadOnlyList<string> ReadBundleProfileNames(string changelogYaml)
+	{
+		var config = DeserializeConfiguration(changelogYaml);
+		return config.Bundle?.Profiles?.Keys.ToList() ?? [];
+	}
 
 	/// <summary>
 	/// Loads the publish blocker configuration from a changelog.
@@ -48,7 +69,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = DeserializeConfiguration(yamlContent);
+		var yamlConfig = DeserializeConfiguration(yamlContent, configPath);
 
 		if (yamlConfig.Rules?.Publish == null)
 			return null;
@@ -77,7 +98,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, finalConfigPath);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
@@ -98,7 +119,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		}
 	}
 
-	private ChangelogConfiguration? ParseConfiguration(IDiagnosticsCollector collector, ChangelogConfigurationYaml yamlConfig, string configPath)
+	private ChangelogConfiguration? ParseConfiguration(
+		IDiagnosticsCollector collector,
+		ChangelogConfigurationYaml yamlConfig,
+		string configPath
+	)
 	{
 		var validProductIds = configurationContext.ProductsConfiguration.Products.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -118,6 +143,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, string>? labelToProducts;
 		Dictionary<string, string>? labelToFeatures;
 		PivotConfiguration? pivot = null;
+		var requiredPivots = RequiredPivot.None;
 
 		if (yamlConfig.Pivot != null)
 		{
@@ -132,7 +158,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					if (ChangelogEntryTypeExtensions.TryParse(typeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
 						continue;
-					collector.EmitError(configPath, $"Type '{typeName}' in pivot.types is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}");
+					collector.EmitError(
+						configPath,
+						$"Type '{typeName}' in pivot.types is not a valid type. Valid types: {string.Join(", ", ChangelogConfiguration.DefaultTypes)}"
+					);
 					return null;
 				}
 
@@ -142,7 +171,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					var requiredTypeName = requiredType.ToStringFast(true);
 					if (yamlConfig.Pivot.Types.Keys.Any(k => k.Equals(requiredTypeName, StringComparison.OrdinalIgnoreCase)))
 						continue;
-					collector.EmitError(configPath, $"Required type '{requiredTypeName}' is missing from pivot.types. Required types: {string.Join(", ", ChangelogConfiguration.RequiredTypes.Select(t => t.ToStringFast(true)))}");
+					collector.EmitError(
+						configPath,
+						$"Required type '{requiredTypeName}' is missing from pivot.types. Required types: {string.Join(", ", ChangelogConfiguration.RequiredTypes.Select(t => t.ToStringFast(true)))}"
+					);
 					return null;
 				}
 
@@ -153,16 +185,29 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						continue;
 					if (!typeName.Equals(ChangelogEntryType.BreakingChange.ToStringFast(true), StringComparison.OrdinalIgnoreCase))
 					{
-						collector.EmitError(configPath, $"Type '{typeName}' has subtypes defined, but subtypes are only allowed for 'breaking-change' type.");
+						collector.EmitError(
+							configPath,
+							$"Type '{typeName}' has subtypes defined, but subtypes are only allowed for 'breaking-change' type."
+						);
 						return null;
 					}
 
 					// Validate subtype values against enum
 					foreach (var subtypeName in typeEntry.Subtypes.Keys)
 					{
-						if (ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+						if (
+							ChangelogEntrySubtypeExtensions.TryParse(
+								subtypeName,
+								out _,
+								ignoreCase: true,
+								allowMatchingMetadataAttribute: true
+							)
+						)
 							continue;
-						collector.EmitError(configPath, $"Subtype '{subtypeName}' in pivot.types.{typeName}.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+						collector.EmitError(
+							configPath,
+							$"Subtype '{subtypeName}' in pivot.types.{typeName}.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}"
+						);
 						return null;
 					}
 				}
@@ -178,9 +223,19 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				// Validate subtypes against enum values using TryParse
 				foreach (var subtypeName in yamlConfig.Pivot.Subtypes.Keys)
 				{
-					if (!ChangelogEntrySubtypeExtensions.TryParse(subtypeName, out _, ignoreCase: true, allowMatchingMetadataAttribute: true))
+					if (
+						!ChangelogEntrySubtypeExtensions.TryParse(
+							subtypeName,
+							out _,
+							ignoreCase: true,
+							allowMatchingMetadataAttribute: true
+						)
+					)
 					{
-						collector.EmitError(configPath, $"Subtype '{subtypeName}' in pivot.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}");
+						collector.EmitError(
+							configPath,
+							$"Subtype '{subtypeName}' in pivot.subtypes is not a valid subtype. Valid subtypes: {string.Join(", ", ChangelogConfiguration.DefaultSubtypes)}"
+						);
 						return null;
 					}
 				}
@@ -212,12 +267,21 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (validProductIds.Contains(productId))
 						continue;
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-					collector.EmitError(configPath, $"Product '{specParts[0]}' in pivot.products is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					collector.EmitError(
+						configPath,
+						$"Product '{specParts[0]}' in pivot.products is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
 					return null;
 				}
 			}
 			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 			labelToFeatures = BuildLabelToFeaturesMapping(yamlConfig.Pivot.Features);
+
+			var mappedPivots = (labelToAreas is { Count: > 0 } ? RequiredPivot.Areas : RequiredPivot.None)
+				| (labelToProducts is { Count: > 0 } ? RequiredPivot.Products : RequiredPivot.None);
+			if (ParseRequiredPivots(collector, yamlConfig.Pivot.Required, mappedPivots, configPath) is not { } parsedRequired)
+				return null;
+			requiredPivots = parsedRequired;
 		}
 		else
 		{
@@ -243,7 +307,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			{
 				if (!LifecycleExtensions.TryParse(lifecycleStr, out var lifecycle, ignoreCase: true, allowMatchingMetadataAttribute: true))
 				{
-					collector.EmitError(configPath, $"Lifecycle '{lifecycleStr}' in changelog.yml is not valid. Valid lifecycles: {string.Join(", ", ChangelogConfiguration.DefaultLifecycles.Select(l => l.ToStringFast(true)))}");
+					collector.EmitError(
+						configPath,
+						$"Lifecycle '{lifecycleStr}' in changelog.yml is not valid. Valid lifecycles: {string.Join(", ", ChangelogConfiguration.DefaultLifecycles.Select(l => l.ToStringFast(true)))}"
+					);
 					return null;
 				}
 				parsedLifecycles.Add(lifecycle);
@@ -263,7 +330,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				if (!validProductIds.Contains(normalizedProductId))
 				{
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-					collector.EmitError(configPath, $"Product '{productId}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in changelog.yml is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
 					return null;
 				}
 				if (configurationContext.ProductsConfiguration.Products.TryGetValue(normalizedProductId, out var product))
@@ -285,11 +355,33 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (yamlConfig.Products != null)
 			productsConfig = ParseProductsConfig(collector, yamlConfig.Products, configPath, validProductIds);
 
+		// An implied-products key only fires for a product that a label maps to. Warn, not fail: a config can
+		// name a product before its labels exist.
+		if (productsConfig?.Implies is { Count: > 0 } implies)
+		{
+			var mappedProductIds = ((IEnumerable<string>?)labelToProducts?.Values ?? [])
+				.Select(
+					spec => spec.Split(
+						' ',
+						StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+					).FirstOrDefault()?.Replace('_', '-')
+				)
+				.OfType<string>()
+				.ToHashSet(StringComparer.OrdinalIgnoreCase);
+			foreach (var productId in implies.Keys.Where(id => !mappedProductIds.Contains(id)))
+			{
+				collector.EmitWarning(
+					configPath,
+					$"Product '{productId}' in products_config.implies has no label in pivot.products that maps to it, so it never applies."
+				);
+			}
+		}
+
 		// Process bundle configuration
 		BundleConfiguration? bundleConfig = null;
 		if (yamlConfig.Bundle != null)
 		{
-			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle);
+			bundleConfig = ParseBundleConfiguration(collector, configPath, yamlConfig.Bundle, validProductIds);
 			if (bundleConfig == null)
 				return null;
 		}
@@ -303,26 +395,56 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 
 		// Process filename strategy
-		var filenameStrategy = FilenameStrategy.Timestamp;
+		var filenameStrategy = FilenameStrategy.Pr;
 		if (!string.IsNullOrWhiteSpace(yamlConfig.Filename))
 		{
-			if (!FilenameStrategyExtensions.TryParse(yamlConfig.Filename, out var parsed, ignoreCase: true, allowMatchingMetadataAttribute: true))
+			if (
+				!FilenameStrategyExtensions.TryParse(
+					yamlConfig.Filename,
+					out var parsed,
+					ignoreCase: true,
+					allowMatchingMetadataAttribute: true
+				)
+			)
 			{
-				var valid = string.Join(", ", FilenameStrategyExtensions.GetValues().Select(v => v.ToStringFast(true)));
-				collector.EmitError(configPath, $"filename: '{yamlConfig.Filename}' is not valid. Use one of: {valid}");
+				collector.EmitError(
+					configPath,
+					$"filename: '{yamlConfig.Filename}' is not valid. The only supported value is 'pr'. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
+				);
 				return null;
 			}
+
+			if (parsed == FilenameStrategy.Timestamp)
+			{
+				collector.EmitError(
+					configPath,
+					"filename: 'timestamp' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
+				);
+				return null;
+			}
+
+			if (parsed == FilenameStrategy.Issue)
+			{
+				collector.EmitError(
+					configPath,
+					"filename: 'issue' is no longer supported. Changelog entries are keyed by PR number; for items with no PR use 'changelog note'."
+				);
+				return null;
+			}
+
 			filenameStrategy = parsed;
 		}
 
 		var labelToAreasReadOnly = labelToAreas?.ToDictionary(
 			kvp => kvp.Key,
 			kvp => (IReadOnlyList<string>)kvp.Value,
-			StringComparer.OrdinalIgnoreCase);
+			StringComparer.OrdinalIgnoreCase
+		);
 
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
+			RequiredPivots = requiredPivots,
 			Types = availableTypes,
 			SubTypes = availableSubtypes,
 			Lifecycles = lifecycles,
@@ -341,6 +463,47 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
+	// mappedPivots holds the pivots that map at least one label: an entry without labels cannot satisfy a requirement.
+	private static RequiredPivot? ParseRequiredPivots(
+		IDiagnosticsCollector collector,
+		YamlLenientList? requiredList,
+		RequiredPivot mappedPivots,
+		string configPath
+	)
+	{
+		var required = RequiredPivot.None;
+		foreach (var value in requiredList?.Values ?? [])
+		{
+			switch (value.Trim().ToLowerInvariant())
+			{
+				// The type is always required, so listing it changes nothing.
+				case "types":
+					break;
+				case "areas" when !mappedPivots.HasFlag(RequiredPivot.Areas):
+				case "products" when !mappedPivots.HasFlag(RequiredPivot.Products):
+					collector.EmitError(
+						configPath,
+						$"pivot.required lists '{value}', but pivot.{value.Trim().ToLowerInvariant()} maps no labels, so no PR could satisfy it. Add labels to pivot.{value.Trim().ToLowerInvariant()}."
+					);
+					return null;
+				case "areas":
+					required |= RequiredPivot.Areas;
+					break;
+				case "products":
+					required |= RequiredPivot.Products;
+					break;
+				default:
+					collector.EmitError(
+						configPath,
+						$"'{value}' in pivot.required is not a pivot that can be required. Valid values: types, areas, products."
+					);
+					return null;
+			}
+		}
+
+		return required;
+	}
+
 	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)
 	{
 		Dictionary<string, TypeEntry?>? types = null;
@@ -350,11 +513,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				kvp => kvp.Key,
 				kvp => kvp.Value == null
 					? null
-					: new TypeEntry
-					{
-						Labels = kvp.Value.Labels,
-						Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes)
-					});
+					: new TypeEntry { Labels = kvp.Value.Labels, Subtypes = ConvertLenientDictToStringDict(kvp.Value.Subtypes) }
+			);
 		}
 
 		return new PivotConfiguration
@@ -376,10 +536,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		if (source == null || source.Count == 0)
 			return null;
 
-		return source.ToDictionary(
-			kvp => kvp.Key,
-			kvp => JoinLenientList(kvp.Value)
-		);
+		return source.ToDictionary(kvp => kvp.Key, kvp => JoinLenientList(kvp.Value));
 	}
 
 	/// <summary>
@@ -392,7 +549,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		IDiagnosticsCollector collector,
 		ProductsConfigYaml yaml,
 		string configPath,
-		HashSet<string> validProductIds)
+		HashSet<string> validProductIds
+	)
 	{
 		// Validate available products
 		List<string>? available = null;
@@ -406,7 +564,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				if (!validProductIds.Contains(normalizedProductId))
 				{
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-					collector.EmitError(configPath, $"Product '{productId}' in products_config.available is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in products_config.available is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
 					return null;
 				}
 				available.Add(normalizedProductId);
@@ -430,35 +591,84 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				if (!validProductIds.Contains(normalizedProductId))
 				{
 					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-					collector.EmitError(configPath, $"Product '{defaultYaml.Product}' in products_config.default is not in the list of available products from config/products.yml. Available products: {availableProducts}");
+					collector.EmitError(
+						configPath,
+						$"Product '{defaultYaml.Product}' in products_config.default is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
 					return null;
 				}
 
-				defaultProducts.Add(new DefaultProduct
-				{
-					Product = normalizedProductId,
-					Lifecycle = defaultYaml.Lifecycle ?? "ga"
-				});
+				defaultProducts.Add(new DefaultProduct { Product = normalizedProductId, Lifecycle = defaultYaml.Lifecycle ?? "ga" });
 			}
 		}
 
-		return new ProductsConfig
+		// Parse implied products
+		var implies = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+		if (yaml.Implies != null)
 		{
-			Available = available,
-			Default = defaultProducts
-		};
+			foreach (var (productId, impliedYaml) in yaml.Implies)
+			{
+				var normalizedProductId = productId.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProductId))
+				{
+					var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"Product '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+					);
+					return null;
+				}
+
+				List<string> implied = [];
+				foreach (var impliedId in impliedYaml?.Values ?? [])
+				{
+					var normalizedImpliedId = impliedId.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedImpliedId))
+					{
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"Product '{impliedId}' implied by '{productId}' in products_config.implies is not in the list of available products from config/products.yml. Available products: {availableProducts}"
+						);
+						return null;
+					}
+
+					// A product implies itself already; list each implied product once.
+					if (
+						string.Equals(normalizedImpliedId, normalizedProductId, StringComparison.OrdinalIgnoreCase)
+						|| implied.Contains(normalizedImpliedId, StringComparer.OrdinalIgnoreCase)
+					)
+						continue;
+					implied.Add(normalizedImpliedId);
+				}
+
+				if (implied.Count > 0)
+					implies[normalizedProductId] = implied;
+			}
+		}
+
+		return new ProductsConfig { Available = available, Default = defaultProducts, Implies = implies.Count > 0 ? implies : null };
 	}
 
-	private static BundleConfiguration? ParseBundleConfiguration(IDiagnosticsCollector collector, string configPath, BundleConfigurationYaml yaml)
+	private static BundleConfiguration? ParseBundleConfiguration(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleConfigurationYaml yaml,
+		HashSet<string> validProductIds
+	)
 	{
 		if (yaml.Resolve != null)
-			collector.EmitWarning(configPath, "bundle.resolve is deprecated and ignored. Resolved bundles are now the only format. Remove 'resolve' from bundle in changelog.yml.");
+			collector.EmitWarning(
+				configPath,
+				"bundle.resolve is deprecated and ignored. Resolved bundles are now the only format. Remove 'resolve' from bundle in changelog.yml."
+			);
 
 		if (!string.IsNullOrWhiteSpace(yaml.Repo) && yaml.Repo.Contains('+', StringComparison.Ordinal))
 		{
 			collector.EmitError(
 				configPath,
-				"bundle.repo must name a single GitHub repository. Remove '+' merged-repo syntax from bundle.repo.");
+				"bundle.repo must name a single GitHub repository. Remove '+' merged-repo syntax from bundle.repo."
+			);
 			return null;
 		}
 
@@ -471,7 +681,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					collector.EmitError(
 						configPath,
-						$"bundle.profiles.{kvp.Key}.repo must name a single GitHub repository. Remove '+' merged-repo syntax.");
+						$"bundle.profiles.{kvp.Key}.repo must name a single GitHub repository. Remove '+' merged-repo syntax."
+					);
 					return null;
 				}
 			}
@@ -488,12 +699,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					continue;
 
 				var trimmed = v.Trim();
-				if (trimmed.IndexOf('/') < 0 ||
-					trimmed.IndexOf('/') != trimmed.LastIndexOf('/'))
+				if (trimmed.IndexOf('/') < 0 || trimmed.IndexOf('/') != trimmed.LastIndexOf('/'))
 				{
 					collector.EmitError(
 						configPath,
-						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'."
+					);
 					return null;
 				}
 
@@ -502,7 +713,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 				{
 					collector.EmitError(
 						configPath,
-						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'.");
+						$"bundle.link_allow_repos: each entry must be exactly 'owner/repo' (one slash). Invalid: '{v}'."
+					);
 					return null;
 				}
 
@@ -515,24 +727,81 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, BundleProfile>? profiles = null;
 		if (yaml.Profiles is { Count: > 0 })
 		{
-			profiles = yaml.Profiles.ToDictionary(
-				kvp => kvp.Key,
-				kvp => kvp.Value is null
-					? new BundleProfile()
-					: new BundleProfile
+			profiles = [];
+			foreach (var (profileName, profileYaml) in yaml.Profiles)
+			{
+				if (profileYaml is null)
+				{
+					profiles[profileName] = new BundleProfile();
+					continue;
+				}
+
+#pragma warning disable CS0618
+				if (!string.IsNullOrWhiteSpace(profileYaml.Source))
+				{
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.source is deprecated. " +
+							"Use bundle.releases.github to map release tags to profiles instead."
+					);
+				}
+
+				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output_products is deprecated. Use 'product: <id>' instead."
+					);
+
+				if (!string.IsNullOrWhiteSpace(profileYaml.OutputDirectory))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output_directory is deprecated. The output directory is derived automatically as bundle.output_directory/{{product}}."
+					);
+#pragma warning restore CS0618
+
+				string? product = null;
+				if (!string.IsNullOrWhiteSpace(profileYaml.Product))
+				{
+					var normalizedProduct = profileYaml.Product.Replace('_', '-');
+					if (!validProductIds.Contains(normalizedProduct))
 					{
-						Products = kvp.Value.Products,
-						Output = kvp.Value.Output,
-						OutputProducts = kvp.Value.OutputProducts,
-						Description = kvp.Value.Description,
-						Repo = kvp.Value.Repo,
-						Owner = kvp.Value.Owner,
-						Branch = kvp.Value.Branch,
-						HideFeatures = kvp.Value.HideFeatures?.Values,
-						ReleaseDates = kvp.Value.ReleaseDates,
-						Source = kvp.Value.Source
-					});
+						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
+						collector.EmitError(
+							configPath,
+							$"bundle.profiles.{profileName}.product: '{profileYaml.Product}' is not in products.yml. Available products: {availableProducts}"
+						);
+						return null;
+					}
+					product = normalizedProduct;
+				}
+
+#pragma warning disable CS0618
+				profiles[profileName] = new BundleProfile
+				{
+					Product = product,
+					Products = profileYaml.Products,
+					Output = profileYaml.Output,
+					OutputDirectory = profileYaml.OutputDirectory,
+					OutputProducts = profileYaml.OutputProducts,
+					Description = profileYaml.Description,
+					Repo = profileYaml.Repo,
+					Owner = profileYaml.Owner,
+					Branch = profileYaml.Branch,
+					HideFeatures = profileYaml.HideFeatures?.Values,
+					ReleaseDates = profileYaml.ReleaseDates,
+					Source = profileYaml.Source
+				};
+#pragma warning restore CS0618
+			}
 		}
+
+		var releases = ParseBundleReleases(collector, configPath, yaml.Releases, profiles, validProductIds);
+		if (releases == null && collector.Errors > 0)
+			return null;
+
+		var backports = ParseBundleBackports(collector, configPath, yaml.Backports);
+		if (backports == null && collector.Errors > 0)
+			return null;
 
 		return new BundleConfiguration
 		{
@@ -545,23 +814,143 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Branch = yaml.Branch,
 			ReleaseDates = yaml.ReleaseDates,
 			LinkAllowRepos = linkAllowRepos,
-			Profiles = profiles
+			Backports = backports,
+			Profiles = profiles,
+			Releases = releases
 		};
+	}
+
+	/// <summary>
+	/// Reads <c>bundle.backports.labels</c>. Labels are exact names: trimmed, de-duplicated ignoring case, and
+	/// never globs, because <c>backport*</c> would also match opt-out labels such as <c>backport-skip</c>.
+	/// Returns <c>null</c> when tracing is not configured, or after emitting an error for an invalid label.
+	/// </summary>
+	private static BackportsConfiguration? ParseBundleBackports(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleBackportsYaml? yaml
+	)
+	{
+		var raw = yaml?.Labels?.Values;
+		if (raw is not { Count: > 0 })
+			return null;
+
+		var labels = new List<string>();
+		foreach (var label in raw.Select(l => l.Trim()).Where(l => l.Length > 0))
+		{
+			if (label.AsSpan().IndexOfAny('*', '?') >= 0)
+			{
+				collector.EmitError(
+					configPath,
+					$"bundle.backports.labels: '{label}' must be an exact label name. Globs are not supported, because 'backport*' would also match opt-out labels such as 'backport-skip'."
+				);
+				return null;
+			}
+
+			if (!labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+				labels.Add(label);
+		}
+
+		return labels.Count == 0 ? null : new BackportsConfiguration { Labels = labels };
+	}
+
+	private static BundleReleases? ParseBundleReleases(
+		IDiagnosticsCollector collector,
+		string configPath,
+		BundleReleasesYaml? yaml,
+		Dictionary<string, BundleProfile>? profiles,
+		HashSet<string> validProductIds
+	)
+	{
+		if (yaml == null)
+			return null;
+
+		Dictionary<string, string>? github = null;
+		if (yaml.Github is { Count: > 0 })
+		{
+			github = [];
+			foreach (var (tag, profile) in yaml.Github)
+			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.github['{tag}']: must map to a non-empty profile name.");
+					return null;
+				}
+				if (profiles == null || !profiles.ContainsKey(profile))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.github['{tag}']: profile '{profile}' is not defined in bundle.profiles."
+					);
+					return null;
+				}
+				github[tag] = profile;
+			}
+		}
+
+		Dictionary<string, string>? products = null;
+		if (yaml.Products is { Count: > 0 })
+		{
+			products = [];
+			foreach (var (product, profile) in yaml.Products)
+			{
+				if (string.IsNullOrWhiteSpace(profile))
+				{
+					collector.EmitError(configPath, $"bundle.releases.products['{product}']: must map to a non-empty profile name.");
+					return null;
+				}
+				var normalizedProduct = product.Replace('_', '-');
+				if (!validProductIds.Contains(normalizedProduct))
+				{
+					var available = string.Join(", ", validProductIds.OrderBy(p => p));
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products key '{product}' is not in products.yml. Available products: {available}"
+					);
+					return null;
+				}
+				if (products.ContainsKey(normalizedProduct))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products: duplicate normalized key '{normalizedProduct}' (from '{product}'). Use only one spelling per product."
+					);
+					return null;
+				}
+				if (profiles == null || !profiles.ContainsKey(profile))
+				{
+					collector.EmitError(
+						configPath,
+						$"bundle.releases.products['{product}']: profile '{profile}' is not defined in bundle.profiles."
+					);
+					return null;
+				}
+				products[normalizedProduct] = profile;
+			}
+		}
+
+		if (github == null && products == null)
+			return null;
+
+		return new BundleReleases { Github = github, Products = products };
 	}
 
 	/// <summary>
 	/// Loads changelog configuration from a specific path, treating a missing file as a hard error.
 	/// Used in profile mode when an explicit config path was provided (e.g. in tests).
 	/// </summary>
-	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationRequired(IDiagnosticsCollector collector, string configPath, Cancel ctx)
+	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationRequired(
+		IDiagnosticsCollector collector,
+		string configPath,
+		Cancel ctx
+	)
 	{
 		if (!fileSystem.File.Exists(configPath))
 		{
 			collector.EmitError(
 				configPath,
-				$"Changelog configuration file not found at '{configPath}'. " +
-				"Either run 'docs-builder changelog init' to create one, " +
-				"or re-run from the folder where changelog.yml exists."
+				$"Changelog configuration file not found at '{configPath}'. " + "Either run 'docs-builder changelog init' to create one, " +
+					"or re-run from the folder where changelog.yml exists."
 			);
 			return null;
 		}
@@ -569,7 +958,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, configPath);
 			return ParseConfiguration(collector, yamlConfig, configPath);
 		}
 		catch (IOException ex)
@@ -582,7 +971,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -598,11 +987,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 	public async Task<ChangelogConfiguration?> LoadChangelogConfigurationForProfileMode(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		var cwd = fileSystem.Directory.GetCurrentDirectory();
-		var candidates = new[]
-		{
-			fileSystem.Path.Join(cwd, "changelog.yml"),
-			fileSystem.Path.Join(cwd, "docs", "changelog.yml")
-		};
+		var candidates = new[] { fileSystem.Path.Join(cwd, "changelog.yml"), fileSystem.Path.Join(cwd, "docs", "changelog.yml") };
 
 		var foundPath = candidates.FirstOrDefault(fileSystem.File.Exists);
 
@@ -611,9 +996,9 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(
 				string.Empty,
 				"changelog.yml not found. Profile-based commands require a changelog configuration file. " +
-				"Either run 'docs-builder changelog init' to create one, " +
-				"or re-run this command from the folder where changelog.yml exists " +
-				"(e.g. the project root if the file is at docs/changelog.yml)."
+					"Either run 'docs-builder changelog init' to create one, " +
+					"or re-run this command from the folder where changelog.yml exists " +
+					"(e.g. the project root if the file is at docs/changelog.yml)."
 			);
 			return null;
 		}
@@ -621,7 +1006,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, foundPath);
 			return ParseConfiguration(collector, yamlConfig, foundPath);
 		}
 		catch (IOException ex)
@@ -634,7 +1019,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -645,7 +1030,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		IDiagnosticsCollector collector,
 		RulesConfigurationYaml? rulesYaml,
 		string configPath,
-		HashSet<string> validProductIds)
+		HashSet<string> validProductIds
+	)
 	{
 		if (rulesYaml == null)
 			return null;
@@ -675,7 +1061,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 
 		// Parse publish rules — emit deprecation warning when present
 		if (rulesYaml.Publish != null)
-			collector.EmitWarning(configPath, "rules.publish is deprecated and no longer used by the changelog render command. Move type/area filtering to rules.bundle, which applies at bundle time instead of render time.");
+			collector.EmitWarning(
+				configPath,
+				"rules.publish is deprecated and no longer used by the changelog render command. Move type/area filtering to rules.bundle, which applies at bundle time instead of render time."
+			);
 
 		// Note: rules.publish is no longer used by changelog render; set to null so it's never applied
 		// The warning above alerts users they need to migrate to rules.bundle
@@ -685,7 +1074,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Match = globalMatch,
 			Create = createRules,
 			Bundle = bundleRules,
-			Publish = null  // rules.publish is retired; filtering happens at bundle time via rules.bundle
+			Publish =
+				null // rules.publish is retired; filtering happens at bundle time via rules.bundle
 		};
 	}
 
@@ -694,7 +1084,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		BundleRulesYaml? yaml,
 		string configPath,
 		HashSet<string> validProductIds,
-		MatchMode inheritedMatch)
+		MatchMode inheritedMatch
+	)
 	{
 		if (yaml == null)
 			return null;
@@ -702,16 +1093,31 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		// Validate mutual exclusivity for products
 		if (yaml.ExcludeProducts?.Values is { Count: > 0 } && yaml.IncludeProducts?.Values is { Count: > 0 })
 		{
-			collector.EmitError(configPath, "rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
+			collector.EmitError(
+				configPath,
+				"rules.bundle: cannot have both 'exclude_products' and 'include_products'. Use one or the other."
+			);
 			return null;
 		}
 
 		// Parse and validate product lists
-		var excludeProducts = ParseAndValidateProductList(collector, yaml.ExcludeProducts, configPath, validProductIds, "rules.bundle.exclude_products");
+		var excludeProducts = ParseAndValidateProductList(
+			collector,
+			yaml.ExcludeProducts,
+			configPath,
+			validProductIds,
+			"rules.bundle.exclude_products"
+		);
 		if (excludeProducts == null && collector.Errors > 0)
 			return null;
 
-		var includeProducts = ParseAndValidateProductList(collector, yaml.IncludeProducts, configPath, validProductIds, "rules.bundle.include_products");
+		var includeProducts = ParseAndValidateProductList(
+			collector,
+			yaml.IncludeProducts,
+			configPath,
+			validProductIds,
+			"rules.bundle.include_products"
+		);
 		if (includeProducts == null && collector.Errors > 0)
 			return null;
 
@@ -722,7 +1128,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchProducts);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
+				collector.EmitError(
+					configPath,
+					$"rules.bundle.match_products: '{yaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'."
+				);
 				return null;
 			}
 			matchProducts = parsed.Value;
@@ -735,7 +1144,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
+				collector.EmitError(
+					configPath,
+					$"rules.bundle.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'."
+				);
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -768,7 +1180,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(configPath, $"rules.bundle.products: '{productId}' not in available products. Available: {availableProducts}");
+						collector.EmitError(
+							configPath,
+							$"rules.bundle.products: '{productId}' not in available products. Available: {availableProducts}"
+						);
 						return null;
 					}
 
@@ -778,16 +1193,31 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					// Validate mutual exclusivity for products within this context
 					if (productYaml.ExcludeProducts?.Values is { Count: > 0 } && productYaml.IncludeProducts?.Values is { Count: > 0 })
 					{
-						collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}: cannot have both 'exclude_products' and 'include_products'. Use one or the other.");
+						collector.EmitError(
+							configPath,
+							$"rules.bundle.products.{normalizedProductId}: cannot have both 'exclude_products' and 'include_products'. Use one or the other."
+						);
 						return null;
 					}
 
 					// Parse product lists for this context
-					var contextExcludeProducts = ParseAndValidateProductList(collector, productYaml.ExcludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.exclude_products");
+					var contextExcludeProducts = ParseAndValidateProductList(
+						collector,
+						productYaml.ExcludeProducts,
+						configPath,
+						validProductIds,
+						$"rules.bundle.products.{normalizedProductId}.exclude_products"
+					);
 					if (contextExcludeProducts == null && collector.Errors > 0)
 						return null;
 
-					var contextIncludeProducts = ParseAndValidateProductList(collector, productYaml.IncludeProducts, configPath, validProductIds, $"rules.bundle.products.{normalizedProductId}.include_products");
+					var contextIncludeProducts = ParseAndValidateProductList(
+						collector,
+						productYaml.IncludeProducts,
+						configPath,
+						validProductIds,
+						$"rules.bundle.products.{normalizedProductId}.include_products"
+					);
 					if (contextIncludeProducts == null && collector.Errors > 0)
 						return null;
 
@@ -801,7 +1231,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsed = ParseMatchMode(productYaml.MatchProducts);
 						if (parsed == null)
 						{
-							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'.");
+							collector.EmitError(
+								configPath,
+								$"rules.bundle.products.{normalizedProductId}.match_products: '{productYaml.MatchProducts}' is not valid. Use 'any', 'all', or 'conjunction'."
+							);
 							return null;
 						}
 						contextMatchProducts = parsed.Value;
@@ -810,25 +1243,30 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					// Validate per-product ineffective patterns
 					if (contextMatchProducts == MatchMode.Any && contextIncludeProducts is { Count: > 0 })
 					{
-						collector.EmitWarning(configPath,
+						collector.EmitWarning(
+							configPath,
 							$"Configuration pattern 'match_products: any' with 'include_products' in per-product rule '{normalizedProductId}' provides no selective filtering. " +
-							"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
-							"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md");
+								"Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. " +
+								"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md"
+						);
 					}
 
 					// Detect disjoint products in per-product include_products
 					if (contextIncludeProducts is { Count: > 1 })
 					{
-						var disjointProducts = contextIncludeProducts.Where(p =>
-							!string.Equals(p, normalizedProductId, StringComparison.OrdinalIgnoreCase)).ToList();
+						var disjointProducts = contextIncludeProducts.Where(
+							p => !string.Equals(p, normalizedProductId, StringComparison.OrdinalIgnoreCase)
+						).ToList();
 
 						if (disjointProducts.Count > 0)
 						{
-							collector.EmitHint(configPath,
+							collector.EmitHint(
+								configPath,
 								$"Per-product rule '{normalizedProductId}' includes disjoint products [{string.Join(", ", disjointProducts)}] " +
-								"which cannot be included due to single-product rule resolution. " +
-								"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
-								"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md");
+									"which cannot be included due to single-product rule resolution. " +
+									"Use separate bundles (each with a single product in output_products or profile output_products), or multi-product changelogs instead. " +
+									"Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs.md"
+							);
 						}
 					}
 
@@ -839,7 +1277,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsedMode = ParseMatchMode(productYaml.MatchAreas);
 						if (parsedMode == null)
 						{
-							collector.EmitError(configPath, $"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
+							collector.EmitError(
+								configPath,
+								$"rules.bundle.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'."
+							);
 							return null;
 						}
 						productMatchAreas = parsedMode.Value;
@@ -853,7 +1294,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						ExcludeAreas = productYaml.ExcludeAreas,
 						IncludeAreas = productYaml.IncludeAreas
 					};
-					var productBlocker = ParsePublishBlockerFromYaml(collector, productBlockerYaml, configPath, $"rules.bundle.products.{normalizedProductId}", productMatchAreas);
+					var productBlocker = ParsePublishBlockerFromYaml(
+						collector,
+						productBlockerYaml,
+						configPath,
+						$"rules.bundle.products.{normalizedProductId}",
+						productMatchAreas
+					);
 					if (productBlocker == null && collector.Errors > 0)
 						return null;
 
@@ -877,9 +1324,11 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var hasGlobalProductFilters = (excludeProducts?.Count ?? 0) > 0 || (includeProducts?.Count ?? 0) > 0;
 			if (hasGlobalProductFilters || blocker != null)
 			{
-				collector.EmitHint(configPath,
+				collector.EmitHint(
+					configPath,
 					"rules.bundle: When 'products' is present, global include_products, exclude_products, and type/area rules are not applied for filtering; configure filters under each product key or use global-only rules.bundle (no 'products' section). " +
-					"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#rules-bundle");
+						"See: https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md#rules-bundle"
+				);
 			}
 		}
 
@@ -898,7 +1347,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		YamlLenientList? list,
 		string configPath,
 		HashSet<string> validProductIds,
-		string fieldPath)
+		string fieldPath
+	)
 	{
 		if (list?.Values is not { Count: > 0 } values)
 			return null;
@@ -910,7 +1360,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			if (!validProductIds.Contains(normalizedId))
 			{
 				var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-				collector.EmitError(configPath, $"{fieldPath}: '{rawId}' is not in the list of available products. Available products: {availableProducts}");
+				collector.EmitError(
+					configPath,
+					$"{fieldPath}: '{rawId}' is not in the list of available products. Available products: {availableProducts}"
+				);
 				return null;
 			}
 			result.Add(normalizedId);
@@ -924,7 +1377,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		string configPath,
 		HashSet<string> validProductIds,
 		string path,
-		MatchMode inheritedMatch)
+		MatchMode inheritedMatch
+	)
 	{
 		if (yaml == null)
 			return null;
@@ -966,11 +1420,21 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(configPath, $"{path}.products: '{productId}' not in available products. Available: {availableProducts}");
+						collector.EmitError(
+							configPath,
+							$"{path}.products: '{productId}' not in available products. Available: {availableProducts}"
+						);
 						return null;
 					}
 
-					var productRules = ParseCreateRules(collector, productYaml, configPath, validProductIds, $"{path}.products.{normalizedProductId}", match);
+					var productRules = ParseCreateRules(
+						collector,
+						productYaml,
+						configPath,
+						validProductIds,
+						$"{path}.products.{normalizedProductId}",
+						match
+					);
 					if (productRules == null && collector.Errors > 0)
 						return null;
 					if (productRules != null)
@@ -979,13 +1443,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		return new CreateRules
-		{
-			Labels = labels,
-			Mode = mode,
-			Match = match,
-			ByProduct = byProduct
-		};
+		return new CreateRules { Labels = labels, Mode = mode, Match = match, ByProduct = byProduct };
 	}
 
 	private PublishRules? ParsePublishRules(
@@ -994,7 +1452,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		string configPath,
 		HashSet<string> validProductIds,
 		string path,
-		MatchMode inheritedMatch)
+		MatchMode inheritedMatch
+	)
 	{
 		if (yaml == null)
 			return null;
@@ -1006,7 +1465,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			var parsed = ParseMatchMode(yaml.MatchAreas);
 			if (parsed == null)
 			{
-				collector.EmitError(configPath, $"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
+				collector.EmitError(
+					configPath,
+					$"{path}.match_areas: '{yaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'."
+				);
 				return null;
 			}
 			matchAreas = parsed.Value;
@@ -1031,7 +1493,10 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					if (!validProductIds.Contains(normalizedProductId))
 					{
 						var availableProducts = string.Join(", ", validProductIds.OrderBy(p => p));
-						collector.EmitError(configPath, $"{path}.products: '{productId}' not in available products. Available: {availableProducts}");
+						collector.EmitError(
+							configPath,
+							$"{path}.products: '{productId}' not in available products. Available: {availableProducts}"
+						);
 						return null;
 					}
 
@@ -1044,13 +1509,22 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 						var parsed = ParseMatchMode(productYaml.MatchAreas);
 						if (parsed == null)
 						{
-							collector.EmitError(configPath, $"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'.");
+							collector.EmitError(
+								configPath,
+								$"{path}.products.{normalizedProductId}.match_areas: '{productYaml.MatchAreas}' is not valid. Use 'any', 'all', or 'conjunction'."
+							);
 							return null;
 						}
 						productMatchAreas = parsed.Value;
 					}
 
-					var productBlocker = ParsePublishBlockerFromYaml(collector, productYaml, configPath, $"{path}.products.{normalizedProductId}", productMatchAreas);
+					var productBlocker = ParsePublishBlockerFromYaml(
+						collector,
+						productYaml,
+						configPath,
+						$"{path}.products.{normalizedProductId}",
+						productMatchAreas
+					);
 					if (productBlocker == null && collector.Errors > 0)
 						return null;
 					if (productBlocker != null)
@@ -1059,11 +1533,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 		}
 
-		return new PublishRules
-		{
-			Blocker = blocker,
-			ByProduct = byProduct
-		};
+		return new PublishRules { Blocker = blocker, ByProduct = byProduct };
 	}
 
 	private static PublishBlocker? ParsePublishBlockerFromYaml(
@@ -1071,7 +1541,8 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		PublishRulesYaml yaml,
 		string configPath,
 		string path,
-		MatchMode matchAreas)
+		MatchMode matchAreas
+	)
 	{
 		// Validate mutual exclusivity for types
 		var excludeTypes = yaml.ExcludeTypes?.Values;
@@ -1136,14 +1607,13 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		};
 	}
 
-	private static MatchMode? ParseMatchMode(string? value) =>
-		value?.ToLowerInvariant() switch
-		{
-			"any" => MatchMode.Any,
-			"all" => MatchMode.All,
-			"conjunction" => MatchMode.Conjunction,
-			_ => string.IsNullOrWhiteSpace(value) ? null : null
-		};
+	private static MatchMode? ParseMatchMode(string? value) => value?.ToLowerInvariant() switch
+	{
+		"any" => MatchMode.Any,
+		"all" => MatchMode.All,
+		"conjunction" => MatchMode.Conjunction,
+		_ => string.IsNullOrWhiteSpace(value) ? null : null
+	};
 
 	/// <summary>
 	/// Builds LabelToType mapping by inverting pivot.types entries.

@@ -58,8 +58,10 @@ public abstract class DocumentationFileExporterBase(IFileSystem readFileSystem, 
 	}
 }
 
-public class DocumentationFileExporter(IFileSystem readFileSystem, IFileSystem writeFileSystem)
-	: DocumentationFileExporterBase(readFileSystem, writeFileSystem)
+public class DocumentationFileExporter(IFileSystem readFileSystem, IFileSystem writeFileSystem) : DocumentationFileExporterBase(
+	readFileSystem,
+	writeFileSystem
+)
 {
 	public override string Name => nameof(DocumentationFileExporter);
 

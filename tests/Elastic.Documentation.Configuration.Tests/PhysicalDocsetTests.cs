@@ -10,10 +10,11 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class PhysicalDocsetTests
 {
-	[Fact]
+	[Test]
 	public void CliReferenceRefReadsTitleOverrides()
 	{
-		const string yaml = """
+		const string yaml =
+			"""
 			project: test
 			toc:
 			  - cli: cli/schema.json
@@ -22,33 +23,38 @@ public class PhysicalDocsetTests
 			    navigation_title: CLI reference
 			""";
 
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
 
 		cliRef.Title.Should().Be("Elastic CLI reference");
 		cliRef.NavigationTitle.Should().Be("CLI reference");
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		docSet.Project.Should().Be("doc-builder");
 		docSet.MaxTocDepth.Should().Be(2);
 		docSet.DevDocs.Should().BeTrue();
 		docSet.Features.PrimaryNav.Should().BeFalse();
 
-		docSet.CrossLinks.Should().ContainSingle().Which.Should().Be("docs-content");
+		docSet.CrossLinks.Should().Equal("docs-content", "elasticsearch");
 		docSet.Exclude.Should().ContainSingle().Which.Should().Be("_*.md");
 		docSet.Subs.Should().NotBeEmpty();
 		docSet.Subs.Should().ContainKey("dbuild").WhoseValue.Should().Be("docs-builder");
 
-		docSet.Api.Should().BeNullOrEmpty("API declarations live in docs-content for assembler builds");
+		docSet.Api.Should().ContainKey("docs-builder-elasticsearch");
+		var apiEntry = docSet.Api["docs-builder-elasticsearch"].SingleEntry;
+		apiEntry.Should().NotBeNull();
+		apiEntry.Spec.Should().Be("elasticsearch.json");
+		apiEntry.Product.Should().Be("elasticsearch");
+		apiEntry.Repository.Should().Be("elastic/elasticsearch-specification");
 
 		docSet.TableOfContents.Should().NotBeEmpty();
 
@@ -66,12 +72,12 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 
@@ -89,14 +95,17 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
-		var documentationFolder = docSet.TableOfContents.OfType<FolderRef>().First(f => f.PathRelativeToDocumentationSet == "documentation");
+		var documentationFolder = docSet
+			.TableOfContents
+			.OfType<FolderRef>()
+			.First(f => f.PathRelativeToDocumentationSet == "documentation");
 		documentationFolder.Children.Should().NotBeEmpty();
 
 		var nestedFolders = documentationFolder.Children.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
@@ -109,16 +118,18 @@ public class PhysicalDocsetTests
 		cliRef.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalTestDocsetContainsFileReferencesWithChildren()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected test docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
-		var fileWithChildren = docSet.TableOfContents.OfType<FileRef>()
+		var fileWithChildren = docSet
+			.TableOfContents
+			.OfType<FileRef>()
 			.FirstOrDefault(f => f.PathRelativeToDocumentationSet == "cross-links.md" && f.Children.Count > 0);
 
 		fileWithChildren.Should().NotBeNull();

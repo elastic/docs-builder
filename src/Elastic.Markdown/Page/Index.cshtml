@@ -1,10 +1,9 @@
 @using System.Text.Json
 @using Elastic.Documentation
 @using Elastic.Documentation.Configuration
-@using Elastic.Documentation.Extensions
 @using Elastic.Documentation.Site
 @using Elastic.Markdown
-@using Elastic.Markdown.Myst.Components
+@using Elastic.Documentation.Site.ApplicabilityBadges
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
 @inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
@@ -12,11 +11,9 @@
 @functions {
 	public MarkdownLayoutViewModel LayoutModel => new()
 	{
-		DocsBuilderVersion = ShortId.Create(BuildContext.Version),
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
-		RenderHamburgerIcon = Model.CurrentDocument.YamlFrontMatter?.Layout != MarkdownPageLayout.LandingPage,
 		DocSetName = Model.DocSetName,
-		Title = $"{Model.Title} | {Model.SiteName}",
+		Title = Model.PageTitle,
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is
 			{
@@ -46,6 +43,10 @@
 		VersioningSystem = Model.VersioningSystem,
 		VersionDropdownSerializedModel = JsonSerializer.Serialize(Model.VersionDropdownItems,
 			ViewModelSerializerContext.Default.VersionDropDownItemViewModelArray),
+		ShowVersionDropdown = Model.BuildType == BuildType.Assembler
+			&& Model.Features.PrimaryNavEnabled
+			&& !Model.VersioningSystem.IsVersionless
+			&& Model.Branding is null,
 		// Header properties for isolated mode
 		HeaderTitle = Model.DocSetName,
 		HeaderVersion = null,
@@ -57,6 +58,7 @@
 		Branding = Model.Branding,
 		RedirectUrl = Model.RedirectUrl,
 		Cta = Model.Cta,
+		StructuredBreadcrumbsJson = Model.StructuredBreadcrumbsJson,
 	};
 	protected override Task ExecuteSectionAsync(string name)
 	{
@@ -70,9 +72,6 @@
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
 			<meta data-pagefind-meta="title[content]" content="@Model.Title"/>
 			<meta data-pagefind-meta="breadcrumbs[content]" content="@Model.StructuredBreadcrumbsJson"/>
-			<script type="application/ld+json">
-	    	@(new HtmlString(Model.StructuredBreadcrumbsJson))
-	    	</script>
 		}
 		if (name == GlobalSections.Head && Model.Products is { Count: > 0 })
 		{
@@ -97,7 +96,8 @@
 			{
 				AppliesTo = Model.AppliesTo,
 				Inline = false,
-				VersionsConfig = Model.VersionsConfig
+				VersionsConfig = Model.VersionsConfig,
+				DesignSystem = Model.Features.NavigationPreviewEnabled
 			}))
 			</p>
 		}

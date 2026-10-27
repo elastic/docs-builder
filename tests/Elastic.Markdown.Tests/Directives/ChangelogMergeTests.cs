@@ -12,19 +12,23 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Tests for automatic merging of bundles with the same target version/date.
 /// Merging is now the default behavior (no longer requires `:merge:` option).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSameTargetTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeSameTargetTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Cloud Serverless scenario: multiple repos contributing to the same dated release
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/kibana-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-05
@@ -38,11 +42,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			  - Dashboard
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/elasticsearch-2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/elasticsearch-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 2025-08-05
@@ -63,11 +71,15 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "222223"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/serverless-2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/serverless-2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch-serverless
 			  target: 2025-08-05
@@ -81,12 +93,16 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			  - API
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// A different release date with single bundle
-		FileSystem.AddFile("docs/changelog/bundles/kibana-2025-08-01.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/kibana-2025-08-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-01
@@ -98,16 +114,18 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-01
 			  prs:
 			  - "444444"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void MergesBundlesWithSameTargetByDefault() =>
 		// Three bundles with 2025-08-05 should be merged into one
 		// Plus one bundle with 2025-08-01 = 2 total bundles
 		Block!.LoadedBundles.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void MergedBundleContainsAllEntries()
 	{
 		// The 2025-08-05 merged bundle should have 4 entries (1 + 2 + 1)
@@ -116,7 +134,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug5Bundle!.Entries.Should().HaveCount(4);
 	}
 
-	[Fact]
+	[Test]
 	public void MergedBundleHasCombinedRepoName()
 	{
 		var aug5Bundle = Block!.LoadedBundles.FirstOrDefault(b => b.Version == "2025-08-05");
@@ -128,7 +146,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug5Bundle.Repo.Should().Contain("+");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersOnlyOneVersionHeaderPerMergedTarget()
 	{
 		// Should render only one version header for 2025-08-05, not three separate ones
@@ -140,7 +158,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		aug01Count.Should().Be(1, "Should have exactly 1 version header for August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntriesFromMergedBundles()
 	{
 		Html.Should().Contain("Kibana feature for August 5th");
@@ -149,7 +167,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Serverless feature for August 5th");
 	}
 
-	[Fact]
+	[Test]
 	public void MaintainsCorrectDateOrder()
 	{
 		// August 5, 2025 should appear before August 1, 2025 (descending order)
@@ -175,19 +193,23 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that bundles with different target versions remain separate (not merged).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeDifferentTargetsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeDifferentTargetsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Bundles with different targets should remain separate
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -199,11 +221,15 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -215,11 +241,15 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.1.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.1.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.1.0
@@ -231,17 +261,19 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 			    target: 9.1.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void KeepsDifferentTargetsSeparate()
 	{
 		// All three bundles have different targets, so no merging should happen
 		Block!.LoadedBundles.Should().HaveCount(3);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersionsSeparately()
 	{
 		Html.Should().Contain("9.3.0");
@@ -249,7 +281,7 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void MaintainsSemverOrder()
 	{
 		var idx93 = Html.IndexOf("9.3.0", StringComparison.Ordinal);
@@ -264,16 +296,21 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging works correctly with a single bundle (no actual merge needed).
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeSingleBundleTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeSingleBundleTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -292,21 +329,20 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111112"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
-	public void SingleBundleRemainsUnchanged() =>
-		Block!.LoadedBundles.Should().HaveCount(1);
+	[Test]
+	public void SingleBundleRemainsUnchanged() => Block!.LoadedBundles.Should().HaveCount(1);
 
-	[Fact]
-	public void SingleBundleHasCorrectVersion() =>
-		Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
+	[Test]
+	public void SingleBundleHasCorrectVersion() => Block!.LoadedBundles[0].Version.Should().Be("9.3.0");
 
-	[Fact]
-	public void SingleBundleHasAllEntries() =>
-		Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
+	[Test]
+	public void SingleBundleHasAllEntries() => Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void SingleBundleRendersCorrectly()
 	{
 		Html.Should().Contain("Feature in 9.3.0");
@@ -317,19 +353,23 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that merging preserves sort order when bundles have both semver and date-based versions.
 /// </summary>
+[InheritsTests]
 public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMergeMixedVersionTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMergeMixedVersionTypesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Semver version
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -341,12 +381,16 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 
 		// Date-based version
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: kibana
 			  target: 2025-08-05
@@ -358,17 +402,19 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 			    target: 2025-08-05
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void MixedVersionTypesRemainSeparate()
 	{
 		// Semver and date-based versions should not be merged
 		Block!.LoadedBundles.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.3.0");

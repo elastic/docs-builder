@@ -12,9 +12,9 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class NestedTocTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
 		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Join("nested-toc", "index.md"));
@@ -22,8 +22,7 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		doc.Should().NotBeNull();
 		INavigationTraversable navigationTraversable = Generator.DocumentationSet;
 		navigationTraversable.GetNavigationFor(doc).Should().NotBeNull();
-		var nav = navigationTraversable.GetNavigationFor(doc)
-				  ?? throw new Exception($"Could not find nav item for {doc.CrossLink}");
+		var nav = navigationTraversable.GetNavigationFor(doc) ?? throw new Exception($"Could not find nav item for {doc.CrossLink}");
 
 		nav.Should().BeOfType<TableOfContentsNavigation<MarkdownFile>>();
 		var parent = nav.Parent;
@@ -38,6 +37,5 @@ public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(outp
 		var fileNav = index as FileNavigationLeaf<MarkdownFile>;
 		fileNav.Should().NotBeNull();
 		fileNav.Model.RelativePath.OptionalWindowsReplace().Should().Be("index.md");
-
 	}
 }

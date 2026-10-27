@@ -14,7 +14,8 @@ namespace Elastic.Documentation.Api.Adapters.AskAi;
 public class AskAiGatewayFactory(
 	IServiceProvider serviceProvider,
 	AskAiProviderResolver providerResolver,
-	ILogger<AskAiGatewayFactory> logger) : IAskAiService
+	ILogger<AskAiGatewayFactory> logger
+) : IAskAiService
 {
 	public async Task<AskAiGatewayResponse> AskAi(AskAiRequest askAiRequest, Cancel ctx = default)
 	{

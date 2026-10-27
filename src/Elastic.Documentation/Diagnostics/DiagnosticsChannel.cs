@@ -17,11 +17,7 @@ public sealed class DiagnosticsChannel : IDisposable
 
 	public DiagnosticsChannel()
 	{
-		var options = new UnboundedChannelOptions
-		{
-			SingleReader = true,
-			SingleWriter = false
-		};
+		var options = new UnboundedChannelOptions { SingleReader = true, SingleWriter = false };
 		_ctxSource = new CancellationTokenSource();
 		_channel = Channel.CreateUnbounded<Diagnostic>(options);
 	}

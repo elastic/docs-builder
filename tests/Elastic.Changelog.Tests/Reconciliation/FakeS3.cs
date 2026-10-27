@@ -23,8 +23,8 @@ namespace Elastic.Changelog.Tests.Reconciliation;
 /// </summary>
 internal sealed class FakeS3
 {
-	private readonly Dictionary<string, Dictionary<string, (string Content, string ETag)>> _buckets =
-		[with(StringComparer.Ordinal)];
+	private readonly Lock _lock = new();
+	private readonly Dictionary<string, Dictionary<string, (string Content, string ETag)>> _buckets = [with(StringComparer.Ordinal)];
 
 	public IAmazonS3 Client { get; } = A.Fake<IAmazonS3>();
 
@@ -64,26 +64,30 @@ internal sealed class FakeS3
 		foreach (var bucket in bucketNames)
 			_buckets[bucket] = [with(StringComparer.Ordinal)];
 
-		_ = A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._))
-			.ReturnsLazily((ListObjectsV2Request r, CancellationToken _) => List(r));
+		_ = A.CallTo(() => Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<CancellationToken>._)).ReturnsLazily(
+			(ListObjectsV2Request r, CancellationToken _) => List(r)
+		);
 
-		_ = A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((GetObjectRequest r, CancellationToken _) => Get(r));
+		_ = A.CallTo(() => Client.GetObjectAsync(A<GetObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectRequest r, CancellationToken _) => Get(r)
+		);
 
-		_ = A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((GetObjectMetadataRequest r, CancellationToken _) => Head(r));
+		_ = A.CallTo(() => Client.GetObjectMetadataAsync(A<GetObjectMetadataRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(GetObjectMetadataRequest r, CancellationToken _) => Head(r)
+		);
 
-		_ = A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((PutObjectRequest r, CancellationToken _) => Put(r));
+		_ = A.CallTo(() => Client.PutObjectAsync(A<PutObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(PutObjectRequest r, CancellationToken _) => Put(r)
+		);
 
-		_ = A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._))
-			.ReturnsLazily((DeleteObjectRequest r, CancellationToken _) => Delete(r));
+		_ = A.CallTo(() => Client.DeleteObjectAsync(A<DeleteObjectRequest>._, A<CancellationToken>._)).ReturnsLazily(
+			(DeleteObjectRequest r, CancellationToken _) => Delete(r)
+		);
 	}
 
 	// MD5 is what real S3 uses for single-part ETags.
 	[SuppressMessage("Security", "CA5351:Do Not Use Broken Cryptographic Algorithms")]
-	public static string ETagOf(string content) =>
-		Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));
+	public static string ETagOf(string content) => Convert.ToHexStringLower(MD5.HashData(Encoding.UTF8.GetBytes(content)));
 
 	/// <summary>Seeds or replaces an object; returns its (unquoted) ETag.</summary>
 	public string Seed(string bucket, string key, string content)
@@ -110,15 +114,22 @@ internal sealed class FakeS3
 
 	private ListObjectsV2Response List(ListObjectsV2Request request)
 	{
-		ListCalls++;
-		OnList?.Invoke(ListCalls);
+		int n;
+		lock (_lock)
+			n = ++ListCalls;
+		OnList?.Invoke(n);
 
-		var store = Store(request.BucketName);
+		Dictionary<string, (string Content, string ETag)> store;
+		lock (_lock)
+			store = Store(request.BucketName).ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.Ordinal);
 		var prefix = request.Prefix ?? string.Empty;
 		var objects = new List<S3Object>();
 		var commonPrefixes = new SortedSet<string>(StringComparer.Ordinal);
 
-		foreach (var (key, value) in store.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+		foreach (var (key, value) in store.Where(kv => kv.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(
+			kv => kv.Key,
+			StringComparer.Ordinal
+		))
 		{
 			var rest = key[prefix.Length..];
 			var slash = rest.IndexOf('/', StringComparison.Ordinal);
@@ -146,19 +157,21 @@ internal sealed class FakeS3
 			S3Objects = page,
 			CommonPrefixes = [.. commonPrefixes],
 			IsTruncated = truncated,
-			NextContinuationToken = truncated
-				? (start + page.Count).ToString(System.Globalization.CultureInfo.InvariantCulture)
-				: null
+			NextContinuationToken = truncated ? (start + page.Count).ToString(System.Globalization.CultureInfo.InvariantCulture) : null
 		};
 	}
 
 	private GetObjectResponse Get(GetObjectRequest request)
 	{
-		Gets.Add(request);
-		_gets++;
-
-		if (!Store(request.BucketName).TryGetValue(request.Key, out var obj))
-			throw NotFound();
+		(string Content, string ETag) obj;
+		int n;
+		lock (_lock)
+		{
+			Gets.Add(request);
+			n = ++_gets;
+			if (!Store(request.BucketName).TryGetValue(request.Key, out obj))
+				throw NotFound();
+		}
 
 		// Capture the response before the hook runs, so a hook that reseeds the key simulates a
 		// write landing right after this read.
@@ -167,65 +180,74 @@ internal sealed class FakeS3
 			ETag = $"\"{obj.ETag}\"",
 			ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(obj.Content))
 		};
-		AfterGet?.Invoke(request.Key, _gets);
+		AfterGet?.Invoke(request.Key, n);
 		return response;
 	}
 
 	private GetObjectMetadataResponse Head(GetObjectMetadataRequest request)
 	{
-		if (!Store(request.BucketName).TryGetValue(request.Key, out var obj))
-			throw NotFound();
-
-		var response = new GetObjectMetadataResponse
+		(string Content, string ETag) obj;
+		lock (_lock)
 		{
-			ETag = $"\"{obj.ETag}\""
-		};
+			if (!Store(request.BucketName).TryGetValue(request.Key, out obj))
+				throw NotFound();
+		}
+
+		var response = new GetObjectMetadataResponse { ETag = $"\"{obj.ETag}\"" };
 		response.Headers.ContentType = "application/yaml";
 		return response;
 	}
 
 	private PutObjectResponse Put(PutObjectRequest request)
 	{
-		_puts++;
-		BeforePut?.Invoke(_puts);
+		int n;
+		lock (_lock)
+			n = ++_puts;
+		BeforePut?.Invoke(n);
 
-		Puts.Add(request);
+		lock (_lock)
+		{
+			Puts.Add(request);
 
-		var store = Store(request.BucketName);
-		var exists = store.TryGetValue(request.Key, out var current);
-		if (request.IfNoneMatch == "*" && exists)
-			throw PreconditionFailed();
-		if (request.IfMatch is { } ifMatch && (!exists || ifMatch.Trim('"') != current.ETag))
-			throw PreconditionFailed();
+			var store = Store(request.BucketName);
+			var exists = store.TryGetValue(request.Key, out var current);
+			if (request.IfNoneMatch == "*" && exists)
+				throw PreconditionFailed();
+			if (request.IfMatch is { } ifMatch && (!exists || ifMatch.Trim('"') != current.ETag))
+				throw PreconditionFailed();
 
-		_ = Seed(request.BucketName, request.Key, request.ContentBody);
+			_ = Seed(request.BucketName, request.Key, request.ContentBody);
+		}
 		return new PutObjectResponse();
 	}
 
 	private DeleteObjectResponse Delete(DeleteObjectRequest request)
 	{
-		_deletes++;
-		BeforeDelete?.Invoke(_deletes);
+		int n;
+		lock (_lock)
+			n = ++_deletes;
+		BeforeDelete?.Invoke(n);
 
-		Deletes.Add(request);
-
-		var store = Store(request.BucketName);
-		var exists = store.TryGetValue(request.Key, out var current);
-		if (request.IfMatch is { } ifMatch)
+		lock (_lock)
 		{
-			if (!exists)
-				throw NotFound();
-			if (ifMatch.Trim('"') != current.ETag)
-				throw PreconditionFailed();
-		}
+			Deletes.Add(request);
 
-		_ = store.Remove(request.Key);
+			var store = Store(request.BucketName);
+			var exists = store.TryGetValue(request.Key, out var current);
+			if (request.IfMatch is { } ifMatch)
+			{
+				if (!exists)
+					throw NotFound();
+				if (ifMatch.Trim('"') != current.ETag)
+					throw PreconditionFailed();
+			}
+
+			_ = store.Remove(request.Key);
+		}
 		return new DeleteObjectResponse();
 	}
 
-	private static AmazonS3Exception NotFound() =>
-		new("Not Found") { StatusCode = HttpStatusCode.NotFound };
+	private static AmazonS3Exception NotFound() => new("Not Found") { StatusCode = HttpStatusCode.NotFound };
 
-	private static AmazonS3Exception PreconditionFailed() =>
-		new("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed };
+	private static AmazonS3Exception PreconditionFailed() => new("Precondition Failed") { StatusCode = HttpStatusCode.PreconditionFailed };
 }

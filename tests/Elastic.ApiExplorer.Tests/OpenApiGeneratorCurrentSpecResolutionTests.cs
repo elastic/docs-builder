@@ -28,22 +28,21 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		DiagnosticsCollector collector,
 		VersionsConfiguration? versionsConfiguration = null,
 		ProductsConfiguration? productsConfiguration = null,
-		GitCheckoutInformation? git = null)
-	{
-		return new BuildContext(collector,
-			DocumentationFileSystem.Resolve(new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), new DocumentationScopeOptions { Git = git }),
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration));
-	}
+		GitCheckoutInformation? git = null
+	) =>
+		new(
+			collector,
+			DocumentationFileSystem.Resolve(
+				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+				new DocumentationScopeOptions { Git = git }
+			),
+			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
+		);
 
-	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) => new()
-	{
-		ProductKey = product.Id,
-		Product = product,
-		SpecFileName = "elasticsearch-openapi.json",
-		LocalSpecFile = localSpecFile
-	};
+	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) =>
+		new() { ProductKey = product.Id, Product = product, SpecFileName = "elasticsearch-openapi.json", LocalSpecFile = localSpecFile };
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessLocalSpec_RendersLocalFileWithoutNetwork()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -52,15 +51,18 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var products = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase),
-			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase)
+			PublicReferenceProducts = new Dictionary<string, Product> { [product.Id] = product }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			),
+			ProductDisplayNames = new Dictionary<string, string> { [product.Id] = product.DisplayName }.ToFrozenDictionary(
+				StringComparer.OrdinalIgnoreCase
+			)
 		};
 		var context = CreateContext(collector, versionless, products);
-		var localFile = new FileSystem().FileInfo.New(
-			Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch-openapi-docs.json"));
+		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(localFile)).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 
 		var handler = new ThrowingHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler);
@@ -69,27 +71,38 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			context,
 			NoopMarkdownStringRenderer.Instance,
 			versionIndexClient,
-			reader);
+			reader
+		);
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"cloud-serverless", ApiConfig(product, localFile), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"cloud-serverless",
+			ApiConfig(product, localFile),
+			TestContext.Current!.Execution.CancellationToken
+		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
-		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
 	{
 		var collector = new CapturingDiagnosticsCollector();
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var git = new GitCheckoutInformation { Branch = "main", Remote = "https://github.com/elastic/elasticsearch.git", Ref = "refs/heads/main" };
+		var git = new GitCheckoutInformation
+		{
+			Branch = "main",
+			Remote = "https://github.com/elastic/elasticsearch.git",
+			Ref = "refs/heads/main"
+		};
 		var context = CreateContext(collector, stack, git: git);
 
-		var handler = new StubHandler(request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
-			? IndexResponse(/*lang=json,strict*/ """
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(/*lang=json,strict*/
+					"""
 				{
 					"elastic/elasticsearch": {
 						"elasticsearch-openapi.json": {
@@ -97,41 +110,50 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 						}
 					}
 				}
-				""")
-			: SpecResponse());
+				"""
+				)
+				: SpecResponse()
+		);
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 		var generator = new OpenApiGenerator(
 			NullLoggerFactory.Instance,
 			context,
 			NoopMarkdownStringRenderer.Instance,
 			versionIndexClient,
-			reader);
+			reader
+		);
 
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current!.Execution.CancellationToken
+		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
-		handler.RequestedPaths.Should().BeEquivalentTo(
-		[
-			"/index.json",
-			"/elastic/elasticsearch/main/elasticsearch-openapi.json"
-		]);
+		handler.RequestedPaths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/main/elasticsearch-openapi.json"]);
 		collector.Errors.Should().Be(errorsBeforeResolution, string.Join("; ", collector.ErrorMessages));
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpecAndIndexUnreachable_ReturnsEmptyAndEmitsError()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var git = new GitCheckoutInformation { Branch = "main", Remote = "https://github.com/elastic/elasticsearch.git", Ref = "refs/heads/main" };
+		var git = new GitCheckoutInformation
+		{
+			Branch = "main",
+			Remote = "https://github.com/elastic/elasticsearch.git",
+			Ref = "refs/heads/main"
+		};
 		var context = CreateContext(collector, stack, git: git);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -142,32 +164,37 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			context,
 			NoopMarkdownStringRenderer.Instance,
 			versionIndexClient,
-			reader);
+			reader
+		);
 		var errorsBeforeResolution = collector.Errors;
 
-		var documents = await generator.ResolveDocumentsForProduct(
-			"elasticsearch", ApiConfig(product), TestContext.Current.CancellationToken);
+		var documents = (await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			ApiConfig(product),
+			TestContext.Current!.Execution.CancellationToken
+		)).Documents;
 
 		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);
-		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._)).MustNotHaveHappened();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
 	}
 
-	private static OpenApiDocument SpecDocument() => new()
-	{
-		Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.4" }
-	};
+	private static OpenApiDocument SpecDocument() => new() { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.4" } };
 
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage SpecResponse() => new(HttpStatusCode.OK)
-	{
-		Content = new StringContent(
-			/*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Elasticsearch API","version":"9.4"},"paths":{}}""",
-			System.Text.Encoding.UTF8, "application/json")
-	};
+	private static HttpResponseMessage SpecResponse() =>
+		new(HttpStatusCode.OK)
+		{
+			Content = new StringContent(
+				/*lang=json,strict*/
+				"""{"openapi":"3.1.0","info":{"title":"Elasticsearch API","version":"9.4"},"paths":{}}""",
+				System.Text.Encoding.UTF8,
+				"application/json"
+			)
+		};
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
 	{

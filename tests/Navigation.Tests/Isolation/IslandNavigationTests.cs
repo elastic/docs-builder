@@ -13,17 +13,18 @@ using Elastic.Documentation.Navigation.Tests.Assembler;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class IslandNavigationTests() : DocumentationSetNavigationTestBase()
 {
 	// ──────────────────────────────────────────────────────────────
 	// Goal 4: in an isolated (single-repo) build the docset root
 	// with island: true still renders as the main nav, not as an island.
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public void DocsetRootIsland_IsNotAnIsland_InIsolatedBuild()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           island: true
 		           project: 'docs-builder'
 		           toc:
@@ -37,7 +38,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		// IsIsland is stored but RendersAsIsland() returns false because Parent is null
 		navigation.IsIsland.Should().BeTrue("docset declared island: true");
@@ -49,11 +55,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 	// ──────────────────────────────────────────────────────────────
 	// island: true on a child toc.yml root
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public async Task NestedTocIsland_RendersAsIsland()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           toc:
 		             - file: index.md
@@ -64,31 +71,43 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/reference/index.md", new MockFileData("# Reference"));
 		fileSystem.AddFile("/docs/reference/page.md", new MockFileData("# Page"));
-		fileSystem.AddFile("/docs/reference/toc.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"/docs/reference/toc.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			island: true
 			toc:
 			  - file: index.md
 			  - file: page.md
-			"""));
+			"""
+			)
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var reference = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var reference = navigation
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 
 		reference.IsIsland.Should().BeTrue();
 		reference.Parent.Should().NotBeNull("reference is a child of the docset");
 		reference.RendersAsIsland().Should().BeTrue();
 
 		// Pages inside the island can find the island root via FindIslandRoot
-		var page = reference.NavigationItems.ElementAt(0)
-			.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var page = reference.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		page.FindIslandRoot().Should().BeSameAs(reference);
 
 		context.Diagnostics.Should().BeEmpty();
@@ -97,11 +116,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 	// ──────────────────────────────────────────────────────────────
 	// island: true inline beside - toc: in the parent YAML
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public async Task InlineTocEntryIsland_RendersAsIsland()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           toc:
 		             - file: index.md
@@ -113,22 +133,35 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		fileSystem.AddFile("/docs/index.md", new MockFileData("# Root"));
 		fileSystem.AddFile("/docs/advanced/index.md", new MockFileData("# Advanced"));
 		fileSystem.AddFile("/docs/advanced/deep.md", new MockFileData("# Deep"));
-		fileSystem.AddFile("/docs/advanced/toc.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"/docs/advanced/toc.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			toc:
 			  - file: index.md
 			  - file: deep.md
-			"""));
+			"""
+			)
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var advanced = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var advanced = navigation
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 
 		advanced.IsIsland.Should().BeTrue("inline island: true propagates to the resolved toc ref");
 		advanced.RendersAsIsland().Should().BeTrue();
@@ -139,11 +172,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 	// ──────────────────────────────────────────────────────────────
 	// OR semantics: inline island: true + toc.yml island: true both work
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public async Task Island_OrSemantics_BothSidesWork()
 	{
 		// language=yaml
-		var yamlInlineOnly = """
+		var yamlInlineOnly =
+			"""
 		                     project: 'docs-builder'
 		                     toc:
 		                       - file: index.md
@@ -151,7 +185,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		                         island: true
 		                     """;
 		// language=yaml
-		var yamlTocYmlOnly = """
+		var yamlTocYmlOnly =
+			"""
 		                     project: 'docs-builder'
 		                     toc:
 		                       - file: index.md
@@ -159,7 +194,8 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		                     """;
 
 		// language=yaml
-		var tocYmlIsland = """
+		var tocYmlIsland =
+			"""
 		                   island: true
 		                   toc:
 		                     - file: index.md
@@ -178,9 +214,14 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 			fs.AddFile("/docs/section/toc.yml", new MockFileData(sectionTocYaml));
 			var ctx = CreateContext(fs);
 			var docSet = DocumentationSetFile.LoadAndResolve(ctx.Collector, docsetYaml, fs.NewDirInfo("docs"));
-			_ = ctx.Collector.StartAsync(TestContext.Current.CancellationToken);
-			var nav = new DocumentationSetNavigation<TestDocumentationFile>(docSet, ctx, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-			await ctx.Collector.StopAsync(TestContext.Current.CancellationToken);
+			_ = ctx.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+			var nav = new DocumentationSetNavigation<TestDocumentationFile>(
+				docSet,
+				ctx,
+				TestDocumentationFileFactory.Instance,
+				crossLinkResolver: TestCrossLinkResolver.Instance
+			);
+			await ctx.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 			return nav.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		}
 
@@ -197,11 +238,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 	// ──────────────────────────────────────────────────────────────
 	// Nested islands: FindIslandRoot returns the nearest enclosing island
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public async Task FindIslandRoot_ReturnsNearestIsland_WhenIslandsNest()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           toc:
 		             - file: index.md
@@ -214,39 +256,54 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		fileSystem.AddFile("/docs/security/index.md", new MockFileData("# Security"));
 		fileSystem.AddFile("/docs/security/rules/index.md", new MockFileData("# Rules"));
 		fileSystem.AddFile("/docs/security/rules/page.md", new MockFileData("# Page"));
-		fileSystem.AddFile("/docs/security/toc.yml", new MockFileData(
-			// language=yaml
-			"""
+		fileSystem.AddFile(
+			"/docs/security/toc.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			toc:
 			  - file: index.md
 			  - toc: rules
 			    island: true
-			"""));
-		fileSystem.AddFile("/docs/security/rules/toc.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+		fileSystem.AddFile(
+			"/docs/security/rules/toc.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			toc:
 			  - file: index.md
 			  - file: page.md
-			"""));
+			"""
+			)
+		);
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var security = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var security = navigation
+			.NavigationItems
+			.ElementAt(0)
+			.Should()
+			.BeOfType<TableOfContentsNavigation<TestDocumentationFile>>()
+			.Subject;
 		security.RendersAsIsland().Should().BeTrue("security is an island");
 
-		var rules = security.NavigationItems.ElementAt(0)
-			.Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
+		var rules = security.NavigationItems.ElementAt(0).Should().BeOfType<TableOfContentsNavigation<TestDocumentationFile>>().Subject;
 		rules.RendersAsIsland().Should().BeTrue("rules is a nested island");
 
 		// A page inside the rules island → nearest island is rules (not security)
-		var page = rules.NavigationItems.ElementAt(0)
-			.Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
+		var page = rules.NavigationItems.ElementAt(0).Should().BeOfType<FileNavigationLeaf<TestDocumentationFile>>().Subject;
 		page.FindIslandRoot().Should().BeSameAs(rules, "FindIslandRoot returns the nearest enclosing island");
 
 		// The rules index page → nearest island is also rules
@@ -261,11 +318,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 	// ──────────────────────────────────────────────────────────────
 	// Listing island: folderNavigation.IsIsland = true
 	// ──────────────────────────────────────────────────────────────
-	[Fact]
+	[Test]
 	public async Task ListingIsland_MarksListingRootAsIsland()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           toc:
 		             - file: index.md
@@ -283,13 +341,17 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Listing island root
-		var listingRoot = navigation.NavigationItems.ElementAt(0)
-			.Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
+		var listingRoot = navigation.NavigationItems.ElementAt(0).Should().BeOfType<FolderNavigation<TestDocumentationFile>>().Subject;
 
 		listingRoot.IsIsland.Should().BeTrue();
 		listingRoot.RendersAsIsland().Should().BeTrue("listing root has a parent");
@@ -303,11 +365,12 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 		context.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ListingIsland_WithVisualNone_EmitsError()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'docs-builder'
 		           toc:
 		             - file: index.md
@@ -323,13 +386,20 @@ public class IslandNavigationTests(ITestOutputHelper output) : DocumentationSetN
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
-		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(docSet, context, TestDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// The listing with island: true and no visual: should emit an error
-		context.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error
-			&& d.Message.Contains("island: true") && d.Message.Contains("visual: none"));
+		context
+			.Diagnostics
+			.Should()
+			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("island: true") && d.Message.Contains("visual: none"));
 		// And the listing is not added to navigation
 		navigation.NavigationItems.Should().BeEmpty();
 	}

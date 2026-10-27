@@ -8,19 +8,23 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDateVersionedBundlesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDateVersionedBundlesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create multiple bundles with date-based versions (Cloud Serverless style)
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-01.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-01
@@ -32,11 +36,15 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-01
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-15.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-15.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-15
@@ -48,11 +56,15 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-15
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -64,13 +76,15 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersInDateOrderDescending()
 	{
 		// Should be sorted by date descending: 2025-08-15 > 2025-08-05 > 2025-08-01
@@ -82,7 +96,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 		idx05.Should().BeLessThan(idx01, "August 5, 2025 should appear before August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllDateVersions()
 	{
 		Html.Should().Contain("August 15, 2025");
@@ -90,7 +104,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersEntriesForDateVersions()
 	{
 		Html.Should().Contain("August 15th feature");
@@ -99,19 +113,23 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedVersionTypesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMixedVersionTypesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create bundles with mixed version types (semver and dates)
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -123,11 +141,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -139,11 +161,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 9.2.0
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08-05.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08-05.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-08-05
@@ -155,11 +181,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08-05
 			  prs:
 			  - "333333"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-07-01.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-07-01.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-serverless
 			  target: 2025-07-01
@@ -171,13 +201,15 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-07-01
 			  prs:
 			  - "444444"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsAllBundles() => Block!.LoadedBundles.Should().HaveCount(4);
 
-	[Fact]
+	[Test]
 	public void SemverVersionsAppearBeforeDates()
 	{
 		// Semver versions should appear before date versions
@@ -197,7 +229,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		idxDate1.Should().BeLessThan(idxDate2, "August 5, 2025 should appear before July 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.3.0");
@@ -206,7 +238,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("July 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries()
 	{
 		Html.Should().Contain("Semver 9.3.0 feature");
@@ -221,18 +253,22 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 /// Verifies that headings render as "Month Year" (e.g., "December 2025") and that
 /// slugs/anchors retain the original yyyy-MM format.
 /// </summary>
+[InheritsTests]
 public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogYearMonthVersionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogYearMonthVersionTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/2025-12.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-12.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-12
@@ -244,11 +280,15 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-12
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-10.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-10.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-10
@@ -260,11 +300,15 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-10
 			  prs:
 			  - "222222"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/2025-08.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/2025-08.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: cloud-hosted
 			  target: 2025-08
@@ -283,13 +327,15 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 			    target: 2025-08
 			  prs:
 			  - "333334"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersHeadingsAsMonthYear()
 	{
 		Html.Should().Contain("December 2025");
@@ -297,7 +343,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderRawYearMonthInHeadings()
 	{
 		// The raw yyyy-MM format should only appear in slugs/anchors, not in visible headings
@@ -306,7 +352,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().NotContain(">2025-08<");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersInDescendingMonthOrder()
 	{
 		var idxDec = Html.IndexOf("December 2025", StringComparison.Ordinal);
@@ -317,7 +363,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		idxOct.Should().BeLessThan(idxAug, "October 2025 should appear before August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void PreservesOriginalSlugsForAnchors()
 	{
 		// Anchors should use the original yyyy-MM format, not the display format
@@ -326,7 +372,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("2025-08");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries()
 	{
 		Html.Should().Contain("December feature");
@@ -335,7 +381,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August bugfix");
 	}
 
-	[Fact]
+	[Test]
 	public void TocUsesMonthYearHeadings()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -346,7 +392,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		versionHeadings.Should().Contain("August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void TocSlugMatchesHeadingId()
 	{
 		// The TOC slug must match the heading ID that SectionedHeadingRenderer derives from
@@ -360,19 +406,23 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogRawVersionFallbackTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogRawVersionFallbackTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// Create bundles with non-standard version formats (edge case)
-		FileSystem.AddFile("docs/changelog/bundles/release-alpha.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-alpha.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-alpha
@@ -384,11 +434,15 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			    target: release-alpha
 			  prs:
 			  - "111111"
-			"""));
-
-		FileSystem.AddFile("docs/changelog/bundles/release-beta.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/changelog/bundles/release-beta.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: experimental
 			  target: release-beta
@@ -400,13 +454,15 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 			    target: release-beta
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void RendersNonStandardVersions()
 	{
 		// Both non-standard versions should be rendered (sorted lexicographically)
@@ -416,7 +472,7 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Beta release feature");
 	}
 
-	[Fact]
+	[Test]
 	public void SortsLexicographically()
 	{
 		// "release-beta" > "release-alpha" lexicographically

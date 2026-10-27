@@ -10,28 +10,22 @@ using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.FileSystems;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class NavigationTestsBase : IAsyncLifetime
+public class NavigationTestsBase : IAsyncInitializer, IAsyncDisposable
 {
-	protected NavigationTestsBase(ITestOutputHelper output)
+	protected NavigationTestsBase()
 	{
-		LoggerFactory = new TestLoggerFactory(output);
-		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		LoggerFactory = new TestLoggerFactory();
+		var mockWriteFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		var docsTestsPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests");
 		var invocation = new System.IO.Abstractions.FileSystem().DirectoryInfo.New(docsTestsPath);
 		FileSystem = DocumentationFileSystem.Resolve(invocation, new DocumentationScopeOptions { InnerWrite = mockWriteFs });
-		var collector = new TestDiagnosticsCollector(output);
+		var collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem.Read);
-		var context = new BuildContext(collector, FileSystem, configurationContext)
-		{
-			Force = false,
-			UrlPathPrefix = null
-		};
+		var context = new BuildContext(collector, FileSystem, configurationContext) { Force = false, UrlPathPrefix = null };
 
 		var linkResolver = new TestCrossLinkResolver();
 		Set = new DocumentationSet(context, LoggerFactory, linkResolver);
@@ -47,7 +41,7 @@ public class NavigationTestsBase : IAsyncLifetime
 	protected DocumentationGenerator Generator { get; }
 	protected ConfigurationFile? Configuration { get; set; }
 
-	public async ValueTask InitializeAsync()
+	public async Task InitializeAsync()
 	{
 		await Generator.ResolveDirectoryTree(default);
 		Configuration = Generator.DocumentationSet.Configuration;

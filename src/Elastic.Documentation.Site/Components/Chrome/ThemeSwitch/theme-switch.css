@@ -1,0 +1,247 @@
+.theme-switch {
+	position: relative;
+	display: inline-block;
+}
+
+.theme-switch__open,
+.theme-menu__option input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.theme-group {
+	display: inline-flex;
+	align-items: stretch;
+	gap: 2px;
+	padding: 3px;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: 10px;
+	background: linear-gradient(
+		180deg,
+		var(--color-surface-sunken),
+		var(--color-surface) 60%
+	);
+	box-shadow:
+		inset 0 1px 2px
+			color-mix(in oklab, var(--color-heading) 8%, transparent),
+		0 1px 0 var(--color-border);
+}
+
+.theme-group__opt {
+	position: relative;
+	display: grid;
+	width: 2.125rem;
+	height: 1.875rem;
+	place-items: center;
+	border-radius: 7px;
+	color: var(--color-text-muted);
+	cursor: pointer;
+	transition:
+		color var(--duration-fast) var(--ease-standard),
+		background-color var(--duration-fast) var(--ease-standard);
+}
+
+.theme-group__opt:hover {
+	background: var(--color-accent-surface);
+	color: var(--color-heading);
+}
+
+.theme-group__opt .icon {
+	width: 1rem;
+	height: 1rem;
+}
+
+.theme-group__sep {
+	width: 1px;
+	margin: 5px 3px;
+	background: var(--color-border);
+}
+
+/* The selected quick pick is the blue pill; true black counts as dark. */
+.theme-switch:has(input[data-v='light']:checked)
+	.theme-group__opt[data-v='light'],
+.theme-switch:has(input[data-v='dark']:checked)
+	.theme-group__opt[data-v='dark'],
+.theme-switch:has(input[data-v='black']:checked)
+	.theme-group__opt[data-v='dark'],
+.theme-switch:has(.theme-switch__open:checked) .theme-group__opt--cog {
+	background: linear-gradient(
+		180deg,
+		var(--color-action),
+		var(--color-action-deep)
+	);
+	box-shadow:
+		inset 0 1px 0
+			color-mix(in oklab, var(--color-on-action) 12%, transparent),
+		0 1px 0 var(--color-action-edge);
+	color: var(--color-on-action);
+}
+
+.theme-switch:has(input:focus-visible) .theme-group {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
+}
+
+.theme-menu {
+	position: absolute;
+	z-index: var(--z-overlay);
+	top: calc(100% + 10px);
+	right: 0;
+	width: 18rem;
+	padding: 6px;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: 10px;
+	background: var(--color-surface);
+	box-shadow:
+		0 12px 28px color-mix(in oklab, var(--color-heading) 14%, transparent),
+		4px 4px 0 var(--color-border);
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		opacity var(--duration-fast) var(--ease-standard),
+		visibility 0s var(--duration-base);
+}
+
+.theme-switch--left .theme-menu {
+	right: auto;
+	left: 0;
+}
+
+.theme-switch__open:checked ~ .theme-menu {
+	opacity: 1;
+	visibility: visible;
+	transition-delay: 0s;
+}
+
+:root[data-motion='full'] .theme-menu {
+	translate: 0 -4px;
+	transition:
+		opacity var(--duration-fast) var(--ease-standard),
+		translate var(--duration-base) var(--ease-standard),
+		visibility 0s var(--duration-base);
+}
+
+:root[data-motion='full'] .theme-switch__open:checked ~ .theme-menu {
+	translate: 0 0;
+}
+
+.theme-menu__group {
+	display: grid;
+	gap: 2px;
+	padding: 4px 0 6px;
+}
+
+.theme-menu__group + .theme-menu__group {
+	padding-top: var(--space-2);
+	border-top: var(--border-width) solid var(--color-border);
+}
+
+.theme-menu__label {
+	padding: 4px 10px;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-semibold);
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.theme-menu__option {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: var(--space-2) 10px;
+	border-radius: 6px;
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-medium);
+	cursor: pointer;
+	transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.theme-menu__option:hover {
+	background: var(--color-accent-surface);
+}
+
+.theme-menu__swatch {
+	flex: none;
+	width: 1.125rem;
+	height: 1.125rem;
+	border: 1.5px solid var(--color-border-control);
+	border-radius: 5px;
+}
+
+.theme-menu__option[data-v='light'] .theme-menu__swatch {
+	background: var(--swatch-light);
+}
+
+.theme-menu__option[data-v='dark'] .theme-menu__swatch {
+	background: var(--swatch-dark);
+}
+
+.theme-menu__option[data-v='black'] .theme-menu__swatch {
+	background: var(--swatch-black);
+}
+
+.theme-menu__option[data-v='system'] .theme-menu__swatch {
+	background: linear-gradient(
+		135deg,
+		var(--swatch-light) 50%,
+		var(--swatch-dark) 50%
+	);
+}
+
+.theme-menu__option small {
+	margin-left: auto;
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: var(--text-xs);
+	font-weight: var(--weight-medium);
+}
+
+.theme-menu__option .icon {
+	width: 1rem;
+	height: 1rem;
+	margin-left: auto;
+	color: var(--color-on-action);
+	opacity: 0;
+}
+
+.theme-menu__option small + .icon {
+	margin-left: var(--space-2);
+}
+
+.theme-menu__option:has(input:checked) {
+	background: linear-gradient(
+		180deg,
+		var(--color-action),
+		var(--color-action-deep)
+	);
+	box-shadow:
+		inset 0 1px 0
+			color-mix(in oklab, var(--color-on-action) 12%, transparent),
+		0 2px 0 var(--color-action-edge);
+	color: var(--color-on-action);
+	font-weight: var(--weight-semibold);
+}
+
+.theme-menu__option:has(input:checked) .icon {
+	opacity: 1;
+}
+
+.theme-menu__option:has(input:checked) small {
+	color: var(--color-on-action);
+}
+
+.theme-menu__option:has(input:checked) .theme-menu__swatch {
+	border-color: var(--color-on-action);
+}
+
+.theme-menu__option:has(input:focus-visible) {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 1px;
+}

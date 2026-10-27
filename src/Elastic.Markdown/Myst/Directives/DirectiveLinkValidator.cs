@@ -5,6 +5,9 @@
 using Elastic.Documentation;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
+using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -26,6 +29,48 @@ internal static class DirectiveLinkValidator
 	/// </summary>
 	public static string? ValidateAndResolve(string? url, DirectiveBlock block, ParserContext context) =>
 		Resolve(url, block, context, allowRelative: false, checkFileExists: true);
+
+	private static readonly MarkdownPipeline InlineLinkPipeline = new MarkdownPipelineBuilder().UsePreciseSourceLocation().Build();
+
+	/// <summary>
+	/// Resolve every inline markdown link, such as <c>[label](/path/page.md)</c>, in a directive
+	/// option or YAML field that is rendered later as inline markdown. Each target goes through
+	/// <see cref="ValidateAndResolve"/>, then becomes a final href, so a <c>.md</c> path or a
+	/// cross-link works the same as in a link card. Anchors and external URLs stay as written.
+	/// The text is parsed first, so only real link destinations change. Code spans and escaped
+	/// link syntax stay literal, and a link title is kept.
+	/// </summary>
+	public static string? ResolveMarkdownLinks(string? markdown, DirectiveBlock block, ParserContext context)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return markdown;
+
+		var document = Markdig.Markdown.Parse(markdown, InlineLinkPipeline);
+		var edits = new List<(int Start, int Length, string Href)>();
+		foreach (var link in document.Descendants<LinkInline>())
+		{
+			if (link.IsImage || link.IsAutoLink || string.IsNullOrEmpty(link.Url))
+				continue;
+
+			var span = link.UrlSpan;
+			if (span.Start < 0 || span.End >= markdown.Length || span.Length <= 0)
+				continue;
+
+			// Only rewrite when the span holds the destination as written.
+			var written = markdown.Substring(span.Start, span.Length);
+			if (!string.Equals(written, link.Url, StringComparison.Ordinal))
+				continue;
+
+			var resolved = ValidateAndResolve(written, block, context);
+			edits.Add((span.Start, span.Length, ToHref(resolved, context.Build.UrlPathPrefix) ?? written));
+		}
+
+		// Apply from the end so earlier offsets stay valid.
+		var result = markdown;
+		foreach (var (start, length, href) in edits.OrderByDescending(edit => edit.Start))
+			result = result[..start] + href + result[(start + length)..];
+		return result;
+	}
 
 	/// <summary>
 	/// Resolve cross-link schemes only, and accept a path relative to the source file.
@@ -52,7 +97,9 @@ internal static class DirectiveLinkValidator
 
 		if (!trimmed.StartsWith('/') && !allowRelative)
 		{
-			block.EmitError($"Directive link `{url}` must be an absolute path starting with `/`, a cross-link scheme (for example `kibana://`), or an external URL.");
+			block.EmitError(
+				$"Directive link `{url}` must be an absolute path starting with `/`, a cross-link scheme (for example `kibana://`), or an external URL."
+			);
 			return url;
 		}
 
@@ -100,13 +147,13 @@ internal static class DirectiveLinkValidator
 	/// <summary>True when <paramref name="url"/> came from a cross-link scheme on this block.</summary>
 	public static bool IsResolvedCrossLink(DirectiveBlock block, string? url) =>
 		url is not null
-		&& block.GetData(ResolvedCrossLinksKey) is HashSet<string> resolvedLinks
-		&& resolvedLinks.Contains(url, StringComparer.OrdinalIgnoreCase);
+			&& block.GetData(ResolvedCrossLinksKey) is HashSet<string> resolvedLinks
+			&& resolvedLinks.Contains(url, StringComparer.OrdinalIgnoreCase);
 
 	private static bool IsExternal(string url) =>
 		url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-		|| url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-		|| url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase);
+			|| url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+			|| url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase);
 
 	private static string StripMarkdownExtension(string path)
 	{
@@ -118,9 +165,7 @@ internal static class DirectiveLinkValidator
 			return stripped.Length == 0 ? "/" : stripped;
 		}
 
-		return path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? path[..^".md".Length]
-			: path;
+		return path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? path[..^".md".Length] : path;
 	}
 
 	private static string ResolveCrossLink(string original, Uri uri, DirectiveBlock block, ParserContext context)
@@ -131,7 +176,9 @@ internal static class DirectiveLinkValidator
 			// Custom passthrough protocols (cursor:, vscode:) are left alone.
 			if (IsPassthroughCustomProtocolScheme(uri.Scheme))
 				return original;
-			block.EmitError($"Directive link `{original}` uses cross-link scheme `{uri.Scheme}://` which is not declared under `cross_links` in docset.yml.");
+			block.EmitError(
+				$"Directive link `{original}` uses cross-link scheme `{uri.Scheme}://` which is not declared under `cross_links` in docset.yml."
+			);
 			return original;
 		}
 
@@ -180,31 +227,24 @@ internal static class DirectiveLinkValidator
 	// docs-builder URLs usually omit the extension, so /explore-analyze/discover may mean
 	// discover.md or discover/index.md. Probe as given first.
 	private static string[] ProbeCandidates(string path) =>
-		path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? [path]
-			: [path, path + ".md", path.TrimEnd('/') + "/index.md"];
+		path.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? [path] : [path, path + ".md", path.TrimEnd('/') + "/index.md"];
 
 	private static bool TryEmitRedirectWarning(string url, string relativeToBase, DirectiveBlock block, ParserContext context)
 	{
-		if (context.Configuration.Redirects is null
-			|| !context.Configuration.Redirects.TryGetValue(relativeToBase, out var redirect))
+		if (context.Configuration.Redirects is null || !context.Configuration.Redirects.TryGetValue(relativeToBase, out var redirect))
 			return false;
 
-		var to = redirect.To
-			?? (redirect.Many is not null
-				? string.Join(", ", redirect.Many.Select(m => m.To))
-				: "unknown");
+		var to = redirect.To ?? (redirect.Many is not null ? string.Join(", ", redirect.Many.Select(m => m.To)) : "unknown");
 		block.EmitWarning($"Directive link `{url}` has a redirect; update to: {to}");
 		return true;
 	}
 
-	private static (string Path, string? Anchor) SplitAnchor(string url)
+	public static (string Path, string? Anchor) SplitAnchor(string url)
 	{
 		var hash = url.IndexOf('#');
 		return hash < 0 ? (url, null) : (url[..hash], url[hash..]);
 	}
 
 	private static bool IsPassthroughCustomProtocolScheme(string scheme) =>
-		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase)
-		|| scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
+		scheme.Equals("cursor", StringComparison.OrdinalIgnoreCase) || scheme.StartsWith("vscode", StringComparison.OrdinalIgnoreCase);
 }

@@ -12,18 +12,22 @@ namespace Elastic.Markdown.Tests.Directives;
 /// Verifies that the directive does not apply publish blockers. Previously blocked entries
 /// (docs, other) should appear in the TOC, anchors, and HTML output.
 /// </summary>
+[InheritsTests]
 public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPublishBlockerFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPublishBlockerFiltersTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -49,66 +53,72 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish in config is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void TocIncludesDocumentationSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesOtherSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Other changes");
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
-	[Fact]
+	[Test]
 	public void TocRetainsVersionHeader()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "9.3.0" && t.Level == 2);
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsIncludeDocumentationSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().Contain(a => a.Contains("docs"));
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsIncludeOtherSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().Contain(a => a.EndsWith("-other"));
 	}
 
-	[Fact]
+	[Test]
 	public void HtmlContainsAllSections()
 	{
 		Html.Should().Contain("Documentation");
@@ -122,18 +132,22 @@ public class ChangelogPublishBlockerFiltersTocTests : DirectiveTest<ChangelogBlo
 /// When all entries of a certain type are hidden via feature-id, the corresponding section
 /// should not appear in the TOC or anchors.
 /// </summary>
+[InheritsTests]
 public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogHideFeaturesFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogHideFeaturesFiltersTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") =>
+		"""
+		) =>
 		// Bundle with hide-features that filters out all "other" entries
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -164,37 +178,39 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void TocExcludesHiddenOtherSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().NotContain(t => t.Heading == "Other changes");
 	}
 
-	[Fact]
+	[Test]
 	public void TocRetainsVisibleFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsExcludeHiddenOtherSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().NotContain(a => a.EndsWith("-other"));
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsRetainVisibleFeaturesSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().Contain(a => a.Contains("features-enhancements"));
 	}
 
-	[Fact]
+	[Test]
 	public void HtmlMatchesTocFiltering()
 	{
 		Html.Should().NotContain("Other changes");
@@ -207,16 +223,21 @@ public class ChangelogHideFeaturesFiltersTocTests : DirectiveTest<ChangelogBlock
 /// <summary>
 /// Tests that partial filtering retains the section when some (but not all) entries are filtered.
 /// </summary>
+[InheritsTests]
 public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPartialFilterRetainsTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPartialFilterRetainsTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -238,23 +259,25 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void TocRetainsSectionWhenSomeEntriesRemain()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Other changes");
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsRetainSectionWhenSomeEntriesRemain()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
 		anchors.Should().Contain(a => a.EndsWith("-other"));
 	}
 
-	[Fact]
+	[Test]
 	public void HtmlShowsVisibleEntryOnly()
 	{
 		Html.Should().Contain("Visible other change");
@@ -265,18 +288,22 @@ public class ChangelogPartialFilterRetainsTocTests : DirectiveTest<ChangelogBloc
 /// <summary>
 /// Tests that publish blocker and hide-features work together to filter the TOC.
 /// </summary>
+[InheritsTests]
 public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogCombinedFiltersFilterTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogCombinedFiltersFilterTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -305,20 +332,26 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 			    target: 9.3.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish is ignored by the directive; only hide-features applies
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesDocumentationSection_PublishBlockerIgnored()
 	{
 		// Directive does not apply rules.publish; docs section appears
@@ -326,7 +359,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
-	[Fact]
+	[Test]
 	public void TocExcludesHideFeatureFilteredSection()
 	{
 		// The only bug-fix entry is hidden by feature-id, so the Fixes section should not appear
@@ -334,14 +367,14 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 		tocItems.Should().NotContain(t => t.Heading == "Fixes");
 	}
 
-	[Fact]
+	[Test]
 	public void TocRetainsUnfilteredSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsExcludeOnlyHideFeatureFilteredSection()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
@@ -349,7 +382,7 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 		anchors.Should().NotContain(a => a.Contains("-fixes"));
 	}
 
-	[Fact]
+	[Test]
 	public void HtmlMatchesTocAndAnchors()
 	{
 		Html.Should().Contain("Features and enhancements");
@@ -365,18 +398,22 @@ public class ChangelogCombinedFiltersFilterTocTests : DirectiveTest<ChangelogBlo
 /// Verifies that the directive does not apply area-based publish blockers.
 /// Previously blocked entries (Internal area) should appear in the TOC and anchors.
 /// </summary>
+[InheritsTests]
 public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPublishBlockerAreaFiltersTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogPublishBlockerAreaFiltersTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -406,44 +443,50 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 			  - Internal
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish in config is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void TocIncludesDocumentationSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesOtherSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Other changes");
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesFeaturesSection()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
-	[Fact]
+	[Test]
 	public void AnchorsIncludeAllSections()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
@@ -457,16 +500,21 @@ public class ChangelogPublishBlockerAreaFiltersTocTests : DirectiveTest<Changelo
 /// Tests that when ALL entries across ALL types in a bundle are filtered out by hide-features
 /// and the bundle has no description, the version is omitted from the TOC and rendered output.
 /// </summary>
+[InheritsTests]
 public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogAllEntriesFilteredTocTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogAllEntriesFilteredTocTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -489,22 +537,21 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsVersionFromTocWhenNoRenderableEntries()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void OmitsVersionFromRenderedOutput()
-	{
-		Html.Should().NotContain("9.3.0");
-	}
+	[Test]
+	public void OmitsVersionFromRenderedOutput() => Html.Should().NotContain("9.3.0");
 
-	[Fact]
+	[Test]
 	public void NoAnchorsGenerated()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
@@ -516,19 +563,23 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 /// Tests TOC filtering across multiple bundles. Each bundle should independently
 /// filter its sections based on which entries survive filtering.
 /// </summary>
+[InheritsTests]
 public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMultipleBundlesTocFilteringTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogMultipleBundlesTocFilteringTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""")
+		"""
+		)
 	{
 		// 9.3.0 has docs entries that will be blocked
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -547,12 +598,16 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			    target: 9.3.0
 			  prs:
 			  - "222222"
-			"""));
+			"""
+			)
+		);
 
 		// 9.2.0 only has docs entries (all will be blocked)
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -564,20 +619,26 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 			    target: 9.2.0
 			  prs:
 			  - "333333"
-			"""));
+			"""
+			)
+		);
 
 		// rules.publish is ignored by the directive
-		FileSystem.AddFile("docs/changelog.yml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - docs
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void BothVersionHeadersAppearInToc()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
@@ -585,7 +646,7 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 		tocItems.Should().Contain(t => t.Heading == "9.2.0" && t.Level == 2);
 	}
 
-	[Fact]
+	[Test]
 	public void BothVersionsHaveDocumentationInToc()
 	{
 		// Directive does not apply rules.publish; Documentation section appears
@@ -593,14 +654,14 @@ public class ChangelogMultipleBundlesTocFilteringTests : DirectiveTest<Changelog
 		tocItems.Should().Contain(t => t.Heading == "Documentation");
 	}
 
-	[Fact]
+	[Test]
 	public void FirstVersionRetainsFeaturesInToc()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		tocItems.Should().Contain(t => t.Heading == "Features and enhancements");
 	}
 
-	[Fact]
+	[Test]
 	public void SecondVersionHasDocumentationSection()
 	{
 		// 9.2.0 has only docs entries; with no publish blocking, Documentation section appears

@@ -10,14 +10,13 @@ using JetBrains.Annotations;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
+[InheritsTests]
 public abstract class CodeBlockCallOutTests(
-	ITestOutputHelper output,
 	string language,
 	[LanguageInjection("csharp")] string code,
 	[LanguageInjection("markdown")] string? markdown = null
-)
-	: BlockTest<EnhancedCodeBlock>(output,
-$$"""
+) : BlockTest<EnhancedCodeBlock>(
+	$$"""
 ```{{language}}
 {{code}}
 ```
@@ -25,43 +24,44 @@ $$"""
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsLanguage() => Block!.Language.Should().Be("csharp");
-
 }
 
-public class MagicCalOuts(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class MagicCalOuts() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; // this is a callout
 //this is not a callout
 var y = x - 2;
 var z = y - 2; // another callout
 """
-	)
+)
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.NotContain(c => c.Text.Contains("not a callout"));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.NotContain(c => c.Text.Contains("not a callout"));
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MagicCallOutWithFormatting(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class MagicCallOutWithFormatting() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; // this uses `formatting` and a [link](testing/req.md)
 """
-	)
+)
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/testing/req.md", new MockFileData("# Requirements"));
 
-	[Fact]
+	[Test]
 	public void RendersFormattedInlineMarkdown() =>
 		Html.ShouldContainHtml(
 			"""
@@ -71,76 +71,80 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 			"""
 		);
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class ClassicCallOutsRequiresContent(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsRequiresContent() : CodeBlockCallOutTests("csharp", """
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
-"""
-	)
+""")
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
-	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by any content"));
+	[Test]
+	public void RequiresContentToFollow() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by any content"));
 }
 
-public class ClassicCallOutsNotFollowedByList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsNotFollowedByList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 ## hello world
 """
-
-	)
+)
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
-	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+	[Test]
+	public void RequiresContentToFollow() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
-
-public class ClassicCallOutsFollowedByAListWithOneParagraph(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsFollowedByAListWithOneParagraph() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 
 **OUTPUT:**
 
 1. Marking the first callout
 2. Marking the second callout
 """
-
-	)
+)
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
+	[Test]
 	public void RendersExpectedHtml() =>
 		Html.ShouldBeHtml(
 			"""
@@ -160,18 +164,19 @@ var z = y - 2; <2>
 			"""
 		);
 
-
-	[Fact]
+	[Test]
 	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ClassicCallOutsFollowedByListButWithTwoParagraphs(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsFollowedByListButWithTwoParagraphs() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 
 **OUTPUT:**
 
@@ -180,76 +185,79 @@ BLOCK TWO
 1. Marking the first callout
 2. Marking the second callout
 """
-
-	)
+)
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
-	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
+	[Test]
+	public void RequiresContentToFollow() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
-
-
-public class ClassicCallOutsFollowedByListWithWrongCoung(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsFollowedByListWithWrongCoung() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 1. Only marking the first callout
 """
-
-	)
+)
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
-	public void RequiresContentToFollow() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
+	[Test]
+	public void RequiresContentToFollow() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
 }
 
-public class ClassicCallOutsReuseHighlights(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutsReuseHighlights() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2; <2>
 var z = y - 2; <2>
 """,
-"""
+	"""
 1. The first
 2. The second appears twice
 """
-
-	)
+)
 {
-	[Fact]
-	public void SeesTwoUniqueCallouts() => Block!.UniqueCallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void SeesTwoUniqueCallouts() =>
+		Block!.UniqueCallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
-	public void ParsesAllForLineInformation() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(3)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesAllForLineInformation() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(3).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
+	[Test]
 	public void RequiresContentToFollow() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class ClassicCallOutWithTheRightListItems(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class ClassicCallOutWithTheRightListItems() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 receivers: <1>
   # ...
   otlp:
@@ -290,7 +298,7 @@ service:
       processors: [..., memory_limiter, batch]
       exporters: [debug, otlp]
 """,
-"""
+	"""
 1. The receivers, like the OTLP receiver, that forward data emitted by APM agents, or the host metrics receiver.
 2. We recommend using the Batch processor and the memory limiter processor. For more information, see recommended processors.
 3. The debug exporter is helpful for troubleshooting, and supports configurable verbosity levels: basic (default), normal, and detailed.
@@ -300,27 +308,23 @@ service:
 7. Environment-specific configuration parameters can be conveniently passed in as environment variables documented here (e.g. ELASTIC_APM_SERVER_ENDPOINT and ELASTIC_APM_SECRET_TOKEN).
 8. [preview] To send OpenTelemetry logs to {stack} version 8.0+, declare a logs pipeline.
 """
-
-	)
+)
 {
-	[Fact]
+	[Test]
 	public void ParsesClassicCallouts()
 	{
-		Block!.CallOuts
-			.Should().NotBeNullOrEmpty()
-			.And.HaveCount(9)
-			.And.OnlyContain(c => c.Text.StartsWith('<'));
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(9).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-		Block!.UniqueCallOuts
-			.Should().NotBeNullOrEmpty()
-			.And.HaveCount(8);
+		Block!.UniqueCallOuts.Should().NotBeNullOrEmpty().And.HaveCount(8);
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class MultipleCalloutsInOneLine(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+[InheritsTests]
+public class MultipleCalloutsInOneLine() : CodeBlockCallOutTests(
+	"csharp",
 	"""
 	var x = 1; // <1>
 	var y = x - 2;
@@ -332,17 +336,17 @@ public class MultipleCalloutsInOneLine(ITestOutputHelper output) : CodeBlockCall
 	"""
 )
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(3)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(3).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class CodeBlockWithChevronInsideCode(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
+[InheritsTests]
+public class CodeBlockWithChevronInsideCode() : CodeBlockCallOutTests(
+	"csharp",
 	"""
 	app.UseFilter<StopwatchFilter>(); <1>
 	app.UseFilter<CatchExceptionFilter>(); <2>
@@ -357,23 +361,23 @@ public class CodeBlockWithChevronInsideCode(ITestOutputHelper output) : CodeBloc
 	"""
 )
 {
-	[Fact]
-	public void ParsesMagicCallOuts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(5)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesMagicCallOuts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(5).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }
 
-public class CodeBlockWithCommentBlocksThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithCommentBlocksThenList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 %  TEST[s/"basque_keywords",//]
 %  TEST[s/\n$/\nstartyaml\n  - compare_analyzers: {index: basque_example, first: basque, second: rebuilt_basque}\nendyaml\n/]
 
@@ -382,16 +386,14 @@ var z = y - 2; <2>
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2)
-		.And.OnlyContain(c => c.Text.StartsWith('<'));
+	[Test]
+	public void ParsesCallouts() =>
+		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
-	[Fact]
+	[Test]
 	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void RenderedHtmlContainsCallouts() =>
 		Html.ShouldContainHtml(
 			"""
@@ -403,13 +405,15 @@ var z = y - 2; <2>
 		);
 }
 
-public class CodeBlockWithMultipleCommentTypesThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithMultipleCommentTypesThenList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 % This is an HTML-style comment that starts with %
 %  TEST[catch:bad_request]
 
@@ -418,22 +422,22 @@ var z = y - 2; <2>
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2);
+	[Test]
+	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
 }
 
-public class CodeBlockWithCommentBlocksParagraphThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithCommentBlocksParagraphThenList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 %  TEST[s/"basque_keywords",//]
 %  TEST[catch:bad_request]
 
@@ -444,15 +448,13 @@ var z = y - 2; <2>
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2);
+	[Test]
+	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void HandlesCommentBlocksAndParagraphCorrectly() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void RendersIntermediateParagraph() =>
 		Html.ShouldContainHtml(
 			"""
@@ -465,13 +467,15 @@ var z = y - 2; <2>
 		);
 }
 
-public class CodeBlockWithCommentBlocksTwoParagraphsThenList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithCommentBlocksTwoParagraphsThenList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 %  TEST[s/"basque_keywords",//]
 
 **This is an intermediate paragraph**
@@ -483,46 +487,56 @@ var z = y - 2; <2>
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2);
+	[Test]
+	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
-	[Fact]
-	public void EmitsErrorForTooManyParagraphs() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
+	[Test]
+	public void EmitsErrorForTooManyParagraphs() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
 }
 
-public class CodeBlockWithManyCommentBlocksNoList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithManyCommentBlocksNoList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 %  TEST[s/"basque_keywords",//]
 %  TEST[s/\n$/\nstartyaml\n  - compare_analyzers: {index: basque_example, first: basque, second: rebuilt_basque}\nendyaml\n/]
 %  TEST[catch:bad_request]
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2);
+	[Test]
+	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
-	[Fact]
-	public void EmitsErrorForNoList() => Collector.Diagnostics.Should().HaveCount(1)
-		.And.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+	[Test]
+	public void EmitsErrorForNoList() =>
+		Collector
+			.Diagnostics
+			.Should()
+			.HaveCount(1)
+			.And
+			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
 }
 
-public class CodeBlockWithCommentsAfterList(ITestOutputHelper output) : CodeBlockCallOutTests(output, "csharp",
-"""
+[InheritsTests]
+public class CodeBlockWithCommentsAfterList() : CodeBlockCallOutTests(
+	"csharp",
+	"""
 var x = 1; <1>
 var y = x - 2;
 var z = y - 2; <2>
 """,
-"""
+	"""
 1. First callout
 2. Second callout
 
@@ -530,15 +544,12 @@ var z = y - 2; <2>
 """
 )
 {
-	[Fact]
-	public void ParsesCallouts() => Block!.CallOuts
-		.Should().NotBeNullOrEmpty()
-		.And.HaveCount(2);
+	[Test]
+	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void HandlesCommentsCorrectly() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
-	public void RenderedHtmlDoesNotContainComments() =>
-		Html.Should().NotContain("basque_keywords");
+	[Test]
+	public void RenderedHtmlDoesNotContainComments() => Html.Should().NotContain("basque_keywords");
 }

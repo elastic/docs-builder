@@ -17,14 +17,14 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class CrossLinkRegistryTests
 {
-	[Fact]
+	[Test]
 	public void Registry_NullOrEmpty_ParsesAsPublic()
 	{
 		foreach (var config in new[] { null, "", "   ", "public" }.Select(v => CreateConfiguration(CreateDocSet(v, ["elasticsearch"]))))
 			config.Registry.Should().Be(DocSetRegistry.Public);
 	}
 
-	[Fact]
+	[Test]
 	public void Registry_Internal_ParsesAsInternal()
 	{
 		var docSet = CreateDocSet("internal", ["docs-eng-team"]);
@@ -33,17 +33,22 @@ public class CrossLinkRegistryTests
 		config.Registry.Should().Be(DocSetRegistry.Internal);
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_BareRepo_InheritsDocsetRegistry()
 	{
 		var docSet = CreateDocSet("internal", ["other-internal-repo"]);
 		var config = CreateConfiguration(docSet);
 
-		config.CrossLinkEntries.Should().ContainSingle()
-			.Which.Should().Be(new CrossLinkEntry("other-internal-repo", DocSetRegistry.Internal));
+		config
+			.CrossLinkEntries
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Be(new CrossLinkEntry("other-internal-repo", DocSetRegistry.Internal));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicPrefix_UsesPublicRegistry()
 	{
 		var docSet = CreateDocSet("internal", ["other-internal-repo", "public://elasticsearch"]);
@@ -54,7 +59,7 @@ public class CrossLinkRegistryTests
 		config.CrossLinkEntries[1].Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicDocset_BareReposUsePublic()
 	{
 		var docSet = CreateDocSet(null, ["elasticsearch", "kibana"]);
@@ -65,18 +70,17 @@ public class CrossLinkRegistryTests
 		config.CrossLinkEntries[1].Should().Be(new CrossLinkEntry("kibana", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicDocset_InternalPrefix_ExcludesInvalidEntry()
 	{
 		var docSet = CreateDocSet(null, ["elasticsearch", "internal://docs-eng-team"]);
 		var config = CreateConfiguration(docSet);
 
 		// Public docsets cannot link to internal; the invalid entry is excluded
-		config.CrossLinkEntries.Should().ContainSingle()
-			.Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
+		config.CrossLinkEntries.Should().ContainSingle().Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkRepositories_MatchesCrossLinkEntries()
 	{
 		var docSet = CreateDocSet("internal", ["repo-a", "public://repo-b"]);
@@ -102,19 +106,13 @@ public class CrossLinkRegistryTests
 		var collector = new DiagnosticsCollector([]);
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = new ProductsConfiguration
 		{
 			Products = new Dictionary<string, Product>().ToFrozenDictionary(),
@@ -129,13 +127,15 @@ public class CrossLinkRegistryTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
 		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
-			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

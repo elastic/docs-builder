@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.ApiExplorer;
 using Elastic.Documentation;
@@ -12,14 +13,18 @@ using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Serialization;
 using Elastic.Documentation.Services;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
 using Elastic.Markdown.IO;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
+using static System.StringComparison;
 
 namespace Elastic.Documentation.Isolated;
 
@@ -40,6 +45,60 @@ public class IsolatedBuildService(
 		return strict.HasValue && strict.Value;
 	}
 
+	private sealed record BuildSettings(
+		bool Strict,
+		IReadOnlySet<Exporter> Exporters,
+		string? PathPrefix,
+		bool Force,
+		bool AllowIndexing,
+		Uri CanonicalBaseUri,
+		bool SkipOpenApi,
+		bool SkipCrossLinks,
+		bool RunningOnCi
+	);
+
+	private BuildSettings ResolveSettings(IsolatedBuildOptions options)
+	{
+		var strict = IsStrict(options.Strict);
+		var metadataOnly = options.MetadataOnly;
+
+		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
+			metadataOnly ??= metaValue;
+
+		var exporters = options.Exporters ?? (metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default);
+		var pathPrefix = options.PathPrefix ?? githubActionsService.GetInput("prefix");
+		var runningOnCi = _env.IsRunningOnCI;
+		var force = options.Force;
+
+		if (runningOnCi)
+		{
+			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
+			force = true;
+		}
+
+		return new BuildSettings(
+			strict,
+			exporters,
+			pathPrefix,
+			force ?? false,
+			options.AllowIndexing ?? false,
+			options.CanonicalBaseUrl ?? new Uri("https://docs-v3-preview.elastic.dev"),
+			options.SkipApi,
+			options.SkipCrossLinks,
+			runningOnCi
+		);
+	}
+
+	private BuildContext CreateContext(IDiagnosticsCollector collector, DocumentationFileSystem docFs, BuildSettings settings) =>
+		new(collector, docFs, configurationContext)
+		{
+			AvailableExporters = settings.Exporters,
+			UrlPathPrefix = settings.PathPrefix,
+			Force = settings.Force,
+			AllowIndexing = settings.AllowIndexing,
+			CanonicalBaseUrl = settings.CanonicalBaseUri,
+		};
+
 	public async Task<bool> Build(
 		IDiagnosticsCollector collector,
 		IsolatedBuildOptions options,
@@ -49,56 +108,21 @@ public class IsolatedBuildService(
 	{
 		var path = options.Path?.FullName;
 		var output = options.Output?.FullName;
-		var pathPrefix = options.PathPrefix;
-		var force = options.Force;
-		var strict = options.Strict;
-		var allowIndexing = options.AllowIndexing;
-		var metadataOnly = options.MetadataOnly;
-		var exporters = options.Exporters;
-		var canonicalBaseUri = options.CanonicalBaseUrl;
-		var skipOpenApi = options.SkipApi;
-		var skipCrossLinks = options.SkipCrossLinks;
-
-		strict = IsStrict(strict);
-
-		if (bool.TryParse(githubActionsService.GetInput("metadata-only"), out var metaValue) && metaValue)
-			metadataOnly ??= metaValue;
-
-		exporters ??= metadataOnly.GetValueOrDefault(false) ? ExportOptions.MetadataOnly : ExportOptions.Default;
-
-		pathPrefix ??= githubActionsService.GetInput("prefix");
-
-		var runningOnCi = _env.IsRunningOnCI;
+		var settings = ResolveSettings(options);
 		BuildContext context;
-
-		canonicalBaseUri ??= new Uri("https://docs-v3-preview.elastic.dev");
-
-		if (runningOnCi)
-		{
-			_logger.LogInformation("Build running on CI, forcing a full rebuild of the destination folder");
-			force = true;
-		}
 
 		try
 		{
-			var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions
-			{
-				Output = options.Output?.FullName,
-				InnerWrite = writeFileSystem
-			});
-			context = new BuildContext(collector, docFs, configurationContext)
-			{
-				AvailableExporters = exporters,
-				UrlPathPrefix = pathPrefix,
-				Force = force ?? false,
-				AllowIndexing = allowIndexing ?? false,
-				CanonicalBaseUrl = canonicalBaseUri,
-			};
+			var docFs = DocumentationFileSystem.Resolve(
+				path,
+				new DocumentationScopeOptions { Output = options.Output?.FullName, InnerWrite = writeFileSystem }
+			);
+			context = CreateContext(collector, docFs, settings);
 		}
 		// On CI, we are running on a merge commit which may have changes against an older
 		// docs folder (this can happen on out-of-date PR's).
 		// At some point in the future we can remove this try catch
-		catch (DocumentationPathException e) when (runningOnCi)
+		catch (DocumentationPathException e) when (settings.RunningOnCi)
 		{
 			// Derive the default output from `path` so it stays within the write FS scope.
 			// Using Paths.WorkingDirectoryRoot would be wrong when --path points to a different repo.
@@ -112,18 +136,43 @@ public class IsolatedBuildService(
 			// cause is a real bug — not the stale-merge-commit case this catch was written for —
 			// the --git-dir remedy in e.Message actually reaches whoever is reading the failed run,
 			// rather than being buried above a later, unrelated artifact-upload failure.
-			_logger.LogWarning("Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
-				e.Message);
+			_logger.LogWarning(
+				"Skipping build on CI: {Message} If the docs folder is not actually out of date on a stale merge commit, this indicates a real path-resolution issue.",
+				e.Message
+			);
 
 			await githubActionsService.SetOutputAsync("skip", "true");
 			return true;
 		}
 
+		return await GenerateAsync(context, settings, ctx);
+	}
+
+	/// <summary>
+	/// Builds from an already-resolved documentation file system, for callers that synthesize the docset
+	/// (for example from an in-memory file system) instead of pointing at a directory on disk.
+	/// </summary>
+	public async Task<bool> BuildFrom(
+		IDiagnosticsCollector collector,
+		IsolatedBuildOptions options,
+		DocumentationFileSystem docFs,
+		Cancel ctx = default
+	)
+	{
+		var settings = ResolveSettings(options);
+		return await GenerateAsync(CreateContext(collector, docFs, settings), settings, ctx);
+	}
+
+	private async Task<bool> GenerateAsync(BuildContext context, BuildSettings settings, Cancel ctx)
+	{
+		var runningOnCi = settings.RunningOnCi;
+		var exporters = settings.Exporters;
+
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("skip", "false");
 
 		ICrossLinkResolver crossLinkResolver;
-		if (skipCrossLinks)
+		if (settings.SkipCrossLinks)
 		{
 			_logger.LogInformation("Skipping cross-link fetching for fast validation build");
 			crossLinkResolver = NoopCrossLinkResolver.Instance;
@@ -137,7 +186,8 @@ public class IsolatedBuildService(
 			var crossLinkFetcher = new DocSetConfigurationCrossLinkFetcher(
 				logFactory,
 				context.Configuration,
-				codexLinkIndexReader: codexReader);
+				codexLinkIndexReader: codexReader
+			);
 			var crossLinks = await crossLinkFetcher.FetchCrossLinks(ctx);
 			IUriEnvironmentResolver? uriResolver = crossLinks.CodexRepositories is not null
 				? new CodexAwareUriResolver(crossLinks.CodexRepositories)
@@ -158,18 +208,25 @@ public class IsolatedBuildService(
 			context.VersionsConfiguration,
 			context.LegacyUrlMappings,
 			set.Configuration,
-			context.Git);
-		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context,
-			branded: context.Configuration.Branding is not null);
+			context.Git
+		);
+		var markdownExporters = exporters.CreateMarkdownExporters(logFactory, context, branded: context.Configuration.Branding is not null);
 
 		var tasks = markdownExporters.Select(async e => await e.StartAsync(ctx));
 		await Task.WhenAll(tasks);
 
+		var generator = new DocumentationGenerator(
+			set,
+			logFactory,
+			set,
+			null,
+			null,
+			markdownExporters.ToArray(),
+			documentInferrer: documentInferrer
+		);
+		var result = await generator.GenerateAll(ctx);
 
-		var generator = new DocumentationGenerator(set, logFactory, set, null, null, markdownExporters.ToArray(), documentInferrer: documentInferrer);
-		_ = await generator.GenerateAll(ctx);
-
-		if (!skipOpenApi)
+		if (!settings.SkipOpenApi)
 		{
 			var openApiGenerator = new OpenApiGenerator(logFactory, context, generator.MarkdownStringRenderer);
 			await openApiGenerator.Generate(ctx);
@@ -178,6 +235,9 @@ public class IsolatedBuildService(
 		if (runningOnCi)
 			await githubActionsService.SetOutputAsync("landing-page-path", set.FirstInterestingUrl);
 
+		if (result.Redirects.Count > 0)
+			await WriteRedirectsAsync(result.Redirects, context, ctx);
+
 		var finishTasks = markdownExporters.Select(async e => await e.FinishExportAsync(context.OutputDirectory, ctx));
 		_ = await Task.WhenAll(finishTasks);
 
@@ -185,6 +245,63 @@ public class IsolatedBuildService(
 		await Task.WhenAll(tasks);
 		_logger.LogInformation("Finished building and exporting exporters {Exporters}", exporters);
 
-		return strict.Value ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+		return settings.Strict ? context.Collector.Errors + context.Collector.Warnings == 0 : context.Collector.Errors == 0;
+	}
+
+	private async Task WriteRedirectsAsync(IReadOnlyDictionary<string, LinkRedirect> redirects, BuildContext context, Cancel ctx)
+	{
+		var pathPrefix = (context.UrlPathPrefix ?? string.Empty).TrimEnd('/');
+		var resolved = new Dictionary<string, string>();
+
+		foreach (var (from, redirect) in redirects)
+		{
+			string? to = null;
+			if (redirect.To is not null)
+				to = redirect.To;
+			else if (redirect.Many is { Length: > 0 })
+				to = redirect.Many.FirstOrDefault(r => r.To is not null)?.To;
+
+			if (to is null || to.Contains("://"))
+				continue;
+
+			var fromUrl = ToAbsoluteUrl(from, pathPrefix);
+			var toUrl = ToAbsoluteUrl(to, pathPrefix);
+
+			if (
+				!string.IsNullOrEmpty(fromUrl)
+				&& !string.IsNullOrEmpty(toUrl)
+				&& !fromUrl.TrimEnd('/').Equals(toUrl.TrimEnd('/'), OrdinalIgnoreCase)
+			)
+			{
+				resolved[fromUrl] = toUrl;
+			}
+		}
+
+		if (resolved.Count == 0)
+			return;
+
+		var redirectsFile = context.WriteFileSystem.FileInfo.New(Path.Join(context.OutputDirectory.FullName, "redirects.json"));
+		_logger.LogInformation("Writing {Count} resolved redirects to {Path}", resolved.Count, redirectsFile.FullName);
+
+		var json = JsonSerializer.Serialize(resolved, SourceGenerationContext.Default.DictionaryStringString);
+		await context.WriteFileSystem.File.WriteAllTextAsync(redirectsFile.FullName, json, ctx);
+	}
+
+	internal static string ToAbsoluteUrl(string path, string pathPrefix)
+	{
+		pathPrefix = pathPrefix.TrimEnd('/');
+
+		if (path.EndsWith(".md", OrdinalIgnoreCase))
+			path = path[..^3];
+
+		if (path.EndsWith("/index", OrdinalIgnoreCase))
+			path = path[..^6];
+		else if (path.Equals("index", OrdinalIgnoreCase))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		if (string.IsNullOrEmpty(path))
+			return string.IsNullOrEmpty(pathPrefix) ? "/" : pathPrefix;
+
+		return $"{pathPrefix}/{path}";
 	}
 }

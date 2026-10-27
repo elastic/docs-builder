@@ -51,12 +51,11 @@ public sealed class VersionIndexClient : IDisposable
 	/// <summary>The public CloudFront distribution in front of the <c>elastic-docs-openapi-specs</c> bucket.</summary>
 	public static readonly Uri DefaultBaseUri = new("https://d29hkgsdo66d1n.cloudfront.net/");
 
-	private static readonly HttpClient SharedHttpClient = new(
-		new SocketsHttpHandler
-		{
-			AutomaticDecompression = DecompressionMethods.All,
-			PooledConnectionLifetime = TimeSpan.FromMinutes(5)
-		})
+	private static readonly HttpClient SharedHttpClient = new(new SocketsHttpHandler
+	{
+		AutomaticDecompression = DecompressionMethods.All,
+		PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+	})
 	{ Timeout = FetchTimeout };
 
 	private readonly HttpClient _httpClient;
@@ -75,7 +74,8 @@ public sealed class VersionIndexClient : IDisposable
 		Uri? baseUri = null,
 		HttpMessageHandler? handler = null,
 		int maxAttempts = DefaultMaxAttempts,
-		Func<TimeSpan, Cancel, Task>? sleep = null)
+		Func<TimeSpan, Cancel, Task>? sleep = null
+	)
 	{
 		_baseUri = baseUri ?? DefaultBaseUri;
 		_indexUri = new Uri(_baseUri, "index.json");
@@ -91,12 +91,20 @@ public sealed class VersionIndexClient : IDisposable
 		}
 	}
 
+	/// <summary>
+	/// When set, downloaded spec bodies are stored here and later fetches of the same object key skip
+	/// the network. <c>serve</c> shares one cache across regenerations while each regeneration gets a
+	/// new client, so a failed version index fetch is retried instead of memoized for the process.
+	/// </summary>
+	public SpecBodyCache? SpecBodies { get; init; }
+
 	public async Task<IReadOnlyList<ResolvedApiVersion>> ResolveVersionsAsync(
 		GitCheckoutInformation git,
 		string apiKey,
 		ResolvedApiConfiguration apiConfig,
 		IDiagnosticsCollector collector,
-		Cancel ctx = default)
+		Cancel ctx = default
+	)
 	{
 		var repository = apiConfig.Repository ?? git.GitHubRepository;
 		if (repository is null)
@@ -110,12 +118,21 @@ public sealed class VersionIndexClient : IDisposable
 			return MissingEntryFallback(apiKey, apiConfig, $"Version index at {_indexUri} declares no repositories", collector);
 
 		if (!index.TryGetValue(repository, out var specsForRepo))
-			return MissingEntryFallback(apiKey, apiConfig, $"Version index at {_indexUri} has no entry for repository '{repository}'", collector);
+			return MissingEntryFallback(
+				apiKey,
+				apiConfig,
+				$"Version index at {_indexUri} has no entry for repository '{repository}'",
+				collector
+			);
 
 		if (!specsForRepo.TryGetValue(apiConfig.SpecFileName, out var versions) || versions.Count == 0)
 		{
-			return MissingEntryFallback(apiKey, apiConfig,
-				$"Version index at {_indexUri} has no entry for spec '{apiConfig.SpecFileName}' under repository '{repository}'", collector);
+			return MissingEntryFallback(
+				apiKey,
+				apiConfig,
+				$"Version index at {_indexUri} has no entry for spec '{apiConfig.SpecFileName}' under repository '{repository}'",
+				collector
+			);
 		}
 
 		var resolved = new List<ResolvedApiVersion>(versions.Count);
@@ -123,13 +140,7 @@ public sealed class VersionIndexClient : IDisposable
 		{
 			if (moniker == "main" && apiConfig.LocalSpecFile is { } localFile)
 			{
-				resolved.Add(new ResolvedApiVersion
-				{
-					Moniker = moniker,
-					Version = entry.Version,
-					IsLocal = true,
-					LocalFile = localFile
-				});
+				resolved.Add(new ResolvedApiVersion { Moniker = moniker, Version = entry.Version, IsLocal = true, LocalFile = localFile });
 				continue;
 			}
 
@@ -145,10 +156,20 @@ public sealed class VersionIndexClient : IDisposable
 		return resolved;
 	}
 
-	public async Task<Stream?> FetchSpecStreamAsync(string apiKey, ResolvedApiVersion version, IDiagnosticsCollector collector, Cancel ctx = default)
+	public async Task<Stream?> FetchSpecStreamAsync(
+		string apiKey,
+		ResolvedApiVersion version,
+		IDiagnosticsCollector collector,
+		Cancel ctx = default
+	)
 	{
 		if (version.ObjectKey is not { } objectKey)
-			throw new InvalidOperationException($"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead.");
+			throw new InvalidOperationException(
+				$"Version '{version.Moniker}' of API '{apiKey}' is local; read {nameof(ResolvedApiVersion.LocalFile)} instead."
+			);
+
+		if (SpecBodies is not null && SpecBodies.TryGet(objectKey, out var cached))
+			return new MemoryStream(cached, writable: false);
 
 		var uri = new Uri(_baseUri, objectKey);
 		string? lastError = null;
@@ -159,7 +180,8 @@ public sealed class VersionIndexClient : IDisposable
 			ctx.ThrowIfCancellationRequested();
 			try
 			{
-				return await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				var stream = await FetchStreamAsync(uri, attempt, ctx).ConfigureAwait(false);
+				return SpecBodies is { } cache ? await BufferSpecBody(cache, objectKey, stream, ctx).ConfigureAwait(false) : stream;
 			}
 			catch (HttpRequestException ex)
 			{
@@ -171,27 +193,48 @@ public sealed class VersionIndexClient : IDisposable
 		}
 
 		collector.EmitGlobalWarning(
-			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version.");
+			$"Could not fetch spec '{objectKey}' for version '{version.Moniker}' of API '{apiKey}' from {uri} after {attempts} attempt(s): {lastError}. Skipping this version."
+		);
 		return null;
+	}
+
+	private static async Task<Stream> BufferSpecBody(SpecBodyCache cache, string objectKey, Stream stream, Cancel ctx)
+	{
+		await using (stream.ConfigureAwait(false))
+		{
+			using var buffer = new MemoryStream();
+			await stream.CopyToAsync(buffer, ctx).ConfigureAwait(false);
+			var body = cache.GetOrAdd(objectKey, buffer.ToArray());
+			return new MemoryStream(body, writable: false);
+		}
 	}
 
 	private static ResolvedApiVersion LocalMain(IFileInfo localFile) =>
 		new() { Moniker = "main", Version = "main", IsLocal = true, LocalFile = localFile };
 
-	private static IReadOnlyList<ResolvedApiVersion> NoRepositoryFallback(string apiKey, ResolvedApiConfiguration apiConfig, IDiagnosticsCollector collector)
+	private static IReadOnlyList<ResolvedApiVersion> NoRepositoryFallback(
+		string apiKey,
+		ResolvedApiConfiguration apiConfig,
+		IDiagnosticsCollector collector
+	)
 	{
 		if (apiConfig.LocalSpecFile is { } localFile)
 			return [LocalMain(localFile)];
 
 		collector.EmitGlobalError(
 			$"API '{apiKey}' has no local spec file, and its repository could not be determined: there is no " +
-			"'repository:' override on the api entry and the current checkout has no resolvable GitHub remote. " +
-			"Add a local spec, set 'repository:' on the api entry, or build from a checkout with a GitHub remote.");
+				"'repository:' override on the api entry and the current checkout has no resolvable GitHub remote. " +
+				"Add a local spec, set 'repository:' on the api entry, or build from a checkout with a GitHub remote."
+		);
 		return [];
 	}
 
 	private static IReadOnlyList<ResolvedApiVersion> MissingEntryFallback(
-		string apiKey, ResolvedApiConfiguration apiConfig, string reason, IDiagnosticsCollector collector)
+		string apiKey,
+		ResolvedApiConfiguration apiConfig,
+		string reason,
+		IDiagnosticsCollector collector
+	)
 	{
 		if (apiConfig.LocalSpecFile is { } localFile)
 		{
@@ -248,7 +291,8 @@ public sealed class VersionIndexClient : IDisposable
 				return await JsonSerializer.DeserializeAsync(
 					stream,
 					VersionIndexJsonContext.Default.DictionaryStringDictionaryStringDictionaryStringVersionIndexEntry,
-					ctx).ConfigureAwait(false);
+					ctx
+				).ConfigureAwait(false);
 			}
 			catch (HttpRequestException ex)
 			{
@@ -272,7 +316,7 @@ public sealed class VersionIndexClient : IDisposable
 
 	private static bool IsTransient(HttpRequestException exception) =>
 		exception.StatusCode is null or HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
-		|| (exception.StatusCode is { } statusCode && (int)statusCode >= 500);
+			|| (exception.StatusCode is { } statusCode && (int)statusCode >= 500);
 
 	private static TimeSpan RetryDelay(int attempt)
 	{

@@ -10,8 +10,7 @@ using Elastic.Markdown.Helpers;
 
 namespace Elastic.Markdown.Myst.Directives.AppliesSwitch;
 
-public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "applies-switch";
 
@@ -32,8 +31,10 @@ public class AppliesSwitchBlock(DirectiveBlockParser parser, ParserContext conte
 	}
 }
 
-public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context), IBlockTitle, IBlockAppliesTo
+public class AppliesItemBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(
+	parser,
+	context
+), IBlockTitle, IBlockAppliesTo
 {
 	public override string Directive => "applies-item";
 

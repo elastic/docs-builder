@@ -2,9 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -16,80 +14,91 @@ namespace Elastic.Documentation.Configuration.Changelog;
 /// <item>Null/empty: returns <c>YamlLenientList(null)</c>.</item>
 /// </list>
 /// </summary>
-public class YamlLenientListConverter : IYamlTypeConverter
+public class YamlLenientListConverter : YamlConverter<YamlLenientList>
 {
-	public bool Accepts(Type type) => type == typeof(YamlLenientList);
-
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override YamlLenientList Read(YamlReader reader)
 	{
-		if (parser.TryConsume<Scalar>(out var scalar))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
-			if (string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~")
+			var scalarValue = reader.ScalarValue;
+			_ = reader.Read();
+
+			if (string.IsNullOrEmpty(scalarValue) || scalarValue == "~")
 				return new YamlLenientList(null);
 
-			var items = scalar.Value
-				.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-				.ToList();
+			var items = scalarValue.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
 
 			return new YamlLenientList(items.Count > 0 ? items : null);
 		}
 
-		if (parser.TryConsume<SequenceStart>(out _))
+		if (reader.TokenType == YamlTokenType.StartSequence)
 		{
+			_ = reader.Read();
 			var items = new List<string>();
 
-			while (!parser.TryConsume<SequenceEnd>(out _))
+			while (reader.TokenType != YamlTokenType.EndSequence)
 			{
-				var item = parser.Consume<Scalar>();
-				if (!string.IsNullOrWhiteSpace(item.Value))
-					items.Add(item.Value.Trim());
+				var item = reader.GetScalarValue();
+				_ = reader.Read();
+				if (!string.IsNullOrWhiteSpace(item))
+					items.Add(item.Trim());
 			}
+			_ = reader.Read(); // consume EndSequence
 
 			return new YamlLenientList(items.Count > 0 ? items : null);
 		}
 
+		reader.Skip();
 		return new YamlLenientList(null);
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+	public override void Write(YamlWriter writer, YamlLenientList value)
 	{
-		if (value is not YamlLenientList { Values: { Count: > 0 } values })
+		if (value is not { Values: { Count: > 0 } values })
 		{
-			emitter.Emit(new Scalar(null, null, string.Empty, ScalarStyle.Plain, true, false));
+			writer.WriteScalar(string.Empty);
 			return;
 		}
 
-		emitter.Emit(new SequenceStart(null, null, false, SequenceStyle.Block));
+		writer.WriteStartSequence();
 
 		foreach (var item in values)
-			emitter.Emit(new Scalar(null, null, item, ScalarStyle.Plain, true, false));
+			writer.WriteScalar(item);
 
-		emitter.Emit(new SequenceEnd());
+		writer.WriteEndSequence();
 	}
 
 	/// <summary>
-	/// Reads a scalar-or-sequence value from the parser and returns a joined comma-separated string.
+	/// Reads a scalar-or-sequence value from the reader and returns a joined comma-separated string.
 	/// Useful for fields that stay as <c>string?</c> in the domain model (e.g., TypeEntryYaml.Labels).
 	/// </summary>
-	internal static string? ReadAsString(IParser parser)
+	internal static string? ReadAsString(YamlReader reader)
 	{
-		if (parser.TryConsume<Scalar>(out var scalar))
-			return string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~" ? null : scalar.Value;
-
-		if (parser.TryConsume<SequenceStart>(out _))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
+			var scalarValue = reader.ScalarValue;
+			_ = reader.Read();
+			return string.IsNullOrEmpty(scalarValue) || scalarValue == "~" ? null : scalarValue;
+		}
+
+		if (reader.TokenType == YamlTokenType.StartSequence)
+		{
+			_ = reader.Read();
 			var items = new List<string>();
 
-			while (!parser.TryConsume<SequenceEnd>(out _))
+			while (reader.TokenType != YamlTokenType.EndSequence)
 			{
-				var item = parser.Consume<Scalar>();
-				if (!string.IsNullOrWhiteSpace(item.Value))
-					items.Add(item.Value.Trim());
+				var item = reader.GetScalarValue();
+				_ = reader.Read();
+				if (!string.IsNullOrWhiteSpace(item))
+					items.Add(item.Trim());
 			}
+			_ = reader.Read(); // consume EndSequence
 
 			return items.Count > 0 ? string.Join(", ", items) : null;
 		}
 
+		reader.Skip();
 		return null;
 	}
 }

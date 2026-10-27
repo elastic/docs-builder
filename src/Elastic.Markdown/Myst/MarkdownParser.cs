@@ -37,8 +37,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 	public Task<MarkdownDocument> ParseAsync(IFileInfo path, YamlFrontMatter? matter, Cancel ctx) =>
 		ParseFromFile(path, matter, Pipeline, false, ctx);
 
-	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) =>
-		ParseFromFile(path, null, MinimalPipeline, true, ctx);
+	public Task<MarkdownDocument> MinimalParseAsync(IFileInfo path, Cancel ctx) => ParseFromFile(path, null, MinimalPipeline, true, ctx);
 
 	private Task<MarkdownDocument> ParseFromFile(IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline, bool skip, Cancel ctx)
 	{
@@ -64,30 +63,62 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, Pipeline);
 
 	public MarkdownDocument ParseApiDescriptionString(string markdown, IFileInfo path) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, null, null, Pipeline, skipValidation: true);
+		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, null, null, ApiDescriptionPipeline, skipValidation: true);
 
 	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter) =>
 		ParseMarkdownStringAsync(markdown, path, matter, MinimalPipeline);
 
-	public MarkdownDocument MinimalParseStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath) =>
-		ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
+	public MarkdownDocument MinimalParseStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath
+	) => ParseMarkdownStringAsync(markdown, path, matter, originalSourcePath, MinimalPipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
+	private MarkdownDocument ParseMarkdownStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, null, pipeline);
 
-	private MarkdownDocument ParseMarkdownStringAsync(string markdown, IFileInfo path, YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
+	private MarkdownDocument ParseMarkdownStringAsync(
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(Build, Resolvers, markdown, path, matter, originalSourcePath, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, null, pipeline);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline) =>
-		ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, originalSourcePath, pipeline, skipValidation: false);
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline
+	) => ParseMarkdownStringAsync(build, resolvers, markdown, path, matter, originalSourcePath, pipeline, skipValidation: false);
 
-	public static MarkdownDocument ParseMarkdownStringAsync(BuildContext build, IParserResolvers resolvers, string markdown, IFileInfo path,
-		YamlFrontMatter? matter, IFileInfo? originalSourcePath, MarkdownPipeline pipeline, bool skipValidation)
+	public static MarkdownDocument ParseMarkdownStringAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		string markdown,
+		IFileInfo path,
+		YamlFrontMatter? matter,
+		IFileInfo? originalSourcePath,
+		MarkdownPipeline pipeline,
+		bool skipValidation
+	)
 	{
 		var state = new ParserState(build)
 		{
@@ -109,8 +140,15 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return Markdig.Markdown.Parse(preprocessedMarkdown, pipeline, context);
 	}
 
-	public static Task<MarkdownDocument> ParseSnippetAsync(BuildContext build, IParserResolvers resolvers, IFileInfo path, IFileInfo parentPath,
-		YamlFrontMatter? matter, Cancel ctx, int? includeLine = null)
+	public static Task<MarkdownDocument> ParseSnippetAsync(
+		BuildContext build,
+		IParserResolvers resolvers,
+		IFileInfo path,
+		IFileInfo parentPath,
+		YamlFrontMatter? matter,
+		Cancel ctx,
+		int? includeLine = null
+	)
 	{
 		var state = new ParserState(build)
 		{
@@ -128,12 +166,12 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 		return ParseAsync(path, context, Pipeline, ctx);
 	}
 
-
 	private static async Task<MarkdownDocument> ParseAsync(
 		IFileInfo path,
 		MarkdownParserContext context,
 		MarkdownPipeline pipeline,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		string inputMarkdown;
 		if (path.FileSystem is FileSystem)
@@ -161,10 +199,42 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseFootnotes() // Must match Pipeline to avoid inconsistent footnote handling
+
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
 				.UseDirectives();
 
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
+	/// <summary>
+	/// A minimal pipeline for re-parsing markdown generated from changelog bundles.
+	/// Changelog content originates from GitHub PR/issue titles and descriptions, not from
+	/// docs-builder source files, so docs-specific parsers (substitution keys, MyST roles,
+	/// cross-reference link validation) must not run on it.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ChangelogPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+			var builder = new MarkdownPipelineBuilder()
+				.UseFootnotes()
+				.UseAutoLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UsePipeTables()
+				.UseTaskLists()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseHardBreaks()
+				.UseComments()
+				.DisableHtml();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			field = builder.Build();
 			return field;
@@ -183,6 +253,7 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
+
 				.UseDiagnosticLinks()
 				.UseAutoLinks()
 				.UseHeadingsWithSlugs()
@@ -203,6 +274,49 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseEnhancedCodeBlocks()
 				.UseHtmxLinkInlineRenderer()
 				.DisableHtml()
+				.UseSpaceNormalizer()
+				.UseHardBreaks();
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
+	/// <summary>
+	/// A variant of <see cref="Pipeline"/> that keeps raw HTML intact instead of escaping it.
+	/// Used when rendering OAS <c>description</c> fields, which can contain HTML markup
+	/// such as <c>&lt;br&gt;</c> tags and anchor links authored against bump.sh conventions.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ApiDescriptionPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+
+			var builder = new MarkdownPipelineBuilder()
+				.UseInlineAnchors()
+				.UsePreciseSourceLocation()
+				.UseFootnotes()
+				.UseAutoLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UseSubstitutionInlineCode()
+				.UseInlineAppliesTo()
+				.UseInlineIcons()
+				.UseInlineKbd()
+				.UseInlineMath()
+				.UseSubstitution()
+				.UseComments()
+				.UseYamlFrontMatter()
+				.UsePipeTables()
+				.UseTaskLists()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseDefinitionTermAnchors()
+				.UseEnhancedCodeBlocks()
+				.UseHtmxLinkInlineRenderer()
 				.UseSpaceNormalizer()
 				.UseHardBreaks();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
@@ -322,5 +436,4 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 
 		return false;
 	}
-
 }

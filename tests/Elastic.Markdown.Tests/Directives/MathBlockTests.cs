@@ -8,32 +8,32 @@ using Elastic.Markdown.Myst.Directives.Math;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MathBlockTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+[InheritsTests]
+public class MathBlockTests() : DirectiveTest<MathBlock>("""
 :::{math}
 E = mc^2
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesMathBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("math");
 
-	[Fact]
+	[Test]
 	public void ExtractsContent() => Block!.Content.Should().Be("E = mc^2");
 
-	[Fact]
+	[Test]
 	public void DeterminesInlineMath() => Block!.IsDisplayMath.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void RendersMathSpan() => Html.Should().Contain("<span class=\"math\">E = mc^2</span>");
 }
 
-public class MathBlockDisplayMathTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+[InheritsTests]
+public class MathBlockDisplayMathTests() : DirectiveTest<MathBlock>(
+	"""
 :::{math}
 \[
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
@@ -42,61 +42,58 @@ public class MathBlockDisplayMathTests(ITestOutputHelper output) : DirectiveTest
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesDisplayMathBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ExtractsDisplayMathContent() => Block!.Content.Should().Contain("\\int_{-\\infty}^{\\infty}");
 
-	[Fact]
+	[Test]
 	public void DeterminesDisplayMath() => Block!.IsDisplayMath.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersDisplayMathDiv() => Html.Should().Contain("<div class=\"math\">");
 }
 
-public class MathBlockWithLabelTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+[InheritsTests]
+public class MathBlockWithLabelTests() : DirectiveTest<MathBlock>("""
 :::{math}
 :label: einstein-mass-energy
 E = mc^2
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesMathBlockWithLabel() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ExtractsLabel() => Block!.Label.Should().Be("einstein-mass-energy");
 
-	[Fact]
+	[Test]
 	public void RendersWithId() => Html.Should().Contain("id=\"einstein-mass-energy\"");
 }
 
-public class MathBlockEmptyTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+[InheritsTests]
+public class MathBlockEmptyTests() : DirectiveTest<MathBlock>("""
 :::{math}
 :::
-"""
-)
+""")
 {
-	[Fact]
-	public void EmptyContentGeneratesError() =>
-		Collector.Errors.Should().Be(1);
+	[Test]
+	public void EmptyContentGeneratesError() => Collector.Errors.Should().Be(1);
 
-	[Fact]
+	[Test]
 	public void EmitsErrorForEmptyContent()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.StartsWith("Math directive requires content."));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.StartsWith("Math directive requires content."));
 	}
 }
 
-public class MathBlockComplexExpressionTests(ITestOutputHelper output) : DirectiveTest<MathBlock>(output,
-"""
+[InheritsTests]
+public class MathBlockComplexExpressionTests() : DirectiveTest<MathBlock>(
+	"""
 :::{math}
 \begin{align}
 \frac{\partial f}{\partial x} &= \lim_{h \to 0} \frac{f(x+h) - f(x)}{h} \\
@@ -106,15 +103,15 @@ public class MathBlockComplexExpressionTests(ITestOutputHelper output) : Directi
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesComplexMathBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ExtractsComplexContent() => Block!.Content.Should().Contain("\\begin{align}");
 
-	[Fact]
+	[Test]
 	public void DeterminesDisplayMathFromBegin() => Block!.IsDisplayMath.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersComplexMathDiv() => Html.Should().Contain("<div class=\"math\">");
 }

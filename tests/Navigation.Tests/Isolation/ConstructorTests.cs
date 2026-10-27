@@ -12,13 +12,14 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class ConstructorTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void ConstructorInitializesRootProperties()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: index.md
@@ -40,11 +41,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.Url.Should().Be("/");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorSetsIsUsingNavigationDropdownFromFeatures()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           features:
 		             primary-nav: true
@@ -62,11 +64,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesFileNavigationLeafFromFileRef()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - file: getting-started.md
@@ -88,11 +91,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileNav.Parent.Should().BeSameAs(navigation); // Top-level files have DocumentationSetNavigation as parent
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesHiddenFileNavigationLeaf()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - hidden: 404.md
@@ -111,11 +115,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		fileNav.Url.Should().Be("/404");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesCrossLinkNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - title: "External Guide"
@@ -127,7 +132,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
 
-		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance, crossLinkResolver: TestCrossLinkResolver.Instance);
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(
+			docSet,
+			context,
+			GenericDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance
+		);
 
 		navigation.NavigationItems.Should().HaveCount(0);
 		var crossLink = navigation.Index.Should().BeOfType<CrossLinkNavigationLeaf>().Subject;
@@ -135,11 +145,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		crossLink.Url.Should().Be("https://docs-v3-preview.elastic.dev/elastic/docs-builder/tree/main");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesFolderNavigationWithChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -168,7 +179,7 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		secondFile.Url.Should().Be("/setup/install");
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorCreatesTableOfContentsNavigationWithChildren()
 	{
 		// language=yaml
@@ -204,18 +215,20 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		file.NavigationRoot.Should().BeSameAs(navigation);
 	}
 
-	[Fact]
+	[Test]
 	public void ConstructorReadsTableOfContentsFromTocYmlFile()
 	{
 		// language=yaml
-		var docSetYaml = """
+		var docSetYaml =
+			"""
 		                 project: 'test-project'
 		                 toc:
 		                   - toc: api
 		                 """;
 
 		// language=yaml
-		var tocYaml = """
+		var tocYaml =
+			"""
 		              toc:
 		                - file: overview.md
 		                - file: reference.md
@@ -242,11 +255,12 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 		reference.Url.Should().Be("/api/reference");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ConstructorProcessesTocYmlItemsBeforeChildrenFromNavigation()
 	{
 		// language=yaml
-		var docSetYaml = """
+		var docSetYaml =
+			"""
 		                 project: 'test-project'
 		                 toc:
 		                   - toc: api
@@ -268,21 +282,21 @@ public class ConstructorTests(ITestOutputHelper output) : DocumentationSetNaviga
 
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, docSetYaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
 		navigation.NavigationItems.Should().HaveCount(0);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var diagnostics = context.Diagnostics;
 		// We expect 2 errors: one for the TOC validation error, and one from navigation constructor
 		// After LoadAndResolve removes the invalid TOC item, the navigation sees an empty TOC
 		context.Diagnostics.Should().HaveCount(2);
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead."));
-		diagnostics.Should().Contain(d =>
-			d.Message.Contains("has no table of contents defined"));
+		diagnostics.Should().Contain(
+			d => d.Message.Contains("TableOfContents 'api' may not contain children, define children in 'api/toc.yml' instead.")
+		);
+		diagnostics.Should().Contain(d => d.Message.Contains("has no table of contents defined"));
 	}
 }

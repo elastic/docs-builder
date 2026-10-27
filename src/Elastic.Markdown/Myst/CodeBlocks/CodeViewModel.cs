@@ -28,9 +28,7 @@ public class CodeViewModel
 		EnhancedCodeBlockHtmlRenderer.RenderCodeBlockLines(subscription.HtmlRenderer, EnhancedCodeBlock);
 		var result = subscription.RentedStringBuilder?.ToString();
 		DocumentationObjectPoolProvider.HtmlRendererPool.Return(subscription);
-		return result == null
-			? HtmlString.Empty
-			: new HtmlString(result.EnsureTrimmed());
+		return result == null ? HtmlString.Empty : new HtmlString(result.EnsureTrimmed());
 	}
 
 	public HtmlString RenderLineWithCallouts(string content, int lineNumber)

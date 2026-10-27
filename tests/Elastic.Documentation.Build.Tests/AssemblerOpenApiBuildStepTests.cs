@@ -25,7 +25,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 {
 	private readonly List<ScopedTempDirectory> _tempDirectories = [];
 
-	private static readonly string MinimalAssemblerYaml = """
+	private static readonly string MinimalAssemblerYaml =
+		"""
 		environments:
 		  prod:
 		    uri: https://www.elastic.co
@@ -42,7 +43,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		references: {}
 		""";
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenFeatureFlagDisabled()
 	{
 		var fileSystem = new FileSystem();
@@ -59,20 +60,26 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			tempDirectory.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken);
+			siteTopNav: null,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-			.Should().BeFalse("OpenAPI generation must not run when the feature flag is disabled");
+		fileSystem
+			.Directory
+			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should()
+			.BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenNoApiDeclarationsAndFlagEnabled()
 	{
 		var fileSystem = new FileSystem();
@@ -89,20 +96,26 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			tempDirectory.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var assembleSources = AssembleSources.ForTests(context, FrozenDictionary<string, AssemblerDocumentationSet>.Empty);
 
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken);
+			siteTopNav: null,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		fileSystem.Directory.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
-			.Should().BeFalse("OpenAPI generation must not run without API declarations");
+		fileSystem
+			.Directory
+			.Exists(fileSystem.Path.Join(outputDirectory, "docs", "api"))
+			.Should()
+			.BeFalse("OpenAPI generation must not run without API declarations");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverApiOwners_EmitsErrorWhenDuplicateKeysDeclared()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -119,7 +132,25 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		collector.Errors.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
+	public void DiscoverApiOwners_SkipsIsolatedFixtureDocsets()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var fixtures = CreateDocumentationSet("docs-builder", "docs-builder-elasticsearch", collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
+		{
+			[content.Checkout.Repository.Name] = content,
+			[fixtures.Checkout.Repository.Name] = fixtures
+		}.ToFrozenDictionary();
+
+		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSets, collector);
+
+		collector.Errors.Should().Be(0);
+		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
+	}
+
+	[Test]
 	public void DiscoverApiOwners_ReturnsOwnersForSetsWithApiDeclarations()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -143,7 +174,6 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		GC.SuppressFinalize(this);
 	}
 
-
 	private static void InitializeGitCheckout(IFileSystem fileSystem, string checkoutRoot)
 	{
 		var gitDir = fileSystem.Path.Join(checkoutRoot, ".git");
@@ -158,10 +188,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		return tempDirectory.Directory;
 	}
 
-	private AssemblerDocumentationSet CreateDocumentationSet(
-		string repositoryName,
-		string? apiKey,
-		DiagnosticsCollector collector)
+	private AssemblerDocumentationSet CreateDocumentationSet(string repositoryName, string? apiKey, DiagnosticsCollector collector)
 	{
 		var fileSystem = new FileSystem();
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -199,7 +226,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			collector,
 			assembleFs,
 			checkoutRoot.FullName,
-			outputDirectory);
+			outputDirectory
+		);
 		var checkout = new Checkout
 		{
 			Repository = new Repository { Name = repositoryName, Origin = $"elastic/{repositoryName}" },
@@ -213,6 +241,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NoopCrossLinkResolver.Instance,
 			new ReleaseNotesResolver(),
 			configurationContext,
-			ExportOptions.Default);
+			ExportOptions.Default
+		);
 	}
 }

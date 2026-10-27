@@ -44,9 +44,7 @@ internal sealed class AssemblerSitemapCommand(
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var fs = CheckoutsFileSystem.FromWorkingDirectory();
 		var service = new AssemblerSitemapService(logFactory, configuration, configurationContext, githubActionsService);
-		serviceInvoker.AddCommand(service,
-			async (s, col, ctx) => await s.GenerateSitemapAsync(col, fs, es, environment, ctx)
-		);
+		serviceInvoker.AddCommand(service, async (s, col, ctx) => await s.GenerateSitemapAsync(col, fs, es, environment, ctx));
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 }

@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
@@ -13,27 +12,28 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ProductFeaturesTests
 {
-	[Fact]
+	[Test]
 	public void ProductWithNoFeaturesKey_GetsAllFeaturesEnabled()
 	{
 		var config = LoadActualProductsConfiguration();
-		var elasticsearch = config.Products["elasticsearch"];
+		var auditbeat = config.Products["auditbeat"];
 
-		elasticsearch.Features.PublicReference.Should().BeTrue();
-		elasticsearch.Features.ReleaseNotes.Should().BeTrue();
+		auditbeat.Features.PublicReference.Should().BeTrue();
+		auditbeat.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		auditbeat.Features.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProductWithPublicReferenceDisabled_HasCorrectFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
 		var docsBuilder = config.Products["docs-builder"];
 
 		docsBuilder.Features.PublicReference.Should().BeFalse();
-		docsBuilder.Features.ReleaseNotes.Should().BeTrue();
+		docsBuilder.Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
 	}
 
-	[Fact]
+	[Test]
 	public void ProductWithoutPublicReference_GetsNoneVersioningSystem()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -44,7 +44,7 @@ public class ProductFeaturesTests
 		docsBuilder.VersioningSystem.Id.Should().Be(VersioningSystemId.None);
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceProducts_ExcludesProductsWithPublicReferenceDisabled()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -53,7 +53,7 @@ public class ProductFeaturesTests
 		config.PublicReferenceProducts.Should().NotContainKey("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicReferenceProducts_IncludesStandardProducts()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -62,7 +62,7 @@ public class ProductFeaturesTests
 		config.PublicReferenceProducts.Should().ContainKey("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void AllProducts_ContainsBothStandardAndOptedOutProducts()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -71,16 +71,17 @@ public class ProductFeaturesTests
 		config.Products.Should().ContainKey("docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductFeatures_All_HasBothFeaturesEnabled()
 	{
 		var all = ProductFeatures.All;
 
 		all.PublicReference.Should().BeTrue();
-		all.ReleaseNotes.Should().BeTrue();
+		all.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		all.ParticipatesInReleaseNotes.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProductFeatures_KnownKeys_ContainsExpectedEntries()
 	{
 		ProductFeatures.KnownKeys.Should().Contain("public-reference");
@@ -88,7 +89,7 @@ public class ProductFeaturesTests
 		ProductFeatures.KnownKeys.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void GetDisplayName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -96,7 +97,7 @@ public class ProductFeaturesTests
 		config.GetDisplayName("docs-builder").Should().Be("Elastic Docs Builder");
 	}
 
-	[Fact]
+	[Test]
 	public void GetProductByRepositoryName_WorksForProductsWithDisabledFeatures()
 	{
 		var config = LoadActualProductsConfiguration();
@@ -104,6 +105,173 @@ public class ProductFeaturesTests
 
 		product.Should().NotBeNull();
 		product.Id.Should().Be("docs-builder");
+	}
+
+	[Test]
+	public void DraArtifact_WhenSet_IsDistinctFromRepository()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    repository: 'widget-src'
+			    dra_artifact: 'widget-artifact'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		var product = config.Products["widget"];
+		product.Repository.Should().Be("widget-src");
+		product.DraArtifact.Should().Be("widget-artifact");
+	}
+
+	[Test]
+	public void DraArtifact_WhenOmitted_IsNull()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		config.Products["widget"].DraArtifact.Should().BeNull();
+	}
+
+	[Test]
+	[Arguments("true", ReleaseNotesPath.OnRelease)]
+	[Arguments("false", ReleaseNotesPath.None)]
+	[Arguments("dra", ReleaseNotesPath.DailyReleasableArtifacts)]
+	[Arguments("Dra", ReleaseNotesPath.DailyReleasableArtifacts)]
+	[Arguments("prestage", ReleaseNotesPath.DailyReleasableArtifacts)] // legacy alias
+
+	[Arguments("Prestage", ReleaseNotesPath.DailyReleasableArtifacts)] // legacy alias
+
+	[Arguments("on-release", ReleaseNotesPath.OnRelease)]
+	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
+	{
+		var config = ParseProducts(
+			$"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: {value}
+			"""
+		);
+
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(expected);
+		config.Products["widget"].Features.ParticipatesInReleaseNotes.Should().Be(expected != ReleaseNotesPath.None);
+	}
+
+	[Test]
+	public void ReleaseNotesFeature_OmittedInFeaturesMap_DefaultsToOnRelease()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference: false
+			"""
+		);
+
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+		config.Products["widget"].Features.PublicReference.Should().BeFalse();
+	}
+
+	[Test]
+	public void ReleaseNotesFeature_UnknownValue_TreatsAsOnRelease()
+	{
+		// Unknown future values must not crash an older binary — forward-compat rule.
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: sideways
+			"""
+		);
+
+		config.Products["widget"].Features.ReleaseNotes.Should().Be(ReleaseNotesPath.OnRelease);
+	}
+
+	[Test]
+	public void PublicReferenceFeature_InvalidValue_Throws()
+	{
+		var act =
+			() => ParseProducts(
+				"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference: prestage
+			"""
+			);
+
+		act.Should().Throw<InvalidOperationException>().WithMessage("*'public-reference' value 'prestage'*Allowed values: true, false*");
+	}
+
+	[Test]
+	public void ReleaseNotesFeature_PresentButEmpty_Throws()
+	{
+		// A present-but-empty key must be rejected, not silently treated as the omitted-key default.
+		var act =
+			() => ParseProducts(
+				"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes:
+			"""
+			);
+
+		act
+			.Should()
+			.Throw<InvalidOperationException>()
+			.WithMessage("*has an empty 'release-notes' value*Allowed values: true, false, dra, on-release*");
+	}
+
+	[Test]
+	public void PublicReferenceFeature_PresentButEmpty_Throws()
+	{
+		var act =
+			() => ParseProducts(
+				"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      public-reference:
+			"""
+			);
+
+		act.Should().Throw<InvalidOperationException>().WithMessage("*has an empty 'public-reference' value*Allowed values: true, false*");
+	}
+
+	private static ProductsConfiguration ParseProducts(string yaml)
+	{
+		var provider = new ConfigurationFileProvider(new NullLoggerFactory(), new ConfigurationFileSystem());
+		var versionsConfig = provider.CreateVersionConfiguration();
+		using var reader = new StringReader(yaml);
+		return ProductExtensions.CreateProducts(reader, versionsConfig);
 	}
 
 	private static ProductsConfiguration LoadActualProductsConfiguration()

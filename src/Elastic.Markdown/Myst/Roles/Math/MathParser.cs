@@ -8,8 +8,7 @@ namespace Elastic.Markdown.Myst.Roles.Math;
 
 public class MathParser : RoleParser<MathRole>
 {
-	protected override MathRole CreateRole(string role, string content, InlineProcessor parserContext)
-		=> new(role, content);
+	protected override MathRole CreateRole(string role, string content, InlineProcessor parserContext) => new(role, content);
 
 	protected override bool Matches(ReadOnlySpan<char> role) => role is "{math}";
 }

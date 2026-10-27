@@ -27,11 +27,10 @@ namespace Elastic.Documentation.FileSystems;
 /// The underlying filesystem. Defaults to a new <see cref="FileSystem"/> when <see langword="null"/>.
 /// Pass a mock in tests.
 /// </param>
-public class AssemblyWriteFileSystem(
-	IDirectoryInfo checkout,
-	IDirectoryInfo? output = null,
-	IFileSystem? inner = null)
-	: ScopedFileSystem(inner ?? new FileSystem(), BuildOptions(checkout, output, inner))
+public class AssemblyWriteFileSystem(IDirectoryInfo checkout, IDirectoryInfo? output = null, IFileSystem? inner = null) : ScopedFileSystem(
+	inner ?? new FileSystem(),
+	BuildOptions(checkout, output, inner)
+)
 {
 	/// <summary>
 	/// The per-user application data directory for <c>elastic/docs-builder</c>.
@@ -48,10 +47,7 @@ public class AssemblyWriteFileSystem(
 		}
 	}
 
-	private static ScopedFileSystemOptions BuildOptions(
-		IDirectoryInfo checkout,
-		IDirectoryInfo? output,
-		IFileSystem? inner)
+	private static ScopedFileSystemOptions BuildOptions(IDirectoryInfo checkout, IDirectoryInfo? output, IFileSystem? inner)
 	{
 		var fs = inner ?? checkout.FileSystem;
 		var checkoutPath = checkout.FullName;
@@ -77,8 +73,7 @@ public class AssemblyWriteFileSystem(
 		var innerType = fs is ScopedFileSystem sf ? sf.InnerType : fs.GetType();
 		if (innerType.Name.Contains("Mock", StringComparison.OrdinalIgnoreCase))
 		{
-			var innerTemp = fs.Path.GetTempPath().TrimEnd(
-				System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+			var innerTemp = fs.Path.GetTempPath().TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
 			if (!string.IsNullOrEmpty(innerTemp) && !roots.Contains(innerTemp, StringComparer.OrdinalIgnoreCase))
 				roots.Add(innerTemp);
 		}
@@ -86,7 +81,11 @@ public class AssemblyWriteFileSystem(
 		return new ScopedFileSystemOptions([.. roots])
 		{
 			AllowedHiddenFolderNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".artifacts" },
-			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".doc.state", ".pagefind-net-frontend-version" },
+			AllowedHiddenFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+			{
+				".doc.state",
+				".pagefind-net-frontend-version"
+			},
 			AllowedSpecialFolders = AllowedSpecialFolder.Temp
 		};
 	}

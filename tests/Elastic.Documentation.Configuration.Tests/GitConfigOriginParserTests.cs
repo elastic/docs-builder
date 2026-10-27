@@ -8,10 +8,11 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class GitConfigOriginParserTests
 {
-	[Fact]
+	[Test]
 	public void TryGetRemoteOriginUrl_StandardConfig_ReturnsUrl()
 	{
-		var yaml = """
+		var yaml =
+			"""
 		           [core]
 		           	repositoryformatversion = 0
 		           [remote "origin"]
@@ -25,10 +26,11 @@ public class GitConfigOriginParserTests
 		url.Should().Be("https://github.com/elastic/kibana.git");
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetRemoteOriginUrl_QuotedUrl_ReturnsUnquoted()
 	{
-		var yaml = """
+		var yaml =
+			"""
 		           [remote "origin"]
 		           	url = "https://github.com/elastic/kibana.git"
 		           """;
@@ -39,10 +41,11 @@ public class GitConfigOriginParserTests
 		url.Should().Be("https://github.com/elastic/kibana.git");
 	}
 
-	[Fact]
+	[Test]
 	public void TryGetRemoteOriginUrl_NoOrigin_ReturnsFalse()
 	{
-		var yaml = """
+		var yaml =
+			"""
 		           [remote "upstream"]
 		           	url = https://github.com/elastic/kibana.git
 		           """;

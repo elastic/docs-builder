@@ -13,10 +13,12 @@ namespace Elastic.Markdown.Extensions.DetectionRules;
 
 public record DeprecatedDetectionRuleOverviewFile : MarkdownFile
 {
-	public DeprecatedDetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
-		: base(sourceFile, rootPath, parser, build)
-	{
-	}
+	public DeprecatedDetectionRuleOverviewFile(
+		IFileInfo sourceFile,
+		IDirectoryInfo rootPath,
+		MarkdownParser parser,
+		BuildContext build
+	) : base(sourceFile, rootPath, parser, build) { }
 
 	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations { get; set; } = [];
 
@@ -57,10 +59,7 @@ public record DeprecatedDetectionRuleOverviewFile : MarkdownFile
 
 		var markdown = intro + "\n\n";
 
-		var groupedRules = rules
-			.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified")
-			.OrderBy(g => g.Key)
-			.ToArray();
+		var groupedRules = rules.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified").OrderBy(g => g.Key).ToArray();
 
 		foreach (var group in groupedRules)
 		{
@@ -75,10 +74,13 @@ public record DeprecatedDetectionRuleOverviewFile : MarkdownFile
 
 public record DetectionRuleOverviewFile : MarkdownFile
 {
-	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build)
-		: base(sourceFile, rootPath, parser, build)
-	{
-	}
+	public DetectionRuleOverviewFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build) : base(
+			sourceFile,
+			rootPath,
+			parser,
+			build
+		)
+	{ }
 
 	internal ILeafNavigationItem<IDocumentationFile>[] RuleNavigations { get; set; } = [];
 
@@ -100,14 +102,10 @@ public record DetectionRuleOverviewFile : MarkdownFile
 	private string GetMarkdown()
 	{
 		var rules = RuleNavigations.Select(navigation => (Navigation: navigation, Model: (DetectionRuleFile)navigation.Model)).ToList();
-		var groupedRules =
-			rules
-				.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified")
-				.OrderBy(g => g.Key)
-				.ToArray();
+		var groupedRules = rules.GroupBy(r => r.Model.Rule.Domain ?? "Unspecified").OrderBy(g => g.Key).ToArray();
 		// language=markdown
 		var markdown =
-"""
+			"""
 # Prebuilt detection rules reference
 
 :::{important}
@@ -119,7 +117,7 @@ All prebuilt machine learning rules are tagged with `ML`, and their rule type is
 		foreach (var group in groupedRules)
 		{
 			markdown +=
-$"""
+				$"""
 
 ## {group.Key}
 
@@ -128,18 +126,14 @@ $"""
 			{
 				// TODO update this to use the new URL from navigation
 				markdown +=
-$"""
+					$"""
 [{model.Rule.Name}](!{navigation.Url}) <br>
 """;
-
 			}
-
 		}
-
 
 		return markdown;
 	}
-
 }
 
 public record DetectionRuleFile : MarkdownFile
@@ -150,12 +144,12 @@ public record DetectionRuleFile : MarkdownFile
 
 	public IFileInfo RuleSourceMarkdownPath { get; }
 
-	public DetectionRuleFile(
-		IFileInfo sourceFile,
-		IDirectoryInfo rootPath,
-		MarkdownParser parser,
-		BuildContext build
-	) : base(sourceFile, rootPath, parser, build)
+	public DetectionRuleFile(IFileInfo sourceFile, IDirectoryInfo rootPath, MarkdownParser parser, BuildContext build) : base(
+			sourceFile,
+			rootPath,
+			parser,
+			build
+		)
 	{
 		RuleSourceMarkdownPath = GetRuleSourcePath(sourceFile, build);
 		LinkReferenceRelativePath = Path.GetRelativePath(build.DocumentationSourceDirectory.FullName, RuleSourceMarkdownPath.FullName);
@@ -210,7 +204,7 @@ public record DetectionRuleFile : MarkdownFile
 
 		// language=markdown
 		var markdown =
-$"""
+			$"""
 # {Rule.Name}
 
 {deprecationNotice}{Rule.Description}
@@ -236,7 +230,7 @@ $"""
 		if (!string.IsNullOrWhiteSpace(Rule.Setup))
 		{
 			markdown +=
-$"""
+				$"""
 
  {Rule.Setup}
 """;
@@ -246,7 +240,7 @@ $"""
 		if (!string.IsNullOrWhiteSpace(Rule.Note))
 		{
 			markdown +=
-$"""
+				$"""
 
  ## Investigation guide
 
@@ -257,7 +251,7 @@ $"""
 		if (!string.IsNullOrWhiteSpace(Rule.Query))
 		{
 			markdown +=
-$"""
+				$"""
 
  ## Rule Query
 
@@ -271,7 +265,7 @@ $"""
 		{
 			// language=markdown
 			markdown +=
-$"""
+				$"""
 
 **Framework:** {threat.Framework}
 
@@ -293,7 +287,7 @@ $"""
 	}
 
 	private static string TechniqueMarkdown(DetectionRuleSubTechnique technique, string header) =>
-$"""
+		$"""
 
 * {header}:
   * Name: {technique.Name}

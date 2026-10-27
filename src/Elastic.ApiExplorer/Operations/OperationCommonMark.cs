@@ -1,0 +1,303 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text;
+using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Operations;
+
+internal static class OperationCommonMark
+{
+	public static string Write(ApiOperation apiOperation, OperationPageModel page, ApiRenderContext context)
+	{
+		var markdown = new StringBuilder();
+		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
+		var operation = apiOperation.Operation;
+		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
+		ApiCommonMark.Heading(markdown, 1, title);
+		WriteBadges(markdown, operation, page);
+		WriteServers(markdown, page);
+		WritePaths(markdown, page);
+		WritePathParameters(markdown, page, apiBaseUrl);
+		WriteDescription(markdown, page, apiBaseUrl);
+		WriteAuthorization(markdown, page, apiBaseUrl);
+		WriteParameterSections(markdown, page, apiBaseUrl);
+		WriteRequestBody(markdown, apiOperation, page, apiBaseUrl);
+		WriteResponses(markdown, page, apiBaseUrl);
+		WriteCodeSamples(markdown, page);
+		WriteExamples(markdown, "Request examples", page.ShowRequestExamples, page.RequestExamples, apiBaseUrl);
+		WriteExamples(markdown, "Response examples", page.ShowResponseExamples, page.ResponseExamples, apiBaseUrl);
+		foreach (var extra in page.PostSections)
+		{
+			ApiCommonMark.Heading(markdown, 2, extra.Heading);
+			ApiCommonMark.Prepared(markdown, extra.BodyMarkdown, apiBaseUrl);
+		}
+
+		return markdown.ToString();
+	}
+
+	private static void WriteBadges(StringBuilder markdown, OpenApiOperation operation, OperationPageModel page)
+	{
+		if (operation.Deprecated)
+			ApiCommonMark.Paragraph(markdown, "deprecated");
+		if (page.Availability is null)
+			return;
+
+		var texts = page
+			.Availability
+			.GetApplicabilityItems()
+			.SelectMany(item => item.RenderData.PopoverData?.AvailabilityItems ?? [])
+			.Select(a => a.Text)
+			.ToArray();
+		if (texts.Length > 0)
+			ApiCommonMark.Paragraph(markdown, $"Availability: {string.Join(", ", texts)}");
+	}
+
+	private static void WriteServers(StringBuilder markdown, OperationPageModel page)
+	{
+		if (page.Servers is not { Count: > 0 })
+			return;
+
+		foreach (var server in page.Servers)
+		{
+			var line = ApiCommonMark.CodeSpan(server.Url);
+			if (!string.IsNullOrEmpty(server.Description))
+				line += $" ({server.Description})";
+			_ = markdown.AppendLine($"- Server: {line}");
+		}
+
+		_ = markdown.AppendLine();
+	}
+
+	private static void WritePaths(StringBuilder markdown, OperationPageModel page)
+	{
+		ApiCommonMark.Heading(markdown, 2, "Paths");
+		foreach (var row in page.Endpoint.Rows)
+			_ = markdown.AppendLine($"- {PathLabel(row)}");
+
+		_ = markdown.AppendLine();
+	}
+
+	/// <summary><c>`POST` (also `GET`) `/{index}/_search`</c>.</summary>
+	public static string PathLabel(EndpointRow row)
+	{
+		var also = row.AlsoMethods.Count == 0
+			? ""
+			: $" (also {string.Join(", ", row.AlsoMethods.Select(static m => ApiCommonMark.CodeSpan(m.ToUpperInvariant())))})";
+		return $"{ApiCommonMark.CodeSpan(row.Method.ToUpperInvariant())}{also} {ApiCommonMark.CodeSpan(row.Route)}";
+	}
+
+	// Path parameters sit right under the paths, before the description, one level deeper than the other parameter sections.
+	private static void WritePathParameters(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	{
+		foreach (var section in page.ParameterSections.Where(static s => s.Location == ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 4, apiBaseUrl);
+	}
+
+	private static void WriteDescription(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	{
+		var hasDesc = !string.IsNullOrWhiteSpace(page.DescriptionMarkdown);
+		if (!hasDesc && page.ExternalDocs is null)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, "Description");
+
+		if (hasDesc)
+			ApiCommonMark.Prepared(markdown, page.DescriptionMarkdown, apiBaseUrl);
+
+		if (page.ExternalDocs is { } docs)
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
+	}
+
+	private static void WriteAuthorization(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	{
+		if (page.RequiredPrivileges.Count > 0)
+		{
+			ApiCommonMark.Heading(markdown, 2, "Required authorization");
+			foreach (var row in page.RequiredPrivileges)
+			{
+				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
+				_ = markdown.AppendLine(
+					values.Length == 0 ? $"- {ApiMarkdown.Prepare(row.Label, apiBaseUrl)}" : $"- {row.Label}: {values}"
+				);
+			}
+
+			_ = markdown.AppendLine();
+		}
+
+		if (page.AuthRequirements.Count == 0)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, "Authentication");
+		foreach (var requirement in page.AuthRequirements)
+			WriteRequirement(markdown, requirement, apiBaseUrl);
+
+		_ = markdown.AppendLine();
+	}
+
+	// One scheme is a plain bullet. Several schemes are sent together, so they nest under one bullet that says so.
+	internal static void WriteRequirement(StringBuilder markdown, AuthRequirement requirement, string apiBaseUrl)
+	{
+		var together = requirement.Schemes.Count > 1;
+		var indent = together ? "  " : "";
+		if (together)
+			_ = markdown.AppendLine($"- {requirement.Label} (send all of these)");
+		foreach (var scheme in requirement.Schemes)
+		{
+			var credential = scheme.CredentialExample is null ? "" : $": {ApiCommonMark.CodeSpan(scheme.CredentialExample)}";
+			_ = markdown.AppendLine($"{indent}- {scheme.Label}{credential}");
+			var description = ApiMarkdown.Prepare(scheme.DescriptionMarkdown, apiBaseUrl);
+			if (!string.IsNullOrWhiteSpace(description))
+				_ = markdown.AppendLine($"{indent}  {description.Trim().ReplaceLineEndings($"\n{indent}  ")}");
+		}
+	}
+
+	private static void WriteParameterSections(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	{
+		foreach (var section in page.ParameterSections.Where(static s => s.Location != ParameterLocation.Path))
+			WriteParameterSection(markdown, section, headingLevel: 2, apiBaseUrl);
+	}
+
+	private static void WriteParameterSection(StringBuilder markdown, ParameterListSection section, int headingLevel, string apiBaseUrl)
+	{
+		ApiCommonMark.Heading(markdown, headingLevel, section.MarkdownHeading);
+		ApiPropertyMarkdown.WriteList(markdown, section.Parameters, apiBaseUrl);
+		_ = markdown.AppendLine();
+	}
+
+	private static void WriteRequestBody(StringBuilder markdown, ApiOperation apiOperation, OperationPageModel page, string apiBaseUrl)
+	{
+		if (apiOperation.Operation.RequestBody is null)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, "Request body");
+		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
+		WriteMediaContents(markdown, page.RequestContents, apiBaseUrl);
+		_ = markdown.AppendLine();
+	}
+
+	private static void WriteResponses(StringBuilder markdown, OperationPageModel page, string apiBaseUrl)
+	{
+		if (page.Responses.Count == 0)
+			return;
+
+		var single = page.Responses.Count == 1;
+		ApiCommonMark.Heading(markdown, 2, single ? "Response" : "Responses");
+		foreach (var response in page.Responses)
+		{
+			if (!single)
+				ApiCommonMark.Heading(markdown, 4, ApiCommonMark.CodeSpan(response.StatusCode));
+
+			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
+
+			WriteMediaContents(markdown, response.Contents, apiBaseUrl);
+
+			WriteHeaders(markdown, response, apiBaseUrl);
+		}
+	}
+
+	private static void WriteMediaContents(StringBuilder markdown, IReadOnlyList<ApiMediaContent> contents, string apiBaseUrl)
+	{
+		foreach (var content in contents)
+		{
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
+			if (content.Requires is { } requires)
+				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+			if (content.HasBody)
+			{
+				if (content.IsArray)
+				{
+					ApiPropertyMarkdown.WriteType(markdown, content.Type);
+					ApiCommonMark.Paragraph(markdown, ApiBodyContent.ArrayItemsLabel);
+				}
+				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
+			}
+			else
+			{
+				ApiPropertyMarkdown.WriteType(markdown, content.Type);
+			}
+		}
+	}
+
+	private static void WriteHeaders(StringBuilder markdown, ApiResponse response, string apiBaseUrl)
+	{
+		if (response.Headers.Count == 0)
+			return;
+
+		ApiCommonMark.Heading(markdown, 5, "Response headers");
+		foreach (var header in response.Headers)
+		{
+			var type = header.Type is null ? "" : $" ({header.Type.Text})";
+			var flags = header.Header?.Required == true ? " — required" : "";
+			if (header.Header?.Deprecated == true)
+				flags += " — deprecated";
+			_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(header.Name)}{type}{flags}");
+			var description = ApiMarkdown.Prepare(header.Header?.Description, apiBaseUrl);
+			if (!string.IsNullOrWhiteSpace(description))
+				_ = markdown.AppendLine($"  {description.TrimEnd()}");
+		}
+
+		_ = markdown.AppendLine();
+	}
+
+	private static void WriteCodeSamples(StringBuilder markdown, OperationPageModel page)
+	{
+		if (page.CodeSamples.Count == 0)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, "Code examples");
+		// With several examples carrying samples, each set sits under its example's title so the copy can tell them apart.
+		var perExample = page.Scenarios.Where(static s => s.CodeSamples.Any(static c => !c.Generated)).ToArray();
+		if (perExample.Length < 2)
+		{
+			WriteSamples(markdown, page.CodeSamples);
+			return;
+		}
+
+		foreach (var scenario in perExample)
+		{
+			ApiCommonMark.Heading(markdown, 3, scenario.Title);
+			WriteSamples(markdown, [.. scenario.CodeSamples.Where(static c => !c.Generated)]);
+		}
+	}
+
+	private static void WriteSamples(StringBuilder markdown, IReadOnlyList<CodeSample> samples)
+	{
+		foreach (var sample in samples)
+		{
+			ApiCommonMark.Heading(markdown, 4, sample.Language);
+			ApiCommonMark.Fence(markdown, sample.Language.ToLowerInvariant(), sample.Source);
+		}
+	}
+
+	private static void WriteExamples(
+		StringBuilder markdown,
+		string heading,
+		bool show,
+		IReadOnlyList<ExampleDisplay> examples,
+		string apiBaseUrl
+	)
+	{
+		if (!show || examples.Count == 0)
+			return;
+
+		ApiCommonMark.Heading(markdown, 2, heading);
+		foreach (var example in examples)
+		{
+			ApiCommonMark.Heading(markdown, 4, example.Title);
+			if (example.MediaType is not null)
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(example.MediaType));
+			if (example.Generated)
+				ApiCommonMark.Paragraph(markdown, ResponseBodyExample.Note);
+			ApiCommonMark.Prepared(markdown, example.DescriptionMarkdown, apiBaseUrl);
+			if (!string.IsNullOrEmpty(example.ExternalValue))
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(example.ExternalValue, example.ExternalValue));
+			ApiCommonMark.Fence(markdown, "json", example.JsonValue);
+		}
+	}
+}

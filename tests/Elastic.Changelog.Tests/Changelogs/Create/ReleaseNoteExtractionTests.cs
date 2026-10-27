@@ -11,9 +11,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ShortReleaseNote_UsesPrTitleAndDescription()
 	{
 		// Arrange
@@ -24,12 +24,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -51,14 +53,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -70,12 +72,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_LongReleaseNote_UsesAsDescription()
 	{
 		// Arrange
@@ -88,12 +90,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -115,14 +119,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -134,17 +138,19 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain($"description: {longReleaseNote}");
+		// Commas trigger SharpYaml's more conservative plain-scalar quoting rules.
+		yamlContent.Should().Contain($"description: \"{longReleaseNote}\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_MultiLineReleaseNote_UsesAsDescription()
 	{
 		// Arrange
 		// The regex stops at double newline, so we need a release note that spans multiple lines without double newline
-		var multiLineReleaseNote = "Adds support for new aggregation types\nThis includes date histogram and range aggregations\nwith improved performance";
+		var multiLineReleaseNote =
+			"Adds support for new aggregation types\nThis includes date histogram and range aggregations\nwith improved performance";
 		var prInfo = new GitHubPrInfo
 		{
 			Title = "Implement new aggregation API",
@@ -152,12 +158,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -179,14 +187,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -198,14 +206,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("description:");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 		yamlContent.Should().Contain("date histogram");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_NoReleaseNote_UsesPrTitle()
 	{
 		// Arrange
@@ -216,12 +224,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -243,14 +253,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -262,7 +272,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		// Description should not be set when no release note is found
 		if (yamlContent.Contains("description:"))
@@ -273,7 +283,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitTitle_TakesPrecedence()
 	{
 		// Arrange
@@ -284,12 +294,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -311,7 +323,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -319,7 +331,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -331,12 +343,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Custom title");
 		yamlContent.Should().Contain("description: Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExtractReleaseNotes_ExplicitDescription_TakesPrecedence()
 	{
 		// Arrange
@@ -349,12 +361,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -376,7 +390,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true,
@@ -384,7 +398,7 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -396,12 +410,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("description: Custom description");
 		yamlContent.Should().NotContain(longReleaseNote);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WhenExtractNotSpecifiedByCli_UsesConfigExtractReleaseNotes()
 	{
 		// When CLI does not pass --no-extract-release-notes, config extract.release_notes applies.
@@ -414,12 +428,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -443,14 +459,15 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
-			ExtractReleaseNotes = null  // CLI did not specify; config default applies
+			ExtractReleaseNotes =
+				null // CLI did not specify; config default applies
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - config says don't extract, so PR title is used
 		result.Should().BeTrue();
@@ -461,12 +478,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionEnabledByConfig_PreservesCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -476,12 +493,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -515,13 +534,13 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -529,12 +548,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabledByCli_ClearsCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -544,12 +563,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -582,14 +603,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - extraction disabled, so CI description should be suppressed
 		result.Should().BeTrue();
@@ -598,12 +619,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_MultiplePrs_ExtractionDisabled_ClearsCIDescription()
 	{
 		var prInfo1 = new GitHubPrInfo
@@ -619,18 +640,22 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:bug-fix"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/100",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo1);
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+				A<CancellationToken>._
+			)
+		).Returns(prInfo1);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/200",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo2);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo2);
 
 		// language=yaml
 		var configContent =
@@ -664,19 +689,15 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var output = CreateOutputDirectory();
 		var input = new CreateChangelogArguments
 		{
-			Prs =
-			[
-				"https://github.com/elastic/elasticsearch/pull/100",
-				"https://github.com/elastic/elasticsearch/pull/200"
-			],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/100", "https://github.com/elastic/elasticsearch/pull/200"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = output,
 			ExtractReleaseNotes = null,
 			UsePrNumber = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -686,14 +707,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 
 		foreach (var file in files)
 		{
-			var yamlContent = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			var yamlContent = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken);
 			yamlContent.Should().NotContain("Leaked description");
 			yamlContent.Should().NotContain("First extracted note");
 			yamlContent.Should().NotContain("Second extracted note");
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_ClearsCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -703,12 +724,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -743,14 +766,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = null
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - config disables extraction, so CI description should be cleared
 		result.Should().BeTrue();
@@ -759,12 +782,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().NotContain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_CliEnablesExtraction_OverridesConfigFalse_PreservesCIDescription()
 	{
 		var prInfo = new GitHubPrInfo
@@ -774,12 +797,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -813,13 +838,13 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -827,12 +852,12 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("Adds support for new aggregation types");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_InCI_ExtractionDisabled_ExplicitCliDescription_Survives()
 	{
 		var prInfo = new GitHubPrInfo
@@ -842,12 +867,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 			Labels = ["type:feature"]
 		};
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -879,14 +906,14 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			ExtractReleaseNotes = false,
 			Description = "My explicit description"
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -894,8 +921,194 @@ public class ReleaseNoteExtractionTests(ITestOutputHelper output) : CreateChange
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("description: My explicit description");
 		yamlContent.Should().NotContain("CI extracted note");
+	}
+
+	[Test]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_ClearsCIImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Remove a parameter",
+			Body = "## Impact\nPRBody impact.\n\n## Action\nPRBody action.",
+			Labels = ["type:breaking"]
+		};
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Remove a parameter");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_IMPACT")).Returns("Leaked impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ACTION")).Returns("Leaked action");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("breaking-change");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null
+		};
+
+		var result = await CreateService(env).CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().NotContain("Leaked impact");
+		yamlContent.Should().NotContain("Leaked action");
+		yamlContent.Should().NotContain("PRBody");
+	}
+
+	[Test]
+	public async Task CreateChangelog_InCI_ExtractionDisabledByConfig_KeepsEntryFileImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo { Title = "Remove a parameter", Body = "Nothing relevant.", Labels = ["type:breaking"] };
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			extract:
+			  release_notes: false
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PR_NUMBER")).Returns("12345");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TITLE")).Returns("Remove a parameter");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_DESCRIPTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_IMPACT")).Returns("Scraped impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ACTION")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ENTRY_IMPACT")).Returns("Entry impact");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_ENTRY_ACTION")).Returns("Entry action");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_TYPE")).Returns("breaking-change");
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_OWNER")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_REPO")).Returns(null);
+		A.CallTo(() => env.GetEnvironmentVariable("CHANGELOG_PRODUCTS")).Returns(null);
+
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = null
+		};
+
+		var result = await CreateService(env).CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("Entry impact");
+		yamlContent.Should().Contain("Entry action");
+		yamlContent.Should().NotContain("Scraped impact");
+	}
+
+	[Test]
+	public async Task CreateChangelog_BreakingTypeSupplied_ExtractionEnabled_FetchesPrForImpactAndAction()
+	{
+		var prInfo = new GitHubPrInfo
+		{
+			Title = "Remove a parameter",
+			Body = "## Impact\nPRBody impact.\n\n## Action\nPRBody action.",
+			Labels = ["type:breaking"]
+		};
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
+				"https://github.com/elastic/elasticsearch/pull/12345",
+				null,
+				null,
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
+
+		// language=yaml
+		var configContent =
+			"""
+			pivot:
+			  types:
+			    feature:
+			    bug-fix:
+			    breaking-change: "type:breaking"
+			lifecycles:
+			  - preview
+			  - beta
+			  - ga
+			""";
+		var configPath = await CreateConfigDirectory(configContent);
+
+		// Title, type and products are all supplied, so only Impact and Action are left to derive.
+		var input = new CreateChangelogArguments
+		{
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Title = "Remove a parameter",
+			Type = "breaking-change",
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Config = configPath,
+			Output = CreateOutputDirectory(),
+			ExtractReleaseNotes = true
+		};
+
+		var result = await CreateService().CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
+		files.Should().HaveCount(1);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("PRBody impact.");
+		yamlContent.Should().Contain("PRBody action.");
 	}
 }

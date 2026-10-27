@@ -8,7 +8,7 @@ namespace Elastic.Documentation.OpenApiIndex.Tests;
 
 public class OpenApiInvalidationPathsTests
 {
-	[Fact]
+	[Test]
 	public void Build_AlwaysIncludesIndexJson()
 	{
 		var paths = OpenApiInvalidationPaths.Build([]);
@@ -16,31 +16,23 @@ public class OpenApiInvalidationPathsTests
 		paths.Should().ContainSingle().Which.Should().Be("/index.json");
 	}
 
-	[Fact]
+	[Test]
 	public void Build_AddsLeadingSlashForEachObjectKey()
 	{
 		var paths = OpenApiInvalidationPaths.Build(["elastic/elasticsearch/8.16/openapi.json"]);
 
-		paths.Should().BeEquivalentTo(
-		[
-			"/index.json",
-			"/elastic/elasticsearch/8.16/openapi.json"
-		]);
+		paths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/8.16/openapi.json"]);
 	}
 
-	[Fact]
+	[Test]
 	public void Build_DeduplicatesRepeatedKeys()
 	{
-		var paths = OpenApiInvalidationPaths.Build(
-		[
-			"elastic/elasticsearch/8.16/openapi.json",
-			"elastic/elasticsearch/8.16/openapi.json"
-		]);
+		var paths = OpenApiInvalidationPaths.Build(["elastic/elasticsearch/8.16/openapi.json", "elastic/elasticsearch/8.16/openapi.json"]);
 
 		paths.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void Build_TrimsLeadingSlashFromObjectKeys()
 	{
 		var paths = OpenApiInvalidationPaths.Build(["/elastic/kibana/9.5/openapi.yaml"]);

@@ -1,0 +1,14 @@
+self-hosted-runner:
+  labels:
+    - docs-builder-latest-16
+    - docs-internal-latest-16
+
+paths:
+  .github/workflows/ci.yml:
+    ignore:
+      # integration job is temporarily disabled on purpose (see TODO in the workflow).
+      - 'constant expression "false" in condition'
+  .github/workflows/updatecli.yml:
+    ignore:
+      # Switching to client-id needs the GitHub App's Client ID; only its App ID is stored as a secret.
+      - 'avoid using deprecated input "app-id"'

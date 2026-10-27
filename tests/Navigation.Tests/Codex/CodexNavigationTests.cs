@@ -10,12 +10,13 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
-public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTestBase(output)
+public class CodexNavigationTests() : CodexNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void UngroupedRepos_UseStableRUrls()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "repo-a", Branch = "main" },
 			new CodexDocumentationSetReference { Name = "repo-b", Branch = "main" }
 		];
@@ -27,10 +28,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		codexNav.DocumentationSetInfos.Select(d => d.Url).Should().BeEquivalentTo(["/docs/r/repo-a", "/docs/r/repo-b"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupedRepos_UseStableRUrls_NotGroupUrls()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" }
 		];
@@ -46,10 +48,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		codexNav.GroupNavigations.First().Url.Should().Be("/docs/g/observability");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_ContainsAllGroupMembers()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }
@@ -64,10 +67,13 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		observabilityGroup.DocumentationSetInfos.Select(d => d.Name).Should().BeEquivalentTo(["apm-agent", "uptime"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupedRepos_HaveGroupNavigationAsRoot()
 	{
-		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" }];
+		CodexDocumentationSetReference[] docSets =
+		[
+			new CodexDocumentationSetReference { Name = "apm-agent", Branch = "main", Group = "observability" }
+		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["apm-agent"]);
 		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
@@ -86,7 +92,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void UngroupedRepos_HaveOwnNavigationAsRoot()
 	{
 		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "standalone", Branch = "main" }];
@@ -106,10 +112,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void IndexH1_UsedAsDocsetTitle_DisplayNameIgnored()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference
 			{
 				Name = "apm-agent",
@@ -130,10 +137,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		docSetNavigations["apm-agent"].NavigationTitleOverride.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EmptySitePrefix_GeneratesRootUrls()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "repo-a", Branch = "main" },
 			new CodexDocumentationSetReference { Name = "repo-b", Branch = "main", Group = "tools" }
 		];
@@ -147,7 +155,7 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		codexNav.GroupNavigations.First().Url.Should().Be("/g/tools");
 	}
 
-	[Fact]
+	[Test]
 	public void SlashSitePrefix_TreatedAsRoot()
 	{
 		// When loading from YAML, "/" gets normalized to empty by CodexConfiguration.Deserialize
@@ -166,10 +174,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		codexNav.DocumentationSetInfos.First().Url.Should().Be("/r/repo-a");
 	}
 
-	[Fact]
+	[Test]
 	public void MultipleCategories_CreateSeparateGroupNavigations()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "apm", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "uptime", Branch = "main", Group = "observability" },
 			new CodexDocumentationSetReference { Name = "siem", Branch = "main", Group = "security" },
@@ -190,10 +199,13 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		security.DocumentationSetInfos.Select(d => d.Name).Should().BeEquivalentTo(["siem", "endpoint"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupTitle_FormatsSlugToTitleCase()
 	{
-		CodexDocumentationSetReference[] docSets = [new CodexDocumentationSetReference { Name = "tool", Branch = "main", Group = "developer-tools" }];
+		CodexDocumentationSetReference[] docSets =
+		[
+			new CodexDocumentationSetReference { Name = "tool", Branch = "main", Group = "developer-tools" }
+		];
 		var config = CreateCodexConfiguration("/docs");
 		var docSetNavigations = CreateMockDocSetNavigations(["tool"]);
 		var codexNav = new CodexNavigation(config, docSets, CreateContext(), docSetNavigations);
@@ -202,10 +214,11 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		group.DisplayTitle.Should().Be("Developer Tools");
 	}
 
-	[Fact]
+	[Test]
 	public void CodexNavigationItems_ContainGroupLinksAndUngroupedRepos()
 	{
-		CodexDocumentationSetReference[] docSets = [
+		CodexDocumentationSetReference[] docSets =
+		[
 			new CodexDocumentationSetReference { Name = "grouped1", Branch = "main", Group = "tools" },
 			new CodexDocumentationSetReference { Name = "grouped2", Branch = "main", Group = "tools" },
 			new CodexDocumentationSetReference { Name = "ungrouped", Branch = "main" }
@@ -222,7 +235,12 @@ public class CodexNavigationTests(ITestOutputHelper output) : CodexNavigationTes
 		var groupLink = codexNav.NavigationItems.OfType<GroupLinkLeaf>().Should().ContainSingle().Subject;
 		groupLink.Url.Should().Be("/docs/g/tools");
 
-		var ungroupedNav = codexNav.NavigationItems.OfType<IRootNavigationItem<IDocumentationFile, INavigationItem>>().Should().ContainSingle().Subject;
+		var ungroupedNav = codexNav
+			.NavigationItems
+			.OfType<IRootNavigationItem<IDocumentationFile, INavigationItem>>()
+			.Should()
+			.ContainSingle()
+			.Subject;
 		ungroupedNav.Url.Should().Be("/docs/r/ungrouped");
 	}
 }

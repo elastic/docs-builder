@@ -28,9 +28,17 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public bool Matrix { get; private set; }
 
+	/// <summary>
+	/// When set, wraps the table in a <c>filterable-table</c> host element so the client
+	/// can progressively enhance it with a search box and per-column facet filters.
+	/// The server-rendered table stays fully usable without JavaScript.
+	/// </summary>
+	public bool Filterable { get; private set; }
+
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Matrix = PropBool("matrix");
+		Filterable = PropBool("filterable");
 
 		var widthsValue = Prop("widths")?.Trim();
 
@@ -91,8 +99,7 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (ColumnWidths.Count > 0 && ColumnWidths.Count != columnCount)
 		{
-			this.EmitError(
-				$"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
+			this.EmitError($"Column width count ({ColumnWidths.Count}) does not match table column count ({columnCount}).");
 			ColumnWidths = [];
 		}
 	}
@@ -118,7 +125,8 @@ public class TableDirectiveBlock(DirectiveBlockParser parser, ParserContext cont
 			if (!int.TryParse(part, out var unit) || unit < 1 || unit > 12)
 			{
 				block.EmitError(
-					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4).");
+					$"Invalid widths value '{value}'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+				);
 				return null;
 			}
 

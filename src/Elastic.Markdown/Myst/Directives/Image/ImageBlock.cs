@@ -11,8 +11,7 @@ namespace Elastic.Markdown.Myst.Directives.Image;
 
 public class FigureBlock(DirectiveBlockParser parser, ParserContext context) : ImageBlock(parser, context);
 
-public class ImageBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class ImageBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "image";
 

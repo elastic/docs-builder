@@ -33,62 +33,65 @@ public partial class AwsS3SyncApplyStrategy(
 	private static readonly Histogram<double> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.deployment.files.count",
 		"files",
-		"Number of files per deployment operation (added + updated + deleted + skipped)");
+		"Number of files per deployment operation (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesTotalCounter = SyncMeter.CreateCounter<double>(
 		"docs.deployment.files.total",
 		"files",
-		"Total number of files in deployment (added + updated + deleted + skipped)");
+		"Total number of files in deployment (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesAddedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.added.total",
 		"files",
-		"Total number of files added to S3");
+		"Total number of files added to S3"
+	);
 
 	private static readonly Counter<double> FilesUpdatedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.updated.total",
 		"files",
-		"Total number of files updated in S3");
+		"Total number of files updated in S3"
+	);
 
 	private static readonly Counter<double> FilesDeletedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.deleted.total",
 		"files",
-		"Total number of files deleted from S3");
+		"Total number of files deleted from S3"
+	);
 
 	private static readonly Counter<double> FilesSkippedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.skipped.total",
 		"files",
-		"Total number of files skipped (unchanged)");
+		"Total number of files skipped (unchanged)"
+	);
 
 	private static readonly Histogram<double> FileSizeHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.file.size",
 		"By",
-		"Distribution of file sizes synced to S3");
+		"Distribution of file sizes synced to S3"
+	);
 
 	private static readonly Counter<double> FilesByExtensionCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.by_extension",
 		"files",
-		"File operations grouped by extension");
+		"File operations grouped by extension"
+	);
 
 	private static readonly Histogram<double> SyncDurationHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.duration",
 		"s",
-		"Duration of sync operations");
+		"Duration of sync operations"
+	);
 
 	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
 	private void DisplayProgress(object? sender, UploadDirectoryProgressArgs args) => LogProgress(_logger, args);
 
-	[LoggerMessage(
-		EventId = 2,
-		Level = LogLevel.Debug,
-		Message = "{Args}")]
+	[LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = "{Args}")]
 	private static partial void LogProgress(ILogger logger, UploadDirectoryProgressArgs args);
 
-	[LoggerMessage(
-		EventId = 3,
-		Level = LogLevel.Information,
-		Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
+	[LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
 	private static partial void LogFileOperation(ILogger logger, string operation, string filePath, long fileSize);
 
 	public async Task Apply(SyncPlan plan, Cancel ctx = default)
@@ -137,7 +140,13 @@ public partial class AwsS3SyncApplyStrategy(
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
-			totalFiles, addCount, updateCount, deleteCount, skipCount, context.EnvironmentName);
+			totalFiles,
+			addCount,
+			updateCount,
+			deleteCount,
+			skipCount,
+			context.EnvironmentName
+		);
 
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);
@@ -164,6 +173,10 @@ public partial class AwsS3SyncApplyStrategy(
 			var addPaths = plan.AddRequests.Select(r => r.LocalPath).ToHashSet();
 			var tempDir = Path.Join(context.WriteFileSystem.Path.GetTempPath(), context.WriteFileSystem.Path.GetRandomFileName());
 			_ = context.WriteFileSystem.Directory.CreateDirectory(tempDir);
+			// Files with an explicit Content-Type are staged in sibling directories, one per type, so each
+			// directory upload carries its own type. The SDK shares one Headers collection across all per-file
+			// requests of a directory upload, so setting ContentType per file would leak it onto other files.
+			var typedDirs = new Dictionary<string, string>();
 			try
 			{
 				_logger.LogInformation("Copying {Count} files to temp directory", uploadRequests.Count);
@@ -178,34 +191,73 @@ public partial class AwsS3SyncApplyStrategy(
 						FilesByExtensionCounter.Add(1, new("operation", operation), new("extension", extension));
 					LogFileOperation(_logger, operation, upload.DestinationPath, fileSize);
 
-					var destPath = context.WriteFileSystem.Path.Join(tempDir, upload.DestinationPath);
+					var stagingDir = tempDir;
+					if (SpecContentType(upload.DestinationPath) is { } specType)
+					{
+						if (!typedDirs.TryGetValue(specType, out stagingDir))
+							typedDirs[specType] = stagingDir = $"{tempDir}-{typedDirs.Count}";
+					}
+
+					var destPath = context.WriteFileSystem.Path.Join(stagingDir, upload.DestinationPath);
 					var destDirPath = context.WriteFileSystem.Path.GetDirectoryName(destPath)!;
 					_ = context.WriteFileSystem.Directory.CreateDirectory(destDirPath);
 					context.WriteFileSystem.File.Copy(upload.LocalPath, destPath);
 				}
-				var directoryRequest = new TransferUtilityUploadDirectoryRequest
-				{
-					BucketName = bucketName,
-					Directory = tempDir,
-					SearchPattern = "*",
-					SearchOption = SearchOption.AllDirectories,
-					UploadFilesConcurrently = true
-				};
-				directoryRequest.UploadDirectoryProgressEvent += DisplayProgress;
 				_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName}", uploadRequests.Count, bucketName);
-				_logger.LogDebug("Starting directory upload from {TempDir}", tempDir);
-				await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
-				_logger.LogInformation("Successfully uploaded {Count} files ({AddCount} added, {UpdateCount} updated)",
-					uploadRequests.Count, addCount, updateCount);
+				var uploads = typedDirs.Select(kv => (Directory: kv.Value, ContentType: (string?)kv.Key)).Prepend(
+					(Directory: tempDir, ContentType: null)
+				);
+				foreach (var (directory, contentType) in uploads)
+				{
+					if (
+						!context.WriteFileSystem.Directory.Exists(directory)
+						|| !context.WriteFileSystem.Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories).Any()
+					)
+						continue;
+					var directoryRequest = new TransferUtilityUploadDirectoryRequest
+					{
+						BucketName = bucketName,
+						Directory = directory,
+						SearchPattern = "*",
+						SearchOption = SearchOption.AllDirectories,
+						UploadFilesConcurrently = true
+					};
+					if (contentType is not null)
+						directoryRequest.ContentType = contentType;
+					directoryRequest.UploadDirectoryProgressEvent += DisplayProgress;
+					_logger.LogDebug("Starting directory upload from {Directory}", directory);
+					await transferUtility.UploadDirectoryAsync(directoryRequest, ctx);
+				}
+				_logger.LogInformation(
+					"Successfully uploaded {Count} files ({AddCount} added, {UpdateCount} updated)",
+					uploadRequests.Count,
+					addCount,
+					updateCount
+				);
 			}
 			finally
 			{
-				// Clean up temp directory
-				if (context.WriteFileSystem.Directory.Exists(tempDir))
-					context.WriteFileSystem.Directory.Delete(tempDir, true);
+				// Clean up temp directories
+				foreach (var directory in typedDirs.Values.Prepend(tempDir))
+				{
+					if (context.WriteFileSystem.Directory.Exists(directory))
+						context.WriteFileSystem.Directory.Delete(directory, true);
+				}
 			}
 		}
 	}
+
+	/// <summary>
+	/// Explicit Content-Type for generated spec files. The SDK guesses from the extension and has no
+	/// <c>.yaml</c> entry, so YAML would be stored as application/octet-stream and browsers would download it.
+	/// YAML uses text/plain because browsers render it inline, unlike application/yaml.
+	/// </summary>
+	public static string? SpecContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+	{
+		".json" => "application/json",
+		".yaml" or ".yml" => "text/plain; charset=utf-8",
+		_ => null
+	};
 
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{
@@ -228,9 +280,7 @@ public partial class AwsS3SyncApplyStrategy(
 				// Record by extension (low cardinality)
 				if (!string.IsNullOrEmpty(extension))
 				{
-					FilesByExtensionCounter.Add(1,
-						new("operation", "delete"),
-						new("extension", extension));
+					FilesByExtensionCounter.Add(1, new("operation", "delete"), new("extension", extension));
 				}
 
 				// Log individual file operations for detailed analysis
@@ -243,10 +293,7 @@ public partial class AwsS3SyncApplyStrategy(
 				var deleteObjectsRequest = new DeleteObjectsRequest
 				{
 					BucketName = bucketName,
-					Objects = batch.Select(d => new KeyVersion
-					{
-						Key = d.DestinationPath
-					}).ToList()
+					Objects = batch.Select(d => new KeyVersion { Key = d.DestinationPath }).ToList()
 				};
 				var response = await s3Client.DeleteObjectsAsync(deleteObjectsRequest, ctx);
 				if (response.HttpStatusCode != System.Net.HttpStatusCode.OK)
@@ -261,8 +308,12 @@ public partial class AwsS3SyncApplyStrategy(
 				else
 				{
 					deleteCount += batch.Length;
-					_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-						batch.Length, deleteCount, deleteRequests.Count);
+					_logger.LogInformation(
+						"Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
+						batch.Length,
+						deleteCount,
+						deleteRequests.Count
+					);
 				}
 			}
 

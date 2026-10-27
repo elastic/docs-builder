@@ -18,13 +18,17 @@ public class StepViewModel : DirectiveViewModel
 	public required string Title { get; init; }
 	public required string Anchor { get; init; }
 	public required int HeadingLevel { get; init; }
+	public required bool RenderAsHeading { get; init; }
 
 	public class StepCrossNavigationLookupProvider : INavigationTraversable
 	{
 		public static StepCrossNavigationLookupProvider Instance { get; } = new();
 
 		/// <inheritdoc />
-		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder { get; } = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
+		public FrozenDictionary<int, INavigationItem> NavigationIndexedByOrder
+		{
+			get;
+		} = new Dictionary<int, INavigationItem>().ToFrozenDictionary();
 
 		/// <inheritdoc />
 		public ConditionalWeakTable<IDocumentationFile, INavigationItem> NavigationDocumentationFileLookup { get; } = [];

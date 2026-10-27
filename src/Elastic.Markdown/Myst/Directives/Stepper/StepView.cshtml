@@ -1,6 +1,12 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Stepper.StepViewModel>
 <li class="step">
-	@if (!string.IsNullOrEmpty(Model.Title))
+	@if (!string.IsNullOrEmpty(Model.Title) && !Model.RenderAsHeading)
+	{
+		<div id="@Model.Anchor" class="step-title step-title-@Model.HeadingLevel" role="heading" aria-level="@Model.HeadingLevel">
+			<a href="#@Model.Anchor">@Model.RenderTitle()</a>
+		</div>
+	}
+	else if (!string.IsNullOrEmpty(Model.Title))
 	{
 		@switch (Model.HeadingLevel)
 		{

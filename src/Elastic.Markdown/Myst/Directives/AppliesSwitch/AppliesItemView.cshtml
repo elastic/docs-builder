@@ -1,4 +1,4 @@
-@using Elastic.Markdown.Myst.Components
+@using Elastic.Documentation.Site.ApplicabilityBadges
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.AppliesSwitch.AppliesItemViewModel>
 
 @{
@@ -17,7 +17,8 @@
 					AppliesTo = Model.AppliesTo,
 					Inline = true,
 					ShowTooltip = false,
-					VersionsConfig = Model.BuildContext.VersionsConfiguration
+					VersionsConfig = Model.BuildContext.VersionsConfiguration,
+					DesignSystem = Model.BuildContext.Configuration.Features.NavigationPreviewEnabled
 				}))
 			</span>
 		}

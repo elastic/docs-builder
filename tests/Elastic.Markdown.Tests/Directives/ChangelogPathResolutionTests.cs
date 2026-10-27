@@ -10,21 +10,24 @@ namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>
 /// Tests for path resolution in the changelog directive.
-/// Verifies that Path.Combine issues are properly handled for:
-/// - Relative paths (combined with docset root)
-/// - Docset-root-relative paths (starting with '/', combined with docset root after trimming)
-/// - Absolute filesystem paths (used as-is, prevents Path.Combine from silently dropping base)
+/// All local paths must be prefixed with '/' (docset-root-relative).
+/// Non-'/' arguments are interpreted as CDN product names.
 /// </summary>
+[InheritsTests]
 public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog} custom/path/bundles
+	public ChangelogBundlesFolderRelativePathTests() : base(
+			// language=markdown
+			"""
+		:::{changelog} /custom/path/bundles
 		:::
-		""") => FileSystem.AddFile("docs/custom/path/bundles/1.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/custom/path/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: test-product
 		  target: 1.0.0
@@ -36,29 +39,36 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 		    target: 1.0.0
 		  prs:
 		  - "12345"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void ResolvesRelativePath() => Block!.Found.Should().BeTrue();
+	[Test]
+	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void PathCombinedWithDocsetRoot() =>
 		Block!.BundlesFolderPath.Should().EndWith("custom/path/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Test feature");
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderDocsetRootRelativeTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogBundlesFolderDocsetRootRelativeTests() : base(
+			// language=markdown
+			"""
 		:::{changelog} /release-notes/versions
 		:::
-		""") => FileSystem.AddFile("docs/release-notes/versions/2.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/release-notes/versions/2.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: test-product
 		  target: 2.0.0
@@ -70,37 +80,42 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 		    target: 2.0.0
 		  prs:
 		  - "67890"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SlashPrefixIsTrimmed() =>
 		Block!.BundlesFolderPath.Should().EndWith("release-notes/versions".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
-	public void PathDoesNotContainDoubleSlashes() =>
-		Block!.BundlesFolderPath.Should().NotContain("//");
+	[Test]
+	public void PathDoesNotContainDoubleSlashes() => Block!.BundlesFolderPath.Should().NotContain("//");
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Another feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigRelativePathTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: config/my-changelog.yml
 		:type: all
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: test-product
 			  target: 1.0.0
@@ -122,22 +137,28 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 			  action: Upgrade.
 			  prs:
 			  - "22222"
-			"""));
-
-		FileSystem.AddFile("docs/config/my-changelog.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/config/my-changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - deprecation
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -146,19 +167,23 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigDocsetRootRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogConfigDocsetRootRelativePathTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:config: /settings/changelog-config.yml
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: test-product
 			  target: 1.0.0
@@ -179,22 +204,28 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 			  - Internal
 			  prs:
 			  - "44444"
-			"""));
-
-		FileSystem.AddFile("docs/settings/changelog-config.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/settings/changelog-config.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_areas:
 			      - Internal
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -203,16 +234,21 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 	}
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderNestedRelativePathTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog} deeply/nested/path/to/bundles
+	public ChangelogBundlesFolderNestedRelativePathTests() : base(
+			// language=markdown
+			"""
+		:::{changelog} /deeply/nested/path/to/bundles
 		:::
-		""") => FileSystem.AddFile("docs/deeply/nested/path/to/bundles/3.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/deeply/nested/path/to/bundles/3.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: nested-product
 		  target: 3.0.0
@@ -224,12 +260,14 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 		    target: 3.0.0
 		  prs:
 		  - "99999"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void ResolvesDeepNestedPath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Nested feature");
 }
 
@@ -246,16 +284,21 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 /// The implementation correctly handles this by checking StartsWith('/') before IsPathRooted,
 /// ensuring our docset-root-relative convention takes precedence.
 /// </remarks>
+[InheritsTests]
 public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPathEdgeCaseTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog} ./relative/bundles
+	public ChangelogPathEdgeCaseTests() : base(
+			// language=markdown
+			"""
+		:::{changelog} /relative/bundles
 		:::
-		""") => FileSystem.AddFile("docs/relative/bundles/1.0.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/relative/bundles/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: edge-product
 		  target: 1.0.0
@@ -267,28 +310,34 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 		    target: 1.0.0
 		  prs:
 		  - "55555"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void ResolvesPathWithDotSlashPrefix() => Block!.Found.Should().BeTrue();
+	[Test]
+	public void ResolvesSlashPrefixedPath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Edge case feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigAndBundlesRelativePathsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
-		:::{changelog} bundles/v1
+	public ChangelogConfigAndBundlesRelativePathsTests() : base(
+			// language=markdown
+			"""
+		:::{changelog} /bundles/v1
 		:config: config/changelog.yml
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/bundles/v1/1.0.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/bundles/v1/1.0.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: combined-product
 			  target: 1.0.0
@@ -307,26 +356,32 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 			    target: 1.0.0
 			  prs:
 			  - "77777"
-			"""));
-
-		FileSystem.AddFile("docs/config/changelog.yml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+
+		FileSystem.AddFile(
+			"docs/config/changelog.yml",
+			new MockFileData(
+				// language=yaml
+				"""
 			rules:
 			  publish:
 			    exclude_types:
 			      - other
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void BothPathsResolveCorrectly()
 	{
 		Block!.Found.Should().BeTrue();
 		Block!.PublishBlocker.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown

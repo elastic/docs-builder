@@ -6,8 +6,7 @@ using Elastic.Markdown.Diagnostics;
 
 namespace Elastic.Markdown.Myst.Directives.AgentSkill;
 
-public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context)
-	: DirectiveBlock(parser, context)
+public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public override string Directive => "agent-skill";
 
@@ -17,9 +16,7 @@ public class AgentSkillBlock(DirectiveBlockParser parser, ParserContext context)
 
 	public string? RepoPrefix { get; private set; }
 
-	public string? InstallCommand => SkillName is not null && RepoPrefix is not null
-		? $"npx skills add {RepoPrefix}@{SkillName}"
-		: null;
+	public string? InstallCommand => SkillName is not null && RepoPrefix is not null ? $"npx skills add {RepoPrefix}@{SkillName}" : null;
 
 	public override void FinalizeAndValidate(ParserContext context)
 	{

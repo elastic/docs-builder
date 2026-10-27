@@ -105,11 +105,7 @@ public static class McpOAuthMetadata
 		return System.Text.Json.JsonSerializer.Serialize(new JwksDocument { Keys = [jwk] }, OAuthMetadataJsonContext.Default.JwksDocument);
 	}
 
-	private static string Base64UrlEncode(byte[] data) =>
-		Convert.ToBase64String(data)
-			.TrimEnd('=')
-			.Replace('+', '-')
-			.Replace('/', '_');
+	private static string Base64UrlEncode(byte[] data) => Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 /// <summary>RFC 9728 Protected Resource Metadata.</summary>

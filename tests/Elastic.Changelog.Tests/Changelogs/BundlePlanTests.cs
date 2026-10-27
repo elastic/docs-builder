@@ -14,23 +14,27 @@ public class BundlePlanTests : ChangelogTestBase
 {
 	private ChangelogBundlingService Service { get; }
 
-	public BundlePlanTests(ITestOutputHelper output) : base(output) =>
-		Service = new(LoggerFactory, FileSystem, ConfigurationContext);
+	public BundlePlanTests() : base() => Service = new(LoggerFactory, FileSystem, ConfigurationContext, env: EmptyEnvironment);
 
 	private async Task<string> CreateConfigAsync(string configContent)
 	{
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 		return configPath;
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_OptionMode_ExplicitOutput_ReturnsNoNetwork()
 	{
 		var input = new BundleChangelogsArguments { Output = "docs/releases/my-bundle.yaml" };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
@@ -40,19 +44,24 @@ public class BundlePlanTests : ChangelogTestBase
 		result.CdnUrl.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_ReleaseVersion_ReturnsNeedsNetwork()
 	{
 		var input = new BundleChangelogsArguments { Output = "docs/releases/bundle.yaml" };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: true, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: true,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_ProfileMode_RepoResolvable_ReturnsNeedsNetwork()
 	{
 		// A profile whose authoring repo resolves (bundle.repo) sources entries from the CDN, so the plan
@@ -66,28 +75,66 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
 		result.NeedsGithubToken.Should().BeFalse();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-elasticsearch-9.2.0.yaml").OptionalWindowsReplace());
 		// The bundle-PR action polls this URL for the scrubbed copy: {base}/bundle/{product}/{file}.
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-elasticsearch-9.2.0.yaml");
 	}
 
-	[Fact]
+	[Test]
+	public async Task Plan_ProfileOutputDirectory_JoinsConventionalName()
+	{
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  repo: kibana
+			  profiles:
+			    serverless-release:
+			      output_products: "cloud-serverless {version}"
+			      output_directory: docs/releases/cloud-serverless
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments { Profile = "serverless-release", ProfileArgument = "2026-08-27", Config = configPath };
+
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().NotBeNull();
+		result
+			.OutputPath
+			.Should()
+			.EndWith(
+				FileSystem
+					.Path
+					.Join("docs", "releases", "cloud-serverless", "kibana-cloud-serverless-2026-08-27.yaml")
+					.OptionalWindowsReplace()
+			);
+	}
+
+	[Test]
 	public async Task Plan_ProfileMode_NoRepo_ReturnsNoNetwork()
 	{
 		// Repo gate at plan time: with no bundle.repo (and no --repo), the authoring repo is unresolvable,
@@ -101,25 +148,28 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/elasticsearch/elasticsearch-9.2.0.yaml");
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("Could not resolve a repository name"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_ProfileMode_OutputProductsScopeCdnUrl()
 	{
 		// output_products takes precedence over products when scoping the CDN URL.
@@ -132,24 +182,23 @@ public class BundlePlanTests : ChangelogTestBase
 			    serverless:
 			      products: "cloud-serverless {version} *"
 			      output_products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "serverless",
-			ProfileArgument = "2026-03",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "serverless", ProfileArgument = "2026-03", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
-		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/serverless-2026-03.yaml");
+		result.CdnUrl.Should().Be("https://d10xozp44eyz7q.cloudfront.net/bundle/cloud-serverless/cloud-serverless-2026-03.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_ProfileMode_UseLocalChangelogs_ReturnsNoNetwork()
 	{
 		// With bundle.use_local_changelogs the entries come from the local folder, so no network is needed.
@@ -162,90 +211,92 @@ public class BundlePlanTests : ChangelogTestBase
 			  profiles:
 			    my-profile:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "my-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "my-profile", ProfileArgument = "9.2.0", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 		result.NeedsGithubToken.Should().BeFalse();
 	}
 
-	[Fact]
-	public async Task Plan_ProfileMode_GitHubRelease_ReturnsNeedsNetwork()
+	[Test]
+	public async Task Plan_ProfileMode_WithProductProfile_ReturnsNeedsNetwork()
 	{
+		// A profile with a repo configured causes CDN sourcing which requires network.
 		// language=yaml
 		var configContent =
 			"""
 			bundle:
 			  output_directory: docs/releases
+			  repo: elasticsearch
 			  profiles:
 			    es-release:
-			      source: github_release
-			      repo: elasticsearch
-			      output: "elasticsearch-{version}.yaml"
+			      output_products: "elasticsearch {version}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "es-release",
-			ProfileArgument = "v9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "es-release", ProfileArgument = "9.2.0", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeTrue();
-		result.NeedsGithubToken.Should().BeTrue();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "elasticsearch-v9.2.0.yaml").OptionalWindowsReplace());
+		result.NeedsGithubToken.Should().BeFalse();
 	}
 
-	[Fact]
-	public async Task Plan_ProfileMode_LifecycleSubstitution_ResolvesCorrectly()
+	[Test]
+	public async Task Plan_ProfileMode_ConventionalName_UsesPrimaryOutputProduct()
 	{
+		// Output names follow {repo}-{product}-{version}.yaml.
 		// language=yaml
 		var configContent =
 			"""
 			bundle:
 			  output_directory: docs/releases
+			  repo: apm-agent-dotnet
 			  profiles:
 			    dotnet-release:
-			      source: github_release
-			      repo: apm-agent-dotnet
-			      output: "dotnet-{version}-{lifecycle}.yaml"
+			      output_products: "apm-agent-dotnet {version} {lifecycle}"
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "dotnet-release",
-			ProfileArgument = "1.0.0-beta.1",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "dotnet-release", ProfileArgument = "1.0.0-beta.1", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
-		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "dotnet-1.0.0-beta.1-beta.yaml").OptionalWindowsReplace());
+		result
+			.OutputPath
+			.Should()
+			.EndWith(
+				FileSystem.Path.Join("docs", "releases", "apm-agent-dotnet-apm-agent-dotnet-1.0.0-beta.1.yaml").OptionalWindowsReplace()
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Plan_NoOutput_FallsBackToConfigOutputDirectory()
 	{
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  output_directory: docs/releases
 			""";
@@ -253,13 +304,48 @@ public class BundlePlanTests : ChangelogTestBase
 
 		var input = new BundleChangelogsArguments { Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.OutputPath.Should().EndWith(FileSystem.Path.Join("docs", "releases", "changelog-bundle.yaml").OptionalWindowsReplace());
 	}
 
-	[Fact]
+	[Test]
+	public async Task Plan_OptionMode_OutputProducts_UsesConventionalName()
+	{
+		var configContent = """
+			bundle:
+			  output_directory: docs/releases
+			  repo: kibana
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Config = configPath,
+			OutputProducts = [new ProductArgument { Product = "cloud-serverless", Target = "2026-08-27" }]
+		};
+
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().NotBeNull();
+		result
+			.OutputPath
+			.Should()
+			.EndWith(FileSystem.Path.Join("docs", "releases", "kibana-cloud-serverless-2026-08-27.yaml").OptionalWindowsReplace());
+	}
+
+	[Test]
 	public async Task Plan_ProfileNotFound_ReturnsResultWithNeedsNetworkFalse()
 	{
 		// language=yaml
@@ -272,17 +358,85 @@ public class BundlePlanTests : ChangelogTestBase
 			""";
 		var configPath = await CreateConfigAsync(configContent);
 
-		var input = new BundleChangelogsArguments
-		{
-			Profile = "nonexistent-profile",
-			ProfileArgument = "9.2.0",
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Profile = "nonexistent-profile", ProfileArgument = "9.2.0", Config = configPath };
 
-		var result = await Service.PlanBundleAsync(Collector, input, hasReleaseVersion: false, TestContext.Current.CancellationToken);
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		result.Should().NotBeNull();
 		result.NeedsNetwork.Should().BeFalse();
 	}
 
+	[Test]
+	public async Task Plan_ProfileWithDescription_RejectsCliDescription()
+	{
+		// CI preflights with --plan before the bundle run, so plan must reject the same collision the run does.
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			Description = "From CLI"
+		};
+
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().BeNull();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Test]
+	public async Task Plan_ProfileWithoutDescription_AllowsCliDescription()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  output_directory: docs/releases
+			  profiles:
+			    my-profile:
+			      products: "elasticsearch {version} {lifecycle}"
+			""";
+		var configPath = await CreateConfigAsync(configContent);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "my-profile",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			Description = "From CLI"
+		};
+
+		var result = await Service.PlanBundleAsync(
+			Collector,
+			input,
+			hasReleaseVersion: false,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+	}
 }

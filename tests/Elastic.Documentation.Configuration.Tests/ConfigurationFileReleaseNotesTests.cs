@@ -17,7 +17,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class ConfigurationFileReleaseNotesTests
 {
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_DeclaredProduct_IsExposedWithoutErrors()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch"));
@@ -26,7 +26,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_UnderscoreVariant_NormalizesToCanonicalId()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("edot_java"));
@@ -35,7 +35,7 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_DuplicateDeclarations_AreDeduplicated()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("elasticsearch", "elasticsearch"));
@@ -44,44 +44,40 @@ public class ConfigurationFileReleaseNotesTests
 		diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_UnknownProduct_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("not-a-product"));
 
 		config.ReleaseNotesProducts.Should().BeEmpty();
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("Unknown 'release_notes' product"));
+		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unknown 'release_notes' product"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_ProductWithoutReleaseNotesFeature_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("reference-only"));
 
 		config.ReleaseNotesProducts.Should().BeEmpty();
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("does not participate"));
+		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not participate"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_InvalidProductId_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("bad/slug"));
 
 		config.ReleaseNotesProducts.Should().BeEmpty();
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("must match"));
+		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("must match"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReleaseNotes_EmptyProductValue_EmitsError()
 	{
 		var (config, diagnostics) = await CreateConfiguration(DocSetWithReleaseNotes("   "));
 
 		config.ReleaseNotesProducts.Should().BeEmpty();
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error && d.Message.Contains("missing a 'product' value"));
+		diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("missing a 'product' value"));
 	}
 
 	private static DocumentationSetFile DocSetWithReleaseNotes(params string[] products) =>
@@ -92,31 +88,27 @@ public class ConfigurationFileReleaseNotesTests
 			ReleaseNotes = [.. products.Select(p => new ReleaseNotesProductReference { Product = p })]
 		};
 
-	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(DocumentationSetFile docSet)
+	private static async Task<(ConfigurationFile Config, IReadOnlyList<Diagnostic> Diagnostics)> CreateConfiguration(
+		DocumentationSetFile docSet
+	)
 	{
 		var recorder = new RecordingDiagnosticsOutput();
 		var collector = new DiagnosticsCollector([recorder]);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var root = Paths.WorkingDirectoryRoot.FullName;
 		var configFilePath = Path.Join(root, "docs", "_docset.yml");
-		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ configFilePath, new MockFileData("") }
-		}, root);
+		var fileSystem = new MockFileSystem(new Dictionary<string, MockFileData> { { configFilePath, new MockFileData("") } }, root);
 
 		var configPath = fileSystem.FileInfo.New(configFilePath);
 		var docsDir = fileSystem.DirectoryInfo.New(Path.Join(root, "docs"));
 
 		var context = new MockDocumentationSetContext(collector, fileSystem, configPath, docsDir);
-		var versionsConfig = new VersionsConfiguration
-		{
-			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>()
-		};
+		var versionsConfig = new VersionsConfiguration { VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>() };
 		var productsConfig = CreateProductsConfiguration();
 
 		var config = new ConfigurationFile(docSet, context, versionsConfig, productsConfig);
-		await collector.StopAsync(TestContext.Current.CancellationToken);
+		await collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 		return (config, recorder.Diagnostics);
 	}
 
@@ -136,7 +128,7 @@ public class ConfigurationFileReleaseNotesTests
 			{
 				Id = "reference-only",
 				DisplayName = "Reference Only",
-				Features = new ProductFeatures { PublicReference = true, ReleaseNotes = false }
+				Features = new ProductFeatures { PublicReference = true, ReleaseNotes = ReleaseNotesPath.None }
 			}
 		};
 
@@ -152,13 +144,15 @@ public class ConfigurationFileReleaseNotesTests
 		IDiagnosticsCollector collector,
 		IFileSystem fileSystem,
 		IFileInfo configurationPath,
-		IDirectoryInfo documentationSourceDirectory)
-		: IDocumentationSetContext
+		IDirectoryInfo documentationSourceDirectory
+	) : IDocumentationSetContext
 	{
 		public IDiagnosticsCollector Collector => collector;
 		public IDocumentationFileSystem ReadFileSystem { get; } = DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName);
 		public DocumentationWriteFileSystem WriteFileSystem { get; } = new DocumentationWriteFileSystem(
-			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName), inner: fileSystem);
+			fileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+			inner: fileSystem
+		);
 		public IDirectoryInfo OutputDirectory => fileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts"));
 		public IFileInfo ConfigurationPath => configurationPath;
 		public BuildType BuildType => BuildType.Isolated;

@@ -11,7 +11,13 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
+  - toc: docs-content://products
   - toc: cloud://release-notes
+  # Temporary: autoops-insights cloud docs (elastic/autoops-insights#186, #189) until their child mount is added.
+  - toc: autoops-insights://cloud
+  # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
+  # Remove this phantom and update the nav entry below once that PR merges.
+  - toc: elastic-agent://reference/otel-collector
 
 toc:
   #############
@@ -23,6 +29,7 @@ toc:
   - toc: explore-analyze
   - toc: deploy-manage
   - toc: cloud-account
+    navigation_title: Manage your Cloud account
   - toc: troubleshoot
 
 
@@ -606,10 +613,27 @@ toc:
                 path_prefix: reference/ecs/logging/ruby
                 # Children include the entire AsciiDoc book
 
+      # Elastic CLI
+      # https://github.com/elastic/cli/blob/main/docs/docset.yml
+      - toc: cli://
+        path_prefix: reference/elastic-cli
+
       # Machine learning (FKA Data analysis)
       # https://github.com/elastic/docs-content/blob/main/reference/machine-learning/toc.yml
       - toc: docs-content://reference/machine-learning
         path_prefix: reference/machine-learning
+
+      # AutoOps insights
+      # https://github.com/elastic/docs-content/blob/main/reference/autoops-insights/toc.yml
+      - toc: docs-content://reference/autoops-insights
+        path_prefix: reference/autoops-insights
+        children:
+
+          # AutoOps insights for Elasticsearch
+          # https://github.com/elastic/autoops-insights/blob/main/generated/docs/elasticsearch/toc.yml
+          - toc: autoops-insights://elasticsearch
+            path_prefix: reference/autoops-insights/elasticsearch
+            navigation_title: Elasticsearch
 
       # Search UI
       # https://github.com/elastic/search-ui/blob/main/docs/reference/toc.yml
