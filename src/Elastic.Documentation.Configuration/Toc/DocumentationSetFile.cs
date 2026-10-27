@@ -1119,7 +1119,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (file.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
 				fileGroups[file] = ListingFrontMatterReader.ReadGroup(file);
 			else
-				fileGroups[file] = null; // extension will provide group via TryGetListingGroup
+				fileGroups[file] = null; // no front matter to read; the parent-directory fallback below may still group it
 		}
 
 		// Separate root/group index pages from content pages
