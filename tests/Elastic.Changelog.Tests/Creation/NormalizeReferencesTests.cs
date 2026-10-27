@@ -15,13 +15,13 @@ namespace Elastic.Changelog.Tests.Creation;
 /// </summary>
 public class NormalizeReferencesTests
 {
-	[Fact]
+	[Test]
 	public void Null_ReturnsNull() => ChangelogFileWriter.NormalizeReferences(null, "elastic", "cloud", "pull").Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void Empty_ReturnsNull() => ChangelogFileWriter.NormalizeReferences([], "elastic", "cloud", "pull").Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void BareNumber_WithOwnerAndRepo_ExpandsToFullUrl()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["155500"], "elastic", "cloud", "pull");
@@ -29,7 +29,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["https://github.com/elastic/cloud/pull/155500"]);
 	}
 
-	[Fact]
+	[Test]
 	public void BareIssueNumber_WithOwnerAndRepo_ExpandsToIssuesUrl()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["4274"], "elastic", "cloud", "issues");
@@ -37,7 +37,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["https://github.com/elastic/cloud/issues/4274"]);
 	}
 
-	[Fact]
+	[Test]
 	public void BareNumber_WithoutOwner_LeftAsIs()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["155500"], null, "cloud", "pull");
@@ -45,7 +45,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["155500"]);
 	}
 
-	[Fact]
+	[Test]
 	public void BareNumber_WithoutRepo_LeftAsIs()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["155500"], "elastic", null, "pull");
@@ -53,7 +53,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["155500"]);
 	}
 
-	[Fact]
+	[Test]
 	public void BareNumber_WithBundleStyleRepo_LeftAsIs()
 	{
 		// `elasticsearch+kibana` is a multi-repo bundle string; we can't pick which one a bare
@@ -63,7 +63,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["100"]);
 	}
 
-	[Fact]
+	[Test]
 	public void BareNumber_WithSlashInRepo_LeftAsIs()
 	{
 		// A pre-qualified `org/repo` value supplied through `--repo` shouldn't be re-combined.
@@ -72,7 +72,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["100"]);
 	}
 
-	[Fact]
+	[Test]
 	public void FullUrl_LeftAsIs()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["https://github.com/elastic/cloud/pull/155500"], "elastic", "cloud", "pull");
@@ -80,7 +80,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["https://github.com/elastic/cloud/pull/155500"]);
 	}
 
-	[Fact]
+	[Test]
 	public void ShortFormReference_LeftAsIs()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["elastic/cloud#155500"], "elastic", "cloud", "pull");
@@ -88,7 +88,7 @@ public class NormalizeReferencesTests
 		result.Should().BeEquivalentTo(["elastic/cloud#155500"]);
 	}
 
-	[Fact]
+	[Test]
 	public void MixedReferences_OnlyBareNumbersExpand()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(
@@ -105,7 +105,7 @@ public class NormalizeReferencesTests
 		]);
 	}
 
-	[Fact]
+	[Test]
 	public void NumberWithWhitespace_TrimmedAndExpanded()
 	{
 		var result = ChangelogFileWriter.NormalizeReferences(["  155500  "], "elastic", "cloud", "pull");

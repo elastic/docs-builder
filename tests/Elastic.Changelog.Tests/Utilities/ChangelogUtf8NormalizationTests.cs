@@ -9,7 +9,7 @@ namespace Elastic.Changelog.Tests.Utilities;
 
 public class ChangelogUtf8NormalizationTests
 {
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_EmptyString_ReturnsEmpty()
 	{
 		var result = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(string.Empty);
@@ -17,7 +17,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(string.Empty);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_NullString_ReturnsNull()
 	{
 		var result = ChangelogUtf8Normalization.StripLeadingUtf8BomChar(null!);
@@ -25,7 +25,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringWithoutBom_ReturnsUnchanged()
 	{
 		const string input = "type: feature\ntitle: Test";
@@ -35,7 +35,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringWithLeadingBom_RemovesBom()
 	{
 		const string content = "type: feature\ntitle: Test";
@@ -46,7 +46,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringOnlyBom_ReturnsEmpty()
 	{
 		var input = ChangelogUtf8Normalization.Utf8BomChar.ToString();
@@ -56,7 +56,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(string.Empty);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringWithBomInMiddle_DoesNotChange()
 	{
 		var input = $"type: feature{ChangelogUtf8Normalization.Utf8BomChar}title: Test";
@@ -66,7 +66,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(input);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringWithConsecutiveLeadingBoms_RemovesAllLeadingBoms()
 	{
 		const string content = "type: feature\ntitle: Test";
@@ -78,7 +78,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void StripLeadingUtf8BomChar_StringWithThreeConsecutiveLeadingBoms_RemovesAllLeadingBoms()
 	{
 		const string content = "type: feature\ntitle: Test";
@@ -93,7 +93,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_EmptySpan_ReturnsFalse()
 	{
 		var bytes = ReadOnlySpan<byte>.Empty;
@@ -103,7 +103,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_TooShortSpan_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB]);
@@ -113,7 +113,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_ValidBomBytes_ReturnsTrue()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBF, 0x74, 0x79]);
@@ -123,7 +123,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_ExactBomBytes_ReturnsTrue()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBF]);
@@ -133,7 +133,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_InvalidBomBytes_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0xEF, 0xBB, 0xBE, 0x74, 0x79]);
@@ -143,7 +143,7 @@ public class ChangelogUtf8NormalizationTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void HasUtf8Bom_NormalYamlBytes_ReturnsFalse()
 	{
 		var bytes = new ReadOnlySpan<byte>([0x74, 0x79, 0x70, 0x65]);

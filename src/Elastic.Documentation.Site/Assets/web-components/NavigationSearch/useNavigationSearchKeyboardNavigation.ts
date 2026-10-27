@@ -3,6 +3,7 @@ import {
     useSearchActions,
     useSearchTerm,
 } from './navigationSearch.store'
+import { type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import { useRef, useCallback } from 'react'
 
@@ -11,6 +12,7 @@ interface Options {
     isLoading: boolean
     onClose: () => void
     onNavigate: () => void
+    typeFilter: TypeFilter
 }
 
 interface Result {
@@ -25,13 +27,14 @@ export const useNavigationSearchKeyboardNavigation = ({
     isLoading,
     onClose,
     onNavigate,
+    typeFilter,
 }: Options): Result => {
     const inputRef = useRef<HTMLInputElement>(null)
     const isKeyboardNavigating = useRef(false)
     const selectedIndex = useSelectedIndex()
     const searchTerm = useSearchTerm()
     const { setSelectedIndex } = useSearchActions()
-    const { trackNavigation } = useNavigationSearchTelemetry()
+    const { trackNavigation } = useNavigationSearchTelemetry(typeFilter)
 
     const handleMouseMove = useCallback(() => {
         isKeyboardNavigating.current = false

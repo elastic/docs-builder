@@ -47,7 +47,7 @@ public class AssemblerBuildStampTests
 
 	// ── IsUpToDate ─────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_NullExisting_ReturnsMiss()
 	{
 		var current = MakeInMemory();
@@ -56,7 +56,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("no stamp");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_NullCurrent_ReturnsMiss()
 	{
 		var existing = MakeInMemory().ToRecord();
@@ -64,7 +64,7 @@ public class AssemblerBuildStampTests
 		isUpToDate.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_IdenticalStamps_ReturnsHit()
 	{
 		var stamp = MakeInMemory();
@@ -72,7 +72,7 @@ public class AssemblerBuildStampTests
 		isUpToDate.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_SchemaVersionBump_ReturnsMiss()
 	{
 		var existing = MakeInMemory(schemaVersion: 1).ToRecord();
@@ -82,7 +82,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("schema");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_EnvironmentChanged_ReturnsMiss()
 	{
 		var existing = MakeInMemory(environment: "dev").ToRecord();
@@ -92,7 +92,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("environment");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_CheckoutShaChanged_ReturnsMiss()
 	{
 		var existing = MakeInMemory(checkouts: new Dictionary<string, string> { { "docs-content", "aaa" } }).ToRecord();
@@ -102,7 +102,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("checkout");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_ConfigHashChanged_ReturnsMiss()
 	{
 		var existing = MakeInMemory(configHash: "aaaa").ToRecord();
@@ -112,7 +112,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("configuration");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_AssemblyMvidChanged_ReturnsMiss()
 	{
 		var existing = MakeInMemory(assemblies: new Dictionary<string, string>
@@ -128,7 +128,7 @@ public class AssemblerBuildStampTests
 		reason.Should().Contain("MVID");
 	}
 
-	[Fact]
+	[Test]
 	public void IsUpToDate_ExportersChanged_ReturnsMiss()
 	{
 		var existing = MakeInMemory(exporters: ["Html"]).ToRecord();
@@ -140,7 +140,7 @@ public class AssemblerBuildStampTests
 
 	// ── Compute ────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Compute_EmptyHeadReference_ReturnsNull()
 	{
 		var fileSystem = new MockFileSystem();
@@ -164,7 +164,7 @@ public class AssemblerBuildStampTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void Compute_ValidCheckouts_ReturnsStamp()
 	{
 		var fileSystem = new MockFileSystem();
@@ -192,7 +192,7 @@ public class AssemblerBuildStampTests
 
 	// ── ToRecord — no sensitive values on disk ─────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void ToRecord_DoesNotExposeCheckoutShas()
 	{
 		var stamp = MakeInMemory(checkouts: new Dictionary<string, string> { { "private-repo", "supersecretsha" } });
@@ -202,7 +202,7 @@ public class AssemblerBuildStampTests
 		record.CheckoutsHash.Should().HaveLength(64); // hex SHA-256
 	}
 
-	[Fact]
+	[Test]
 	public void ToRecord_DoesNotExposeAssemblyMvids()
 	{
 		var stamp = MakeInMemory(assemblies: new Dictionary<string, string>
@@ -214,7 +214,7 @@ public class AssemblerBuildStampTests
 		record.AssembliesHash.Should().HaveLength(64);
 	}
 
-	[Fact]
+	[Test]
 	public void ToRecord_DifferentInputs_ProduceDifferentHashes()
 	{
 		var stampA = MakeInMemory(checkouts: new Dictionary<string, string> { { "repo", "sha-a" } });
@@ -224,14 +224,14 @@ public class AssemblerBuildStampTests
 
 	// ── JSON round-trip ────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task ReadWrite_RoundTrip_PreservesFields()
 	{
 		var stamp = MakeInMemory(environment: "staging");
 		using var dir = new ScopedTempDirectory(new System.IO.Abstractions.FileSystem(), "stamp-test");
 		var path = System.IO.Path.Join(dir.FullName, AssemblerBuildStampService.StampFileName);
 
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		await AssemblerBuildStampService.WriteAsync(path, stamp, ct);
 		var read = await AssemblerBuildStampService.ReadAsync(path, ct);
 
@@ -241,19 +241,22 @@ public class AssemblerBuildStampTests
 		read.AssembliesHash.Should().Be(stamp.ToRecord().AssembliesHash);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Read_MissingFile_ReturnsNull()
 	{
-		var result = await AssemblerBuildStampService.ReadAsync("/nonexistent/path/.stamp.json", TestContext.Current.CancellationToken);
+		var result = await AssemblerBuildStampService.ReadAsync(
+			"/nonexistent/path/.stamp.json",
+			TestContext.Current!.Execution.CancellationToken
+		);
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Read_CorruptFile_ReturnsNull()
 	{
 		using var dir = new ScopedTempDirectory(new System.IO.Abstractions.FileSystem(), "stamp-corrupt");
 		var path = System.IO.Path.Join(dir.FullName, AssemblerBuildStampService.StampFileName);
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		await System.IO.File.WriteAllTextAsync(path, "not valid json", ct);
 
 		var result = await AssemblerBuildStampService.ReadAsync(path, ct);

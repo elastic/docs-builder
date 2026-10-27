@@ -8,7 +8,7 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class ChecksumValidationTests() : RenderChangelogTestBase()
 {
 	// language=yaml
 	private const string BundleHeader = """
@@ -43,7 +43,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		- "100"
 		""";
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_ResolvedBundle_RendersWithoutReadingFiles()
 	{
 		// Arrange — bundles are self-contained: entries carry inline content and the
@@ -53,7 +53,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		var bundleContent = CreateResolvedBundleContent(BundleHeader, ("1755268130-feature.yaml", ChangelogWithoutComments));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		var input = new RenderChangelogsArguments
@@ -64,7 +64,7 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -73,11 +73,11 @@ public class ChecksumValidationTests(ITestOutputHelper output) : RenderChangelog
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("My new feature");
 	}
 
-	[Fact]
+	[Test]
 	public void Checksums_WithAndWithoutComments_AreEqual()
 	{
 		// Verify that checksums ignore comment lines (normalization strips them)

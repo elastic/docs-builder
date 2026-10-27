@@ -24,13 +24,13 @@ public class CloudFrontCacheInvalidatorTests
 
 	private CloudFrontCacheInvalidator CreateInvalidator() => new(_cloudFrontClient, DistributionId);
 
-	[Fact]
+	[Test]
 	public async Task InvalidateAsync_SendsExpectedPathsAndCallerReference()
 	{
 		var invalidator = CreateInvalidator();
 		var paths = new[] { "/index.json", "/elastic/elasticsearch/8.16/openapi.json" };
 
-		await invalidator.InvalidateAsync(paths, "request-id-1", TestContext.Current.CancellationToken);
+		await invalidator.InvalidateAsync(paths, "request-id-1", TestContext.Current!.Execution.CancellationToken);
 
 		var request = _requests.Should().ContainSingle().Subject;
 		request.DistributionId.Should().Be(DistributionId);
@@ -39,24 +39,25 @@ public class CloudFrontCacheInvalidatorTests
 		request.InvalidationBatch.Paths.Items.Should().BeEquivalentTo(paths);
 	}
 
-	[Fact]
+	[Test]
 	public async Task InvalidateAsync_EmptyPaths_DoesNotCallCloudFront()
 	{
 		var invalidator = CreateInvalidator();
 
-		await invalidator.InvalidateAsync([], "request-id-1", TestContext.Current.CancellationToken);
+		await invalidator.InvalidateAsync([], "request-id-1", TestContext.Current!.Execution.CancellationToken);
 
 		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task InvalidateAsync_CloudFrontFailure_PropagatesException()
 	{
 		A.CallTo(() => _cloudFrontClient.CreateInvalidationAsync(A<CreateInvalidationRequest>._, A<Cancel>._)).Throws(
 			new AmazonCloudFrontException("Access denied")
 		);
 
-		var act = () => CreateInvalidator().InvalidateAsync(["/index.json"], "request-id-1", TestContext.Current.CancellationToken);
+		var act =
+			() => CreateInvalidator().InvalidateAsync(["/index.json"], "request-id-1", TestContext.Current!.Execution.CancellationToken);
 
 		await act.Should().ThrowAsync<AmazonCloudFrontException>();
 	}

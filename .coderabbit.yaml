@@ -45,8 +45,9 @@ reviews:
       enabled: true
     yamllint:
       enabled: true
+    # Upstream actionlint rejects the `$/` self-repository syntax; the actionlint workflow runs kjanat/actionlint instead.
     actionlint:
-      enabled: true
+      enabled: false
     gitleaks:
       enabled: true
     trufflehog:

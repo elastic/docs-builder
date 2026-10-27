@@ -41,7 +41,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using Microsoft.AspNetCore.Html;
 using RazorSlices;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Markdown.Myst.Directives;
 
@@ -54,6 +54,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	protected override void Write(HtmlRenderer renderer, DirectiveBlock directiveBlock)
 	{
 		_ = renderer.EnsureLine();
+
+		if (DesignSystemDirectives.IsEnabled(directiveBlock) && DesignSystemDirectives.TryWrite(renderer, directiveBlock))
+			return;
 
 		switch (directiveBlock)
 		{
@@ -125,6 +128,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case WhatsNewBlock whatsNewBlock:
 				WriteWhatsNew(renderer, whatsNewBlock);
+				return;
+			case OnThisPageBlock onThisPageBlock:
+				WriteOnThisPage(renderer, onThisPageBlock);
 				return;
 			case RelatedLearningBlock relatedLearningBlock:
 				WriteRelatedLearning(renderer, relatedLearningBlock);
@@ -253,7 +259,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			DirectiveBlock = block,
 			Title = block.Title,
 			Intro = block.Intro,
-			Anchor = block.Anchor
+			Anchor = block.Anchor,
+			HeadingLevel = block.Level
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -265,24 +272,27 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			Title = block.Title,
-			Intro = block.Intro,
+			IntroHtml = RenderInlineMarkdown(block.Intro),
 			Anchor = block.Anchor,
 			Variant = block.Variant,
 			IsAccordion = explore is not null,
-			IsOpen = explore is not null && HubExplore.IsFirstCardGroup(explore, block)
+			AccordionHeadingLevel = (explore?.Level ?? 2) + 1,
+			IsOpen = explore is not null && HubExplore.IsOpenByDefault(explore, block)
 		});
 		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteLinkCard(HtmlRenderer renderer, LinkCardBlock block)
 	{
+		var explore = HubExplore.FindAncestor(block);
 		var slice = LinkCardView.Create(new LinkCardViewModel
 		{
 			DirectiveBlock = block,
 			Data = block.Data,
 			IconSvg = ProductIcons.Get(block.Data.Icon),
 			SitePathPrefix = block.Build.UrlPathPrefix,
-			IsColumn = HubExplore.FindAncestor(block) is not null
+			IsColumn = explore is not null,
+			ColumnHeadingLevel = (explore?.Level ?? 2) + 2
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -295,6 +305,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			Data = block.Data,
 			SitePathPrefix = block.Build.UrlPathPrefix
 		});
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteOnThisPage(HtmlRenderer renderer, OnThisPageBlock block)
+	{
+		var slice = OnThisPageView.Create(new OnThisPageViewModel { DirectiveBlock = block, Items = block.CollectItems() });
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -329,14 +345,15 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			});
 		}
 
-		var slice = GetStartedView.Create(new GetStartedViewModel
+		var model = new GetStartedViewModel
 		{
 			DirectiveBlock = block,
 			Title = data.Title,
 			IntroHtml = RenderInlineMarkdown(data.Intro),
 			Steps = steps,
 			SitePathPrefix = block.Build.UrlPathPrefix
-		});
+		};
+		var slice = DesignSystemDirectives.IsEnabled(block) ? GetStartedDesignView.Create(model) : GetStartedView.Create(model);
 		RenderRazorSlice(slice, renderer);
 	}
 
@@ -390,7 +407,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			DirectiveBlock = block,
 			Title = block.Title,
 			Anchor = block.Anchor,
-			HeadingLevel = block.HeadingLevel
+			HeadingLevel = block.HeadingLevel,
+			RenderAsHeading = block.RenderAsHeading
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -432,7 +450,8 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 		{
 			DirectiveBlock = block,
 			ColumnWidths = block.ColumnWidths,
-			Matrix = block.Matrix
+			Matrix = block.Matrix,
+			Filterable = block.Filterable
 		});
 		RenderRazorSlice(slice, renderer);
 	}
@@ -715,6 +734,7 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			SettingsCollection = settings,
 			GroupHeadingLevel = block.GroupHeadingLevel,
 			VersionsConfig = block.Build.VersionsConfiguration,
+			DesignSystem = DesignSystemDirectives.IsEnabled(block),
 			ActiveDeploymentFilter = block.ActiveDeploymentFilter,
 			RenderMarkdown = s =>
 			{
@@ -875,10 +895,10 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 			markdown,
 			block.CurrentFile,
 			block.Context.YamlFrontMatter,
-			MarkdownParser.Pipeline
+			MarkdownParser.ChangelogPipeline
 		);
 
-		var html = document.ToHtml(MarkdownParser.Pipeline);
+		var html = document.ToHtml(MarkdownParser.ChangelogPipeline);
 		_ = renderer.Write(html);
 	}
 

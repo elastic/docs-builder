@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Mcp.Remote;
 using Elastic.Documentation.Mcp.Remote.Telemetry;
@@ -11,6 +12,7 @@ using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using ModelContextProtocol;
+using ModelContextProtocol.Protocol;
 using OpenTelemetry;
 using OpenTelemetry.Trace;
 
@@ -62,9 +64,21 @@ try
 	// In SDK 1.4+, stateless and SSE are mutually exclusive; EnableLegacySse (default false)
 	// cannot be combined with Stateless = true. SSE-only clients should use the mcp-remote bridge:
 	// npx -y mcp-remote https://<host>/docs/_mcp
+	var serverVersion = Assembly
+		.GetExecutingAssembly()
+		.GetCustomAttributes<AssemblyInformationalVersionAttribute>()
+		.FirstOrDefault()?.InformationalVersion
+		?? "0.0.0";
+
 	var mcpBuilder = builder
 		.Services
-		.AddMcpServer(options => options.ServerInstructions = profile.ComposeServerInstructions())
+		.AddMcpServer(options =>
+		{
+			options.ServerInstructions = profile.ComposeServerInstructions();
+			options.ServerInfo = new Implementation { Name = profile.ServiceName, Version = serverVersion };
+			// Null echoes the client's requested version; pin to the latest we actually support.
+			options.ProtocolVersion = "2025-11-25";
+		})
 		.WithHttpTransport(o => o.Stateless = true);
 
 	var prefixedTools = McpToolRegistration.CreatePrefixedTools(profile);

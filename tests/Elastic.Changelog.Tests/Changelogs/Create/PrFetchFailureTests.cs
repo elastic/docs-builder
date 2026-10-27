@@ -10,9 +10,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class PrFetchFailureTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionAndTitleAndType_SkipsApiFetch()
 	{
 		var service = CreateService();
@@ -26,7 +26,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -42,14 +42,14 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Manual title provided");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("prs:");
 		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOptionButPrFetchFails_WithoutTitleAndType_CreatesChangelogWithCommentedFields()
 	{
 		// Arrange
@@ -67,7 +67,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -84,7 +84,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("# title: # TODO: Add title");
 		yamlContent.Should().Contain("# type: # TODO: Add type");
 		yamlContent.Should().Contain("prs:");
@@ -96,7 +96,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		lines.Should().NotContain(l => l.Trim().StartsWith("type:", StringComparison.Ordinal) && !l.Trim().StartsWith('#'));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultiplePrsButPrFetchFails_GeneratesBasicChangelogs()
 	{
 		// Arrange
@@ -116,7 +116,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -137,7 +137,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		files.Should().HaveCountGreaterThanOrEqualTo(1);
 
 		// Verify the file contains the provided title/type and at least one PR reference
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Shared title");
 		yamlContent.Should().Contain("type: bug-fix");
 		// Should reference at least one of the PRs (when filenames collide, the last one wins)
@@ -147,7 +147,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultiplePrsFetchFails_EmitsAggregateWarningSummary()
 	{
 		// Arrange
@@ -165,7 +165,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert: by default the bulk fetch failure is a single, loud summary warning (not an error).
 		result.Should().BeTrue();
@@ -180,7 +180,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultiplePrsFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
@@ -199,7 +199,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert: under --strict-fetch the bulk fetch failure escalates to an error (non-zero exit),
 		// but the best-effort files are still written so they can be inspected.
@@ -208,7 +208,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not be fetched from GitHub"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultipleIssuesFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
@@ -227,7 +227,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert: under --strict-fetch the bulk fetch failure escalates to an error.
 		// No files are written because filename derivation requires a PR number;
@@ -239,7 +239,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Their changelogs were created"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithSinglePrFetchFailsAndStrictFetch_EmitsError()
 	{
 		// Arrange
@@ -258,7 +258,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -266,7 +266,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("--strict-fetch"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithVersionedProductsOnBulkAdd_EmitsErrorWithoutFetchOrFiles()
 	{
 		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(
@@ -287,7 +287,7 @@ public class PrFetchFailureTests(ITestOutputHelper output) : CreateChangelogTest
 			Output = outputDir
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);

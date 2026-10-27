@@ -9,7 +9,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 public class BundleDescriptionSubstitutionTests
 {
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_AllPlaceholdersResolved_ReturnsSubstitutedString()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(
@@ -23,7 +23,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("Release 9.2.0 (ga) from elastic/elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_NullValues_ReplacedWithEmptyString()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders("Version {version} by {owner}", null, null, null, null);
@@ -31,7 +31,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("Version  by ");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_EmptyDescription_ReturnsEmpty()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders("", "9.2.0", "ga", "elastic", "elasticsearch");
@@ -39,7 +39,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_NoPlaceholders_ReturnsOriginal()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(
@@ -53,7 +53,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("Just a plain description.");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_PartialPlaceholders_OnlySubstitutesPresent()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(
@@ -67,7 +67,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("Download: https://github.com/elastic/elasticsearch/releases");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_ValidateResolvable_ThrowsWhenVersionMissing()
 	{
 		var act =
@@ -83,7 +83,7 @@ public class BundleDescriptionSubstitutionTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*version*");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_ValidateResolvable_ThrowsWhenMultipleMissing()
 	{
 		var act =
@@ -99,7 +99,7 @@ public class BundleDescriptionSubstitutionTests
 		act.Should().Throw<InvalidOperationException>().WithMessage("*version*lifecycle*owner*repo*");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_ValidateResolvable_SucceedsWhenAllProvided()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(
@@ -114,7 +114,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("v9.2.0 from elastic/elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_ValidateResolvable_IgnoresUnusedNullValues()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(
@@ -129,7 +129,7 @@ public class BundleDescriptionSubstitutionTests
 		result.Should().Be("Download from elastic/elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void SubstitutePlaceholders_NullDescription_ReturnsNull()
 	{
 		var result = BundleDescriptionSubstitution.SubstitutePlaceholders(null!, "9.2.0", "ga", "elastic", "elasticsearch");

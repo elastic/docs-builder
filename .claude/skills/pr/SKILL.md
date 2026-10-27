@@ -68,6 +68,25 @@ Required structure:
  If there is no clear local verification step, omit this section entirely.
  Do not list CI checks, YAML linting, or bash scripts an agent would run
  to prove their own work — those are not reviewer steps.>
+
+## Check on the preview
+<Only when the change shows on a built page. One bullet per page on this PR's preview,
+ `https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/<PR number>/<path>`:
+ the link, a dash, then the one thing to look at there. Pick pages that each show a
+ different behaviour of the change, and one control page the change must leave alone.
+ The preview does not exist yet when the PR is created, so the links cannot be opened
+ then. Take each <path> from the page's own address instead: a Markdown page's docset
+ path, or `api/doc/<api>/operation/operation-<operation id>` for an API operation.
+ A local build (`.artifacts/docs/html/<path>/index.html`) confirms a path when one is
+ already at hand; do not build the site only for this. The preview serves the paths
+ once its workflow finishes. Omit when nothing renders differently.>
+```
+
+A **Check on the preview** entry reads like this:
+
+```
+- [Cloud Connect: Get subscription](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/cloud-connect/operation/operation-getsubscription) — path filled from the spec example, `Authorization: ApiKey ${API_KEY}`, no Console card.
+- [Elasticsearch: Delete async search](https://docs-v3-preview.elastic.dev/elastic/docs-builder/docs/4446/api/doc/elasticsearch/operation/operation-async-search-delete) — control page: spec-written samples, unchanged.
 ```
 
 Conditional add-ons — each is one or two sentences with a bold lead-in, no heading:
@@ -105,10 +124,12 @@ Never use `fix` (use `bug`) or `ci` (use `automation`) — both are release-draf
 ### 7. Check whether a PR already exists
 
 ```bash
-gh pr view --json number,url,baseRefName --jq '{number,url,baseRefName}' 2>/dev/null
+gh pr view --json number,url,state,baseRefName --jq '{number,url,state,baseRefName}' 2>/dev/null
 ```
 
-**If a PR exists — update it.**
+**Check `state` before doing anything.** If `state` is `"MERGED"` or `"CLOSED"`, the branch already landed; treat it as no PR and proceed to step 8 to create a new one. Never edit a merged or closed PR.
+
+**If `state` is `"OPEN"` — update it.**
 
 Rebuild the body from the cumulative diff against the PR's own base branch (not a hardcoded `main`):
 
@@ -140,7 +161,7 @@ gh pr edit --add-label "<new-label>" --remove-label "<old-label>"
 
 ### 8. Create the PR
 
-One call — title, label, and body together. No follow-up `gh pr edit`:
+One call — title, label, and body together. When the change renders differently, one `gh pr edit` follows right away to add **Check on the preview**: the section needs the PR number, which exists only after creation, so read it from the URL `gh pr create` prints and build the links from it. Do not wait for the preview workflow and do not build the site for this; the paths come from the pages' own addresses, and the preview serves them once it has run.
 
 ```bash
 gh pr create --title "<title>" --label "<label>" --body "$(cat <<'EOF'

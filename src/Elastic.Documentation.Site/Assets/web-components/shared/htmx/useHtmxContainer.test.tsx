@@ -2,9 +2,10 @@ import { useHtmxContainer } from './useHtmxContainer'
 import { render, screen } from '@testing-library/react'
 import htmx from 'htmx.org'
 import { useRef } from 'react'
+import type { Mocked } from 'vitest'
 
 // Mock config to use assembler build type (tests were written for assembler behavior)
-jest.mock('../../../config', () => ({
+vi.mock('../../../config', () => ({
     config: {
         buildType: 'assembler',
         serviceName: 'docs-frontend',
@@ -14,14 +15,16 @@ jest.mock('../../../config', () => ({
 }))
 
 // Mock htmx - it uses XPath which jsdom doesn't support properly
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
+vi.mock('htmx.org', () => ({
+    default: {
+        on: vi.fn(),
+        off: vi.fn(),
+        process: vi.fn(),
+        ajax: vi.fn(),
+    },
 }))
 
-const mockHtmx = htmx as jest.Mocked<typeof htmx>
+const mockHtmx = htmx as Mocked<typeof htmx>
 
 // Test component that uses the hook
 const TestContainer = ({ html }: { html: string }) => {
@@ -38,7 +41,7 @@ const TestContainer = ({ html }: { html: string }) => {
 
 describe('useHtmxContainer', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     describe('internal docs links', () => {
@@ -69,8 +72,8 @@ describe('useHtmxContainer', () => {
         })
     })
 
-    describe('/docs/api paths should be disabled', () => {
-        it('should add hx-disable for /docs/api paths', () => {
+    describe('/docs/api paths should be enabled', () => {
+        it('should call htmx.process for /docs/api paths', () => {
             render(
                 <TestContainer html='<a href="/docs/api/elasticsearch">API Link</a>' />
             )
@@ -79,11 +82,11 @@ describe('useHtmxContainer', () => {
             const anchor = container.querySelector('a')
 
             expect(anchor).toHaveAttribute('href', '/docs/api/elasticsearch')
-            expect(anchor).toHaveAttribute('hx-disable', 'true')
-            expect(mockHtmx.process).not.toHaveBeenCalled()
+            expect(anchor).not.toHaveAttribute('hx-disable')
+            expect(mockHtmx.process).toHaveBeenCalledWith(container)
         })
 
-        it('should add hx-disable for full elastic.co/docs/api URLs', () => {
+        it('should call htmx.process for full elastic.co/docs/api URLs', () => {
             render(
                 <TestContainer html='<a href="https://www.elastic.co/docs/api/kibana">API Link</a>' />
             )
@@ -92,8 +95,8 @@ describe('useHtmxContainer', () => {
             const anchor = container.querySelector('a')
 
             expect(anchor).toHaveAttribute('href', '/docs/api/kibana')
-            expect(anchor).toHaveAttribute('hx-disable', 'true')
-            expect(mockHtmx.process).not.toHaveBeenCalled()
+            expect(anchor).not.toHaveAttribute('hx-disable')
+            expect(mockHtmx.process).toHaveBeenCalledWith(container)
         })
     })
 
@@ -184,9 +187,9 @@ describe('useHtmxContainer', () => {
             expect(internalLink).toHaveAttribute('href', '/docs/elasticsearch')
             expect(internalLink).not.toHaveAttribute('hx-disable')
 
-            // API link - htmx disabled
+            // API link - htmx enabled
             expect(apiLink).toHaveAttribute('href', '/docs/api/kibana')
-            expect(apiLink).toHaveAttribute('hx-disable', 'true')
+            expect(apiLink).not.toHaveAttribute('hx-disable')
 
             // External link - htmx disabled
             expect(externalLink).toHaveAttribute(
@@ -199,12 +202,12 @@ describe('useHtmxContainer', () => {
             expect(mockHtmx.process).toHaveBeenCalledWith(container)
         })
 
-        it('should not call htmx.process if all links are external', () => {
+        it('should not call htmx.process if all links are truly external', () => {
             render(
                 <TestContainer
                     html={`
-                        <a href="/docs/api/elasticsearch">API</a>
                         <a href="https://github.com/elastic">GitHub</a>
+                        <a href="https://www.elastic.co/products">Products</a>
                     `}
                 />
             )

@@ -11,7 +11,7 @@ public class FilterLoaderUtilitiesTests
 {
 	private static readonly string Home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-	[Fact]
+	[Test]
 	public void ExpandTilde_BareTilde_ReturnsHomeDirectory()
 	{
 		var result = FilterLoaderUtilities.ExpandTilde("~");
@@ -19,7 +19,7 @@ public class FilterLoaderUtilitiesTests
 		result.Should().Be(Home);
 	}
 
-	[Fact]
+	[Test]
 	public void ExpandTilde_TildePrefixedPath_ExpandsToHomeDirectory()
 	{
 		var result = FilterLoaderUtilities.ExpandTilde("~/docs/changelog/entry.yaml");
@@ -27,7 +27,7 @@ public class FilterLoaderUtilitiesTests
 		result.Should().Be(Path.Join(Home, "docs/changelog/entry.yaml"));
 	}
 
-	[Fact]
+	[Test]
 	public void ExpandTilde_RelativePath_ReturnsTrimmedPathUnchanged()
 	{
 		var result = FilterLoaderUtilities.ExpandTilde(" docs/changelog/entry.yaml ");
@@ -35,7 +35,7 @@ public class FilterLoaderUtilitiesTests
 		result.Should().Be("docs/changelog/entry.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void ExpandTilde_TildeInMiddleOfPath_ReturnsPathUnchanged()
 	{
 		var result = FilterLoaderUtilities.ExpandTilde("docs/~backup/entry.yaml");

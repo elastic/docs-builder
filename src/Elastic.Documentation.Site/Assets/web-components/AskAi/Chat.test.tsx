@@ -5,13 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
+import type { MockedFunction } from 'vitest'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-jest.mock('idb-keyval', () => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(undefined),
-    del: jest.fn().mockResolvedValue(undefined),
-    createStore: jest.fn().mockReturnValue({}),
+vi.mock('idb-keyval', () => ({
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    del: vi.fn().mockResolvedValue(undefined),
+    createStore: vi.fn().mockReturnValue({}),
 }))
 
 // Create a fresh QueryClient for each test
@@ -32,8 +33,8 @@ const renderWithQueryClient = (ui: React.ReactElement) => {
 }
 
 // Mock only external HTTP calls - fetchEventSource makes the actual API request
-jest.mock('@microsoft/fetch-event-source', () => ({
-    fetchEventSource: jest.fn(),
+vi.mock('@microsoft/fetch-event-source', () => ({
+    fetchEventSource: vi.fn(),
     EventStreamContentType: 'text/event-stream',
 }))
 
@@ -56,13 +57,13 @@ const resetStores = () => {
 
 describe('Chat Component', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetStores()
 
         // Mock scrollTo to prevent flaky test failures in CI
         // The handleSubmit function schedules a setTimeout that calls scrollTo
         // In test environments, scrollTo may not be available on DOM elements
-        HTMLElement.prototype.scrollTo = jest.fn()
+        HTMLElement.prototype.scrollTo = vi.fn()
     })
 
     afterEach(() => {
@@ -276,11 +277,12 @@ describe('Chat Component', () => {
 
         it('should scroll to user message when question is submitted', async () => {
             // Arrange
-            jest.useFakeTimers()
+            // shouldAdvanceTime: Testing Library only drives fake timers it detects through a `jest` global
+            vi.useFakeTimers({ shouldAdvanceTime: true })
             try {
                 const user = userEvent.setup({ delay: null })
                 const question = 'What is Kibana?'
-                const scrollToSpy = jest.fn()
+                const scrollToSpy = vi.fn()
 
                 // Set up existing messages so scroll container exists
                 chatStore.setState({
@@ -331,7 +333,7 @@ describe('Chat Component', () => {
                     scrollContainer.scrollTo = scrollToSpy
                     scrollContainer.scrollTop = 0
                     // Mock getBoundingClientRect for scroll calculations
-                    scrollContainer.getBoundingClientRect = jest.fn(() => ({
+                    scrollContainer.getBoundingClientRect = vi.fn(() => ({
                         top: 0,
                         left: 0,
                         right: 100,
@@ -340,8 +342,8 @@ describe('Chat Component', () => {
                         height: 500,
                         x: 0,
                         y: 0,
-                        toJSON: jest.fn(),
-                    })) as jest.MockedFunction<() => DOMRect>
+                        toJSON: vi.fn(),
+                    })) as MockedFunction<() => DOMRect>
                 }
 
                 const input = screen.getByPlaceholderText(
@@ -368,7 +370,7 @@ describe('Chat Component', () => {
                     '[data-message-type="user"]:last-of-type'
                 ) as HTMLElement
                 if (newUserMessage) {
-                    newUserMessage.getBoundingClientRect = jest.fn(() => ({
+                    newUserMessage.getBoundingClientRect = vi.fn(() => ({
                         top: 100,
                         left: 0,
                         right: 100,
@@ -377,16 +379,16 @@ describe('Chat Component', () => {
                         height: 100,
                         x: 0,
                         y: 100,
-                        toJSON: jest.fn(),
-                    })) as jest.MockedFunction<() => DOMRect>
+                        toJSON: vi.fn(),
+                    })) as MockedFunction<() => DOMRect>
                 }
 
                 // Advance timers to trigger requestAnimationFrame
-                jest.advanceTimersByTime(100)
+                vi.advanceTimersByTime(100)
                 await Promise.resolve() // Let React process the state update
 
                 // Run all pending requestAnimationFrame callbacks
-                jest.runAllTimers()
+                vi.runAllTimers()
 
                 // Verify scrollTo was called
                 if (scrollContainer) {
@@ -398,7 +400,7 @@ describe('Chat Component', () => {
                     )
                 }
             } finally {
-                jest.useRealTimers()
+                vi.useRealTimers()
             }
         })
     })

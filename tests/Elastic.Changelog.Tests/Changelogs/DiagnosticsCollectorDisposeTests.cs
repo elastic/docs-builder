@@ -28,12 +28,17 @@ public class DiagnosticsCollectorDisposeTests
 	// StartAsync. Emitting a diagnostic and then disposing deadlocked on
 	// Channel.Reader.Completion because nothing was draining the channel,
 	// causing the lambda to hit its 180s timeout.
-	[Fact]
+	//
+	// A second regression: the no-deadlock fix dropped all queued items on the floor —
+	// HandleItem was never called and outputs never received any messages, even though the
+	// severity count was correct. StopAsync now drains synchronously (non-blocking TryRead)
+	// when no background reader was started, so items reach outputs without risk of hanging.
+	[Test]
 	public async Task DisposeAsync_WithoutStartAsyncAfterEmit_DoesNotHang()
 	{
 		var output = new RecordingOutput();
 		var collector = new DiagnosticsCollector([output]);
-		collector.EmitWarning("file.yaml", "test warning that nobody is reading");
+		collector.EmitWarning("file.yaml", "test warning");
 
 		await ShouldComplete(
 			collector.DisposeAsync().AsTask(),
@@ -43,16 +48,37 @@ public class DiagnosticsCollectorDisposeTests
 
 		collector.Warnings.Should().Be(1, "severity counters update regardless of reader state");
 		collector.IsStarted.Should().BeFalse();
-		collector.OffendingFiles.Should().BeEmpty("OffendingFiles is only populated by the background reader");
-		output.Items.Should().BeEmpty("IDiagnosticsOutput sinks are only invoked by the background reader");
+		collector.OffendingFiles.Keys.Should().Contain("file.yaml", "StopAsync drains the channel synchronously");
+		output.Items.Should().HaveCount(1, "outputs receive items from the synchronous drain in StopAsync");
 	}
 
-	[Fact]
+	// Regression: the codex build failed with "Destination array is not long enough" because the
+	// background reader added to OffendingFiles while the build thread snapshotted it.
+	[Test]
+	public async Task OffendingFiles_SnapshotWhileReaderIsWriting_DoesNotThrow()
+	{
+		const int total = 20_000;
+		var collector = new DiagnosticsCollector([]);
+		_ = collector.StartAsync(CancellationToken.None);
+		for (var i = 0; i < total; i++)
+			collector.EmitWarning($"file-{i}.md", "warning");
+
+		// Snapshot for as long as the reader is still adding, so both sides overlap.
+		using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+		while (collector.OffendingFiles.Count < total && !timeout.IsCancellationRequested)
+			_ = collector.OffendingFiles.Keys.ToArray();
+
+		await collector.DisposeAsync();
+
+		collector.OffendingFiles.Should().HaveCount(20_000);
+	}
+
+	[Test]
 	public async Task StopAsync_WithoutStartAsyncAfterEmit_DoesNotHang()
 	{
 		var output = new RecordingOutput();
 		var collector = new DiagnosticsCollector([output]);
-		collector.EmitError("file.yaml", "test error that nobody is reading");
+		collector.EmitError("file.yaml", "test error");
 
 		await ShouldComplete(
 			collector.StopAsync(CancellationToken.None),
@@ -62,10 +88,10 @@ public class DiagnosticsCollectorDisposeTests
 
 		collector.Errors.Should().Be(1);
 		collector.IsStarted.Should().BeFalse();
-		output.Items.Should().BeEmpty();
+		output.Items.Should().HaveCount(1, "items are drained synchronously even without a background reader");
 	}
 
-	[Fact]
+	[Test]
 	public async Task DisposeAsync_WithoutStartAsyncAndNoEmissions_DoesNotHang()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -81,7 +107,7 @@ public class DiagnosticsCollectorDisposeTests
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task WaitForDrain_WithoutStartAsync_ThrowsImmediately()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -95,7 +121,10 @@ public class DiagnosticsCollectorDisposeTests
 	// If the service command completes before the thread pool picks up the Task.Run delegate,
 	// _readerStarted is still false when WaitForDrain runs. Previously this threw; now it
 	// waits briefly for the reader to start and then drains successfully.
-	[Fact]
+	// Runs alone: the reader starts on the thread pool and must come up within WaitForDrain's 2s
+	// deadline, which other tests blocking pool threads can push past on a busy runner.
+	[Test]
+	[NotInParallel]
 	public async Task WaitForDrain_AfterStartAsync_WaitsForReaderEvenIfNotStartedYet()
 	{
 		var output = new RecordingOutput();
@@ -120,7 +149,7 @@ public class DiagnosticsCollectorDisposeTests
 	// A pre-canceled token makes Task.Run return a canceled task without ever executing
 	// the reader delegate: start is requested but the reader never comes up, so WaitForDrain
 	// must hit its 2s deadline. FakeTimeProvider advances that deadline virtually.
-	[Fact]
+	[Test]
 	public async Task WaitForDrain_ReaderNeverStarts_TimesOutInVirtualTime()
 	{
 		var timeProvider = new FakeTimeProvider();
@@ -135,7 +164,10 @@ public class DiagnosticsCollectorDisposeTests
 		for (var i = 0; i < 100 && !drain.IsCompleted; i++)
 		{
 			timeProvider.Advance(TimeSpan.FromMilliseconds(500));
-			await Task.Delay(10, TestContext.Current.CancellationToken); // real delay so the awaiting continuation observes the fired timer
+			await Task.Delay(
+				10,
+				TestContext.Current!.Execution.CancellationToken
+			); // real delay so the awaiting continuation observes the fired timer
 		}
 
 		drain.IsCompleted.Should().BeTrue("the 2s virtual deadline must trip long before 50s of virtual time");

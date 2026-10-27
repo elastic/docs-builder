@@ -84,6 +84,28 @@ groups:
         #       REQUIRED
 ```
 
+`datatype` is an optional display value. Copy the term the surrounding file already uses for that kind of value. Do not invent a new term.
+
+### Description and default
+
+Write `description` for the person who sets the value. Lead with what the setting does. Then say how to set it.
+
+Do:
+
+- Say what changes when the value changes.
+- For a boolean, say what `true` and `false` do.
+- For a limit or duration, include the unit.
+
+Do not:
+
+- Restate the key as the whole description.
+- Repeat `datatype` or the current `default` in the description. Those render as their own fields.
+- Put a version number in the description next to a badge.
+
+`default` is the current product value. Include it when the source defines it. Do not omit `default` to encode an earlier value.
+
+If an earlier version used a different default, keep `default` as the current value. Put the previous value in a gated `note`. The `:applies_to:` range carries the version. Do not write the version in the note body. The sample YAML on this page shows that pattern.
+
 ### applies_to in settings YAML [settings-yaml]
 
 The keys are the same as [Applies to](applies.md). The authoring contract is different, because each setting renders a **Supported on** line.
@@ -92,9 +114,15 @@ In settings YAML, list every deployment key so that line is complete and the `:d
 
 | Key | What it means here | Write |
 |---|---|---|
-| `stack` | The setting's lifecycle and versions it's available in | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. Omit the version if the setting was added before 9.0. |
+| `stack` | The setting's lifecycle and versions it's available in | `ga`, `preview 9.2`, or a history such as `preview 9.0-9.2, ga 9.3+`. A new setting includes a version. Omit the version if the setting was added before 9.0. |
 | `ech`, `ece`, `eck`, `self` | Supported on that deployment, or not | Always list all four. `ga` if supported. `unavailable` if not. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. |
 | `serverless` | Supported on serverless, or not | Always list it. `ga` if every serverless project supports it. `unavailable` if none do. Never a version. Never `preview`, `experimental`, `deprecated`, or `removed`. If only some projects support it, nest those project keys. |
+
+A new setting includes a version on `stack`, for example `ga 9.4+` or `preview 9.5+`. Omit the version only if the setting was added before 9.0.
+
+If that minor is not released yet, still write the version. Docs show **Planned** until it ships. That rendering is documented in [Badge rendering reference](applies.md#badge-rendering-reference). Do not omit the version to hide **Planned**.
+
+Tag `stack` at the minor: `ga 9.4+`, not `ga 9.4.2`. Version syntax is in [Applies to](applies.md#version-syntax).
 
 `ga` on a deployment key is a support flag. It does not mean the setting is generally available. If `stack` is `preview` and the setting exists on Elastic Cloud Hosted, write `ech: ga`.
 
@@ -161,6 +189,52 @@ applies_to:
 
 The same nested shape works for `elasticsearch`, `security`, and `vectordb`.
 
+### Lifecycle history
+
+`stack` accepts more than one lifecycle. Separate them with a comma. Append the new state. Do not overwrite the previous one.
+
+Preview, then GA:
+
+```yaml
+applies_to:
+  stack: preview 9.0-9.2, ga 9.3+
+  ech: ga
+  ece: ga
+  eck: ga
+  self: ga
+  serverless: ga
+```
+
+GA, then deprecated:
+
+```yaml
+applies_to:
+  stack: ga 9.0-9.3, deprecated 9.4+
+  ech: ga
+  ece: ga
+  eck: ga
+  self: ga
+  serverless: ga
+```
+
+When you remove a setting that existed on Elastic Stack, keep the YAML entry. Users on earlier versions still need to find the key. Append `removed` and the version on `stack`. Keep the same `ga` or `unavailable` values on the deployment keys. Do not write `removed` on `ech`, `ece`, `eck`, or `self`.
+
+If the setting leaves serverless and it still exists on Elastic Stack, write `serverless: unavailable`. Serverless has no version history on these keys.
+
+If the setting existed only on serverless and is removed, delete the YAML entry.
+
+Usual removal from Stack and serverless:
+
+```yaml
+applies_to:
+  stack: ga 9.0-9.3, removed 9.4+
+  ech: ga
+  ece: ga
+  eck: ga
+  self: ga
+  serverless: unavailable
+```
+
 ### Example
 
 See `/syntax/settings-with-applies-example.yml` for a full, schema-compliant sample.
@@ -176,6 +250,8 @@ It demonstrates:
 - Inline `{applies_to}` badges inside a setting `description` for version-scoped behavior that is not the `default` field.
 - A gated `note` for a previous default, and a gated `warning` with `:applies_to:` on the first line.
 - Top-level `page_description`.
+
+Lifecycle history maps, including deprecated and removed `stack` values, are in [Lifecycle history](#lifecycle-history).
 
 ### Result
 

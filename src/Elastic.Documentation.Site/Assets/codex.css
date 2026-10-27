@@ -38,13 +38,3 @@
 .icon-mono path {
 	fill: currentColor !important;
 }
-
-.codex-hero {
-	navigation-search > div {
-		position: static;
-		padding: 0;
-		& > hr.euiHorizontalRule {
-			display: none;
-		}
-	}
-}

@@ -20,7 +20,7 @@ links:
 
 `links`
 :   A YAML mapping where each key is a stable catalog ID (typically the training URL slug).
-* `title`: The link text shown on the page. Required.
+* `title`: The link text shown on the page. Required. Quote the value if it contains YAML special characters such as `: ` or `&`.
 * `url`: An absolute `http` or `https` URL. Required.
 
 Pages are not listed in this file. Authors place `{related-learning}` on the page and pass catalog IDs as the directive argument.

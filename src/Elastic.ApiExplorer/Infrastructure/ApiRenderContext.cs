@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -10,6 +11,7 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -18,7 +20,18 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Infrastructure;
 
-public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected);
+/// <param name="PageNames">
+/// Every name of every page this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).
+/// Each name maps to all names of that page, canonical first, because a collapsed operation also answers to its former paths.
+/// </param>
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected, string? ShortLabel = null)
+{
+	public IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames
+	{
+		get;
+		init;
+	} = FrozenDictionary<string, IReadOnlyList<string>>.Empty;
+}
 
 public record ApiRenderContext(
 	BuildContext BuildContext,
@@ -42,6 +55,9 @@ public record ApiRenderContext(
 	/// <summary>Product bound to this API key, or <see langword="null"/> on the combined catalog.</summary>
 	public Product? Product { get; init; }
 
+	/// <summary>The site's top navigation in an assembler build, so API pages carry the same docs bar as the rest of the site.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	internal IReadOnlyDictionary<string, ApiSupplementalDoc> OperationSupplemental
 	{
 		get;
@@ -53,4 +69,24 @@ public record ApiRenderContext(
 		get;
 		init;
 	} = FrozenDictionary<string, ApiSupplementalDoc>.Empty;
+
+	/// <summary>
+	/// Per-generation-unit cache for resolving OpenAPI <c>$ref</c> identifiers to their concrete
+	/// component schemas.  Shared by reference across all per-page <c>with</c>-copies of this context
+	/// so each component schema is fetched from <see cref="OpenApiDocument.Components"/> only once per
+	/// unit rather than on every proxy property access.
+	/// </summary>
+	/// <remarks>
+	/// Records propagate reference-type properties shallowly via <c>with</c>, so this dictionary is
+	/// the same object instance in the unit context and in every page-level copy derived from it.
+	/// Pages within a unit render in parallel, so the cache must be concurrent.
+	/// </remarks>
+	internal ConcurrentDictionary<string, IOpenApiSchema?> SchemaResolveCache { get; } = new();
+
+	/// <summary>
+	/// Per-generation-unit cache of sanitized description HTML, shared like <see cref="SchemaResolveCache"/>.
+	/// The same descriptions repeat across many pages, and HtmlSanitizer serializes on a process-wide
+	/// AngleSharp pool lock, so sanitizing each distinct fragment once keeps parallel rendering busy.
+	/// </summary>
+	internal ConcurrentDictionary<string, string> SanitizedHtmlCache { get; } = new(StringComparer.Ordinal);
 }

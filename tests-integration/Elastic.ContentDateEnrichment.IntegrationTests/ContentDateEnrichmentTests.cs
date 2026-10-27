@@ -12,21 +12,22 @@ using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Ingest.Elasticsearch;
-using Elastic.Markdown.Exporters.Elasticsearch;
 using Elastic.Transport;
 using Elastic.Transport.Products.Elasticsearch;
 using Microsoft.Extensions.Logging;
-using Xunit;
+using TUnit.Core.Interfaces;
+using ContentDateEnrichmentService = Elastic.Documentation.Indexing.Exporters.Elasticsearch.ContentDateEnrichment;
+using ElasticsearchOperationsService = Elastic.Documentation.Indexing.Exporters.Elasticsearch.ElasticsearchOperations;
 using ElasticsearchTransportConfig = Elastic.Transport.Products.Elasticsearch.ElasticsearchConfiguration;
 
 namespace Elastic.ContentDateEnrichment.IntegrationTests;
 
-public class ElasticsearchFixture : IAsyncLifetime
+public class ElasticsearchFixture : IAsyncInitializer, IAsyncDisposable
 {
 	private IContainer _container = null!;
 	public DistributedTransport Transport { get; private set; } = null!;
 
-	public async ValueTask InitializeAsync()
+	public async Task InitializeAsync()
 	{
 		_container = new ContainerBuilder()
 			.WithImage("docker.elastic.co/elasticsearch/elasticsearch:8.18.0")
@@ -51,27 +52,25 @@ public class ElasticsearchFixture : IAsyncLifetime
 	}
 }
 
-[CollectionDefinition("Elasticsearch")]
-public class ElasticsearchTestCluster : ICollectionFixture<ElasticsearchFixture>;
-
 /// <summary>
 /// Integration tests verifying that content_last_updated is correctly resolved
 /// via the enrichment pipeline, even when documents are written via bulk update
 /// actions that skip ingest pipelines. Uses the real IngestChannel (HashedBulkUpdate)
 /// from Elastic.Ingest.Elasticsearch — the same code path as production.
 /// </summary>
-[Collection("Elasticsearch")]
-public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutputHelper output)
+[ClassDataSource<ElasticsearchFixture>(Shared = SharedType.Keyed, Key = "Elasticsearch")]
+[NotInParallel("Elasticsearch")]
+public class ContentDateEnrichmentTests(ElasticsearchFixture fixture)
 {
 	private readonly DistributedTransport _transport = fixture.Transport;
 
-	private Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment CreateEnrichment(string testName)
+	private ContentDateEnrichmentService CreateEnrichment(string testName)
 	{
-		var loggerFactory = LoggerFactory.Create(b => b.AddXUnit(output));
+		var loggerFactory = LoggerFactory.Create(b => b.AddProvider(new TestLoggerProvider()));
 		var logger = loggerFactory.CreateLogger<ContentDateEnrichmentTests>();
-		var operations = new ElasticsearchOperations(_transport, logger);
+		var operations = new ElasticsearchOperationsService(_transport, logger);
 		// Each test uses a unique buildType to isolate its pipeline/lookup infrastructure
-		return new Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment(_transport, operations, logger, testName, "test");
+		return new ContentDateEnrichmentService(_transport, operations, logger, testName, "test");
 	}
 
 	/// <summary>
@@ -82,7 +81,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// the same scripted-upsert path that production uses on subsequent deploys.
 	/// </summary>
 	private async Task<IngestChannel<DocumentationDocument>> CreateChannelAsync(
-		Elastic.Markdown.Exporters.Elasticsearch.ContentDateEnrichment enrichment,
+		ContentDateEnrichmentService enrichment,
 		string testName,
 		string? indexNameOverride = null
 	)
@@ -124,7 +123,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	private static DocumentationDocument CreateDoc(string url, string contentHash, string title) =>
 		new() { Path = url, Title = title, SearchTitle = title, Hash = contentHash, ContentBodyHash = contentHash };
 
-	[Fact]
+	[Test]
 	public async Task FirstRun_AllDocumentsGetCurrentTimestamp()
 	{
 		var enrichment = CreateEnrichment("first-run");
@@ -141,7 +140,9 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Diagnostic: read back what the channel actually stored
 		var beforeResolve = await GetDocument(index, "url1");
-		output.WriteLine($"Before resolve — url1 content_last_updated: {beforeResolve.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url1 content_last_updated: {beforeResolve.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 
 		// Act: run the post-indexing resolution
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
@@ -162,7 +163,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task SecondRun_UnchangedContentPreservesOldDate()
 	{
 		var enrichment = CreateEnrichment("unchanged");
@@ -187,7 +188,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
 		// Wait to ensure timestamp separation
-		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current!.Execution.CancellationToken);
 
 		// Re-initialize for second run (re-executes enrich policy with updated lookup data)
 		await enrichment.InitializeAsync(CancellationToken.None);
@@ -207,7 +208,9 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Diagnostic: check what HashedBulkUpdate stored before resolve
 		var url1Before = await GetDocument(index, "url1");
-		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
@@ -224,7 +227,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task SecondRun_ChangedContentGetsNewDate()
 	{
 		var enrichment = CreateEnrichment("changed");
@@ -248,7 +251,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDocs = await GetAllDocuments(index);
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
-		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current!.Execution.CancellationToken);
 
 		await enrichment.InitializeAsync(CancellationToken.None);
 
@@ -268,7 +271,9 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Diagnostic: check url1 before resolve
 		var url1Before = await GetDocument(index, "url1");
-		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
@@ -295,7 +300,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// stores for content_last_updated when the field is never explicitly set.
 	/// This tells us the exact value to filter on in ResolveContentDatesAsync.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task ScriptedUpsert_WithFullDocument_ContentLastUpdatedValue()
 	{
 		var index = "test-discovery";
@@ -348,7 +353,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// the filter only processes documents that were changed (unresolved dates),
 	/// while unchanged documents (noop) retain their existing resolved dates.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task FilteredResolve_SkipsDocumentsWithExistingDates()
 	{
 		var enrichment = CreateEnrichment("filtered");
@@ -377,7 +382,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDocs = await GetAllDocuments(index);
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
-		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current!.Execution.CancellationToken);
 		await enrichment.InitializeAsync(CancellationToken.None);
 
 		// === Second run: reuse index → HashedBulkUpdate. Only url1 changed. ===
@@ -396,9 +401,13 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Diagnostic: check what HashedBulkUpdate stored
 		var url1Before = await GetDocument(index, "url1");
-		output.WriteLine($"Before resolve — url1 (changed) content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url1 (changed) content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 		var url2Before = await GetDocument(index, "url2");
-		output.WriteLine($"Before resolve — url2 (noop) content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url2 (noop) content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 
 		// Act: resolve content dates
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
@@ -423,7 +432,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	/// (HashedBulkUpdate path): unchanged docs are noop (date preserved),
 	/// changed doc gets replaced (needs resolve).
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task SecondRun_WithFilter_OnlyChangedDocGetsNewDate()
 	{
 		var enrichment = CreateEnrichment("filter-e2e");
@@ -452,7 +461,7 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 		var firstRunDocs = await GetAllDocuments(index);
 		var firstRunDates = firstRunDocs.ToDictionary(d => d.Url, d => d.ContentLastUpdated);
 
-		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current.CancellationToken);
+		await Task.Delay(TimeSpan.FromSeconds(1.5), TestContext.Current!.Execution.CancellationToken);
 		await enrichment.InitializeAsync(CancellationToken.None);
 
 		// === Second run: reuse index → HashedBulkUpdate. Only url1 changed. ===
@@ -471,9 +480,13 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 
 		// Diagnostic: check url1 after HashedBulkUpdate, before resolve
 		var url1Before = await GetDocument(index, "url1");
-		output.WriteLine($"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url1 content_last_updated: {url1Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 		var url2Before = await GetDocument(index, "url2");
-		output.WriteLine($"Before resolve — url2 content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}");
+		TestContext.Current?.Output.WriteLine(
+			$"Before resolve — url2 content_last_updated: {url2Before.ContentLastUpdated?.ToString("O") ?? "NULL"}"
+		);
 
 		await enrichment.ResolveContentDatesAsync(index, CancellationToken.None);
 		await RefreshIndex(index);
@@ -670,4 +683,23 @@ public class ContentDateEnrichmentTests(ElasticsearchFixture fixture, ITestOutpu
 	}
 
 	private sealed record TestDocument(string Url, string ContentHash, DateTimeOffset? ContentLastUpdated);
+}
+
+file class TestLogger : ILogger
+{
+	public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+	public bool IsEnabled(LogLevel logLevel) => true;
+	public void Log<TState>(
+		LogLevel logLevel,
+		EventId eventId,
+		TState state,
+		Exception? exception,
+		Func<TState, Exception?, string> formatter
+	) => TestContext.Current?.Output.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+}
+
+file class TestLoggerProvider : ILoggerProvider
+{
+	public ILogger CreateLogger(string categoryName) => new TestLogger();
+	public void Dispose() { }
 }

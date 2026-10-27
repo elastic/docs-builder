@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class HighlightsRenderTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHighlightedEntries_CreatesHighlightsFile()
 	{
 		// Arrange
@@ -44,7 +44,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""",
 			("1755268130-highlight-feature.yaml", changelog1)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -56,7 +56,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -65,7 +65,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
 		FileSystem.File.Exists(highlightsFile).Should().BeTrue("highlights.md should be created when entries have highlight: true");
 
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current.CancellationToken);
+		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
 		highlightsContent.Should().Contain("## 9.3.0");
 		highlightsContent.Should().Contain("New Cloud Connect UI");
 		highlightsContent.Should().Contain("Adds Cloud Connect functionality");
@@ -73,12 +73,12 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		// Verify the entry also appears in index.md
 		var indexFile = FileSystem.Path.Join(outputDir, "9.3.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("New Cloud Connect UI");
 		// Note: Cross-file links like "[Highlights]" have been removed from index.md
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithoutHighlightedEntries_DoesNotCreateHighlightsFile()
 	{
 		// Arrange
@@ -108,7 +108,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""",
 			("1755268130-regular-feature.yaml", changelog1)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -120,7 +120,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -130,7 +130,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		FileSystem.File.Exists(highlightsFile).Should().BeFalse("highlights.md should NOT be created when no entries have highlight: true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHighlightedEntries_IncludesHighlightsInAsciidoc()
 	{
 		// Arrange
@@ -162,7 +162,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			""",
 			("1755268130-highlight-enhancement.yaml", changelog1)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -175,7 +175,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -184,14 +184,14 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		var asciidocFile = FileSystem.Path.Join(outputDir, "9.3.0.asciidoc");
 		FileSystem.File.Exists(asciidocFile).Should().BeTrue();
 
-		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current.CancellationToken);
+		var asciidocContent = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
 		asciidocContent.Should().Contain("[[highlights-9.3.0]]");
 		asciidocContent.Should().Contain("=== Highlights");
 		asciidocContent.Should().Contain("Highlighted enhancement");
 		asciidocContent.Should().Contain("This is a highlighted enhancement");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMultipleHighlightedEntries_GroupsByArea()
 	{
 		// Arrange
@@ -240,7 +240,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 			("1755268130-search.yaml", changelog1),
 			("1755268140-indexing.yaml", changelog2)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -253,7 +253,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -262,7 +262,7 @@ public class HighlightsRenderTests(ITestOutputHelper output) : RenderChangelogTe
 		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
 		FileSystem.File.Exists(highlightsFile).Should().BeTrue();
 
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current.CancellationToken);
+		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
 		highlightsContent.Should().Contain("Search highlight");
 		highlightsContent.Should().Contain("Indexing highlight");
 		highlightsContent.Should().Contain("**Search**");

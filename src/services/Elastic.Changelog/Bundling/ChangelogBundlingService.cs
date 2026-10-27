@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Changelog.Rendering;
 using Elastic.Changelog.Utilities;
@@ -27,6 +29,20 @@ namespace Elastic.Changelog.Bundling;
 /// </summary>
 public record BundleChangelogsArguments
 {
+	/// <summary>
+	/// Called with a message when the CDN has no entry pool for the repository. When set, the bundle is skipped and
+	/// the run still succeeds; when <c>null</c> a missing pool is an error. Set for commit-range bundles only.
+	/// </summary>
+	public Action<string>? OnPoolMissing { get; init; }
+
+	/// <summary>
+	/// Called when a commit range resolves no changelog entries because it has no pull requests, or every pull request
+	/// was excluded. When set, that range succeeds and writes no bundle. When <c>null</c>, the range is an error.
+	/// A pull request whose metadata could not be read is still an error. Set for DRA products, which often ship a
+	/// version with no user-facing changes.
+	/// </summary>
+	public Action? OnEmptyRange { get; init; }
+
 	/// <summary>
 	/// Directory containing changelog YAML files. null = use config default.
 	/// </summary>
@@ -125,8 +141,9 @@ public record BundleChangelogsArguments
 	public bool SuppressReleaseDate { get; init; }
 
 	/// <summary>
-	/// When non-null (including empty), PR/issue links are filtered to this <c>owner/repo</c> allowlist (from changelog.yml <c>bundle.link_allow_repos</c>).
+	/// Obsolete — no longer read. Link sanitization is handled by the scrubber Lambda.
 	/// </summary>
+	[Obsolete("link_allow_repos is no longer read.", error: false)]
 	public IReadOnlyList<string>? LinkAllowRepos { get; init; }
 
 	/// <summary>
@@ -142,10 +159,26 @@ public record BundleChangelogsArguments
 	public string? EndGitRef { get; init; }
 
 	/// <summary>
+	/// When set with a git ref range, only pull requests whose base branch is this branch are bundled.
+	/// Pull requests merged into other branches (for example feature branches that later merged into
+	/// the integration branch) appear in the run report as excluded. Set programmatically by
+	/// <c>release serverless</c>; not a <c>changelog bundle</c> option.
+	/// </summary>
+	public string? BaseRef { get; init; }
+
+	/// <summary>
 	/// When true, resolve the commit range and print the run report (resolved PR list with per-PR
 	/// entry source) without writing a bundle. Only valid together with a git ref range.
 	/// </summary>
 	public bool DryRun { get; init; }
+
+	/// <summary>
+	/// Optional callback invoked with the resolved output file path immediately after the bundle
+	/// is written to disk. Used by <c>ChangelogCommand.Bundle</c> to capture the path for GitHub
+	/// Actions output without changing the <see cref="ChangelogBundlingService.BundleChangelogs"/>
+	/// return type (tests that don't need the path leave this null).
+	/// </summary>
+	public Action<string>? OnBundlePathResolved { get; init; }
 }
 
 /// <summary>
@@ -180,20 +213,31 @@ public partial class ChangelogBundlingService(
 	ILoggerFactory logFactory,
 	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	IGitHubReleaseService? releaseService = null,
 	CdnChangelogEntryFetcher? entryFetcher = null,
 	IGitHubPrService? prService = null,
 	IGitHubCommitRangeService? commitRangeService = null,
-	IEnvironmentVariables? env = null
+	IEnvironmentVariables? env = null,
+	IGitHubBackportService? backportService = null,
+	DecisionLog? decisions = null,
+	IPullRequestSummaryProvider? summaries = null,
+	ChangelogCache? cache = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogBundlingService>();
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly IEnvironmentVariables? _env = env;
-	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
 	private readonly CdnChangelogEntryFetcher _entryFetcher = entryFetcher ?? new CdnChangelogEntryFetcher(logFactory);
-	private readonly IGitHubPrService _prService = prService ?? new GitHubPrService(logFactory);
-	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService ?? new GitHubCommitRangeService(logFactory);
+
+	// Tests and callers that bring their own IGitHubPrService keep reading pull requests one at a time through it.
+	// Otherwise the pull requests of a range are read in batches.
+	private readonly IPullRequestSummaryProvider _summaries = summaries
+		?? (prService is not null
+			? new RestPullRequestSummaryProvider(prService)
+			: new GraphQlPullRequestSummaryProvider(logFactory, cache: cache));
+	private readonly IGitHubCommitRangeService _commitRangeService = commitRangeService
+		?? new GitHubCommitRangeService(logFactory, cache: cache);
+	private readonly IGitHubBackportService _backportService = backportService ?? new GitHubBackportService(logFactory, cache: cache);
+	private readonly DecisionLog _decisions = decisions ?? DecisionLog.Immediate(logFactory.CreateLogger<ChangelogBundlingService>());
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
 		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
@@ -380,7 +424,7 @@ public partial class ChangelogBundlingService(
 			// Source and match changelog entries — from the CDN (default) or the local folder.
 			// Explicit --files / path-list selection bypasses content filters (IncludeAll): locally it loads
 			// the named paths, in CDN mode it selects pool entries by file name.
-			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializer(), _logger);
+			var entryMatcher = new ChangelogEntryMatcher(_fileSystem, ReleaseNotesSerialization.GetEntryDeserializerOptions(), _logger);
 			ChangelogMatchResult matchResult;
 			if (explicitFilePaths != null)
 			{
@@ -542,40 +586,6 @@ public partial class ChangelogBundlingService(
 			return false;
 
 		var bundleData = buildResult.Data;
-		if (input.LinkAllowRepos != null)
-		{
-			if (
-				!LinkAllowlistSanitizer.TryApplyBundle(
-					collector,
-					bundleData,
-					input.LinkAllowRepos,
-					input.Owner ?? "elastic",
-					productRepo,
-					out var sanitizedBundle,
-					out _
-				)
-			)
-				return false;
-			bundleData = sanitizedBundle;
-
-			if (configurationContext != null && input.LinkAllowRepos.Count > 0)
-			{
-				try
-				{
-					var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-					var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-					LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, input.LinkAllowRepos, assembly);
-				}
-				catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-				{
-					collector.EmitWarning(
-						string.Empty,
-						$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-					);
-				}
-			}
-		}
-
 		// Apply description with placeholder substitution
 		if (!string.IsNullOrEmpty(input.Description))
 		{
@@ -635,6 +645,10 @@ public partial class ChangelogBundlingService(
 		// Write bundle file
 		await WriteBundleFileAsync(bundleData, outputPath, ctx);
 
+		// Notify the caller of the resolved output path (used by ChangelogCommand.Bundle to emit
+		// bundle_path as a GitHub Actions step output so callers don't need to predict the path).
+		input.OnBundlePathResolved?.Invoke(outputPath);
+
 		return true;
 	}
 
@@ -645,7 +659,7 @@ public partial class ChangelogBundlingService(
 		Cancel ctx
 	)
 	{
-		if (!ValidateProfileOutputs(collector, config))
+		if (!ValidateProfileOutputs(collector, config, input.Profile))
 			return null;
 
 		// Commit-range mode derives its PR list from git; the profile only contributes output
@@ -660,8 +674,7 @@ public partial class ChangelogBundlingService(
 				_fileSystem,
 				_logger,
 				ctx,
-				input.ProfileReport,
-				_releaseService
+				input.ProfileReport
 			);
 
 		if (filterResult == null)
@@ -679,8 +692,6 @@ public partial class ChangelogBundlingService(
 
 		if (config?.Bundle?.Profiles != null && config.Bundle.Profiles.TryGetValue(input.Profile!, out var profile))
 		{
-			// For github_release profiles, lifecycle is carried from the raw tag (pre-release suffix preserved).
-			// For all other profile types, infer it from the base version string.
 			var resolvedLifecycle = filterResult.Lifecycle ?? VersionLifecycleInference.InferLifecycle(filterResult.Version);
 
 			// Bundle output names follow {repo}-{product}-{version}.yaml when an authoring repo
@@ -704,16 +715,20 @@ public partial class ChangelogBundlingService(
 					)
 #pragma warning restore CS0618
 				);
-				outputPath = JoinProfileOutputPath(config, input, fileName);
+				outputPath = JoinProfileOutputPath(config, input, fileName, primaryProduct);
 			}
 
-			// Parse output_products pattern with version/lifecycle substitution
+			// Parse output_products pattern with version/lifecycle substitution.
+			// When only the new product: field is set, synthesize an equivalent single-product list
+			// so BuildBundle() gets deterministic product scoping without requiring output_products.
+#pragma warning disable CS0618
 			if (!string.IsNullOrWhiteSpace(profile.OutputProducts))
 			{
 				var outputProductsPattern = profile
 					.OutputProducts
 					.Replace("{version}", filterResult.Version)
 					.Replace("{lifecycle}", resolvedLifecycle);
+#pragma warning restore CS0618
 				if (
 					!ProfileFilterResolver.TryParseProfileProducts(
 						outputProductsPattern,
@@ -731,6 +746,13 @@ public partial class ChangelogBundlingService(
 
 				outputProducts = parsedOutputProducts;
 			}
+			else if (!string.IsNullOrWhiteSpace(profile.Product))
+			{
+				outputProducts =
+				[
+					new ProductArgument { Product = profile.Product, Target = filterResult.Version, Lifecycle = resolvedLifecycle }
+				];
+			}
 
 			// Profile-level repo/owner/branch takes precedence; fall back to bundle-level defaults
 #pragma warning disable CS0618
@@ -745,18 +767,24 @@ public partial class ChangelogBundlingService(
 			// Checkout fallback is for {repo}/{owner} text only — keep returned Repo/Owner as
 			// config/CLI so combined owner/repo still supplies the CDN owner.
 			var descriptionTemplate = profile.Description ?? config.Bundle.Description;
+			if (!ValidateProfileDescription(collector, input.Description, descriptionTemplate))
+				return null;
+
 			if (!string.IsNullOrEmpty(descriptionTemplate))
 			{
 				// Validate placeholder usage in profile mode
 				var hasVersionPlaceholder = descriptionTemplate.Contains("{version}") || descriptionTemplate.Contains("{lifecycle}");
 				var hasOwnerRepoPlaceholder = descriptionTemplate.Contains("{owner}") || descriptionTemplate.Contains("{repo}");
 
-				if (hasVersionPlaceholder && filterResult.Version == "unknown" && string.IsNullOrEmpty(profile.OutputProducts))
+#pragma warning disable CS0618
+				var hasProductBinding = !string.IsNullOrWhiteSpace(profile.Product) || !string.IsNullOrEmpty(profile.OutputProducts);
+#pragma warning restore CS0618
+				if (hasVersionPlaceholder && filterResult.Version == "unknown" && !hasProductBinding)
 				{
 					collector.EmitError(
 						string.Empty,
 						$"Profile '{input.Profile}' uses {{version}} or {{lifecycle}} placeholders in description but no version is available for substitution. " +
-							"Either provide a version argument, or add 'output_products' pattern to the profile configuration."
+							"Either provide a version argument, or set 'product' (or the deprecated 'output_products') on the profile configuration."
 					);
 					return null;
 				}
@@ -802,13 +830,34 @@ public partial class ChangelogBundlingService(
 			All = false,
 			Output = outputPath,
 			OutputProducts = outputProducts,
-			Repo = repo,
-			Owner = owner,
-			Branch = branch,
+			// Profile and bundle settings win. The arguments fill what they leave unset, so a profile that only
+			// names a product still bundles for the repository the caller passed.
+			Repo = repo ?? input.Repo,
+			Owner = owner ?? input.Owner,
+			Branch = branch ?? input.Branch,
 			HideFeatures = mergedHideFeatures,
-			Description = profileDescription,
+			Description = profileDescription ?? input.Description,
 			SuppressReleaseDate = profileSuppressReleaseDate
 		};
+	}
+
+	/// <summary>
+	/// Configuration owns the bundle intro in profile mode, so a CLI description source is only allowed when
+	/// neither <c>bundle.description</c> nor the profile description is set. Presence of the flag is what counts:
+	/// an empty <c>--description</c> is still a supplied source, so this tests for null rather than emptiness.
+	/// Shared by the run path and <see cref="PlanBundleAsync"/> so <c>--plan</c> rejects the same invocations.
+	/// </summary>
+	private static bool ValidateProfileDescription(IDiagnosticsCollector collector, string? cliDescription, string? descriptionTemplate)
+	{
+		if (cliDescription is null || string.IsNullOrEmpty(descriptionTemplate))
+			return true;
+
+		collector.EmitError(
+			string.Empty,
+			"When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. " +
+				"Remove the CLI description, or remove the description from changelog.yml."
+		);
+		return false;
 	}
 
 	/// <summary>
@@ -874,8 +923,8 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Profile resolution for commit-range mode: the profile contributes output metadata only, so
-	/// filter-producing profile shapes (<c>source: github_release</c>, a <c>products</c> pattern)
-	/// are rejected and the version argument is carried through for placeholder substitution.
+	/// filter-producing profile shapes (a <c>products</c> pattern) are rejected and the version
+	/// argument is carried through for placeholder substitution.
 	/// </summary>
 	private static ProfileFilterResult? ResolveGitRangeProfileFilter(
 		IDiagnosticsCollector collector,
@@ -894,16 +943,6 @@ public partial class ChangelogBundlingService(
 			collector.EmitError(
 				string.Empty,
 				$"Profile '{input.Profile}' requires a version as the second argument when bundling a git commit range"
-			);
-			return null;
-		}
-
-		if (string.Equals(profile.Source, "github_release", StringComparison.OrdinalIgnoreCase))
-		{
-			collector.EmitError(
-				string.Empty,
-				$"Profile '{input.Profile}': 'source: github_release' cannot be combined with --start-git-ref/--end-git-ref. " +
-					"The PR list is derived from the commit range itself."
 			);
 			return null;
 		}
@@ -957,22 +996,63 @@ public partial class ChangelogBundlingService(
 		var owner = string.IsNullOrWhiteSpace(sourcing.Owner) ? DefaultOwner : sourcing.Owner;
 		var resolution = await _commitRangeService.ResolvePullRequestsAsync(
 			collector,
-			new CommitRangeArguments { Owner = owner, Repo = sourcing.Repo, StartRef = input.StartGitRef!, EndRef = input.EndGitRef! },
+			new CommitRangeArguments
+			{
+				Owner = owner,
+				Repo = sourcing.Repo,
+				StartRef = input.StartGitRef!,
+				EndRef = input.EndGitRef!,
+				BaseRef = input.BaseRef
+			},
 			ctx
 		);
 		if (resolution == null)
 			return false;
 
+		var backportReport = string.Empty;
+		if (config?.Bundle?.Backports is { Labels.Count: > 0 } backports)
+		{
+			var trace = await BackportTracer.TraceAsync(
+				collector,
+				_backportService,
+				(owner, sourcing.Repo),
+				backports.Labels,
+				resolution,
+				ctx
+			);
+			if (trace == null)
+				return false;
+
+			resolution = trace.Resolution;
+			backportReport = trace.ToMarkdown();
+		}
+
 		var directory = input.Directory!;
 		var outputPath = ResolveResolvedOutputPath(collector, input, config);
 
+		// A repository without an entry pool is not onboarded. The caller may ask to skip it instead of failing.
+		var poolMissing = false;
+		var notifyPoolMissing = input.OnPoolMissing;
+		Action<string>? onPoolMissing = null;
+		if (notifyPoolMissing is not null)
+		{
+			onPoolMissing = message =>
+			{
+				poolMissing = true;
+				notifyPoolMissing(message);
+			};
+		}
+
 		var candidates = sourcing.UseCdn
-			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, ctx)
+			? await FetchCdnEntriesAsync(collector, owner, sourcing.Repo, sourcing.Branch, onPoolMissing, ctx)
 			: await ReadLocalEntriesAsync(collector, directory, outputPath, ctx);
+		if (poolMissing)
+			return true;
+
 		if (candidates == null)
 			return false;
 
-		var resolver = new GitRangeEntryResolver(_prService, _logger);
+		var resolver = new GitRangeEntryResolver(_summaries, _decisions);
 		var result = await resolver.ResolveAsync(
 			collector,
 			resolution,
@@ -989,8 +1069,20 @@ public partial class ChangelogBundlingService(
 			ctx
 		);
 
-		var report = result.Report.ToMarkdown();
-		_logger.LogInformation("Commit-range bundle report:\n{Report}", report);
+		var report = result.Report.ToMarkdown() + (backportReport.Length > 0 ? "\n" + backportReport : string.Empty);
+		// The full report has a row per pull request, hundreds for a patch and thousands for a minor. It is the product of a
+		// dry run. A normal run logs a summary, and the report at debug level.
+		var sources = result.Report.Rows.GroupBy(r => r.Source).ToDictionary(g => g.Key, g => g.Count());
+		_logger.LogInformation(
+			"Commit-range bundle: {Commits} commit(s), {PullRequests} pull request(s): {Pool} from the pool, {Inferred} inferred, {Excluded} excluded, {Missing} missing",
+			result.Report.TotalCommits,
+			result.Report.Rows.Count,
+			sources.GetValueOrDefault(GitRangePrSourceKind.Pool),
+			sources.GetValueOrDefault(GitRangePrSourceKind.InferredPrBody) + sources.GetValueOrDefault(GitRangePrSourceKind.InferredTitle),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Excluded) + sources.GetValueOrDefault(GitRangePrSourceKind.ExcludedBaseBranch),
+			sources.GetValueOrDefault(GitRangePrSourceKind.Missing)
+		);
+		_logger.LogDebug("Commit-range bundle report:\n{Report}", report);
 
 		if (input.DryRun)
 		{
@@ -1002,17 +1094,56 @@ public partial class ChangelogBundlingService(
 		if (!result.Success || collector.Errors > 0)
 			return false;
 
-		if (result.Entries.Count == 0)
-		{
-			collector.EmitError(
-				string.Empty,
-				$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {owner}/{sourcing.Repo}."
-			);
+		// Notes authored for the target are not tied to a pull request, so the range never finds them.
+		// Merge them like the filter pipeline does, so a range bundle is not missing them.
+		var allEntries = await MergeNotesAsync(collector, result.Entries, sourcing.UseCdn, owner, sourcing.Repo, input, ctx);
+		if (allEntries == null)
 			return false;
+
+		if (allEntries.Count == 0)
+			return FinishEmptyRange(collector, input, result, $"{owner}/{sourcing.Repo}");
+
+		return await BuildAndWriteBundle(collector, input, config, allEntries, outputPath, ctx);
+	}
+
+	/// <summary>
+	/// A range with nothing to publish. DRA bundling allows it: the product shipped with no user-facing changes.
+	/// A pull request whose metadata could not be read is still an error, so a failed fetch is not reported as an empty release.
+	/// </summary>
+	private bool FinishEmptyRange(
+		IDiagnosticsCollector collector,
+		BundleChangelogsArguments input,
+		GitRangeEntryResolutionResult result,
+		string repository
+	)
+	{
+		if (input.OnEmptyRange is not null && RangeHasNoNotes(result))
+		{
+			_logger.LogInformation(
+				"No changelog entries in commit range {Start}..{End} of {Repository}. The release has no notes.",
+				input.StartGitRef,
+				input.EndGitRef,
+				repository
+			);
+			input.OnEmptyRange();
+			return true;
 		}
 
-		return await BuildAndWriteBundle(collector, input, config, result.Entries, outputPath, ctx);
+		collector.EmitError(
+			string.Empty,
+			$"No changelog entries could be resolved for commit range {input.StartGitRef}..{input.EndGitRef} of {repository}."
+		);
+		return false;
 	}
+
+	private static bool RangeHasNoNotes(GitRangeEntryResolutionResult result) =>
+		result.Report.Rows.All(row => row.Source is GitRangePrSourceKind.Excluded or GitRangePrSourceKind.ExcludedBaseBranch);
+
+	/// <summary>
+	/// An entry that a bundle rule leaves out. A run with a decision log records it there, because a range bundle can leave out
+	/// hundreds. Other runs keep the warning.
+	/// </summary>
+	private void ExcludeFromBundle(MatchedChangelogFile entry, string why) => _decisions.Record("bundle", "exclude", entry.FileName, why);
 
 	/// <summary>Reads the local changelog directory into (file name, content) pairs for range matching.</summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> ReadLocalEntriesAsync(
@@ -1046,7 +1177,7 @@ public partial class ChangelogBundlingService(
 		var directory = input.Directory ?? config?.Bundle?.Directory ?? _fileSystem.Directory.GetCurrentDirectory();
 
 		if (config?.Bundle == null)
-			return input with { Directory = directory, LinkAllowRepos = null };
+			return input with { Directory = directory };
 
 		// File name is resolved later in ResolveResolvedOutputPath so option-mode can use the
 		// conventional {repo}-{product}-{version}.yaml name. Keep a directory --output as-is.
@@ -1076,8 +1207,7 @@ public partial class ChangelogBundlingService(
 			Owner = owner,
 			Branch = branch,
 			Description = description,
-			SuppressReleaseDate = suppressReleaseDate,
-			LinkAllowRepos = config.Bundle.LinkAllowRepos
+			SuppressReleaseDate = suppressReleaseDate
 		};
 	}
 
@@ -1125,16 +1255,14 @@ public partial class ChangelogBundlingService(
 		{
 			// Plan must fail the same way the run does when profiles still carry output: patterns
 			// or collide on the conventional target, so CI surfaces the error before the Docker run.
-			if (!ValidateProfileOutputs(collector, config))
+			if (!ValidateProfileOutputs(collector, config, input.Profile))
 				return null;
 
-			if (
-				config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true
-				&& string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
-			)
+			if (config?.Bundle?.Profiles?.TryGetValue(input.Profile, out profileDef) == true)
 			{
-				needsNetwork = true;
-				needsGithubToken = true;
+				// Mirror the run path so a CI preflight rejects a CLI description that collides with config.
+				if (!ValidateProfileDescription(collector, input.Description, profileDef.Description ?? config.Bundle.Description))
+					return null;
 			}
 		}
 
@@ -1166,15 +1294,7 @@ public partial class ChangelogBundlingService(
 			&& ResolvePrimaryProduct(profileDef, input) is { } primaryProduct
 		)
 		{
-			// For 'source: github_release', ProcessProfile names the bundle from the version it
-			// extracts out of the fetched release tag (ExtractBaseVersion strips a leading 'v' and any
-			// pre-release suffix), not the raw CLI argument. Mirror that here for concrete version
-			// arguments so plan's output_path always matches the file bundle actually writes; "latest"
-			// can't be resolved to a concrete tag without the network call plan deliberately avoids, so
-			// it is passed through as-is (a best-effort value CI must not depend on byte-for-byte).
-			var planVersion = string.Equals(profileDef.Source, "github_release", StringComparison.OrdinalIgnoreCase)
-				? ChangelogTextUtilities.ExtractBaseVersion(input.ProfileArgument)
-				: input.ProfileArgument;
+			var planVersion = input.ProfileArgument;
 			var fileName = BundleOutputNaming.ResolveFileName(
 				collector,
 				_fileSystem,
@@ -1190,7 +1310,7 @@ public partial class ChangelogBundlingService(
 				)
 #pragma warning restore CS0618
 			);
-			outputPath = JoinProfileOutputPath(config, input, fileName);
+			outputPath = JoinProfileOutputPath(config, input, fileName, primaryProduct);
 		}
 		else
 			outputPath = ResolveResolvedOutputPath(collector, input, config);
@@ -1251,9 +1371,10 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Explicit <c>.yml</c>/<c>.yaml</c> <c>--output</c> wins. A directory <c>--output</c> (or
-	/// omitted) joins the conventional name, or <see cref="BundleOutputNaming.FallbackFileName"/>
-	/// when product/version cannot be resolved. Profile mode that already missed convention keeps
-	/// the fallback name without a second product/version warning.
+	/// omitted) joins the conventional name inside a <c>{product}/</c> subfolder when a product
+	/// resolves, or <see cref="BundleOutputNaming.FallbackFileName"/> when product/version cannot
+	/// be resolved. Profile mode that already missed convention keeps the fallback name without a
+	/// second product/version warning.
 	/// </summary>
 	private string ResolveResolvedOutputPath(
 		IDiagnosticsCollector collector,
@@ -1264,7 +1385,10 @@ public partial class ChangelogBundlingService(
 		if (BundleOutputNaming.IsYamlFilePath(input.Output))
 			return input.Output!.OptionalWindowsReplace();
 
-		var outputDir = !string.IsNullOrWhiteSpace(input.Output)
+		var hasExplicitOutputDir = !string.IsNullOrWhiteSpace(input.Output);
+		// A caller that passes OutputDirectory (release unified, release serverless) chooses its own layout.
+		var callerChoseOutputDir = hasExplicitOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
+		var outputDir = hasExplicitOutputDir
 			? input.Output
 			: ResolveConfiguredOutputDirectory(config, input)
 				?? input.OutputDirectory
@@ -1276,6 +1400,11 @@ public partial class ChangelogBundlingService(
 			return _fileSystem.Path.Join(outputDir, BundleOutputNaming.FallbackFileName).OptionalWindowsReplace();
 
 		var product = ResolvePrimaryProduct(null, input) ?? "";
+		// Append the per-product subfolder so the local tree mirrors the S3 layout
+		// bundle/{product}/{file} — but only when the caller did not choose the output directory.
+		if (!callerChoseOutputDir && !string.IsNullOrWhiteSpace(product))
+			outputDir = _fileSystem.Path.Join(outputDir, product);
+
 		var version = BundleOutputNaming.ResolveVersion(input.OutputProducts, input.InputProducts, input.ReleaseVersion) ?? "";
 		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
 			collector,
@@ -1290,36 +1419,69 @@ public partial class ChangelogBundlingService(
 	/// <summary>
 	/// Profile <c>output_directory</c> replaces <c>bundle.output_directory</c> (same as option-mode
 	/// <c>--output</c> as a directory). Then <c>input.OutputDirectory</c>, <c>bundle.directory</c>, CWD.
+	/// When neither the caller (<c>input.OutputDirectory</c>) nor a deprecated profile <c>output_directory</c>
+	/// chose the directory and <paramref name="primaryProduct"/> is known, appends a <c>{product}/</c>
+	/// subfolder so the local layout mirrors the S3 key structure <c>bundle/{product}/{file}</c>.
 	/// </summary>
-	private string JoinProfileOutputPath(ChangelogConfiguration? config, BundleChangelogsArguments input, string fileName)
+	private string JoinProfileOutputPath(
+		ChangelogConfiguration? config,
+		BundleChangelogsArguments input,
+		string fileName,
+		string? primaryProduct = null
+	)
 	{
-		var outputDir = ResolveConfiguredOutputDirectory(config, input)
+		// A caller's OutputDirectory (release unified already passes {root}/{product}) and a deprecated
+		// profile output_directory are honored verbatim — no subfolder appended.
+#pragma warning disable CS0618
+		var hasProfileOutputDir = !string.IsNullOrWhiteSpace(input.Profile)
+			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var prof) == true
+			&& !string.IsNullOrWhiteSpace(prof.OutputDirectory);
+#pragma warning restore CS0618
+		var keepDirectoryVerbatim = hasProfileOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
+
+		var baseDir = ResolveConfiguredOutputDirectory(config, input)
 			?? input.OutputDirectory
 			?? config?.Bundle?.Directory
 			?? _fileSystem.Directory.GetCurrentDirectory();
-		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+
+		if (!keepDirectoryVerbatim && !string.IsNullOrWhiteSpace(primaryProduct))
+			baseDir = _fileSystem.Path.Join(baseDir, primaryProduct);
+
+		return _fileSystem.Path.Join(baseDir, fileName).OptionalWindowsReplace();
 	}
 
 	/// <summary>
-	/// Profile <c>output_directory</c> when the invoked profile sets it; otherwise
-	/// <c>bundle.output_directory</c>.
+	/// Explicit <see cref="BundleChangelogsArguments.OutputDirectory"/> when set; otherwise
+	/// the profile's <c>output_directory</c>; otherwise <c>bundle.output_directory</c>.
+	/// Caller-supplied wins so that DRA bundling (and any explicit <c>--output-dir</c>) always
+	/// writes to the requested location rather than the profile's repo-relative default.
 	/// </summary>
 	private static string? ResolveConfiguredOutputDirectory(ChangelogConfiguration? config, BundleChangelogsArguments input)
 	{
+		if (!string.IsNullOrWhiteSpace(input.OutputDirectory))
+			return input.OutputDirectory;
+
+#pragma warning disable CS0618
 		if (
 			!string.IsNullOrWhiteSpace(input.Profile)
 			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var profile) == true
 			&& !string.IsNullOrWhiteSpace(profile.OutputDirectory)
 		)
 			return profile.OutputDirectory;
+#pragma warning restore CS0618
 
 		return config?.Bundle?.OutputDirectory;
 	}
 
-	/// <summary>The first concrete product id from a profile's <c>output_products</c>/<c>products</c> pattern.</summary>
+	/// <summary>The first concrete product id from a profile's <c>product</c> or (deprecated) <c>output_products</c>/<c>products</c> pattern.</summary>
 	private static string? ResolvePrimaryProductFromProfile(BundleProfile profileDef)
 	{
+		if (!string.IsNullOrWhiteSpace(profileDef.Product))
+			return profileDef.Product;
+
+#pragma warning disable CS0618
 		var pattern = profileDef.OutputProducts ?? profileDef.Products;
+#pragma warning restore CS0618
 		if (string.IsNullOrWhiteSpace(pattern))
 			return null;
 
@@ -1334,7 +1496,11 @@ public partial class ChangelogBundlingService(
 	/// explicit <c>output</c> pattern is a hard error, and two profiles sharing the same primary
 	/// output product would collide on the same conventional target, so that is rejected as well.
 	/// </summary>
-	private static bool ValidateProfileOutputs(IDiagnosticsCollector collector, ChangelogConfiguration? config)
+	private static bool ValidateProfileOutputs(
+		IDiagnosticsCollector collector,
+		ChangelogConfiguration? config,
+		string? selectedProfile = null
+	)
 	{
 		if (config?.Bundle?.Profiles is not { Count: > 0 } profiles)
 			return true;
@@ -1342,6 +1508,20 @@ public partial class ChangelogBundlingService(
 		var valid = true;
 		foreach (var (name, profile) in profiles)
 		{
+			// Scope the source: github_release runtime error to the actively selected profile only.
+			// Other profiles may still be mid-migration; load-time already warned about them.
+#pragma warning disable CS0618
+			if (!string.IsNullOrWhiteSpace(profile.Source) && (selectedProfile == null || name == selectedProfile))
+			{
+				collector.EmitError(
+					string.Empty,
+					$"Profile '{name}' sets 'source: github_release', which is no longer supported at runtime. " +
+						"Add a bundle.releases.github entry that maps the release tag to this profile and remove the source field."
+				);
+				valid = false;
+			}
+#pragma warning restore CS0618
+
 #pragma warning disable CS0618 // intentionally reading the obsolete field to reject profiles that still set it
 			if (!string.IsNullOrWhiteSpace(profile.Output))
 #pragma warning restore CS0618
@@ -1354,7 +1534,9 @@ public partial class ChangelogBundlingService(
 				valid = false;
 			}
 
+#pragma warning disable CS0618
 			if (BundleOutputNaming.IsYamlFilePath(profile.OutputDirectory))
+#pragma warning restore CS0618
 			{
 				collector.EmitError(
 					string.Empty,
@@ -1445,11 +1627,64 @@ public partial class ChangelogBundlingService(
 	}
 
 	/// <summary>Downloads the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/> pool's changelog entries from the CDN (<c>changelog/{org}/{repo}/{branch}/...</c>); returns null after emitting an error on any fatal fetch failure.</summary>
+	private readonly ConcurrentDictionary<string, Task<PoolFetch>> _pools = [];
+
+	/// <summary>What fetching a pool came to: its entries, or the message that the repository publishes none.</summary>
+	private sealed record PoolFetch(IReadOnlyList<(string FileName, string Content)>? Entries, string? PoolMissing);
+
+	/// <summary>
+	/// The entries of a pool. A run reads the same pool for every target it bundles, such as the patch and the minor release of
+	/// one product, so each pool is fetched once. What the pool held at the start of the run is what every target sees.
+	/// </summary>
 	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesAsync(
 		IDiagnosticsCollector collector,
 		string? org,
 		string? repo,
 		string? branch,
+		Action<string>? onPoolMissing,
+		Cancel ctx
+	)
+	{
+		// A pool that could not be read is fetched again by the next target, so only a pool that was read is kept.
+		var key = $"{org}/{repo}/{branch}".ToLowerInvariant();
+		if (_pools.TryGetValue(key, out var known))
+		{
+			var kept = await known.ConfigureAwait(false);
+			if (kept.PoolMissing is not null)
+				onPoolMissing?.Invoke(kept.PoolMissing);
+
+			if (kept.Entries is not null || kept.PoolMissing is not null)
+				return kept.Entries;
+		}
+
+		string? poolMissing = null;
+
+		void Remember(string message)
+		{
+			poolMissing = message;
+			onPoolMissing?.Invoke(message);
+		}
+
+		var entries = await FetchCdnEntriesCoreAsync(
+			collector,
+			org,
+			repo,
+			branch,
+			onPoolMissing is null ? null : Remember,
+			ctx
+		).ConfigureAwait(false);
+		if (entries is not null || poolMissing is not null)
+			_pools[key] = Task.FromResult(new PoolFetch(entries, poolMissing));
+
+		return entries;
+	}
+
+	private async Task<IReadOnlyList<(string FileName, string Content)>?> FetchCdnEntriesCoreAsync(
+		IDiagnosticsCollector collector,
+		string? org,
+		string? repo,
+		string? branch,
+		Action<string>? onPoolMissing,
 		Cancel ctx
 	)
 	{
@@ -1491,7 +1726,8 @@ public partial class ChangelogBundlingService(
 				collector.EmitError(string.Empty, msg);
 			},
 			msg => collector.EmitWarning(string.Empty, msg),
-			ctx
+			ctx,
+			onPoolMissing
 		);
 
 		// The fetcher emits an error (via the callback above) for any fatal condition — a registry that
@@ -1561,7 +1797,11 @@ public partial class ChangelogBundlingService(
 			try
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(entry.Content);
-				var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions()
+				)
+					?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 				var data = ReleaseNotesSerialization.ConvertEntry(dto);
 				var checksum = ComputeSha1(entry.Content);
 				matchedNotes.Add(new MatchedChangelogFile
@@ -2178,7 +2418,7 @@ public partial class ChangelogBundlingService(
 		return issue.ToLowerInvariant();
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyGlobalContentBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules
@@ -2209,10 +2449,7 @@ public partial class ChangelogBundlingService(
 
 				if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 				{
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-					);
+					ExcludeFromBundle(entry, "global type/area filter");
 					continue;
 				}
 
@@ -2222,19 +2459,13 @@ public partial class ChangelogBundlingService(
 
 			if (ShouldExcludeByProductFilter(entryProducts, bundleRules, out var productReason))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (global product filter)."
-				);
+				ExcludeFromBundle(entry, $"global product filter, {productReason}");
 				continue;
 			}
 
 			if (bundleRules.Blocker != null && bundleRules.Blocker.ShouldBlock(entry.Data))
 			{
-				collector.EmitWarning(
-					entry.FilePath,
-					$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (global type/area filter)."
-				);
+				ExcludeFromBundle(entry, "global type/area filter");
 				continue;
 			}
 
@@ -2244,7 +2475,7 @@ public partial class ChangelogBundlingService(
 		return filtered;
 	}
 
-	private static IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
+	private IReadOnlyList<MatchedChangelogFile> ApplyPerProductContextBundleFilter(
 		IDiagnosticsCollector collector,
 		IReadOnlyList<MatchedChangelogFile> entries,
 		BundleRules bundleRules,
@@ -2252,7 +2483,7 @@ public partial class ChangelogBundlingService(
 	)
 	{
 		// Early validation: validate bundle has some product context
-		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Any() == true))
+		if ((outputProductIds == null || outputProductIds.Count == 0) && !entries.Any(e => e.Data.Products?.Count > 0))
 		{
 			collector.EmitError(
 				string.Empty,
@@ -2283,18 +2514,12 @@ public partial class ChangelogBundlingService(
 			switch (resolveResult.Result)
 			{
 				case ResolveResult.ExcludeMissingProducts:
-					collector.EmitWarning(
-						entry.FilePath,
-						$"[-bundle-missing-products] Excluding '{entry.FileName}' from bundle (no products declared)."
-					);
+					ExcludeFromBundle(entry, "no products declared");
 					ruleStats["excluded_no_products"] = ruleStats.GetValueOrDefault("excluded_no_products") + 1;
 					continue;
 
 				case ResolveResult.ExcludeDisjoint:
-					collector.EmitHint(
-						entry.FilePath,
-						$"[-bundle-disjoint] Excluding '{entry.FileName}' from bundle (disjoint from rule context '{ruleContextProduct}')."
-					);
+					ExcludeFromBundle(entry, $"disjoint from rule context '{ruleContextProduct}'");
 					ruleStats["excluded_disjoint"] = ruleStats.GetValueOrDefault("excluded_disjoint") + 1;
 					continue;
 
@@ -2325,20 +2550,14 @@ public partial class ChangelogBundlingService(
 					// 1 — Product filter: use per-product rule
 					if (ShouldExcludeByResolvedProductRule(entryProducts, resolveResult.Rule, out var productReason))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-{productReason}] Excluding '{entry.FileName}' from bundle (per-product filter)."
-						);
+						ExcludeFromBundle(entry, $"per-product filter, {productReason}");
 						continue;
 					}
 
 					// 2 — Type/area filter: use per-product blocker
 					if (resolveResult.Rule.Blocker != null && resolveResult.Rule.Blocker.ShouldBlock(entry.Data))
 					{
-						collector.EmitWarning(
-							entry.FilePath,
-							$"[-bundle-type-area] Excluding '{entry.FileName}' from bundle (per-product type/area filter)."
-						);
+						ExcludeFromBundle(entry, "per-product type/area filter");
 						continue;
 					}
 					break;

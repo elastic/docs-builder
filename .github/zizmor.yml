@@ -11,8 +11,13 @@ rules:
         # All other actions must be pinned to a commit SHA (implicit "*": hash-pin).
 
   # Intentional pull_request_target for fork PRs / label automation / preview cleanup.
+  # The release-notes-* entries use workflow_run on purpose: commenting on a PR and
+  # committing a changelog entry to its branch need base-branch permissions that a
+  # pull_request job from a fork cannot be given. Neither workflow checks out PR code.
   dangerous-triggers:
     ignore:
       - assembler-preview-cleanup.yml
       - docs-preview-cleanup-local.yml
       - required-labels.yml
+      - release-notes-comments.yml
+      - release-notes-changelog-file.yml

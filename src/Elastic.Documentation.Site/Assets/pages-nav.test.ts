@@ -10,6 +10,7 @@ import {
     pinPagesNavScroll,
     shouldRetargetArticleSwap,
     shouldRetargetApiContentSwap,
+    shouldResetPageScroll,
     syncPagesNavFromResponse,
 } from './pages-nav'
 
@@ -34,7 +35,7 @@ describe('syncPagesNavFromResponse', () => {
     })
 
     afterEach(() => {
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     it('replaces the sidebar when the incoming page has a different heading', () => {
@@ -54,7 +55,7 @@ describe('syncPagesNavFromResponse', () => {
     })
 
     it('does not recenter the sidebar after a same-tree swap', () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML = `
             <nav id="pages-nav">
                 <div class="pages-nav-v2-shell" data-nav-heading="Reference">
@@ -80,10 +81,39 @@ describe('syncPagesNavFromResponse', () => {
         scroll.scrollTop = 0
         initNav()
         initNav()
-        jest.advanceTimersByTime(150)
+        vi.advanceTimersByTime(150)
 
         expect(scroll.scrollTop).toBe(80)
-        jest.useRealTimers()
+        vi.useRealTimers()
+    })
+
+    it('places a visible current row at the golden-ratio point of a replaced sidebar', () => {
+        vi.useFakeTimers()
+        document.body.innerHTML = pagesNav('nav-tree-ref', 'Reference')
+        syncPagesNavFromResponse(`<html><body>
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                    <div class="pages-nav-v2__scroll" id="nav-scroll">
+                        <ul id="nav-tree-es">
+                            <li><a class="sidebar-link current" href="/">A</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </body></html>`)
+        const scroll = document.querySelector<HTMLElement>('#nav-scroll')!
+        const row = document.querySelector<HTMLElement>('a.current')!
+        scroll.scrollTop = 100
+        scroll.getBoundingClientRect = () =>
+            ({ top: 0, bottom: 600, height: 600 }) as DOMRect
+        row.getBoundingClientRect = () =>
+            ({ top: 400, bottom: 432, height: 32 }) as DOMRect
+
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        // Row centre sits 400 + 16 - 100 = 416 below the top. 600 * 0.382 = 229.2.
+        expect(scroll.scrollTop).toBeCloseTo(100 + (416 - 600 * 0.381966), 1)
     })
 
     it('keeps the live sidebar when the heading and tree stay the same', () => {
@@ -274,7 +304,7 @@ describe('syncPagesNavFromResponse', () => {
             </nav>
         `
         initNav()
-        const raf = jest
+        const raf = vi
             .spyOn(window, 'requestAnimationFrame')
             .mockImplementation((cb) => {
                 cb(0)
@@ -318,7 +348,7 @@ describe('markCurrentPage', () => {
             </nav>
         `
         const current = document.querySelector('a.current')!
-        const remove = jest.spyOn(current.classList, 'remove')
+        const remove = vi.spyOn(current.classList, 'remove')
 
         markCurrentPage(document.querySelector('#pages-nav')!)
 
@@ -365,8 +395,68 @@ describe('markCurrentPage', () => {
         ).toBe(true)
     })
 
+    it('does not mark in-page heading links on the current page', () => {
+        const path = window.location.pathname
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Reference">
+                    <ul id="nav-tree-ref">
+                        <li><a class="sidebar-link" href="${path}">Group</a></li>
+                        <li><a class="sidebar-link" href="${path}#get-started">Get started</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+
+        markCurrentPage(document.querySelector('#pages-nav')!)
+
+        expect(
+            document
+                .querySelector(`a[href="${path}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(`a[href="${path}#get-started"]`)
+                ?.classList.contains('current')
+        ).toBe(false)
+    })
+
+    it('leaves a click on an in-page heading link to the browser', () => {
+        const path = window.location.pathname
+        document.body.innerHTML = `
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Reference">
+                    <ul id="nav-tree-ref">
+                        <li><a class="sidebar-link current" href="${path}">Group</a></li>
+                        <li><a class="sidebar-link" href="${path}#get-started">Get started</a></li>
+                    </ul>
+                </div>
+            </nav>
+        `
+        initNav()
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${path}#get-started"]`
+        )!
+        const click = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            button: 0,
+        })
+
+        link.dispatchEvent(click)
+
+        expect(click.defaultPrevented).toBe(false)
+        expect(link.classList.contains('current')).toBe(false)
+        expect(
+            document
+                .querySelector(`a[href="${path}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+    })
+
     it('delays the current text color without applying it immediately', () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         const path = window.location.pathname
         document.body.innerHTML = `
             <nav id="pages-nav">
@@ -381,16 +471,16 @@ describe('markCurrentPage', () => {
         settleCurrentPage(nav, { delay: true })
         expect(link.classList.contains('nav-v2-current-ready')).toBe(false)
 
-        jest.advanceTimersByTime(CURRENT_COLOR_DELAY_MS - 1)
+        vi.advanceTimersByTime(CURRENT_COLOR_DELAY_MS - 1)
         expect(link.classList.contains('nav-v2-current-ready')).toBe(false)
 
-        jest.advanceTimersByTime(1)
+        vi.advanceTimersByTime(1)
         expect(link.classList.contains('nav-v2-current-ready')).toBe(true)
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     it('does not let a later immediate settle cancel the color delay', () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         const path = window.location.pathname
         document.body.innerHTML = `
             <nav id="pages-nav">
@@ -406,9 +496,9 @@ describe('markCurrentPage', () => {
         settleCurrentPage(nav)
         expect(link.classList.contains('nav-v2-current-ready')).toBe(false)
 
-        jest.advanceTimersByTime(CURRENT_COLOR_DELAY_MS)
+        vi.advanceTimersByTime(CURRENT_COLOR_DELAY_MS)
         expect(link.classList.contains('nav-v2-current-ready')).toBe(true)
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 })
 
@@ -795,5 +885,222 @@ describe('shouldRetargetApiContentSwap', () => {
                 '<main id="content-container" class="min-w-0 md:col-start-2"></main>'
             )
         ).toBe(false)
+    })
+})
+
+describe('API nav deep link', () => {
+    const operation = '/api/doc/es/operation/operation-search'
+
+    function scrolledApiPage() {
+        document.body.innerHTML = `
+            <div id="api-content-grid"></div>
+            <nav id="pages-nav">
+                <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                    <ul id="nav-tree-es">
+                        <li class="nav-folder">
+                            <div class="peer nav-folder-peer">
+                                <input id="other-group" type="checkbox" checked>
+                                <a class="sidebar-link current" href="/api/doc/es/operation/operation-other">Other</a>
+                            </div>
+                            <ul class="nav-subtree"><li>Other child</li></ul>
+                        </li>
+                        <li class="nav-folder">
+                            <div class="peer nav-folder-peer">
+                                <input id="search-group" type="checkbox">
+                                <a class="sidebar-link" href="/api/doc/es/group/search">Search</a>
+                            </div>
+                            <ul class="nav-subtree">
+                                <li><a class="sidebar-link" href="${operation}">Run a search</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        `
+    }
+
+    function setScrollY(value: number) {
+        Object.defineProperty(window, 'scrollY', {
+            configurable: true,
+            value,
+        })
+    }
+
+    it('expands the current operation after a same-tree swap', () => {
+        scrolledApiPage()
+        const response = `
+            <html>
+                <head><meta name="docs:nav-active" content="${operation}"></head>
+                <body>
+                    <nav id="pages-nav">
+                        <div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch">
+                            <ul id="nav-tree-es"></ul>
+                        </div>
+                    </nav>
+                </body>
+            </html>
+        `
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: { xhr: { response } },
+            })
+        )
+
+        expect(
+            document.querySelector<HTMLInputElement>('#search-group')?.checked
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(`a[href="${operation}"]`)
+                ?.classList.contains('current')
+        ).toBe(true)
+        expect(
+            document
+                .querySelector(
+                    'a[href="/api/doc/es/operation/operation-other"]'
+                )
+                ?.classList.contains('current')
+        ).toBe(false)
+        expect(
+            document.querySelector<HTMLInputElement>('#other-group')?.checked
+        ).toBe(true)
+    })
+
+    it('scrolls the current operation into view after a same-tree swap', () => {
+        vi.useFakeTimers()
+        scrolledApiPage()
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+        const link = document.querySelector<HTMLElement>(
+            `a[href="${operation}"]`
+        )!
+        Object.defineProperty(nav, 'scrollTop', {
+            configurable: true,
+            writable: true,
+            value: 80,
+        })
+        vi.spyOn(nav, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 0, width: 100, height: 200 })
+        )
+        vi.spyOn(link, 'getBoundingClientRect').mockReturnValue(
+            DOMRect.fromRect({ x: 0, y: 500, width: 100, height: 20 })
+        )
+
+        document.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                detail: {
+                    xhr: {
+                        response: `<html><head><meta name="docs:nav-active" content="${operation}"></head><body><nav id="pages-nav"><div class="pages-nav-v2-shell" data-nav-heading="Elasticsearch"><ul id="nav-tree-es"></ul></div></nav></body></html>`,
+                    },
+                },
+            })
+        )
+        document.head.insertAdjacentHTML(
+            'beforeend',
+            `<meta name="docs:nav-active" content="${operation}">`
+        )
+        initNav()
+        vi.advanceTimersByTime(150)
+
+        expect(nav.scrollTop).toBeCloseTo(80 + 500 - (200 * 0.381966 - 10), 1)
+        vi.useRealTimers()
+    })
+
+    it('scrolls the article to the top when an API nav swap settles', () => {
+        scrolledApiPage()
+        setScrollY(240)
+        const scrollTo = vi
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const grid = document.getElementById('api-content-grid')!
+        grid.dispatchEvent(
+            new CustomEvent('htmx:afterSwap', {
+                bubbles: true,
+                detail: { xhr: { response: '<html></html>' } },
+            })
+        )
+        expect(scrollTo).toHaveBeenCalledWith(0, 0)
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('scrolls the article to the top on keyboard activation', () => {
+        scrolledApiPage()
+        setScrollY(180)
+        const scrollTo = vi
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${operation}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        expect(
+            shouldResetPageScroll(document.getElementById('api-content-grid'))
+        ).toBe(true)
+        expect(scrollTo).toHaveBeenCalledWith(0, 0)
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('keeps the article scroll when Space is pressed on a nav link', () => {
+        scrolledApiPage()
+        setScrollY(180)
+        const scrollTo = vi
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${operation}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+    })
+
+    it('keeps the article scroll when the current folder row is toggled', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        initNav()
+        setScrollY(220)
+        const scrollTo = vi
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, button: 0 })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        expect(
+            document.querySelector<HTMLInputElement>('#other-group')?.checked
+        ).toBe(false)
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
+    })
+
+    it('keeps the article scroll when Enter toggles the current folder row', () => {
+        const currentHref = '/api/doc/es/operation/operation-other'
+        window.history.pushState({}, '', currentHref)
+        scrolledApiPage()
+        setScrollY(220)
+        const scrollTo = vi
+            .spyOn(window, 'scrollTo')
+            .mockImplementation(() => undefined)
+        const link = document.querySelector<HTMLAnchorElement>(
+            `a[href="${currentHref}"]`
+        )!
+        link.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })
+        )
+        expect(scrollTo).not.toHaveBeenCalled()
+        scrollTo.mockRestore()
+        setScrollY(0)
+        window.history.pushState({}, '', '/')
     })
 })

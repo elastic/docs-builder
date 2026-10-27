@@ -14,7 +14,7 @@ namespace Elastic.Documentation.Api.Tests;
 
 public class PageFeedbackGatewayTests
 {
-	[Fact]
+	[Test]
 	public async Task UpsertFeedbackAsync_AllItemsPersisted_ReturnsTrue()
 	{
 		var transport = CreateTransport(201);
@@ -27,12 +27,12 @@ public class PageFeedbackGatewayTests
 			NullLogger<ElasticsearchPageFeedbackGateway>.Instance
 		);
 
-		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current.CancellationToken);
+		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task UpsertFeedbackAsync_ItemRejected_ReturnsFalse()
 	{
 		var transport = CreateTransport(400);
@@ -45,7 +45,7 @@ public class PageFeedbackGatewayTests
 			NullLogger<ElasticsearchPageFeedbackGateway>.Instance
 		);
 
-		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current.CancellationToken);
+		var result = await gateway.UpsertFeedbackAsync(CreateRecord(), TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 	}

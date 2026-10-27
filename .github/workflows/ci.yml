@@ -18,7 +18,6 @@ env:
 
 jobs:
   validate-assembler:
-    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -26,62 +25,108 @@ jobs:
           persist-credentials: false
 
       - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
+
+      - name: Build docs-builder
+        run: dotnet build src/tooling/docs-builder -c release
 
       - name: Validate Navigation
-        run: dotnet run --project src/tooling/docs-builder -c release -- assembler navigation validate
+        run: dotnet run --project src/tooling/docs-builder -c release --no-build -- assembler navigation validate
 
       - name: Validate Content Sources
-        run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
+        run: dotnet run --project src/tooling/docs-builder -c release --no-build -- assembler content-source validate
+
+  # Decides which slow work a PR needs. Pushes to main always do everything.
+  # - link-index-lambda / openapi-index-lambda: the lambda's transitive project references or shared build inputs changed
+  # - dotnet: .NET code, build inputs or test fixtures changed, so Windows and macOS run the unit tests
+  #   (Linux runs them on every PR)
+  # - frontend-toolchain: npm dependencies or the Vite/Tailwind config changed, so Windows and macOS build the
+  #   frontend natively instead of reusing the `frontend` job's output. Native npm packages (esbuild, rolldown,
+  #   lightningcss, tailwind oxide) can break on one OS only.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      link-index-lambda: ${{ steps.filter.outputs.link-index-lambda }}
+      openapi-index-lambda: ${{ steps.filter.outputs.openapi-index-lambda }}
+      dotnet: ${{ steps.filter.outputs.dotnet }}
+      frontend-toolchain: ${{ steps.filter.outputs.frontend-toolchain }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # pull_request checks out the merge commit: HEAD^1 is the base branch tip
+          fetch-depth: 2
+
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          outputs='link-index-lambda openapi-index-lambda dotnet frontend-toolchain'
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            for output in $outputs; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            exit 0
+          fi
+          git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
+          cat changed.txt
+          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.dockerignore|\.github/workflows/ci\.yml)$'
+          link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
+          openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
+          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
+          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
+          matches() { grep -Eq "$@" changed.txt && echo true || echo false; }
+          {
+            echo "link-index-lambda=$(matches -e "$shared" -e "$link_index")"
+            echo "openapi-index-lambda=$(matches -e "$shared" -e "$openapi_index")"
+            echo "dotnet=$(matches -e "$dotnet")"
+            echo "frontend-toolchain=$(matches -e "$frontend_toolchain")"
+          } | tee -a "$GITHUB_OUTPUT"
 
   build-link-index-updater-lambda:
-    needs: [lint]
-    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    needs: [changes]
+    if: ${{ needs.changes.outputs.link-index-lambda == 'true' }}
+    uses: $/.github/workflows/build-link-index-updater-lambda.yml
 
   build-openapi-index-lambda:
-    needs: [lint]
-    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    needs: [changes]
+    if: ${{ needs.changes.outputs.openapi-index-lambda == 'true' }}
+    uses: $/.github/workflows/build-openapi-index-lambda.yml
 
+  # Frontend checks. The Vite production build itself runs in the `frontend` job.
   npm:
     runs-on: ubuntu-latest
-    defaults: 
-      run: 
+    defaults:
+      run:
         working-directory: src/Elastic.Documentation.Site
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v7.0.0
+      - uses: actions/setup-node@v7.1.0
         with:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
           node-version-file: .nvmrc
-      
+
       - name: Install dependencies
         run: npm ci
 
       - name: Check shai-hulud attack
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 
       - name: Lint
         run: npm run lint
-      
+
       - name: Format
         run: npm run fmt:check
-      
+
       - name: Compile
         run: npm run compile:check
-        
-      - name: Build
-        run: npm run build
-        
+
       - name: Test
         run: npm run test
-      
 
   lint:
     runs-on: ubuntu-latest
@@ -91,13 +136,37 @@ jobs:
           persist-credentials: false
 
       - name: Lint
-        uses: nullean/curb@c399bcd201b5ca466cfbcf5776825a629abf4f4b # 0.7.1
+        uses: nullean/curb@747187f178444c46e0098a9e50241b523bf7b9f8 # 0.8.1
         with:
           command: check
           path: .
 
+  # Builds the frontend assets once for the `build` jobs. `npm ci` takes about 6 minutes on
+  # Windows runners, and the Vite output is identical on every OS.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        uses: $/.github/actions/bootstrap
+
+      # Runs the Site project's own npm targets so the assets embed the same MinVer version as the .NET build
+      - name: Build frontend
+        run: dotnet msbuild src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj -restore -t:NpmRunBuild -p:Configuration=Release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-static
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: true
+          path: src/Elastic.Documentation.Site/_static
+
   build:
-    needs: [lint]
+    needs: [changes, frontend]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -106,22 +175,33 @@ jobs:
          - ubuntu-latest
          - macos-latest
          - windows-latest
-    steps:          
+    steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: 'Windows only, set TEMP to the same drive'
-        if: ${{ matrix.os == 'windows-latest' }}
-        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
-        run: |
-          mkdir "D:\\Temp"
-          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
 
       - name: Bootstrap Action Workspace
-        id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
+
+      # Linux always reuses the `frontend` job's output, which is itself a native Linux build.
+      # Windows and macOS reuse it unless the frontend toolchain changed (always the case on pushes to main).
+      - name: Download frontend assets
+        id: frontend
+        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.frontend-toolchain != 'true' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-static
+          path: src/Elastic.Documentation.Site/_static
+
+      - name: Skip the npm build
+        if: ${{ steps.frontend.outcome == 'success' }}
+        shell: bash
+        run: echo "SkipNpmBuild=true" >> "$GITHUB_ENV"
 
       - name: Compile
+        # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
+        env:
+          Curb_Bypass: true
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
@@ -132,7 +212,9 @@ jobs:
           rm docs/cli-schema.json.tmp
 
       - name: Test
-        run: dotnet run --project build -c release -- unit-test
+        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true' }}
+        # --single-target skips the compile dependency; the Compile step above already built everything
+        run: dotnet run --project build -c release -- unit-test --single-target
 
       - name: Publish AOT
         if: ${{ github.event_name == 'push' && matrix.os != 'ubuntu-latest' }} # publish containers already validates AOT build
@@ -147,7 +229,6 @@ jobs:
       - name: Run Container
         if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
         run: dotnet run --project build -c release -- runlocalcontainer
-        
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
@@ -165,10 +246,10 @@ jobs:
 
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-integration-tests
           aws-region: us-east-1

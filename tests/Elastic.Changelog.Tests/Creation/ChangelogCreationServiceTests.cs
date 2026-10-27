@@ -16,7 +16,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Creation;
 
-public class ChangelogCreationServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogCreationServiceTests() : ChangelogTestBase()
 {
 	private readonly IGitHubPrService _mockGitHub = A.Fake<IGitHubPrService>();
 
@@ -71,7 +71,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When all CHANGELOG_* env vars are provided (including CHANGELOG_PRODUCTS),
 	/// changelog add should succeed without making any GitHub API calls.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_CIWithProducts_SkipsPrFetchAndSucceeds()
 	{
 		await WriteConfig(ConfigWithProductLabels);
@@ -107,7 +107,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When CI provides title+type but NOT products, changelog add falls back to
 	/// fetching the PR from the API and resolving products from labels.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_CIWithoutProducts_FallsBackToPrFetchForProducts()
 	{
 		await WriteConfig(ConfigWithProductLabels);
@@ -148,8 +148,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When CI provides title+type but NOT products, the PR has no product labels,
 	/// and the repo name doesn't match any product ID, the command fails.
 	/// </summary>
-	[Fact]
-	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsWithProductRequired()
+	[Test]
+	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsAndListsTheProductLabels()
 	{
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
@@ -183,18 +183,24 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().Be(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one product is required"));
+		// Two products are mapped and no default is set, so the PR must name its product with a label.
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("No matching product label found on PR") && d.Message.Contains("Add one of the following labels")
+			);
 	}
 
 	/// <summary>
 	/// When --output points to a subdirectory of the repo root, the service writes changelog files there.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_OutputSubdirectory_Succeeds()
 	{
 		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current!.Execution.CancellationToken);
 
 		var output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "changelog-staging");
 
@@ -210,7 +216,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments { Products = [], Config = configPath, Output = output, Concise = true };
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -218,7 +224,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		FileSystem.Directory.GetFiles(output, "*.yaml").Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_OutputDoesNotContainBom()
 	{
 		await WriteConfig(ConfigWithProductLabels);
@@ -238,7 +244,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("changelog creation should succeed");
@@ -249,11 +255,11 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		yamlFiles.Should().NotBeEmpty("should create a YAML file");
 
 		var yamlFile = yamlFiles[0];
-		var bytes = await FileSystem.File.ReadAllBytesAsync(yamlFile, TestContext.Current.CancellationToken);
+		var bytes = await FileSystem.File.ReadAllBytesAsync(yamlFile, TestContext.Current!.Execution.CancellationToken);
 		ChangelogUtf8Normalization.HasUtf8Bom(bytes).Should().BeFalse("created changelog should not contain UTF-8 BOM");
 
 		// Verify content is correct
-		var content = await FileSystem.File.ReadAllTextAsync(yamlFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(yamlFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Test BOM handling");
 		content.Should().Contain("type: feature");
 	}

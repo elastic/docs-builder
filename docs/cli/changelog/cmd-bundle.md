@@ -1,6 +1,6 @@
 Aggregates changelog YAML files matching a filter into a single bundle file. The bundle is the artifact used by the `{changelog}` directive and `docs-builder changelog render` to produce release notes.
 
-The command has **two mutually exclusive modes**. You cannot mix them: supplying a profile name on the command line disables all filter and output flags (refer to [Options](#options) for equivalent changelog configuration settings).
+The command has **two mutually exclusive modes**. You cannot mix filter flags with a profile name (refer to [Options](#options) for equivalent changelog configuration settings). `--description` and `--description-file` are allowed with a profile only when the profile and `bundle.description` do not already define an intro.
 
 ## Profile-based mode
 
@@ -84,6 +84,19 @@ docs-builder changelog bundle \
   --output-products "cloud-serverless 2026-07-07"
 ```
 
+## Bundle description [changelog-bundle-description]
+
+`--description` and `--description-file` set the bundle intro rendered after the release heading. `--description-file` is a UTF-8 file, or `-` to read stdin. The two flags are mutually exclusive.
+
+In option-based mode they override `bundle.description`. In profile-based commands they are allowed only when neither `bundle.description` nor the profile `description` is set.
+
+```sh
+docs-builder changelog bundle es-release 1.12.0 \
+  --description-file .ci/changelog-bundle-description.md
+```
+
+Multiline Markdown is serialized as a YAML literal block (`|`). To change the intro after the bundle exists, use [](/cli/changelog/bundle-amend.md).
+
 ## Commit-range mode [git-ref-mode]
 
 `--start-git-ref` and `--end-git-ref` cut a bundle from a **git commit range** instead of an externally supplied PR list. This is the mode date-promotion automation (serverless, Cloud ECH/ECE) uses: the promotion system hands off two commit hashes from a protected branch, and the command derives everything else itself.
@@ -100,7 +113,7 @@ Both refs are always required together — the start ref is never inferred from 
 2. Resolves each commit to its merged pull request via GraphQL `associatedPullRequests`. Works for squash and merge commits on protected integration branches; commits with no associated PR are reported, never silently dropped. When a commit is associated with multiple merged PRs, the command warns and picks deterministically (merge-commit match first, then lowest PR number).
 3. Sources each PR's changelog entry with a fixed precedence:
    - **A checked-in entry from the entry pool wins.** Pool entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public copies) or by the entry's `prs` references.
-   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. `rules.create` label rules decide inclusion.
+   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, the `## Impact` and `## Action` sections of the PR body fill `impact` and `action`, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. Products follow the [resolution order](/data/release-notes/configure-ref.md#products-resolution) of `changelog add`: label-derived products with `products.implies`, then `products.default`, then the profile's output products. Without a default, a pull request with no product label is an error when `pivot.products` maps two or more distinct products. `rules.create` label rules decide inclusion.
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 
@@ -121,6 +134,14 @@ Pass `--dry-run` to resolve the range and print the run report — the resolved 
 docs-builder changelog bundle serverless-release 2026-08-13 \
   --start-git-ref abc123 --end-git-ref def456 --dry-run
 ```
+
+### Cache
+
+A range of a minor release holds thousands of commits, and asking GitHub which pull request each one belongs to takes minutes. The command remembers the answer for every commit that has a merged pull request, because that does not change, and asks only about commits it has not seen. The cache is shared by every command that reads a commit range, whatever the product, version or profile.
+
+It lives in the application data of docs-builder, in `changelog-cache/github/{owner}/{repo}/`. Use `--cache-dir <directory>` to put it elsewhere, which is what a CI job does to keep it between runs, and `--no-cache` to neither read nor write it. Entries that nothing used for 30 days are dropped when the cache is saved. A file that cannot be read is ignored and written again, so the cache can slow nothing down and fail nothing.
+
+Titles and labels are not cached. They can change after a merge, so they are read on every run.
 
 ## Bundles are self-contained
 

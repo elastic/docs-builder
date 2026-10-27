@@ -25,11 +25,12 @@ public abstract class ChangelogTestBase : IDisposable
 	protected IConfigurationContext ConfigurationContext { get; }
 	protected TestDiagnosticsCollector Collector { get; }
 	protected ILoggerFactory LoggerFactory { get; }
-	protected ITestOutputHelper Output { get; }
 
-	protected ChangelogTestBase(ITestOutputHelper output)
+	/// <summary>What the services under test logged, including the lines of their decision logs.</summary>
+	protected IReadOnlyCollection<string> Logged => ((TestLoggerFactory)LoggerFactory).Messages;
+
+	protected ChangelogTestBase()
 	{
-		Output = output;
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		FileSystem = ChangelogFileSystem.FromWorkingDirectory(mockFileSystem);
 		RunnerTempFileSystem = new RunnerTempFileSystem(
@@ -40,8 +41,8 @@ public abstract class ChangelogTestBase : IDisposable
 		// git-root scope by design. Use a CheckoutsFileSystem (includes AppData) for the config provider only;
 		// it wraps the same mock so both filesystems share in-memory state.
 		var configFileSystem = CheckoutsFileSystem.FromWorkingDirectory(mockFileSystem);
-		Collector = new TestDiagnosticsCollector(output);
-		LoggerFactory = new TestLoggerFactory(output);
+		Collector = new TestDiagnosticsCollector();
+		LoggerFactory = new TestLoggerFactory();
 
 		var versionsConfiguration = new VersionsConfiguration
 		{
@@ -137,8 +138,9 @@ public abstract class ChangelogTestBase : IDisposable
 		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
 	}
 
-	public void Dispose()
+	public virtual void Dispose()
 	{
+		Collector.DisposeAsync().AsTask().GetAwaiter().GetResult();
 		LoggerFactory.Dispose();
 		GC.SuppressFinalize(this);
 	}

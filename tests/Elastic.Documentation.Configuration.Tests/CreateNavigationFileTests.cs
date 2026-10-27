@@ -27,7 +27,7 @@ public class CreateNavigationFileTests
 		return AssemblyConfiguration.Deserialize(yaml, skipPrivateRepositories: true);
 	}
 
-	[Fact]
+	[Test]
 	public void ConsecutiveSiblingPrivateEntries_BothRemoved()
 	{
 		var fileSystem = new MockFileSystem();
@@ -61,7 +61,7 @@ public class CreateNavigationFileTests
 		output.Should().Contain("public-repo-two://section-d");
 	}
 
-	[Fact]
+	[Test]
 	public void DeeplyNestedConsecutivePrivateEntries_BothRemoved()
 	{
 		var fileSystem = new MockFileSystem();
@@ -98,7 +98,7 @@ public class CreateNavigationFileTests
 		output.Should().Contain("public-repo-two://leaf-d");
 	}
 
-	[Fact]
+	[Test]
 	public void PrivateRepoWithChildren_EntryRemovedChildrenReindented()
 	{
 		var fileSystem = new MockFileSystem();
@@ -130,7 +130,7 @@ public class CreateNavigationFileTests
 		output.Should().Contain("public-repo://after");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicEntriesBetweenPrivateEntries_Preserved()
 	{
 		var fileSystem = new MockFileSystem();
@@ -161,7 +161,7 @@ public class CreateNavigationFileTests
 		output.Should().Contain("public-repo://middle");
 	}
 
-	[Fact]
+	[Test]
 	public void IslandProperty_OnPublicEntry_SurvivesPrivateRepoStripping()
 	{
 		var fileSystem = new MockFileSystem();
@@ -194,7 +194,7 @@ public class CreateNavigationFileTests
 		output.Should().NotContain("private-a://");
 	}
 
-	[Fact]
+	[Test]
 	public void IslandProperty_OnPrivateEntry_IsRemovedWithEntry()
 	{
 		var fileSystem = new MockFileSystem();
@@ -226,7 +226,7 @@ public class CreateNavigationFileTests
 		output.Should().Contain("public-after://other");
 	}
 
-	[Fact]
+	[Test]
 	public void NoPrivateRepositories_ReturnsOriginalFile()
 	{
 		var fileSystem = new MockFileSystem();

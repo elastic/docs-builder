@@ -221,11 +221,56 @@ const ThumbIcon = ({ down = false }: { down?: boolean }) => (
     </svg>
 )
 
+declare global {
+    interface Window {
+        AwsWafIntegration?: { fetch: typeof fetch }
+    }
+}
+
+const WAF_SDK_TIMEOUT = 5000
+
+let wafSdkLoad: Promise<typeof fetch | null> | undefined
+
+const loadWafSdk = (): Promise<typeof fetch | null> => {
+    const url = config.wafIntegrationUrl
+    if (!url) return Promise.resolve(null)
+    if (window.AwsWafIntegration)
+        return Promise.resolve(window.AwsWafIntegration.fetch)
+    if (wafSdkLoad) return wafSdkLoad
+
+    wafSdkLoad = new Promise<typeof fetch>((resolve, reject) => {
+        const script = document.createElement('script')
+        const fail = (reason: string) => {
+            clearTimeout(timer)
+            script.remove()
+            reject(new Error(reason))
+        }
+        const timer = setTimeout(
+            () => fail('AWS WAF SDK load timed out'),
+            WAF_SDK_TIMEOUT
+        )
+        script.src = url
+        script.defer = true
+        script.onload = () => {
+            clearTimeout(timer)
+            const wafFetch = window.AwsWafIntegration?.fetch
+            if (wafFetch) resolve(wafFetch)
+            else fail('AWS WAF SDK loaded without AwsWafIntegration')
+        }
+        script.onerror = () => fail('AWS WAF SDK failed to load')
+        document.head.appendChild(script)
+    }).finally(() => {
+        wafSdkLoad = undefined
+    })
+    return wafSdkLoad
+}
+
 const submitFeedback = async (
     feedbackId: string,
     payload: PageFeedbackPayload
 ) => {
-    const response = await fetch(
+    const wafFetch = await loadWafSdk()
+    const response = await (wafFetch ?? fetch)(
         `${config.apiBasePath}/v1/page-feedback/${feedbackId}`,
         {
             method: 'PUT',
@@ -285,6 +330,11 @@ export const PageFeedback = ({
     }, [pageUrl, feedbackId, reaction, reasons, comment, showThanks])
 
     useEffect(() => () => pendingReactionSaveRef.current?.(false), [])
+
+    useEffect(() => {
+        // Warm the WAF token; a failure resurfaces on submit.
+        loadWafSdk().catch(() => {})
+    }, [])
 
     const saveInitialReaction = async (nextReaction: Reaction) => {
         try {

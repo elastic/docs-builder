@@ -15,7 +15,7 @@ public class ApplicableToJsonConverterSerializationTests
 {
 	private readonly JsonSerializerOptions _options = new() { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
 
-	[Fact]
+	[Test]
 	public void SerializeStackProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo { Stack = AppliesCollection.GenerallyAvailable };
@@ -37,7 +37,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeStackWithVersionProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -62,7 +62,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeMultipleApplicabilitiesProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -96,7 +96,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDeploymentProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -133,7 +133,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeServerlessProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -170,7 +170,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Serialize_ServerlessVectorDatabase_ProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -195,7 +195,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeProductProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -222,7 +222,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeProductApplicabilityProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -259,7 +259,7 @@ public class ApplicableToJsonConverterSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeAllLifecyclesProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -284,7 +284,7 @@ public class ApplicableToJsonConverterSerializationTests
 		json.Should().Contain("\"lifecycle\": \"removed\"");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeComplexProducesCorrectJson()
 	{
 		var applicableTo = new ApplicableTo
@@ -313,7 +313,7 @@ public class ApplicableToJsonConverterSerializationTests
 		json.Should().Contain("\"sub_type\": \"product\"");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEmptyProducesEmptyArray()
 	{
 		var applicableTo = new ApplicableTo();
@@ -323,7 +323,7 @@ public class ApplicableToJsonConverterSerializationTests
 		json.Should().Be("[]");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeValidatesJsonStructure()
 	{
 		var original = new ApplicableTo

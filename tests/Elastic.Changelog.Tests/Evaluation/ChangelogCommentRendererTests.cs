@@ -9,7 +9,7 @@ namespace Elastic.Changelog.Tests.Evaluation;
 
 public class ChangelogCommentRendererTests
 {
-	[Fact]
+	[Test]
 	public void RenderEntryCommitted_EscapesUrlComponents()
 	{
 		var body = ChangelogCommentRenderer.RenderEntryCommitted("elastic", "test repo", "feature/my branch", "docs/changelog/42 fix.yaml");
@@ -18,7 +18,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("42%20fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderCommentOnly_WithYaml_ContainsCodeFence()
 	{
 		var body = ChangelogCommentRenderer.RenderCommentOnly("docs/changelog", "type: feature\ntitle: Test", "42.yaml", false, false);
@@ -27,7 +27,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("type: feature");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderCommentOnly_ForkVariant_ContainsInformationalGuidance()
 	{
 		var body = ChangelogCommentRenderer.RenderCommentOnly(
@@ -41,7 +41,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("regenerated from the live PR record");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderCommentOnly_CommitFailedVariant_ContainsFailureGuidance()
 	{
 		var body = ChangelogCommentRenderer.RenderCommentOnly(
@@ -55,7 +55,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("could not commit");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderCommentOnly_NoYaml_ContainsWarning()
 	{
 		var body = ChangelogCommentRenderer.RenderCommentOnly("docs/changelog", null, null, false, false);
@@ -63,7 +63,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("could not be read");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_TypeMissing_ContainsTypeLabelHeadline()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", null, null, null);
@@ -73,7 +73,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("type:bug");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_TypeMissing_RendersInlineLabels()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", null, null, null);
@@ -83,7 +83,7 @@ public class ChangelogCommentRendererTests
 		body.Should().NotContain("| Label |");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_WithOwnerRepo_RendersConfigFileLink()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
@@ -99,7 +99,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("[current changelog configuration](https://github.com/elastic/docs/blob/main/docs/changelog.yml)");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_ProductMissing_ContainsProductLabelHeadline()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, "| @Product:ECH | cloud |", null, null);
@@ -108,7 +108,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("@Product:ECH");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_AmbiguousTypeLabels_ContainsMultipleTypeHeadline()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, ambiguousTypeLabels: "type:bug,type:feature");
@@ -118,7 +118,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("type:feature");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderLabelsNeeded_BothMissing_ContainsBothTables()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded("type:bug,type:feature", "| @Product:ECH | cloud |", null, null);
@@ -128,7 +128,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("@Product:ECH");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderResolved_ContainsTitleAndCheckmark()
 	{
 		var body = ChangelogCommentRenderer.RenderResolved();
@@ -137,7 +137,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("✅");
 	}
 
-	[Fact]
+	[Test]
 	public void WrapCodeFence_ContentWithThreeBacktickRun_UsesFourBackticks()
 	{
 		var content = "prefix ``` suffix";
@@ -146,7 +146,7 @@ public class ChangelogCommentRendererTests
 		fenced.Should().StartWith("````");
 	}
 
-	[Fact]
+	[Test]
 	public void WrapInlineCode_ValueStartsWithBacktick_AddsPadding()
 	{
 		var result = ChangelogCommentRenderer.WrapInlineCode("`starts-with-tick");
@@ -154,11 +154,11 @@ public class ChangelogCommentRendererTests
 		result.Should().Contain(" `starts-with-tick ");
 	}
 
-	[Theory]
-	[InlineData("entry-committed")]
-	[InlineData("comment-only")]
-	[InlineData("labels-needed")]
-	[InlineData("resolved")]
+	[Test]
+	[Arguments("entry-committed")]
+	[Arguments("comment-only")]
+	[Arguments("labels-needed")]
+	[Arguments("resolved")]
 	public void AllBodies_StartWithTitle(string variant)
 	{
 		var body = variant switch
@@ -173,7 +173,7 @@ public class ChangelogCommentRendererTests
 		body.Should().StartWith(ChangelogCommentRenderer.Title);
 	}
 
-	[Fact]
+	[Test]
 	public void RenderCommentOnly_LongBody_TruncatesAt65536()
 	{
 		var longYaml = new string('x', 70_000);
@@ -187,7 +187,7 @@ public class ChangelogCommentRendererTests
 	// RenderEntriesInvalid
 	// ──────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_StartsWithTitle()
 	{
 		var findings = new List<EntryFinding>
@@ -198,7 +198,7 @@ public class ChangelogCommentRendererTests
 		body.Should().StartWith(ChangelogCommentRenderer.Title);
 	}
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_ContainsHeadline()
 	{
 		var findings = new List<EntryFinding>
@@ -209,7 +209,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("validation failed");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_ErrorFinding_ContainsRedCross()
 	{
 		var findings = new List<EntryFinding>
@@ -221,7 +221,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("title is required");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_WarningFinding_ContainsWarningIcon()
 	{
 		var findings = new List<EntryFinding>
@@ -233,7 +233,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("title exceeds 80 characters");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_WithOwnerRepo_RendersFileLink()
 	{
 		var findings = new List<EntryFinding>
@@ -244,7 +244,7 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("https://github.com/elastic/my-repo/blob/main/");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderEntriesInvalid_MultipleFindingsSameFile_GroupedUnderFile()
 	{
 		var findings = new List<EntryFinding>
@@ -261,43 +261,110 @@ public class ChangelogCommentRendererTests
 	// RenderMissingEntry
 	// ──────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void RenderMissingEntry_StartsWithTitle()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 42);
 		body.Should().StartWith(ChangelogCommentRenderer.Title);
 	}
 
-	[Fact]
+	[Test]
 	public void RenderMissingEntry_ContainsPrNumber()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 99);
-		body.Should().Contain("#99");
 		body.Should().Contain("99.yaml");
+		body.Should().Contain("pending");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderMissingEntry_DefaultDir_UsesDefaultPath()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 7);
 		body.Should().Contain("docs/changelog/7.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderMissingEntry_CustomDir_UsesCustomPath()
 	{
 		var body = ChangelogCommentRenderer.RenderMissingEntry("changelogs", 7);
 		body.Should().Contain("changelogs/7.yaml");
 	}
 
-	[Fact]
+	[Test]
+	public void RenderMissingEntry_Fork_ContainsBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true, resolvedProducts: "my-product");
+		body.Should().Contain("mkdir -p -- \"docs/changelog\"");
+		body.Should().Contain("cat > \"docs/changelog/42.yaml\"");
+		body.Should().Contain("product: my-product");
+	}
+
+	[Test]
+	public void RenderMissingEntry_Fork_ContainsDocsBuilderScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		body.Should().Contain("docs-builder changelog add");
+		body.Should().Contain("--pr 42");
+		body.Should().NotContain("--config");
+		body.Should().NotContain("--output");
+	}
+
+	[Test]
+	public void RenderMissingEntry_Fork_GitCommandsNotDuplicated()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		// git push should appear exactly once (in the shared "Then commit and push" block)
+		body.Split("git push").Length.Should().Be(2);
+	}
+
+	[Test]
+	public void RenderMissingEntry_Fork_ContainsForkGuidanceExplanation()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry(null, 5, isFork: true);
+		body.Should().Contain("external contributor");
+	}
+
+	[Test]
+	public void RenderMissingEntry_NotFork_DoesNotContainBashScript()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false);
+		body.Should().NotContain("cat >");
+		body.Should().NotContain("docs-builder changelog add");
+		body.Should().NotContain("disable");
+	}
+
+	[Test]
+	public void RenderMissingEntry_Fork_HasSofterTone()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: true);
+		body.Should().Contain("needed");
+		body.Should().NotContain("disable");
+	}
+
+	[Test]
+	public void RenderMissingEntry_NotFork_CanCommit_SaysPending()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: true);
+		body.Should().Contain("pending");
+		body.Should().Contain("automatically");
+	}
+
+	[Test]
+	public void RenderMissingEntry_NotFork_CannotCommit_SaysNeeded()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingEntry("docs/changelog", 42, isFork: false, canCommit: false);
+		body.Should().Contain("needed");
+		body.Should().NotContain("automatically");
+	}
+
+	[Test]
 	public void RenderRepositoryNotOnboarded_StartsWithTitle()
 	{
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");
 		body.Should().StartWith(ChangelogCommentRenderer.Title);
 	}
 
-	[Fact]
+	[Test]
 	public void RenderRepositoryNotOnboarded_ContainsRepoAndYamlSnippet()
 	{
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("my-repo");
@@ -306,11 +373,201 @@ public class ChangelogCommentRendererTests
 		body.Should().Contain("release-notes: true");
 	}
 
-	[Fact]
+	[Test]
 	public void RenderRepositoryNotOnboarded_BacktickRepoName_FencedCorrectly()
 	{
 		// A repo name containing backticks should still render without breaking the fence
 		var body = ChangelogCommentRenderer.RenderRepositoryNotOnboarded("normal-repo");
 		body.Should().Contain("```yaml");
 	}
+
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+	// RenderMissingImpactAction / RenderBreakingChangeCaptured
+	// ──────────────────────────────────────────────────────────────────────────────────────────────
+
+	[Test]
+	public void RenderMissingImpactAction_BothMissing_ShowsBothHeadingsInTemplate()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("impact,action", 42);
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body.Should().Contain("PR #42");
+		body.Should().Contain("## Impact");
+		body.Should().Contain("## Action");
+	}
+
+	[Test]
+	public void RenderMissingImpactAction_OnlyActionMissing_TemplateHasOnlyAction()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("action", 42);
+
+		body.Should().Contain("## Action");
+		body.Should().NotContain("## Impact");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_RendersDetailsWithFencedValues()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("Users break.", "Upgrade.");
+
+		body.Should().StartWith("<details><summary>");
+		body.Should().Contain("Users break.");
+		body.Should().Contain("Upgrade.");
+		body.Should().EndWith("</details>");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_MissingValue_ShowsNotProvided()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("Users break.", null);
+
+		body.Should().Contain("_Not provided_");
+	}
+
+	[Test]
+	public void RenderBreakingChangeCaptured_HostileContent_StaysInsideFence()
+	{
+		var body = ChangelogCommentRenderer.RenderBreakingChangeCaptured("```\n</details>\n```", "ok");
+
+		// The fence around the value must be longer than the embedded backtick run.
+		body.Should().Contain("````text\n```\n</details>\n```\n````");
+	}
+
+	[Test]
+	public void RenderConflictingImpactAction_NamesEntryFileAndSections()
+	{
+		var body = ChangelogCommentRenderer.RenderConflictingImpactAction("docs/changelog/42.yaml", "impact,action", 42);
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body.Should().Contain("docs/changelog/42.yaml");
+		body.Should().Contain("## Impact").And.Contain("## Action");
+	}
+
+	[Test]
+	public void RenderMissingImpactAction_WithEntryFile_AsksForYamlFields()
+	{
+		var body = ChangelogCommentRenderer.RenderMissingImpactAction("action", 42, "docs/changelog/42.yaml");
+
+		body.Should().Contain("docs/changelog/42.yaml");
+		body.Should().Contain("action: ");
+		body.Should().NotContain("## Action");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_AbsoluteConfigPath_LinksToTheDefaultRepoPath()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"| Label | Type |",
+			null,
+			null,
+			"/home/runner/work/repo/repo/docs/changelog.yml",
+			owner: "elastic",
+			repo: "repo"
+		);
+
+		body.Should().Contain("https://github.com/elastic/repo/blob/main/docs/changelog.yml");
+		body.Should().NotContain("/home/runner");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Included_ListsTypeProductsAndAreas()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = true,
+			Type = "feature",
+			Products = "kibana",
+			Areas = "Dashboards"
+		});
+
+		body.Should().StartWith(ChangelogCommentRenderer.Title);
+		body
+			.Should()
+			.Contain("will be part of the release notes")
+			.And
+			.Contain("`feature`")
+			.And
+			.Contain("`kibana`")
+			.And
+			.Contain("`Dashboards`");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_AreaWithBackticks_CannotBreakOutOfInlineCode()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome { Included = true, Areas = "a`b" });
+
+		body.Should().Contain("``a`b``");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_Excluded_StatesTheReason()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(new ReleaseNoteOutcome
+		{
+			Included = false,
+			Reason = "it has the label skip"
+		});
+
+		body.Should().Contain("will not be part of the release notes** because it has the label skip");
+	}
+
+	[Test]
+	public void RenderReleaseNoteOutcome_WithImpactAndAction_AppendsCapturedBlock()
+	{
+		var body = ChangelogCommentRenderer.RenderReleaseNoteOutcome(
+			new ReleaseNoteOutcome { Included = true, Type = "breaking-change" },
+			"Breaks.",
+			"Fix."
+		);
+
+		body.Should().Contain("Breaks.").And.Contain("Fix.");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_AreaMissing_ContainsAreaHeadlineAndTable()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(null, null, null, null, areaLabelTable: "| `:Search` | Search |");
+
+		body.Should().Contain("Area label needed").And.Contain("add an area label");
+		body.Should().Contain("**area** labels").And.Contain("`:Search`");
+		body.Should().NotContain("Add a type label that matches");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_ProductAndAreaMissing_ListsBothPivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			null,
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("Changelog labels needed").And.Contain("add product and area labels");
+		body.Should().Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeProductAndAreaMissing_ListsAllThreePivots()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			"type:bug,type:feature",
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("add type, product and area labels");
+		body.Should().Contain("type labels").And.Contain("**product** labels").And.Contain("**area** labels");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeMissing_HeadlineIsUnchangedByAreaSupport() =>
+		ChangelogCommentRenderer
+			.RenderLabelsNeeded("type:bug", null, null, null)
+			.Should()
+			.Contain("🏷️ **Changelog label needed** — add a type label so we can determine this PR's release-notes status.");
 }

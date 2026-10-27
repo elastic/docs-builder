@@ -11,100 +11,100 @@ namespace Mcp.Remote.IntegrationTests;
 /// <summary>
 /// Integration tests for SearchTools MCP tools.
 /// </summary>
-public class SearchToolsIntegrationTests(ITestOutputHelper output) : McpToolsIntegrationTestsBase(output)
+public class SearchToolsIntegrationTests : McpToolsIntegrationTestsBase
 {
-	[Fact]
+	[Test]
 	public async Task SemanticSearch_ReturnsResults()
 	{
 		// Arrange
 		var (searchTools, clientAccessor) = CreateSearchTools();
-		Assert.SkipUnless(searchTools is not null, "Elasticsearch is not configured");
+		Skip.Unless(searchTools is not null, "Elasticsearch is not configured");
 		LogDiagnostics(clientAccessor);
-		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
-		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
 		var resultJson = await searchTools.SemanticSearch(
 			"elasticsearch getting started",
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
-		Output.WriteLine($"Result: {resultJson}");
+		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
 		response.Should().NotBeNull();
 		if (response!.Results.Count == 0)
-			await LogIndexCount(clientAccessor, TestContext.Current.CancellationToken);
+			await LogIndexCount(clientAccessor, TestContext.Current!.Execution.CancellationToken);
 
 		response
 			.Results
 			.Should()
 			.NotBeEmpty($"Search for 'elasticsearch getting started' should return results (index: {clientAccessor.SearchIndex})");
 		response.TotalHits.Should().BeGreaterThan(0);
-		Output.WriteLine($"Total hits: {response.TotalHits}");
-		Output.WriteLine($"Results returned: {response.Results.Count}");
+		TestContext.Current?.Output.WriteLine($"Total hits: {response.TotalHits}");
+		TestContext.Current?.Output.WriteLine($"Results returned: {response.Results.Count}");
 	}
 
-	[Fact]
+	[Test]
 	public async Task SemanticSearch_WithProductFilter()
 	{
 		// Arrange
 		var (searchTools, clientAccessor) = CreateSearchTools();
-		Assert.SkipUnless(searchTools is not null, "Elasticsearch is not configured");
+		Skip.Unless(searchTools is not null, "Elasticsearch is not configured");
 		LogDiagnostics(clientAccessor);
-		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
-		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
 		var resultJson = await searchTools.SemanticSearch(
 			"getting started",
 			productFilter: "elasticsearch",
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
-		Output.WriteLine($"Result: {resultJson}");
+		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.SemanticSearchResponse);
 
 		response.Should().NotBeNull();
 		if (response!.Results.Count == 0)
-			await LogIndexCount(clientAccessor!, TestContext.Current.CancellationToken);
+			await LogIndexCount(clientAccessor!, TestContext.Current!.Execution.CancellationToken);
 
 		response.Results.Should().NotBeEmpty($"Search with product filter should return results (index: {clientAccessor!.SearchIndex})");
-		Output.WriteLine($"Total hits: {response.TotalHits}");
+		TestContext.Current?.Output.WriteLine($"Total hits: {response.TotalHits}");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FindRelatedDocs_ReturnsRelated()
 	{
 		// Arrange
 		var (searchTools, clientAccessor) = CreateSearchTools();
-		Assert.SkipUnless(searchTools is not null, "Elasticsearch is not configured");
+		Skip.Unless(searchTools is not null, "Elasticsearch is not configured");
 		LogDiagnostics(clientAccessor);
-		var canConnect = await clientAccessor!.CanConnect(TestContext.Current.CancellationToken);
-		Assert.SkipUnless(canConnect, "Elasticsearch is not connected");
+		var canConnect = await clientAccessor!.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
 
 		// Act
 		var resultJson = await searchTools.FindRelatedDocs(
 			"data streams",
 			limit: 5,
-			cancellationToken: TestContext.Current.CancellationToken
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
 		// Assert
-		Output.WriteLine($"Result: {resultJson}");
+		TestContext.Current?.Output.WriteLine($"Result: {resultJson}");
 		var response = JsonSerializer.Deserialize(resultJson, McpJsonContext.Default.RelatedDocsResponse);
 
 		response.Should().NotBeNull();
 		if (response!.RelatedDocs.Count == 0)
-			await LogIndexCount(clientAccessor!, TestContext.Current.CancellationToken);
+			await LogIndexCount(clientAccessor!, TestContext.Current!.Execution.CancellationToken);
 
 		response
 			.RelatedDocs
 			.Should()
 			.NotBeEmpty($"Finding related docs for 'data streams' should return results (index: {clientAccessor!.SearchIndex})");
 		response.Count.Should().BeGreaterThan(0);
-		Output.WriteLine($"Related docs count: {response.Count}");
+		TestContext.Current?.Output.WriteLine($"Related docs count: {response.Count}");
 	}
 }

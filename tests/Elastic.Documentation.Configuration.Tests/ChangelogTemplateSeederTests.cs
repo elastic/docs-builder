@@ -13,7 +13,7 @@ public class ChangelogTemplateSeederTests
 	private const string TemplateWindows =
 		"bundle:\r\n  release_dates: true\r\n  # changelog-init-bundle-seed\r\n  # some other comment\r\n";
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_GitOwnerAndRepo_SeedsTemplate()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -30,7 +30,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().NotContain("changelog-init-bundle-seed");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_CliOwnerAndRepo_SeedsTemplate()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -46,7 +46,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("    - myorg/myrepo\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_CliOverridesGit()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -62,7 +62,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("    - override-owner/override-repo\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_CliRepoOnly_OwnerDefaultsToElastic()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -78,7 +78,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("    - elastic/myrepo\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_CliOwnerOnly_NoRepo_RemovesPlaceholder()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(Template, ownerCli: "myorg", repoCli: null, gitOwner: null, gitRepo: null);
@@ -88,7 +88,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().NotContain("  repo:");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_NeitherCliNorGit_RemovesPlaceholder()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(Template, ownerCli: null, repoCli: null, gitOwner: null, gitRepo: null);
@@ -99,7 +99,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("  # some other comment\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_WhitespaceCliValues_TreatedAsAbsent()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -114,7 +114,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("  repo: kibana\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_WindowsLineEndings_PreservesStyle()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -130,7 +130,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().NotContain("  owner: elastic\n  repo:");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_MissingPlaceholder_ReturnsContentUnchanged()
 	{
 		var content = "bundle:\n  release_dates: true\n";
@@ -146,7 +146,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Be(content);
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_ValuesNeedingYamlQuoting_AreQuoted()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -162,7 +162,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("    - \"my org/my:repo\"\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_CliRepoOverridesGitRepo_KeepsGitOwner()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -178,7 +178,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("    - elastic/other-repo\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_Seeds()
 	{
 		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
@@ -196,7 +196,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().NotContain("changelog-init-bundle-seed");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_PlaceholderAtEofWithoutNewline_RemovesWhenNoSeed()
 	{
 		var content = "bundle:\n  release_dates: true\n  # changelog-init-bundle-seed";
@@ -207,7 +207,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().NotContain("changelog-init-bundle-seed");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_BackslashInValue_IsEscapedInYaml()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(
@@ -222,7 +222,7 @@ public class ChangelogTemplateSeederTests
 		result.Should().Contain("  repo: repo\n");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyBundleRepoSeed_ControlCharsInValue_AreEscapedInYaml()
 	{
 		var result = ChangelogTemplateSeeder.ApplyBundleRepoSeed(

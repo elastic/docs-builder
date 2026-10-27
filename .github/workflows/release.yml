@@ -24,7 +24,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+      - uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -63,14 +63,14 @@ jobs:
           persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Restore npm dependencies
         working-directory: src/Elastic.Documentation.Site
         run: npm ci
 
       - name: Check shai-hulud supply-chain hashes
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 
@@ -136,7 +136,7 @@ jobs:
       contents: read
     needs: 
       - release-drafter
-    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    uses: $/.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -145,7 +145,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
+    uses: $/.github/workflows/build-changelog-scrubber-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -154,7 +154,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    uses: $/.github/workflows/build-openapi-index-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -214,7 +214,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -260,7 +260,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -303,16 +303,9 @@ jobs:
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
-      - name: 'Windows only, set TEMP to the same drive'
-        if: ${{ matrix.os == 'windows-latest' }}
-        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
-        run: |
-          mkdir "D:\\Temp"
-          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
-
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
         run: ./build.sh publishzip
@@ -343,7 +336,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
     steps:
       - name: Publish release
         env:
@@ -353,6 +345,16 @@ jobs:
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
 
+  # Notification runs after publish-release but is decoupled from the bundle jobs.
+  # A dispatch failure must not prevent a published tag from getting its release-notes bundle.
+  notify-docs-internal-workflows:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
       - name: Fetch ephemeral GitHub token
         id: fetch-ephemeral-token
         uses: elastic/ci-gh-actions/fetch-github-token@v1
@@ -366,7 +368,64 @@ jobs:
         run: |
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-released \
-            -F client_payload[tag_name]="$TAG_NAME"
+            -F "client_payload[tag_name]=$TAG_NAME"
+
+  # Build and publish the release-notes bundle for this tag.
+  #
+  # These two jobs live here rather than in the `release-notes.yml` caller (which gates its
+  # bundle job on `on: release`) because the release above is published with GITHUB_TOKEN,
+  # and GitHub does not start workflow runs from GITHUB_TOKEN-created events. Running them
+  # inside the release workflow keeps the bundle tied to the tag that was just cut.
+  #
+  # The split into create + publish mirrors elastic/docs-actions: the create job holds no
+  # AWS credentials and hands the bundle over as an artifact, and only the publish job
+  # assumes the OIDC upload role.
+  create-release-notes-bundle:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    outputs:
+      bundle-path: ${{ steps.create.outputs.bundle-path }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Create bundle
+        id: create
+        uses: elastic/docs-actions/changelog/bundle-create-version@v1
+        with:
+          config: docs/changelog.yml
+          version: ${{ needs.release-drafter.outputs.tag_name }}
+          repo: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+
+  publish-release-notes-bundle:
+    needs:
+      - release-drafter
+      - create-release-notes-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Publish bundle to S3
+        uses: elastic/docs-actions/changelog/bundle-publish@v1
+        with:
+          config: docs/changelog.yml
+          bundle-path: ${{ needs.create-release-notes-bundle.outputs.bundle-path }}
 
   notify-failure:
     needs:
@@ -380,6 +439,9 @@ jobs:
       - deploy-changelog-scrubber-lambda-prod
       - release
       - publish-release
+      - notify-docs-internal-workflows
+      - create-release-notes-bundle
+      - publish-release-notes-bundle
     if: always() && contains(needs.*.result, 'failure')
     runs-on: ubuntu-slim
     permissions:

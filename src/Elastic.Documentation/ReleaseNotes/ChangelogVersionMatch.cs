@@ -7,8 +7,9 @@ namespace Elastic.Documentation.ReleaseNotes;
 /// <summary>
 /// Shared matching rule for the <c>changelog</c> directive's <c>:version:</c> filter. A bundle
 /// matches a requested version when the requested value equals either the bundle's declared target
-/// or its file name (with or without extension), compared case-insensitively. Kept in one place so
-/// the directive's post-load filter and the CDN fetcher's download-time filter agree.
+/// or its file name (with or without extension), compared case-insensitively and ignoring a leading
+/// <c>v</c> on either side (release tags are <c>v9.5.0</c>; generated version pages are <c>9.5.0</c>).
+/// Kept in one place so the directive's post-load filter and the CDN fetcher's download-time filter agree.
 /// </summary>
 public static class ChangelogVersionMatch
 {
@@ -21,16 +22,18 @@ public static class ChangelogVersionMatch
 		if (string.IsNullOrWhiteSpace(requested))
 			return true;
 
-		var value = requested.Trim();
+		var value = StripLeadingV(requested.Trim());
 
-		if (!string.IsNullOrWhiteSpace(target) && string.Equals(target.Trim(), value, StringComparison.OrdinalIgnoreCase))
+		if (!string.IsNullOrWhiteSpace(target) && string.Equals(StripLeadingV(target.Trim()), value, StringComparison.OrdinalIgnoreCase))
 			return true;
 
 		if (string.IsNullOrWhiteSpace(file))
 			return false;
 
 		var name = Path.GetFileName(file);
-		return string.Equals(name, value, StringComparison.OrdinalIgnoreCase)
-			|| string.Equals(Path.GetFileNameWithoutExtension(file), value, StringComparison.OrdinalIgnoreCase);
+		return string.Equals(StripLeadingV(name), value, StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(StripLeadingV(Path.GetFileNameWithoutExtension(file)), value, StringComparison.OrdinalIgnoreCase);
 	}
+
+	private static string StripLeadingV(string version) => version.TrimStart('v', 'V');
 }

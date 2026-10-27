@@ -10,23 +10,31 @@ public static class CodeBlock
 	{
 		{ "asciidoc", "adoc" }, // AsciiDoc
 
-		{ "bash", "sh, zsh" }, // Bash
+		{ "bash", "sh, zsh, fish" }, // Bash
 
 		{ "c", "h" }, // C
 
 		{ "csharp", "cs" }, // C#
 
+		{ "clojure", "clj, edn" }, // Clojure
+
 		{ "css", "" }, // CSS
+
+		{ "diff", "patch" }, // Diff
 
 		{ "dockerfile", "docker" }, // Dockerfile
 
-		{ "dos", "bat, cmd" }, // DOS
+		{ "dos", "bat, cmd, batch" }, // DOS
 
 		{ "ebnf", "" }, // EBNF
+
+		{ "gherkin", "feature" }, // Gherkin
 
 		{ "go", "golang" }, // Go
 
 		{ "gradle", "" }, // Gradle
+
+		{ "graphql", "gql" }, // GraphQL
 
 		{ "groovy", "" }, // Groovy
 
@@ -43,6 +51,8 @@ public static class CodeBlock
 		{ "json", "jsonc" }, // JSON
 
 		{ "kotlin", "kt" }, // Kotlin
+
+		{ "makefile", "mk, mak, make" }, // Makefile
 
 		{ "markdown", "md, mkdown, mkd" }, // Markdown
 

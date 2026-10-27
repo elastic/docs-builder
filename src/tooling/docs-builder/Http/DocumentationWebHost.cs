@@ -17,11 +17,16 @@ using Elastic.Documentation.Http;
 using Elastic.Documentation.Api;
 using Elastic.Documentation.Api.PageFeedback;
 #endif
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ServiceDefaults;
 using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.StyleGuide;
 using Elastic.Markdown.IO;
+using Elastic.ApiExplorer.StyleGuide;
+using Elastic.Codex.StyleGuide;
+using Elastic.Markdown.StyleGuide;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -75,6 +80,8 @@ public class DocumentationWebHost
 		var collector = new LiveModeDiagnosticsCollector(logFactory);
 
 		var hostUrl = $"http://localhost:{port}";
+		var bindAddress = Environment.GetEnvironmentVariable("DOCS_BUILDER_BIND_ADDRESS") ?? "localhost";
+		var listenUrl = $"http://{bindAddress}:{port}";
 
 		_hostedService = collector;
 		var docFs = DocumentationFileSystem.Resolve(path, new DocumentationScopeOptions { InnerWrite = new MockFileSystem() });
@@ -117,9 +124,9 @@ public class DocumentationWebHost
 			);
 
 		if (IsDotNetWatchBuild())
-			_ = builder.Services.AddHostedService<ParcelWatchService>();
+			_ = builder.Services.AddHostedService<FrontendWatchService>();
 
-		_ = builder.WebHost.UseUrls(hostUrl);
+		_ = builder.WebHost.UseUrls(listenUrl);
 
 		_webApplication = builder.Build();
 		SetUpRoutes();
@@ -173,9 +180,18 @@ public class DocumentationWebHost
 					throw; // Re-throw to let ASP.NET Core handle it
 				}
 			})
-			.UseStaticFiles(new StaticFileOptions { FileProvider = new EmbeddedOrPhysicalFileProvider(Context), RequestPath = "/_static" });
+			.UseStaticFiles(new StaticFileOptions
+			{
+				FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
+				RequestPath = "/_static",
+				// Generated pages keep the asset hash from when they were rendered, so make the
+				// browser revalidate instead of reusing a cached bundle after a Vite rebuild.
+				OnPrepareResponse = static ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
+			});
 
 		_ = _webApplication.UseRouting();
+
+		MapStyleGuide();
 
 		_ = _webApplication.MapGet(
 			"/",
@@ -196,6 +212,10 @@ public class DocumentationWebHost
 			"/api/{**slug}",
 			(string slug, ReloadableGeneratorState holder, HttpContext http, Cancel ctx) => ServeApiFile(holder, slug, http, ctx)
 		);
+
+		// Assembler / staging paste `/docs/api/...` into Isolated (`:3000` has no `/docs` prefix).
+		_ = _webApplication.MapGet("/docs/api/", (HttpContext http) => RedirectAssemblerApiPath(http, ""));
+		_ = _webApplication.MapGet("/docs/api/{**slug}", (string slug, HttpContext http) => RedirectAssemblerApiPath(http, slug));
 
 #if DEBUG
 		var apiV1 = _webApplication.MapGroup($"{SystemEnvironmentVariables.Instance.ApiPrefix}/v1");
@@ -336,9 +356,17 @@ public class DocumentationWebHost
 			if (slug.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
 				return "application/json";
 			if (slug.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || slug.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
-				return "text/yaml";
+				return "text/plain; charset=utf-8";
 			return null;
 		}
+	}
+
+	private static IResult RedirectAssemblerApiPath(HttpContext http, string slug)
+	{
+		var location = string.IsNullOrEmpty(slug) ? "/api/" : $"/api/{slug.Trim('/')}";
+		if (http.Request.Path.Value?.EndsWith('/') == true && !location.EndsWith('/'))
+			location += "/";
+		return Results.Redirect(location + http.Request.QueryString);
 	}
 
 	private static async Task<IResult> ServeDocumentationFile(
@@ -441,14 +469,73 @@ public class DocumentationWebHost
 		}
 	}
 
-	private static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)
+	// The living design-system guide. It renders the same Razor components as the site, so it is a dev-server route regardless of feature flags.
+	private void MapStyleGuide()
+	{
+		MarkdownComponentSections.Register();
+		var hashes = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context));
+
+		string StaticUrl(string path) => hashes.GetUrl(path, string.Empty);
+
+		async Task<IResult> Serve(string? page, Cancel ctx)
+		{
+			var html = await StyleGuideCatalog.RenderAsync(page, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		}
+
+		_ = _webApplication.MapGet($"{LayoutSamples.Route}/{{name}}", async (string name, Cancel ctx) =>
+		{
+			var html = await LayoutSamples.RenderAsync(name, StaticUrl, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
+
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/download.zip", async (Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var zip = await StyleGuideExport.BuildZipAsync(
+				provider,
+				async id => await StyleGuidePreviews.RenderAsync(id, Context, ctx) ?? await CodexStyleGuidePreviews.RenderAsync(
+					id,
+					Context,
+					provider,
+					ctx
+				) ?? await ApiStyleGuidePreviews.RenderAsync(id, Context, provider, ctx),
+				ctx
+			);
+			return Results.File(zip, "application/zip", "style-guide.zip");
+		});
+		_ = _webApplication.MapGet($"{StyleGuidePreviewCatalog.Route}/{{id}}", async (string id, Cancel ctx) =>
+		{
+			var provider = new EmbeddedOrPhysicalFileProvider(Context);
+			var html = await StyleGuidePreviews.RenderAsync(id, Context, ctx)
+				?? await CodexStyleGuidePreviews.RenderAsync(id, Context, provider, ctx)
+				?? await ApiStyleGuidePreviews.RenderAsync(id, Context, provider, ctx);
+			return html is null ? Results.NotFound() : LiveReloadHtml(html);
+		});
+		_ = _webApplication.MapGet(StyleGuideCatalog.Route, (Cancel ctx) => Serve(null, ctx));
+		_ = _webApplication.MapGet($"{StyleGuideCatalog.Route}/{{**page}}", (string? page, Cancel ctx) => Serve(page, ctx));
+	}
+
+	internal static IResult LiveReloadHtml(string content, Encoding? encoding = null, int? statusCode = null)
 	{
 		if (LiveReloadConfiguration.Current.LiveReloadEnabled)
 		{
-			//var script = WebsocketScriptInjectionHelper.GetWebSocketClientJavaScript(context, true);
-			//var html = $"<script>\n{script}\n</script>";
-			var html = "\n" + $@"<script src=""{LiveReloadConfiguration.Current.LiveReloadScriptUrl}"" defer></script>";
-			content += html;
+			var scriptUrl = LiveReloadConfiguration.Current.LiveReloadScriptUrl;
+			content +=
+				$$"""
+
+				<script>
+				(function () {
+					function inject() {
+						var s = document.createElement('script');
+						s.src = '{{scriptUrl}}';
+						document.head.appendChild(s);
+					}
+					if (document.readyState === 'complete') setTimeout(inject, 0);
+					else window.addEventListener('load', function () { setTimeout(inject, 0); });
+				})();
+				</script>
+				""";
 		}
 
 		return Results.Content(content, "text/html", encoding, statusCode);

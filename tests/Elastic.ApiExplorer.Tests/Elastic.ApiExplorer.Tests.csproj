@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj"/>
-    <ProjectReference Include="..\authoring\authoring.fsproj" />
+    <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
   </ItemGroup>
 
   <ItemGroup>

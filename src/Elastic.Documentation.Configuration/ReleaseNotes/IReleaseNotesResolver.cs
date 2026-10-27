@@ -17,6 +17,20 @@ public interface IReleaseNotesResolver
 	bool IsDeclared(string product);
 
 	/// <summary>
+	/// Whether <paramref name="product"/> was auto-inferred but returned HTTP 404 during prefetch —
+	/// bundles are not yet published. Scoped per-product so one repo's 404 does not suppress the
+	/// undeclared-product error for an explicit <c>:cdn:</c> reference in a different repo.
+	/// </summary>
+	bool IsNotFound(string product);
+
+	/// <summary>
+	/// Whether <paramref name="product"/> is registered in products.yml but returned HTTP 404 during
+	/// prefetch — no bundles have been published yet. products.yml membership is the authoritative gate;
+	/// 404 on the CDN registry is a warning (no release cut yet), not an unknown-product error.
+	/// </summary>
+	bool IsNotFoundDeclared(string product);
+
+	/// <summary>
 	/// Gets the prefetched bundles for <paramref name="product"/>. Returns false when the product was not
 	/// declared (or not fetched); a declared product with no usable bundles returns true with an empty list.
 	/// </summary>
@@ -35,6 +49,12 @@ public sealed class NoopReleaseNotesResolver : IReleaseNotesResolver
 
 	/// <inheritdoc />
 	public bool IsDeclared(string product) => false;
+
+	/// <inheritdoc />
+	public bool IsNotFound(string product) => false;
+
+	/// <inheritdoc />
+	public bool IsNotFoundDeclared(string product) => false;
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)
@@ -58,6 +78,12 @@ public sealed class ReleaseNotesResolver(FetchedReleaseNotes? fetched = null) : 
 
 	/// <inheritdoc />
 	public bool IsDeclared(string product) => _fetched.DeclaredProducts.Contains(product);
+
+	/// <inheritdoc />
+	public bool IsNotFound(string product) => _fetched.NotFoundInferredProducts.Contains(product);
+
+	/// <inheritdoc />
+	public bool IsNotFoundDeclared(string product) => _fetched.NotFoundDeclaredProducts.Contains(product);
 
 	/// <inheritdoc />
 	public bool TryGetBundles(string product, out IReadOnlyList<LoadedBundle> bundles)

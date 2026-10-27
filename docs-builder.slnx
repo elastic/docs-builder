@@ -99,7 +99,7 @@
   </Folder>
   <Folder Name="/tests/">
     <File Path="tests/Directory.Build.props" />
-    <Project Path="tests/authoring/authoring.fsproj" />
+    <Project Path="tests/Elastic.Authoring.Tests/Elastic.Authoring.Tests.csproj" />
     <Project Path="tests/Elastic.ApiExplorer.Tests/Elastic.ApiExplorer.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Infrastructure.Tests/Elastic.Documentation.Api.Infrastructure.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Api.Tests/Elastic.Documentation.Api.Tests.csproj" />
@@ -109,6 +109,7 @@
     <Project Path="tests/Elastic.Documentation.Indexing.Tests/Elastic.Documentation.Indexing.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.LegacyDocs.Tests/Elastic.Documentation.LegacyDocs.Tests.csproj" />
     <Project Path="tests/Elastic.Markdown.Tests/Elastic.Markdown.Tests.csproj" />
+    <Project Path="tests/Mcp.Remote.Tests/Mcp.Remote.Tests.csproj" />
     <Project Path="tests/Navigation.Tests/Navigation.Tests.csproj" />
     <Project Path="tests/Elastic.Changelog.Tests/Elastic.Changelog.Tests.csproj" />
     <Project Path="tests/Elastic.Documentation.Integrations.Tests/Elastic.Documentation.Integrations.Tests.csproj" />

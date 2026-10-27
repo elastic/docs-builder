@@ -1,0 +1,141 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Bump example codeSamples",
+    "version": "1.0"
+  },
+  "paths": {
+    "/{index}/_search": {
+      "post": {
+        "operationId": "search",
+        "summary": "Run a search",
+        "description": "Returns search hits that match the query.",
+        "tags": [
+          "search"
+        ],
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "examples": {
+                "searchRequestExample1": {
+                  "summary": "A simple term search",
+                  "value": {
+                    "query": {
+                      "term": {
+                        "user.id": "kimchy"
+                      }
+                    }
+                  },
+                  "x-codeSamples": [
+                    {
+                      "lang": "Console",
+                      "source": "POST /my-index/_search\n{\"query\":{\"term\":{\"user.id\":\"kimchy\"}}}"
+                    },
+                    {
+                      "lang": "Python",
+                      "source": "client.search(index=\"my-index\", query={\"term\":{\"user.id\":\"kimchy\"}})"
+                    },
+                    {
+                      "lang": "curl",
+                      "source": "curl -X POST \"$ELASTICSEARCH_URL/my-index/_search\" -H \"Content-Type: application/json\" -d '{\"query\":{\"term\":{\"user.id\":\"kimchy\"}}}'"
+                    }
+                  ]
+                },
+                "searchRequestExample2": {
+                  "summary": "A point in time search",
+                  "value": {
+                    "pit": {
+                      "id": "46ToAwMDaWR5BXV1aWQy",
+                      "keep_alive": "1m"
+                    }
+                  },
+                  "x-codeSamples": [
+                    {
+                      "lang": "Console",
+                      "source": "POST /_search\n{\"pit\":{\"id\":\"46ToAwMDaWR5BXV1aWQy\",\"keep_alive\":\"1m\"}}"
+                    },
+                    {
+                      "lang": "Python",
+                      "source": "client.search(pit={\"id\":\"46ToAwMDaWR5BXV1aWQy\",\"keep_alive\":\"1m\"})"
+                    },
+                    {
+                      "lang": "curl",
+                      "source": "curl -X POST \"$ELASTICSEARCH_URL/_search\" -H \"Content-Type: application/json\" -d '{\"pit\":{\"id\":\"46ToAwMDaWR5BXV1aWQy\",\"keep_alive\":\"1m\"}}'"
+                    }
+                  ]
+                },
+                "searchRequestExample3": {
+                  "summary": "Search slicing",
+                  "value": {
+                    "slice": {
+                      "id": 0,
+                      "max": 2
+                    },
+                    "query": {
+                      "match": {
+                        "message": "foo"
+                      }
+                    }
+                  },
+                  "x-codeSamples": [
+                    {
+                      "lang": "Console",
+                      "source": "GET /my-index/_search\n{\"slice\":{\"id\":0,\"max\":2},\"query\":{\"match\":{\"message\":\"foo\"}}}"
+                    },
+                    {
+                      "lang": "Python",
+                      "source": "client.search(index=\"my-index\", slice={\"id\":0,\"max\":2}, query={\"match\":{\"message\":\"foo\"}})"
+                    },
+                    {
+                      "lang": "curl",
+                      "source": "curl \"$ELASTICSEARCH_URL/my-index/_search\" -d '{\"slice\":{\"id\":0,\"max\":2}}'"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Console",
+            "source": "POST /my-index/_search\n{\"query\":{\"term\":{\"user.id\":\"kimchy\"}}}"
+          },
+          {
+            "lang": "Python",
+            "source": "client.search(index=\"my-index\", query={\"term\":{\"user.id\":\"kimchy\"}})"
+          },
+          {
+            "lang": "curl",
+            "source": "curl -X POST \"$ELASTICSEARCH_URL/my-index/_search\" -H \"Content-Type: application/json\" -d '{\"query\":{\"term\":{\"user.id\":\"kimchy\"}}}'"
+          }
+        ]
+      }
+    }
+  }
+}

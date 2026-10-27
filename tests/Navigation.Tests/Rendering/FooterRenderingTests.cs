@@ -15,9 +15,9 @@ using RazorSlices;
 
 namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
-public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FooterRenderingTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task AssemblerFooter_RendersIubendaLinksAfterTrademarkCopy()
 	{
 		var html = await RenderAssemblerFooter();
@@ -57,7 +57,6 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 
 		var model = new GlobalLayoutViewModel
 		{
-			DocsBuilderVersion = "test",
 			DocSetName = "test",
 			Description = "",
 			CurrentNavigationItem = new StubNavigationItem("/docs/"),
@@ -74,7 +73,7 @@ public class FooterRenderingTests(ITestOutputHelper output) : DocumentationSetNa
 			BuildType = BuildType.Assembler
 		};
 
-		return await _AssemblerFooter.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		return await _AssemblerFooter.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private sealed record StubNavigationItem(string Url) : INavigationItem

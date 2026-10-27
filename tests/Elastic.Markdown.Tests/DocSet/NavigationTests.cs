@@ -6,12 +6,12 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class NavigationTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class NavigationTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void ParsesATableOfContents() => Set.Navigation.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void ParsesRedirects()
 	{
 		Configuration.Should().NotBeNull();

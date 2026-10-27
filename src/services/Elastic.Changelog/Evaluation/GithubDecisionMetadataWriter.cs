@@ -37,13 +37,49 @@ internal class GithubDecisionMetadataWriter(ILoggerFactory logFactory, IRunnerTe
 	/// </summary>
 	internal async Task WriteAsync(GithubDecisionMetadata metadata, Cancel ctx)
 	{
+		// The comment job builds a link from this path, so it must not carry the runner's checkout location.
+		metadata = metadata with { ConfigFile = RepoRelative(metadata.ConfigFile) };
+
 		var dir = fileSystem.Path.GetFullPath(ArtifactDir);
 		_ = fileSystem.Directory.CreateDirectory(dir);
 
 		var path = fileSystem.Path.Combine(dir, MetadataFilename);
+		metadata = await CarryForward(metadata, path, ctx);
 		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
 		await fileSystem.File.WriteAllTextAsync(path, json, ctx);
 		_logger.LogInformation("Wrote decision metadata to {Path}", path);
+	}
+
+	/// <summary>
+	/// Each gate overwrites the file, but the release-note outcome and the opt-in flag are decided by the first gate that knows them,
+	/// so a later write that doesn't set them must not erase them.
+	/// </summary>
+	private async Task<GithubDecisionMetadata> CarryForward(GithubDecisionMetadata metadata, string path, Cancel ctx)
+	{
+		if (metadata.Outcome is not null && metadata.CommentOnSuccess)
+			return metadata;
+
+		var existing = await ReadAsync(path, ctx);
+		if (existing is null || existing.PrNumber != metadata.PrNumber)
+			return metadata;
+
+		return metadata with
+		{
+			Outcome = metadata.Outcome ?? existing.Outcome,
+			CommentOnSuccess = metadata.CommentOnSuccess || existing.CommentOnSuccess
+		};
+	}
+
+	/// <summary>Returns <paramref name="path"/> relative to the working directory when it lies inside it, otherwise unchanged.</summary>
+	private string? RepoRelative(string? path)
+	{
+		if (string.IsNullOrWhiteSpace(path) || !fileSystem.Path.IsPathRooted(path))
+			return path;
+
+		var relative = fileSystem.Path.GetRelativePath(fileSystem.Path.GetFullPath("."), path);
+		return relative.StartsWith("..", StringComparison.Ordinal) || fileSystem.Path.IsPathRooted(relative)
+			? path
+			: relative.Replace('\\', '/');
 	}
 
 	/// <summary>
