@@ -290,6 +290,10 @@ internal static class OperationCommonMark
 		foreach (var example in examples)
 		{
 			ApiCommonMark.Heading(markdown, 4, example.Title);
+			if (example.MediaType is not null)
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(example.MediaType));
+			if (example.Generated)
+				ApiCommonMark.Paragraph(markdown, ResponseBodyExample.Note);
 			ApiCommonMark.Prepared(markdown, example.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrEmpty(example.ExternalValue))
 				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(example.ExternalValue, example.ExternalValue));

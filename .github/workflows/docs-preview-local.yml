@@ -289,8 +289,8 @@ jobs:
               exit 1;
               ;;
           esac
-          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
-          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
+          echo "PATH_PREFIX=${path_prefix}" >> "$GITHUB_ENV"
+          echo "result=${path_prefix}" >> "$GITHUB_OUTPUT"
 
       - name: Bootstrap Action Workspace
         if: >

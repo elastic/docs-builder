@@ -1119,7 +1119,7 @@ public class DocumentationSetFile : TableOfContentsFile
 			if (file.Extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
 				fileGroups[file] = ListingFrontMatterReader.ReadGroup(file);
 			else
-				fileGroups[file] = null; // extension will provide group via TryGetListingGroup
+				fileGroups[file] = null; // no front matter to read; the parent-directory fallback below may still group it
 		}
 
 		// Separate root/group index pages from content pages
@@ -1151,6 +1151,16 @@ public class DocumentationSetFile : TableOfContentsFile
 		foreach (var file in contentFiles)
 		{
 			var group = fileGroups[file];
+
+			// If listing: frontmatter is absent, infer the group from the parent directory
+			// when that directory is a known group folder (has a group index file).
+			if (string.IsNullOrEmpty(group) && file.Directory is not null)
+			{
+				var parentRel = Path.GetRelativePath(listingDirAbsolute, file.Directory.FullName).Replace('\\', '/');
+				if (groupIndexFiles.ContainsKey(parentRel))
+					group = parentRel;
+			}
+
 			if (!string.IsNullOrEmpty(group))
 			{
 				if (!groupedFiles.ContainsKey(group))

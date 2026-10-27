@@ -18,9 +18,11 @@
 		("Explore and analyze", "Discover the tools of Elasticsearch and Kibana.", "ml_data_visualizer", "/explore-analyze"),
 		("Manage Cloud account", "Manage your profile information, preferences, and personal settings.", "user", "/cloud-account")
 	};
+	// Air-gapped sites can't reach elastic.co, so link to the API reference bundled with the site
+	var apiUrl = Model.Features.AirGappedEnabled ? Model.Link("/api/") : "https://www.elastic.co/docs/api";
 	var references = new (string Name, string Icon, string Url, bool External)[]
 	{
-		("Elastic APIs", "code", "https://www.elastic.co/docs/api", true),
+		("Elastic APIs", "code", apiUrl, !Model.Features.AirGappedEnabled),
 		("Elasticsearch clients", "package", Model.Link("/reference/elasticsearch-clients/"), false),
 		("OpenTelemetry (EDOT)", "node", Model.Link("/reference/opentelemetry/"), false),
 		("Query languages", "list_bullet", Model.Link("/reference/query-languages/"), false)

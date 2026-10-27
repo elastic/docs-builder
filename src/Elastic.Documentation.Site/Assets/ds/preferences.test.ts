@@ -1,13 +1,13 @@
 import { applyPref, initPreferences, readPref } from './preferences'
 
 function system(contrastMore: boolean, reducedMotion: boolean) {
-    window.matchMedia = jest.fn().mockImplementation((query: string) => ({
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
         matches: query.includes('contrast')
             ? contrastMore
             : query.includes('reduced-motion')
               ? reducedMotion
               : false,
-        addEventListener: jest.fn(),
+        addEventListener: vi.fn(),
     })) as unknown as typeof window.matchMedia
 }
 

@@ -10,9 +10,9 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
-using Ganss.Xss;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -26,7 +26,17 @@ public static partial class ApiMarkdown
 	/// <summary>An HTML description cut before its first heading. <see cref="Remainder"/> is null when it has none.</summary>
 	public sealed record HtmlSplit(string Lead, string? Remainder);
 
-	public static HtmlString Render(ApiRenderContext context, string? markdown)
+	public static HtmlString Render(ApiRenderContext context, string? markdown) => Render(context, markdown, headingAnchors: null);
+
+	/// <summary>
+	/// Renders a group intro and keeps the heading anchor ids in <paramref name="headingAnchors"/>, the slugs its sidebar
+	/// links target. Other pages strip them, because an operation or schema page owns ids such as <c>responses</c> that a
+	/// description heading could duplicate.
+	/// </summary>
+	public static HtmlString RenderWithHeadingAnchors(ApiRenderContext context, string? markdown, IReadOnlySet<string> headingAnchors) =>
+		Render(context, markdown, headingAnchors);
+
+	private static HtmlString Render(ApiRenderContext context, string? markdown, IReadOnlySet<string>? headingAnchors)
 	{
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
@@ -34,7 +44,43 @@ public static partial class ApiMarkdown
 		var rewritten = ApiAdmonitions.Convert(Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url));
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
-		return new HtmlString(string.IsNullOrEmpty(html) ? html : context.SanitizedHtmlCache.GetOrAdd(html, SanitizeHtml));
+		if (string.IsNullOrEmpty(html))
+			return new HtmlString(html);
+
+		// Each group intro renders once, so only the shared descriptions go through the cache.
+		return new HtmlString(
+			headingAnchors is { Count: > 0 }
+				? ApiHtmlSanitizer.Sanitize(html, headingAnchors)
+				: context.SanitizedHtmlCache.GetOrAdd(html, static h => ApiHtmlSanitizer.Sanitize(h))
+		);
+	}
+
+	/// <summary>
+	/// Reads the headings <see cref="Render"/> produces for <paramref name="markdown"/>, with the slugs of their anchor ids.
+	/// <paramref name="apiBaseUrl"/> must be the product root the page renders under, because link rewrites change heading slugs.
+	/// </summary>
+	public static IReadOnlyList<TocItem> ReadHeadings(IMarkdownStringRenderer renderer, string? markdown, string apiBaseUrl) =>
+		string.IsNullOrEmpty(markdown)
+			? []
+			: renderer.ReadApiDescriptionHeadings(ApiAdmonitions.Convert(Prepare(markdown, apiBaseUrl)), null);
+
+	/// <summary>
+	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
+	/// so an intro heading with the same slug is left out rather than linking to the post section.
+	/// </summary>
+	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
+		IMarkdownStringRenderer renderer,
+		string? markdown,
+		string apiBaseUrl,
+		IReadOnlyList<ApiSupplementalSection> postSections
+	)
+	{
+		var headings = ReadHeadings(renderer, markdown, apiBaseUrl);
+		if (postSections.Count == 0)
+			return headings;
+
+		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
+		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
 	}
 
 	/// <summary>
@@ -96,19 +142,6 @@ public static partial class ApiMarkdown
 		"track",
 		"wbr"
 	];
-
-	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
-	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
-	private static readonly HtmlSanitizer Sanitizer = new();
-
-	static ApiMarkdown() => Sanitizer.AllowedAttributes.Add("class");
-
-	/// <summary>
-	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
-	/// <see cref="HtmlString"/>. Relies on <see cref="HtmlSanitizer"/> defaults (99 allowed
-	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
-	/// </summary>
-	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.

@@ -6,16 +6,15 @@
 		@(Model.Features.NavigationPreviewEnabled ? "hx-preserve" : "")
 		class="sidebar-nav h-full simple-scrollbar">
 		@{
-			// Which API this is lives in the assembler bar. Isolated builds have no bar, so the sidebar carries it.
-			var showIdentity = Model.ApiContext is not null && Model.BuildType != BuildType.Assembler;
-		}		@if (showIdentity || Model.ShowJumpToPage)
+			var showIdentity = Model.ApiContext is not null;
+		}
+		@if (showIdentity || Model.ShowJumpToPage)
 		{
 			<div class="api-sidebar-chrome sticky top-0 z-10 bg-white px-4 pt-4 pb-3 flex flex-col gap-3 border-b border-grey-20">
 				@if (showIdentity)
 				{
 					<div class="api-sidebar-identity">
-						@await RenderPartialAsync(_ApiProductSwitcher.Create(Model.ApiContext!))
-						@await RenderPartialAsync(_ApiVersion.Create(Model.ApiContext!))
+						@await RenderPartialAsync(_ApiIdentity.Create(Model.ApiContext!))
 					</div>
 				}
 				@if (Model.ShowJumpToPage)

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
@@ -70,8 +71,49 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 		html.Should().NotContain("View release notes");
 	}
 
-	private async Task<string> RenderLanding(bool navigationPreviewEnabled)
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task LandingPage_LinksToTheExternalApiReference(bool navigationPreviewEnabled)
 	{
+		var html = await RenderLanding(navigationPreviewEnabled, airGapped: false);
+
+		var link = ApiCardLink(html, navigationPreviewEnabled);
+		link.Should().Contain("href=\"https://www.elastic.co/docs/api\"");
+		link.Should().Contain("target=\"_blank\"").And.Contain("rel=\"noopener noreferrer\"");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public async Task LandingPage_WhenAirGapped_LinksToTheBundledApiReferenceInTheSameTab(bool navigationPreviewEnabled)
+	{
+		var html = await RenderLanding(navigationPreviewEnabled, airGapped: true);
+
+		var link = ApiCardLink(html, navigationPreviewEnabled);
+		link.Should().Contain("href=\"/docs/api");
+		link.Should().NotContain("elastic.co").And.NotContain("target=").And.NotContain("rel=");
+	}
+
+	// The opening tag of the anchor that belongs to the "Elastic APIs" card in either landing layout
+	private static string ApiCardLink(string html, bool navigationPreviewEnabled)
+	{
+		var pattern = navigationPreviewEnabled
+			? "(<a [^>]*landing__reference[^>]*>)(?:(?!</a>).)*?Elastic APIs"
+			: "Elastic APIs.*?(<a [^>]*>)";
+		var match = Regex.Match(html, pattern, RegexOptions.Singleline);
+		match.Success.Should().BeTrue("the landing page has an Elastic APIs card");
+		return match.Groups[1].Value;
+	}
+
+	private async Task<string> RenderLanding(bool navigationPreviewEnabled, bool airGapped = false)
+	{
+		var flags = new Dictionary<string, bool>();
+		if (navigationPreviewEnabled)
+			flags["navigation-preview"] = true;
+		if (airGapped)
+			flags["air-gapped"] = true;
+
 		var fileSystem = new MockFileSystem();
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
@@ -89,9 +131,7 @@ public class LandingLayoutRenderingTests() : DocumentationSetNavigationTestBase(
 			UrlPathPrefix = "/docs",
 			CanonicalBaseUrl = null,
 			AllowIndexing = false,
-			Features = navigationPreviewEnabled
-				? new FeatureFlags(new Dictionary<string, bool> { ["navigation-preview"] = true })
-				: new FeatureFlags([]),
+			Features = new FeatureFlags(flags),
 			GoogleTagManager = new GoogleTagManagerConfiguration(),
 			Optimizely = new OptimizelyConfiguration(),
 			StaticFileContentHashProvider = new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)),

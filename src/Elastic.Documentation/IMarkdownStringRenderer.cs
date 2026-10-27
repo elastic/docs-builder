@@ -27,6 +27,11 @@ public interface IMarkdownStringRenderer
 	/// Renders OpenAPI description fragments without docset link or code-block validation.
 	/// </summary>
 	string RenderApiDescription(string markdown, IFileInfo? source) => Render(markdown, source);
+
+	/// <summary>
+	/// Returns the headings that <see cref="RenderApiDescription"/> renders for the same markdown, with the slugs of their anchor ids.
+	/// </summary>
+	IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source) => [];
 }
 
 public class NoopMarkdownStringRenderer : IMarkdownStringRenderer

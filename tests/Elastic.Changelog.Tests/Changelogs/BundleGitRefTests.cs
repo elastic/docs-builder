@@ -159,7 +159,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns(new GitHubPrInfo
 		{
 			Title = "Sharper autocomplete",
-			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Body =
+				"Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.\n\n## Impact\nSaved searches that relied on alphabetical order change position.\n\n## Action\nPin the indices you need at the top.",
 			Labels = [">feature"],
 			LinkedIssues = []
 		});
@@ -196,10 +197,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Faster hosted search");
 		bundle.Should().Contain("Sturdier snapshots");
 
-		// The synthesized entry carries PR-body release-note text, the label-derived type, and the
-		// profile's output products.
+		// The synthesized entry carries PR-body release-note text, the Impact and Action sections,
+		// the label-derived type, and the profile's output products.
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
+		bundle.Should().Contain("impact: Saved searches that relied on alphabetical order change position.");
+		bundle.Should().Contain("action: Pin the indices you need at the top.");
 		bundle.Should().Contain("name: 300.yaml");
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 

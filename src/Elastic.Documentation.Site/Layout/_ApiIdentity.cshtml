@@ -1,0 +1,101 @@
+@using Microsoft.AspNetCore.Html
+@inherits RazorSlice<Elastic.Documentation.Site.ApiIdentity>
+@* Which API this is, and which version of it: one choice, one menu. The top of the API sidebar.
+   The menu is a popover (top layer), positioned by api-menu.ts. *@
+@{
+	var hasVersions = Model.Versions.Count > 1;
+	var hasProducts = Model.ProductGroups.Count > 0;
+	var current = hasVersions ? Model.Versions.FirstOrDefault(static v => v.Selected) ?? Model.Versions[0] : null;
+	// The menu label can carry a hint such as "(latest)"; the trigger names just the version.
+	var currentLabel = current?.ShortLabel ?? current?.Label;
+}
+@if (hasProducts || hasVersions)
+{
+	<div class="api-identity-product" id="api-hub-switcher">
+		<button type="button"
+		        class="api-identity-product-trigger"
+		        popovertarget="api-hub-menu"
+		        aria-label="@(current is null ? $"API: {Model.Title}" : $"API: {Model.Title}, version {currentLabel}")">
+			@if (Model.IconSvg is not null)
+			{
+				<span class="api-identity-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
+			}
+			<span class="api-identity-name">
+				<span class="api-identity-title">@Model.Title</span>
+				@if (current is not null)
+				{
+					<span class="api-identity-version-label">@currentLabel</span>
+				}
+			</span>
+			<span class="api-identity-updown" aria-hidden="true">
+				<svg viewBox="0 0 16 16"><use href="#icon-chevron-updown"/></svg>
+			</span>
+		</button>
+		<div id="api-hub-menu" class="api-menu" popover data-placement="bottom-start" aria-label="API and version">
+			@if (hasVersions)
+			{
+				<div id="api-version-switcher" role="group" aria-labelledby="api-version-group-label">
+					<div id="api-version-group-label" class="api-menu-group-label">Version</div>
+					@foreach (var version in Model.Versions)
+					{
+						var selectedClass = version.Selected ? " secondary-nav-dropdown-link--selected" : "";
+						<a class="secondary-nav-dropdown-link@(selectedClass)"
+						   href="@version.Value"
+						   aria-current="@(version.Selected ? "true" : null)">@version.Label</a>
+					}
+				</div>
+			}
+			@for (var g = 0; g < Model.ProductGroups.Count; g++)
+			{
+				var group = Model.ProductGroups[g];
+				var labelId = "api-hub-group-" + g;
+				if (hasVersions || g > 0)
+				{
+					<div class="api-menu-sep" role="separator"></div>
+				}
+				<div role="group" aria-labelledby="@(group.Title is null ? null : labelId)">
+					@if (group.Title is not null)
+					{
+						<div id="@labelId" class="api-menu-group-label">@group.Title</div>
+					}
+					@foreach (var product in group.Products)
+					{
+						var selectedClass = product.Selected ? " secondary-nav-dropdown-link--selected" : "";
+						<a class="secondary-nav-dropdown-link api-identity-product-link@(selectedClass)"
+						   href="@product.Url"
+						   aria-current="@(product.Selected ? "true" : null)"
+						   preload="mousedown">
+							@if (product.IconSvg is not null)
+							{
+								<span class="api-identity-logo api-identity-logo--sm" aria-hidden="true">@(new HtmlString(product.IconSvg))</span>
+							}
+							<span>@product.Label</span>
+						</a>
+					}
+				</div>
+			}
+			@if (hasProducts && Model.HubUrl is not null)
+			{
+				<div class="api-menu-sep" role="separator"></div>
+				<a class="secondary-nav-dropdown-link api-identity-product-link"
+				   href="@Model.HubUrl"
+				   preload="mousedown">
+					<span class="api-identity-logo api-identity-logo--sm api-identity-logo--muted" aria-hidden="true">
+						<svg viewBox="0 0 16 16"><use href="#icon-grid"/></svg>
+					</span>
+					<span>All APIs</span>
+				</a>
+			}
+		</div>
+	</div>
+}
+else
+{
+	<div class="api-identity-product api-identity-product--static">
+		@if (Model.IconSvg is not null)
+		{
+			<span class="api-identity-logo" aria-hidden="true">@(new HtmlString(Model.IconSvg))</span>
+		}
+		<span class="api-identity-title">@Model.Title</span>
+	</div>
+}

@@ -2,9 +2,10 @@ import { useHtmxLink } from './useHtmxLink'
 import { getPathFromUrl, isExternalDocsUrl } from './utils'
 import { render, renderHook, screen } from '@testing-library/react'
 import htmx from 'htmx.org'
+import type { Mocked } from 'vitest'
 
 // Mock config to use assembler build type (tests were written for assembler behavior)
-jest.mock('../../../config', () => ({
+vi.mock('../../../config', () => ({
     config: {
         buildType: 'assembler',
         serviceName: 'docs-frontend',
@@ -14,14 +15,16 @@ jest.mock('../../../config', () => ({
 }))
 
 // Mock htmx - it uses XPath which jsdom doesn't support properly
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
+vi.mock('htmx.org', () => ({
+    default: {
+        on: vi.fn(),
+        off: vi.fn(),
+        process: vi.fn(),
+        ajax: vi.fn(),
+    },
 }))
 
-const mockHtmx = htmx as jest.Mocked<typeof htmx>
+const mockHtmx = htmx as Mocked<typeof htmx>
 
 // Test component that uses the hook and renders an anchor
 const TestLink = ({ url }: { url: string }) => {
@@ -225,7 +228,7 @@ describe('useHtmxLink', () => {
 
     describe('HTMX attribute handling', () => {
         beforeEach(() => {
-            jest.clearAllMocks()
+            vi.clearAllMocks()
         })
 
         it('should call htmx.process for internal docs links', () => {
