@@ -555,7 +555,40 @@ public class ChangelogUploadService(
 			targets.AddRange(found);
 		}
 
-		return targets;
+		return CollapseByS3Key(collector, targets);
+	}
+
+	/// <summary>
+	/// The root of <c>bundle.output_directory</c> and its product subdirectories are both scanned, so a stale
+	/// flat bundle and its per-product copy can map to the same S3 key. Keeps one target per key: the file in
+	/// the deeper directory (the per-product folder) wins, the first one found on a tie, and the other is
+	/// reported as a warning.
+	/// </summary>
+	internal static IReadOnlyList<UploadTarget> CollapseByS3Key(IDiagnosticsCollector collector, IReadOnlyList<UploadTarget> targets)
+	{
+		var byKey = new Dictionary<string, UploadTarget>(StringComparer.Ordinal);
+		var order = new List<string>();
+		foreach (var target in targets)
+		{
+			if (!byKey.TryGetValue(target.S3Key, out var existing))
+			{
+				byKey[target.S3Key] = target;
+				order.Add(target.S3Key);
+				continue;
+			}
+
+			var keep = Depth(target.LocalPath) > Depth(existing.LocalPath) ? target : existing;
+			var skip = ReferenceEquals(keep, target) ? existing : target;
+			byKey[target.S3Key] = keep;
+			collector.EmitWarning(
+				skip.LocalPath,
+				$"Skipping '{skip.LocalPath}': '{keep.LocalPath}' uploads to the same key '{target.S3Key}'. Remove the stale file."
+			);
+		}
+
+		return order.Select(key => byKey[key]).ToList();
+
+		static int Depth(string path) => path.Replace('\\', '/').Count(c => c == '/');
 	}
 
 	/// <summary>

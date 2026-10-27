@@ -720,6 +720,52 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 		FileSystem.File.Exists(plan.OutputPath).Should().BeTrue("--plan output_path matches the actual bundle write location");
 	}
 
+	/// <summary>
+	/// <c>release unified bundle</c> and <c>release serverless</c> pass <c>OutputDirectory</c> themselves
+	/// (the unified command already passes <c>{root}/{product}</c>). That directory is used as is, so the
+	/// product folder is not added a second time.
+	/// </summary>
+	[Test]
+	public async Task ProductField_CallerOutputDirectory_IsUsedVerbatim()
+	{
+		var configOutputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "releases");
+		var callerDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundles", "elasticsearch");
+		FileSystem.Directory.CreateDirectory(configOutputDir);
+		FileSystem.Directory.CreateDirectory(callerDir);
+
+		var configPath = await WriteConfig(
+			$"""
+			bundle:
+			  directory: CHANGELOG_DIR
+			  output_directory: {configOutputDir}
+			  use_local_changelogs: true
+			  repo: elasticsearch
+			  profiles:
+			    es-release:
+			      product: elasticsearch
+			"""
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Profile = "es-release",
+			ProfileArgument = "9.3.0",
+			Config = configPath,
+			OutputDirectory = callerDir
+		};
+
+		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		FileSystem.File.Exists(FileSystem.Path.Join(callerDir, "elasticsearch-elasticsearch-9.3.0.yaml")).Should().BeTrue();
+		FileSystem
+			.Directory
+			.Exists(FileSystem.Path.Join(callerDir, "elasticsearch"))
+			.Should()
+			.BeFalse("the caller already chose the product folder");
+	}
+
 	[Test]
 	public void ResolveVersion_PrefersOutputProductsThenInputThenReleaseTag()
 	{

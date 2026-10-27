@@ -1386,6 +1386,8 @@ public partial class ChangelogBundlingService(
 			return input.Output!.OptionalWindowsReplace();
 
 		var hasExplicitOutputDir = !string.IsNullOrWhiteSpace(input.Output);
+		// A caller that passes OutputDirectory (release unified, release serverless) chooses its own layout.
+		var callerChoseOutputDir = hasExplicitOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
 		var outputDir = hasExplicitOutputDir
 			? input.Output
 			: ResolveConfiguredOutputDirectory(config, input)
@@ -1399,8 +1401,8 @@ public partial class ChangelogBundlingService(
 
 		var product = ResolvePrimaryProduct(null, input) ?? "";
 		// Append the per-product subfolder so the local tree mirrors the S3 layout
-		// bundle/{product}/{file} — but only when --output was not given explicitly by the caller.
-		if (!hasExplicitOutputDir && !string.IsNullOrWhiteSpace(product))
+		// bundle/{product}/{file} — but only when the caller did not choose the output directory.
+		if (!callerChoseOutputDir && !string.IsNullOrWhiteSpace(product))
 			outputDir = _fileSystem.Path.Join(outputDir, product);
 
 		var version = BundleOutputNaming.ResolveVersion(input.OutputProducts, input.InputProducts, input.ReleaseVersion) ?? "";
@@ -1417,9 +1419,9 @@ public partial class ChangelogBundlingService(
 	/// <summary>
 	/// Profile <c>output_directory</c> replaces <c>bundle.output_directory</c> (same as option-mode
 	/// <c>--output</c> as a directory). Then <c>input.OutputDirectory</c>, <c>bundle.directory</c>, CWD.
-	/// When the profile has no deprecated <c>output_directory</c> and <paramref name="primaryProduct"/>
-	/// is known, appends a <c>{product}/</c> subfolder so the local layout mirrors the S3 key structure
-	/// <c>bundle/{product}/{file}</c>.
+	/// When neither the caller (<c>input.OutputDirectory</c>) nor a deprecated profile <c>output_directory</c>
+	/// chose the directory and <paramref name="primaryProduct"/> is known, appends a <c>{product}/</c>
+	/// subfolder so the local layout mirrors the S3 key structure <c>bundle/{product}/{file}</c>.
 	/// </summary>
 	private string JoinProfileOutputPath(
 		ChangelogConfiguration? config,
@@ -1428,19 +1430,21 @@ public partial class ChangelogBundlingService(
 		string? primaryProduct = null
 	)
 	{
-		// A deprecated profile output_directory is honored verbatim — no subfolder appended.
+		// A caller's OutputDirectory (release unified already passes {root}/{product}) and a deprecated
+		// profile output_directory are honored verbatim — no subfolder appended.
 #pragma warning disable CS0618
-		var hasExplicitProfileOutputDir = !string.IsNullOrWhiteSpace(input.Profile)
+		var hasProfileOutputDir = !string.IsNullOrWhiteSpace(input.Profile)
 			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var prof) == true
 			&& !string.IsNullOrWhiteSpace(prof.OutputDirectory);
 #pragma warning restore CS0618
+		var keepDirectoryVerbatim = hasProfileOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
 
 		var baseDir = ResolveConfiguredOutputDirectory(config, input)
 			?? input.OutputDirectory
 			?? config?.Bundle?.Directory
 			?? _fileSystem.Directory.GetCurrentDirectory();
 
-		if (!hasExplicitProfileOutputDir && !string.IsNullOrWhiteSpace(primaryProduct))
+		if (!keepDirectoryVerbatim && !string.IsNullOrWhiteSpace(primaryProduct))
 			baseDir = _fileSystem.Path.Join(baseDir, primaryProduct);
 
 		return _fileSystem.Path.Join(baseDir, fileName).OptionalWindowsReplace();

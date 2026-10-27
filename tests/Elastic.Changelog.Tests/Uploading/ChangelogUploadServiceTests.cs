@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -773,6 +774,50 @@ public class ChangelogUploadServiceTests : IAsyncDisposable
 		dirs.Should().Contain(globalDir);
 		dirs.Should().Contain(esDir);
 		dirs.Should().Contain(serverlessDir);
+	}
+
+	/// <summary>
+	/// During the move to <c>{output_directory}/{product}/</c>, a stale flat bundle in the root and the new
+	/// bundle in the product folder map to the same S3 key. Only the product-folder file is uploaded.
+	/// </summary>
+	[Test]
+	public void CollapseByS3Key_StaleFlatBundleAndProductFolderBundle_KeepsProductFolderFile()
+	{
+		var globalDir = _mockFileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "docs", "releases");
+		var esDir = _mockFileSystem.Path.Join(globalDir, "elasticsearch");
+		// language=yaml
+		var bundleYaml =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries: []
+			""";
+		var flatPath = _mockFileSystem.Path.Join(globalDir, "elasticsearch-elasticsearch-9.3.0.yaml");
+		var productPath = _mockFileSystem.Path.Join(esDir, "elasticsearch-elasticsearch-9.3.0.yaml");
+		_mockFileSystem.AddFile(flatPath, new MockFileData(bundleYaml));
+		_mockFileSystem.AddFile(productPath, new MockFileData(bundleYaml));
+
+		var config = new ChangelogConfiguration { Bundle = new BundleConfiguration { OutputDirectory = globalDir } };
+		var scanDirs = ChangelogUploadService.CollectBundleScanDirectories(null, config, _fileSystem);
+		var discovered = scanDirs.SelectMany(d => _service.DiscoverBundleUploadTargets(_collector, d)).ToList();
+		discovered.Should().HaveCount(2, "both copies are discovered before the collapse");
+
+		var targets = ChangelogUploadService.CollapseByS3Key(_collector, discovered);
+
+		targets.Should().ContainSingle();
+		targets[0].LocalPath.Should().Be(productPath);
+		targets[0].S3Key.Should().Be("bundle/elasticsearch/elasticsearch-elasticsearch-9.3.0.yaml");
+		_collector.Diagnostics.Should().Contain(d => d.Message.Contains("Skipping") && d.Message.Contains(flatPath));
+	}
+
+	[Test]
+	public void CollapseByS3Key_DistinctKeys_KeepsAllInOrder()
+	{
+		UploadTarget[] targets = [new("a/one.yaml", "bundle/a/one.yaml"), new("b/two.yaml", "bundle/b/two.yaml")];
+
+		ChangelogUploadService.CollapseByS3Key(_collector, targets).Should().Equal(targets);
+		_collector.Warnings.Should().Be(0);
 	}
 
 	[Test]
