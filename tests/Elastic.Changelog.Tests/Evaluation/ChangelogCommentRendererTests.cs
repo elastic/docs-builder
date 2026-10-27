@@ -568,7 +568,10 @@ public class ChangelogCommentRendererTests
 	public void RenderLabelsNeeded_TypeMissing_KeepsTypeLabelsVisible() =>
 		ChangelogCommentRenderer
 			.RenderLabelsNeeded("type:bug,type:feature", null, null, null)
-			.Should().Contain("`type:bug`").And.NotContain("<details>");
+			.Should()
+			.Contain("`type:bug`")
+			.And
+			.NotContain("<details>");
 
 	[Test]
 	public void RenderLabelsNeeded_TypeProductAndAreaMissing_ListsAllThreePivots()
