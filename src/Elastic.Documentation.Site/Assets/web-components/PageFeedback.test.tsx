@@ -11,13 +11,13 @@ const failedResponse = { ok: false, status: 503 } as Response
 describe('PageFeedback', () => {
     beforeEach(() => {
         sessionStorage.clear()
-        jest.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
-        global.fetch = jest.fn().mockResolvedValue(successfulResponse)
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
+        global.fetch = vi.fn().mockResolvedValue(successfulResponse)
     })
 
     afterEach(() => {
         sessionStorage.clear()
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('records a positive reaction after the debounce and shows positive reasons', async () => {
@@ -133,7 +133,7 @@ describe('PageFeedback', () => {
 
     it('does not retry a failed immediate reaction', async () => {
         const user = userEvent.setup()
-        jest.mocked(global.fetch).mockResolvedValueOnce(failedResponse)
+        vi.mocked(global.fetch).mockResolvedValueOnce(failedResponse)
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
@@ -301,7 +301,7 @@ describe('PageFeedback', () => {
         const initialSave = new Promise<Response>((resolve) => {
             resolveInitialSave = resolve
         })
-        jest.mocked(global.fetch)
+        vi.mocked(global.fetch)
             .mockReturnValueOnce(initialSave)
             .mockResolvedValueOnce(successfulResponse)
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
@@ -328,7 +328,7 @@ describe('PageFeedback', () => {
 
     it('preserves selected reasons and comment when submission is retried', async () => {
         const user = userEvent.setup()
-        jest.mocked(global.fetch)
+        vi.mocked(global.fetch)
             .mockResolvedValueOnce(successfulResponse)
             .mockResolvedValueOnce(failedResponse)
             .mockResolvedValueOnce(successfulResponse)
@@ -478,7 +478,7 @@ describe('PageFeedback', () => {
 
         it('sends the PUT through AwsWafIntegration.fetch once the SDK loads', async () => {
             config.wafIntegrationUrl = sdkUrl
-            const wafFetch = jest.fn().mockResolvedValue(successfulResponse)
+            const wafFetch = vi.fn().mockResolvedValue(successfulResponse)
 
             await submitPositiveFeedback()
             const script = findSdkScript()

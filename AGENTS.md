@@ -47,7 +47,7 @@ cd src/Elastic.Documentation.Site
 npm ci
 npm run build           # production build
 npm run watch           # dev with live reload
-npm run test            # Jest
+npm run test            # Vitest
 npm run lint            # ESLint
 npm run fmt:write       # Prettier auto-fix
 npm run compile:check   # TypeScript type check only
@@ -58,7 +58,7 @@ npm run compile:check   # TypeScript type check only
 Tests live in `tests/` (unit) and `tests-integration/` (integration).
 
 - **C#**: TUnit · AwesomeAssertions · FakeItEasy across all test projects. All test projects (unit and integration) use TUnit (wired centrally via `tests/Directory.Build.props` and `tests-integration/Directory.Build.props`; no per-project flag needed). Write new tests using TUnit APIs: `[Test]`, `[Arguments(...)]`, `[MethodDataSource(nameof(X))]`.
-- **TypeScript**: Jest
+- **TypeScript**: Vitest
 - **Integration**: clones real repos, runs full assembler — only run when integration files change
 
 Use the `/test` skill to pick the right test project automatically. A change to product code should land with a test that exercises it — the mapping from changed source to test project (mirrored by `/test`):

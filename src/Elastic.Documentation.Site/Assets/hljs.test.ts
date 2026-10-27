@@ -3,7 +3,7 @@ type HljsModule = typeof import('./hljs')
 async function loadModule(): Promise<HljsModule> {
     // Re-import per test so the module-level registration cache and the shared hljs
     // singleton start clean, isolating what each test loads.
-    jest.resetModules()
+    vi.resetModules()
     return await import('./hljs')
 }
 
@@ -123,7 +123,7 @@ describe('initHighlight', () => {
     it('does not re-highlight a block when invoked concurrently', async () => {
         const { initHighlight, hljs } = await loadModule()
         setCodeBlocks('bash')
-        const spy = jest.spyOn(hljs, 'highlightElement')
+        const spy = vi.spyOn(hljs, 'highlightElement')
 
         await Promise.all([initHighlight(), initHighlight()])
 
@@ -170,7 +170,7 @@ describe('highlightCodeBlocks', () => {
 
 describe('toLanguageFn', () => {
     // A bundler's dynamic import() can resolve a language module to the LanguageFn directly,
-    // while Babel/Jest wrap it as { default: fn }. Both must yield the function; a
+    // while some test runners wrap it as { default: fn }. Both must yield the function; a
     // regression here silently breaks highlighting only in the production bundle.
     it('returns the function when the module is the function itself (bundler)', async () => {
         const { toLanguageFn } = await loadModule()
@@ -179,7 +179,7 @@ describe('toLanguageFn', () => {
         expect(toLanguageFn(fn)).toBe(fn)
     })
 
-    it('returns the default export when wrapped in a namespace (Babel/Jest)', async () => {
+    it('returns the default export when wrapped in a namespace (test runners)', async () => {
         const { toLanguageFn } = await loadModule()
         const fn = () => ({ contains: [] })
 

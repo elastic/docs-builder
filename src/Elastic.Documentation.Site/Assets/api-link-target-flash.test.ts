@@ -18,7 +18,7 @@ function report(visible: boolean) {
 /** Reports the target on screen and lets the settle delay pass. */
 function scrollIntoView(visible = true) {
     report(visible)
-    jest.advanceTimersByTime(250)
+    vi.advanceTimersByTime(250)
 }
 
 const hashListeners: EventListener[] = []
@@ -36,7 +36,7 @@ async function open(hash: string) {
     document.body.innerHTML = MARKUP
     window.location.hash = hash
     // jsdom reports the hash change on a timer; run it before the page's listener exists
-    jest.runOnlyPendingTimers()
+    vi.runOnlyPendingTimers()
     observers.length = 0
     window.IntersectionObserver = class {
         constructor(
@@ -49,26 +49,23 @@ async function open(hash: string) {
             observers.splice(observers.indexOf(this), 1)
         }
     } as unknown as typeof IntersectionObserver
-    let api!: typeof import('./api-docs')
-    await jest.isolateModulesAsync(async () => {
-        api = await import('./api-docs')
-    })
-    return api
+    vi.resetModules()
+    return await import('./api-docs')
 }
 
 const flashing = (id: string) =>
     document.getElementById(id)!.classList.contains(FLASH)
 
-Element.prototype.scrollIntoView = jest.fn()
+Element.prototype.scrollIntoView = vi.fn()
 
 describe('flash of the linked target', () => {
-    beforeEach(() => jest.useFakeTimers())
+    beforeEach(() => vi.useFakeTimers())
 
     afterEach(() => {
         hashListeners
             .splice(0)
             .forEach((l) => window.removeEventListener('hashchange', l))
-        jest.useRealTimers()
+        vi.useRealTimers()
         window.location.hash = ''
     })
 
@@ -124,7 +121,7 @@ describe('flash of the linked target', () => {
 
     it('waits until the target is on screen', async () => {
         ;(await open('#prop')).initApiDocs()
-        jest.advanceTimersByTime(1000)
+        vi.advanceTimersByTime(1000)
         expect(flashing('prop-name')).toBe(false)
         scrollIntoView()
         expect(flashing('prop-name')).toBe(true)
@@ -133,7 +130,7 @@ describe('flash of the linked target', () => {
     it('does not flash a target that only passed through the viewport', async () => {
         ;(await open('#prop')).initApiDocs()
         report(true)
-        jest.advanceTimersByTime(100)
+        vi.advanceTimersByTime(100)
         scrollIntoView(false)
         expect(flashing('prop-name')).toBe(false)
     })
@@ -142,13 +139,13 @@ describe('flash of the linked target', () => {
         ;(await open('#prop')).initApiDocs()
         scrollIntoView()
         // The first flash started at 200ms and its fallback fires at 3400ms
-        jest.advanceTimersByTime(2000)
+        vi.advanceTimersByTime(2000)
         window.location.hash = '#other'
         window.location.hash = '#prop'
         window.dispatchEvent(new HashChangeEvent('hashchange'))
         scrollIntoView()
         // Past the first flash's deadline, while the second one is still inside its own
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         expect(flashing('prop-name')).toBe(true)
     })
 
