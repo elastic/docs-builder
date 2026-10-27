@@ -129,8 +129,8 @@ jobs:
           command: check
           path: .
 
-  # Builds the frontend assets once for the Windows and macOS PR build jobs. `npm ci` takes about
-  # 6 minutes on Windows runners, and the Vite output is identical on every OS.
+  # Builds the frontend assets once for the `build` jobs. `npm ci` takes about 6 minutes on
+  # Windows runners, and the Vite output is identical on every OS.
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -171,8 +171,9 @@ jobs:
         id: bootstrap
         uses: $/.github/actions/bootstrap
 
-      # Decides how much Windows and macOS repeat on a PR. Linux always builds the frontend and runs the unit tests,
-      # and pushes to main do everything natively on every OS.
+      # Decides how much Windows and macOS repeat on a PR. Linux always runs the unit tests and reuses the
+      # `frontend` job's output, which is itself a native Linux build; pushes to main build everything natively
+      # on Windows and macOS.
       # - unit tests run only when .NET code, build inputs or test fixtures change
       # - the frontend is built natively only when its toolchain changes, which is where native npm packages
       #   (esbuild, rolldown, lightningcss, tailwind oxide) break per OS; otherwise the `frontend` job's output is reused
@@ -199,15 +200,19 @@ jobs:
           fi
 
       - name: Download frontend assets
-        if: ${{ steps.changes.outputs.skip-npm == 'true' }}
+        id: frontend
+        if: ${{ matrix.os == 'ubuntu-latest' || steps.changes.outputs.skip-npm == 'true' }}
         uses: actions/download-artifact@v8
         with:
           name: frontend-static
           path: src/Elastic.Documentation.Site/_static
 
+      - name: Skip the npm build
+        if: ${{ steps.frontend.outcome == 'success' }}
+        shell: bash
+        run: echo "SkipNpmBuild=true" >> "$GITHUB_ENV"
+
       - name: Compile
-        env:
-          SkipNpmBuild: ${{ steps.changes.outputs.skip-npm == 'true' }}
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
@@ -219,8 +224,6 @@ jobs:
 
       - name: Test
         if: ${{ steps.changes.outputs.run-tests != 'false' }}
-        env:
-          SkipNpmBuild: ${{ steps.changes.outputs.skip-npm == 'true' }}
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
