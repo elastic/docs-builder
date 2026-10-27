@@ -71,7 +71,7 @@
     <NpmBuildInputFiles Include="package-lock.json" />
     <NpmBuildInputFiles Include="tsconfig.json" />
     <NpmBuildInputFiles Include="tailwind.config.js" />
-    <NpmBuildInputFiles Include="vite.config.ts" />
+    <NpmBuildInputFiles Include="vite.config.mts" />
   </ItemGroup>
   <!-- Tailwind scans these directories for utility class usage (see tailwind.config.js content paths).
        Resolved inside a target so external cshtml files don't appear in the IDE's project tree. -->
