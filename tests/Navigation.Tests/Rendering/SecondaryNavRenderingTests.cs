@@ -173,20 +173,20 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
-	public async Task ApiContextBarShowsTheApiAndItsSpecDownload()
+	public async Task ApiIdentityShowsTheApiAndItsVersionsInOneMenu()
 	{
-		var bar = new ApiContextBar(
+		var bar = new ApiIdentity(
 			"Elasticsearch API",
 			"<svg></svg>",
 			[
-				new ApiContextProductGroup(
+				new ApiIdentityProductGroup(
 					"Elastic Stack",
 					[
-						new ApiContextProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
-						new ApiContextProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+						new ApiIdentityProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
+						new ApiIdentityProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
 					]
 				),
-				new ApiContextProductGroup(null, [new ApiContextProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
+				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
 			],
 			"/docs/api/",
 			[
@@ -196,30 +196,78 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 			new ApiSpecDownload("/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml")
 		);
 
-		var html = await _ApiContextBar.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		// Product and version together on the left, the spec download alone on the right.
+		// One trigger carries the API and the current version; one menu holds versions, then APIs, then All APIs.
+		CountOccurrences(html, "popovertarget=").Should().Be(1);
 		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("popovertarget=\"api-hub-menu\"");
-		html.Should().Contain("api-context-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
+		html.Should().Contain("api-identity-version-label\">main</span>");
+		html.Should().Contain("id=\"api-version-switcher\"").And.Contain("href=\"/docs/api/doc/elasticsearch/v8/\"");
+		html.Should().Contain("api-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
 		// A group without a title gets no label, and the separator sits between the groups.
 		html.Should().NotContain("id=\"api-hub-group-1\"");
-		var groupOrder = new[] { "Kibana APIs", "api-context-menu-sep", "Alpha API" }.Select(
-			t => html.IndexOf(t, StringComparison.Ordinal)
-		).ToArray();
-		groupOrder.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
-		html.Should().Contain("id=\"api-version-switcher\"").And.Contain("popovertarget=\"api-version-menu\"");
-		html.Should().Contain("Download OpenAPI spec").And.Contain("popovertarget=\"api-spec-menu\"");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\"").And.Contain("download");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\"");
-		var order = new[] { "id=\"api-hub-switcher\"", "id=\"api-version-switcher\"", "id=\"api-download-source\"" }.Select(
+		var order = new[] { "id=\"api-version-switcher\"", "Kibana APIs", "Alpha API", "All APIs" }.Select(
 			t => html.IndexOf(t, StringComparison.Ordinal)
 		).ToArray();
 		order.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
-		// The breadcrumb is the page's own, so the bar carries no trail. Its ids stay clear of the docs bar's.
-		html.Should().NotContain(">Docs</a>").And.NotContain(">APIs</a>");
-		html.Should().Contain("id=\"api-context-bar-host\"").And.Contain("id=\"api-context-bar\"");
+		CountOccurrences(html, "api-menu-sep").Should().Be(3);
+		// The spec download lives in the page actions, not here.
+		html.Should().NotContain("Download OpenAPI spec");
 		html.Should().NotContain("id=\"secondary-nav");
 	}
+
+	[Test]
+	public async Task ApiIdentityTriggerDropsTheLatestSuffixButTheMenuKeepsIt()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[
+				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("v9 (latest)", "/a/v9/", true, "v9"),
+				new NavigationSelectOption("v8", "/a/v8/", false)
+			],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("api-identity-version-label\">v9</span>").And.Contain("version v9\"");
+		html.Should().Contain(">v9 (latest)</a>");
+		CountOccurrences(html, "(latest)").Should().Be(1);
+	}
+
+	[Test]
+	public async Task ApiIdentityWithoutVersionsOrOtherApisIsPlainText()
+	{
+		var bar = new ApiIdentity("Alpha API", null, [], null, [], new ApiSpecDownload("/a.json", "/a.yaml"));
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("api-identity-product--static").And.Contain("Alpha API");
+		html.Should().NotContain("popovertarget");
+	}
+
+	[Test]
+	public async Task ApiIdentityWithVersionsOnlyListsTheVersions()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[new NavigationSelectOption("main", "/a/", true), new NavigationSelectOption("v8", "/a/v8/", false)],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("id=\"api-version-switcher\"").And.NotContain("All APIs").And.NotContain("api-menu-sep");
+	}
+
+	static int CountOccurrences(string text, string value) => text.Split(value).Length - 1;
 
 	[Test]
 	public async Task DocsBarsCarryNoApiChrome()
@@ -228,7 +276,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		{
 			var html = await Render(TopNav, "/docs/", navigationPreviewEnabled: navigationPreviewEnabled);
 
-			html.Should().NotContain("api-context");
+			html.Should().NotContain("api-identity");
 			html.Should().NotContain("api-hub-switcher");
 		}
 	}

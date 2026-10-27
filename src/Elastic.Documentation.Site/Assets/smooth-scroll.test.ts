@@ -18,7 +18,7 @@ describe('smooth scroll for in-page links', () => {
                     <div hidden="until-found"><dt id="api-target">field</dt></div>
                 </section>
             </article>`
-        Element.prototype.scrollIntoView = jest.fn()
+        Element.prototype.scrollIntoView = vi.fn()
         initSmoothScroll()
     })
 

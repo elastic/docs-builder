@@ -24,7 +24,6 @@
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Sep" />
     <PackageReference Include="SharpYaml" />
-    <PackageReference Include="Slugify.Core" />
     <PackageReference Include="Utf8StreamReader" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />

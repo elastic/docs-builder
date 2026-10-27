@@ -120,7 +120,7 @@ public sealed class ReloadGeneratorService(
 	// Generated API pages bake in the rendering code, so a hot-reloaded change only shows after regeneration.
 	private void OnApplicationUpdated() => ReloadableGenerator.InvalidateApiReferences();
 
-	// Under dotnet watch, Parcel rebuilds JS and CSS that debug builds serve from disk, so a rebuild only needs a browser refresh.
+	// Under dotnet watch, Vite rebuilds JS and CSS that debug builds serve from disk, so a rebuild only needs a browser refresh.
 	private FileSystemWatcher? WatchStaticAssets()
 	{
 		if (Environment.GetEnvironmentVariable("DOTNET_WATCH") is null || Paths.GetSolutionDirectory() is not { } solutionRoot)

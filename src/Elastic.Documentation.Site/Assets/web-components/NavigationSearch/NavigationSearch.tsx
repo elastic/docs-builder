@@ -184,7 +184,8 @@ export const NavigationSearch = ({
                         disabled={isSearchCooldownActive}
                         isLoading={isSearching}
                         keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
-                        ariaLabel={isApi ? 'Explore API' : undefined}
+                        shortcutHint={slashFocusEnabled ? '/' : undefined}
+                        ariaLabel={isApi ? 'Explore APIs' : undefined}
                         title={
                             isApi
                                 ? 'Explore API operations. Type / to focus.'

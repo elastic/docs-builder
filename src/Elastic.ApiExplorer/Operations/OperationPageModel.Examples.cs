@@ -25,8 +25,10 @@ public record ExampleDisplay(
 	/// <summary>What the response's status code means, from the spec's <c>responses.&lt;code&gt;.description</c>.</summary>
 	public string? StatusDescription { get; init; }
 
-	/// <summary>The request content type the example is listed under.</summary>
+	/// <summary>The request or response content type the example is listed under.</summary>
 	public string? MediaType { get; init; }
+
+	public bool Generated { get; init; }
 }
 
 /// <summary>The examples listed under one content type of a request body.</summary>
@@ -36,11 +38,9 @@ internal sealed record RequestContent(string? MediaType, IDictionary<string, IOp
 public record ExampleResponse
 {
 	public required string StatusCode { get; init; }
-	public string? JsonValue { get; init; }
-	public string? ExternalValue { get; init; }
+	public IReadOnlyList<ExampleDisplay> Examples { get; init; } = [];
 
-	/// <summary>The response example's own description, shown above its body.</summary>
-	public HtmlString? DescriptionHtml { get; init; }
+	public HtmlString? DescriptionHtml => Examples.Count > 0 ? Examples[0].DescriptionHtml : null;
 
 	/// <summary>What the status code means; the status tab's tooltip.</summary>
 	public string? StatusDescription { get; init; }
@@ -50,8 +50,6 @@ public record ExampleResponse
 	/// "No body" instead of "No example".
 	/// </summary>
 	public bool IsNoBody { get; init; }
-
-	public bool HasExampleBody => JsonValue is not null || !string.IsNullOrEmpty(ExternalValue);
 }
 
 /// <summary>
@@ -256,7 +254,13 @@ public partial record OperationPageModel
 		foreach (var example in shared)
 		{
 			var statusCode = string.IsNullOrEmpty(example.StatusCode) ? "default" : example.StatusCode;
-			if (merged.Any(r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase)))
+			if (
+				merged.Any(
+					r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase) && r.Examples.Any(
+						e => e.MediaType == example.MediaType
+					)
+				)
+			)
 				continue;
 			merged = UpsertResponse(merged, example);
 		}
@@ -279,7 +283,19 @@ public partial record OperationPageModel
 					r => string.Equals(r.StatusCode, response.StatusCode, StringComparison.OrdinalIgnoreCase)
 				);
 				if (alreadyPresent)
+				{
+					var index = responses.FindIndex(r => r.StatusCode == response.StatusCode);
+					var current = responses[index];
+					responses[index] = current with
+					{
+						Examples =
+						[
+							.. current.Examples,
+							.. response.Examples.Where(e => !current.Examples.Any(c => c.MediaType == e.MediaType))
+						]
+					};
 					continue;
+				}
 				responses.Add(response);
 			}
 		}
@@ -345,18 +361,11 @@ public partial record OperationPageModel
 	private static IReadOnlyList<ExampleResponse> UpsertResponse(IReadOnlyList<ExampleResponse> existing, ExampleDisplay example)
 	{
 		var statusCode = string.IsNullOrEmpty(example.StatusCode) ? "default" : example.StatusCode;
-		var next = new ExampleResponse
-		{
-			StatusCode = statusCode,
-			JsonValue = example.JsonValue,
-			ExternalValue = example.ExternalValue,
-			DescriptionHtml = example.DescriptionHtml,
-			StatusDescription = example.StatusDescription
-		};
+		var next = new ExampleResponse { StatusCode = statusCode, Examples = [example], StatusDescription = example.StatusDescription };
 		var list = existing.ToList();
 		var index = list.FindIndex(r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase));
 		if (index >= 0)
-			list[index] = next;
+			list[index] = next with { Examples = [.. list[index].Examples.Where(e => e.MediaType != example.MediaType), example] };
 		else
 			list.Add(next);
 
@@ -457,23 +466,31 @@ public partial record OperationPageModel
 	}
 
 	/// <summary>
-	/// When scenarios have request/code samples but no response example bodies, attach
-	/// status-code tabs from the operation's declared responses so the rail still shows
-	/// "No body" / "No example" instead of omitting the response card.
+	/// Fills each scenario's missing status tabs from the operation's declared responses without replacing its examples.
 	/// </summary>
 	public static IReadOnlyList<ExampleScenario> EnsureResponseTabs(IReadOnlyList<ExampleScenario> scenarios, OpenApiResponses? responses)
 	{
 		if (scenarios.Count == 0 || responses is null || responses.Count == 0)
 			return scenarios;
 
-		if (scenarios.Any(static s => s.Responses.Count > 0))
-			return scenarios;
-
 		var fallback = BuildStatusOnlyResponses(responses);
 		if (fallback.Count == 0)
 			return scenarios;
 
-		return scenarios.Select(s => s with { Responses = fallback }).ToArray();
+		return scenarios.Select(
+			s =>
+				s with
+				{
+					Responses =
+					[
+						.. s
+							.Responses
+							.Concat(fallback.Where(r => !s.Responses.Any(existing => existing.StatusCode == r.StatusCode)))
+							.OrderBy(static r => StatusSortKey(r.StatusCode))
+							.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
+					]
+				}
+		).ToArray();
 	}
 
 	private static IReadOnlyList<ExampleResponse> BuildStatusOnlyResponses(OpenApiResponses responses) =>
@@ -495,34 +512,39 @@ public partial record OperationPageModel
 	private static string? StatusDescriptionOf(IOpenApiResponse? response) =>
 		string.IsNullOrWhiteSpace(response?.Description) ? null : response.Description.Replace("`", "", StringComparison.Ordinal).Trim();
 
-	private static IReadOnlyList<ExampleDisplay> MapResponseExamples(OpenApiResponses? responses, Func<string?, HtmlString> renderMarkdown)
+	internal static IReadOnlyList<ExampleDisplay> MapResponseExamples(
+		OpenApiResponses? responses,
+		Func<string?, HtmlString> renderMarkdown,
+		SchemaAnalyzer analyzer
+	)
 	{
-		if (responses is null || responses.Count == 0)
-			return [];
-
 		var list = new List<ExampleDisplay>();
-		foreach (var (statusCode, response) in responses)
+		foreach (var (statusCode, response) in responses ?? [])
 		{
-			var media = response?.Content?.FirstOrDefault().Value;
-			var statusDescription = StatusDescriptionOf(response);
-			var named = MapExamples(media?.Examples, renderMarkdown, statusCode);
-			if (named.Count > 0)
+			foreach (var content in response?.Content ?? new Dictionary<string, IOpenApiMediaType>())
 			{
-				list.AddRange(named.Select(e => e with { StatusDescription = statusDescription }));
-				continue;
+				var examples = ResponseMediaExamples(statusCode, content, renderMarkdown, analyzer);
+				list.AddRange(examples.Select(e => e with { StatusDescription = StatusDescriptionOf(response), MediaType = content.Key }));
 			}
-
-			if (media?.Example is not { } example || JsonNullSentinel.IsJsonNullSentinel(example))
-				continue;
-
-			var json = example.ToString();
-			if (string.IsNullOrWhiteSpace(json))
-				continue;
-
-			list.Add(new ExampleDisplay(statusCode, null, json, null, statusCode) { StatusDescription = statusDescription });
 		}
-
 		return list;
+	}
+
+	private static IReadOnlyList<ExampleDisplay> ResponseMediaExamples(
+		string statusCode,
+		KeyValuePair<string, IOpenApiMediaType> content,
+		Func<string?, HtmlString> renderMarkdown,
+		SchemaAnalyzer analyzer
+	)
+	{
+		var (mediaType, media) = content;
+		var named = MapExamples(media.Examples, renderMarkdown, statusCode);
+		if (named.Count > 0)
+			return named;
+		if (media.Example is { } example)
+			return [new ExampleDisplay(statusCode, null, ResponseBodyExample.CopyValue(example)?.ToString() ?? "null", null, statusCode)];
+		var generated = ResponseBodyExample.Build(analyzer, mediaType, media.Schema);
+		return [new ExampleDisplay(statusCode, null, generated, null, statusCode) { Generated = generated is not null }];
 	}
 
 	/// <summary>With <paramref name="endpoint"/>, a request description's <c>Run `METHOD path`</c> line follows the path's dominant method.</summary>
@@ -542,7 +564,7 @@ public partial record OperationPageModel
 				return new ExampleDisplay(
 					ExampleTitle(e.Key, e.Value),
 					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
-					e.Value?.Value?.ToString(),
+					e.Value?.Value is { } value ? ResponseBodyExample.CopyValue(value)?.ToString() ?? "null" : null,
 					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
 					statusCode,
 					description

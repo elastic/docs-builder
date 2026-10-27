@@ -39,9 +39,9 @@ public partial class ApiPagesNavRenderingTests
 
 		html.Should().Contain("id=\"api-hub-switcher\"");
 		html.Should().Contain("id=\"api-version-switcher\"");
-		// Menus are popovers placed by api-menu.ts, each opened by a button that names it.
+		// One popover, placed by api-menu.ts, opened by one button: API and version are a single choice.
 		html.Should().Contain("popovertarget=\"api-hub-menu\"").And.Contain("id=\"api-hub-menu\"");
-		html.Should().Contain("popovertarget=\"api-version-menu\"").And.Contain("id=\"api-version-menu\"");
+		html.Should().NotContain("api-version-menu");
 		// Only the selected product and the selected version are marked current.
 		CountOccurrences(html, "aria-current=\"true\"").Should().Be(2);
 		html.Should().NotContain("aria-current=\"false\"");
@@ -68,7 +68,7 @@ public partial class ApiPagesNavRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Assembler_HasOnlyTheFilterBecauseTheBarCarriesTheApi()
+	public async Task Render_Assembler_ShowsTheApiIdentityAboveTheFilter()
 	{
 		var model = CreateLayoutModel(
 			"/api/doc/elasticsearch/",
@@ -82,9 +82,11 @@ public partial class ApiPagesNavRenderingTests
 
 		var html = await _ApiPagesNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().NotContain("api-hub-switcher").And.NotContain("api-version-switcher").And.NotContain("<select");
-		html.Should().Contain("navigation-search");
-		CountOccurrences(html, "border-b").Should().Be(1);
+		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("id=\"api-version-switcher\"").And.NotContain("<select");
+		html
+			.IndexOf("api-hub-switcher", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("navigation-search", StringComparison.Ordinal));
 	}
 
 	[Test]
@@ -240,6 +242,32 @@ public partial class ApiPagesNavRenderingTests
 		link.Should().NotContain("icon-api-x");
 	}
 
+	[Test]
+	[Arguments("/api/doc/kibana/group/endpoint-dashboards#get-started", true)]
+	[Arguments("/api/doc/kibana/group/endpoint-dashboards", false)]
+	public async Task Render_InPageLeaf_OptsOutOfHtmxBoost(string url, bool optsOut)
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new() { Kind = NavigationRenderNodeKind.Leaf, IsTopLevel = false, NavigationTitle = "Get started", Url = url }
+		];
+		var ct = TestContext.Current!.Execution.CancellationToken;
+
+		foreach (var html in new[]
+		{
+			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+		})
+		{
+			var link = OperationLink(html);
+			link.Should().NotContain("&quot;");
+			if (optsOut)
+				link.Should().Contain(" hx-boost=\"false\">");
+			else
+				link.Should().NotContain("hx-boost");
+		}
+	}
+
 	private static string OperationLink(string html)
 	{
 		var start = html.IndexOf("<a ", StringComparison.Ordinal);
@@ -252,7 +280,7 @@ public partial class ApiPagesNavRenderingTests
 	private static ApiLayoutViewModel CreateLayoutModel(
 		string navigationUrl,
 		string markdownUrl,
-		ApiContextBar? apiContext = null,
+		ApiIdentity? apiContext = null,
 		FeatureFlags? features = null,
 		BuildType buildType = BuildType.Isolated
 	)
@@ -286,7 +314,7 @@ public partial class ApiPagesNavRenderingTests
 		};
 	}
 
-	private static ApiContextBar CreateApiContext(IReadOnlyList<NavigationSelectOption>? versions = null) =>
+	private static ApiIdentity CreateApiContext(IReadOnlyList<NavigationSelectOption>? versions = null) =>
 		new(
 			"Elasticsearch API",
 			IconSvg: null,

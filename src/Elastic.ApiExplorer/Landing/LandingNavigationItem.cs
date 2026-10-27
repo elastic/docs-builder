@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -165,10 +166,12 @@ public class TagNavigationItem(
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
-	internal void ApplyIntroHeadings(string? markdown)
+	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
-		var headings = IntroHeadings.Parse(markdown).Select(heading => new IntroHeadingNavigationItem(this, heading));
+		var headings = introHeadings.Select(
+			heading => new IntroHeadingNavigationItem(this, new IntroHeading(heading.Heading, heading.Slug))
+		);
 		NavigationItems = [.. headings, .. operations];
 	}
 
@@ -181,6 +184,8 @@ public class TagNavigationItem(
 	/// <inheritdoc />
 	public override string Id { get; } = ShortId.Create(tag.Name);
 }
+
+public sealed record IntroHeading(string Title, string Slug) : INavigationModel;
 
 public sealed class IntroHeadingNavigationItem(TagNavigationItem parent, IntroHeading heading) : ILeafNavigationItem<IntroHeading>
 {

@@ -5,7 +5,7 @@
 ### Native (recommended for active development)
 
 - [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
-- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
+- [Node.js 22.18.0 (LTS)](https://nodejs.org/en/blog/release/v22.18.0)
 
 The Aspire toolchain is bundled as a local dotnet tool — no workload install required.
 
@@ -89,7 +89,7 @@ Two watch loops are available depending on what you're working on:
 
 Monitors code, Razor template files, and frontend assets for a **single documentation set**.
 Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
-the server automatically. Web assets are rebuilt by `parcel watch` in the background.
+the server automatically. Web assets are rebuilt by `vite build --watch` in the background.
 
 ### Full assembled-site watch (assembler, navigation, multi-repo)
 
