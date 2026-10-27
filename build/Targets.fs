@@ -134,7 +134,7 @@ let private publishContainers _ =
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
     createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
-let private runTests (testSuite: TestSuite) _ =
+let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
     let directories =
         match testSuite with
         | All -> [ "tests"; "tests-integration" ]
@@ -151,6 +151,8 @@ let private runTests (testSuite: TestSuite) _ =
 
     if List.isEmpty projects then
         failwithf "No test projects found under %A" directories
+
+    let parallelism = parsed.TryGetResult Test_Parallelism |> Option.defaultValue System.Environment.ProcessorCount
 
     // Test projects run concurrently; output is buffered per project so logs stay readable.
     let runOne (project: string) =
@@ -178,7 +180,7 @@ let private runTests (testSuite: TestSuite) _ =
     let failures =
         projects
         |> List.map runOne
-        |> fun runs -> Async.Parallel(runs, maxDegreeOfParallelism = System.Environment.ProcessorCount)
+        |> fun runs -> Async.Parallel(runs, maxDegreeOfParallelism = parallelism)
         |> Async.RunSynchronously
         |> Array.filter (snd >> not)
         |> Array.map fst
@@ -304,6 +306,7 @@ let Setup (parsed:ParseResults<Build>) =
         // flags
         | Single_Target
         | Test_Suite _
+        | Test_Parallelism _
         | Token _
         | Skip_Dirty_Check -> Build.Ignore
 
