@@ -25,6 +25,9 @@ concurrency:
   group: docs-preview-local-${{ github.event_name == 'pull_request' && format('pr{0}-{1}', github.event.pull_request.number, github.event.pull_request.head.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
 jobs:
   match:
     if: github.event.repository.fork == false

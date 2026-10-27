@@ -48,6 +48,7 @@ type Build =
     | [<Inherit>] Token of string 
     | [<Inherit;AltCommandLine("-c")>] Skip_Dirty_Check
     | [<Inherit;EqualsAssignment>] Test_Suite of TestSuite
+    | [<Inherit;EqualsAssignment>] Test_Parallelism of int
 with
     interface IArgParserTemplate with
         member this.Usage =
@@ -86,6 +87,7 @@ with
             | Token _ -> "Token to be used to authenticate with github"
             | Skip_Dirty_Check -> "Skip the clean checkout check that guards the release/publish targets"
             | Test_Suite _ -> "Specify the test suite to run, defaults to all"
+            | Test_Parallelism _ -> "Max number of test projects to run at once, defaults to the processor count"
 
     member this.StepName =
         match FSharpValue.GetUnionFields(this, typeof<Build>) with
