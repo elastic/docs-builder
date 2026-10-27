@@ -45,7 +45,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Telemetry.Abstractions" Version="10.11.0" />
     <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
-    <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.4.2" />
+    <PackageVersion Include="Nullean.ScopedFileSystem" Version="0.5.0" />
     <PackageVersion Include="Pagefind.Net" Version="0.4.1" />
     <PackageVersion Include="Pagefind.Net.Frontend" Version="0.4.1" />
     <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.19.0" />
@@ -96,7 +96,7 @@
     <PackageVersion Include="Slugify.Core" Version="4.0.1" />
     <PackageVersion Include="Spectre.Console" Version="0.55.0" />
     <PackageVersion Include="SoftCircuits.IniFileParser" Version="2.7.0" />
-    <PackageVersion Include="System.IO.Abstractions" Version="22.2.0" />
+    <PackageVersion Include="System.IO.Abstractions" Version="22.3.0" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
     <PackageVersion Include="SharpYaml" Version="3.16.0" />
@@ -138,7 +138,7 @@
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
     <PackageVersion Include="OpenTelemetry.Exporter.InMemory" Version="1.19.1" />
-    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.2.0" />
+    <PackageVersion Include="System.IO.Abstractions.TestingHelpers" Version="22.3.0" />
     <PackageVersion Include="Testcontainers.Elasticsearch" Version="4.6.0" />
   </ItemGroup>
 </Project>
