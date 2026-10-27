@@ -41,6 +41,9 @@
     "url": "https://github.com/elastic/docs-builder.git"
   },
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@elastic/synthetics": "1.26.3",

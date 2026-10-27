@@ -74,17 +74,29 @@ export default defineConfig({
                 defaultHandler(warning)
             },
             input: {
-                main: path.resolve(__dirname, 'Assets/main.ts'),
-                styles: path.resolve(__dirname, 'Assets/styles.css'),
-                assembler: path.resolve(__dirname, 'Assets/assembler.css'),
-                isolated: path.resolve(__dirname, 'Assets/isolated.css'),
-                codex: path.resolve(__dirname, 'Assets/codex.css'),
+                main: path.resolve(import.meta.dirname, 'Assets/main.ts'),
+                styles: path.resolve(import.meta.dirname, 'Assets/styles.css'),
+                assembler: path.resolve(
+                    import.meta.dirname,
+                    'Assets/assembler.css'
+                ),
+                isolated: path.resolve(
+                    import.meta.dirname,
+                    'Assets/isolated.css'
+                ),
+                codex: path.resolve(import.meta.dirname, 'Assets/codex.css'),
                 // The design-system bundle, loaded instead of the above when NAVIGATION_PREVIEW is on.
                 // ds-layers.css stays its own file: the cascade order must not be reordered by the bundler.
-                ds: path.resolve(__dirname, 'Assets/ds.ts'),
-                'ds-layers': path.resolve(__dirname, 'Assets/ds-layers.css'),
-                'ds-css': path.resolve(__dirname, 'Assets/ds.css'),
-                'ds-guide': path.resolve(__dirname, 'Assets/ds-guide.css'),
+                ds: path.resolve(import.meta.dirname, 'Assets/ds.ts'),
+                'ds-layers': path.resolve(
+                    import.meta.dirname,
+                    'Assets/ds-layers.css'
+                ),
+                'ds-css': path.resolve(import.meta.dirname, 'Assets/ds.css'),
+                'ds-guide': path.resolve(
+                    import.meta.dirname,
+                    'Assets/ds-guide.css'
+                ),
             },
             output: {
                 // Chunks import shared code back from the entry by file name. A content-hashed
