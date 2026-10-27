@@ -122,6 +122,8 @@ jobs:
           # Pre-compress all non-zip files so aws s3 sync ships ~120 MB instead of ~2 GiB.
           # Zip bundles (llm.zip, okf.zip) are already compressed; syncing them with
           # content-encoding:gzip would prevent clients from decoding them correctly.
+          # The inner sh -c script is intentionally single-quoted so it expands per file, not here.
+          # shellcheck disable=SC2016
           find ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" -type f ! -name "*.zip" -print0 \
             | xargs -0 -P "$(nproc)" -I{} sh -c 'tmp=$(mktemp "$1.tmp.XXXXXX") && gzip -9 -n -c "$1" > "$tmp" && mv -f "$tmp" "$1"' _ {}
 
