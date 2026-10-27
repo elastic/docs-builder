@@ -18,7 +18,6 @@ env:
 
 jobs:
   validate-assembler:
-    needs: [lint]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -35,12 +34,46 @@ jobs:
       - name: Validate Content Sources
         run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
 
+  # The lambda Docker builds are slow and only depend on a handful of projects, so on PRs
+  # only run them when their transitive project references (or shared build inputs) change.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      link-index-lambda: ${{ steps.filter.outputs.link-index-lambda }}
+      openapi-index-lambda: ${{ steps.filter.outputs.openapi-index-lambda }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # pull_request checks out the merge commit: HEAD^1 is the base branch tip
+          fetch-depth: 2
+
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "link-index-lambda=true" >> "$GITHUB_OUTPUT"
+            echo "openapi-index-lambda=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only HEAD^1 HEAD > changed.txt
+          cat changed.txt
+          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.github/workflows/ci\.yml)$'
+          link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
+          openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
+          matches() { grep -Eq -e "$shared" -e "$1" changed.txt && echo true || echo false; }
+          echo "link-index-lambda=$(matches "$link_index")" >> "$GITHUB_OUTPUT"
+          echo "openapi-index-lambda=$(matches "$openapi_index")" >> "$GITHUB_OUTPUT"
+
   build-link-index-updater-lambda:
-    needs: [lint]
+    needs: [changes]
+    if: ${{ needs.changes.outputs.link-index-lambda == 'true' }}
     uses: $/.github/workflows/build-link-index-updater-lambda.yml
 
   build-openapi-index-lambda:
-    needs: [lint]
+    needs: [changes]
+    if: ${{ needs.changes.outputs.openapi-index-lambda == 'true' }}
     uses: $/.github/workflows/build-openapi-index-lambda.yml
 
   npm:
@@ -97,7 +130,6 @@ jobs:
           path: .
 
   build:
-    needs: [lint]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
