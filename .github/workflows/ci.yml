@@ -129,7 +129,7 @@ jobs:
           command: check
           path: .
 
-  # Builds the frontend assets once for the Windows and macOS build jobs. `npm ci` takes about
+  # Builds the frontend assets once for the Windows and macOS PR build jobs. `npm ci` takes about
   # 6 minutes on Windows runners, and the Vite output is identical on every OS.
   frontend:
     runs-on: ubuntu-latest
@@ -163,9 +163,6 @@ jobs:
          - ubuntu-latest
          - macos-latest
          - windows-latest
-    env:
-      # Linux builds the frontend itself; Windows and macOS reuse the `frontend` job's output
-      SkipNpmBuild: ${{ matrix.os != 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -174,31 +171,43 @@ jobs:
         id: bootstrap
         uses: $/.github/actions/bootstrap
 
-      - name: Download frontend assets
-        if: ${{ matrix.os != 'ubuntu-latest' }}
-        uses: actions/download-artifact@v8
-        with:
-          name: frontend-static
-          path: src/Elastic.Documentation.Site/_static
-
-      # Linux runs the unit tests on every PR. Windows and macOS only add value when .NET code,
-      # build inputs or test fixtures change, so PRs that touch only docs or the frontend skip them there.
-      - name: Detect .NET changes
-        id: dotnet-changes
+      # Decides how much Windows and macOS repeat on a PR. Linux always builds the frontend and runs the unit tests,
+      # and pushes to main do everything natively on every OS.
+      # - unit tests run only when .NET code, build inputs or test fixtures change
+      # - the frontend is built natively only when its toolchain changes, which is where native npm packages
+      #   (esbuild, rolldown, lightningcss, tailwind oxide) break per OS; otherwise the `frontend` job's output is reused
+      - name: Detect changes
+        id: changes
         if: ${{ github.event_name == 'pull_request' && matrix.os != 'ubuntu-latest' }}
         shell: bash
         run: |
           # bootstrap unshallows the clone; HEAD is the PR merge commit and HEAD^1 the base branch tip
           git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
           dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
+          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
           if grep -Eq "$dotnet" "$RUNNER_TEMP/changed.txt"; then
             echo "run-tests=true" >> "$GITHUB_OUTPUT"
           else
             echo "No .NET changes; skipping unit tests on ${RUNNER_OS}."
             echo "run-tests=false" >> "$GITHUB_OUTPUT"
           fi
+          if grep -Eq "$frontend_toolchain" "$RUNNER_TEMP/changed.txt"; then
+            echo "Frontend toolchain changed; building the frontend natively on ${RUNNER_OS}."
+            echo "skip-npm=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip-npm=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download frontend assets
+        if: ${{ steps.changes.outputs.skip-npm == 'true' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-static
+          path: src/Elastic.Documentation.Site/_static
 
       - name: Compile
+        env:
+          SkipNpmBuild: ${{ steps.changes.outputs.skip-npm == 'true' }}
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
@@ -209,7 +218,9 @@ jobs:
           rm docs/cli-schema.json.tmp
 
       - name: Test
-        if: ${{ steps.dotnet-changes.outputs.run-tests != 'false' }}
+        if: ${{ steps.changes.outputs.run-tests != 'false' }}
+        env:
+          SkipNpmBuild: ${{ steps.changes.outputs.skip-npm == 'true' }}
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
