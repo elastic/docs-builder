@@ -108,3 +108,13 @@ updates:
       - chore
     cooldown:
       default-days: 14
+  # Keep the SDK pin in global.json current. The Docker builds install the
+  # SDK from that file, so one PR updates the repo and the images together.
+  - package-ecosystem: dotnet-sdk
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    labels:
+      - chore
