@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import path from 'node:path'
@@ -27,6 +28,25 @@ export default defineConfig({
     define: {
         'process.env.DOCS_BUILDER_VERSION': JSON.stringify(docsBuilderVersion),
     },
+    test: {
+        environment: 'jsdom',
+        globals: true,
+        environmentOptions: { jsdom: { url: 'http://localhost/' } },
+        // Inlined so vi.resetModules() also resets it; externalized deps stay cached by Node.
+        server: { deps: { inline: ['highlight.js'] } },
+        setupFiles: ['./setupTests.ts'],
+        include: ['**/*.test.{ts,tsx}'],
+        exclude: [
+            '**/node_modules/**',
+            '_static/**',
+            'visual/**',
+            'synthetics/**',
+        ],
+        reporters:
+            process.env.CI === 'true'
+                ? ['github-actions', 'dot']
+                : ['default', 'github-actions'],
+    },
     build: {
         // The design system's floor, which Vite lowers nesting and other newer CSS to. The legacy bundle is lowered the same way.
         cssTarget: ['chrome111', 'edge111', 'firefox113', 'safari16.2'],
@@ -54,17 +74,29 @@ export default defineConfig({
                 defaultHandler(warning)
             },
             input: {
-                main: path.resolve(__dirname, 'Assets/main.ts'),
-                styles: path.resolve(__dirname, 'Assets/styles.css'),
-                assembler: path.resolve(__dirname, 'Assets/assembler.css'),
-                isolated: path.resolve(__dirname, 'Assets/isolated.css'),
-                codex: path.resolve(__dirname, 'Assets/codex.css'),
+                main: path.resolve(import.meta.dirname, 'Assets/main.ts'),
+                styles: path.resolve(import.meta.dirname, 'Assets/styles.css'),
+                assembler: path.resolve(
+                    import.meta.dirname,
+                    'Assets/assembler.css'
+                ),
+                isolated: path.resolve(
+                    import.meta.dirname,
+                    'Assets/isolated.css'
+                ),
+                codex: path.resolve(import.meta.dirname, 'Assets/codex.css'),
                 // The design-system bundle, loaded instead of the above when NAVIGATION_PREVIEW is on.
                 // ds-layers.css stays its own file: the cascade order must not be reordered by the bundler.
-                ds: path.resolve(__dirname, 'Assets/ds.ts'),
-                'ds-layers': path.resolve(__dirname, 'Assets/ds-layers.css'),
-                'ds-css': path.resolve(__dirname, 'Assets/ds.css'),
-                'ds-guide': path.resolve(__dirname, 'Assets/ds-guide.css'),
+                ds: path.resolve(import.meta.dirname, 'Assets/ds.ts'),
+                'ds-layers': path.resolve(
+                    import.meta.dirname,
+                    'Assets/ds-layers.css'
+                ),
+                'ds-css': path.resolve(import.meta.dirname, 'Assets/ds.css'),
+                'ds-guide': path.resolve(
+                    import.meta.dirname,
+                    'Assets/ds-guide.css'
+                ),
             },
             output: {
                 // Chunks import shared code back from the entry by file name. A content-hashed

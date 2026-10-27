@@ -11,17 +11,19 @@ import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
 // Mock htmx - it uses XPath which jsdom doesn't support properly
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
+vi.mock('htmx.org', () => ({
+    default: {
+        on: vi.fn(),
+        off: vi.fn(),
+        process: vi.fn(),
+        ajax: vi.fn(),
+    },
 }))
 
 // Mock the telemetry logging functions
-jest.mock('../../telemetry/logging', () => ({
-    logInfo: jest.fn(),
-    logWarn: jest.fn(),
+vi.mock('../../telemetry/logging', () => ({
+    logInfo: vi.fn(),
+    logWarn: vi.fn(),
 }))
 
 // Mock search results for result click tests
@@ -86,12 +88,12 @@ const resetStores = () => {
 
 describe('Navigation Search Telemetry Integration', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetStores()
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     describe('Opening Navigation Search', () => {
@@ -122,7 +124,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus and type, then escape
             await userEvent.click(input)
             await userEvent.type(input, 'elasticsearch')
-            jest.clearAllMocks() // Clear the opened event
+            vi.clearAllMocks() // Clear the opened event
 
             await userEvent.keyboard('{Escape}')
 
@@ -149,7 +151,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus, type, then click outside
             await userEvent.click(input)
             await userEvent.type(input, 'test')
-            jest.clearAllMocks()
+            vi.clearAllMocks()
 
             await userEvent.click(screen.getByTestId('outside'))
 
@@ -170,7 +172,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus, type, then escape without results
             await userEvent.click(input)
             await userEvent.type(input, 'test')
-            jest.clearAllMocks()
+            vi.clearAllMocks()
 
             await userEvent.keyboard('{Escape}')
 
@@ -188,7 +190,7 @@ describe('Navigation Search Telemetry Integration', () => {
     describe('Error Tracking', () => {
         it('should track navigation_search_rate_limited on 429 response', async () => {
             // Arrange - mock 429 response
-            global.fetch = jest.fn().mockResolvedValue({
+            global.fetch = vi.fn().mockResolvedValue({
                 ok: false,
                 status: 429,
                 headers: {
@@ -222,18 +224,18 @@ describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
         isKeyboardNavigating: { current: false },
-        onMouseMove: jest.fn(),
-        onResultClick: jest.fn(),
+        onMouseMove: vi.fn(),
+        onResultClick: vi.fn(),
     })
 
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetStores()
         // Set up the store with a search term
         navigationSearchStore.getState().actions.setSearchTerm('elasticsearch')
 
         // Mock the query hook to return results
-        jest.spyOn(queryHook, 'useNavigationSearchQuery').mockReturnValue({
+        vi.spyOn(queryHook, 'useNavigationSearchQuery').mockReturnValue({
             isLoading: false,
             isFetching: false,
             data: mockSearchResults,
@@ -242,7 +244,7 @@ describe('Navigation Search Result Click Tracking', () => {
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('should track result click with query, position, url, and score', async () => {
@@ -314,7 +316,7 @@ describe('Navigation Search Result Click Tracking', () => {
         )
 
         await userEvent.type(input, 'bulk')
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         await userEvent.keyboard('{Escape}')
         expect(logging.logInfo).toHaveBeenCalledWith(
             'navigation_search_closed',

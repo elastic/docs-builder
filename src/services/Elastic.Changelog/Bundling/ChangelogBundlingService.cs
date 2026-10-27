@@ -715,7 +715,7 @@ public partial class ChangelogBundlingService(
 					)
 #pragma warning restore CS0618
 				);
-				outputPath = JoinProfileOutputPath(config, input, fileName);
+				outputPath = JoinProfileOutputPath(config, input, fileName, primaryProduct);
 			}
 
 			// Parse output_products pattern with version/lifecycle substitution.
@@ -1310,7 +1310,7 @@ public partial class ChangelogBundlingService(
 				)
 #pragma warning restore CS0618
 			);
-			outputPath = JoinProfileOutputPath(config, input, fileName);
+			outputPath = JoinProfileOutputPath(config, input, fileName, primaryProduct);
 		}
 		else
 			outputPath = ResolveResolvedOutputPath(collector, input, config);
@@ -1371,9 +1371,10 @@ public partial class ChangelogBundlingService(
 
 	/// <summary>
 	/// Explicit <c>.yml</c>/<c>.yaml</c> <c>--output</c> wins. A directory <c>--output</c> (or
-	/// omitted) joins the conventional name, or <see cref="BundleOutputNaming.FallbackFileName"/>
-	/// when product/version cannot be resolved. Profile mode that already missed convention keeps
-	/// the fallback name without a second product/version warning.
+	/// omitted) joins the conventional name inside a <c>{product}/</c> subfolder when a product
+	/// resolves, or <see cref="BundleOutputNaming.FallbackFileName"/> when product/version cannot
+	/// be resolved. Profile mode that already missed convention keeps the fallback name without a
+	/// second product/version warning.
 	/// </summary>
 	private string ResolveResolvedOutputPath(
 		IDiagnosticsCollector collector,
@@ -1384,7 +1385,10 @@ public partial class ChangelogBundlingService(
 		if (BundleOutputNaming.IsYamlFilePath(input.Output))
 			return input.Output!.OptionalWindowsReplace();
 
-		var outputDir = !string.IsNullOrWhiteSpace(input.Output)
+		var hasExplicitOutputDir = !string.IsNullOrWhiteSpace(input.Output);
+		// A caller that passes OutputDirectory (release unified, release serverless) chooses its own layout.
+		var callerChoseOutputDir = hasExplicitOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
+		var outputDir = hasExplicitOutputDir
 			? input.Output
 			: ResolveConfiguredOutputDirectory(config, input)
 				?? input.OutputDirectory
@@ -1396,6 +1400,11 @@ public partial class ChangelogBundlingService(
 			return _fileSystem.Path.Join(outputDir, BundleOutputNaming.FallbackFileName).OptionalWindowsReplace();
 
 		var product = ResolvePrimaryProduct(null, input) ?? "";
+		// Append the per-product subfolder so the local tree mirrors the S3 layout
+		// bundle/{product}/{file} — but only when the caller did not choose the output directory.
+		if (!callerChoseOutputDir && !string.IsNullOrWhiteSpace(product))
+			outputDir = _fileSystem.Path.Join(outputDir, product);
+
 		var version = BundleOutputNaming.ResolveVersion(input.OutputProducts, input.InputProducts, input.ReleaseVersion) ?? "";
 		var fileName = BundleOutputNaming.ResolveFileNameOrFallback(
 			collector,
@@ -1410,14 +1419,35 @@ public partial class ChangelogBundlingService(
 	/// <summary>
 	/// Profile <c>output_directory</c> replaces <c>bundle.output_directory</c> (same as option-mode
 	/// <c>--output</c> as a directory). Then <c>input.OutputDirectory</c>, <c>bundle.directory</c>, CWD.
+	/// When neither the caller (<c>input.OutputDirectory</c>) nor a deprecated profile <c>output_directory</c>
+	/// chose the directory and <paramref name="primaryProduct"/> is known, appends a <c>{product}/</c>
+	/// subfolder so the local layout mirrors the S3 key structure <c>bundle/{product}/{file}</c>.
 	/// </summary>
-	private string JoinProfileOutputPath(ChangelogConfiguration? config, BundleChangelogsArguments input, string fileName)
+	private string JoinProfileOutputPath(
+		ChangelogConfiguration? config,
+		BundleChangelogsArguments input,
+		string fileName,
+		string? primaryProduct = null
+	)
 	{
-		var outputDir = ResolveConfiguredOutputDirectory(config, input)
+		// A caller's OutputDirectory (release unified already passes {root}/{product}) and a deprecated
+		// profile output_directory are honored verbatim — no subfolder appended.
+#pragma warning disable CS0618
+		var hasProfileOutputDir = !string.IsNullOrWhiteSpace(input.Profile)
+			&& config?.Bundle?.Profiles?.TryGetValue(input.Profile, out var prof) == true
+			&& !string.IsNullOrWhiteSpace(prof.OutputDirectory);
+#pragma warning restore CS0618
+		var keepDirectoryVerbatim = hasProfileOutputDir || !string.IsNullOrWhiteSpace(input.OutputDirectory);
+
+		var baseDir = ResolveConfiguredOutputDirectory(config, input)
 			?? input.OutputDirectory
 			?? config?.Bundle?.Directory
 			?? _fileSystem.Directory.GetCurrentDirectory();
-		return _fileSystem.Path.Join(outputDir, fileName).OptionalWindowsReplace();
+
+		if (!keepDirectoryVerbatim && !string.IsNullOrWhiteSpace(primaryProduct))
+			baseDir = _fileSystem.Path.Join(baseDir, primaryProduct);
+
+		return _fileSystem.Path.Join(baseDir, fileName).OptionalWindowsReplace();
 	}
 
 	/// <summary>

@@ -26,7 +26,7 @@ public class OperationExamplesPanelRenderingTests
 		Title = "A simple term search",
 		TabId = "term",
 		CodeSamples = [Sample("Console", "GET /_search"), Sample("curl"), Sample("Python"), Sample("Java", "client.search(s -> s)")],
-		Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+		Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 	};
 
 	private static readonly ExampleScenario Slicing = new()
@@ -41,6 +41,35 @@ public class OperationExamplesPanelRenderingTests
 
 	private static ValueTask<string> RenderScenario(ExampleScenario scenario) =>
 		_ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
+
+	[Test]
+	public async Task Render_GeneratedResponseMedia_ShowsProvenanceAndSeparateCopyActions()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Subscription",
+			TabId = "subscription",
+			Responses =
+			[
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples =
+					[
+						new ExampleDisplay("200", null, "{}", null) { MediaType = "application/json", Generated = true },
+						new ExampleDisplay("200", null, "false", null) { MediaType = "application/problem+json" }
+					]
+				}
+			]
+		});
+
+		html.Should().Contain("Generated from the API spec</span>");
+		html.Should().Contain("Unions use the first variant");
+		System.Net.WebUtility.HtmlDecode(html).Should().Contain("application/json").And.Contain("application/problem+json");
+		Regex.Matches(html, "data-code-card").Count.Should().Be(3);
+		Regex.Matches(html, "data-code-actions").Count.Should().Be(3);
+		Regex.Matches(html, "data-status=\"200\"").Count.Should().Be(2);
+	}
 
 	[Test]
 	public async Task Render_MultipleScenarios_ShowsChipsAndKeepsOthersFindable()
@@ -236,14 +265,12 @@ public class OperationExamplesPanelRenderingTests
 				new ExampleResponse
 				{
 					StatusCode = "200",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>")
+					Examples = [new ExampleDisplay("200", new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>"), "{}", null)]
 				},
 				new ExampleResponse
 				{
 					StatusCode = "404",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>")
+					Examples = [new ExampleDisplay("404", new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>"), "{}", null)]
 				}
 			]
 		});
@@ -265,8 +292,13 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "get",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}", StatusDescription = "Unauthorized" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples = [new ExampleDisplay("200", null, "{}", null)],
+					StatusDescription = "Unauthorized"
+				},
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 
@@ -297,7 +329,7 @@ public class OperationExamplesPanelRenderingTests
 		{
 			Title = "Match all",
 			TabId = "match-all",
-			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 		});
 
 		request.Should().Contain("api-code-card");
@@ -314,8 +346,8 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "match-all",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] },
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 

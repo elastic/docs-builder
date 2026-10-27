@@ -7,6 +7,7 @@ using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Microsoft.AspNetCore.Html;
@@ -107,8 +108,8 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
-	protected override IReadOnlyList<ApiTocItem> GetTocItems() =>
-		Page.Kind == ApiStructuralKind.Authentication ? Schemes.Select(scheme => new ApiTocItem(scheme.Heading, scheme.Slug)).ToArray() : [];
+	protected override IReadOnlyList<TocItem> GetTocItems() =>
+		Page.Kind == ApiStructuralKind.Authentication ? Schemes.Select(scheme => new TocItem(scheme.Heading, scheme.Slug, 2)).ToArray() : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context) =>
 		page.Kind == ApiStructuralKind.Authentication

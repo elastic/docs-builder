@@ -3842,7 +3842,7 @@ html:has(.api-page-shell) {
 /* A sample docs-builder built says so at the end of its own code block, so the note is about this sample and no other.
    It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
    selection and the copy button leave it out, like the line numbers. */
-#api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+#api-examples-panel .api-code-carousel-card-note {
 	/* Pinned to the bottom-right of the visible code, not to the code: it neither rides along a wide line's horizontal
 	   scroll nor disappears below a long body. Sticky keeps it in flow, so the strip height still counts it. */
 	position: sticky;

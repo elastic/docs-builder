@@ -7,11 +7,11 @@ import { render, screen } from '@testing-library/react'
 import * as React from 'react'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-jest.mock('idb-keyval', () => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(undefined),
-    del: jest.fn().mockResolvedValue(undefined),
-    createStore: jest.fn().mockReturnValue({}),
+vi.mock('idb-keyval', () => ({
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue(undefined),
+    del: vi.fn().mockResolvedValue(undefined),
+    createStore: vi.fn().mockReturnValue({}),
 }))
 
 // Create a fresh QueryClient for each test

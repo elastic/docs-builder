@@ -30,15 +30,15 @@ function flushMicrotasks(times = 6): Promise<void> {
 
 describe('initApiPageActions', () => {
     const markdown = '# Search\n'
-    const writeText = jest.fn().mockResolvedValue(undefined)
+    const writeText = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         writeText.mockClear()
         Object.assign(navigator, {
             clipboard: { writeText },
         })
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             text: async () => markdown,
         }) as unknown as typeof fetch
@@ -47,7 +47,7 @@ describe('initApiPageActions', () => {
     })
 
     afterEach(() => {
-        jest.useRealTimers()
+        vi.useRealTimers()
         document.body.innerHTML = ''
     })
 
@@ -66,7 +66,7 @@ describe('initApiPageActions', () => {
                 ?.textContent?.trim()
         ).toBe('Copied!')
 
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         expect(
             document
                 .querySelector('.api-page-actions-label')

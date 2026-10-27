@@ -594,9 +594,15 @@ function normalizeNavPathname(pathname: string) {
     return p === '' ? '/' : p
 }
 
+// A link to a heading on its page (an API group intro heading) is not a page of its own:
+// it never becomes current, and clicking it leaves the jump to the browser.
+function isInPageLink(anchor: HTMLAnchorElement) {
+    return anchor.getAttribute('href')?.includes('#') ?? false
+}
+
 function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
     const href = anchor.getAttribute('href')
-    if (!href) {
+    if (!href || isInPageLink(anchor)) {
         return false
     }
     try {
@@ -1059,7 +1065,10 @@ function onApiNavKey(event: KeyboardEvent) {
     if (!(link instanceof HTMLAnchorElement)) {
         return
     }
-    if (anchorMatchesPath(link, window.location.pathname)) {
+    if (
+        isInPageLink(link) ||
+        anchorMatchesPath(link, window.location.pathname)
+    ) {
         return
     }
     const grid = document.getElementById('api-content-grid')
@@ -1140,7 +1149,7 @@ function ensureFolderRowClick() {
             const a = e.target.closest(
                 '#pages-nav a.sidebar-link'
             ) as HTMLAnchorElement | null
-            if (!a) {
+            if (!a || isInPageLink(a)) {
                 return
             }
 
