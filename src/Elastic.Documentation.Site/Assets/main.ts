@@ -8,8 +8,8 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
-import { loadKatexStylesheet } from './katex-stylesheet'
 import { initListing } from './listing'
+import { initMath } from './math'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
@@ -99,59 +99,6 @@ function applyEditParam() {
     if (urlParams.has('edit')) {
         $optional('.edit-this-page.hidden')?.classList.remove('hidden')
     }
-}
-
-/**
- * Initialize KaTeX math rendering for elements with class 'math'.
- * KaTeX's JS and fonts/CSS are lazy-loaded here so pages without math pay nothing for them.
- */
-async function initMath() {
-    const mathElements = $$optional('.math:not([data-katex-processed])')
-    if (mathElements.length === 0) return
-
-    const [katex] = await Promise.all([import('katex'), loadKatexStylesheet()])
-
-    mathElements.forEach((element) => {
-        try {
-            const content = element.textContent?.trim()
-            if (!content) return
-
-            // Determine if this is display math based on content and element type
-            const isDisplayMath =
-                element.tagName === 'DIV' ||
-                content.includes('\\[') ||
-                content.includes('$$') ||
-                content.includes('\\begin{') ||
-                content.includes('\n')
-
-            // Clean up common LaTeX delimiters
-            const cleanContent = content
-                .replace(/^\$\$|\$\$$/g, '') // Remove $$ delimiters
-                .replace(/^\\\[|\\\]$/g, '') // Remove \[ \] delimiters
-                .trim()
-
-            // Clear the element content before rendering
-            element.innerHTML = ''
-
-            katex.render(cleanContent, element, {
-                throwOnError: false,
-                displayMode: isDisplayMath,
-                strict: false, // Allow some LaTeX extensions
-                trust: false, // Security: don't trust arbitrary commands
-                output: 'mathml', // Only render MathML, not HTML
-                macros: {
-                    // Add common macros if needed
-                },
-            })
-
-            // Mark as processed to prevent double processing
-            element.setAttribute('data-katex-processed', 'true')
-        } catch (error) {
-            console.warn('KaTeX rendering error:', error)
-            // Fallback: keep the original content
-            element.innerHTML = element.textContent || ''
-        }
-    })
 }
 
 // Attributes shared by cta_viewed and cta_clicked so the two are directly comparable (CTR).
