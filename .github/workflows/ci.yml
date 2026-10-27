@@ -25,22 +25,31 @@ jobs:
           persist-credentials: false
 
       - name: Bootstrap Action Workspace
-        id: bootstrap
         uses: $/.github/actions/bootstrap
 
+      - name: Build docs-builder
+        run: dotnet build src/tooling/docs-builder -c release
+
       - name: Validate Navigation
-        run: dotnet run --project src/tooling/docs-builder -c release -- assembler navigation validate
+        run: dotnet run --project src/tooling/docs-builder -c release --no-build -- assembler navigation validate
 
       - name: Validate Content Sources
-        run: dotnet run --project src/tooling/docs-builder -c release -- assembler content-source validate
+        run: dotnet run --project src/tooling/docs-builder -c release --no-build -- assembler content-source validate
 
-  # The lambda Docker builds are slow and only depend on a handful of projects, so on PRs
-  # only run them when their transitive project references (or shared build inputs) change.
+  # Decides which slow work a PR needs. Pushes to main always do everything.
+  # - link-index-lambda / openapi-index-lambda: the lambda's transitive project references or shared build inputs changed
+  # - dotnet: .NET code, build inputs or test fixtures changed, so Windows and macOS run the unit tests
+  #   (Linux runs them on every PR)
+  # - frontend-toolchain: npm dependencies or the Vite/Tailwind config changed, so Windows and macOS build the
+  #   frontend natively instead of reusing the `frontend` job's output. Native npm packages (esbuild, rolldown,
+  #   lightningcss, tailwind oxide) can break on one OS only.
   changes:
     runs-on: ubuntu-latest
     outputs:
       link-index-lambda: ${{ steps.filter.outputs.link-index-lambda }}
       openapi-index-lambda: ${{ steps.filter.outputs.openapi-index-lambda }}
+      dotnet: ${{ steps.filter.outputs.dotnet }}
+      frontend-toolchain: ${{ steps.filter.outputs.frontend-toolchain }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -52,9 +61,9 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
+          outputs='link-index-lambda openapi-index-lambda dotnet frontend-toolchain'
           if [ "$EVENT_NAME" != "pull_request" ]; then
-            echo "link-index-lambda=true" >> "$GITHUB_OUTPUT"
-            echo "openapi-index-lambda=true" >> "$GITHUB_OUTPUT"
+            for output in $outputs; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           fi
           git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
@@ -62,9 +71,15 @@ jobs:
           shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.dockerignore|\.github/workflows/ci\.yml)$'
           link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
           openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
-          matches() { grep -Eq -e "$shared" -e "$1" changed.txt && echo true || echo false; }
-          echo "link-index-lambda=$(matches "$link_index")" >> "$GITHUB_OUTPUT"
-          echo "openapi-index-lambda=$(matches "$openapi_index")" >> "$GITHUB_OUTPUT"
+          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
+          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
+          matches() { grep -Eq "$@" changed.txt && echo true || echo false; }
+          {
+            echo "link-index-lambda=$(matches -e "$shared" -e "$link_index")"
+            echo "openapi-index-lambda=$(matches -e "$shared" -e "$openapi_index")"
+            echo "dotnet=$(matches -e "$dotnet")"
+            echo "frontend-toolchain=$(matches -e "$frontend_toolchain")"
+          } | tee -a "$GITHUB_OUTPUT"
 
   build-link-index-updater-lambda:
     needs: [changes]
@@ -76,10 +91,11 @@ jobs:
     if: ${{ needs.changes.outputs.openapi-index-lambda == 'true' }}
     uses: $/.github/workflows/build-openapi-index-lambda.yml
 
+  # Frontend checks. The Vite production build itself runs in the `frontend` job.
   npm:
     runs-on: ubuntu-latest
-    defaults: 
-      run: 
+    defaults:
+      run:
         working-directory: src/Elastic.Documentation.Site
     steps:
       - uses: actions/checkout@v7
@@ -91,7 +107,7 @@ jobs:
           cache: npm
           cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
           node-version-file: .nvmrc
-      
+
       - name: Install dependencies
         run: npm ci
 
@@ -102,19 +118,15 @@ jobs:
 
       - name: Lint
         run: npm run lint
-      
+
       - name: Format
         run: npm run fmt:check
-      
+
       - name: Compile
         run: npm run compile:check
-        
-      - name: Build
-        run: npm run build
-        
+
       - name: Test
         run: npm run test
-      
 
   lint:
     runs-on: ubuntu-latest
@@ -154,7 +166,7 @@ jobs:
           path: src/Elastic.Documentation.Site/_static
 
   build:
-    needs: [frontend]
+    needs: [changes, frontend]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -167,41 +179,15 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+
       - name: Bootstrap Action Workspace
-        id: bootstrap
         uses: $/.github/actions/bootstrap
 
-      # Decides how much Windows and macOS repeat on a PR. Linux always runs the unit tests and reuses the
-      # `frontend` job's output, which is itself a native Linux build; pushes to main build everything natively
-      # on Windows and macOS.
-      # - unit tests run only when .NET code, build inputs or test fixtures change
-      # - the frontend is built natively only when its toolchain changes, which is where native npm packages
-      #   (esbuild, rolldown, lightningcss, tailwind oxide) break per OS; otherwise the `frontend` job's output is reused
-      - name: Detect changes
-        id: changes
-        if: ${{ github.event_name == 'pull_request' && matrix.os != 'ubuntu-latest' }}
-        shell: bash
-        run: |
-          # bootstrap unshallows the clone; HEAD is the PR merge commit and HEAD^1 the base branch tip
-          git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
-          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
-          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
-          if grep -Eq "$dotnet" "$RUNNER_TEMP/changed.txt"; then
-            echo "run-tests=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "No .NET changes; skipping unit tests on ${RUNNER_OS}."
-            echo "run-tests=false" >> "$GITHUB_OUTPUT"
-          fi
-          if grep -Eq "$frontend_toolchain" "$RUNNER_TEMP/changed.txt"; then
-            echo "Frontend toolchain changed; building the frontend natively on ${RUNNER_OS}."
-            echo "skip-npm=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "skip-npm=true" >> "$GITHUB_OUTPUT"
-          fi
-
+      # Linux always reuses the `frontend` job's output, which is itself a native Linux build.
+      # Windows and macOS reuse it unless the frontend toolchain changed (always the case on pushes to main).
       - name: Download frontend assets
         id: frontend
-        if: ${{ matrix.os == 'ubuntu-latest' || steps.changes.outputs.skip-npm == 'true' }}
+        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.frontend-toolchain != 'true' }}
         uses: actions/download-artifact@v8
         with:
           name: frontend-static
@@ -223,7 +209,7 @@ jobs:
           rm docs/cli-schema.json.tmp
 
       - name: Test
-        if: ${{ steps.changes.outputs.run-tests != 'false' }}
+        if: ${{ matrix.os == 'ubuntu-latest' || needs.changes.outputs.dotnet == 'true' }}
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
@@ -239,7 +225,6 @@ jobs:
       - name: Run Container
         if: ${{ github.event_name == 'push' && matrix.os == 'ubuntu-latest' }}
         run: dotnet run --project build -c release -- runlocalcontainer
-        
 
   integration:
     # TODO temporarily disabled: credentials now actually reach the tests (Parameters:-prefixed
