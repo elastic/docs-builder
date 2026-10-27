@@ -5,17 +5,19 @@ import { navigationSearchStore } from './navigationSearch.store'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
+vi.mock('htmx.org', () => ({
+    default: {
+        on: vi.fn(),
+        off: vi.fn(),
+        process: vi.fn(),
+        ajax: vi.fn(),
+    },
 }))
 
-jest.mock('../../telemetry/logging', () => ({
-    logInfo: jest.fn(),
-    logWarn: jest.fn(),
-    logError: jest.fn(),
+vi.mock('../../telemetry/logging', () => ({
+    logInfo: vi.fn(),
+    logWarn: vi.fn(),
+    logError: vi.fn(),
 }))
 
 const emptySearch = {
@@ -27,7 +29,7 @@ const emptySearch = {
 }
 
 const searchRequestUrls = () =>
-    jest
+    vi
         .mocked(global.fetch)
         .mock.calls.map(([input]) => String(input))
         .filter((url) => url.includes('/v1/navigation-search'))
@@ -36,7 +38,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     beforeEach(() => {
         sharedQueryClient.clear()
         navigationSearchStore.getState().actions.clearSearchTerm()
-        global.fetch = jest.fn().mockImplementation((input: RequestInfo) => {
+        global.fetch = vi.fn().mockImplementation((input: RequestInfo) => {
             const url = String(input)
             if (url.includes('/v1/navigation-search')) {
                 return Promise.resolve({
@@ -49,7 +51,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('requests navigation-search with type=api when type is api', async () => {
@@ -108,7 +110,7 @@ describe('NavigationSearchWrapper slash shortcut', () => {
     beforeEach(() => {
         sharedQueryClient.clear()
         navigationSearchStore.getState().actions.clearSearchTerm()
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: () => Promise.resolve(emptySearch),
         })
@@ -116,7 +118,7 @@ describe('NavigationSearchWrapper slash shortcut', () => {
 
     afterEach(() => {
         document.body.innerHTML = ''
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('focuses the api input on "/" without typing the slash', async () => {
@@ -170,12 +172,12 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         const input = await screen.findByPlaceholderText(apiPlaceholder)
         await userEvent.click(input)
         await userEvent.type(input, '_bulk')
-        jest.mocked(logInfo).mockClear()
+        vi.mocked(logInfo).mockClear()
 
         await userEvent.keyboard('{Escape}')
 
         await waitFor(() => expect(input).not.toHaveFocus())
-        const closes = jest
+        const closes = vi
             .mocked(logInfo)
             .mock.calls.filter(([name]) => name === 'navigation_search_closed')
         expect(closes).toHaveLength(1)

@@ -72,7 +72,13 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig = null,
 		int? versionMajor = null
-	) => new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig, versionMajor);
+	) =>
+		new ApiNavigationBuilder(_logger, context, markdownStringRenderer).CreateNavigation(
+			apiUrlSuffix,
+			openApiDocument,
+			apiConfig,
+			versionMajor
+		);
 
 	public async Task Generate(Cancel ctx = default)
 	{
@@ -472,7 +478,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		ApplySupplementalIntroHeadings(navigation, tags);
+		ApplySupplementalIntroHeadings(navigation, navigation.Url, tags);
 
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
@@ -544,21 +550,25 @@ public class OpenApiGenerator(
 		return result;
 	}
 
-	private static void ApplySupplementalIntroHeadings(INavigationItem item, IReadOnlyDictionary<string, ApiSupplementalDoc> tags)
+	private void ApplySupplementalIntroHeadings(
+		INavigationItem item,
+		string apiBaseUrl,
+		IReadOnlyDictionary<string, ApiSupplementalDoc> tags
+	)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
 
 		var children = node.NavigationItems.ToArray();
-		if (
-			item is TagNavigationItem tag
-			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
-			&& !string.IsNullOrWhiteSpace(doc.Description)
-		)
-			tag.ApplyIntroHeadings(doc.Description);
+		// Same description and post sections as TagLandingViewModel, so the sidebar links only to anchors the page keeps.
+		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
+		{
+			var description = doc.DescriptionOr(tag.Index.Model.Description);
+			tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(markdownStringRenderer, description, apiBaseUrl, doc.PostSections));
+		}
 
 		foreach (var child in children)
-			ApplySupplementalIntroHeadings(child, tags);
+			ApplySupplementalIntroHeadings(child, apiBaseUrl, tags);
 	}
 
 	private async Task RenderNavigationItems(

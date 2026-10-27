@@ -71,7 +71,7 @@ describe('disclosure clicks on API pages', () => {
     })
 
     it('toggles a param section from its title and sets the hash without a jump', () => {
-        const pushState = jest.spyOn(history, 'pushState')
+        const pushState = vi.spyOn(history, 'pushState')
         document.querySelector<HTMLAnchorElement>('.headerlink')!.click()
 
         expect(isExpanded('section')).toBe(true)
@@ -111,9 +111,9 @@ describe('disclosure clicks on API pages', () => {
     })
 
     it('opens every collapsible around an in-page link target and scrolls to it smoothly', () => {
-        const scroll = jest.fn()
+        const scroll = vi.fn()
         byId('deep').scrollIntoView = scroll
-        const pushState = jest.spyOn(history, 'pushState')
+        const pushState = vi.spyOn(history, 'pushState')
 
         byId('jump').click()
 
@@ -126,7 +126,7 @@ describe('disclosure clicks on API pages', () => {
 
     it('opens the collapsibles for a path placeholder link, even when its hash is already set', () => {
         initSmoothScroll()
-        const scroll = jest.fn()
+        const scroll = vi.fn()
         byId('deep').scrollIntoView = scroll
         history.replaceState(null, '', '#deep')
 

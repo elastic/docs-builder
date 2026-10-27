@@ -1,17 +1,18 @@
 import { initApiMenus } from './api-menu'
 import { autoUpdate, computePosition } from '@floating-ui/dom'
+import type { Mock } from 'vitest'
 
-jest.mock('@floating-ui/dom', () => ({
-    autoUpdate: jest.fn(),
-    computePosition: jest.fn(),
-    flip: jest.fn(() => 'flip'),
-    offset: jest.fn(() => 'offset'),
-    shift: jest.fn(() => 'shift'),
-    size: jest.fn(() => 'size'),
+vi.mock('@floating-ui/dom', () => ({
+    autoUpdate: vi.fn(),
+    computePosition: vi.fn(),
+    flip: vi.fn(() => 'flip'),
+    offset: vi.fn(() => 'offset'),
+    shift: vi.fn(() => 'shift'),
+    size: vi.fn(() => 'size'),
 }))
 
-const stopTracking = jest.fn()
-const hidePopover = jest.fn()
+const stopTracking = vi.fn()
+const hidePopover = vi.fn()
 
 function toggle(menu: HTMLElement, newState: 'open' | 'closed') {
     const event = new Event('toggle')
@@ -26,21 +27,21 @@ describe('api menus', () => {
     beforeAll(() => {
         // jsdom has no popover API; initApiMenus only listens where it exists.
         Object.assign(HTMLElement.prototype, {
-            showPopover: jest.fn(),
+            showPopover: vi.fn(),
             hidePopover,
         })
         initApiMenus()
     })
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(autoUpdate as jest.Mock).mockImplementation(
+        vi.clearAllMocks()
+        ;(autoUpdate as Mock).mockImplementation(
             (_trigger, _menu, update: () => void) => {
                 update()
                 return stopTracking
             }
         )
-        ;(computePosition as jest.Mock).mockResolvedValue({ x: 12, y: 34 })
+        ;(computePosition as Mock).mockResolvedValue({ x: 12, y: 34 })
         document.body.innerHTML = `
             <button id="trigger" popovertarget="menu"></button>
             <div id="menu" class="api-menu" popover data-placement="bottom-end"></div>`

@@ -74,6 +74,7 @@ environments:
     allow_indexing: false
     feature_flags:
       AIR_GAPPED: true
+      ASSEMBLER_API_EXPLORER: true
 
 shared_configuration:
   stack: &stack

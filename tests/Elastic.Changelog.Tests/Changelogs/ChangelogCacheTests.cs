@@ -87,7 +87,7 @@ public class ChangelogCacheTests : IDisposable
 	[Arguments("this is not json")]
 	[Arguments("")]
 	[Arguments("""{ "version": 999, "commits": { "sha1": { "prs": [], "used": 1 } } }""")]
-	[Arguments("""{ "version": 1, "commits": "oops" }""")]
+	[Arguments("""{ "version": 2, "commits": "oops" }""")]
 	public async Task Load_UnreadableOrForeignFile_IsIgnoredAndWrittenAgain(string content)
 	{
 		Directory.CreateDirectory(Path.GetDirectoryName(CommitsFile())!);
@@ -211,7 +211,7 @@ public class ChangelogCacheTests : IDisposable
 		_ = Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 		await File.WriteAllTextAsync(
 			path,
-			"""{"version":1,"commits":{"abc":{"prs":null,"used":1,"seen":1}}}""",
+			"""{"version":2,"commits":{"abc":{"prs":null,"used":1,"seen":1}}}""",
 			TestContext.Current!.Execution.CancellationToken
 		);
 
@@ -239,7 +239,13 @@ public class ChangelogCacheTests : IDisposable
 		first.PullRequestTexts("elastic", "widget").Set(
 			7,
 			Updated,
-			new CachedPullRequestText("Search is faster.", true, ["https://github.com/elastic/widget/issues/1"])
+			new CachedPullRequestText(
+				"Search is faster.",
+				true,
+				["https://github.com/elastic/widget/issues/1"],
+				"Slow queries time out sooner.",
+				"Raise the timeout."
+			)
 		);
 		await first.SaveAsync(TestContext.Current!.Execution.CancellationToken);
 
@@ -248,6 +254,8 @@ public class ChangelogCacheTests : IDisposable
 		text.ReleaseNote.Should().Be("Search is faster.");
 		text.ReleaseNoteTruncated.Should().BeTrue();
 		text.LinkedIssues.Should().Equal("https://github.com/elastic/widget/issues/1");
+		text.Impact.Should().Be("Slow queries time out sooner.");
+		text.Action.Should().Be("Raise the timeout.");
 
 		store.TryGet(7, Updated.AddSeconds(1), out _).Should().BeFalse("the pull request changed after it was stored");
 		store.TryGet(8, Updated, out _).Should().BeFalse();

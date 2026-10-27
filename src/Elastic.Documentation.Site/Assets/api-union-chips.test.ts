@@ -40,7 +40,7 @@ describe('union variant chips', () => {
     const proto = HTMLElement.prototype as unknown as Record<string, unknown>
 
     beforeEach(() => {
-        proto.hidePopover = jest.fn()
+        proto.hidePopover = vi.fn()
         document.body.innerHTML = chipList(
             'outer',
             ['query', 'eql', 'esql'],
@@ -229,8 +229,8 @@ describe('union variant search box', () => {
     const proto = HTMLElement.prototype as unknown as Record<string, unknown>
 
     beforeEach(() => {
-        proto.hidePopover = jest.fn()
-        proto.showPopover = jest.fn()
+        proto.hidePopover = vi.fn()
+        proto.showPopover = vi.fn()
         document.body.innerHTML = chipList('list', ['query', 'eql', 'esql'])
         document
             .querySelector('[data-chip-menu]')!
@@ -265,7 +265,9 @@ describe('union variant search box', () => {
         const menu = document.querySelector<HTMLElement>('[data-chip-menu]')!
         menu.id = 'menu'
         menu.setAttribute('popover', 'manual')
-        jest.spyOn(menu, 'matches').mockImplementation(
+        // jsdom hides a closed popover and refuses it focus; the mocked showPopover never opens it.
+        menu.style.display = 'block'
+        vi.spyOn(menu, 'matches').mockImplementation(
             (selector: string) =>
                 selector === ':popover-open' ||
                 Element.prototype.matches.call(menu, selector)
@@ -328,8 +330,8 @@ describe('union variant search box', () => {
         const other = document.getElementById('menu2')!
         other.setAttribute('popover', 'manual')
         initUnionChips()
-        const hideFirst = jest.fn()
-        const hideSecond = jest.fn()
+        const hideFirst = vi.fn()
+        const hideSecond = vi.fn()
         menu.hidePopover = hideFirst
         other.hidePopover = hideSecond
 

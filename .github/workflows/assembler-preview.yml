@@ -115,7 +115,7 @@ jobs:
           aws configure set default.s3.max_concurrent_requests "${AWS_S3_MAX_CONCURRENT_REQUESTS}"
           aws configure set default.s3.max_queue_size "${AWS_S3_MAX_QUEUE_SIZE}"
 
-          aws s3 sync .artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX} "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
+          aws s3 sync ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
           aws cloudfront create-invalidation \
             --distribution-id EKT7LT5PM8RKS \
             --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"

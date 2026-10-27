@@ -38,7 +38,7 @@ function release() {
 }
 
 describe('mermaid pan', () => {
-    afterEach(() => jest.restoreAllMocks())
+    afterEach(() => vi.restoreAllMocks())
 
     it('pans the dragged diagram', () => {
         document.body.innerHTML = diagram('a')
@@ -91,7 +91,7 @@ describe('mermaid pan', () => {
     })
 
     it('adds no document listeners when pages with diagrams are swapped', () => {
-        const added = jest.spyOn(document, 'addEventListener')
+        const added = vi.spyOn(document, 'addEventListener')
         document.body.innerHTML = diagram('a')
         initMermaid()
         document.body.innerHTML = diagram('b')

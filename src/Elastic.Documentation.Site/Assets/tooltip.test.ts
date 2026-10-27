@@ -8,7 +8,7 @@ function hover(id: string) {
     document
         .getElementById(id)!
         .dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
-    jest.advanceTimersByTime(80)
+    vi.advanceTimersByTime(80)
 }
 
 function swap() {
@@ -21,7 +21,7 @@ describe('initTooltips', () => {
     let t: HTMLElement
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML =
             '<div id="page"><span id="t" data-tippy-content="hits.total">x</span></div>'
         t = document.getElementById('t')!
@@ -35,7 +35,7 @@ describe('initTooltips', () => {
 
     afterEach(() => {
         swap()
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     it('destroys the tooltips of swapped-out content', () => {
@@ -48,7 +48,7 @@ describe('initTooltips', () => {
 
     it('releases a tooltip that was shown and hidden before the swap', () => {
         t.dispatchEvent(new MouseEvent('mouseleave'))
-        jest.advanceTimersByTime(20)
+        vi.advanceTimersByTime(20)
         // jsdom runs no CSS transitions, so the fade-out that unmounts the tooltip has to be ended by hand
         roots()[0]
             .querySelector('.tippy-box')!
@@ -80,15 +80,15 @@ describe('initTooltips', () => {
 })
 
 describe('flashTooltip', () => {
-    beforeEach(() => jest.useFakeTimers())
-    afterEach(() => jest.useRealTimers())
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
 
     it('swaps the text and restores it after the delay', () => {
         const el = document.createElement('button')
         el.dataset.tippyContent = 'Copy'
         flashTooltip(el, 'Copied!')
         expect(el.dataset.tippyContent).toBe('Copied!')
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         expect(el.dataset.tippyContent).toBe('Copy')
     })
 
@@ -97,7 +97,7 @@ describe('flashTooltip', () => {
         el.dataset.tippyContent = 'Copy'
         flashTooltip(el, 'Copied!')
         flashTooltip(el, 'Copied!')
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         expect(el.dataset.tippyContent).toBe('Copy')
     })
 
@@ -105,11 +105,11 @@ describe('flashTooltip', () => {
         const el = document.createElement('button')
         el.dataset.tippyContent = 'Copy'
         flashTooltip(el, 'Copied!')
-        jest.advanceTimersByTime(1000)
+        vi.advanceTimersByTime(1000)
         flashTooltip(el, 'Copied!')
-        jest.advanceTimersByTime(1000)
+        vi.advanceTimersByTime(1000)
         expect(el.dataset.tippyContent).toBe('Copied!')
-        jest.advanceTimersByTime(500)
+        vi.advanceTimersByTime(500)
         expect(el.dataset.tippyContent).toBe('Copy')
     })
 })

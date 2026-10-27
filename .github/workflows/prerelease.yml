@@ -14,9 +14,6 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    outputs:
-      full-version: ${{ steps.bootstrap.outputs.full-version }}
-      major-version: ${{ steps.bootstrap.outputs.major-version }}
     needs: [build]
     concurrency: 
       group: deploy-to-github-pages
@@ -26,7 +23,9 @@ jobs:
       url: ${{steps.deployment.outputs.page_url}}
     steps:
       - id: repo-basename
-        run: 'echo "value=`basename ${{ github.repository }}`" >> $GITHUB_OUTPUT'
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "value=$(basename "$REPOSITORY")" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
@@ -66,7 +65,7 @@ jobs:
 
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       # Restore npm dependencies explicitly for supply-chain checks
       - name: Restore npm dependencies
@@ -74,7 +73,7 @@ jobs:
         run: npm ci
 
       - name: Check shai-hulud supply-chain hashes
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 

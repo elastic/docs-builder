@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Structural;
+using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -47,30 +48,30 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	internal static string? DescriptionOrSummary(string? description, string? summary) =>
 		string.IsNullOrWhiteSpace(description) ? summary : description;
 
-	protected override IReadOnlyList<ApiTocItem> GetTocItems()
+	protected override IReadOnlyList<TocItem> GetTocItems()
 	{
 		var operation = Operation.Operation;
-		var tocItems = new List<ApiTocItem> { new("Paths", "paths") };
+		var tocItems = new List<TocItem> { new("Paths", "paths", 2) };
 
 		if (Page.RequiredPrivileges.Count > 0)
-			tocItems.Add(new ApiTocItem("Required authorization", "required-authorization"));
+			tocItems.Add(new TocItem("Required authorization", "required-authorization", 2));
 
 		if (Page.AuthRequirements.Count > 0)
-			tocItems.Add(new ApiTocItem("Authentication", "authentication"));
+			tocItems.Add(new TocItem("Authentication", "authentication", 2));
 
 		// The path parameters have never had an entry: they sit right under the paths they belong to.
 		tocItems.AddRange(
 			Page
 				.ParameterSections
 				.Where(static s => s.Location != ParameterLocation.Path)
-				.Select(static s => new ApiTocItem(s.Header.Title, s.Header.Anchor))
+				.Select(static s => new TocItem(s.Header.Title, s.Header.Anchor, 2))
 		);
 
 		if (operation.RequestBody is not null)
-			tocItems.Add(new ApiTocItem("Request body", "request-body"));
+			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new ApiTocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses"));
+			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
 
 		return tocItems;
 	}

@@ -16,7 +16,7 @@ describe('carousel', () => {
             '[data-carousel-track]'
         )!
         Object.defineProperty(track, 'clientWidth', { value: 100 })
-        track.scrollTo = jest.fn() as unknown as typeof track.scrollTo
+        track.scrollTo = vi.fn() as unknown as typeof track.scrollTo
         initCarousels()
     })
 
