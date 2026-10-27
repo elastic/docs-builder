@@ -57,9 +57,9 @@ jobs:
             echo "openapi-index-lambda=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git diff --name-only HEAD^1 HEAD > changed.txt
+          git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
           cat changed.txt
-          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.github/workflows/ci\.yml)$'
+          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.dockerignore|\.github/workflows/ci\.yml)$'
           link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
           openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
           matches() { grep -Eq -e "$shared" -e "$1" changed.txt && echo true || echo false; }
@@ -146,6 +146,23 @@ jobs:
         id: bootstrap
         uses: $/.github/actions/bootstrap
 
+      # Linux runs the unit tests on every PR. Windows and macOS only add value when .NET code,
+      # build inputs or test fixtures change, so PRs that touch only docs or the frontend skip them there.
+      - name: Detect .NET changes
+        id: dotnet-changes
+        if: ${{ github.event_name == 'pull_request' && matrix.os != 'ubuntu-latest' }}
+        shell: bash
+        run: |
+          # bootstrap unshallows the clone; HEAD is the PR merge commit and HEAD^1 the base branch tip
+          git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/ci\.yml$|\.github/actions/bootstrap/))'
+          if grep -Eq "$dotnet" "$RUNNER_TEMP/changed.txt"; then
+            echo "run-tests=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No .NET changes; skipping unit tests on ${RUNNER_OS}."
+            echo "run-tests=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compile
         run: dotnet run --project build -c release -- compile
 
@@ -157,6 +174,7 @@ jobs:
           rm docs/cli-schema.json.tmp
 
       - name: Test
+        if: ${{ steps.dotnet-changes.outputs.run-tests != 'false' }}
         run: dotnet run --project build -c release -- unit-test
 
       - name: Publish AOT
