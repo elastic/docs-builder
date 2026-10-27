@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Evaluation;
 using Elastic.Documentation.Configuration.Changelog;
+using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -253,77 +254,72 @@ public class ChangelogEntryValidatorTests
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
-	// Allowed products (per-repo restriction)
+	// Allowed products (products.available in changelog.yml)
 	// ─────────────────────────────────────────────────────────────────────────────────────────────
 
-	[Fact]
-	public void Validate_AllowedProducts_ProductInAllowedSet_NoError()
-	{
-		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
-		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
-		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: elasticsearch");
-		var findings = ChangelogEntryValidator.Validate(
+	private static readonly IReadOnlySet<string> KnownProducts = new HashSet<string>(
+		["elasticsearch", "kibana", "cloud-serverless", "observability", "security", "apm-agent-dotnet"],
+		StringComparer.OrdinalIgnoreCase
+	);
+
+	private static ChangelogConfiguration ConfigWithAvailable(params string[] productIds) =>
+		ChangelogConfiguration.Default with { Products = [.. productIds.Select(id => new Product { Id = id, DisplayName = id })] };
+
+	private static IReadOnlyList<EntryFileFinding> ValidateWith(ChangelogConfiguration config, string products) =>
+		ChangelogEntryValidator.Validate(
 			"docs/changelog/42.yaml",
-			entry,
-			Config,
+			ParseYaml($"type: feature\ntitle: Test\nproducts:\n{products}"),
+			config,
 			null,
-			knownProducts,
-			allowedProducts: allowedProducts
+			KnownProducts
 		);
+
+	[Test]
+	public void Validate_AvailableProducts_ProductInList_NoError()
+	{
+		var findings = ValidateWith(ConfigWithAvailable("elasticsearch", "cloud-serverless"), "  - product: elasticsearch");
 		findings.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void Validate_AllowedProducts_ProductNotInAllowedSet_ProducesError()
+	[Test]
+	public void Validate_AvailableProducts_KibanaDefaults_NoError()
 	{
-		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
-		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
-		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: kibana");
-		var findings = ChangelogEntryValidator.Validate(
-			"docs/changelog/42.yaml",
-			entry,
-			Config,
-			null,
-			knownProducts,
-			allowedProducts: allowedProducts
-		);
-		findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error && f.Message.Contains("not allowed for this repository"));
-	}
-
-	[Fact]
-	public void Validate_AllowedProducts_Null_SkipsRestrictionCheck()
-	{
-		var knownProducts = new HashSet<string>(["elasticsearch", "kibana"], StringComparer.OrdinalIgnoreCase);
-		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: kibana");
-		var findings = ChangelogEntryValidator.Validate(
-			"docs/changelog/42.yaml",
-			entry,
-			Config,
-			null,
-			knownProducts,
-			allowedProducts: null
-		);
+		// Kibana's changelog.yml lists these four, and its entries default to kibana + cloud-serverless.
+		var config = ConfigWithAvailable("kibana", "observability", "cloud-serverless", "security");
+		var findings = ValidateWith(config, "  - product: kibana\n  - product: cloud-serverless");
 		findings.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void Validate_AllowedProducts_UnknownProductDoesNotAlsoFireAllowedError()
+	[Test]
+	public void Validate_AvailableProducts_ProductNotInList_ErrorListsOnlyTheRepositoryProducts()
 	{
-		// When a product is unknown (not in knownProducts), only the "not in products.yml" error fires,
-		// not the allowed-products error — the else-if ensures mutual exclusion.
-		var knownProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
-		var allowedProducts = new HashSet<string>(["elasticsearch"], StringComparer.OrdinalIgnoreCase);
-		var entry = ParseYaml("type: feature\ntitle: Test\nproducts:\n  - product: totally-unknown");
-		var findings = ChangelogEntryValidator.Validate(
-			"docs/changelog/42.yaml",
-			entry,
-			Config,
-			null,
-			knownProducts,
-			allowedProducts: allowedProducts
-		);
-		findings.Should().ContainSingle(f => f.Message.Contains("not in the list of available products"));
-		findings.Should().NotContain(f => f.Message.Contains("not allowed for this repository"));
+		var findings = ValidateWith(ConfigWithAvailable("elasticsearch", "cloud-serverless"), "  - product: apm-agent-dotnet");
+		var error = findings.Should().ContainSingle(f => f.Severity == FindingSeverity.Error).Subject;
+		error
+			.Message
+			.Should()
+			.Be(
+				"product 'apm-agent-dotnet' is not in products.available in changelog.yml. Allowed products: cloud-serverless, elasticsearch"
+			);
+	}
+
+	[Test]
+	public void Validate_AvailableProducts_UnknownProduct_ReportsTheShortListOnce()
+	{
+		var findings = ValidateWith(ConfigWithAvailable("elasticsearch"), "  - product: totally-unknown");
+		findings.Should().ContainSingle(f => f.Message.Contains("not in products.available"));
+		findings.Should().NotContain(f => f.Message.Contains("config/products.yml"));
+	}
+
+	[Test]
+	public void Validate_NoAvailableProducts_FallsBackToProductsYml()
+	{
+		// Without products.available (for example, no changelog.yml), any product in products.yml is accepted.
+		var findings = ValidateWith(ChangelogConfiguration.Default, "  - product: apm-agent-dotnet");
+		findings.Should().BeEmpty();
+
+		var unknown = ValidateWith(ChangelogConfiguration.Default, "  - product: totally-unknown");
+		unknown.Should().ContainSingle(f => f.Message.Contains("not in the list of available products from config/products.yml"));
 	}
 
 	// ─────────────────────────────────────────────────────────────────────────────────────────────

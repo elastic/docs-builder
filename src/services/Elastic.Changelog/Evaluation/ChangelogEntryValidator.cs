@@ -41,22 +41,25 @@ public static class ChangelogEntryValidator
 	/// Valid product IDs (already normalised to lower-kebab-case) from products.yml.
 	/// Null means skip product membership check.
 	/// </param>
-	/// <param name="allowedProducts">
-	/// Product IDs this repository is allowed to reference — its own products (from products.yml
-	/// <c>repository:</c> field) plus any listed under <c>release_notes:</c> in <c>docset.yml</c>.
-	/// Null means skip the per-repo restriction check.
-	/// </param>
+	/// <remarks>
+	/// When <c>products.available</c> in the repository's <c>changelog.yml</c> lists products, an entry may only use
+	/// those, and the error lists only them. The loader already checks that list against products.yml. Without the
+	/// list, for example in a repository with no <c>changelog.yml</c>, any product in <paramref name="knownProducts"/>
+	/// is accepted.
+	/// </remarks>
 	public static IReadOnlyList<EntryFileFinding> Validate(
 		string filePath,
 		ChangelogEntryDto entry,
 		ChangelogConfiguration config,
 		ChangelogEntryType? labelDerivedType,
 		IReadOnlySet<string>? knownProducts,
-		int? filenamePrNumber = null,
-		IReadOnlySet<string>? allowedProducts = null
+		int? filenamePrNumber = null
 	)
 	{
 		var findings = new List<EntryFileFinding>();
+		IReadOnlySet<string>? allowedProducts = config.Products is { Count: > 0 }
+			? new HashSet<string>(config.Products.Select(p => p.Id.Replace('_', '-')), StringComparer.OrdinalIgnoreCase)
+			: null;
 
 		// ── Marker hygiene ───────────────────────────────────────────────────────────────────────
 		var isMarker = entry.Link is not null;
@@ -115,7 +118,7 @@ public static class ChangelogEntryValidator
 						findings.Add(
 							Error(
 								filePath,
-								$"product '{product.Product}' is not allowed for this repository. " + $"Allowed products: {allowed}"
+								$"product '{product.Product}' is not in products.available in changelog.yml. Allowed products: {allowed}"
 							)
 						);
 					}
@@ -127,7 +130,10 @@ public static class ChangelogEntryValidator
 					{
 						var available = string.Join(", ", knownProducts.OrderBy(p => p));
 						findings.Add(
-							Error(filePath, $"product '{product.Product}' is not a known product id. Available products: {available}")
+							Error(
+								filePath,
+								$"product '{product.Product}' is not in the list of available products from config/products.yml. Available products: {available}"
+							)
 						);
 					}
 				}
