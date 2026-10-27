@@ -6,6 +6,7 @@ import { initAppliesSwitch } from '../applies-switch'
 import { config } from '../config'
 import { initCopyButton } from '../copybutton'
 import { initHighlight, preloadHighlight } from '../hljs'
+import { loadKatexStylesheet } from '../katex-stylesheet'
 import { initMermaid } from '../mermaid'
 import { openDetailsWithAnchor } from '../open-details-with-anchor'
 import { initPrivacyConsent } from '../privacy-consent'
@@ -95,7 +96,7 @@ async function initMath() {
     const mathElements = $$optional('.math:not([data-katex-processed])')
     if (mathElements.length === 0) return
 
-    const [katex] = await Promise.all([import('katex'), import('../katex.css')])
+    const [katex] = await Promise.all([import('katex'), loadKatexStylesheet()])
 
     // The initial load and htmx:load both start this step; the second must not render over the first's output.
     mathElements.forEach((element) => {

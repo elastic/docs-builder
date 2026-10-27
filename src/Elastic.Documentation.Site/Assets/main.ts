@@ -8,6 +8,7 @@ import { config } from './config'
 import { initCopyButton } from './copybutton'
 import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { loadKatexStylesheet } from './katex-stylesheet'
 import { initListing } from './listing'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
@@ -108,7 +109,7 @@ async function initMath() {
     const mathElements = $$optional('.math:not([data-katex-processed])')
     if (mathElements.length === 0) return
 
-    const [katex] = await Promise.all([import('katex'), import('./katex.css')])
+    const [katex] = await Promise.all([import('katex'), loadKatexStylesheet()])
 
     mathElements.forEach((element) => {
         try {
