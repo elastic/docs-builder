@@ -11,10 +11,10 @@ namespace Elastic.ApiExplorer.Tests.Supplemental;
 
 public class ApiSupplementalDocTests
 {
-	[Fact]
+	[Test]
 	public void Parse_Null_ReturnsNull() => ApiSupplementalDoc.Parse(null).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void Parse_FrontMatterOnly_PreservesFrontMatterWithNullDescription()
 	{
 		const string raw = """
@@ -35,7 +35,7 @@ public class ApiSupplementalDocTests
 		doc.PostSections.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_NoHeadings_EntireBodyIsDescription()
 	{
 		const string raw =
@@ -53,7 +53,7 @@ public class ApiSupplementalDocTests
 		doc.PostSections.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_CrlfInput_NormalizesToLf()
 	{
 		const string raw = "The search API returns hits that match the query.\r\n\r\nIt supports aggregations.";
@@ -64,7 +64,7 @@ public class ApiSupplementalDocTests
 		doc.Description.Should().Be("The search API returns hits that match the query.\n\nIt supports aggregations.");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_NoHeadingsWithFrontMatter_StripsFrontMatterFromDescription()
 	{
 		const string raw =
@@ -84,7 +84,7 @@ public class ApiSupplementalDocTests
 		doc.Description.Should().NotContain("Metadata description.");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_DescriptionHeading_IsolatesDescriptionFromOtherSections()
 	{
 		const string raw =
@@ -111,7 +111,7 @@ public class ApiSupplementalDocTests
 			.Be(new ApiSupplementalSection("Usage examples", "Use `search_after` for deep pagination."));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_ParametersHeading_MapsDefinitionList()
 	{
 		const string raw =
@@ -134,7 +134,7 @@ public class ApiSupplementalDocTests
 		doc.ParameterOverrides["expand_wildcards"].Should().Be("Type of index that wildcard patterns can match.");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_QueryAndPathParameterHeadings_ShareOneMap()
 	{
 		const string raw =
@@ -158,7 +158,7 @@ public class ApiSupplementalDocTests
 		doc.ParameterOverrides["index"].Should().Be("Comma-separated list of data streams.");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_RequestBodyHeading_MapsDefinitionList()
 	{
 		const string raw =
@@ -181,7 +181,7 @@ public class ApiSupplementalDocTests
 		doc.ParameterOverrides.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_BacktickAndBareName_ProduceSameKey()
 	{
 		const string raw =
@@ -202,7 +202,7 @@ public class ApiSupplementalDocTests
 		doc.ParameterOverrides["allow_no_indices"].Should().Be("Bare form.");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_UnrecognizedHeadings_CollectInDocumentOrder()
 	{
 		const string raw =
@@ -233,7 +233,7 @@ public class ApiSupplementalDocTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_TagStyleFile_LeavesOverrideMapsEmpty()
 	{
 		const string raw =
@@ -262,7 +262,7 @@ public class ApiSupplementalDocTests
 			.Be(new ApiSupplementalSection("Getting started", "Create a job, then open it."));
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_NestedH3_DoesNotStartNewSection()
 	{
 		const string raw =
@@ -285,7 +285,7 @@ public class ApiSupplementalDocTests
 		doc.PostSections[0].Body.Should().Contain("Details stay in this section.");
 	}
 
-	[Fact]
+	[Test]
 	public void DescriptionOr_PrefersSupplementalThenSpec()
 	{
 		var withDescription = ApiSupplementalDoc.Parse("Override text");
@@ -304,7 +304,7 @@ public class ApiSupplementalDocTests
 		parametersOnly.DescriptionOr(null).Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ParameterOr_ReplacesListedNamesOnly()
 	{
 		var doc = ApiSupplementalDoc.Parse("""
@@ -318,7 +318,7 @@ public class ApiSupplementalDocTests
 		doc.ParameterOr("index", "spec index").Should().Be("spec index");
 	}
 
-	[Fact]
+	[Test]
 	public void Load_ParsesMatchedFilesAndSkipsEmpty()
 	{
 		var fs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -339,7 +339,7 @@ public class ApiSupplementalDocTests
 		docs.Should().NotContainKey("empty");
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_NullBaseline_ReturnsOverlay()
 	{
 		var overlay = ApiSupplementalDoc.Parse("Version-only description.")!;
@@ -349,7 +349,7 @@ public class ApiSupplementalDocTests
 		merged.Should().BeSameAs(overlay);
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_DescriptionWins_KeepsUnspecifiedBaseSections()
 	{
 		var baseline =
@@ -376,7 +376,7 @@ public class ApiSupplementalDocTests
 		merged.PostSections.Should().ContainSingle().Which.Should().Be(new ApiSupplementalSection("Best practices", "Base practices."));
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_BareText_ReplacesDescriptionOnly()
 	{
 		var baseline =
@@ -400,7 +400,7 @@ public class ApiSupplementalDocTests
 		merged.ParameterOverrides["q"].Should().Be("Base query.");
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_ParametersOnly_KeepsBaseDescriptionAndMergesKeys()
 	{
 		var baseline =
@@ -441,7 +441,7 @@ public class ApiSupplementalDocTests
 		merged.ParameterOverrides["knn"].Should().Be("Version knn.");
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_RequestBodyKeys_ReplaceAndAdd()
 	{
 		var baseline =
@@ -477,7 +477,7 @@ public class ApiSupplementalDocTests
 		merged.RequestBodyOverrides["knn"].Should().Be("Version knn.");
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_PostSections_ReplaceSameHeadingAndAppendNew()
 	{
 		var baseline =
@@ -517,7 +517,7 @@ public class ApiSupplementalDocTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public void Overlay_TagStyle_UsesSameMerge()
 	{
 		var baseline =
@@ -559,7 +559,7 @@ public class ApiSupplementalDocTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public void OverlayVersionFiles_MatchingMajor_OverlaysBase()
 	{
 		var fs = new MockFileSystem(new Dictionary<string, MockFileData>

@@ -1,0 +1,37 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Navigation.NavSide.NavSideModel>
+@using Elastic.Documentation.Site.Components.Navigation.NavTree
+@{
+	var nav = Model.Navigation;
+}
+<div class="nav-side" data-nav-side data-nav-heading="@(nav.TreeHeading ?? "")">
+	@if (Model.SectionMenu is { } sectionMenu)
+	{
+		<div class="nav-side__section">@await RenderPartialAsync(_LinkMenu.Create(sectionMenu))</div>
+	}
+	@foreach (var back in nav.BackLinks)
+	{
+		<a class="nav-side__back" href="@back.Url">
+			@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_double_left", Size = IconSize.Small }))
+			<span>@back.Title</span>
+		</a>
+	}
+	@if (nav.TreeHeading is { } heading)
+	{
+		<p class="nav-side__heading@(nav.BackLinks.Count > 0 ? " nav-side__heading--island" : "")">@heading</p>
+	}
+	<nav class="nav-side__scroll" aria-label="Documentation">
+		<ul class="nav-tree" id="nav-tree-@nav.ContentHash">
+			@if (nav.RootIndex is { } rootIndex)
+			{
+				<li class="nav-tree__item">
+					<a class="nav-tree__link" href="@rootIndex.Url"><span class="nav-tree__text">@rootIndex.NavigationTitle</span></a>
+				</li>
+				@if (!nav.TreeHasSeparator)
+				{
+					<li class="nav-tree__separator" role="separator"></li>
+				}
+			}
+			@await RenderPartialAsync(_NavTreeItems.Create(nav.Tree))
+		</ul>
+	</nav>
+</div>

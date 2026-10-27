@@ -12,7 +12,7 @@ namespace Mcp.Remote.Tests;
 
 public class McpToolTelemetryTests
 {
-	[Fact]
+	[Test]
 	public void ResolveToolName_UsesProfilePlaceholders()
 	{
 		var template = "find_{scope}related_{resource}";
@@ -28,7 +28,7 @@ public class McpToolTelemetryTests
 		resolved.Should().Be(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void SetPayloadMetadata_SetsArgCountKeysAndStringLengths()
 	{
 		using var listener = CreateListener();
@@ -43,7 +43,7 @@ public class McpToolTelemetryTests
 		metadata.ArgCount.Should().Be(3);
 		metadata.ArgKeys.Should().Be("pageNumber,query,topic");
 
-		var tags = activity!.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var tags = activity.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		tags["mcp.payload.arg_count"].Should().Be(3);
 		tags["mcp.payload.arg_keys"].Should().Be("pageNumber,query,topic");
 		tags["mcp.payload.query.length"].Should().Be(13);
@@ -51,17 +51,17 @@ public class McpToolTelemetryTests
 		tags.ContainsKey("mcp.payload.pageNumber.length").Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void StartActivity_UsesInternalKind()
 	{
 		using var listener = CreateListener();
 		using var activity = McpToolTelemetry.StartActivity("test_tool");
 
 		activity.Should().NotBeNull();
-		activity!.Kind.Should().Be(ActivityKind.Internal);
+		activity.Kind.Should().Be(ActivityKind.Internal);
 	}
 
-	[Fact]
+	[Test]
 	public void MarkSuccess_SetsSuccessTagAndOkStatus()
 	{
 		using var listener = CreateListener();
@@ -70,12 +70,12 @@ public class McpToolTelemetryTests
 
 		McpToolTelemetry.MarkSuccess(activity);
 
-		var tags = activity!.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var tags = activity.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		tags["mcp.call.success"].Should().Be(true);
 		activity.Status.Should().Be(ActivityStatusCode.Ok);
 	}
 
-	[Fact]
+	[Test]
 	public void MarkFailure_SetsFailureTagsAndErrorStatus()
 	{
 		using var listener = CreateListener();
@@ -85,7 +85,7 @@ public class McpToolTelemetryTests
 		var error = new InvalidOperationException("gateway failed");
 		McpToolTelemetry.MarkFailure(activity, error);
 
-		var tags = activity!.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var tags = activity.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		tags["mcp.call.success"].Should().Be(false);
 		tags["mcp.call.error_type"].Should().Be(typeof(InvalidOperationException).FullName);
 		tags["error.message"].Should().Be("gateway failed");
@@ -93,7 +93,7 @@ public class McpToolTelemetryTests
 		activity.StatusDescription.Should().Be("gateway failed");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkCancelled_SetsCancelledTagAndErrorStatus()
 	{
 		using var listener = CreateListener();
@@ -102,7 +102,7 @@ public class McpToolTelemetryTests
 
 		McpToolTelemetry.MarkCancelled(activity);
 
-		var tags = activity!.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+		var tags = activity.TagObjects.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 		tags["mcp.call.success"].Should().Be(false);
 		tags["mcp.call.cancelled"].Should().Be(true);
 		activity.Status.Should().Be(ActivityStatusCode.Error);
@@ -111,10 +111,13 @@ public class McpToolTelemetryTests
 
 	private static ActivityListener CreateListener()
 	{
+		static ActivitySamplingResult SampleAll(ref ActivityCreationOptions<ActivityContext> _) =>
+			ActivitySamplingResult.AllDataAndRecorded;
+
 		var listener = new ActivityListener
 		{
 			ShouldListenTo = source => source.Name == "Elastic.Documentation.Api.McpTools",
-			Sample = static (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded
+			Sample = SampleAll
 		};
 
 		ActivitySource.AddActivityListener(listener);

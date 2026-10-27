@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
@@ -10,6 +11,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -22,11 +24,12 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesSiblingMarkdownForEveryRenderedPage()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-emit-{Guid.NewGuid():N}");
@@ -41,7 +44,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var write = context.WriteFileSystem.File;
 		write.Exists(Path.Join(outputRoot, "api.md")).Should().BeTrue();
@@ -53,7 +56,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		write.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "types", "_types-query_dsl-querycontainer.md")).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesReadableCommonMarkNotHtmlDocument()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-content-{Guid.NewGuid():N}");
@@ -68,23 +71,23 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var landing = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), TestContext.Current!.Execution.CancellationToken);
 		var operation = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
 				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search.md"),
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 		var catalog = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(Path.Join(outputRoot, "api.md"), TestContext.Current!.Execution.CancellationToken);
 
 		landing.Should().StartWith("---");
 		landing.Should().Contain("type: api");
@@ -105,13 +108,18 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		operation.Should().Contain("`/{index}/_search`");
 		operation.Should().Contain("## Description");
 		operation.Should().Contain("Returns hits that match the query");
+		operation.Should().Contain("Supports pagination through `size` and `from`.");
+		operation.Should().Contain("#### `200`");
+		operation.Should().Contain("Search results");
+		operation.Should().NotContain("#### `200` Search results");
+		operation.Should().Contain("`application/json`");
 		operation.Should().NotContain("<!DOCTYPE");
 		operation.Should().NotContain("<html");
 
 		catalog.Should().Contain("type: api");
-		catalog.Should().Contain("title: API catalog");
-		catalog.Should().Contain("description: API products in this documentation set.");
-		catalog.Should().Contain("# API catalog");
+		catalog.Should().Contain("title: Elastic APIs");
+		catalog.Should().Contain("description: Reference documentation for Elastic REST APIs");
+		catalog.Should().Contain("# Elastic APIs");
 		catalog.Should().Contain("Fixture API");
 		catalog.Should().Contain("`elasticsearch`");
 		catalog.Should().Contain("[Markdown](/api/doc/elasticsearch.md)");
@@ -119,7 +127,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		catalog.Should().Contain("[YAML](/api/doc/elasticsearch.yaml)");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Generate_WritesAlternateLinkOnApiHtml()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-md-alt-{Guid.NewGuid():N}");
@@ -134,29 +142,37 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 			reader
 		);
 
-		await generator.Generate(TestContext.Current.CancellationToken);
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 
 		var html = await context
 			.WriteFileSystem
 			.File
-			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), TestContext.Current.CancellationToken);
+			.ReadAllTextAsync(
+				Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"),
+				TestContext.Current!.Execution.CancellationToken
+			);
 		var operationHtml = await context
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(
 				Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-search", "index.html"),
-				TestContext.Current.CancellationToken
+				TestContext.Current!.Execution.CancellationToken
 			);
 
 		html.Should().Contain("""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch.md" title="Markdown export"/>""");
 		html.Should().Contain("View as Markdown");
+		html.Should().Contain("Copy page");
+		html.Should().Contain("api-page-actions");
 		operationHtml.Should().Contain(
 			"""<link rel="alternate" type="text/markdown" href="/api/doc/elasticsearch/operation/operation-search.md" title="Markdown export"/>"""
 		);
 		operationHtml.Should().Contain("View as Markdown");
+		operationHtml.Should().Contain("Copy page");
+		operationHtml.Should().Contain("api-page-heading");
+		operationHtml.Should().Contain("api-page-actions-split");
 	}
 
-	[Fact]
+	[Test]
 	public async Task SimpleMarkdownPage_WritesAuthoredSource()
 	{
 		var introPath = Path.Combine(
@@ -177,7 +193,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		)
 		{ NavigationHtml = string.Empty, CurrentNavigation = item, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
 
-		var markdown = await item.RenderCommonMarkAsync(renderContext, TestContext.Current.CancellationToken);
+		var markdown = await item.RenderCommonMarkAsync(renderContext, TestContext.Current!.Execution.CancellationToken);
 
 		var wrapped = ApiMarkdownFrontMatter.Wrap(markdown!, item, renderContext, item);
 
@@ -188,6 +204,58 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 		wrapped.Should().Contain("description: Spaces enable you to organize");
 		wrapped.Should().Contain("# Kibana spaces");
 		wrapped.Should().NotContain("<!DOCTYPE");
+	}
+
+	[Test]
+	public async Task Generate_CollapsedOperations_RedirectFormerUrls()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-redirect-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(await LoadSpec(SearchVariantsSpec))
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var operationDir = Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation");
+		var file = context.WriteFileSystem.File;
+		var canonical = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search", "index.html"));
+		var former = await file.ReadAllTextAsync(Path.Join(operationDir, "operation-search-1", "index.html"));
+		canonical.Should().Contain("api-url-also-method");
+		former.Should().Contain(
+			"window.location.replace(\"/api/doc/elasticsearch/operation/operation-search\" + window.location.search + window.location.hash)"
+		);
+		file.Exists(Path.Join(operationDir, "operation-search-1.md")).Should().BeFalse();
+	}
+
+	private const string SearchVariantsSpec = /*lang=json,strict*/
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Elasticsearch", "version": "1.0" },
+		  "paths": {
+		    "/_search": {
+		      "get": { "operationId": "search", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } },
+		      "post": { "operationId": "search-1", "summary": "Run a search", "tags": ["search"], "x-namespace": "_global", "x-api-name": "search", "responses": { "200": { "description": "ok" } } }
+		    }
+		  },
+		  "tags": [ { "name": "search" } ]
+		}
+		""";
+
+	private static async Task<OpenApiDocument> LoadSpec(string json)
+	{
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		var result = await OpenApiDocument.LoadAsync(
+			stream,
+			settings: new Microsoft.OpenApi.Reader.OpenApiReaderSettings { LeaveStreamOpen = false }
+		);
+		return result.Document!;
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
@@ -240,9 +308,11 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture) :
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
+		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).ReturnsLazily(_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue()));
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(queue.TryDequeue(out var next) ? next : null)
+		);
 		return reader;
 	}
 

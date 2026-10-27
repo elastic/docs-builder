@@ -17,7 +17,7 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 
 	DiagnosticsChannel Channel { get; }
 	ConcurrentBag<string> CrossLinks { get; }
-	HashSet<string> OffendingFiles { get; }
+	ConcurrentDictionary<string, bool> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
 	/// True once the background reader is actively draining the channel.

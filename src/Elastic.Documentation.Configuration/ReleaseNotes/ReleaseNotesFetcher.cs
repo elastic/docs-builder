@@ -12,9 +12,9 @@ namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
 /// <summary>
 /// Prefetches CDN changelog bundles for every product declared under <c>release_notes</c> at build
-/// startup, concurrently, mirroring how cross-links are fetched. Any failure to read a product's
-/// registry is emitted as an error on the collector (strict fail-fast): a declared product whose
-/// content cannot be sourced fails the build rather than silently rendering an empty changelog.
+/// startup, concurrently, mirroring how cross-links are fetched. Explicitly declared products are
+/// strict on real errors, but a CDN 404 is a hint (the product is registered, no release cut yet).
+/// Auto-inferred products are best-effort: a 404 is silently skipped and the directive emits a hint.
 /// </summary>
 public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem fileSystem, HttpMessageHandler? handler = null)
 {
@@ -24,28 +24,61 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 	private readonly ILogger _logger = logFactory.CreateLogger<ReleaseNotesFetcher>();
 
 	/// <summary>
-	/// Prefetches release notes for the products declared in <paramref name="context"/>'s docset.yml and
-	/// returns a ready resolver. Returns the no-op resolver when nothing is declared (no network is hit).
+	/// Prefetches release notes for all products and returns a ready resolver.
+	/// Explicit products come from <c>release_notes</c> in docset.yml (required; 404 is a hint).
+	/// The product is also inferred from the repository name via products.yml (best-effort, no error on 404).
 	/// </summary>
 	public static async Task<IReleaseNotesResolver> PrefetchAsync(BuildContext context, ILoggerFactory logFactory, Cancel ctx)
 	{
-		var products = context.Configuration.ReleaseNotesProducts;
-		if (products.Length == 0)
+		var explicitProducts = context.Configuration.ReleaseNotesProducts;
+
+		// Infer the CDN product from the repository name via products.yml, same logic as the directive's
+		// valueless :cdn: option. Only infer when the product isn't already explicitly declared.
+		string? inferredProduct = null;
+		if (context.Git.IsAvailable)
+		{
+			var repo = context.Git.RepositoryName;
+			var candidate = context.ProductsConfiguration.GetProductByRepositoryName(repo)?.Id ?? repo;
+			if (IsValidCdnProductId(candidate) && !explicitProducts.Contains(candidate, StringComparer.Ordinal))
+				inferredProduct = candidate;
+		}
+
+		if (explicitProducts.Length == 0 && inferredProduct is null)
 			return NoopReleaseNotesResolver.Instance;
 
 		var fetcher = new ReleaseNotesFetcher(logFactory, context.ReadFileSystem);
-		var fetched = await fetcher.FetchAsync(context.Collector, products, ctx).ConfigureAwait(false);
+		var fetched = await fetcher.FetchAsync(
+			context.Collector,
+			explicitProducts,
+			inferredProduct is not null ? [inferredProduct] : null,
+			ctx
+		).ConfigureAwait(false);
 		return new ReleaseNotesResolver(fetched);
 	}
 
-	public async Task<FetchedReleaseNotes> FetchAsync(IDiagnosticsCollector collector, IReadOnlyCollection<string> products, Cancel ctx)
+	/// <summary>
+	/// Fetches bundles for <paramref name="requiredProducts"/> (error on real failure; 404 is a hint)
+	/// and optionally for <paramref name="inferredProducts"/> (no error on 404 — best-effort only).
+	/// </summary>
+	public async Task<FetchedReleaseNotes> FetchAsync(
+		IDiagnosticsCollector collector,
+		IReadOnlyCollection<string> requiredProducts,
+		IReadOnlyCollection<string>? inferredProducts = null,
+		Cancel ctx = default
+	)
 	{
-		var declared = products.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p.Trim()).Distinct(StringComparer.Ordinal).ToArray();
+		var required = requiredProducts
+			.Where(p => !string.IsNullOrWhiteSpace(p))
+			.Select(p => p.Trim())
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
 
-		if (declared.Length == 0)
+		var inferredSet = inferredProducts is { Count: > 0 }
+			? inferredProducts.Where(p => p is { Length: > 0 }).Except(required, StringComparer.Ordinal).ToFrozenSet(StringComparer.Ordinal)
+			: [];
+
+		if (required.Length == 0 && inferredSet.Count == 0)
 			return FetchedReleaseNotes.Empty;
-
-		var declaredSet = declared.ToFrozenSet(StringComparer.Ordinal);
 
 		var baseUri = ChangelogCdn.ResolveBaseUri();
 		if (baseUri is null)
@@ -57,33 +90,64 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			return new FetchedReleaseNotes
 			{
 				BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
-				DeclaredProducts = declaredSet
+				DeclaredProducts = required.ToFrozenSet(StringComparer.Ordinal),
+				NotFoundInferredProducts = []
 			};
 		}
 
-		_logger.LogInformation("Fetching release notes for {Count} product(s) from {BaseUri}", declared.Length, baseUri);
+		var allProducts = required.Concat(inferredSet).Distinct(StringComparer.Ordinal).ToArray();
+		_logger.LogInformation("Fetching release notes for {Count} product(s) from {BaseUri}", allProducts.Length, baseUri);
 
 		using var fetcher = new CdnChangelogFetcher(_logFactory, _fileSystem, _handler);
-		var tasks = declared.Select(async product =>
+		var tasks = allProducts.Select(async product =>
 		{
+			var isRequired = required.Contains(product, StringComparer.Ordinal);
+			var notFound = false;
 			// version: null — prefetch the full set; each directive applies its own :version: filter later.
-			var bundles = await fetcher.FetchAsync(
-				baseUri,
-				product,
-				version: null,
-				msg => collector.EmitError(string.Empty, msg),
-				msg => collector.EmitWarning(string.Empty, msg),
-				ctx
-			).ConfigureAwait(false);
-			return (product, bundles);
+			var bundles = await fetcher.FetchAsync(baseUri, product, version: null, emitError: isRequired
+				? msg => collector.EmitError(string.Empty, msg)
+				: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
+			 emitWarning: msg => collector.EmitWarning(string.Empty, msg), ctx,
+			// 404 for products registered in products.yml is a hint, not an error — products.yml
+			// membership is the authoritative gate; 404 means no release has been cut yet.
+			// 404 for inferred products is silently tracked (hint emitted by the directive).
+			emitNotFound: _ =>
+			{
+				notFound = true;
+				if (isRequired)
+					collector.EmitHint(
+						string.Empty,
+						$"No CDN bundles published yet for '{product}' (registered in products.yml). The changelog will render empty until the first release is published."
+					);
+			}).ConfigureAwait(false);
+			return (product, bundles, isRequired, notFound);
 		});
 
 		var results = await Task.WhenAll(tasks).ConfigureAwait(false);
 
+		// Declared products: only those explicitly listed under release_notes — never inferred products.
+		// Keeping inferred products out of DeclaredProducts prevents cross-repo contamination in assembler
+		// runs where a single resolver is shared: one repo inferring 'foo' must not suppress the
+		// undeclared-product error for an explicit :cdn: foo reference in a different repo.
+		var declaredSet = required.ToFrozenSet(StringComparer.Ordinal);
+
+		// BundlesByProduct includes all products that returned bundles (required or inferred).
+		// The directive reaches inferred bundles via TryGetBundles when isAutoInferred is true.
+		var bundleMap = results.Where(r => r.bundles.Count > 0).ToFrozenDictionary(r => r.product, r => r.bundles, StringComparer.Ordinal);
+
+		// Track products that returned HTTP 404 so the directive can emit a "not yet published" hint.
+		var notFoundInferred = results.Where(r => !r.isRequired && r.notFound).Select(r => r.product).ToFrozenSet(StringComparer.Ordinal);
+		var notFoundDeclared = results.Where(r => r.isRequired && r.notFound).Select(r => r.product).ToFrozenSet(StringComparer.Ordinal);
+
 		return new FetchedReleaseNotes
 		{
-			BundlesByProduct = results.ToFrozenDictionary(r => r.product, r => r.bundles, StringComparer.Ordinal),
-			DeclaredProducts = declaredSet
+			BundlesByProduct = bundleMap,
+			DeclaredProducts = declaredSet,
+			NotFoundInferredProducts = notFoundInferred,
+			NotFoundDeclaredProducts = notFoundDeclared
 		};
 	}
+
+	public static bool IsValidCdnProductId(string product) =>
+		product.Length > 0 && product.All(c => char.IsAsciiLetterOrDigit(c) || c is '_' or '-');
 }

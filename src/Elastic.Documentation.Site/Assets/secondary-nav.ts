@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from './motion'
+
 /**
  * Close behaviour for the top-bar dropdowns, and active-tab sync after htmx swaps.
  *
@@ -45,13 +47,6 @@ function beginClosing(dropdown: HTMLDetailsElement) {
         closingTimers.delete(dropdown)
     }, CLOSE_MS)
     closingTimers.set(dropdown, timer)
-}
-
-function prefersReducedMotion() {
-    return (
-        typeof window.matchMedia === 'function' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
 }
 
 function setMenuOpen(dropdown: HTMLDetailsElement) {

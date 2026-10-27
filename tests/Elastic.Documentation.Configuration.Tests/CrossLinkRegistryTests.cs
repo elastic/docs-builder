@@ -17,14 +17,14 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class CrossLinkRegistryTests
 {
-	[Fact]
+	[Test]
 	public void Registry_NullOrEmpty_ParsesAsPublic()
 	{
 		foreach (var config in new[] { null, "", "   ", "public" }.Select(v => CreateConfiguration(CreateDocSet(v, ["elasticsearch"]))))
 			config.Registry.Should().Be(DocSetRegistry.Public);
 	}
 
-	[Fact]
+	[Test]
 	public void Registry_Internal_ParsesAsInternal()
 	{
 		var docSet = CreateDocSet("internal", ["docs-eng-team"]);
@@ -33,7 +33,7 @@ public class CrossLinkRegistryTests
 		config.Registry.Should().Be(DocSetRegistry.Internal);
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_BareRepo_InheritsDocsetRegistry()
 	{
 		var docSet = CreateDocSet("internal", ["other-internal-repo"]);
@@ -48,7 +48,7 @@ public class CrossLinkRegistryTests
 			.Be(new CrossLinkEntry("other-internal-repo", DocSetRegistry.Internal));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicPrefix_UsesPublicRegistry()
 	{
 		var docSet = CreateDocSet("internal", ["other-internal-repo", "public://elasticsearch"]);
@@ -59,7 +59,7 @@ public class CrossLinkRegistryTests
 		config.CrossLinkEntries[1].Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicDocset_BareReposUsePublic()
 	{
 		var docSet = CreateDocSet(null, ["elasticsearch", "kibana"]);
@@ -70,7 +70,7 @@ public class CrossLinkRegistryTests
 		config.CrossLinkEntries[1].Should().Be(new CrossLinkEntry("kibana", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkEntry_PublicDocset_InternalPrefix_ExcludesInvalidEntry()
 	{
 		var docSet = CreateDocSet(null, ["elasticsearch", "internal://docs-eng-team"]);
@@ -80,7 +80,7 @@ public class CrossLinkRegistryTests
 		config.CrossLinkEntries.Should().ContainSingle().Which.Should().Be(new CrossLinkEntry("elasticsearch", DocSetRegistry.Public));
 	}
 
-	[Fact]
+	[Test]
 	public void CrossLinkRepositories_MatchesCrossLinkEntries()
 	{
 		var docSet = CreateDocSet("internal", ["repo-a", "public://repo-b"]);

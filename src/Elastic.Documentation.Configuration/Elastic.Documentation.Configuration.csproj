@@ -31,9 +31,8 @@
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="SharpYaml" />
     <PackageReference Include="Tomlyn" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
-    <PackageReference Include="YamlDotNet" />
   </ItemGroup>
 
   <ItemGroup>

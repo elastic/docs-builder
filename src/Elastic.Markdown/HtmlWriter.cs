@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
@@ -11,10 +10,14 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
 using Elastic.Markdown.Extensions.DetectionRules;
+using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using RazorSlices;
@@ -52,18 +55,37 @@ public class HtmlWriter(
 
 	/// <inheritdoc />
 	public string RenderPreservingFirstHeading(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: false);
+		RenderPreservingFirstHeadingWithMetadata(markdown, source).Html;
 
 	/// <inheritdoc />
-	public string RenderApiDescription(string markdown, IFileInfo? source) =>
-		RenderCore(markdown, source, stripFirstHeadingLevel1: true, skipValidation: true);
-
-	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1, bool skipValidation = false)
+	public MarkdownRenderResult RenderPreservingFirstHeadingWithMetadata(string markdown, IFileInfo? source)
 	{
 		source ??= DocumentationSet.Context.ConfigurationPath;
-		var parsed = skipValidation
-			? DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source)
-			: DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
+		var (title, metaTitle) = MarkdownFile.ReadTitles(parsed, DocumentationSet.Context, source);
+		return new(MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: false), title, metaTitle);
+	}
+
+	/// <inheritdoc />
+	public string RenderApiDescription(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
+		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline);
+	}
+
+	/// <inheritdoc />
+	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
+		return RenderedHeadings.Read(parsed, stripFirstHeadingLevel1: true);
+	}
+
+	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseStringAsync(markdown, source, null);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1);
 	}
 
@@ -152,10 +174,12 @@ public class HtmlWriter(
 
 		var currentBaseVersion = pageVersioning.IsVersionless ? null : $"{pageVersioning.Base.Major}.{pageVersioning.Base.Minor}+";
 
-		//TODO should we even distinctby
-		var breadcrumbs = parents.Reverse().DistinctBy(p => p.Url).ToArray();
-		var breadcrumbsList = CreateStructuredBreadcrumbsData(markdown, breadcrumbs);
-		var structuredBreadcrumbsJsonString = JsonSerializer.Serialize(breadcrumbsList, BreadcrumbsContext.Default.BreadcrumbsList);
+		var breadcrumbs = current.BreadcrumbParents();
+		var structuredBreadcrumbsJsonString = BreadcrumbJson.Serialize(
+			breadcrumbs,
+			markdown.Title ?? markdown.NavigationTitle,
+			DocumentationSet.Context.CanonicalBaseUrl
+		);
 
 		// Git info for isolated header
 		var gitBranch = DocumentationSet.Context.Git.Branch;
@@ -221,32 +245,6 @@ public class HtmlWriter(
 		});
 
 		return new RenderResult { Html = await slice.RenderAsync(cancellationToken: ctx) };
-	}
-
-	private BreadcrumbsList CreateStructuredBreadcrumbsData(MarkdownFile markdown, INavigationItem[] crumbs)
-	{
-		List<BreadcrumbListItem> breadcrumbItems = [];
-		var position = 1;
-		// Add parents
-		breadcrumbItems.AddRange(
-			crumbs.Select(
-				parent => new BreadcrumbListItem
-				{
-					Position = position++,
-					Name = parent.NavigationTitle,
-					Item = new Uri(DocumentationSet.Context.CanonicalBaseUrl ?? new Uri("http://localhost"), parent.Url).ToString()
-				}
-			)
-		);
-		// Add current page
-		breadcrumbItems.Add(new BreadcrumbListItem
-		{
-			Position = position,
-			Name = markdown.Title ?? markdown.NavigationTitle,
-			Item = null,
-		});
-		var breadcrumbsList = new BreadcrumbsList { ItemListElement = breadcrumbItems };
-		return breadcrumbsList;
 	}
 
 	public async Task<MarkdownDocument> WriteAsync(

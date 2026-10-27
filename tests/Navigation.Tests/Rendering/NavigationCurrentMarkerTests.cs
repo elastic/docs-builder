@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Navigation.Tests.Rendering;
 
 public class NavigationCurrentMarkerTests
 {
-	[Fact]
+	[Test]
 	public void Apply_MatchingSidebarLink_AddsCurrent()
 	{
 		const string html =
@@ -25,7 +25,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("class=\"sidebar-link nav-link nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_TrailingSlash_StillMatches()
 	{
 		const string html = """<a href="/getting-started/" class="sidebar-link nav-folder-link nav-v2-link">Started</a>""";
@@ -35,7 +35,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_PrefixUrl_DoesNotMatch()
 	{
 		const string html =
@@ -51,7 +51,22 @@ public class NavigationCurrentMarkerTests
 		marked.Should().NotContain("href=\"/getting-started\" class=\"sidebar-link nav-folder-link nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
+	public void Apply_InPageHeadingLinks_AreNotCurrent()
+	{
+		const string html =
+			"""
+		                    <a href="/api/doc/kibana/group/endpoint-dashboards" class="sidebar-link nav-folder-link">Dashboards</a>
+		                    <a href="/api/doc/kibana/group/endpoint-dashboards#get-started" class="sidebar-link nav-link">Get started</a>
+		                    """;
+
+		var marked = NavigationCurrentMarker.Apply(html, "/api/doc/kibana/group/endpoint-dashboards");
+
+		marked.Should().Contain("class=\"sidebar-link nav-folder-link current\"");
+		marked.Should().Contain("#get-started\" class=\"sidebar-link nav-link\">");
+	}
+
+	[Test]
 	public void Apply_AlreadyCurrent_IsIdempotent()
 	{
 		const string html = """<a href="/guide" class="sidebar-link nav-link nav-v2-link current">Guide</a>""";
@@ -61,7 +76,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Be(html);
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_RootPath_MatchesIndex()
 	{
 		const string html = """<a href="/" class="sidebar-link nav-link nav-v2-link">docs-builder</a>""";
@@ -71,7 +86,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Contain("nav-v2-link current\"");
 	}
 
-	[Fact]
+	[Test]
 	public void Apply_NonSidebarAnchor_IsIgnored()
 	{
 		const string html = """<a href="/getting-started" class="pages-nav-v2__back">Back</a>""";
@@ -81,7 +96,7 @@ public class NavigationCurrentMarkerTests
 		marked.Should().Be(html);
 	}
 
-	[Fact]
+	[Test]
 	public async Task TocTree_StampedHtml_MarksTheCurrentLeaf()
 	{
 		var model = new NavigationRenderModel
@@ -112,11 +127,39 @@ public class NavigationCurrentMarkerTests
 			NavigationPreviewEnabled = true
 		};
 
-		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		var marked = NavigationCurrentMarker.Apply(html, "/getting-started/installation");
 
-		marked.Should().Contain("href=\"/getting-started/installation\" class=\"sidebar-link nav-link nav-v2-link current\"");
-		marked.Should().Contain("href=\"/\" class=\"sidebar-link nav-link nav-v2-link\"");
-		marked.Should().NotContain("href=\"/\" class=\"sidebar-link nav-link nav-v2-link current\"");
+		marked.Should().Contain("href=\"/getting-started/installation\" aria-current=\"page\"");
+		marked.Should().NotContain("href=\"/\" aria-current=\"page\"");
+	}
+
+	[Test]
+	public void Apply_DesignSystemTree_OpensEveryAncestorFolder()
+	{
+		const string html =
+			"""
+			<ul class="nav-tree">
+			<li class="nav-tree__group"><input class="nav-tree__toggle" type="checkbox" id="outer" data-nav-toggle><div class="nav-tree__row"><a class="nav-tree__link" href="/a">A</a></div>
+			<ul class="nav-tree__children"><li class="nav-tree__group"><input class="nav-tree__toggle" type="checkbox" id="inner" data-nav-toggle><div class="nav-tree__row"><a class="nav-tree__link" href="/a/b">B</a></div>
+			<ul class="nav-tree__children"><li class="nav-tree__item"><a class="nav-tree__link" href="/a/b/c">C</a></li></ul></li></ul></li>
+			<li class="nav-tree__group"><input class="nav-tree__toggle" type="checkbox" id="other" data-nav-toggle><div class="nav-tree__row"><a class="nav-tree__link" href="/z">Z</a></div></li>
+			</ul>
+			""";
+
+		var marked = NavigationCurrentMarker.Apply(html, "/a/b/c");
+
+		marked.Should().Contain("href=\"/a/b/c\" aria-current=\"page\"");
+		marked.Should().Contain("id=\"outer\" data-nav-toggle checked");
+		marked.Should().Contain("id=\"inner\" data-nav-toggle checked");
+		marked.Should().NotContain("id=\"other\" data-nav-toggle checked");
+	}
+
+	[Test]
+	public void Apply_DesignSystemTree_IsIdempotent()
+	{
+		const string html = """<a class="nav-tree__link" href="/a" aria-current="page">A</a>""";
+
+		NavigationCurrentMarker.Apply(html, "/a").Should().Be(html);
 	}
 }

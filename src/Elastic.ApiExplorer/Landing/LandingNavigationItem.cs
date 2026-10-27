@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -15,26 +16,43 @@ namespace Elastic.ApiExplorer.Landing;
 
 public class ApiLanding : IApiGroupingModel
 {
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public object? CreatePageModel(ApiRenderContext context) =>
+		ApiOverviewBuilder.Build(
+			context.CurrentNavigation.NavigationRoot,
+			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+		);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new LandingViewModel(context)
-		{
-			Landing = this,
-			ApiInfo = context.Model.Info,
-			OverviewRows = ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot)
-		};
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
+			?? ApiOverviewBuilder.Build(
+				context.CurrentNavigation.NavigationRoot,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
+		var viewModel = new LandingViewModel(context) { Landing = this, ApiInfo = context.Model.Info, OverviewRows = overviewRows };
 		var slice = LandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
 
-	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
-		Task.FromResult<string?>(
-			LandingCommonMark.Product(
-				context.Model.Info,
-				ApiOverviewBuilder.Build(context.CurrentNavigation.NavigationRoot),
-				context.CurrentNavigation.NavigationRoot.Url
-			)
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) =>
+		await RenderAsync(stream, context, null, ctx);
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
+	{
+		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
+			?? ApiOverviewBuilder.Build(
+				context.CurrentNavigation.NavigationRoot,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
+		return Task.FromResult<string?>(
+			LandingCommonMark.Product(context.Model.Info, overviewRows, context.CurrentNavigation.NavigationRoot.Url)
 		);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) => RenderCommonMarkAsync(context, null, ctx);
 }
 
 public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INavigationItem>, IRootNavigationItem<ApiLanding, INavigationItem>
@@ -144,9 +162,18 @@ public class TagNavigationItem(
 	string apiUrlSuffix,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ApiGroupingNavigationItem<ApiTag, IEndpointOrOperationNavigationItem>(tag, rootNavigation, parent)
+) : ApiGroupingNavigationItem<ApiTag, INavigationItem>(tag, rootNavigation, parent)
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
+
+	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
+	{
+		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
+		var headings = introHeadings.Select(
+			heading => new IntroHeadingNavigationItem(this, new IntroHeading(heading.Heading, heading.Slug))
+		);
+		NavigationItems = [.. headings, .. operations];
+	}
 
 	/// <inheritdoc />
 	public override string Url => _url;
@@ -158,22 +185,18 @@ public class TagNavigationItem(
 	public override string Id { get; } = ShortId.Create(tag.Name);
 }
 
-public interface IEndpointOrOperationNavigationItem : INavigationItem;
+public sealed record IntroHeading(string Title, string Slug) : INavigationModel;
 
-public class EndpointNavigationItem(
-	ApiEndpoint endpoint,
-	IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
-	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : IApiGroupingNavigationItem<ApiEndpoint, OperationNavigationItem>, IEndpointOrOperationNavigationItem, IMultiOperationNavigationItem
+public sealed class IntroHeadingNavigationItem(TagNavigationItem parent, IntroHeading heading) : ILeafNavigationItem<IntroHeading>
 {
 	/// <inheritdoc />
-	public string Url => NavigationItems.First().Url;
+	public string Url { get; } = $"{parent.Url}#{heading.Slug}";
 
 	/// <inheritdoc />
-	public string NavigationTitle { get; } = endpoint.Operations.First().ApiName;
+	public string NavigationTitle { get; } = heading.Title;
 
 	/// <inheritdoc />
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = rootNavigation;
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = parent.NavigationRoot;
 
 	/// <inheritdoc />
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
@@ -185,17 +208,7 @@ public class EndpointNavigationItem(
 	public int NavigationIndex { get; set; }
 
 	/// <inheritdoc />
-	public string Id { get; } = ShortId.Create(
-		nameof(EndpointNavigationItem),
-		endpoint.Operations.First().ApiName,
-		endpoint.Operations.First().Route
-	);
-
-	//TODO ensure Index is not newed everytime
-	/// <inheritdoc />
-	public ILeafNavigationItem<ApiEndpoint> Index =>
-		new ApiIndexLeafNavigation<ApiEndpoint>(endpoint, Url, NavigationTitle, rootNavigation, Parent);
-
-	/// <inheritdoc />
-	public IReadOnlyCollection<OperationNavigationItem> NavigationItems { get; set; } = [];
+	public IntroHeading Model { get; } = heading;
 }
+
+public interface IEndpointOrOperationNavigationItem : INavigationItem;

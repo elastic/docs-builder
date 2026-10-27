@@ -9,7 +9,7 @@ namespace Mcp.Remote.Tests;
 
 public class McpServerInstructionTests
 {
-	[Fact]
+	[Test]
 	public void PublicProfile_ContainsAllModuleGuidance()
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
@@ -25,7 +25,7 @@ public class McpServerInstructionTests
 		instructions.Should().Contain("Use check_docs_coherence or find_docs_inconsistencies when reviewing or auditing");
 	}
 
-	[Fact]
+	[Test]
 	public void InternalProfile_ContainsSearchAndDocumentGuidanceOnly()
 	{
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
@@ -42,7 +42,7 @@ public class McpServerInstructionTests
 		instructions.Should().NotContain("generate_template");
 	}
 
-	[Fact]
+	[Test]
 	public void Triggers_AreProfileSpecific()
 	{
 		var publicInstructions = McpServerProfile.Public.ComposeServerInstructions();
@@ -57,7 +57,13 @@ public class McpServerInstructionTests
 		internalInstructions.Should().NotContain("Elastic product names");
 	}
 
-	[Fact]
+	[Test]
+	public void PublicProfile_ServiceName_IsDocsMcp() => McpServerProfile.Public.ServiceName.Should().Be("docs-mcp");
+
+	[Test]
+	public void InternalProfile_ServiceName_IsCodexMcp() => McpServerProfile.Internal.ServiceName.Should().Be("codex-mcp");
+
+	[Test]
 	public void Resolve_WithPublic_ReturnsPublicProfile()
 	{
 		var profile = McpServerProfile.Resolve("public");
@@ -66,7 +72,7 @@ public class McpServerInstructionTests
 		profile.Name.Should().Be("public");
 	}
 
-	[Fact]
+	[Test]
 	public void Resolve_WithInternal_ReturnsInternalProfile()
 	{
 		var profile = McpServerProfile.Resolve("internal");
@@ -75,7 +81,7 @@ public class McpServerInstructionTests
 		profile.Name.Should().Be("internal");
 	}
 
-	[Fact]
+	[Test]
 	public void Resolve_WithNullOrWhitespace_ReturnsPublicProfile()
 	{
 		McpServerProfile.Resolve(null).Should().Be(McpServerProfile.Public);
@@ -83,7 +89,7 @@ public class McpServerInstructionTests
 		McpServerProfile.Resolve("   ").Should().Be(McpServerProfile.Public);
 	}
 
-	[Fact]
+	[Test]
 	public void Resolve_WithUnknownProfile_Throws()
 	{
 		var act = () => McpServerProfile.Resolve("unknown");
@@ -91,14 +97,14 @@ public class McpServerInstructionTests
 		act.Should().Throw<ArgumentException>().WithMessage("*Unknown MCP server profile*").WithParameterName("name");
 	}
 
-	[Fact]
+	[Test]
 	public void PublicProfile_ComposesExactInstructions()
 	{
 		var instructions = McpServerProfile.Public.ComposeServerInstructions();
 
 		var expected =
 			"""
-			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs.
+			Use this server to search, retrieve, and analyze Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.
 
 			<triggers>
 			Use the server when the user:
@@ -116,10 +122,10 @@ public class McpServerInstructionTests
 			</tool_guidance>
 			""";
 
-		instructions.Should().Be(expected);
+		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
 	}
 
-	[Fact]
+	[Test]
 	public void InternalProfile_ComposesExactInstructions()
 	{
 		var instructions = McpServerProfile.Internal.ComposeServerInstructions();
@@ -142,7 +148,7 @@ public class McpServerInstructionTests
 			</tool_guidance>
 			""";
 
-		instructions.Should().Be(expected);
+		instructions.Should().Be(expected.ReplaceLineEndings("\n"));
 	}
 
 	private static List<string> ExtractBullets(string instructions) =>

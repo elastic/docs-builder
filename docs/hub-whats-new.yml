@@ -14,7 +14,7 @@ products:
     # More than one release stream can be listed here.
     release-links:
       - label: Release notes
-        url: /data/release-notes/index.md
+        url: /release-notes.md
       - label: Changelog reference
         url: /data/release-notes/overview.md
     upgrade-link:

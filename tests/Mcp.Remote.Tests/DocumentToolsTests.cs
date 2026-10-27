@@ -13,7 +13,7 @@ namespace Mcp.Remote.Tests;
 
 public class DocumentToolsTests
 {
-	[Fact]
+	[Test]
 	public async Task GetDocumentByUrl_MapsSourceUrlIntoResponse()
 	{
 		const string expectedSourceUrl = "https://github.com/elastic/docs-content/blob/main/docs/some-page.md";
@@ -26,7 +26,7 @@ public class DocumentToolsTests
 		});
 		var tools = new DocumentTools(gateway, NullLogger<DocumentTools>.Instance);
 
-		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current.CancellationToken);
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		// MCP responses use camelCase (McpJsonContext); assert the wire key, not only the CLR property.
 		json.Should().Contain("\"sourceUrl\"");
@@ -35,7 +35,7 @@ public class DocumentToolsTests
 		response.SourceUrl.Should().Be(expectedSourceUrl);
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetDocumentByUrl_OmitsSourceUrlWhenNull()
 	{
 		var gateway = new StubDocumentGateway(new DocumentResult
@@ -47,7 +47,7 @@ public class DocumentToolsTests
 		});
 		var tools = new DocumentTools(gateway, NullLogger<DocumentTools>.Instance);
 
-		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current.CancellationToken);
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		using var doc = JsonDocument.Parse(json);
 		var hasNonNullSourceUrl = doc.RootElement.TryGetProperty("sourceUrl", out var sourceUrl)

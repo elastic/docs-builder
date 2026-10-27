@@ -15,7 +15,7 @@ namespace Elastic.Documentation.Navigation.Tests.Codex;
 
 public class CodexGitRepositoryTests
 {
-	[Fact]
+	[Test]
 	public void Fetch_WhenGitFails_ThrowsWithoutLeavingTheFailureAsAnUncaughtJobError()
 	{
 		var gitCollector = new DiagnosticsCollector([]);
@@ -27,7 +27,7 @@ public class CodexGitRepositoryTests
 		gitCollector.Errors.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public void Checkout_WhenGitFails_ThrowsAfterRecordingTheFailureOnTheGitCollector()
 	{
 		var gitCollector = new DiagnosticsCollector([]);

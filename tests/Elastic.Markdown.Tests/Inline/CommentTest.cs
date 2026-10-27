@@ -5,12 +5,12 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class CommentTest(ITestOutputHelper output) : InlineTest(output, """
+public class CommentTest() : InlineTest("""
 % comment
 not a comment
 """)
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
@@ -21,8 +21,7 @@ not a comment
 	}
 }
 
-public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(
-	output,
+public class MultipleLineCommentTest() : InlineTest(
 	"""
 	not a comment, and multi line comment below
 	<!--
@@ -35,7 +34,7 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
@@ -59,8 +58,7 @@ public class MultipleLineCommentTest(ITestOutputHelper output) : InlineTest(
 	}
 }
 
-public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineTest(
-	output,
+public class MultipleLineCommentWithLinkTest() : InlineTest(
 	"""
 	not a comment, and multi line comment below
 	<!--
@@ -74,10 +72,10 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml()
 	{
 		// language=html
@@ -107,8 +105,7 @@ public class MultipleLineCommentWithLinkTest(ITestOutputHelper output) : InlineT
 /// Tests for GitHub issue #2456: Silent build errors on malformed multiline comments.
 /// When closing --> is on the same line as other content, the comment should still close properly.
 /// </summary>
-public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : InlineTest(
-	output,
+public class CommentWithClosingTagAtEndOfLineTest() : InlineTest(
 	"""
 	content before comment
 
@@ -121,7 +118,7 @@ public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : In
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void ContentAfterCommentShouldBeRendered()
 	{
 		// This test verifies GitHub issue #2456 is fixed.
@@ -129,40 +126,36 @@ public class CommentWithClosingTagAtEndOfLineTest(ITestOutputHelper output) : In
 		Html.Should().Contain("<p>content after comment</p>");
 	}
 
-	[Fact]
+	[Test]
 	public void ContentBeforeCommentShouldBeRendered() => Html.Should().Contain("<p>content before comment</p>");
 
-	[Fact]
+	[Test]
 	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("TODO: Uncomment once page is live.");
 }
 
 /// <summary>
 /// Tests single-line HTML comments like <!-- comment -->
 /// </summary>
-public class SingleLineCommentTest(ITestOutputHelper output) : InlineTest(
-	output,
-	"""
+public class SingleLineCommentTest() : InlineTest("""
 	content before
 
 	<!-- This is a single line comment -->
 
 	content after
-	"""
-)
+	""")
 {
-	[Fact]
+	[Test]
 	public void ContentBeforeAndAfterShouldBeRendered() =>
 		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
 
-	[Fact]
+	[Test]
 	public void CommentContentShouldNotBeRendered() => Html.Should().NotContain("single line comment");
 }
 
 /// <summary>
 /// Tests comment with opening and content on same line, closing on different line
 /// </summary>
-public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) : InlineTest(
-	output,
+public class CommentWithOpeningContentOnSameLineTest() : InlineTest(
 	"""
 	content before
 
@@ -174,11 +167,11 @@ public class CommentWithOpeningContentOnSameLineTest(ITestOutputHelper output) :
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void ContentBeforeAndAfterShouldBeRendered() =>
 		Html.Should().Contain("<p>content before</p>").And.Contain("<p>content after</p>");
 
-	[Fact]
+	[Test]
 	public void CommentContentShouldNotBeRendered() =>
 		Html.Should().NotContain("start of comment").And.NotContain("middle of comment").And.NotContain("end of comment");
 }

@@ -8,6 +8,18 @@ The `docset.yml` file is the configuration file for a documentation set. At mini
 
 For an overview of navigation concepts and common patterns, see [Navigation](../navigation.md).
 
+## Unknown keys
+
+Unknown keys in `docset.yml` and in nested `toc.yml` files are build errors, so a typo is never silently ignored. Each error points at the key, shows where it sits in the file, and suggests the closest valid key:
+
+```text
+Error: Unknown key 'fiel' in $.toc[1]. Did you mean 'file'?
+ 5 │   - fiel: other.md
+   ·     ────
+```
+
+If no valid key is close, the error lists the valid keys for that position. The same applies to [frontmatter](../../../syntax/frontmatter.md), `redirects.yml`, `{settings}` files, and the other YAML the build reads.
+
 ## `project`
 
 The name of the project.
@@ -171,6 +183,16 @@ Defines named call-to-action templates for the right-hand sidebar. See [CTA](../
 ## `default_cta`
 
 Registers a named CTA template as the default for every page listed in this navigation file. Available on both `docset.yml` and nested `toc.yml` files. The template must be declared under the `cta` map in `docset.yml`.
+
+`default_cta` can also be set on an individual `file:` or `folder:` entry inside `toc`, where it applies to that entry and every page beneath it:
+
+```yaml
+toc:
+  - file: observability.md
+    default_cta: observability
+    children:
+      - folder: observability
+```
 
 See [CTA](../cta.md).
 

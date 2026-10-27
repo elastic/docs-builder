@@ -13,7 +13,7 @@ namespace Elastic.Documentation.Api.Tests;
 
 public class PageFeedbackEndpointTests
 {
-	[Fact]
+	[Test]
 	public async Task Put_ValidFeedback_RecordsFeedbackWithEuid()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -28,7 +28,7 @@ public class PageFeedbackEndpointTests
 		using var request = CreateRequest(feedbackId, ValidPayload);
 		request.Headers.Add("Cookie", "euid=test-euid");
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
@@ -41,7 +41,7 @@ public class PageFeedbackEndpointTests
 		recorded.Euid.Should().Be("test-euid");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Put_ReactionOnly_RecordsFeedbackWithoutDetails()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -62,7 +62,7 @@ public class PageFeedbackEndpointTests
 			""";
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
@@ -71,7 +71,7 @@ public class PageFeedbackEndpointTests
 		recorded.Comment.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Put_MultipleReasons_RecordsAllReasons()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -94,14 +94,14 @@ public class PageFeedbackEndpointTests
 			""";
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
 		recorded.Reasons.Should().BeEquivalentTo([PageFeedbackReason.Inaccurate, PageFeedbackReason.OutOfDate]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Put_CommentExceedsLimit_ReturnsBadRequest()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -120,14 +120,14 @@ public class PageFeedbackEndpointTests
 			""";
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Theory]
-	[InlineData(
+	[Test]
+	[Arguments(
 	/*lang=json,strict*/
 	"""
 		{
@@ -138,7 +138,7 @@ public class PageFeedbackEndpointTests
 			"reasonSetVersion": 2
 		}
 		""")]
-	[InlineData(
+	[Arguments(
 	/*lang=json,strict*/
 	"""
 		{
@@ -146,7 +146,7 @@ public class PageFeedbackEndpointTests
 			"pageTitle": "Test page"
 		}
 		""")]
-	[InlineData(
+	[Arguments(
 	/*lang=json,strict*/
 	"""
 		{
@@ -156,7 +156,7 @@ public class PageFeedbackEndpointTests
 			"comment": "Missing a required reason"
 		}
 		""")]
-	[InlineData(
+	[Arguments(
 	/*lang=json,strict*/
 	"""
 		{
@@ -173,13 +173,13 @@ public class PageFeedbackEndpointTests
 		using var client = factory.CreateClient();
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Put_PersistenceFails_ReturnsServiceUnavailable()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -190,12 +190,12 @@ public class PageFeedbackEndpointTests
 		using var client = factory.CreateClient();
 		using var request = CreateRequest(Guid.NewGuid(), ValidPayload);
 
-		using var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Delete_ExistingFeedback_DeletesFeedback()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
@@ -204,7 +204,10 @@ public class PageFeedbackEndpointTests
 		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
 		using var client = factory.CreateClient();
 
-		using var response = await client.DeleteAsync($"/docs/_api/v1/page-feedback/{feedbackId}", TestContext.Current.CancellationToken);
+		using var response = await client.DeleteAsync(
+			$"/docs/_api/v1/page-feedback/{feedbackId}",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).MustHaveHappenedOnceExactly();

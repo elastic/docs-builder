@@ -236,7 +236,11 @@ public sealed class NotesIndexReconciler(
 			var yaml = await reader.ReadToEndAsync(ctx);
 
 			var normalized = ReleaseNotesSerialization.NormalizeYaml(yaml);
-			var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				normalized,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(key)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 
 			if (dto.Products is not { Count: > 0 })
 				return [];

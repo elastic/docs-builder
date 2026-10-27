@@ -35,12 +35,16 @@ products:
   apm-server:
     display: 'APM Server'
     versioning: 'stack'
+    features:
+      release-notes: dra
   auditbeat:
     display: 'Auditbeat'
     versioning: 'stack'
   beats:
     display: 'Beats'
     versioning: 'stack'
+    features:
+      release-notes: dra
   cloud-control-ecctl:
     display: 'Elastic Cloud Control'
     versioning: 'ecctl'
@@ -65,6 +69,12 @@ products:
   terraform-google-edot-cf:
     display: 'Terraform Google Elastic Cloud Forwarder'
     versioning: 'terraform-google-edot-cf'
+  connectors:
+    display: 'Elastic Connectors'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: dra
   curator:
     display: 'Elasticsearch Curator'
   docs-builder:
@@ -72,13 +82,21 @@ products:
     repository: 'docs-builder'
     features:
       public-reference: false
+      # Bundles are cut at release time from the GitHub release. Omitting the key resolves
+      # to the same path; it is spelled out so `changelog validate-onboarding` reads true.
+      release-notes: on-release
   docs-playground-release-notes-changelogs:
     display: 'Release Notes Playground (Changelogs)'
     features:
       public-reference: false
-      release-notes: prestage
+      release-notes: on-release
   docs-playground-release-notes-tagged:
     display: 'Release Notes Playground (Tagged)'
+    features:
+      public-reference: false
+      release-notes: on-release
+  docs-playground-release-notes-tagged-workflow:
+    display: 'Release Notes Playground (Tagged Workflow)'
     features:
       public-reference: false
       release-notes: on-release
@@ -151,10 +169,41 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
-  elastic-docs:
-    display: 'Elastic Documentation'
+    dra_artifact: 'elastic-agent-core'
+    features:
+      release-notes: dra
+  elastic-agent-package:
+    display: 'Elastic Agent Package'
+    versioning: 'stack'
+    repository: 'elastic-agent'
+    dra_artifact: 'elastic-agent-package'
     features:
       public-reference: false
+      release-notes: dra
+  elastic-defend:
+    display: 'Elastic Defend'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-docs:
+    display: 'Elastic Documentation'
+    repository: 'docs-content'
+    features:
+      public-reference: false
+      release-notes: on-release
+  elastic-maps-server:
+    display: 'Elastic Maps Server'
+    versioning: 'stack'
+    features:
+      public-reference: false
+      release-notes: false
+  elastic-package-registry:
+    display: 'Elastic Package Registry'
+    repository: 'package-registry'
+    features:
+      public-reference: false
+      release-notes: false
   elastic-serverless-forwarder:
     display: 'Elastic Serverless Forwarder'
     versioning: 'esf'
@@ -164,6 +213,8 @@ products:
   elasticsearch:
     display: 'Elasticsearch'
     versioning: 'stack'
+    features:
+      release-notes: dra
   elasticsearch-client:
     display: 'Elasticsearch Client'
     versioning: 'stack'
@@ -203,6 +254,13 @@ products:
     display: 'Elasticsearch for Apache Hadoop'
     repository: 'elasticsearch-hadoop'
     versioning: 'stack'
+    features:
+      release-notes: dra
+  enterprise-search:
+    display: 'Elastic Enterprise Search'
+    features:
+      public-reference: false
+      release-notes: false
   ess:
     display: 'Elastic Cloud Hosted'
     versioning: 'all'
@@ -215,6 +273,8 @@ products:
   fleet-server:
     display: 'Fleet Server'
     versioning: 'stack'
+    features:
+      release-notes: dra
   heartbeat:
     display: 'Heartbeat'
     versioning: 'stack'
@@ -224,9 +284,13 @@ products:
   kibana:
     display: 'Kibana'
     versioning: 'stack'
+    features:
+      release-notes: dra
   logstash:
     display: 'Logstash'
     versioning: 'stack'
+    features:
+      release-notes: dra
   machine-learning:
     display: 'Machine Learning'
     versioning: 'stack'
@@ -263,6 +327,11 @@ products:
   serverless-vector-database:
     display: 'Elasticsearch Vector Database Serverless'
     versioning: 'serverless'
+  synthetics-recorder:
+    display: 'Elastic Synthetics Recorder'
+    features:
+      public-reference: false
+      release-notes: false
   transport-go:
     display: 'Elastic Transport Go'
     repository: 'elastic-transport-go'
@@ -272,3 +341,50 @@ products:
   winlogbeat:
     display: 'Winlogbeat'
     versioning: 'stack'
+
+  # Products shipped via the DRA pipeline, not yet in the public docs site.
+  # ems-server, endpoint-dev, and prodfiler are on the DRA bump list. Leave
+  # release-notes: false until https://github.com/elastic/catalog-info/pull/4862
+  # is merged, the Vault role is in place, and the preview workflow requests
+  # that token. cloud-defend is not on that list.
+  cloud-defend:
+    display: 'Elastic Cloud Defend'
+    features:
+      public-reference: false
+      release-notes: false
+  cloudbeat:
+    display: 'Cloudbeat'
+    features:
+      public-reference: false
+      release-notes: dra
+  elastic-stack-installers:
+    display: 'Elastic Stack Installers'
+    features:
+      public-reference: false
+      release-notes: dra
+  elasticsearch-sql-odbc:
+    display: 'Elasticsearch SQL ODBC Driver'
+    features:
+      public-reference: false
+      release-notes: dra
+  ems-server:
+    display: 'Elastic Maps Server'
+    repository: 'ems-server'
+    features:
+      public-reference: false
+      release-notes: false
+  endpoint-dev:
+    display: 'Endpoint Dev'
+    features:
+      public-reference: false
+      release-notes: false
+  ml-cpp:
+    display: 'Machine Learning C++'
+    features:
+      public-reference: false
+      release-notes: dra
+  prodfiler:
+    display: 'Elastic Universal Profiling'
+    features:
+      public-reference: false
+      release-notes: false

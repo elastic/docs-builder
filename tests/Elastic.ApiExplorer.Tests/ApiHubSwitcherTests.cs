@@ -5,127 +5,101 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.Documentation.Configuration.Products;
-using Elastic.Documentation.Configuration.Toc;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ApiHubSwitcherTests
 {
-	[Fact]
-	public void CollectDeclaredEntries_NullConfig_ReturnsEmpty()
-	{
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", null);
-
-		entries.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void CollectDeclaredEntries_EmptyConfig_ReturnsEmpty()
-	{
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", new Dictionary<string, ResolvedApiConfiguration>());
-
-		entries.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void CollectDeclaredEntries_TwoConfigs_UsesDisplayNamesAndProductRoots()
-	{
-		var configs = new Dictionary<string, ResolvedApiConfiguration>
-		{
-			["elasticsearch"] = Config("elasticsearch", "Elasticsearch"),
-			["kibana"] = Config("kibana", "Kibana")
-		};
-
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", configs);
-
-		entries.Should().HaveCount(2);
-		entries
-			.Should()
-			.ContainSingle(e => e.Key == "elasticsearch")
-			.Which
-			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("elasticsearch", "Elasticsearch", "/api/doc/elasticsearch/", "elasticsearch"));
-		entries
-			.Should()
-			.ContainSingle(e => e.Key == "kibana")
-			.Which
-			.Should()
-			.BeEquivalentTo(new ApiCatalogEntry("kibana", "Kibana", "/api/doc/kibana/", "kibana"));
-	}
-
-	[Fact]
+	[Test]
 	public void Build_NullCurrentKey_ReturnsEmpty()
 	{
-		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: null, "/api/");
+		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: null);
 
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void Build_EmptyEntries_ReturnsEmpty()
 	{
-		var items = ApiHubSwitcher.Build([], currentApiKey: "elasticsearch", "/api/");
+		var items = ApiHubSwitcher.Build([], currentApiKey: "elasticsearch");
 
 		items.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void Build_HubOptionFirst_NeverSelected()
-	{
-		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: "elasticsearch", "/api/");
-
-		items[0].Label.Should().Be("Back to hub");
-		items[0].Url.Should().Be("/api/");
-		items[0].Selected.Should().BeFalse();
-	}
-
-	[Fact]
+	[Test]
 	public void Build_OrdersEntriesAlphabeticallyByTitle()
 	{
-		var items = ApiHubSwitcher.Build(
-			[Entry("kibana", "Kibana"), Entry("elasticsearch", "Elasticsearch")],
-			currentApiKey: "kibana",
-			"/api/"
-		);
+		var items = ApiHubSwitcher.Build([Entry("kibana", "Kibana"), Entry("elasticsearch", "Elasticsearch")], currentApiKey: "kibana");
 
-		items.Select(i => i.Label).Should().Equal("Back to hub", "Elasticsearch", "Kibana");
+		items.SelectMany(g => g.Products).Select(i => i.Label).Should().Equal("Elasticsearch", "Kibana");
 	}
 
-	[Fact]
+	[Test]
+	public void Build_SingleGroupHasNoTitle()
+	{
+		var groups = ApiHubSwitcher.Build([Entry("kibana", "Kibana"), Entry("elasticsearch", "Elasticsearch")], currentApiKey: "kibana");
+
+		groups.Should().ContainSingle().Which.Title.Should().BeNull();
+	}
+
+	[Test]
+	public void Build_GroupsMatchTheCatalogLanding()
+	{
+		var groups = ApiHubSwitcher.Build(
+			[
+				Entry("zeta", "Zeta API"),
+				Entry("kibana-serverless", "Kibana Serverless APIs"),
+				Entry("cloud-serverless", "Elastic Cloud Serverless API"),
+				Entry("logstash", "Logstash APIs"),
+				Entry("alpha", "Alpha API"),
+				Entry("cloud", "Elastic Cloud API"),
+				Entry("kibana", "Kibana APIs"),
+				Entry("cloud-billing", "Cloud Billing API"),
+				Entry("elasticsearch", "Elasticsearch API"),
+				Entry("elasticsearch-serverless", "Elasticsearch Serverless API")
+			],
+			currentApiKey: "kibana"
+		);
+
+		groups.Select(g => g.Title).Should().Equal("Elastic Stack", "Orchestration", null);
+		groups[0]
+			.Products
+			.Select(p => p.Label)
+			.Should()
+			.Equal("Elasticsearch API", "Elasticsearch Serverless API", "Kibana APIs", "Kibana Serverless APIs", "Logstash APIs");
+		groups[1].Products.Select(p => p.Label).Should().Equal("Elastic Cloud API", "Cloud Billing API", "Elastic Cloud Serverless API");
+		groups[2].Products.Select(p => p.Label).Should().Equal("Alpha API", "Zeta API");
+	}
+
+	[Test]
 	public void Build_SelectedMatchesCurrentKey()
 	{
 		var items = ApiHubSwitcher.Build(
 			[Entry("elasticsearch", "Elasticsearch"), Entry("kibana", "Kibana")],
-			currentApiKey: "elasticsearch",
-			"/api/"
+			currentApiKey: "elasticsearch"
 		);
 
-		items.Count(i => i.Selected).Should().Be(1);
-		items.Single(i => i.Selected).Label.Should().Be("Elasticsearch");
+		items.SelectMany(g => g.Products).Count(i => i.Selected).Should().Be(1);
+		items.SelectMany(g => g.Products).Single(i => i.Selected).Label.Should().Be("Elasticsearch");
 	}
 
-	[Fact]
-	public void CollectDeclaredEntries_PreservesCatalogCategories()
+	[Test]
+	public void Build_ResolvesTheProductIcon()
 	{
-		var configs = new Dictionary<string, ResolvedApiConfiguration>
-		{
-			["elasticsearch"] = Config("elasticsearch", "Elasticsearch", ["self", "ess"])
-		};
+		var items = ApiHubSwitcher.Build([Entry("elasticsearch", "Elasticsearch")], currentApiKey: "elasticsearch");
 
-		var entries = ApiHubSwitcher.CollectDeclaredEntries("", configs);
-
-		entries.Should().ContainSingle().Which.CatalogCategories.Should().Equal("self", "ess");
+		items.SelectMany(g => g.Products).Should().ContainSingle().Which.IconSvg.Should().Contain("<svg");
 	}
 
-	private static ResolvedApiConfiguration Config(string key, string displayName, IReadOnlyList<string>? categories = null) =>
-		new()
-		{
-			ProductKey = key,
-			Product = new Product { Id = key, DisplayName = displayName },
-			SpecFileName = $"{key}.json",
-			CatalogCategories = categories ?? []
-		};
+	[Test]
+	public void Build_EntryWithLatestVersion_LinksToItAndOthersKeepTheirRoot()
+	{
+		var versioned = Entry("kibana", "Kibana") with { LatestUrl = "/api/doc/kibana/v9" };
+
+		var items = ApiHubSwitcher.Build([versioned, Entry("logstash", "Logstash")], currentApiKey: "kibana");
+
+		items.SelectMany(g => g.Products).Select(i => i.Url).Should().Equal("/api/doc/kibana/v9", "/api/doc/logstash/");
+	}
 
 	private static ApiCatalogEntry Entry(string key, string title) => new(key, title, $"/api/doc/{key}/");
 }

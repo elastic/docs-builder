@@ -370,9 +370,11 @@ bundles/
 └── 9.3.0.amend-notes.yaml     # Lambda-owned notes sidecar (auto-merged last)
 ```
 
-Amend files may contain `entries` (additions) and `exclude-entries` (removals). Within each amend file, exclusions are applied before additions. Numbered amends are processed in numeric order, then `.amend-notes`. Do not create `.amend-notes` files yourself; see [](/cli/changelog/bundle-amend.md).
+Amend files may contain `entries` (additions), `exclude-entries` (removals), and an optional bundle `description`. Within each amend file, exclusions are applied before additions. Numbered amends are processed in numeric order, then `.amend-notes`. Do not create `.amend-notes` files yourself; see [](/cli/changelog/bundle-amend.md).
 
-All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (products, hide-features, repo) is preserved.
+If a numbered amend sets `description`, that text replaces the parent bundle's intro (an empty value clears it). Numbered amends that omit `description` leave the intro unchanged. The `.amend-notes` sidecar never changes the intro.
+
+All entries from the parent and amend bundles are rendered together as a single release section. The parent bundle's metadata (`products`, `hide-features`, `repo`) is preserved except for `description`, which follows the numbered-amend patch rules above.
 
 ## Default folder structure
 

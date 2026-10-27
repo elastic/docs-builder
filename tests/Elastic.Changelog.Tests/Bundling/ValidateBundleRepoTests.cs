@@ -10,12 +10,18 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Bundling;
 
-public class ValidateBundleRepoTests(ITestOutputHelper output)
+public class ValidateBundleRepoTests() : IAsyncDisposable
 {
-	private readonly TestDiagnosticsCollector _collector = new(output);
+	private readonly TestDiagnosticsCollector _collector = new();
 	private readonly MockFileSystem _fileSystem = new();
 
-	[Fact]
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		GC.SuppressFinalize(this);
+	}
+
+	[Test]
 	public void ValidateBundleRepo_UnsetBundleRepo_EmitsNothing()
 	{
 		BundleOutputNaming.ValidateBundleRepo(_collector, _fileSystem, null, null, EmptyEnvironment);
@@ -24,7 +30,7 @@ public class ValidateBundleRepoTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateBundleRepo_EmptyBundleRepo_EmitsNothing()
 	{
 		BundleOutputNaming.ValidateBundleRepo(_collector, _fileSystem, null, string.Empty, EmptyEnvironment);
@@ -33,7 +39,7 @@ public class ValidateBundleRepoTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateBundleRepo_SetButNoAuthoritativeSource_EmitsNothing()
 	{
 		// No GITHUB_REPOSITORY env var, no git remote — cannot validate, so silently skip.
@@ -43,7 +49,7 @@ public class ValidateBundleRepoTests(ITestOutputHelper output)
 		_collector.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateBundleRepo_MatchesGithubRepository_EmitsWarning()
 	{
 		BundleOutputNaming.ValidateBundleRepo(_collector, _fileSystem, null, "docs-builder", RepoEnvironment("elastic/docs-builder"));
@@ -54,7 +60,7 @@ public class ValidateBundleRepoTests(ITestOutputHelper output)
 		warnings[0].Message.Should().Contain("redundant");
 	}
 
-	[Fact]
+	[Test]
 	public void ValidateBundleRepo_DiffersFromGithubRepository_EmitsError()
 	{
 		BundleOutputNaming.ValidateBundleRepo(_collector, _fileSystem, null, "kibana", RepoEnvironment("elastic/docs-builder"));

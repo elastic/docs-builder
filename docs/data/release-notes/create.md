@@ -58,6 +58,7 @@ If you already have automated release notes for GitHub releases, you can use the
 
      These files don't have `prs` and thus don't appear in a release's PR list.
      The `products[].versions` are used to add these files to release bundles automatically.
+     After you upload a note, if that product version's bundle has already shipped, the scrubber attaches it without `changelog bundle-amend --add`. Taking a note off a published bundle is incomplete: there is no command that unpublishes the pool file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
      :::
 
      Title, type, and products (including version or date) are the minimal details required when you are not deriving details from a PR.
@@ -84,11 +85,13 @@ For details about this method, refer to the [README](https://github.com/elastic/
 
 When automated via the [changelog GitHub Actions](https://github.com/elastic/docs-actions/tree/main/changelog), changelog creation is a two-step process:
 
-1. `changelog evaluate-pr` inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, and `products`.
+1. `changelog evaluate-pr` inspects the PR (title, labels, body) and produces outputs such as `title`, `type`, `description`, `impact`, `action`, and `products`.
 2. `changelog add` reads those outputs from `CHANGELOG_*` environment variables and generates the changelog YAML file.
 
 The `description` output from step 1 contains the release note extracted from the PR body (when `extract.release_notes` is enabled).
 If extraction is disabled (either by setting `extract.release_notes: false` in `changelog.yml` or by passing `--no-extract-release-notes` to `changelog add`), the `CHANGELOG_DESCRIPTION` environment variable is ignored and the extracted description is not written to the changelog.
+
+The `impact` and `action` outputs contain the `## Impact` and `## Action` sections of the PR description and fill the `impact:` and `action:` fields of the entry. Pass `--require-impact-action` to `evaluate-pr` to fail breaking-change PRs that lack them.
 
 Refer to [CI auto-detection](/cli/changelog/add.md) for the full list of environment variables and precedence rules.
 

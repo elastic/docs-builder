@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Versions;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -141,6 +142,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
+	[YamlIgnore]
 	public static AppliesCollection GenerallyAvailable { get; } = new([Applicability.GenerallyAvailable]);
 
 	public override string ToString()
@@ -165,6 +167,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 	public ProductLifecycle Lifecycle { get; init; }
 	public VersionSpec? Version { get; init; }
 
+	[YamlIgnore]
 	public static Applicability GenerallyAvailable { get; } = new()
 	{
 		Lifecycle = ProductLifecycle.GenerallyAvailable,

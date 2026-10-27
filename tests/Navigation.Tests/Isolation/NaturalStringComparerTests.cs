@@ -11,7 +11,7 @@ public class NaturalStringComparerTests
 {
 	private static readonly NaturalStringComparer Comparer = NaturalStringComparer.Instance;
 
-	[Fact]
+	[Test]
 	public void PureAlphabeticalStringsCompareNormally()
 	{
 		Comparer.Compare("abc", "def").Should().BeNegative();
@@ -21,7 +21,7 @@ public class NaturalStringComparerTests
 		Comparer.Compare(same, new string(same)).Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void SingleDigitVersionsSort()
 	{
 		Comparer.Compare("v1", "v2").Should().BeNegative();
@@ -31,14 +31,14 @@ public class NaturalStringComparerTests
 		Comparer.Compare(same, new string(same)).Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MultiDigitNumbersSortNumerically()
 	{
 		Comparer.Compare("v2", "v10").Should().BeNegative();
 		Comparer.Compare("v10", "v2").Should().BePositive();
 	}
 
-	[Fact]
+	[Test]
 	public void VersionNumbersWithUnderscores()
 	{
 		var files = new[] { "3_10_0.md", "3_2_0.md", "3_1_0.md", "3_0_0.md" };
@@ -47,7 +47,7 @@ public class NaturalStringComparerTests
 		sorted.Should().BeEquivalentTo(["3_0_0.md", "3_1_0.md", "3_2_0.md", "3_10_0.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void VersionNumbersWithDots()
 	{
 		var files = new[] { "3.10.0.md", "3.2.0.md", "3.1.0.md", "3.0.0.md" };
@@ -56,7 +56,7 @@ public class NaturalStringComparerTests
 		sorted.Should().BeEquivalentTo(["3.0.0.md", "3.1.0.md", "3.2.0.md", "3.10.0.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void NullsAreHandled()
 	{
 		string? nullA = null;
@@ -66,7 +66,7 @@ public class NaturalStringComparerTests
 		Comparer.Compare("a", nullB).Should().BePositive();
 	}
 
-	[Fact]
+	[Test]
 	public void SameValueReturnsZero()
 	{
 		var a = "test";
@@ -74,7 +74,7 @@ public class NaturalStringComparerTests
 		Comparer.Compare(a, b).Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public void MixedPrefixesWithNumbers()
 	{
 		var files = new[] { "file2.md", "file10.md", "file1.md" };
@@ -83,7 +83,7 @@ public class NaturalStringComparerTests
 		sorted.Should().BeEquivalentTo(["file1.md", "file2.md", "file10.md"], options => options.WithStrictOrdering());
 	}
 
-	[Fact]
+	[Test]
 	public void DifferentLengthStrings()
 	{
 		Comparer.Compare("v1", "v1a").Should().BeNegative();

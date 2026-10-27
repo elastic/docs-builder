@@ -11,6 +11,7 @@ using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.LegacyUrlMappings;
+using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation;
@@ -206,6 +207,7 @@ public class AssemblerBuilder(
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
 		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
+		set.DocumentationSet.Configuration.Features.WafIntegrationUrl = set.AssembleContext.Environment.WafIntegrationUrl;
 	}
 
 	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)

@@ -31,7 +31,7 @@ public class ApiMarkdownIntraApiLinkTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Render_RewritesGroupAndOperationLinksAgainstCurrentApiBase()
 	{
 		var renderer = new CapturingRenderer();
@@ -65,7 +65,7 @@ public class ApiMarkdownIntraApiLinkTests
 		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/operation/operation-post-saved-objects-export)");
 	}
 
-	[Fact]
+	[Test]
 	public void CanonicalizeLinks_UsesLlmAbsoluteUrlStrategyWithoutMarkdownSuffix()
 	{
 		var markdown =

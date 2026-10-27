@@ -4,13 +4,11 @@ import type { HtmxUrlStrategy } from './types'
 // rootPath is '/docs' on prod but varies on PR previews (e.g.
 // '/elastic/docs-builder/docs/3634'), so it can't be hardcoded.
 const root = config.rootPath.replace(/\/$/, '')
-const apiRoot = `${root}/api`
 const isDocsPath = (path: string) =>
     path === root || path.startsWith(`${root}/`)
 
 export const assemblerStrategy: HtmxUrlStrategy = {
-    isExternalDocsUrl: (url) =>
-        url === apiRoot || url.startsWith(`${apiRoot}/`),
+    isExternalDocsUrl: () => false,
 
     getPathFromUrl: (url) => {
         try {

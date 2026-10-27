@@ -1,0 +1,7 @@
+@inherits RazorSlice<ApiGroupListModel>
+<ul class="api-group-list">
+	@foreach (var row in Model.Rows)
+	{
+		@(await RenderPartialAsync<_ApiGroupRow, ApiGroupRowModel>(new ApiGroupRowModel(row, Model.HxAttributes)))
+	}
+</ul>

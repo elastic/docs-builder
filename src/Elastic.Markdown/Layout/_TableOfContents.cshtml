@@ -3,10 +3,10 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
-	<nav id="toc-nav" class="sidebar-nav lg:h-full flex lg:block items-center justify-start md:justify-start gap-4 simple-scrollbar">
+	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse justify-between items-center md:flex-row md:justify-start lg:block gap-4 simple-scrollbar">
 		@if (Model.ShowVersionDropdown && !Model.Features.NavigationPreviewEnabled)
 		{
-			<div class="mb-4">
+			<div class="lg:mb-4">
 				<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 					<div class="h-8">@*height of dropdown button*@</div>
 				</version-dropdown>
@@ -20,7 +20,7 @@
 		@if (Model.RenderHamburgerIcon)
 		{
 			@* ReSharper disable once Html.IdNotResolved *@
-			<label role="button" class="md:hidden cursor-pointer mt-3" for="pages-nav-hamburger">
+			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 					stroke="currentColor" class="size-6">
 					<path stroke-linecap="round" stroke-linejoin="round"

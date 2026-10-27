@@ -8,9 +8,9 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class BasicRenderTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithValidBundle_CreatesMarkdownFiles()
 	{
 		// Arrange
@@ -38,7 +38,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("1755268130-test-feature.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -50,7 +50,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -59,12 +59,12 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("## 9.2.0");
 		indexContent.Should().Contain("Test feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMultipleTypes_DoesNotIncludeCrossFileLinksInIndex()
 	{
 		// Arrange
@@ -122,7 +122,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 			("deprecation.yaml", deprecationChangelog),
 			("highlight.yaml", highlightChangelog)
 		);
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -134,7 +134,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -143,7 +143,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		// Verify index.md exists but does NOT contain cross-file links
 		var indexFile = FileSystem.Path.Join(outputDir, "9.3.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 
 		indexContent.Should().Contain("## 9.3.0");
 		indexContent.Should().Contain("Test feature");
@@ -157,16 +157,19 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		// Verify individual separated files are still generated
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
-		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(
+			deprecationsFile,
+			TestContext.Current!.Execution.CancellationToken
+		);
 		deprecationsContent.Should().Contain("Deprecated API");
 
 		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
 		FileSystem.File.Exists(highlightsFile).Should().BeTrue();
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current.CancellationToken);
+		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
 		highlightsContent.Should().Contain("Highlighted feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMultipleBundles_MergesAndRenders()
 	{
 		// Arrange
@@ -206,11 +209,11 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 
 		var bundle1 = FileSystem.Path.Join(bundleDir, "bundle1.yaml");
 		var bundleContent1 = CreateResolvedBundleContent(bundleHeader, ("1755268130-first.yaml", changelog1));
-		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle1, bundleContent1, TestContext.Current!.Execution.CancellationToken);
 
 		var bundle2 = FileSystem.Path.Join(bundleDir, "bundle2.yaml");
 		var bundleContent2 = CreateResolvedBundleContent(bundleHeader, ("1755268140-second.yaml", changelog2));
-		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundle2, bundleContent2, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -222,7 +225,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -231,7 +234,7 @@ public class BasicRenderTests(ITestOutputHelper output) : RenderChangelogTestBas
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("First feature");
 		indexContent.Should().Contain("Second feature");
 	}

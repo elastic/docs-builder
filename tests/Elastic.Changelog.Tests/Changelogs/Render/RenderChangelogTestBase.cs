@@ -10,6 +10,6 @@ public abstract class RenderChangelogTestBase : ChangelogTestBase
 {
 	protected ChangelogRenderingService Service { get; }
 
-	protected RenderChangelogTestBase(ITestOutputHelper output) : base(output) =>
+	protected RenderChangelogTestBase() : base() =>
 		Service = new ChangelogRenderingService(LoggerFactory, FileSystem, ConfigurationContext);
 }

@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 
 public class ReleaseNotesSerializationTests
 {
-	[Fact]
+	[Test]
 	public void SerializeEntry_TitleStartingWithDash_EmitsDoubleQuotedTitleAndRoundTrips()
 	{
 		var entry = new ChangelogEntry
@@ -31,7 +31,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Title.Should().Be("- Manual leading dash");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_PlainTitle_DoesNotForceDoubleQuotes()
 	{
 		var entry = new ChangelogEntry
@@ -47,7 +47,7 @@ public class ReleaseNotesSerializationTests
 		yaml.Should().NotContain("title: \"Enable numerical id service\"");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_MultilineTitleStartingWithDash_RoundTrips()
 	{
 		var entry = new ChangelogEntry
@@ -65,19 +65,19 @@ public class ReleaseNotesSerializationTests
 
 	// --- Adversarial round-trip tests
 
-	[Theory]
-	[InlineData("Title with \"double\" quotes")]
-	[InlineData("Title with 'single' quotes")]
-	[InlineData("Title with: embedded colon")]
-	[InlineData("Title with #leading-comment-marker")]
-	[InlineData("Title with !tag-like marker")]
-	[InlineData("Title with &anchor and *alias")]
-	[InlineData("Title ending with backslash \\")]
-	[InlineData("Title with | pipe character")]
-	[InlineData("Title with > folded marker")]
-	[InlineData("Title with newline\nthen colon: injected: true")]
-	[InlineData("title:\nmalicious: true")]
-	[InlineData("\u202E right-to-left override")]
+	[Test]
+	[Arguments("Title with \"double\" quotes")]
+	[Arguments("Title with 'single' quotes")]
+	[Arguments("Title with: embedded colon")]
+	[Arguments("Title with #leading-comment-marker")]
+	[Arguments("Title with !tag-like marker")]
+	[Arguments("Title with &anchor and *alias")]
+	[Arguments("Title ending with backslash \\")]
+	[Arguments("Title with | pipe character")]
+	[Arguments("Title with > folded marker")]
+	[Arguments("Title with newline\nthen colon: injected: true")]
+	[Arguments("title:\nmalicious: true")]
+	[Arguments("\u202E right-to-left override")]
 	public void SerializeEntry_AdversarialTitle_RoundTripsWithoutInjection(string adversarialTitle)
 	{
 		var entry = new ChangelogEntry
@@ -97,7 +97,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Type.Should().Be(ChangelogEntryType.Feature, "adversarial title must not change unrelated fields");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_DescriptionWithYamlBlockMarkers_RoundTrips()
 	{
 		var entry = new ChangelogEntry
@@ -115,7 +115,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Title.Should().Be("Plain title");
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_InjectedFieldInTitle_DoesNotPolluteOtherFields()
 	{
 		// A hostile title that tries to make the deserializer believe extra
@@ -135,7 +135,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.Action.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeDeserialize_MarkerEntry_LinkRoundTrips()
 	{
 		// A marker is link: only — no title, type, products.
@@ -149,7 +149,7 @@ public class ReleaseNotesSerializationTests
 		entry.Type.Should().Be(ChangelogEntryType.Invalid);
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_WithLink_LinkRoundTrips()
 	{
 		var entry = new ChangelogEntry { Link = "99999" };
@@ -161,7 +161,7 @@ public class ReleaseNotesSerializationTests
 		roundTrip.IsMarker.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void SerializeEntry_MarkerEntry_YamlContainsOnlyLinkField()
 	{
 		// Marker entries must serialize as link: only — no title, type, products, etc.
@@ -175,7 +175,7 @@ public class ReleaseNotesSerializationTests
 		yaml.Should().NotContain("products:");
 	}
 
-	[Fact]
+	[Test]
 	public void IsMarker_NullLink_ReturnsFalse()
 	{
 		var entry = new ChangelogEntry { Title = "A real entry", Type = ChangelogEntryType.Feature };

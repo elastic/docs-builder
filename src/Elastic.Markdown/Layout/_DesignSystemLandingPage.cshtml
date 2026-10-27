@@ -1,0 +1,191 @@
+@inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Primitives.Button
+@using Elastic.Documentation.Site.Components.Cards.Card
+@using Elastic.Documentation.Site.Components.Primitives.Icon
+@using Elastic.Documentation.Site.Components.Primitives.Link
+@{
+	var solutions = new (string Name, string Description, string Icon, string Path, string? Previous)[]
+	{
+		("Elasticsearch", "Build search and analytics for mixed use cases across structured data, logs, metrics, documents, and vectors.", "search", "/solutions/search", "https://www.elastic.co/guide/en/elasticsearch/reference/index.html"),
+		("Vector Database", "Build vector-centric applications for semantic search, RAG, or AI retrieval, with built-in inference and vector-optimized defaults.", "vector", "/solutions/vector-database", null),
+		("Observability", "Resolve problems with open, flexible, and unified observability powered by advanced machine learning and analytics.", "logo_observability", "/solutions/observability", "https://www.elastic.co/guide/en/observability/index.html"),
+		("Security", "Detect, investigate, and respond to threats with AI-driven security analytics to protect your organization at scale.", "logo_security", "/solutions/security", "https://www.elastic.co/guide/en/security/index.html")
+	};
+	var guides = new (string Name, string Description, string Icon, string Path)[]
+	{
+		("Manage data", "Learn how to ingest, enrich, and manage your data in Elastic.", "database", "/manage-data"),
+		("Explore and analyze", "Discover the tools of Elasticsearch and Kibana.", "ml_data_visualizer", "/explore-analyze"),
+		("Deploy and manage", "Learn how to deploy and manage all aspects of your Elastic environment.", "storage", "/deploy-manage"),
+		("Manage Cloud account", "Manage your profile information, preferences, and personal settings.", "user", "/cloud-account")
+	};
+	// Air-gapped sites can't reach elastic.co, so link to the API reference bundled with the site
+	var apiUrl = Model.Features.AirGappedEnabled ? Model.Link("/api/") : "https://www.elastic.co/docs/api";
+	var references = new (string Name, string Icon, string Url, bool External)[]
+	{
+		("Elastic APIs", "code", apiUrl, !Model.Features.AirGappedEnabled),
+		("Elasticsearch clients", "package", Model.Link("/reference/elasticsearch-clients/"), false),
+		("OpenTelemetry (EDOT)", "node", Model.Link("/reference/opentelemetry/"), false),
+		("Query languages", "list_bullet", Model.Link("/reference/query-languages/"), false)
+	};
+	var resources = new (string Name, string Icon, string Url, bool External)[]
+	{
+		("Release notes", "documentation", Model.Link("/release-notes/"), false),
+		("Extend and contribute", "plus", Model.Link("extend/"), false),
+		("Troubleshoot", "wrench", Model.Link("/troubleshoot/"), false),
+		("Previous versions", "refresh_time", "https://www.elastic.co/guide?lang=en", true)
+	};
+}
+<main id="content-container" class="landing layout layout--bands">
+	<section class="landing__hero" id="hero">
+		<div class="band__content landing__inner landing__hero-text">
+			<p class="landing__eyebrow">Elastic Docs</p>
+			<h1 class="landing__title">Build, run and scale with Elastic</h1>
+			<p class="landing__lead">Welcome to the technical documentation for Elastic Stack 9.0.0 and later, and Elastic Cloud Serverless. Deploy, operate, and scale with step-by-step guides, API references, examples, and best practices.</p>
+			<div class="landing__actions">
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Elastic Fundamentals", Href = Model.Link("/get-started"), Variant = ButtonVariant.Cta }))
+				@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "https://cloud.elastic.co/registration?page=docs&placement=docs-body", Variant = ButtonVariant.Secondary }))
+			</div>
+			@if (Model.AllVersionsUrl is not null)
+			{
+				<p class="landing__versions"><a href="@Model.AllVersionsUrl">View previous docs versions</a></p>
+			}
+		</div>
+	</section>
+	<p class="landing__notice"><span class="band__content landing__inner">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "refresh_time", Size = IconSize.Small }))<strong>Upgrading from an earlier version?</strong> Follow the <a href="@Model.Link("/deploy-manage/upgrade")">upgrade guide</a> to plan and complete your upgrade.</span></p>
+		<section class="band band--wash landing__section">
+			<div class="band__content landing__inner">
+				<div class="landing__slab">
+					<div class="landing__slab-text">
+						<span class="landing__tag">New</span>
+						<h2 class="landing__slab-title">Build with Elasticsearch Vector Database</h2>
+						<p>Create a project, then use your preferred language to index data and run semantic and hybrid searches in 10 minutes.</p>
+						<div class="landing__slab-actions">
+							@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start tutorial", Href = Model.Link("/solutions/vector-database/vector-full-text-search"), Variant = ButtonVariant.Primary }))
+							<span class="landing__duration">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "clock", Size = IconSize.Small }))10 minutes</span>
+						</div>
+					</div>
+					<div class="landing__code" aria-hidden="true">
+						<span class="landing__dots"><i></i><i></i><i></i></span>
+						<pre><code><span class="landing__c"># 1 · create a project, then index</span>
+<span class="landing__k">PUT</span> /products/_doc/1
+{ <span class="landing__s">"name"</span>: <span class="landing__s">"Trail shoes"</span>, <span class="landing__s">"embedding"</span>: <span class="landing__n">[0.12, -0.41, …]</span> }
+
+<span class="landing__c"># 2 · hybrid search in one query</span>
+<span class="landing__k">POST</span> /products/_search
+{ <span class="landing__s">"retriever"</span>: { <span class="landing__s">"rrf"</span>: { <span class="landing__s">"retrievers"</span>: [ <span class="landing__n">knn</span>, <span class="landing__n">match</span> ] } } }</code></pre>
+					</div>
+				</div>
+			</div>
+		</section>
+		<section class="band band--soft band--wash-a landing__section">
+			<div class="band__content landing__inner">
+				<h2 class="landing__heading" id="solutions-use-cases">Solutions and use cases</h2>
+				<div class="grid grid--4 landing__grid">
+					@foreach (var solution in solutions)
+					{
+						@await RenderPartialAsync(_Card.Create(new CardModel { Title = solution.Name, Description = solution.Description, Href = Model.Link(solution.Path), Icon = solution.Icon, Primary = true, CtaLabel = "View docs" }))
+					}
+				</div>
+				<p class="landing__chips">
+					<span>9.0+ (latest @Model.CurrentVersion)</span>
+					@foreach (var solution in solutions.Where(s => s.Previous is not null))
+					{
+						<a href="@solution.Previous" hx-disable="true">@solution.Name previous versions</a>
+					}
+				</p>
+			</div>
+		</section>
+		<section class="band band--dots band--wash-b landing__section">
+			<div class="band__content landing__inner">
+				<h2 class="landing__heading" id="how-to-guides">How-to guides</h2>
+				<div class="grid grid--4 landing__grid">
+					@foreach (var guide in guides)
+					{
+						@await RenderPartialAsync(_Card.Create(new CardModel { Title = guide.Name, Description = guide.Description, Href = Model.Link(guide.Path), Icon = guide.Icon, CtaLabel = "View docs" }))
+					}
+				</div>
+			</div>
+		</section>
+	<section class="band band--ink landing__band">
+		<div class="band__content landing__inner">
+			<div class="landing__band-head">
+				<h2 class="landing__heading landing__heading--light" id="references">Reference</h2>
+				<a class="landing__band-link" href="@Model.Link("/reference")">View all reference docs</a>
+			</div>
+			<div class="grid grid--2 landing__references">
+				@foreach (var reference in references)
+				{
+					<a class="landing__reference" href="@reference.Url"@(reference.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\"") : HtmlString.Empty)>
+						<span class="icon-box icon-box--dark">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = reference.Icon, Size = IconSize.Medium }))</span>
+						<span class="landing__reference-name">@reference.Name</span>
+						@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))
+					</a>
+				}
+			</div>
+		</div>
+	</section>
+		<section class="band band--tint landing__section">
+			<div class="band__content landing__inner">
+				<h2 class="landing__heading" id="product-resources">Product resources</h2>
+				<div class="grid grid--4 landing__grid">
+					@foreach (var resource in resources)
+					{
+						<a class="landing__resource" href="@resource.Url"@(resource.External ? new HtmlString(" target=\"_blank\" rel=\"noopener noreferrer\" hx-disable=\"true\"") : HtmlString.Empty)>
+							<span class="icon-box">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = resource.Icon, Size = IconSize.Medium }))</span>
+							<span class="landing__resource-name">@resource.Name @await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</span>
+						</a>
+					}
+				</div>
+			</div>
+		</section>
+		<section class="band band--soft band--wash-c landing__section">
+			<div class="band__content landing__inner grid grid--2 landing__promos">
+				<div class="landing__promo">
+					<svg class="landing__art landing__art--window" viewBox="0 0 160 100" aria-hidden="true" focusable="false">
+						<rect class="art-plate" x="14" y="14" width="140" height="80" rx="6"/>
+						<rect class="art-paper" x="6" y="6" width="140" height="80" rx="6"/>
+						<circle class="art-dot" cx="22" cy="22" r="4"/>
+						<rect class="art-line" x="34" y="20" width="60" height="4" rx="2"/>
+						<rect class="art-line" x="18" y="38" width="100" height="4" rx="2"/>
+						<rect class="art-line" x="18" y="50" width="76" height="4" rx="2"/>
+						<rect class="art-block" x="86" y="58" width="52" height="20" rx="3"/>
+					</svg>
+					<p class="landing__eyebrow">Community</p>
+					<h2 class="landing__promo-title">Welcome to our community of developers</h2>
+					<p>Learn from your peers and share code examples.</p>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Join now", Href = "https://discuss.elastic.co", Variant = ButtonVariant.Primary }))
+				</div>
+				<div class="landing__promo landing__promo--dark">
+					<svg class="landing__art landing__art--calendar" viewBox="0 0 96 96" aria-hidden="true" focusable="false">
+						<rect class="art-plate" x="10" y="10" width="82" height="82" rx="8"/>
+						<rect class="art-paper" x="2" y="2" width="82" height="82" rx="8"/>
+						<rect class="art-block" x="2" y="2" width="82" height="20" rx="8"/>
+						<rect class="art-line" x="14" y="34" width="16" height="12" rx="2"/>
+						<rect class="art-line" x="35" y="34" width="16" height="12" rx="2"/>
+						<rect class="art-line" x="56" y="34" width="16" height="12" rx="2"/>
+						<rect class="art-line" x="14" y="54" width="16" height="12" rx="2"/>
+						<rect class="art-accent" x="35" y="54" width="16" height="12" rx="2"/>
+						<rect class="art-line" x="56" y="54" width="16" height="12" rx="2"/>
+					</svg>
+					<p class="landing__eyebrow landing__eyebrow--light">Events</p>
+					<h2 class="landing__promo-title">Looking for more?</h2>
+					<p>We'll show you how to solve toughest challenges with Search AI. Join us at an Elastic{ON} event near you!</p>
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Register now", Href = "https://www.elastic.co/events/elasticon", Variant = ButtonVariant.Cta }))
+				</div>
+			</div>
+		</section>
+	<section class="band band--wash landing__section">
+		<div class="band__content landing__inner">
+			<div class="cta-band">
+				<div>
+					<h2>Ready to deploy your data?</h2>
+					<p>Start a free 14-day trial. No credit card needed.</p>
+				</div>
+				<div class="cta-band__actions">
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Start free trial", Href = "https://cloud.elastic.co/registration?page=docs&placement=docs-body", Variant = ButtonVariant.Cta }))
+					@await RenderPartialAsync(_Button.Create(new ButtonModel { Label = "Talk to sales", Href = "https://www.elastic.co/contact", Variant = ButtonVariant.Secondary }))
+				</div>
+			</div>
+		</div>
+	</section>
+</main>

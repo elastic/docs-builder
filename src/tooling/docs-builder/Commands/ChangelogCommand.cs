@@ -14,6 +14,7 @@ using Elastic.Changelog;
 using Elastic.Changelog.AllowlistIdentity;
 using Elastic.Changelog.Backfill;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.Creation;
 using Elastic.Changelog.Evaluation;
 using Elastic.Changelog.GitHub;
@@ -234,6 +235,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="issues">Optional: Issue URL(s) or number(s) (comma-separated), or a path to a newline-delimited file containing issue URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated issues (e.g., `--issues "https://github.com/owner/repo/issues/123,456"`) or a file path (e.g., `--issues /path/to/file.txt`). If --owner and --repo are provided, issue numbers can be used instead of URLs. If specified, --title can be derived from the issue. Creates one changelog file per issue. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="owner">Optional: GitHub repository owner (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.owner in changelog.yml when not specified. If that value is also absent, "elastic" is used.</param>
 	/// <param name="output">Optional: Output directory for the changelog. Falls back to bundle.directory in changelog.yml when not specified. Defaults to current directory.</param>
+	/// <param name="pr">Optional: Alias for --prs that accepts a single pull request URL or PR number. Feeds into --prs. Prefer --prs for multiple values.</param>
 	/// <param name="prs">Optional: Pull request URL(s) or PR number(s) (comma-separated), or a path to a newline-delimited file containing PR URLs or numbers. Can be specified multiple times. Each occurrence can be either comma-separated PRs (e.g., `--prs "https://github.com/owner/repo/pull/123,6789"`) or a file path (e.g., `--prs /path/to/file.txt`). When specifying PRs directly, provide comma-separated values. When specifying a file path, provide a single value that points to a newline-delimited file. If --owner and --repo are provided, PR numbers can be used instead of URLs. If specified, --title can be derived from the PR. If mappings are configured, --areas and --type can also be derived from the PR. Creates one changelog file per PR. Mutually exclusive with --release-version and --report.</param>
 	/// <param name="report">Optional: URL or file path to a promotion report HTML document. Extracts GitHub pull request URLs and creates one changelog per PR (same parsing as `changelog bundle --report`). Mutually exclusive with --prs, --issues, and --release-version.</param>
 	/// <param name="repo">Optional: GitHub repository name (used when --prs or --issues contains just numbers, or when using --release-version). Falls back to bundle.repo in changelog.yml when not specified.</param>
@@ -263,6 +265,7 @@ internal sealed partial class ChangelogCommands(
 		string[]? issues = null,
 		string? owner = null,
 		string? output = null,
+		string? pr = null,
 		string[]? prs = null,
 		string? report = null,
 		string? releaseVersion = null,
@@ -279,6 +282,9 @@ internal sealed partial class ChangelogCommands(
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
+
+		if (!string.IsNullOrWhiteSpace(pr))
+			prs = prs is { Length: > 0 } ? [.. prs, pr] : [pr];
 
 		var hasReport = !string.IsNullOrWhiteSpace(report);
 		if (hasReport)
@@ -743,7 +749,9 @@ internal sealed partial class ChangelogCommands(
 	/// <summary>Aggregate changelog entries matching a filter into a single bundle YAML.</summary>
 	/// <remarks>
 	/// <para><b>Profile-based commands</b> (<c>bundle &lt;profile&gt; &lt;version|report&gt; [report] [--plan]</c>): filters, paths, repo metadata,
-	/// description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. Only <c>--plan</c> is supported
+	/// description, hide-features, and release-date behaviour come from <c>changelog.yml</c>. <c>--description</c> and
+	/// <c>--description-file</c> are allowed in profile-based commands only when neither <c>bundle.description</c> nor
+	/// the profile's <c>description</c> is set. Only <c>--plan</c> is otherwise supported
 	/// alongside profile positional arguments; other flags documented below as unsupported in profile-based commands must be set in
 	/// configuration instead. Config is auto-discovered from <c>./changelog.yml</c> or <c>./docs/changelog.yml</c>. Use
 	/// <c>bundle.release_dates</c> or <c>bundle.profiles.&lt;name&gt;.release_dates</c> to control auto-population;
@@ -757,7 +765,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="all">Include all changelogs in the directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.products: "* * *"</c>.</param>
 	/// <param name="config">Path to the changelog.yml configuration file. Defaults to 'docs/changelog.yml' in option-based mode. This option is not supported in profile-based commands; configuration is auto-discovered.</param>
 	/// <param name="directory">Directory containing changelog YAML files. Uses config <c>bundle.directory</c> or defaults to current directory. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.directory</c>.</param>
-	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.description</c> or <c>bundle.profiles.&lt;name&gt;.description</c>.</param>
+	/// <param name="description">Bundle description text with placeholder support ({version}, {lifecycle}, {owner}, {repo}). Overrides <c>bundle.description</c> from config. In option-based mode, placeholders require --output-products. In profile-based commands, allowed only when neither <c>bundle.description</c> nor the profile <c>description</c> is set. Mutually exclusive with --description-file.</param>
+	/// <param name="descriptionFile">Path to a UTF-8 file whose contents are the bundle description, or <c>-</c> to read from stdin. Same placeholder rules as --description. Mutually exclusive with --description. In profile-based commands, allowed only when neither <c>bundle.description</c> nor the profile <c>description</c> is set.</param>
 	/// <param name="hideFeatures">Feature IDs (comma-separated) or a path to a newline-delimited file. Entries with matching feature-id values are hidden when the bundle is rendered. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.hide_features</c>.</param>
 	/// <param name="noReleaseDate">Skip auto-population of release date in the bundle. Mutually exclusive with --release-date. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.release_dates: false</c> or <c>bundle.profiles.&lt;name&gt;.release_dates: false</c>.</param>
 	/// <param name="releaseDate">Explicit release date for the bundle in YYYY-MM-DD format. Overrides auto-population behaviour. Mutually exclusive with --no-release-date. This option is not supported in profile-based commands; use option-based mode, or set <c>bundle.release_dates</c> in configuration to control auto-population.</param>
@@ -776,6 +785,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name for PR/issue numbers or --release-version. Falls back to <c>bundle.repo</c> or the product ID. This option is not supported in profile-based commands. The equivalent configuration options are <c>bundle.repo</c> or <c>bundle.profiles.&lt;name&gt;.repo</c>.</param>
 	/// <param name="report">URL or file path to a promotion report; extracts PR URLs as the filter. This option is not supported in profile-based commands. Pass the report as the second or third positional argument instead.</param>
 	/// <param name="releaseVersion">GitHub release tag to use as a filter source (for example, "v9.2.0" or "latest"). Fetches PR references from release notes. This option is not supported in profile-based commands. The equivalent configuration option is <c>bundle.profiles.&lt;name&gt;.source: github_release</c>.</param>
+	/// <param name="cacheDir">Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the application data of docs-builder. Anything unused for 30 days is dropped.</param>
+	/// <param name="noCache">Do not read or write the cache of commit ranges.</param>
 	/// <param name="plan">Emit GitHub Actions step outputs (<c>needs_network</c>, <c>needs_github_token</c>, <c>output_path</c>, and <c>cdn_url</c> when a product is resolvable) describing network requirements, the resolved output path, and the public CDN URL of the scrubbed bundle, then exit without generating the bundle. Intended for CI actions. Supported in profile-based commands.</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
@@ -787,6 +798,7 @@ internal sealed partial class ChangelogCommands(
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo? config = null,
 		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? directory = null,
 		string? description = null,
+		string? descriptionFile = null,
 		string[]? hideFeatures = null,
 		bool noReleaseDate = false,
 		string? releaseDate = null,
@@ -806,13 +818,16 @@ internal sealed partial class ChangelogCommands(
 		string? startGitRef = null,
 		string? endGitRef = null,
 		bool dryRun = false,
+		[ExpandUserProfile, RejectSymbolicLinks] DirectoryInfo? cacheDir = null,
+		bool noCache = false,
 		CancellationToken ct = default
 	)
 	{
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext);
+		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
+		var service = new ChangelogBundlingService(logFactory, _fileSystem, configurationContext, cache: cache);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 		var isGitRefMode = !string.IsNullOrWhiteSpace(startGitRef) || !string.IsNullOrWhiteSpace(endGitRef);
@@ -883,7 +898,7 @@ internal sealed partial class ChangelogCommands(
 				}
 
 				IGitHubReleaseService releaseService = new GitHubReleaseService(logFactory);
-				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory);
+				IGitHubCommitRangeService commitRangeService = new GitHubCommitRangeService(logFactory, cache: cache);
 				var release = await releaseService.FetchReleaseAsync(resolvedOwner, resolvedRepo, releaseVersion, ctx);
 				if (release == null)
 				{
@@ -894,8 +909,8 @@ internal sealed partial class ChangelogCommands(
 					return 1;
 				}
 
-				var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
-				if (previousTag == null)
+				var previousTagResult = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+				if (previousTagResult.Tag == null)
 				{
 					collector.EmitError(
 						string.Empty,
@@ -903,6 +918,7 @@ internal sealed partial class ChangelogCommands(
 					);
 					return 1;
 				}
+				var previousTag = previousTagResult.Tag;
 
 				var resolution = await commitRangeService.ResolvePullRequestsAsync(
 					collector,
@@ -971,8 +987,6 @@ internal sealed partial class ChangelogCommands(
 				forbidden.Add("--config");
 			if (directory != null)
 				forbidden.Add("--directory");
-			if (!string.IsNullOrWhiteSpace(description))
-				forbidden.Add("--description");
 
 			if (forbidden.Count > 0)
 			{
@@ -1167,6 +1181,16 @@ internal sealed partial class ChangelogCommands(
 			}
 		}
 
+		var descriptionResult = await ResolveBundleDescription(description, descriptionFile, clearDescription: false, ctx);
+		if (!descriptionResult.Success)
+		{
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+		var resolvedDescription = descriptionResult.HasPatch ? descriptionResult.Value : null;
+
 		// --plan mode: resolve config/profile metadata and set CI outputs without executing
 		if (plan)
 		{
@@ -1184,7 +1208,7 @@ internal sealed partial class ChangelogCommands(
 				Repo = repo,
 				ReleaseVersion = releaseVersion,
 				Config = config?.FullName,
-				Description = description,
+				Description = resolvedDescription,
 				StartGitRef = startGitRef,
 				EndGitRef = endGitRef
 			};
@@ -1256,7 +1280,7 @@ internal sealed partial class ChangelogCommands(
 			Report = !isProfileMode ? report : null,
 			Config = config?.FullName,
 			HideFeatures = allFeatureIdsForBundle.Count > 0 ? allFeatureIdsForBundle.ToArray() : null,
-			Description = description,
+			Description = resolvedDescription,
 			ReleaseDate = releaseDate,
 			SuppressReleaseDate = noReleaseDate,
 			StartGitRef = startGitRef,
@@ -1273,6 +1297,8 @@ internal sealed partial class ChangelogCommands(
 		);
 
 		var exitCode = await serviceInvoker.InvokeAsync(ctx);
+		if (cache is not null)
+			await cache.SaveAsync(ctx);
 		if (bundlePath != null)
 			await githubActionsService.SetOutputAsync("bundle_path", bundlePath);
 		return exitCode;
@@ -1320,12 +1346,7 @@ internal sealed partial class ChangelogCommands(
 		var ctx = ct;
 		await using var serviceInvoker = new ServiceInvoker(collector);
 
-		var service = new ChangelogRemoveService(
-			logFactory,
-			_fileSystem,
-			configurationContext,
-			commitRangeService: new GitHubCommitRangeService(logFactory)
-		);
+		var service = new ChangelogRemoveService(logFactory, _fileSystem, configurationContext);
 
 		var isProfileMode = !string.IsNullOrWhiteSpace(profile);
 
@@ -1376,8 +1397,8 @@ internal sealed partial class ChangelogCommands(
 				return 1;
 			}
 
-			var previousTag = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
-			if (previousTag == null)
+			var previousTagResult = await releaseService.FetchPreviousTagAsync(resolvedOwner, resolvedRepo, release.TagName, ctx);
+			if (previousTagResult.Tag == null)
 			{
 				collector.EmitError(
 					string.Empty,
@@ -1385,6 +1406,7 @@ internal sealed partial class ChangelogCommands(
 				);
 				return 1;
 			}
+			var previousTag = previousTagResult.Tag;
 
 			var resolution = await commitRangeService.ResolvePullRequestsAsync(
 				collector,
@@ -1776,7 +1798,7 @@ internal sealed partial class ChangelogCommands(
 		return exitCode;
 	}
 
-	/// <summary>Append or exclude changelog entries in a published bundle without modifying it.</summary>
+	/// <summary>Append or exclude changelog entries, or replace the bundle intro description, without modifying the parent file.</summary>
 	/// <remarks>
 	/// Creates an immutable <c>.amend-N</c> sidecar using the same <c>.yaml</c> or <c>.yml</c> extension
 	/// as the parent. The parent may be a local file (the sidecar is written next to it) or a CDN locator
@@ -1791,6 +1813,9 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="forceLocal">Optional: Force local entry sourcing for this run (equivalent to <c>bundle.use_local_changelogs: true</c> without editing config).</param>
 	/// <param name="dryRun">Optional: Preview changes without writing an amend file.</param>
 	/// <param name="output">Optional: Where to write the new sidecar when the parent is a CDN locator. A directory, or a <c>.yaml</c>/<c>.yml</c> path whose file name must be <c>{parent}.amend-N</c> plus the same extension as the parent for the next unused N. Falls back to <c>bundle.output_directory</c> in changelog.yml, then the current directory. Ignored for a local parent.</param>
+	/// <param name="description">Optional: Replace the parent bundle's intro description. Supports {version}, {lifecycle}, {owner}, and {repo} from the parent products. Mutually exclusive with --description-file and --clear-description. May be used without --add/--remove.</param>
+	/// <param name="descriptionFile">Optional: Path to a UTF-8 file whose contents replace the parent intro, or <c>-</c> to read from stdin. Same placeholders as --description. Mutually exclusive with --description and --clear-description.</param>
+	/// <param name="clearDescription">Optional: Remove the effective bundle intro. Mutually exclusive with --description and --description-file. May be used without --add/--remove.</param>
 	[NoOptionsInjection]
 	public async Task<int> BundleAmend(
 		[Argument] string bundlePath,
@@ -1800,6 +1825,9 @@ internal sealed partial class ChangelogCommands(
 		bool forceLocal = false,
 		bool dryRun = false,
 		string? output = null,
+		string? description = null,
+		string? descriptionFile = null,
+		bool clearDescription = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1811,9 +1839,18 @@ internal sealed partial class ChangelogCommands(
 		var normalizedAddFiles = add != null ? ExpandCommaSeparated(add).Select(NormalizePath).ToList() : [];
 		var normalizedRemoveFiles = remove != null ? ExpandCommaSeparated(remove).Select(NormalizePath).ToList() : [];
 
-		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0)
+		var descriptionResult = await ResolveBundleDescription(description, descriptionFile, clearDescription, ctx);
+		if (!descriptionResult.Success)
 		{
-			collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
+			_ = collector.StartAsync(ctx);
+			await collector.WaitForDrain();
+			await collector.StopAsync(ctx);
+			return 1;
+		}
+
+		if (normalizedAddFiles.Count == 0 && normalizedRemoveFiles.Count == 0 && !descriptionResult.HasPatch)
+		{
+			collector.EmitError(string.Empty, BundleDescriptionInput.AmendRequiresChange);
 			_ = collector.StartAsync(ctx);
 			await collector.WaitForDrain();
 			await collector.StopAsync(ctx);
@@ -1833,7 +1870,8 @@ internal sealed partial class ChangelogCommands(
 			Force = force,
 			ForceLocal = forceLocal,
 			DryRun = dryRun,
-			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output)
+			Output = string.IsNullOrWhiteSpace(output) ? null : NormalizePath(output),
+			Description = descriptionResult.HasPatch ? descriptionResult.Value : null
 		};
 
 		serviceInvoker.AddCommand(service, input, static async (s, collector, state, ctx) => await s.AmendBundle(collector, state, ctx));
@@ -1859,7 +1897,10 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="titleChanged">Whether the PR title changed (for edited events)</param>
 	/// <param name="bodyChanged">Whether the PR body changed (for edited events)</param>
 	/// <param name="stripTitlePrefix">Remove square-bracket prefixes from the PR title</param>
+	/// <param name="requireChangelogFile">Fail when no changelog entry file exists for the PR</param>
+	/// <param name="requireImpactAction">Fail when a breaking-change PR description lacks an Impact and/or Action section</param>
 	/// <param name="botName">Bot login name for loop detection</param>
+	/// <param name="commentOnSuccess">Also comment when the check passes, saying whether the PR will be part of the release notes</param>
 	/// <param name="ctx"></param>
 	[NoOptionsInjection]
 	public async Task<int> EvaluatePr(
@@ -1876,11 +1917,13 @@ internal sealed partial class ChangelogCommands(
 		bool bodyChanged = false,
 		bool stripTitlePrefix = false,
 		bool requireChangelogFile = false,
+		bool requireImpactAction = false,
 		string botName = "github-actions[bot]",
 		bool isFork = false,
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1919,11 +1962,13 @@ internal sealed partial class ChangelogCommands(
 			BodyChanged = bodyChanged,
 			StripTitlePrefix = stripTitlePrefix,
 			RequireChangelogFile = requireChangelogFile,
+			RequireImpactAction = requireImpactAction,
 			BotName = botName,
 			IsFork = isFork,
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
-			HeadRepo = headRepo
+			HeadRepo = headRepo,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.EvaluatePr(collector, state, ctx));
@@ -1953,6 +1998,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
 	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="commentOnSuccess">Also comment when the check passes, saying whether the PR will be part of the release notes.</param>
 	/// <param name="ct">Cancellation token</param>
 	[NoOptionsInjection]
 	public async Task<int> ValidateLabels(
@@ -1965,6 +2011,7 @@ internal sealed partial class ChangelogCommands(
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -1991,7 +2038,8 @@ internal sealed partial class ChangelogCommands(
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
 			HeadRepo = headRepo,
-			ConfigFile = config.FullName
+			ConfigFile = config.FullName,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateLabels(collector, state, ctx));
@@ -2016,6 +2064,7 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="canCommit">Whether the commit strategy allows committing.</param>
 	/// <param name="maintainerCanModify">Whether the fork PR allows maintainer edits.</param>
 	/// <param name="headRepo">Fork repository full name (owner/repo).</param>
+	/// <param name="commentOnSuccess">Keep the release-note outcome comment when entry validation passes.</param>
 	/// <param name="ct">Cancellation token.</param>
 	[NoOptionsInjection]
 	public async Task<int> Validate(
@@ -2032,6 +2081,7 @@ internal sealed partial class ChangelogCommands(
 		bool canCommit = false,
 		bool maintainerCanModify = false,
 		string? headRepo = null,
+		bool commentOnSuccess = false,
 		CancellationToken ct = default
 	)
 	{
@@ -2069,7 +2119,8 @@ internal sealed partial class ChangelogCommands(
 			IsFork = isFork,
 			CanCommit = canCommit,
 			MaintainerCanModify = maintainerCanModify,
-			HeadRepo = headRepo
+			HeadRepo = headRepo,
+			CommentOnSuccess = commentOnSuccess
 		};
 
 		serviceInvoker.AddCommand(service, args, static async (s, collector, state, ctx) => await s.ValidateEntries(collector, state, ctx));
@@ -2303,6 +2354,36 @@ internal sealed partial class ChangelogCommands(
 		return ChangelogTemplateSeeder.ApplyBundleRepoSeed(content, ownerCli, repoCli, gitOwner, gitRepo);
 	}
 
+	private async Task<BundleDescriptionInputResult> ResolveBundleDescription(
+		string? description,
+		string? descriptionFile,
+		bool clearDescription,
+		Cancel ctx
+	)
+	{
+		var request = new BundleDescriptionRequest(
+			description,
+			NormalizeDescriptionFile(descriptionFile),
+			ClearDescription: clearDescription,
+			Stdin: Console.In
+		);
+		return await BundleDescriptionInput.ResolveAsync(collector, _fileSystem, request, ctx);
+	}
+
+	/// <summary>
+	/// A whitespace-only path stays non-null so the resolver still sees the flag as supplied and rejects it,
+	/// instead of treating the run as if no description source was given.
+	/// </summary>
+	private string? NormalizeDescriptionFile(string? descriptionFile)
+	{
+		if (string.IsNullOrWhiteSpace(descriptionFile))
+			return descriptionFile;
+
+		return descriptionFile.Trim() == BundleDescriptionInput.StdinPath
+			? BundleDescriptionInput.StdinPath
+			: NormalizePath(descriptionFile);
+	}
+
 	/// <summary>Upload changelog entries or bundle artifacts to S3 or Elasticsearch.</summary>
 	/// <remarks>
 	/// Uses content-hash–based incremental transfer — only changed files are uploaded.
@@ -2323,7 +2404,8 @@ internal sealed partial class ChangelogCommands(
 	/// <param name="repo">GitHub repository name, the second segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.repo in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="owner">GitHub owner (org), the first segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...). Falls back to bundle.owner in changelog.yml, then the git remote origin. Required for changelog uploads; ignored for bundle uploads.</param>
 	/// <param name="branch">Branch, the third segment of changelog entry keys (changelog/{org}/{repo}/{branch}/...), stored verbatim. Falls back to the current checkout's branch. Required for changelog uploads; ignored for bundle uploads.</param>
-	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content.</param>
+	/// <param name="skipEtagCheck">Upload every discovered file even when its content hash matches the remote object. Use to re-trigger downstream scrubbers without changing file content. Mutually exclusive with --no-overwrite.</param>
+	/// <param name="noOverwrite">When a remote object already exists with different content, skip PutObject, warn with the existing YAML, and exit non-zero. New keys are still uploaded. Mutually exclusive with --skip-etag-check.</param>
 	[NoOptionsInjection]
 	public async Task<int> Upload(
 		string artifactType,
@@ -2335,10 +2417,17 @@ internal sealed partial class ChangelogCommands(
 		string? owner = null,
 		string? branch = null,
 		bool skipEtagCheck = false,
+		bool noOverwrite = false,
 		CancellationToken ct = default
 	)
 	{
 		var ctx = ct;
+
+		if (skipEtagCheck && noOverwrite)
+		{
+			collector.EmitError(string.Empty, "--no-overwrite cannot be combined with --skip-etag-check");
+			return 1;
+		}
 
 		// Accept a comma-separated list of artifact types (e.g. "changelog,amend")
 		var artifactTypeList = artifactType.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -2402,7 +2491,8 @@ internal sealed partial class ChangelogCommands(
 				Repo = resolvedRepo,
 				Owner = resolvedOwner,
 				Branch = resolvedBranch,
-				SkipEtagCheck = skipEtagCheck
+				SkipEtagCheck = skipEtagCheck,
+				NoOverwrite = noOverwrite
 			};
 			serviceInvoker.AddCommand(service, args, static async (s, c, state, ct) => await s.Upload(c, state, ct));
 		}
@@ -2410,9 +2500,9 @@ internal sealed partial class ChangelogCommands(
 		return await serviceInvoker.InvokeAsync(ctx);
 	}
 
-	/// <summary>Validate that every product registered with <c>features.release-notes: prestage</c> has the required onboarding files in its repository.</summary>
+	/// <summary>Validate that every product registered with <c>features.release-notes: dra</c> or <c>on-release</c> has the required onboarding files in its repository.</summary>
 	/// <remarks>
-	/// Probes each Prestage product's repository (resolved from <c>products.yml</c>: the product key
+	/// Probes each DRA or on-release product's repository (resolved from <c>products.yml</c>: the product key
 	/// or its <c>repository:</c> override) via the GitHub contents API for the changelog
 	/// configuration (<c>docs/changelog.yml</c> or <c>changelog.yml</c>) and the
 	/// <c>changelog-validate</c>, <c>changelog-submit</c>, <c>changelog-upload</c>, and

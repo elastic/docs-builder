@@ -12,9 +12,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
-public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public void DiscoverSupplemental_MatchesFixtureFilesAndLeavesHtmlUnchanged()
 	{
 		var folder = "/docs/api/fixture";
@@ -45,7 +46,7 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 		navigation.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNavigation_VersionSuffixedChild_IncludedOnlyForMatchingMajor()
 	{
 		var folder = "/docs/api/fixture";
@@ -71,11 +72,11 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started");
 	}
 
-	[Theory]
-	[InlineData("8", 9, 8)]
-	[InlineData("9", 9, 9)]
-	[InlineData("main", 9, 9)]
-	[InlineData("main", null, null)]
+	[Test]
+	[Arguments("8", 9, 8)]
+	[Arguments("9", 9, 9)]
+	[Arguments("main", 9, 9)]
+	[Arguments("main", null, null)]
 	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected) =>
 		OpenApiGenerator.SupplementalMajor(moniker, highest).Should().Be(expected);
 }

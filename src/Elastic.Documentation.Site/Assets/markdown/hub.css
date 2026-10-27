@@ -33,42 +33,6 @@
 	.hub-hero .hub-hero-inner {
 		@apply mx-auto w-full max-w-5xl;
 	}
-	.hub-hero .hub-hero-eyebrow {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 10px 14px;
-		margin: 0 0 20px;
-		font-size: var(--text-base);
-		letter-spacing: 0.02em;
-	}
-	.hub-hero .hub-hero-eyebrow-label {
-		font-weight: 600;
-		color: var(--color-ink-light);
-	}
-	.hub-hero .hub-hero-eyebrow-link {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 12px;
-		font-weight: 600;
-		color: var(--color-ink-dark);
-		text-decoration: none;
-		background: var(--color-white);
-		/* grey-70 is the lightest token clearing the 3:1 non-text contrast ratio, which
-		   the border needs because it is what identifies this control. Same reasoning as
-		   the neutral button in button.css. */
-		border: 1px solid var(--color-grey-70);
-		border-radius: 999px;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
-	}
-	.hub-hero .hub-hero-eyebrow-link:hover,
-	.hub-hero .hub-hero-eyebrow-link:focus-visible {
-		background: var(--color-grey-10);
-		border-color: var(--color-ink-dark);
-	}
 	/* Shared arrow -----------------------------------------------------
 	   The site puts an arrow on exactly two kinds of link: one that sends the
 	   reader onward out of a section, and a row that is itself the target. It
@@ -103,8 +67,7 @@
 		color: var(--color-ink-dark);
 	}
 	/* The letter fallback keeps the fixed chip. A product mark does not: its box hugs
-	   the glyph, so the mark's left edge lines up with the eyebrow and the description
-	   below it. Each icon's viewBox is cropped to its glyph, so there is no transparent
+	   the glyph, so the mark's left edge lines up with the description below it. Each icon's viewBox is cropped to its glyph, so there is no transparent
 	   padding left to absorb. Width follows from the glyph's own aspect ratio. */
 	.hub-hero .hub-hero-icon-svg {
 		width: auto;
@@ -154,126 +117,259 @@
 		flex-shrink: 0;
 	}
 
+	/* On this page ----------------------------------------------------- */
+	/* A row of in-page links under the hero rule. It borrows the right-rail TOC look: 14px
+	   ink-light links, each with a grey rule on its left edge that darkens on hover. */
+	.hub-hero:has(+ .hub-on-this-page) {
+		margin-bottom: 0;
+	}
+	.hub-on-this-page {
+		@apply mx-auto w-full max-w-5xl;
+		display: flex;
+		align-items: baseline;
+		column-gap: 16px;
+		padding-top: 20px;
+		margin-bottom: 40px;
+	}
+	.hub-on-this-page .hub-on-this-page-label {
+		flex: none;
+		font-size: var(--text-base);
+		font-weight: 700;
+		line-height: 24px;
+		white-space: nowrap;
+		color: var(--color-ink);
+	}
+	/* The links wrap inside their own column, so a second line starts under the first link
+	   and never under the label. */
+	.hub-on-this-page .hub-on-this-page-list {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex: 1;
+		flex-wrap: wrap;
+		min-width: 0;
+		row-gap: 4px;
+	}
+	.hub-on-this-page .hub-on-this-page-list li {
+		@apply m-0 p-0;
+	}
+	.hub-on-this-page .hub-on-this-page-list a {
+		display: block;
+		padding: 0 16px;
+		border-left: 1px solid var(--color-grey-20);
+		font-size: var(--text-sm);
+		line-height: 20px;
+		color: var(--color-ink-light);
+		text-decoration: none;
+	}
+	.hub-on-this-page .hub-on-this-page-list a:hover,
+	.hub-on-this-page .hub-on-this-page-list a:focus-visible {
+		border-left-color: var(--color-grey-80);
+		color: var(--color-ink-dark);
+	}
+	@media (max-width: 640px) {
+		.hub-on-this-page {
+			display: block;
+		}
+		.hub-on-this-page .hub-on-this-page-label {
+			margin-bottom: 8px;
+		}
+	}
+
 	/* Get started ------------------------------------------------------ */
-	/* A container, not the viewport: the left sidebar narrows the body, so the step
-	   grid has to answer to the space it actually has. */
+	/* The first step sits in a tinted box. The steps after it sit below in open columns, and
+	   share three grid rows (title, text, link) so each row lines up across the columns. One
+	   number slot and one column gap serve both, so every step starts at the same left edge.
+
+	   A container, not the viewport: the left sidebar narrows the body, so the layout has to
+	   answer to the space it actually has. */
 	.hub-get-started {
 		@apply mx-auto w-full max-w-5xl;
+		--hub-slot: 48px;
+		--hub-col-gap: 40px;
+		--hub-pad: 28px;
+		--hub-step-gap: 28px;
 		container-type: inline-size;
 		margin-bottom: 56px;
 		scroll-margin-top: 96px;
 	}
+	/* The lead is a section heading like `.hub-zone`, so it takes the same type and the same
+	   gap above the content. */
+	.hub-get-started .hub-get-started-lead {
+		margin-bottom: 24px;
+	}
 	.hub-get-started .hub-get-started-title {
-		margin: 0 0 8px;
-		font-size: var(--text-xl);
+		margin: 0;
+		font-size: var(--text-2xl);
 		font-weight: 700;
-		color: var(--color-ink);
+		color: var(--color-ink-dark);
+		line-height: 1.2;
 	}
 	.hub-get-started .hub-get-started-intro {
-		margin: 0 0 20px;
+		margin: 8px 0 0;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.5;
 	}
+	/* An option command stays a real code block, so it keeps highlighting and a
+	   copy button. The box hugs the command and matches the option button. */
 	.hub-get-started .hub-get-started-install {
 		position: relative;
-		flex: 1 1 380px;
+		flex: none;
+		align-self: flex-start;
+		width: fit-content;
+		max-width: 100%;
 		min-width: 0;
 		margin: 0;
+		/* `code-block.css` pads `pre code` with an !important padding and fills it with its own
+		   background. Left alone, the code box is taller than the 37px `pre` and scrolls vertically.
+		   The `--code-*` properties are its theming hook, so the box shrinks to the command. */
+		--code-pad: 0;
+		--code-bg: transparent;
+		--code-size: var(--text-xs);
+		--code-leading: 1.2;
 	}
+	/* A long command scrolls sideways inside its box instead of being clipped. */
 	.hub-get-started .hub-get-started-install pre {
+		display: flex;
+		align-items: center;
+		box-sizing: border-box;
+		height: 37px;
 		margin: 0;
-		padding: 12px 16px;
+		padding: 0 36px 0 12px;
 		overflow-x: auto;
 		background: var(--color-ink-navy);
-		border-radius: 10px;
+		border-radius: 8px;
 	}
 	.hub-get-started .hub-get-started-install code {
-		font-family: var(--font-mono, monospace);
-		font-size: var(--text-sm);
-		color: var(--color-white);
-		background: transparent;
+		white-space: nowrap;
 	}
 
-	/* The track count is authored, not inferred from the width: the directive counts the
-	   steps that flow in columns and sets --hub-step-columns, so a section of any length
-	   fills its rows evenly instead of leaving a short last row. */
-	.hub-get-started .hub-get-started-steps {
-		@apply grid gap-4;
-		grid-template-columns: repeat(
-			var(--hub-step-columns, 2),
-			minmax(0, 1fr)
-		);
+	.hub-get-started .hub-get-started-track {
+		display: flex;
+		flex-direction: column;
+	}
+	.hub-get-started .hub-get-started-first,
+	.hub-get-started .hub-get-started-grid {
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
-	.hub-get-started .hub-get-started-step {
-		@apply relative flex flex-col;
-		padding: 20px;
-		background: var(--color-white);
-		border: 1px solid var(--color-grey-20);
-		border-radius: 14px;
+	.hub-get-started .hub-get-started-box {
+		padding: 24px var(--hub-pad) 26px;
+		background: var(--color-blue-elastic-10);
+		border-radius: 12px;
+		color: var(--color-ink-dark);
 	}
-	.hub-get-started .hub-get-started-step-head {
-		@apply flex items-center;
-		gap: 12px;
-		margin-bottom: 10px;
-		padding-right: 34px;
+	.hub-get-started .hub-get-started-head {
+		display: flex;
+		align-items: center;
 	}
 	.hub-get-started .hub-get-started-step-num {
-		position: absolute;
-		top: 20px;
-		right: 20px;
-		font-size: var(--text-base);
+		flex: none;
+		width: var(--hub-slot);
+		font-size: 40px;
 		font-weight: 600;
-		/* grey-70 reads at 3.31:1 on white, short of the 4.5:1 minimum. ink-light
-		   carries the same quiet weight at 7.03:1 and is what other secondary text
-		   on the page already uses. */
-		color: var(--color-ink-light);
-		letter-spacing: 0.06em;
+		line-height: 1;
+		color: var(--color-blue-elastic-100);
 	}
 	.hub-get-started .hub-get-started-step-title {
 		margin: 0;
-		font-size: var(--text-base);
+		font-size: var(--text-lg);
 		font-weight: 700;
+		line-height: 1.3;
+		letter-spacing: -0.2px;
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-step-desc {
-		margin: 0;
+		margin: 8px 0 0;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
-
-	/* Below this the tracks are too narrow to hold a step title and a description. */
-	@container (max-width: 640px) {
-		.hub-get-started .hub-get-started-steps {
-			grid-template-columns: 1fr;
-		}
+	/* Content of the first step lines up under its title, past the number. */
+	.hub-get-started .hub-get-started-indent {
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-indent.hub-get-started-step-desc {
+		max-width: calc(560px + var(--hub-slot));
+	}
+	.hub-get-started
+		.hub-get-started-box
+		> .hub-get-started-indent:not(.hub-get-started-step-desc) {
+		margin-top: 4px;
 	}
 
-	/* A step offering equally weighted options spans the full row, whatever the track count. */
-	.hub-get-started .hub-get-started-step-wide {
-		grid-column: 1 / -1;
-		container-type: inline-size;
+	/* A link that leads onward ends in the shared arrow. The arrow follows the last word and
+	   wraps with it. */
+	.hub-get-started .hub-get-started-step-arrow,
+	.hub-get-started .hub-get-started-option-link {
+		display: inline-block;
+		margin-top: 12px;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
 	}
-	.hub-get-started .hub-get-started-options {
+	.hub-get-started .hub-get-started-nowrap {
+		white-space: nowrap;
+	}
+	.hub-get-started .hub-get-started-step-arrow .hub-arrow,
+	.hub-get-started .hub-get-started-option-link .hub-arrow {
+		display: inline-block;
+		margin-left: 4px;
+		vertical-align: -0.2em;
+	}
+	.hub-get-started .hub-get-started-step-arrow:hover,
+	.hub-get-started .hub-get-started-step-arrow:focus-visible,
+	.hub-get-started .hub-get-started-option-link:hover,
+	.hub-get-started .hub-get-started-option-link:focus-visible {
+		text-decoration: underline;
+	}
+
+	/* Two options sit side by side with an "or" between them. Each option is indented past
+	   the number, so it lines up under the step title. */
+	.hub-get-started .hub-get-started-fork {
+		position: relative;
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		margin-top: 16px;
-		padding-top: 16px;
-		border-top: 1px solid var(--color-grey-20);
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: var(--hub-col-gap);
+		margin-top: 12px;
+	}
+	.hub-get-started .hub-get-started-fork .hub-get-started-option,
+	.hub-get-started .hub-get-started-box .hub-get-started-options {
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-or {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(50% - var(--hub-col-gap) / 2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--hub-col-gap);
+		color: var(--color-ink-light);
+		font-size: 0.8125rem;
+	}
+	.hub-get-started .hub-get-started-or::before {
+		content: '';
+		position: absolute;
+		top: 8px;
+		bottom: 8px;
+		left: 50%;
+		width: 1px;
+		background: var(--color-blue-elastic-30);
+	}
+	.hub-get-started .hub-get-started-or span {
+		position: relative;
+		z-index: 1;
+		padding: 4px 0;
+		background: var(--color-blue-elastic-10);
 	}
 	.hub-get-started .hub-get-started-option {
-		@apply flex flex-col;
-		gap: 10px;
-		padding-right: 28px;
-	}
-	.hub-get-started .hub-get-started-option + .hub-get-started-option {
-		padding-right: 0;
-		padding-left: 28px;
-		border-left: 1px solid var(--color-grey-20);
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
 	}
 	.hub-get-started .hub-get-started-option-label {
 		font-size: var(--text-base);
@@ -281,93 +377,154 @@
 		color: var(--color-ink-dark);
 	}
 	.hub-get-started .hub-get-started-option-desc {
-		margin: 0;
+		margin: 8px 0 12px;
 		font-size: var(--text-base);
 		color: var(--color-ink-light, #4c4c4c);
 		line-height: 1.45;
 	}
-	.hub-get-started .hub-get-started-option .hub-get-started-install {
-		flex: none;
-		width: 100%;
+	.hub-get-started .hub-get-started-option .hub-get-started-install,
+	.hub-get-started .hub-get-started-option-btn {
 		margin-top: auto;
 	}
+	/* Same height as the command chip, and smaller than the body type. */
 	.hub-get-started .hub-get-started-option-btn {
 		@apply inline-flex items-center justify-center;
-		gap: 8px;
-		width: 100%;
-		min-height: 48px;
-		margin-top: auto;
-		padding: 0 18px;
-		font-size: var(--text-base);
+		align-self: flex-start;
+		box-sizing: border-box;
+		width: auto;
+		height: 37px;
+		padding: 0 12px;
+		font-size: var(--text-sm);
 		font-weight: 600;
+		line-height: 1.2;
 		color: var(--color-ink-dark);
 		background: var(--color-white);
 		border: 1px solid var(--color-ink-dark);
 		border-radius: 8px;
-		transition:
-			background 0.15s ease,
-			border-color 0.15s ease;
+		text-decoration: none;
 	}
 	.hub-get-started .hub-get-started-option-btn:hover,
 	.hub-get-started .hub-get-started-option-btn:focus-visible {
 		background: var(--color-grey-10);
-		border-color: var(--color-ink-dark);
 		color: var(--color-ink-dark);
 	}
-	.hub-get-started .hub-get-started-option-link {
-		@apply inline-flex items-center gap-1;
-		align-self: flex-start;
-		font-size: var(--text-base);
-		font-weight: 600;
-		color: var(--color-blue-elastic-100, #0b64dd);
-	}
-	.hub-get-started .hub-get-started-option-link:hover,
-	.hub-get-started .hub-get-started-option-link:focus-visible {
-		text-decoration: underline;
-	}
-	@container (max-width: 560px) {
-		.hub-get-started .hub-get-started-options {
-			grid-template-columns: 1fr;
-		}
-		.hub-get-started .hub-get-started-option {
-			padding-right: 0;
-		}
-		.hub-get-started .hub-get-started-option + .hub-get-started-option {
-			padding-left: 0;
-			padding-top: 16px;
-			margin-top: 4px;
-			border-left: 0;
-			border-top: 1px solid var(--color-grey-20);
-		}
+	/* Options that are not a pair of two (one, or three and more) share the row without an "or".
+	   The column minimum is capped at the width of the container, so in a narrow step column or
+	   on a small screen the options fall to one column instead of overflowing. */
+	.hub-get-started .hub-get-started-options {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+		gap: 16px var(--hub-col-gap);
+		margin-top: 12px;
 	}
 
-	/* Steps 02/03 are clickable link cards. */
-	.hub-get-started .hub-get-started-step-link {
-		padding: 0;
-		transition:
-			box-shadow 0.15s,
-			border-color 0.15s;
+	/* The steps after the first. Each one spans the same three rows, shared through subgrid, so
+	   titles, text and links line up across the columns whatever their length. The link row
+	   carries the space below the step, and the grid takes it back, so rows of steps are
+	   spaced without leaving a gap at the end. */
+	.hub-get-started .hub-get-started-grid {
+		display: grid;
+		grid-template-columns: repeat(
+			var(--hub-step-columns, 2),
+			minmax(0, 1fr)
+		);
+		grid-template-rows: auto auto auto;
+		column-gap: var(--hub-col-gap);
+		row-gap: 0;
+		margin-top: 28px;
+		margin-bottom: calc(-1 * var(--hub-step-gap));
+		padding: 0 var(--hub-pad);
 	}
-	/* Same hover treatment as every other card that is itself a link. Blue would make
-	   one step look like the call to action when they are a sequence. */
-	.hub-get-started .hub-get-started-step-link:hover,
-	.hub-get-started .hub-get-started-step-link:focus-visible {
-		border-color: var(--color-grey-80);
-		box-shadow: 0 1px 4px rgb(0 0 0 / 0.07);
+	.hub-get-started .hub-get-started-step {
+		display: grid;
+		grid-row: span 3;
+		grid-template-rows: subgrid;
+		row-gap: 0;
+		min-width: 0;
+		color: var(--color-ink-dark);
 	}
-	.hub-get-started .hub-get-started-step-anchor {
-		@apply flex h-full flex-col;
-		padding: 20px;
-		color: inherit;
-		text-decoration: none;
+	.hub-get-started .hub-get-started-step > .hub-get-started-head {
+		grid-row: 1;
 	}
-	.hub-get-started .hub-get-started-step-arrow {
-		@apply inline-flex items-center gap-1;
-		margin-top: auto;
-		padding-top: 14px;
-		font-size: var(--text-base);
-		font-weight: 600;
-		color: var(--color-blue-elastic-100, #0b64dd);
+	.hub-get-started .hub-get-started-step > .hub-get-started-step-desc {
+		grid-row: 2;
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-step > .hub-get-started-step-foot {
+		grid-row: 3;
+		align-self: end;
+		padding: 0 0 var(--hub-step-gap) var(--hub-slot);
+	}
+
+	/* Below this the steps stack in one column, with the link under the text. The first
+	   step's options stack too, with the "or" line between them. */
+	@container (max-width: 720px) {
+		.hub-get-started {
+			--hub-pad: 20px;
+			--hub-step-gap: 32px;
+		}
+		.hub-get-started .hub-get-started-box {
+			padding-top: 20px;
+			padding-bottom: 20px;
+		}
+		.hub-get-started .hub-get-started-fork {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: 12px;
+		}
+		.hub-get-started .hub-get-started-or {
+			position: relative;
+			top: auto;
+			bottom: auto;
+			left: auto;
+			width: 100%;
+			height: 28px;
+			padding-left: var(--hub-slot);
+		}
+		.hub-get-started .hub-get-started-or::before {
+			top: 50%;
+			bottom: auto;
+			left: var(--hub-slot);
+			width: auto;
+			right: 0;
+			height: 1px;
+		}
+		.hub-get-started .hub-get-started-or span {
+			padding: 0 12px;
+		}
+		.hub-get-started .hub-get-started-grid {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: none;
+		}
+		.hub-get-started .hub-get-started-step {
+			grid-row: auto;
+			grid-template-rows: auto auto auto;
+		}
+		.hub-get-started .hub-get-started-step > .hub-get-started-step-desc {
+			padding-left: var(--hub-slot);
+		}
+		.hub-get-started .hub-get-started-step > .hub-get-started-step-foot {
+			align-self: start;
+		}
+	}
+	/* Three columns need more room than two, since each also gives up the number slot. They
+	   stack sooner. */
+	@container (max-width: 800px) {
+		.hub-get-started .hub-get-started-grid.has-three-columns {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: none;
+		}
+		.hub-get-started
+			.hub-get-started-grid.has-three-columns
+			> .hub-get-started-step {
+			grid-row: auto;
+			grid-template-rows: auto auto auto;
+		}
+		.hub-get-started
+			.hub-get-started-grid.has-three-columns
+			> .hub-get-started-step
+			> .hub-get-started-step-foot {
+			align-self: start;
+		}
 	}
 
 	/* What's new ------------------------------------------------------- */
@@ -428,10 +585,9 @@
 		@apply inline-flex items-center;
 	}
 	.hub-whats-new .hub-wn-rn-list li:not(:last-child)::after {
-		content: '·';
-		color: var(--color-grey-40);
-		margin: 0 10px;
-		font-weight: 700;
+		content: '|';
+		color: var(--color-grey-70);
+		margin: 0 8px;
 	}
 	.hub-whats-new .hub-wn-rn-link {
 		font-size: var(--text-base);
@@ -549,6 +705,29 @@
 	.hub-zone .hub-zone-intro {
 		color: var(--color-ink-light);
 		margin-top: 8px;
+	}
+	/* A link in a section intro looks like the links in the cards below it. */
+	.hub-zone .hub-zone-intro a {
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+	}
+	.hub-zone .hub-zone-intro a:hover,
+	.hub-zone .hub-zone-intro a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
+	/* A section nested under another zone ({explore} with :level: 3). It sits closer to the
+	   zone above and steps its title down so the H2 stays the strongest heading. */
+	.hub-zone.hub-zone-nested {
+		margin-top: 40px;
+	}
+	.hub-zone.hub-zone-nested .hub-zone-title {
+		font-size: var(--text-xl);
+	}
+	/* Accordion titles are text-xl, the same size as a nested section title. Under a nested
+	   section they step down so the section title still reads as the heading. */
+	.hub-zone-nested + .hub-explore .hub-accordion-title {
+		font-size: var(--text-base);
+		font-weight: 600;
 	}
 
 	/* Card grid -------------------------------------------------------- */
@@ -839,7 +1018,6 @@
 		.hub-accordion-icon-v {
 			transition: none;
 		}
-		.hub-hero .hub-hero-eyebrow-link,
 		.hub-hero .hub-hero-action,
 		.hub-arrow {
 			transition: none;

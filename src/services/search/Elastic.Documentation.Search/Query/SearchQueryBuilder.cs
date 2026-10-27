@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Search.Contract;
+using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
@@ -81,6 +83,94 @@ public static class SearchQueryBuilder
 			query |= new TermQuery { Field = QueryFieldNames.TitleKeyword, Value = synonym };
 
 		return query;
+	}
+
+	/// <summary>
+	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
+	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
+	/// with the same token. A typed value matches the <c>*</c> of a parameter in any position. One <c>terms</c>
+	/// clause per number of literal segments kept, weighted <c>5 * (1 + literals) / (1 + total)</c>, and
+	/// <c>dis_max</c> keeps the best.
+	/// </summary>
+	public static Query? BuildApiEndpointQuery(string searchQuery)
+	{
+		var groups = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
+		if (groups.Count == 0)
+			return null;
+
+		var total = groups[0].LiteralSegments;
+		return new DisMaxQuery
+		{
+			Queries = groups.Select(
+				g =>
+					(Query)new ConstantScoreQuery
+					{
+						Filter = new TermsQuery(
+							QueryFieldNames.ApiEndpoints,
+							new TermsQueryField(g.Terms.Select(t => (FieldValue)t).ToArray())
+						),
+						Boost = 5.0f * (1 + g.LiteralSegments) / (1 + total)
+					}
+			).ToList()
+		};
+	}
+
+	/// <summary>
+	/// Elasticsearch endpoints are underscore-prefixed (<c>_search</c>, <c>_bulk</c>), so a bare word like
+	/// <c>search</c> is scored as the endpoint <c>_search</c> too. Only meant for API-filtered lookups: in the
+	/// unfiltered docs search it would put <c>/_aliases</c> above the "Aliases" docs page.
+	/// </summary>
+	public static Query? BuildBareWordEndpointQuery(string searchQuery)
+	{
+		var word = searchQuery.Trim();
+		if (word.Length == 0 || word.StartsWith('_') || word.Any(c => c is '/' or ' ' or '{'))
+			return null;
+
+		return BuildApiEndpointQuery("_" + word);
+	}
+
+	/// <summary>
+	/// Partial-match fallback for API lookups. The strict lexical query needs every typed word, so
+	/// <c>create deployment cloud</c> finds only operations that contain all three. From three words on, this
+	/// clause also matches operations that contain 75% of them, at a lower weight than a full match.
+	/// </summary>
+	public static Query? BuildLoosePartialMatchQuery(string searchQuery)
+	{
+		if (searchQuery.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length < 3)
+			return null;
+
+		return new BoolQuery
+		{
+			Must =
+			[
+				new MultiMatchQuery
+				{
+					Query = searchQuery,
+					Operator = Operator.Or,
+					MinimumShouldMatch = "75%",
+					Type = TextQueryType.BestFields,
+					Analyzer = "synonyms_analyzer",
+					Boost = 0.5f,
+					Fields = new[] { QueryFieldNames.SearchTitle, QueryFieldNames.Body }
+				}
+			],
+			Filter = [DocumentFilter]
+		};
+	}
+
+	/// <summary>
+	/// API-filtered lookups only: widens the match set with <see cref="BuildLoosePartialMatchQuery"/> and lifts the
+	/// endpoint of a bare word. Both are no-ops for queries they don't apply to.
+	/// </summary>
+	public static Query ApplyApiRanking(Query lexicalQuery, string searchQuery)
+	{
+		var query = BuildLoosePartialMatchQuery(searchQuery) is { } loose
+			? new BoolQuery { Should = [lexicalQuery, loose], MinimumShouldMatch = 1 }
+			: lexicalQuery;
+
+		return BuildBareWordEndpointQuery(searchQuery) is { } bareWordEndpoint
+			? new BoolQuery { Must = [query], Should = [bareWordEndpoint] }
+			: query;
 	}
 
 	public static Query BuildSemanticQuery(string searchQuery) =>
@@ -170,6 +260,10 @@ public static class SearchQueryBuilder
 		var titleKeywordQuery = GenerateTitleKeywordQuery(searchQuery, synonymBiDirectional);
 		if (titleKeywordQuery is not null)
 			query |= titleKeywordQuery;
+
+		var apiEndpointQuery = BuildApiEndpointQuery(searchQuery);
+		if (apiEndpointQuery is not null)
+			query |= apiEndpointQuery;
 
 		var startsWithQuery = BuildTitleStartsWithQuery(searchQuery);
 		if (startsWithQuery is not null)

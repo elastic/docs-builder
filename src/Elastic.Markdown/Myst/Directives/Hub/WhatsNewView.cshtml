@@ -21,7 +21,7 @@
 		@if (d.ReleaseLinks.Length > 0)
 		{
 			<div class="hub-wn-rn">
-				<span class="hub-wn-rn-label">Latest release notes:</span>
+				<span class="hub-wn-rn-label">Go to latest release notes:</span>
 				<ul class="hub-wn-rn-list">
 					@foreach (var link in d.ReleaseLinks)
 					{
@@ -52,7 +52,11 @@
 						<a class="hub-wn-card-link" @Model.LinkAttributes(item.Link)>
 							<div class="hub-wn-card-meta">
 								<span class="hub-wn-card-meta-left">
-									@if (!string.IsNullOrWhiteSpace(item.Date))
+									@if (item.Availability.Length > 0)
+									{
+										<span class="hub-wn-card-date">@string.Join(" · ", item.Availability)</span>
+									}
+									else if (!string.IsNullOrWhiteSpace(item.Date))
 									{
 										<span class="hub-wn-card-date">@item.Date</span>
 									}
@@ -80,7 +84,11 @@
 						<div class="hub-wn-card-link">
 							<div class="hub-wn-card-meta">
 								<span class="hub-wn-card-meta-left">
-									@if (!string.IsNullOrWhiteSpace(item.Date))
+									@if (item.Availability.Length > 0)
+									{
+										<span class="hub-wn-card-date">@string.Join(" · ", item.Availability)</span>
+									}
+									else if (!string.IsNullOrWhiteSpace(item.Date))
 									{
 										<span class="hub-wn-card-date">@item.Date</span>
 									}

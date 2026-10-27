@@ -14,7 +14,7 @@ public class BundleLoaderFromContentTests
 
 	private static (string FileName, string Content) Bundle(string fileName, string content) => (fileName, content);
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_InlineEntries_AreLoaded()
 	{
 		var warnings = new List<string>();
@@ -47,7 +47,7 @@ public class BundleLoaderFromContentTests
 		loaded.Entries[0].Title.Should().Be("Sample enhancement");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_FileOnlyEntry_IsSkippedWithWarning()
 	{
 		var warnings = new List<string>();
@@ -75,7 +75,7 @@ public class BundleLoaderFromContentTests
 		warning.Should().Contain("orphan.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_InvalidYaml_IsSkippedWithWarning()
 	{
 		var warnings = new List<string>();
@@ -87,7 +87,7 @@ public class BundleLoaderFromContentTests
 		warnings.Should().ContainSingle().Which.Should().Contain("broken.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_AmendFile_IsMergedIntoParent()
 	{
 		var warnings = new List<string>();
@@ -122,7 +122,7 @@ public class BundleLoaderFromContentTests
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Base entry", "Amended fix");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_AmendNotesFile_IsMergedIntoParent()
 	{
 		var warnings = new List<string>();
@@ -159,7 +159,7 @@ public class BundleLoaderFromContentTests
 		warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_AmendNotesFile_AppliesAfterNumberedAmends()
 	{
 		var warnings = new List<string>();

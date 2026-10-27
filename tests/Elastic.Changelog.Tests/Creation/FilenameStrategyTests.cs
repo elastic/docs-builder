@@ -12,7 +12,7 @@ public class FilenameStrategyTests
 {
 	private static CreateChangelogArguments DefaultInput() => new() { Products = [] };
 
-	[Fact]
+	[Test]
 	public void ApplyConfigDefaults_AlwaysSetsPrNumberTrue()
 	{
 		var config = ChangelogConfiguration.Default;
@@ -23,7 +23,7 @@ public class FilenameStrategyTests
 		result.UsePrNumber.Should().BeTrue("filename strategy is always Pr");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyConfigDefaults_DefaultConfig_UsesPr()
 	{
 		var config = ChangelogConfiguration.Default;
@@ -34,7 +34,7 @@ public class FilenameStrategyTests
 		result.UsePrNumber.Should().BeTrue("default FilenameStrategy is Pr");
 	}
 
-	[Fact]
+	[Test]
 	public void ApplyConfigDefaults_CLIUsePrNumber_RemainsTrue()
 	{
 		var config = ChangelogConfiguration.Default;

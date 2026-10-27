@@ -107,6 +107,7 @@ public class GitHubReleaseChangelogService(
 	private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
 
 	private readonly ILogger _logger = logFactory.CreateLogger<GitHubReleaseChangelogService>();
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logFactory.CreateLogger<GitHubReleaseChangelogService>());
 	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader _configLoader = new(logFactory, configurationContext, fileSystem);
 	private readonly IGitHubReleaseService _releaseService = releaseService ?? new GitHubReleaseService(logFactory);
@@ -215,7 +216,12 @@ public class GitHubReleaseChangelogService(
 			var cdnBranch = config.Bundle?.Branch ?? "main";
 
 			// 8. Process each PR and create changelog files
-			var outputDir = input.Output ?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
+			// Mirror the plan step's fallback chain so the actual output path matches what
+			// `changelog bundle --plan` predicts when --output is not supplied by the caller.
+			var outputDir = input.Output
+				?? config.Bundle?.OutputDirectory
+				?? config.Bundle?.Directory
+				?? _fileSystem.Path.Join(_fileSystem.Directory.GetCurrentDirectory(), "changelogs");
 			if (!_fileSystem.Directory.Exists(outputDir))
 				_ = _fileSystem.Directory.CreateDirectory(outputDir);
 
@@ -307,16 +313,58 @@ public class GitHubReleaseChangelogService(
 		Cancel ctx
 	)
 	{
-		var previousTag = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
+		var lookup = await _releaseService.FetchPreviousTagAsync(owner, repo, currentTag, ctx);
 
-		if (previousTag == null)
+		if (lookup.Status == PreviousTagStatus.LookupFailed)
 		{
 			collector.EmitError(
 				string.Empty,
-				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo}. " +
-					"Cannot derive PR list from commit range. Ensure at least one prior release exists in the same major version line."
+				$"GitHub could not determine the previous release before '{currentTag}' in {owner}/{repo} " +
+					"due to an API or transport failure. Cannot derive PR list from commit range."
 			);
 			return null;
+		}
+
+		if (lookup.Status == PreviousTagStatus.FirstReleaseInLine)
+		{
+			collector.EmitError(
+				string.Empty,
+				$"'{currentTag}' is the first release in its major/prefix line in {owner}/{repo}, " +
+					"but earlier releases exist in the repository. Specify a start ref explicitly " +
+					"(e.g. the latest tag from the previous major) so the commit range does not " + "include unrelated history."
+			);
+			return null;
+		}
+
+		string previousTag;
+		if (lookup.Tag is not null)
+		{
+			previousTag = lookup.Tag;
+		}
+		else
+		{
+			// Genuine first release in the repository — fall back to the initial commit so the range
+			// covers all PR merges up to this tag rather than failing entirely.
+			var initialCommit = await _releaseService.FetchInitialCommitAsync(owner, repo, currentTag, ctx);
+			if (initialCommit is null)
+			{
+				collector.EmitError(
+					string.Empty,
+					$"No previous release found for '{currentTag}' in {owner}/{repo}, " +
+						"and could not fetch the repository's initial commit as a fallback. " + "Cannot derive PR list from commit range."
+				);
+				return null;
+			}
+
+			_logger.LogInformation(
+				"No previous release found for {CurrentTag} in {Owner}/{Repo} — treating as first release; " +
+					"comparing all commits from initial commit {InitialSha}",
+				currentTag,
+				owner,
+				repo,
+				initialCommit
+			);
+			previousTag = initialCommit;
 		}
 
 		_logger.LogInformation(
@@ -379,7 +427,7 @@ public class GitHubReleaseChangelogService(
 		}
 
 		// Check rules.create — skip PRs with blocking labels
-		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), context.ProductInfo, config, collector, pr.Url))
+		if (prInfo != null && ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), context.ProductInfo, config, pr.Url))
 		{
 			_logger.LogInformation("PR #{PrNumber}: excluded — matched label block rule", pr.Number);
 			return false;
@@ -418,9 +466,15 @@ public class GitHubReleaseChangelogService(
 
 		var title = prInfo?.Title ?? $"PR #{pr.Number}";
 		if (context.StripTitlePrefix)
-			title = ChangelogTextUtilities.StripSquareBracketPrefix(title);
+			title = ChangelogTextUtilities.StripTitlePrefix(title);
 
-		var description = config.Extract.ReleaseNotes ? ReleaseNotesExtractor.FindReleaseNote(prInfo?.Body) : null;
+		string? description = null;
+		if (config.Extract.ReleaseNotes)
+		{
+			var extraction = ReleaseNotesExtractor.ExtractReleaseNote(prInfo?.Body);
+			description = extraction.Content;
+			ReleaseNoteExtractionDiagnostics.Record(_decisions, pr.Number, extraction);
+		}
 		var issues = config.Extract.Issues && prInfo?.LinkedIssues is { Count: > 0 } linkedIssues ? linkedIssues.ToList() : null;
 
 		var changelogData = new ChangelogEntry
@@ -596,13 +650,7 @@ public class GitHubReleaseChangelogService(
 		return areas.ToList();
 	}
 
-	private bool ShouldSkipPrDueToLabelBlockers(
-		string[] prLabels,
-		ProductArgument productInfo,
-		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl
-	)
+	private bool ShouldSkipPrDueToLabelBlockers(string[] prLabels, ProductArgument productInfo, ChangelogConfiguration config, string prUrl)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
@@ -612,27 +660,19 @@ public class GitHubReleaseChangelogService(
 
 		// Check product-specific overrides first
 		if (createRules.ByProduct is { Count: > 0 } && createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
-			return ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, productInfo.Product);
+			return ShouldSkipByCreateRules(prLabels, productRules, prUrl, _decisions);
 
 		// Fall back to global rules
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, _decisions);
 	}
 
-	private static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext
-	)
+	private static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
@@ -641,10 +681,7 @@ public class GitHubReleaseChangelogService(
 			);
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(
-					prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -653,11 +690,7 @@ public class GitHubReleaseChangelogService(
 			var hasMatch = prLabels.Any(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase));
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(
-					prUrl,
-					$"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()})."
-				);
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}

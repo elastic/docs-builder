@@ -68,3 +68,21 @@ documents that must be retained. Mixed task versions then write to separate
 versioned indices during a rolling deployment. The assembly mapping version is
 an additional downgrade guard for templates that retain the same schema-versioned
 name; it does not replace index versioning.
+
+## AWS WAF token
+
+The web ACL can require a valid `aws-waf-token` cookie on `/docs/_api/v1/page-feedback`.
+A request without one gets an HTTP 202 challenge that a plain `fetch()` can't solve.
+When `waf_integration_url` is set on an environment in `config/assembler.yml`, the
+`<page-feedback>` component loads the AWS WAF JavaScript SDK from that URL and sends
+the `PUT` through `AwsWafIntegration.fetch`. Take the URL from the AWS WAF console's
+Application integration page. Use the CloudFront (`edge`) script URL, not the regional
+one. It belongs to the AWS account and is not tied to a web ACL, so environments in the
+same account share it.
+
+With no URL (local dev, isolated, codex, air-gapped) nothing loads and the component
+uses plain `fetch`. If the SDK is configured but fails to load or times out, the
+submit shows the normal error state instead of sending an unchallenged request.
+
+Only page feedback uses the SDK. External callers of other `/docs/_api/v1/*` paths
+can't run it and stay on IP rate limits.

@@ -7,22 +7,26 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
 public record AssemblyConfiguration
 {
 	public static AssemblyConfiguration Create(ConfigurationFileProvider provider) =>
-		Deserialize(provider.AssemblerFile.ReadToEnd(), skipPrivateRepositories: provider.SkipPrivateRepositories);
+		Deserialize(
+			provider.AssemblerFile.ReadToEnd(),
+			skipPrivateRepositories: provider.SkipPrivateRepositories,
+			sourceName: provider.AssemblerFile.FullName
+		);
 
-	public static AssemblyConfiguration Deserialize(string yaml, bool skipPrivateRepositories = false)
+	public static AssemblyConfiguration Deserialize(string yaml, bool skipPrivateRepositories = false, string? sourceName = null)
 	{
 		var input = new StringReader(yaml);
 
 		try
 		{
-			var config = ConfigurationFileProvider.Deserializer.Deserialize<AssemblyConfiguration>(input);
+			var config = ConfigurationFileProvider.Deserialize<AssemblyConfiguration>(input, sourceName);
 			foreach (var (name, r) in config.ReferenceRepositories)
 			{
 				var repository = RepositoryDefaults(r, name);
@@ -111,10 +115,10 @@ public record AssemblyConfiguration
 		return repository;
 	}
 
-	[YamlMember(Alias = "narrative")]
+	[YamlPropertyName("narrative")]
 	public NarrativeRepository Narrative { get; set; } = new();
 
-	[YamlMember(Alias = "references")]
+	[YamlPropertyName("references")]
 	public Dictionary<string, Repository> ReferenceRepositories { get; set; } = [];
 
 	/// All available repositories, combines <see cref="ReferenceRepositories"/> and <see cref="Narrative"/> and will filter private repositories if `skip-private-repositories`
@@ -133,10 +137,10 @@ public record AssemblyConfiguration
 	[YamlIgnore]
 	public IReadOnlySet<string> AllPrivateRepositoryNames { get; private set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-	[YamlMember(Alias = "environments")]
+	[YamlPropertyName("environments")]
 	public Dictionary<string, PublishEnvironment> Environments { get; set; } = [];
 
-	[YamlMember(Alias = "shared_configuration")]
+	[YamlPropertyName("shared_configuration")]
 	public Dictionary<string, Repository> SharedConfigurations { get; set; } = [];
 
 	/// Returns whether the <paramref name="branchOrTag"/> is configured as an integration branch or tag for the given

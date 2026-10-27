@@ -6,8 +6,7 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class IconParserTests(ITestOutputHelper output) : InlineTest(
-	output,
+public class IconParserTests() : InlineTest(
 	"""
 	A check mark {icon}`check`. A cross {icon}`cross`. A warning {icon}`warning`.
 
@@ -18,7 +17,7 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() =>
 		Html
 			.Should()
@@ -41,11 +40,11 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(
 			.Contain("::");
 }
 
-public class IconInListItemTest(ITestOutputHelper output) : InlineTest(output, """
+public class IconInListItemTest() : InlineTest("""
 	- {icon}`check` A check mark.
 	""")
 {
-	[Fact]
+	[Test]
 	public void Render() =>
 		Html
 			.Should()
@@ -56,11 +55,11 @@ public class IconInListItemTest(ITestOutputHelper output) : InlineTest(output, "
 			.NotContain("<li></li>");
 }
 
-public class IconInHeadingShouldBeRemovedFromAnchor(ITestOutputHelper output) : InlineTest(output, """
+public class IconInHeadingShouldBeRemovedFromAnchor() : InlineTest("""
 	## Users {icon}`check`
 	""")
 {
-	[Fact]
+	[Test]
 	public void Render() =>
 		Html
 			.Should()

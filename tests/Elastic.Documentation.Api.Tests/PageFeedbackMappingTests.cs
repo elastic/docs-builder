@@ -11,7 +11,7 @@ namespace Elastic.Documentation.Api.Tests;
 
 public class PageFeedbackMappingTests
 {
-	[Fact]
+	[Test]
 	public void Mapping_EnvironmentProvided_GeneratesExpectedIndexAndFields()
 	{
 		var context = PageFeedbackMappingContext.PageFeedbackDocument.CreateContext(env: "staging");
@@ -35,7 +35,7 @@ public class PageFeedbackMappingTests
 		properties.GetProperty("@timestamp").GetProperty("type").GetString().Should().Be("date");
 	}
 
-	[Fact]
+	[Test]
 	public void Serialization_DetailsProvided_WritesQueryableReasonFields()
 	{
 		var document = new PageFeedbackDocument

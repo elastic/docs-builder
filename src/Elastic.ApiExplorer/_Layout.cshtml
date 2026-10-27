@@ -7,9 +7,58 @@
 		if (name == GlobalSections.Head)
 		{
 			<link rel="alternate" type="text/markdown" href="@(Model.MarkdownUrl)" title="Markdown export"/>
+			@if (!string.IsNullOrEmpty(Model.ProductName))
+			{
+				<meta class="elastic" name="product_name" content="@Model.ProductName"/>
+				<meta name="DC.subject" content="@Model.ProductName"/>
+			}
 		}
 		return Task.CompletedTask;
 	}
+}
+@if (Model.Features.NavigationPreviewEnabled)
+{
+	if (Model.BuildType == BuildType.Assembler)
+	{
+		@await RenderPartialAsync(_DesignSystemAssemblerHeader.Create(Model))
+	}
+	else
+	{
+		@await RenderPartialAsync(_DesignSystemHeader.Create(Model))
+	}
+	<div id="main-container">
+		<div class="layout layout--three layout--rail-after layout--nav-flush api-page-shell">
+			<input class="layout__drawer-toggle" type="checkbox" id="pages-nav-hamburger">
+			<label class="layout__scrim" for="pages-nav-hamburger" aria-hidden="true"></label>
+			<aside class="layout__nav" id="pages-nav">
+				@await RenderPartialAsync(_DesignSystemApiNav.Create(Model))
+			</aside>
+			<div class="layout__main" id="api-content-grid">
+				<main id="content-container" class="layout__content">
+					<label class="layout__menu-button" for="pages-nav-hamburger">
+						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Primitives.Icon._Icon.Create(new Elastic.Documentation.Site.Components.Primitives.Icon.IconModel { Name = "menu", Size = Elastic.Documentation.Site.Components.Primitives.Icon.IconSize.Small }))
+						<span>Menu</span>
+					</label>
+					<div class="api-page-toolbar">
+						@await RenderPartialAsync(_DesignSystemApiBreadcrumbs.Create(Model))
+					</div>
+					<article id="markdown-content" class="prose content-container markdown-content">
+						@await RenderBodyAsync()
+					</article>
+					@await RenderPartialAsync(_DesignSystemPageFeedback.Create(Model))
+				</main>
+				<aside class="layout__rail api-page-rail">
+					@if (Model.DesignSystemPageActions is not null)
+					{
+						@await RenderPartialAsync(Elastic.Documentation.Site.Components.Navigation.PageActions._PageActions.Create(Model.DesignSystemPageActions))
+					}
+					@await RenderSectionAsync(ApiPageSections.Rail)
+				</aside>
+			</div>
+		</div>
+	</div>
+	@await RenderPartialAsync(_DesignSystemFooter.Create(Model))
+	return;
 }
 @if (Model.BuildType == BuildType.Assembler)
 {
@@ -19,34 +68,37 @@ else
 {
 	@(await RenderPartialAsync(_IsolatedHeader.Create(Model)))
 }
-@* API content grid + examples rail. Sidebar is _ApiPagesNav (main), not Nav V2 _PagesNav. *@
+@* API content column. Sidebar is _ApiPagesNav (main), not Nav V2 _PagesNav. *@
 <div id="main-container" class="relative">
-	<div class="min-h-screen w-full mx-auto md:px-4 api-page-shell">
+	<div class="min-h-screen w-full mx-auto api-page-shell">
 		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
-			@* Two-column mode is driven by CSS :has(#api-examples-panel.api-examples-panel). *@
-			@* display:grid at ≥1024px is set in api-docs.css (:has examples) — do not use lg:grid (1280). *@
-			<div id="api-content-grid" class="min-w-0 flex flex-col md:order-2 gap-y-4 gap-x-6 api-content-grid">
-				<div class="api-page-main min-w-0 pt-6">
-					<main id="content-container" class="w-full flex flex-col relative pb-12 overflow-x-hidden">
-						<article id="markdown-content" class="content-container markdown-content min-w-0">
-							<input type="checkbox" class="hidden" id="pages-nav-hamburger">
-							@(await RenderPartialAsync<_ApiBreadcrumbs, ApiBreadcrumbsView>(
-								new ApiBreadcrumbsView(Model.Breadcrumbs, Model.HxAttributes)))
+			@* #api-content-grid is the htmx swap target for API pages (pages-nav.ts). Every API page has the same
+			   two columns inside it: the article and the right rail (.api-page-grid in api-docs.css). The rail holds
+			   Copy page, then whatever the page puts in ApiPageSections.Rail. *@
+			@* Placed explicitly: the nav follows in the document, so while a large page is still
+			   streaming the content must not fall into the nav's column. *@
+			<div id="api-content-grid" class="min-w-0 md:col-start-2 md:row-start-1 mx-4 md:mx-0">
+				<div class="api-page-grid">
+					<main id="content-container" class="api-page-main relative pt-6 pb-12">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						@await RenderPartialAsync(_ApiPagesNavToggle.Create())
+						<div class="api-page-toolbar">
+							@* Isolated docs hide a one-item trail. The spec landing's only crumb is the catalog. *@
+							@(await RenderPartialAsync(_Breadcrumbs.Create(new BreadcrumbsView(Model.Breadcrumbs, Model.BuildType, ShowSingle: true))))
+						</div>
+						<article id="markdown-content" class="content-container markdown-content">
 							@await RenderBodyAsync()
 						</article>
-						@await RenderPartialAsync(_PageFeedback.Create(Model))
 					</main>
+					<div class="api-page-rail">
+						@if (Model.PageActions is not null)
+						{
+							@(await RenderPartialAsync(_PageActions.Create(Model.PageActions)))
+						}
+						@await RenderSectionAsync(ApiPageSections.Rail)
+					</div>
+					@await RenderPartialAsync(_PageFeedback.Create(Model))
 				</div>
-				@* API pages never show "On this page"; right rail is examples-only. Keep both IDs for htmx swaps. *@
-				@if (Model.ExamplesPanel is not null)
-				{
-					@await RenderPartialAsync(_OperationExamplesPanel.Create(Model.ExamplesPanel))
-				}
-				else
-				{
-					<aside id="api-examples-panel" class="hidden" aria-hidden="true"></aside>
-				}
-				<aside id="toc-nav" class="hidden" aria-hidden="true"></aside>
 			</div>
 			@await RenderPartialAsync(_ApiPagesNav.Create(Model))
 		</div>

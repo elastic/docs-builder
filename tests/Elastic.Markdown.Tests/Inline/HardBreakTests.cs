@@ -4,21 +4,21 @@
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class AllowBrTagTest(ITestOutputHelper output) : InlineTest(output, "Hello,<br>World!")
+public class AllowBrTagTest() : InlineTest("Hello,<br>World!")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.ShouldContainHtml("<p>Hello,<br>World!</p>");
 }
 
-public class BrTagNeedsToBeExact(ITestOutputHelper output) : InlineTest(output, "Hello,<br >World<br />!")
+public class BrTagNeedsToBeExact() : InlineTest("Hello,<br >World<br />!")
 {
-	[Fact]
+	[Test]
 	public void GeneratesHtml() => Html.ShouldContainHtml("<p>Hello,&lt;br &gt;World&lt;br /&gt;!</p>");
 }
 
-public class DisallowSpanTag(ITestOutputHelper output) : InlineTest(output, "Hello,<span>World!</span>")
+public class DisallowSpanTag() : InlineTest("Hello,<span>World!</span>")
 {
-	[Fact]
+	[Test]
 	// span tag is rendered as text
 	public void GeneratesHtml() => Html.ShouldContainHtml("<p>Hello,&lt;span&gt;World!&lt;/span&gt;</p>");
 }

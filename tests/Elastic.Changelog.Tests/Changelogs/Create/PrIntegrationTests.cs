@@ -10,9 +10,9 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class PrIntegrationTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrOption_FetchesPrInfoAndDerivesTitle()
 	{
 		// Arrange
@@ -53,7 +53,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -75,14 +75,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Implement new aggregation API");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("prs:");
 		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/12345");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithUsePrNumber_CreatesFileWithPrNumberAsFilename()
 	{
 		// Arrange
@@ -124,7 +124,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -141,13 +141,13 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var fileName = Path.GetFileName(files[0]);
 		fileName.Should().Be("140034.yaml", "the filename should be the PR number when UsePrNumber is true");
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("type: bug-fix");
 		yamlContent.Should().Contain("prs:");
 		yamlContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/140034");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultiplePrsAndUsePrNumber_CreatesOneFilePerPrEachNamedByPrNumber()
 	{
 		// With --use-pr-number and multiple PRs, creates one changelog per PR, each named by its PR number (not one aggregated file)
@@ -189,7 +189,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -203,7 +203,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		fileNames.Should().Contain("5678.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBothIssuesAndPrs_UsesPrNumberForFilename()
 	{
 		// Filename is always derived from the PR number; issue-number naming was removed.
@@ -239,7 +239,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Type = "feature"
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -251,7 +251,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		fileName.Should().Be("250840.yaml", "the filename should use the PR number; issue-number naming is no longer supported");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrNumberAndOwnerRepo_SkipsApiFetchWhenTitleAndTypeProvided()
 	{
 		var service = CreateService();
@@ -267,7 +267,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Output = CreateOutputDirectory()
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -277,7 +277,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultiplePrs_CreatesOneFilePerPr()
 	{
 		// Arrange
@@ -318,7 +318,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -332,14 +332,14 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		var yamlContents = new List<string>();
 		foreach (var file in files)
-			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken));
 
 		// Verify both PRs were processed
 		yamlContents.Should().Contain(c => c.Contains("title: First PR feature"));
 		yamlContents.Should().Contain(c => c.Contains("title: Second PR bug fix"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithPrsFromFile_ProcessesAllPrsFromFile()
 	{
 		// Arrange - Simulate what ChangelogCommand does: read PRs from a file
@@ -370,10 +370,10 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			https://github.com/elastic/elasticsearch/pull/2222
 			https://github.com/elastic/elasticsearch/pull/3333
 			""";
-		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Read PRs from file (simulating ChangelogCommand behavior)
-		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current!.Execution.CancellationToken);
 		var parsedPrs = prsFromFile.Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToArray();
 
 		// language=yaml
@@ -404,7 +404,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -418,7 +418,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 
 		var yamlContents = new List<string>();
 		foreach (var file in files)
-			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken));
+			yamlContents.Add(await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken));
 
 		// Verify all PRs were processed
 		yamlContents.Should().Contain(c => c.Contains("title: First PR from file"));
@@ -426,7 +426,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		yamlContents.Should().Contain(c => c.Contains("title: Third PR from file"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMixedPrsFromFileAndCommaSeparated_ProcessesAllPrs()
 	{
 		// Arrange - Simulate ChangelogCommand handling both file paths and comma-separated PRs
@@ -449,7 +449,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var prsFileContent = """
 			https://github.com/elastic/elasticsearch/pull/2222
 			""";
-		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, prsFileContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Simulate ChangelogCommand processing: comma-separated PRs + file path
 		var allPrs = new List<string>();
@@ -462,7 +462,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		allPrs.AddRange(commaSeparatedPrs);
 
 		// Add PRs from file
-		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current.CancellationToken);
+		var prsFromFile = await FileSystem.File.ReadAllLinesAsync(prsFile, TestContext.Current!.Execution.CancellationToken);
 		allPrs.AddRange(prsFromFile.Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()));
 
 		// language=yaml
@@ -492,7 +492,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -507,7 +507,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var yamlContents = new List<string>();
 		foreach (var file in files)
 		{
-			var content = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current.CancellationToken);
+			var content = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken);
 			yamlContents.Add(content);
 		}
 
@@ -518,7 +518,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		yamlContents.Should().Contain(c => c.Contains("prs:") && c.Contains("https://github.com/elastic/elasticsearch/pull/2222"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBareNumberPrAndOwnerRepo_WritesFullUrlIntoYaml()
 	{
 		// Mirrors the upload action's fork-PR re-derivation invocation:
@@ -558,7 +558,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 			Concise = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -567,7 +567,7 @@ public class PrIntegrationTests(ITestOutputHelper output) : CreateChangelogTestB
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("prs:");
 		yamlContent.Should().Contain("https://github.com/elastic/cloud/pull/155500");
 		yamlContent.Should().NotMatch("*prs:*\n- '155500'*");

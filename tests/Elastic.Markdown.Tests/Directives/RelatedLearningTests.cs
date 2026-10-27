@@ -8,44 +8,48 @@ using Elastic.Markdown.Myst.Directives.RelatedLearning;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
-	"""
+[InheritsTests]
+public class RelatedLearningBasicTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning} apm-with-elastic
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ResolvesCatalogId()
 	{
 		Block!.Items.Should().ContainSingle();
-		Block.Items[0].Id.Should().Be("apm-with-elastic");
-		Block.Items[0].Title.Should().Be("APM with Elastic");
-		Block.Items[0].Url.Should().Be("https://www.elastic.co/training/apm-with-elastic");
+		var item = Block.Items[0];
+		item.Id.Should().Be("apm-with-elastic");
+		item.Title.Should().NotBeNullOrWhiteSpace();
+		item.Url.Should().NotBeNullOrWhiteSpace();
+
+		Set.Context.RelatedLearningConfiguration.TryGet("apm-with-elastic", out var catalog).Should().BeTrue();
+		item.Title.Should().Be(catalog!.Title);
+		item.Url.Should().Be(catalog.Url);
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultsHeadingAndSlug()
 	{
 		Block!.Heading.Should().Be(RelatedLearningBlock.DefaultHeading);
 		Block.Slug.Should().Be(RelatedLearningBlock.DefaultSlug);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersHeadingIdAndExternalLink()
 	{
+		var item = Block!.Items.Should().ContainSingle().Which;
 		Html.Should().Contain("id=\"related-learning-heading\"");
 		Html.Should().Contain("<h2>");
 		Html.Should().Contain("Related learning");
-		Html.Should().Contain("href=\"https://www.elastic.co/training/apm-with-elastic\"");
+		Html.Should().Contain($"href=\"{item.Url}\"");
 		Html.Should().Contain("target=\"_blank\"");
 		Html.Should().Contain("rel=\"noopener noreferrer\"");
-		Html.Should().Contain("APM with Elastic");
+		Html.Should().Contain(item.Title);
 		CountOccurrences(Html, "id=\"related-learning-heading\"").Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public void PageTocIncludesDefaultSlug()
 	{
 		File.PageTableOfContent.Should().ContainKey(RelatedLearningBlock.DefaultSlug);
@@ -53,7 +57,7 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 		File.PageTableOfContent[RelatedLearningBlock.DefaultSlug].Level.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
 	private static int CountOccurrences(string haystack, string needle)
@@ -69,27 +73,27 @@ public class RelatedLearningBasicTests(ITestOutputHelper output) : DirectiveTest
 	}
 }
 
-public class RelatedLearningOrderTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
+[InheritsTests]
+public class RelatedLearningOrderTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} index-basics, apm-with-elastic
 :::
 """
 )
 {
-	[Fact]
+	[Test]
 	public void DisplayOrderMatchesIds()
 	{
 		Block!.Items.Select(i => i.Id).Should().Equal("index-basics", "apm-with-elastic");
-		var indexPos = Html.IndexOf("Index Basics", StringComparison.Ordinal);
-		var apmPos = Html.IndexOf("APM with Elastic", StringComparison.Ordinal);
+		var indexPos = Html.IndexOf(Block.Items[0].Title, StringComparison.Ordinal);
+		var apmPos = Html.IndexOf(Block.Items[1].Title, StringComparison.Ordinal);
 		indexPos.Should().BePositive();
 		apmPos.Should().BeGreaterThan(indexPos);
 	}
 }
 
-public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
+[InheritsTests]
+public class RelatedLearningHeadingOverrideTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} elastic-agent
 :heading: Learn Elastic Agent
@@ -97,7 +101,7 @@ public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : Dir
 """
 )
 {
-	[Fact]
+	[Test]
 	public void UsesCustomHeadingAndSlugifiedAnchor()
 	{
 		Block!.Heading.Should().Be("Learn Elastic Agent");
@@ -122,15 +126,13 @@ public class RelatedLearningHeadingOverrideTests(ITestOutputHelper output) : Dir
 	}
 }
 
-public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
-	"""
+[InheritsTests]
+public class RelatedLearningUnknownIdTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning} not-a-module
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorAndRendersNothing()
 	{
 		Collector
@@ -143,15 +145,15 @@ public class RelatedLearningUnknownIdTests(ITestOutputHelper output) : Directive
 	}
 }
 
-public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
+[InheritsTests]
+public class RelatedLearningDuplicateIdTests() : DirectiveTest<RelatedLearningBlock>(
 	"""
 :::{related-learning} apm-with-elastic, apm-with-elastic
 :::
 """
 )
 {
-	[Fact]
+	[Test]
 	public void WarnsAndKeepsFirstOccurrence()
 	{
 		Block!.Items.Should().ContainSingle().Which.Id.Should().Be("apm-with-elastic");
@@ -162,15 +164,13 @@ public class RelatedLearningDuplicateIdTests(ITestOutputHelper output) : Directi
 	}
 }
 
-public class RelatedLearningEmptyIdsTests(ITestOutputHelper output) : DirectiveTest<RelatedLearningBlock>(
-	output,
-	"""
+[InheritsTests]
+public class RelatedLearningEmptyIdsTests() : DirectiveTest<RelatedLearningBlock>("""
 :::{related-learning}
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void EmitsErrorWhenArgumentMissing()
 	{
 		Collector
