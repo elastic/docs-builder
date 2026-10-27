@@ -129,7 +129,32 @@ jobs:
           command: check
           path: .
 
+  # Builds the frontend assets once for the Windows and macOS build jobs. `npm ci` takes about
+  # 6 minutes on Windows runners, and the Vite output is identical on every OS.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap Action Workspace
+        uses: $/.github/actions/bootstrap
+
+      # Runs the Site project's own npm targets so the assets embed the same MinVer version as the .NET build
+      - name: Build frontend
+        run: dotnet msbuild src/Elastic.Documentation.Site/Elastic.Documentation.Site.csproj -restore -t:NpmRunBuild -p:Configuration=Release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-static
+          retention-days: 1
+          if-no-files-found: error
+          include-hidden-files: true
+          path: src/Elastic.Documentation.Site/_static
+
   build:
+    needs: [frontend]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -138,13 +163,23 @@ jobs:
          - ubuntu-latest
          - macos-latest
          - windows-latest
-    steps:          
+    env:
+      # Linux builds the frontend itself; Windows and macOS reuse the `frontend` job's output
+      SkipNpmBuild: ${{ matrix.os != 'ubuntu-latest' }}
+    steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
         uses: $/.github/actions/bootstrap
+
+      - name: Download frontend assets
+        if: ${{ matrix.os != 'ubuntu-latest' }}
+        uses: actions/download-artifact@v8
+        with:
+          name: frontend-static
+          path: src/Elastic.Documentation.Site/_static
 
       # Linux runs the unit tests on every PR. Windows and macOS only add value when .NET code,
       # build inputs or test fixtures change, so PRs that touch only docs or the frontend skip them there.
