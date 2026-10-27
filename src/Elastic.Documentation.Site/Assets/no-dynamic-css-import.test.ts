@@ -14,16 +14,42 @@ function sources(dir: string): string[] {
     })
 }
 
+// import('x.css'), import 'x.css' and import x from 'x.css' (with or without a ?query).
+const cssImport =
+    /(?:(?<![@\w])import\s*\(\s*|(?<![@\w])import\s+(?:[^'"]*\sfrom\s+)?)['"][^'"]+\.css(?:\?[^'"]*)?['"]/
+
+// katex-stylesheet.ts resolves the URL and adds the <link> itself, so it is the one allowed import.
+const allowed = new Set(['katex-stylesheet.ts'])
+
 describe('stylesheet loading', () => {
-    // Vite compiles import('./x.css') to a no-op here: the chunk is emitted but nothing adds a <link>
-    // for it, so the styles never apply (KaTeX shipped unstyled this way).
-    it('never imports a stylesheet dynamically', () => {
-        const offenders = sources(__dirname).filter((file) =>
-            /import\(\s*['"][^'"]+\.css(\?[^'"]*)?['"]\s*\)/.test(
-                readFileSync(file, 'utf8')
-            )
-        )
+    // Vite extracts a stylesheet imported from a lazily loaded module into its own chunk, and nothing
+    // adds a <link> for it, so the styles never apply (KaTeX shipped unstyled this way). Entry
+    // stylesheets are loaded by <link> tags in _Head.cshtml instead.
+    it('imports no stylesheet from TypeScript', () => {
+        const offenders = sources(__dirname)
+            .filter((file) => !allowed.has(path.basename(file)))
+            .filter((file) => cssImport.test(readFileSync(file, 'utf8')))
+            .map((file) => path.relative(__dirname, file))
 
         expect(offenders).toEqual([])
+    })
+
+    it.each([
+        "import('./x.css')",
+        'import("./x.css?inline")',
+        "import './x.css'",
+        "import styles from './x.css'",
+        "import url from './x.css?url'",
+    ])('flags %s', (line) => {
+        expect(cssImport.test(line)).toBe(true)
+    })
+
+    it.each([
+        "import { a } from './x'",
+        "import('./x')",
+        "@import './x.css'",
+        '// see x.css for the styles',
+    ])('ignores %s', (line) => {
+        expect(cssImport.test(line)).toBe(false)
     })
 })
