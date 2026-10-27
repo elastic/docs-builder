@@ -108,3 +108,21 @@ updates:
       - chore
     cooldown:
       default-days: 14
+  # Keep the SDK pin in global.json and the dev image's SDK tag current, so
+  # security releases arrive as reviewable PRs instead of floating silently.
+  - package-ecosystem: dotnet-sdk
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    labels:
+      - chore
+  - package-ecosystem: docker
+    directory: '/build/dev'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    labels:
+      - chore
