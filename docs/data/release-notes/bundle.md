@@ -84,7 +84,7 @@ bundle:
 ```
 
 1. The directory that contains changelog files.
-2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write here.
+2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write to a `{product}/` folder here, for example `docs/releases/elasticsearch/`.
 3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo (`bundle.repo` here) and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml`.
 4. Optional. Replaces `bundle.output_directory` for this profile (the same as option-mode `--output` when it is a directory). This profile writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-{version}.yaml` so a `{changelog}` directive can point at that folder without mixing other products.
 
