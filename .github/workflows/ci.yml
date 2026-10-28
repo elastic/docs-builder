@@ -20,6 +20,9 @@ jobs:
   # Decides which slow work a PR needs, see changes.yml
   changes:
     uses: $/.github/workflows/changes.yml
+    permissions:
+      contents: read
+      pull-requests: read
 
   validate-assembler:
     needs: [changes]
