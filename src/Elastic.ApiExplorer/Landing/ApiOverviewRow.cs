@@ -154,6 +154,10 @@ public static class ApiOverviewBuilder
 				case OperationNavigationItem operation:
 					rows.Add(OperationRow(operation, versionsConfig, designSystem));
 					break;
+				case TypesNavigationItem types:
+					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = types.NavigationTitle });
+					AddProductRows(types, rows, versionsConfig, designSystem);
+					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
 					AddProductRows(schemaCategory, rows, versionsConfig, designSystem);

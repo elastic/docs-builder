@@ -150,7 +150,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					topLevelNavigationItems
 				);
 		}
-		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
+		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
 
 		var finalNavigationItems = new List<INavigationItem>();
 		var (topicsNavigation, hasAuthenticationTopic) = _topics.Create(
@@ -176,6 +176,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
 		if (endpointItems.Count > 0)
 			finalNavigationItems.AddRange(endpointItems);
+
+		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
+		if (typesNavigation is not null)
+		{
+			if (finalNavigationItems.Count > 0)
+				finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
+			finalNavigationItems.Add(typesNavigation);
+		}
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
@@ -299,19 +307,18 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		};
 	}
 
-	private void CreateSchemaNavigationItems(
+	/// <summary>The Types folder of shared schema pages, or null when the spec has none of the listed types.</summary>
+	private TypesNavigationItem? CreateTypesNavigation(
 		string apiUrlSuffix,
 		OpenApiDocument openApiDocument,
-		LandingNavigationItem rootNavigation,
-		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> topLevelNavigationItems
+		LandingNavigationItem rootNavigation
 	)
 	{
 		var schemas = openApiDocument.Components?.Schemas;
 		if (schemas is null || schemas.Count == 0)
-			return;
+			return null;
 
-		var typesCategory = new SchemaCategory("Types", "Shared type definitions");
-		var typesCategoryNav = new SchemaCategoryNavigationItem(typesCategory, rootNavigation, rootNavigation);
+		var typesCategoryNav = new TypesNavigationItem(rootNavigation);
 		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
 
 		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
@@ -341,11 +348,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			categoryNavigationItems.Add(categoryNav);
 		}
 
-		if (categoryNavigationItems.Count > 0)
-		{
-			typesCategoryNav.NavigationItems = categoryNavigationItems;
-			topLevelNavigationItems.Add(typesCategoryNav);
-		}
+		if (categoryNavigationItems.Count == 0)
+			return null;
+
+		typesCategoryNav.NavigationItems = categoryNavigationItems;
+		return typesCategoryNav;
 	}
 	private string ResolveTagClassification(string? tag, XTagGroups? xTagGroups, HashSet<string> orphanTagsLogged)
 	{

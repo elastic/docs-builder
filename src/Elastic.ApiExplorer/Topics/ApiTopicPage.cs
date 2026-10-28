@@ -66,31 +66,13 @@ public class TopicNavigationItem(
 	public int NavigationIndex { get; set; }
 }
 
-/// <summary>The Topics sidebar heading. It has no page; it groups the topic pages above the endpoint groups.</summary>
-public record ApiTopicGroup : IApiGroupingModel
-{
-	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default) => Task.CompletedTask;
-}
-
-public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiGroupingNavigationItem<ApiTopicGroup, INavigationItem>(
-	new ApiTopicGroup(),
-	rootNavigation,
-	rootNavigation
-), ISidebarHeadingNavigationItem
+/// <summary>The Topics sidebar heading. It groups the topic pages above the endpoint groups.</summary>
+public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(Title, rootNavigation)
 {
 	public const string Title = "Topics";
 
 	/// <summary>Topics listed first, in this order. Every other topic follows alphabetically. Add a title here to pin it.</summary>
 	public static readonly string[] PinnedTitles = ["Authentication", "Rate limiting"];
-
-	public LandingNavigationItem Landing => rootNavigation;
-
-	/// <summary>Like <see cref="ClassificationNavigationItem"/>, the heading points at the product overview, so breadcrumbs fold it into the spec crumb.</summary>
-	public override string Url => rootNavigation.Index.Url;
-
-	public override string NavigationTitle => Title;
-
-	public override string Id { get; } = ShortId.Create("api-topics");
 
 	/// <summary>Pinned topics first, in <see cref="PinnedTitles"/> order, then the rest by title.</summary>
 	public static IReadOnlyList<INavigationItem> Order(IEnumerable<INavigationItem> items) =>

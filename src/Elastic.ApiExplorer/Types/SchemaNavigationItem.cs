@@ -67,6 +67,12 @@ public record SchemaCategory(string Name, string Description) : IApiGroupingMode
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
 }
 
+/// <summary>The Types sidebar heading. It groups the shared type pages after the endpoint groups.</summary>
+public class TypesNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(Title, rootNavigation)
+{
+	public const string Title = "Types";
+}
+
 public class SchemaCategoryNavigationItem(
 	SchemaCategory category,
 	IRootNavigationItem<IApiGroupingModel, INavigationItem> root,

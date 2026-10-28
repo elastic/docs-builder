@@ -77,13 +77,13 @@ public class ApiNavParityTests
 		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
 		var navigation = generator.CreateNavigation("test", document);
 
-		var types = navigation
-			.NavigationItems
-			.OfType<SchemaCategoryNavigationItem>()
-			.Should()
-			.ContainSingle(item => item.NavigationTitle == "Types")
-			.Subject;
+		var types = navigation.NavigationItems.OfType<TypesNavigationItem>().Should().ContainSingle().Subject;
+		types.Should().BeAssignableTo<ISidebarHeadingNavigationItem>("Types is a heading with no page, like Topics");
+		types.Url.Should().Be(navigation.Url);
 		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
+		var items = navigation.NavigationItems.ToList();
+		items[^1].Should().Be(types);
+		items[^2].Should().BeOfType<SidebarSeparatorNavigationItem>("a divider sets the types apart from the endpoint groups");
 	}
 
 	[Test]
