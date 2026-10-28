@@ -74,35 +74,12 @@ jobs:
           persist-credentials: false
 
       - name: Create Deployment
-        uses: actions/github-script@v9
         id: deployment
-        env:
-          PR_SHA: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
+        uses: $/.github/actions/deployment-start
         with:
-          result-encoding: string
-          script: |
-            const { owner, repo } = context.repo;
-            const prNumber = process.env.PR_NUMBER;
-            const environment = 'assembler-preview';
-            const task = `assembler-preview-${prNumber}`;
-            const deployment = await github.rest.repos.createDeployment({
-                owner,
-                repo,
-                environment,
-                task,
-                ref: process.env.PR_SHA,
-                auto_merge: false,
-                transient_environment: true,
-                required_contexts: [],
-            })
-            await github.rest.repos.createDeploymentStatus({
-                deployment_id: deployment.data.id,
-                owner,
-                repo,
-                state: "in_progress",
-                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
-            return deployment.data.id
+          environment: assembler-preview
+          pr-number: ${{ env.PR_NUMBER }}
+          ref: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
 
       - name: Bootstrap Action Workspace
         uses: elastic/docs-builder/.github/actions/bootstrap@main
@@ -114,11 +91,8 @@ jobs:
 
       - uses: elastic/docs-builder/.github/actions/aws-auth@main
 
-      - name: Upload assembled docs to S3
-        id: s3-upload
+      - name: Configure S3 transfer
         env:
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 6
           AWS_S3_MAX_CONCURRENT_REQUESTS: 50
           AWS_S3_MAX_QUEUE_SIZE: 20000
         run: |
@@ -126,16 +100,12 @@ jobs:
           aws configure set default.s3.max_concurrent_requests "${AWS_S3_MAX_CONCURRENT_REQUESTS}"
           aws configure set default.s3.max_queue_size "${AWS_S3_MAX_QUEUE_SIZE}"
 
-          aws s3 sync ".artifacts/assembly/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "s3://elastic-docs-v3-website-preview/${ASSEMBLER_PREVIEW_PATH_PREFIX}" --delete --no-follow-symlinks
-          aws cloudfront create-invalidation \
-            --distribution-id EKT7LT5PM8RKS \
-            --paths "/${ASSEMBLER_PREVIEW_PATH_PREFIX}" "/${ASSEMBLER_PREVIEW_PATH_PREFIX}/*"
-
-      - uses: actions/setup-node@v7.1.0
+      - name: Upload assembled docs to S3
+        id: s3-upload
+        uses: $/.github/actions/upload-preview
         with:
-          cache: npm
-          cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json
-          node-version-file: .nvmrc
+          source: .artifacts/assembly/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
+          path-prefix: /${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}
 
       - name: Install frontend dependencies
         working-directory: src/Elastic.Documentation.Site
@@ -169,15 +139,9 @@ jobs:
         run: npm run synthetics:test:accessibility
 
       - name: Update Deployment Status
-        if: always() && steps.deployment.outputs.result
-        uses: actions/github-script@v9
+        if: always() && steps.deployment.outputs.id
+        uses: $/.github/actions/deployment-finish
         with:
-          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.s3-upload.outcome == 'success' && steps.synthetics.outcome != 'failure' && steps.synthetics-accessibility.outcome != 'failure' && 'success' || 'failure' }}",
-              environment_url: `https://docs-v3-preview.elastic.dev/${process.env.ASSEMBLER_PREVIEW_PATH_PREFIX}`,
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
+          deployment-id: ${{ steps.deployment.outputs.id }}
+          state: ${{ steps.s3-upload.outcome == 'success' && steps.synthetics.outcome != 'failure' && steps.synthetics-accessibility.outcome != 'failure' && 'success' || 'failure' }}
+          environment-url: https://docs-v3-preview.elastic.dev/${{ env.ASSEMBLER_PREVIEW_PATH_PREFIX }}

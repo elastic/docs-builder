@@ -1,0 +1,69 @@
+name: preview-cleanup
+
+# Deletes a closed PR's GitHub deployments and, when any existed, its preview objects in S3.
+# Called by the pull_request_target cleanup workflows, which grant the permissions below.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The GitHub environment the preview deployed to, e.g. docs-preview'
+        required: true
+        type: string
+      s3-folder:
+        description: 'Folder under the repository prefix in the preview bucket, e.g. docs or pull'
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: none
+      deployments: write
+      id-token: write
+    steps:
+      - name: Delete GitHub environment
+        uses: actions/github-script@v9
+        id: delete-deployment
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const environment = process.env.ENVIRONMENT;
+            // `deployment-start` names the task `<environment>-<pr number>`.
+            const deployments = await github.rest.repos.listDeployments({
+              owner,
+              repo,
+              environment,
+              task: `${environment}-${context.issue.number}`,
+            });
+            core.setOutput('is-empty', deployments.data.length === 0)
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner,
+                repo,
+                deployment_id: deployment.id,
+                state: 'inactive',
+                description: 'Marking deployment as inactive'
+              });
+              await github.rest.repos.deleteDeployment({
+                owner,
+                repo,
+                deployment_id: deployment.id
+              });
+            }
+
+      - uses: elastic/docs-builder/.github/actions/aws-auth@main
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+
+      - name: Delete s3 objects
+        if: steps.delete-deployment.outputs.is-empty == 'false'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          S3_FOLDER: ${{ inputs.s3-folder }}
+        run: |
+          aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/${S3_FOLDER}/${PR_NUMBER}" --recursive
