@@ -153,21 +153,24 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Topic pages sit under a Topics heading below the landing page and before the generated OpenAPI groups.
-		// They come from the docset's children: pages; a docset without them falls back to the spec's x-topics.
+		// Topic pages sit under a Topics heading below the landing page and before the generated OpenAPI groups. The docset's
+		// children: pages come first, in declared order. The spec's x-topics follow, except those a child page already covers.
 		var finalNavigationItems = new List<INavigationItem>();
 		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
 		var children = ChildFiles(apiConfig, versionMajor);
+		var replacedTopics = MatchTopicsToChildren(apiUrlSuffix, topics, children);
+		var remainingTopics = topics.Where(topic => !replacedTopics.ContainsKey(topic)).ToArray();
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
-		// children: pages keep the order the docset declares; spec topics follow the pinned and alphabetical order.
-		topicsNavigation.NavigationItems = children.Count > 0
-			? CreateChildNavigationItems(apiUrlSuffix, children, topics, topicsNavigation)
-			: TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, topics, topicsNavigation));
+		topicsNavigation.NavigationItems =
+		[
+			.. CreateChildNavigationItems(apiUrlSuffix, children, replacedTopics, topicsNavigation),
+			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
+		];
 		if (topicsNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.Add(topicsNavigation);
 
 		// A spec topic titled Authentication replaces the generated Authentication page; the topic page still lists the schemes.
-		var hasAuthenticationTopic = children.Count == 0 && topics.Any(ApiTopicPage.IsAuthentication);
+		var hasAuthenticationTopic = remainingTopics.Any(ApiTopicPage.IsAuthentication);
 		finalNavigationItems.AddRange(
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
 				item => !(hasAuthenticationTopic && item.Model.Kind == ApiStructuralKind.Authentication)
@@ -234,17 +237,16 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	private List<INavigationItem> CreateChildNavigationItems(
 		string apiUrlSuffix,
 		IReadOnlyList<IFileInfo> children,
-		IReadOnlyList<OpenApiTopic> topics,
+		IReadOnlyDictionary<OpenApiTopic, IFileInfo> replacedTopics,
 		TopicsNavigationItem topicsNavigation
 	)
 	{
-		var replacedTopics = ReplacedTopicUrls(apiUrlSuffix, topics, children);
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var items = new List<INavigationItem>(children.Count);
 		foreach (var child in children)
 		{
 			var item = CreateMarkdownNavigationItem(apiUrlSuffix, child, topicsNavigation.Landing, topicsNavigation, markdownSlugs);
-			item.AliasUrls = replacedTopics.TryGetValue(child.FullName, out var aliases) ? aliases : [];
+			item.AliasUrls = [.. replacedTopics.Where(pair => pair.Value == child).Select(pair => TopicUrl(apiUrlSuffix, pair.Key))];
 			items.Add(item);
 		}
 
@@ -252,52 +254,47 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	}
 
 	/// <summary>
-	/// The docset's <c>children:</c> pages replace the spec's topics. A topic URL forwards to the child whose first heading
-	/// matches the topic title, so links to the bump.sh topic page keep working.
+	/// The spec topics that a <c>children:</c> page already covers, because the child's first heading matches the topic title
+	/// or its text matches the topic content. The topic is not built, and its URL forwards to the child.
 	/// </summary>
-	private Dictionary<string, IReadOnlyList<string>> ReplacedTopicUrls(
+	private Dictionary<OpenApiTopic, IFileInfo> MatchTopicsToChildren(
 		string apiUrlSuffix,
 		IReadOnlyList<OpenApiTopic> topics,
 		IReadOnlyList<IFileInfo> children
 	)
 	{
-		if (topics.Count == 0)
-			return [];
+		var matches = new Dictionary<OpenApiTopic, IFileInfo>();
+		if (topics.Count == 0 || children.Count == 0)
+			return matches;
 
-		var childByHeading = new Dictionary<string, IFileInfo>(StringComparer.OrdinalIgnoreCase);
-		foreach (var child in children)
-		{
-			if (MarkdownNavigationTitleReader.GetFirstHeading(context.ReadFileSystem, child) is { } heading)
-				_ = childByHeading.TryAdd(heading, child);
-		}
-
-		var aliases = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+		var childPages = children
+			.Select(child => (File: child, Page: MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child)))
+			.Where(child => child.Page.Heading is not null)
+			.ToArray();
 		foreach (var topic in topics)
 		{
-			if (!childByHeading.TryGetValue(topic.Title, out var child))
-			{
-				_logger.LogWarning(
-					"API '{ApiKey}' ignores x-topics entry '{Title}', because the docset declares children: and none of them is headed '{Title}'.",
-					apiUrlSuffix,
-					topic.Title,
-					topic.Title
-				);
+			var match = childPages.FirstOrDefault(child => Covers(child.Page, topic)).File;
+			if (match is null)
 				continue;
-			}
 
 			_logger.LogInformation(
-				"API '{ApiKey}' ignores x-topics entry '{Title}' and forwards it to the children: page '{File}'.",
+				"API '{ApiKey}' builds no page for x-topics entry '{Title}', because the children: page '{File}' covers it; the topic URL forwards there.",
 				apiUrlSuffix,
 				topic.Title,
-				child.Name
+				match.Name
 			);
-			if (!aliases.TryGetValue(child.FullName, out var urls))
-				aliases[child.FullName] = urls = [];
-			urls.Add(TopicUrl(apiUrlSuffix, topic));
+			matches[topic] = match;
 		}
 
-		return aliases.ToDictionary(static pair => pair.Key, static pair => (IReadOnlyList<string>)pair.Value, StringComparer.Ordinal);
+		return matches;
 	}
+
+	private static bool Covers((string? Heading, string? Body) child, OpenApiTopic topic) =>
+		string.Equals(child.Heading, topic.Title, StringComparison.OrdinalIgnoreCase)
+			|| (!string.IsNullOrWhiteSpace(topic.Content) && CollapseWhitespace(child.Body) == CollapseWhitespace(topic.Content));
+
+	private static string CollapseWhitespace(string? text) =>
+		string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
 	private string TopicUrl(string apiUrlSuffix, OpenApiTopic topic) =>
 		ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, ApiUrlBuilder.TopicMoniker(topic.Title));

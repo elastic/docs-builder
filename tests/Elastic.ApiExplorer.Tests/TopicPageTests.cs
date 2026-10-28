@@ -211,13 +211,56 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenAndUnmatchedTopic_IgnoresTopic()
+	public async Task CreateNavigation_ChildrenAndUnmatchedTopics_ListsChildrenThenTopics()
 	{
-		var navigation = await Navigation(Spec(["""{ "title": "Principles", "content": "REST." }"""]), [KibanaOverview]);
+		var navigation = await Navigation(
+			Spec(["""{ "title": "Principles", "content": "REST." }""", """{ "title": "Authentication", "content": "Use an API key." }"""]),
+			[KibanaOverview]
+		);
 
-		var all = ApiExplorerFixture.Walk(navigation).ToList();
-		all.OfType<TopicNavigationItem>().Should().BeEmpty();
-		all.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().BeEmpty();
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics
+			.NavigationItems
+			.Select(item => (item.GetType().Name, item.Url))
+			.Should()
+			.Equal(
+				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
+				(nameof(StructuralNavigationItem), "/api/doc/cloud/authentication"),
+				(nameof(TopicNavigationItem), "/api/doc/cloud/topic/topic-principles")
+			);
+		topics.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildWithSameContentAsTopic_ForwardsTopicToChild()
+	{
+		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
+		var folder = Directory.CreateDirectory(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
+		).FullName;
+		try
+		{
+			var child = Path.Combine(folder, "spaces.md");
+			await File.WriteAllTextAsync(
+				child,
+				"# Spaces\n\nSpaces organize\nyour saved objects.\n",
+				TestContext.Current!.Execution.CancellationToken
+			);
+
+			var navigation = await Navigation(
+				Spec(["""{ "title": "Kibana spaces", "content": "Spaces organize your saved objects." }"""]),
+				[child]
+			);
+
+			var all = ApiExplorerFixture.Walk(navigation).ToList();
+			all.OfType<TopicNavigationItem>().Should().BeEmpty();
+			all.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
+		}
+		finally
+		{
+			Directory.Delete(folder, recursive: true);
+		}
 	}
 
 	[Test]

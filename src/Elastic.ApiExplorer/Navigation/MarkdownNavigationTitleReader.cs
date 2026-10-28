@@ -33,24 +33,26 @@ public static class MarkdownNavigationTitleReader
 		return TitleCaseFromFileName(markdownFile.Name);
 	}
 
-	/// <summary>The text of the first level-one heading after the front matter, or null when the file has none or cannot be read.</summary>
-	public static string? GetFirstHeading(IFileSystem readFileSystem, IFileInfo markdownFile)
+	/// <summary>
+	/// The first level-one heading after the front matter, and the text after it. Both are null when the file has no such
+	/// heading or cannot be read.
+	/// </summary>
+	public static (string? Heading, string? Body) ReadHeadingAndBody(IFileSystem readFileSystem, IFileInfo markdownFile)
 	{
 		try
 		{
+			var lines = readFileSystem.File.ReadAllLines(markdownFile.FullName);
 			var inFrontMatter = false;
-			var lineNumber = 0;
-			foreach (var line in readFileSystem.File.ReadLines(markdownFile.FullName))
+			for (var i = 0; i < lines.Length; i++)
 			{
-				lineNumber++;
-				if (line.Trim() == "---" && (lineNumber == 1 || inFrontMatter))
+				if (lines[i].Trim() == "---" && (i == 0 || inFrontMatter))
 				{
 					inFrontMatter = !inFrontMatter;
 					continue;
 				}
 
-				if (!inFrontMatter && line.StartsWith("# ", StringComparison.Ordinal))
-					return line[2..].Trim();
+				if (!inFrontMatter && lines[i].StartsWith("# ", StringComparison.Ordinal))
+					return (lines[i][2..].Trim(), string.Join('\n', lines[(i + 1)..]));
 			}
 		}
 		catch
@@ -58,7 +60,7 @@ public static class MarkdownNavigationTitleReader
 			// An unreadable child file is reported where the page is built.
 		}
 
-		return null;
+		return (null, null);
 	}
 
 	private static string? ReadFrontMatterNavigationTitle(string content)

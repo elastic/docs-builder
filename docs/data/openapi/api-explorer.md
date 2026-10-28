@@ -87,7 +87,7 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them. They take priority over the spec's [`x-topics`](#x-topics): when a product declares `children:`, the API Explorer ignores its `x-topics`. A topic URL such as `/topic/topic-kibana-spaces` redirects to the child page whose first heading matches the topic title, so links to the bump.sh page keep working. A topic with no matching child is skipped with a build warning.
+Child pages are listed first under the **Topics** heading in the sidebar, in the order you declare them. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic, and the topic URL, such as `/topic/topic-kibana-spaces`, redirects to the child page. Links to the bump.sh page keep working.
 
 Child pages also behave as follows:
 
@@ -470,7 +470,7 @@ The same accordion applies to **Path Parameters**, **Query Parameters**, and **R
 
 ### Topic pages [x-topics]
 
-`x-topics` is deprecated: write these pages as [`children:`](#api-children) pages instead. The API Explorer only uses `x-topics` when the product declares no `children:`.
+`x-topics` is deprecated: write these pages as [`children:`](#api-children) pages instead. A child page that covers a topic replaces it.
 
 The document-level `x-topics` extension lists pages of prose that explain the API as a whole, such as rate limits or how to use spaces. Each entry has a `title` and a Markdown `content`:
 
@@ -486,11 +486,11 @@ x-topics:
 
 Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
 
-The sidebar lists the topics under a **Topics** heading, above the endpoint groups. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading only appears when the product has at least one topic page.
+The sidebar lists the topics under a **Topics** heading, above the endpoint groups and after any `children:` pages. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading only appears when the product has at least one topic page.
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`, and `/topic/topic-authentication` redirects there. This also works for a spec without security schemes.
 
-When the product declares `children:`, the Topics heading lists those pages instead, and the spec's topics redirect to them. Refer to [`children:`](#api-children).
+A `children:` page whose first heading or text matches a topic replaces it, and the topic URL redirects to the child page. Refer to [`children:`](#api-children).
 
 ### Tag labels [x-displayname]
 
