@@ -47,11 +47,13 @@ jobs:
       frontend-toolchain: ${{ steps.result.outputs.frontend-toolchain }}
     steps:
       # On pull_request the action reads the diff from the GitHub API, so no checkout is needed.
-      # `any_modified` also counts deleted files, which `any_changed` does not.
+      # `any_modified` also counts deleted files, which `any_changed` does not. Renames are split into a
+      # deletion and an addition so a file moved out of a filtered path still counts.
       - id: files
         if: ${{ github.event_name == 'pull_request' }}
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
+          output_renamed_files_as_deleted_and_added: true
           files_yaml: |
             code:
               - '**'
