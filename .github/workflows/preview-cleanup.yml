@@ -66,4 +66,5 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           S3_FOLDER: ${{ inputs.s3-folder }}
         run: |
-          aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/${S3_FOLDER}/${PR_NUMBER}" --recursive
+          # The trailing slash matters: `s3 rm` matches by key prefix, so without it PR 461 also deletes 4610-4619.
+          aws s3 rm "s3://elastic-docs-v3-website-preview/${GITHUB_REPOSITORY}/${S3_FOLDER}/${PR_NUMBER}/" --recursive
