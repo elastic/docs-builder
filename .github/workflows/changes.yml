@@ -39,12 +39,13 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+    # Pushes and manual runs skip the diff and report true for everything.
     outputs:
-      code: ${{ steps.result.outputs.code }}
-      link-index-lambda: ${{ steps.result.outputs.link-index-lambda }}
-      openapi-index-lambda: ${{ steps.result.outputs.openapi-index-lambda }}
-      dotnet: ${{ steps.result.outputs.dotnet }}
-      frontend-toolchain: ${{ steps.result.outputs.frontend-toolchain }}
+      code: ${{ github.event_name != 'pull_request' || steps.files.outputs.metadata_only_modified != 'true' }}
+      link-index-lambda: ${{ github.event_name != 'pull_request' || steps.files.outputs.link_index_lambda_any_modified == 'true' }}
+      openapi-index-lambda: ${{ github.event_name != 'pull_request' || steps.files.outputs.openapi_index_lambda_any_modified == 'true' }}
+      dotnet: ${{ github.event_name != 'pull_request' || steps.files.outputs.dotnet_any_modified == 'true' }}
+      frontend-toolchain: ${{ github.event_name != 'pull_request' || steps.files.outputs.frontend_toolchain_any_modified == 'true' }}
     steps:
       # On pull_request the action reads the diff from the GitHub API, so no checkout is needed.
       # `any_modified` also counts deleted files, which `any_changed` does not. Renames are split into a
@@ -55,21 +56,21 @@ jobs:
         with:
           output_renamed_files_as_deleted_and_added: true
           files_yaml: |
-            code:
-              - '**'
-              # Bot/review config, ownership and issue templates. Workflows and actions are deliberately not listed.
-              - '!.libra/**'
-              - '!.github/ISSUE_TEMPLATE/**'
-              - '!.github/updatecli/**'
-              - '!.github/CODEOWNERS'
-              - '!.github/copilot-instructions.md'
-              - '!.github/dependabot.yml'
-              - '!.github/release-drafter.yml'
-              - '!.github/zizmor.yml'
-              - '!.github/actionlint.yaml'
-              - '!CODEOWNERS'
-              - '!README.md'
-            link_index_lambda:
+            # `only_modified` is true when every changed file is in this list. Workflows and actions are deliberately
+            # not listed, so editing CI still runs CI.
+            metadata:
+              - .libra/**
+              - .github/ISSUE_TEMPLATE/**
+              - .github/updatecli/**
+              - .github/CODEOWNERS
+              - .github/copilot-instructions.md
+              - .github/dependabot.yml
+              - .github/release-drafter.yml
+              - .github/zizmor.yml
+              - .github/actionlint.yaml
+              - CODEOWNERS
+              - README.md
+            shared: &shared
               - global.json
               - Directory.Build.props
               - Directory.Packages.props
@@ -77,6 +78,8 @@ jobs:
               - .dockerignore
               - .github/workflows/ci.yml
               - .github/workflows/changes.yml
+            link_index_lambda:
+              - *shared
               - .github/workflows/build-link-index-updater-lambda.yml
               - src/infra/docs-lambda-index-publisher/**
               - src/Elastic.Documentation/**
@@ -86,13 +89,7 @@ jobs:
               - src/services/search/Elastic.Documentation.Search.Contract/**
               - config/**
             openapi_index_lambda:
-              - global.json
-              - Directory.Build.props
-              - Directory.Packages.props
-              - src/Directory.Build.props
-              - .dockerignore
-              - .github/workflows/ci.yml
-              - .github/workflows/changes.yml
+              - *shared
               - .github/workflows/build-openapi-index-lambda.yml
               - src/infra/docs-lambda-openapi-index/**
               - src/Elastic.Documentation.OpenApiIndex/**
@@ -111,21 +108,3 @@ jobs:
               - src/Elastic.Documentation.Site/package-lock.json
               - src/Elastic.Documentation.Site/vite.config.ts
               - src/Elastic.Documentation.Site/tailwind.config.js
-
-      - id: result
-        env:
-          IS_PR: ${{ github.event_name == 'pull_request' }}
-          CODE: ${{ steps.files.outputs.code_any_modified }}
-          LINK_INDEX_LAMBDA: ${{ steps.files.outputs.link_index_lambda_any_modified }}
-          OPENAPI_INDEX_LAMBDA: ${{ steps.files.outputs.openapi_index_lambda_any_modified }}
-          DOTNET: ${{ steps.files.outputs.dotnet_any_modified }}
-          FRONTEND_TOOLCHAIN: ${{ steps.files.outputs.frontend_toolchain_any_modified }}
-        run: |
-          pick() { [ "$IS_PR" = "true" ] && echo "${1:-false}" || echo true; }
-          {
-            echo "code=$(pick "$CODE")"
-            echo "link-index-lambda=$(pick "$LINK_INDEX_LAMBDA")"
-            echo "openapi-index-lambda=$(pick "$OPENAPI_INDEX_LAMBDA")"
-            echo "dotnet=$(pick "$DOTNET")"
-            echo "frontend-toolchain=$(pick "$FRONTEND_TOOLCHAIN")"
-          } | tee -a "$GITHUB_OUTPUT"
