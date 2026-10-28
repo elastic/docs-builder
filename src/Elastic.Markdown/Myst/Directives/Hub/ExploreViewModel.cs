@@ -9,4 +9,7 @@ public class ExploreViewModel : DirectiveViewModel
 	public required string? Title { get; init; }
 	public required string? Intro { get; init; }
 	public required string? Anchor { get; init; }
+
+	/// <summary>Heading level of the section title, 2 or 3.</summary>
+	public int HeadingLevel { get; init; } = 2;
 }

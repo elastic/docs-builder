@@ -12,6 +12,7 @@
 @import './code-block.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
+@import './product-icons.css';
 @import './markdown/kbd.css';
 @import './copybutton.css';
 @import './page-feedback.css';
@@ -27,6 +28,7 @@
 @import './modal.css';
 @import './secondary-nav.css';
 @import './secondary-nav-dropdown.css';
+@import './api-identity.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
@@ -36,6 +38,7 @@
 @import './markdown/storybook.css';
 @import './markdown/hub.css';
 @import './api-docs.css';
+@import './api-language-icons.css';
 @import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import './pages-nav-figma.css';
 @import 'tippy.js/dist/tippy.css';
@@ -77,7 +80,8 @@ body {
 	);
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
-	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
+	--max-examples-width: calc(var(--spacing) * 110);
+	--max-api-content-width: var(--max-text-width);
 }
 
 #pages-nav li.current {

@@ -6,7 +6,6 @@ import {
     useSearchActions,
     useSelectedIndex,
 } from './navigationSearch.store'
-import { useGlobalKeyboardShortcut } from './useGlobalKeyboardShortcut'
 import { useIsNavigationSearchCooldownActive } from './useNavigationSearchCooldown'
 import { useNavigationSearchKeyboardNavigation } from './useNavigationSearchKeyboardNavigation'
 import {
@@ -14,6 +13,7 @@ import {
     type TypeFilter,
 } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
+import { useSlashToFocus } from './useSlashToFocus'
 import {
     EuiInputPopover,
     useEuiTheme,
@@ -74,6 +74,11 @@ export const NavigationSearch = ({
         typeFilter,
     })
 
+    const isApi = typeFilter === 'api'
+    // The sidebar is off-canvas on small screens, so there is nothing to focus.
+    const slashFocusEnabled = isApi && !isMobile
+    useSlashToFocus({ enabled: slashFocusEnabled, inputRef })
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         setSearchTerm(value)
@@ -91,6 +96,10 @@ export const NavigationSearch = ({
             })
             setSearchTerm('')
             setIsPopoverOpen(false)
+            // After the re-render, so handleBlur doesn't log a second close for the same Escape.
+            if (isApi) {
+                queueMicrotask(() => inputRef.current?.blur())
+            }
             return
         }
         handleInputKeyDown(e)
@@ -117,32 +126,16 @@ export const NavigationSearch = ({
         setIsPopoverOpen(false)
     }
 
-    useGlobalKeyboardShortcut('k', () => {
-        trackOpened('keyboard_shortcut')
-        inputRef.current?.focus()
-        inputRef.current?.select()
-    })
-
-    // Close popover and blur input when htmx navigation starts from a search result
+    // Close after the swap, not before: the clicked result link must stay
+    // mounted so htmx can still read the body's inherited hx-swap and hx-select.
     useEffect(() => {
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                setIsPopoverOpen(false)
-                inputRef.current?.blur()
-            }
+        const handleAfterSwap = () => {
+            setIsPopoverOpen(false)
+            inputRef.current?.blur()
         }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-        }
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
+        return () =>
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
     }, [inputRef])
 
     return (
@@ -185,6 +178,14 @@ export const NavigationSearch = ({
                         onKeyDown={handleKeyDown}
                         disabled={isSearchCooldownActive}
                         isLoading={isSearching}
+                        keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
+                        shortcutHint={slashFocusEnabled ? '/' : undefined}
+                        ariaLabel={isApi ? 'Explore APIs' : undefined}
+                        title={
+                            isApi
+                                ? 'Explore API operations. Type / to focus.'
+                                : undefined
+                        }
                     />
                 </>
             }

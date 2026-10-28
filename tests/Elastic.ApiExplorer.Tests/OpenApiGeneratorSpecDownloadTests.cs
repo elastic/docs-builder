@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
@@ -81,7 +82,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Generate_LandingHtmlContainsDownloadSourceLinks()
+	public async Task Generate_LandingHtmlOffersTheSpecDownloadInThePageActions()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-html-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -105,10 +106,75 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				TestContext.Current!.Execution.CancellationToken
 			);
 
-		html.Should().Contain("Download source");
+		html.Should().Contain("Download OpenAPI spec (JSON)");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.yaml\"");
 		html.Should().Contain("download");
+		// One place for the download: the old landing fact is gone.
+		html.Should().NotContain("<dt>Download spec</dt>");
+	}
+
+	[Test]
+	public async Task Generate_LandingShowsCopyableBaseUrlAndVersionAndKeepsCatalog()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-facts-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(fixture.Document)
+		);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		html.Should().Contain("<dt>Base URL");
+		html.Should().Contain("data-copy=\"https://fixture.example.com\"");
+		html.Should().Contain("<dt>Version</dt>").And.Contain("1.2.3");
+		html.Should().Contain("api-index");
+
+		var markdown = await context.WriteFileSystem.File.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch.md"), ct);
+		markdown = markdown.ReplaceLineEndings("\n");
+		markdown.Should().Contain("version: \"1.2.3\"");
+		markdown.Should().Contain("servers:\n  - \"https://fixture.example.com\"");
+		markdown.Should().Contain("spec:");
+		markdown.Should().NotContain("License:");
+	}
+
+	[Test]
+	public async Task Generate_SpecWithInfoLicense_LandingDoesNotShowLicenseFact()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var fixturePath = Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
+		var document = await OpenApiReader.Instance.ReadAsync(new System.IO.Abstractions.FileSystem().FileInfo.New(fixturePath))
+			?? throw new InvalidOperationException($"Could not read fixture spec at {fixturePath}");
+		document.Info.License = new OpenApiLicense { Name = "Apache 2.0" };
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-license-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(document)
+		);
+
+		await generator.Generate(ct);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		html.Should().Contain("<dt>Version</dt>");
+		html.Should().NotContain("<dt>License").And.NotContain("Apache 2.0");
 	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
@@ -161,10 +227,10 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 
 	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
+		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
 		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
+			_ => Task.FromResult<OpenApiDocument?>(queue.TryDequeue(out var next) ? next : null)
 		);
 		return reader;
 	}

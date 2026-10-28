@@ -11,4 +11,7 @@ public class LinkCardViewModel : HubDirectiveViewModel
 
 	/// <summary>Rendered as a titled link column inside an {explore} accordion.</summary>
 	public bool IsColumn { get; init; }
+
+	/// <summary>Heading level of the column title: two below the enclosing {explore} title.</summary>
+	public int ColumnHeadingLevel { get; init; } = 4;
 }

@@ -38,7 +38,7 @@ if (isAssemblerApiExplorerEnabled()) {
             })
             expect(response?.ok()).toBeTruthy()
             await expect(
-                page.getByRole('heading', { name: 'API catalog' })
+                page.getByRole('heading', { name: 'Elastic APIs' })
             ).toBeVisible()
         })
 

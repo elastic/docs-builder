@@ -36,6 +36,7 @@ environments:
       ASSEMBLER_API_EXPLORER: true
       PAGE_FEEDBACK: true
       # NAVIGATION_PREVIEW: true
+    waf_integration_url: https://33d8ddf078ac.edge.captcha-sdk.awswaf.com/33d8ddf078ac/jsapi.js
   # TODO: remove 'local' and switch CI synthetics to use 'dev' explicitly once
   # NAVIGATION_PREVIEW is the default (at which point the pages-dropdown step
   # in navigation-test.journey.ts should be replaced with a top-nav step).
@@ -73,6 +74,7 @@ environments:
     allow_indexing: false
     feature_flags:
       AIR_GAPPED: true
+      ASSEMBLER_API_EXPLORER: true
 
 shared_configuration:
   stack: &stack

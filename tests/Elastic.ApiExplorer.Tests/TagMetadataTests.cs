@@ -2,17 +2,22 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
@@ -151,8 +156,45 @@ public class TagMetadataTests
 		var tagNavItem = FindTagNavigationItem(navigation, "transform");
 		tagNavItem.Should().NotBeNull();
 
-		// Should fallback to canonical name when no x-displayName
-		tagNavItem.NavigationTitle.Should().Be("transform");
+		// Should fallback to the canonical name, capitalized, when no x-displayName
+		tagNavItem.NavigationTitle.Should().Be("Transform");
+	}
+
+	[Test]
+	public async Task ParseTagMetadata_WithoutXDisplayName_CapitalizesPlainWordsAndKeepsCodeLikeNames()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "Test API", "version": "1.0.0" },
+		  "paths": {},
+		  "tags": [
+		    { "name": "elasticsearch projects" },
+		    { "name": "capabilities" },
+		    { "name": "BillingCostsAnalysis" },
+		    { "name": "ml_anomaly" },
+		    { "name": "v2 search" },
+		    { "name": "search v2" },
+		    { "name": "search APIs" },
+		    { "name": "tasks", "x-displayName": "Task management" }
+		  ]
+		}
+		""";
+
+		var (_, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+
+		var tags = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
+
+		tags["elasticsearch projects"].DisplayName.Should().Be("Elasticsearch projects");
+		tags["capabilities"].DisplayName.Should().Be("Capabilities");
+		tags["BillingCostsAnalysis"].DisplayName.Should().Be("BillingCostsAnalysis");
+		tags["ml_anomaly"].DisplayName.Should().Be("ml_anomaly");
+		tags["v2 search"].DisplayName.Should().Be("v2 search");
+		// Only the first word decides: later digits or capitals do not block capitalization
+		tags["search v2"].DisplayName.Should().Be("Search v2");
+		tags["search APIs"].DisplayName.Should().Be("Search APIs");
+		tags["tasks"].DisplayName.Should().Be("Task management");
 	}
 
 	[Test]
@@ -285,9 +327,23 @@ public class TagMetadataTests
 		tagNavItem.Id.Should().NotBe("Machine Learning Anomaly Detection APIs"); // Not the display name
 	}
 
+	/// <summary>Returns fixed headings so navigation tests cover plumbing; the heading parser has its own tests.</summary>
+	private sealed class HeadingsRenderer(IReadOnlyList<TocItem> headings) : IMarkdownStringRenderer
+	{
+		public List<string> Markdown { get; } = [];
+
+		public string Render(string markdown, IFileInfo? source) => string.Empty;
+
+		public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+		{
+			Markdown.Add(markdown);
+			return headings;
+		}
+	}
+
 	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
 		string openApiJson,
-		bool apiNavGroupingEnabled = false
+		IMarkdownStringRenderer? markdownRenderer = null
 	)
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -297,9 +353,8 @@ public class TagMetadataTests
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			configurationContext
 		);
-		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
 
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, markdownRenderer ?? NoopMarkdownStringRenderer.Instance);
 
 		// Parse the OpenAPI spec directly from JSON using a stream
 		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
@@ -403,13 +458,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "charlie", "Fruit Store"
+		// Assert - should be sorted alphabetically by display name: "Animal Zoo", "Charlie", "Fruit Store"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
 		// Verify sorted order
 		tagItems[0].NavigationTitle.Should().Be("Animal Zoo", "First tag should be 'Animal Zoo' (zebra with x-displayName)");
-		tagItems[1].NavigationTitle.Should().Be("charlie", "Second tag should be 'charlie' (canonical name, no x-displayName)");
+		tagItems[1].NavigationTitle.Should().Be("Charlie", "Second tag should be 'Charlie' (capitalized canonical name, no x-displayName)");
 		tagItems[2].NavigationTitle.Should().Be("Fruit Store", "Third tag should be 'Fruit Store' (apple with x-displayName)");
 	}
 
@@ -524,13 +579,13 @@ public class TagMetadataTests
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
-		// Assert - should be sorted alphabetically by canonical name: "alpha", "mike", "zebra"
+		// Assert - should be sorted alphabetically by canonical name: "Alpha", "Mike", "Zebra"
 		var tagItems = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
 		tagItems.Should().HaveCount(3);
 
-		tagItems[0].NavigationTitle.Should().Be("alpha", "Should sort by canonical name");
-		tagItems[1].NavigationTitle.Should().Be("mike", "Should sort by canonical name");
-		tagItems[2].NavigationTitle.Should().Be("zebra", "Should sort by canonical name");
+		tagItems[0].NavigationTitle.Should().Be("Alpha", "Should sort by canonical name");
+		tagItems[1].NavigationTitle.Should().Be("Mike", "Should sort by canonical name");
+		tagItems[2].NavigationTitle.Should().Be("Zebra", "Should sort by canonical name");
 	}
 
 	[Test]
@@ -610,7 +665,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
@@ -653,7 +708,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
@@ -753,7 +808,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var titles = navigation.NavigationItems.OfType<ClassificationNavigationItem>().Select(c => c.NavigationTitle).ToList();
@@ -804,7 +859,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson, apiNavGroupingEnabled: true);
+		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
@@ -994,5 +1049,189 @@ public class TagMetadataTests
 
 		var act = () => generator.CreateNavigation("test", openApiDocument);
 		act.Should().Throw<InvalidOperationException>().WithMessage("*tag URL segment conflict*");
+	}
+
+	[Test]
+	public async Task GroupIntro_WithHeadings_AddsNavItemsAndDocsMeasure()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": {
+			        "operationId": "get-dashboards",
+			        "tags": ["dashboards"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [
+			    {
+			      "name": "dashboards",
+			      "x-displayName": "Dashboards",
+			      "description": "# Ignored title\n\nGet started.\n\n## Panel types\n\nUse a panel.\n\n~~~\n# not a heading\n~~~\n\n## What's supported\n"
+			    }
+			  ]
+			}
+			""";
+
+		var renderer = new HeadingsRenderer([
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("What's supported", "whats-supported", 2)
+		]);
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson, renderer);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var tag = FindTagNavigationItem(navigation, "dashboards");
+		tag.Should().NotBeNull();
+
+		renderer.Markdown.Should().ContainSingle().Which.Should().Contain("## Panel types");
+		var headings = tag.NavigationItems.OfType<IntroHeadingNavigationItem>().ToArray();
+		headings.Select(heading => heading.NavigationTitle).Should().Equal("Panel types", "What's supported");
+		headings[0].Url.Should().Be($"{tag.Url}#panel-types");
+		headings[1].Url.Should().Be($"{tag.Url}#whats-supported");
+		tag
+			.NavigationItems
+			.Select(item => item.GetType())
+			.Should()
+			.Equal(typeof(IntroHeadingNavigationItem), typeof(IntroHeadingNavigationItem), typeof(OperationNavigationItem));
+
+		var html = await RenderTagAsync(tag);
+		html.Should().Contain("class=\"api-tag-description docs-measure\"");
+		html.Should().Contain("api-overview");
+	}
+
+	[Test]
+	public async Task GroupIntro_HeadingSharingAPostSectionAnchor_IsLeftOutOfTheSidebar()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": { "operationId": "get-dashboards", "tags": ["dashboards"], "responses": { "200": { "description": "ok" } } }
+			    }
+			  },
+			  "tags": [ { "name": "dashboards", "x-displayName": "Dashboards" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
+		tag.Should().NotBeNull();
+
+		var renderer = new HeadingsRenderer([
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("What's supported", "whats-supported", 2)
+		]);
+		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
+			renderer,
+			"## Panel types\n\n## What's supported\n",
+			tag.NavigationRoot.Url,
+			[new ApiSupplementalSection("Panel types", "Owned by the post section.")]
+		));
+
+		tag
+			.NavigationItems
+			.OfType<IntroHeadingNavigationItem>()
+			.Select(heading => heading.NavigationTitle)
+			.Should()
+			.Equal("What's supported");
+	}
+
+	[Test]
+	public async Task GroupIntro_WithoutDescription_OmitsMeasureAndHeadingNav()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/spaces": {
+			      "get": {
+			        "operationId": "get-spaces",
+			        "tags": ["spaces"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [ { "name": "spaces", "x-displayName": "Spaces" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+		var tag = FindTagNavigationItem(navigation, "spaces");
+		tag.Should().NotBeNull();
+		tag.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<OperationNavigationItem>();
+
+		var html = await RenderTagAsync(tag);
+		html.Should().NotContain("docs-measure");
+		html.Should().Contain("api-overview");
+		html.Should().Contain("Spaces");
+	}
+
+	[Test]
+	public async Task ProductLanding_Render_ShowsGroupedIndexWithTextMeasure()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/spaces": {
+			      "get": {
+			        "operationId": "get-spaces",
+			        "tags": ["spaces"],
+			        "responses": { "200": { "description": "ok" } }
+			      }
+			    }
+			  },
+			  "tags": [ { "name": "spaces", "x-displayName": "Spaces" } ]
+			}
+			""";
+
+		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var navigation = generator.CreateNavigation("kibana", document);
+
+		var html = await RenderIndexAsync(navigation.Index, navigation);
+		html.Should().Contain("class=\"docs-measure\"");
+		html.Should().Contain("api-index-group");
+		// Every endpoint stays in the page so the browser's find-in-page matches it.
+		html.Should().Contain("api-index-item");
+		html.Should().Contain("Spaces");
+		// Authentication and Servers are topics, so they sit above the index, not in a group.
+		html.Should().NotContain("api-index-item\" href=\"/api/doc/kibana/authentication");
+	}
+
+	private static Task<string> RenderTagAsync(TagNavigationItem tag) => RenderIndexAsync(tag.Index, tag);
+
+	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
+	{
+		var collector = new DiagnosticsCollector([]);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
+		var context = new BuildContext(
+			collector,
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			configurationContext
+		);
+		var renderContext = new ApiRenderContext(
+			context,
+			new OpenApiDocument(),
+			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context))
+		)
+		{ NavigationHtml = string.Empty, CurrentNavigation = current, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await index.Model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
 	}
 }

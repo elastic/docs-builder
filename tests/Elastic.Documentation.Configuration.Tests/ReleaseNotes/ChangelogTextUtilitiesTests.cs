@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Reflection;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.Documentation.ReleaseNotes;
 
@@ -59,6 +61,34 @@ public class ChangelogTextUtilitiesTests
 	public void StripSquareBracketPrefix_RemovesPrefix(string input, string expected)
 	{
 		var result = ChangelogTextUtilities.StripSquareBracketPrefix(input);
+		result.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("fix: Sanitize local tool names", "Sanitize local tool names")]
+	[Arguments("Fix: Do not error when role is not set", "Do not error when role is not set")]
+	[Arguments("feat(cases): bulk delete observables", "bulk delete observables")]
+	[Arguments("fix(apm)!: apply environment filter", "apply environment filter")]
+	[Arguments("fix create visualization", "fix create visualization")]
+	[Arguments("Fixes the sparkline", "Fixes the sparkline")]
+	[Arguments("fix:NoSpace", "fix:NoSpace")]
+	[Arguments("fix: ", "fix: ")]
+	[Arguments("Inbound Telemetry: Count events", "Inbound Telemetry: Count events")]
+	public void StripConventionalCommitPrefix_RemovesPrefix(string input, string expected)
+	{
+		var result = ChangelogTextUtilities.StripConventionalCommitPrefix(input);
+		result.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("[Cases] feat(cases): bulk delete observables", "Bulk delete observables")]
+	[Arguments("fix(apm): apply environment filter", "Apply environment filter")]
+	[Arguments("fix: don't return an empty response", "Don't return an empty response")]
+	[Arguments("Fix: Sanitize local tool names", "Sanitize local tool names")]
+	[Arguments("[Inference API] Add new endpoint", "Add new endpoint")]
+	public void StripTitlePrefix_CombinesAllSteps(string input, string expected)
+	{
+		var result = ChangelogTextUtilities.StripTitlePrefix(input);
 		result.Should().Be(expected);
 	}
 
@@ -244,5 +274,19 @@ public class ChangelogTextUtilitiesTests
 			"https://github.com/elastic/elasticsearch/pull/1"
 		]);
 		result.Should().Equal("https://github.com/elastic/elasticsearch/pull/1");
+	}
+
+	[Test]
+	public void AllRegexes_HaveAMatchTimeout()
+	{
+		var regexes = typeof(ChangelogTextUtilities)
+			.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+			.Where(method => method.ReturnType == typeof(Regex) && method.GetParameters().Length == 0)
+			.Select(method => (method.Name, Regex: (Regex)method.Invoke(null, null)!))
+			.ToList();
+
+		regexes.Should().NotBeEmpty();
+		foreach (var (name, regex) in regexes)
+			regex.MatchTimeout.Should().NotBe(Regex.InfiniteMatchTimeout, $"{name} needs a match timeout");
 	}
 }

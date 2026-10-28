@@ -2,14 +2,15 @@ import {
     connectToDiagnosticsStream,
     disconnectFromDiagnosticsStream,
 } from './diagnosticsStreamClient'
+import type { Mock } from 'vitest'
 
 describe('diagnosticsStreamClient', () => {
     const originalFetch = globalThis.fetch
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         disconnectFromDiagnosticsStream()
-        globalThis.fetch = jest.fn().mockResolvedValue({
+        globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 type: 'state',
@@ -30,14 +31,14 @@ describe('diagnosticsStreamClient', () => {
             configurable: true,
             get: () => 'complete',
         })
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     it('polls /_api/diagnostics/state after load instead of opening EventSource', async () => {
         connectToDiagnosticsStream()
         expect(globalThis.fetch).not.toHaveBeenCalled()
 
-        jest.runOnlyPendingTimers()
+        vi.runOnlyPendingTimers()
         await Promise.resolve()
 
         expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -55,14 +56,14 @@ describe('diagnosticsStreamClient', () => {
         connectToDiagnosticsStream()
         connectToDiagnosticsStream()
         window.dispatchEvent(new Event('load'))
-        jest.runOnlyPendingTimers()
+        vi.runOnlyPendingTimers()
         await Promise.resolve()
         await Promise.resolve()
         await Promise.resolve()
 
         expect(globalThis.fetch).toHaveBeenCalledTimes(1)
 
-        jest.advanceTimersByTime(1500)
+        vi.advanceTimersByTime(1500)
         await Promise.resolve()
         await Promise.resolve()
 
@@ -71,7 +72,7 @@ describe('diagnosticsStreamClient', () => {
 
     it('does not cancel an in-flight poll when the next tick is due', async () => {
         let signal: AbortSignal | undefined
-        globalThis.fetch = jest
+        globalThis.fetch = vi
             .fn()
             .mockImplementation((_url, init: RequestInit) => {
                 signal = init.signal ?? undefined
@@ -79,10 +80,10 @@ describe('diagnosticsStreamClient', () => {
             })
 
         connectToDiagnosticsStream()
-        jest.runOnlyPendingTimers()
+        vi.runOnlyPendingTimers()
         await Promise.resolve()
 
-        jest.advanceTimersByTime(3000)
+        vi.advanceTimersByTime(3000)
         await Promise.resolve()
 
         expect(globalThis.fetch).toHaveBeenCalledTimes(1)
@@ -91,12 +92,12 @@ describe('diagnosticsStreamClient', () => {
 
     it('stops polling on disconnect', async () => {
         connectToDiagnosticsStream()
-        jest.runOnlyPendingTimers()
+        vi.runOnlyPendingTimers()
         await Promise.resolve()
         disconnectFromDiagnosticsStream()
-        ;(globalThis.fetch as jest.Mock).mockClear()
+        ;(globalThis.fetch as Mock).mockClear()
 
-        jest.advanceTimersByTime(5000)
+        vi.advanceTimersByTime(5000)
         await Promise.resolve()
 
         expect(globalThis.fetch).not.toHaveBeenCalled()

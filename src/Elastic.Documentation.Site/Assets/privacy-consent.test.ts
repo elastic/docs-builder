@@ -4,7 +4,7 @@ function clickOn(html: string): Event {
     document.body.innerHTML = html
     const el = document.body.querySelector('a, button, svg')
     if (!el) throw new Error('missing fixture element')
-    return { target: el, preventDefault: jest.fn() } as unknown as Event
+    return { target: el, preventDefault: vi.fn() } as unknown as Event
 }
 
 describe('iubendaActionFor', () => {
@@ -41,7 +41,7 @@ describe('handlePrivacyConsentClick', () => {
     })
 
     it('opens preferences and stops the hash navigation', () => {
-        const openPreferences = jest.fn()
+        const openPreferences = vi.fn()
         window._iub = { cs: { api: { openPreferences } } }
         const event = clickOn(
             '<a class="iubenda-cs-preferences-link" href="#">Your Privacy Choices</a>'
@@ -64,7 +64,7 @@ describe('handlePrivacyConsentClick', () => {
     })
 
     it('does not intercept Notice at Collection', () => {
-        window._iub = { cs: { api: { openPreferences: jest.fn() } } }
+        window._iub = { cs: { api: { openPreferences: vi.fn() } } }
         const event = clickOn(
             '<a class="iubenda-cs-uspr-link" href="#">Notice at Collection</a>'
         )

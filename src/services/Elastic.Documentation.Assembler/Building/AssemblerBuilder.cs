@@ -207,6 +207,7 @@ public class AssemblerBuilder(
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
 		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
+		set.DocumentationSet.Configuration.Features.WafIntegrationUrl = set.AssembleContext.Environment.WafIntegrationUrl;
 	}
 
 	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)

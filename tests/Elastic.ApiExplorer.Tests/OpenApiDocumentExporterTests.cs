@@ -3,16 +3,20 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using FakeItEasy;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -44,11 +48,11 @@ public class OpenApiDocumentExporterTests
 		};
 
 		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
-		const int limitPerSource = 300; // Get 50 from each source (Elasticsearch and Kibana)
+		const int limitPerSource = 300;
 
 		// Act - Collect all documents, tracking source
 		var documents = new List<(string Url, string Source)>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current!.Execution.CancellationToken))
+		foreach (var doc in await FetchDocuments(exporter, limitPerSource, TestContext.Current!.Execution.CancellationToken))
 		{
 			if (!string.IsNullOrEmpty(doc.Path))
 			{
@@ -145,9 +149,7 @@ public class OpenApiDocumentExporterTests
 
 		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
 
-		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current!.Execution.CancellationToken))
-			documents.Add(doc);
+		var documents = await FetchDocuments(exporter, 100, TestContext.Current!.Execution.CancellationToken);
 
 		documents.Should().NotBeEmpty("the exporter should return documents");
 
@@ -159,6 +161,50 @@ public class OpenApiDocumentExporterTests
 			doc.Description.Should().NotContain("methods and paths for this operation", "the fixed method list is not the search hit");
 			doc.Description.Should().NotContain("method and path for this operation", "the fixed method list is not the search hit");
 		}
+	}
+
+	[Test]
+	public void ConvertToDocuments_KeyDiffersFromProduct_InfersFromProductAndKeepsKeyInUrl()
+	{
+		var inferrer = A.Fake<IDocumentInferrerService>();
+		A.CallTo(() => inferrer.InferForOpenApi(A<string>._)).Returns(new DocumentInferenceResult());
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/api/v1/deployments"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation { OperationId = "list-deployments", Summary = "List Deployments" }
+					}
+				}
+			}
+		};
+
+		var doc = new OpenApiDocumentExporter(StackVersions(), inferrer).ConvertToDocuments(spec, "cloud", "cloud-hosted").Single();
+
+		doc.Path.Should().StartWith("/docs/api/doc/cloud/operation/");
+		A.CallTo(() => inferrer.InferForOpenApi("cloud-hosted")).MustHaveHappenedOnceExactly();
+		A.CallTo(() => inferrer.InferForOpenApi("cloud")).MustNotHaveHappened();
+	}
+
+	private static async Task<List<DocumentationDocument>> FetchDocuments(OpenApiDocumentExporter exporter, int limitPerSource, Cancel ctx)
+	{
+		var documents = new List<DocumentationDocument>();
+		foreach (var (key, url) in new[]
+		{
+			("elasticsearch", "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json"),
+			("kibana", "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json")
+		})
+		{
+			await using var stream = await HttpClient.GetStreamAsync(url, ctx);
+			var settings = new OpenApiReaderSettings { RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
+			var spec = (await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx)).Document!;
+			documents.AddRange(exporter.ConvertToDocuments(spec, key).Take(limitPerSource));
+		}
+
+		return documents;
 	}
 
 	private static VersionsConfiguration StackVersions() =>
@@ -286,5 +332,52 @@ public class OpenApiDocumentExporterTests
 
 		doc.Title.Should().Be("Create or update an ES|QL data source");
 		doc.Description.Should().Be(raw);
+	}
+
+	[Test]
+	[Arguments("Generally available; Added in 9.5.0", 0)]
+	[Arguments("Generally available; Added in 9.2.0", 1)]
+	[Arguments("Deprecated; Deprecated in 9.5.0", 1)]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.5.0", 1)]
+	public void ConvertToDocuments_XState_SkipsOnlyApisIntroducedAfterCurrentStack(string xState, int expectedCount) =>
+		ExportWithState(xState).Should().HaveCount(expectedCount);
+
+	[Test]
+	public void ConvertToDocuments_XState_IndexesSameApplicabilityAsBadge()
+	{
+		var applies = ExportWithState("Technical Preview; added in 9.0.0").Single().Applies;
+
+		applies.Should().NotBeNull();
+		var entry = applies.Single();
+		entry.Type.Should().Be("stack");
+		entry.Lifecycle.Should().Be("preview");
+		entry.Version.Should().StartWith("9.0");
+	}
+
+	private static List<DocumentationDocument> ExportWithState(string xState)
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_thing"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation
+						{
+							OperationId = "thing",
+							Summary = "Get a thing",
+							Extensions = new Dictionary<string, IOpenApiExtension>
+							{
+								["x-state"] = new JsonNodeExtension(JsonValue.Create(xState))
+							}
+						}
+					}
+				}
+			}
+		};
+
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
 	}
 }

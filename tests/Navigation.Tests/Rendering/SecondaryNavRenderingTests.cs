@@ -173,59 +173,112 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
-	public async Task VersionDropdownRendersOnTheLegacyBarWhenRequested()
+	public async Task ApiIdentityShowsTheApiAndItsVersionsInOneMenu()
 	{
-		var html = await Render(
-			TopNav,
-			currentUrl: "/docs/api/doc/elasticsearch/",
-			showVersionDropdown: true,
-			navigationPreviewEnabled: false,
-			showLegacyBarVersionDropdown: true
+		var bar = new ApiIdentity(
+			"Elasticsearch API",
+			"<svg></svg>",
+			[
+				new ApiIdentityProductGroup(
+					"Elastic Stack",
+					[
+						new ApiIdentityProduct("Elasticsearch API", "/docs/api/doc/elasticsearch/", true, "<svg></svg>"),
+						new ApiIdentityProduct("Kibana APIs", "/docs/api/doc/kibana/", false, null)
+					]
+				),
+				new ApiIdentityProductGroup(null, [new ApiIdentityProduct("Alpha API", "/docs/api/doc/alpha/", false, null)])
+			],
+			"/docs/api/",
+			[
+				new NavigationSelectOption("main", "/docs/api/doc/elasticsearch/", true),
+				new NavigationSelectOption("v8", "/docs/api/doc/elasticsearch/v8/", false)
+			],
+			new ApiSpecDownload("/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml")
 		);
 
-		html.Should().Contain("bg-grey-10");
-		html.Should().Contain("secondary-nav-legacy-actions");
-		html.Should().Contain("<version-dropdown");
-		html.Should().Contain("data-testid=\"docs-version-dropdown\"");
-		html.Should().Contain("current-version='9.0");
-		html
-			.IndexOf("Reference", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("secondary-nav-legacy-actions", StringComparison.Ordinal));
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		// One trigger carries the API and the current version; one menu holds versions, then APIs, then All APIs.
+		CountOccurrences(html, "popovertarget=").Should().Be(1);
+		html.Should().Contain("id=\"api-hub-switcher\"").And.Contain("popovertarget=\"api-hub-menu\"");
+		html.Should().Contain("api-identity-version-label\">main</span>");
+		html.Should().Contain("id=\"api-version-switcher\"").And.Contain("href=\"/docs/api/doc/elasticsearch/v8/\"");
+		html.Should().Contain("api-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
+		// A group without a title gets no label, and the separator sits between the groups.
+		html.Should().NotContain("id=\"api-hub-group-1\"");
+		var order = new[] { "id=\"api-version-switcher\"", "Kibana APIs", "Alpha API", "All APIs" }.Select(
+			t => html.IndexOf(t, StringComparison.Ordinal)
+		).ToArray();
+		order.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
+		CountOccurrences(html, "api-menu-sep").Should().Be(3);
+		// The spec download lives in the page actions, not here.
+		html.Should().NotContain("Download OpenAPI spec");
+		html.Should().NotContain("id=\"secondary-nav");
 	}
 
 	[Test]
-	public async Task ProductSwitcherRendersOnTheLegacyBarBeforeTheVersionDropdown()
+	public async Task ApiIdentityTriggerDropsTheLatestSuffixButTheMenuKeepsIt()
 	{
-		var html = await Render(
-			TopNav,
-			currentUrl: "/docs/api/doc/elasticsearch/",
-			navigationPreviewEnabled: false,
-			showLegacyBarVersionDropdown: true,
-			productSwitcher: [
-				new NavigationSelectOption("Back to hub", "/docs/api/", false),
-				new NavigationSelectOption("Elasticsearch", "/docs/api/doc/elasticsearch/", true),
-				new NavigationSelectOption("Kibana", "/docs/api/doc/kibana/", false)
-			]
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[
+				new NavigationSelectOption("main", "/a/", false),
+				new NavigationSelectOption("v9 (latest)", "/a/v9/", true, "v9"),
+				new NavigationSelectOption("v8", "/a/v8/", false)
+			],
+			new ApiSpecDownload("/a.json", "/a.yaml")
 		);
 
-		html.Should().Contain("bg-grey-10");
-		html.Should().Contain("id=\"api-hub-switcher\"");
-		html.Should().Contain("secondary-nav-legacy-product");
-		html.Should().Contain("nav-select__chevron");
-		html.Should().Contain(">Elasticsearch<");
-		html.Should().Contain("href=\"/docs/api/\"");
-		html.Should().Contain(">Back to hub<");
-		html.Should().Contain("href=\"/docs/api/doc/kibana/\"");
-		html.Should().Contain(">Kibana<");
-		html.Should().Contain("secondary-nav-dropdown-link--selected");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html
-			.IndexOf("api-hub-switcher", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("secondary-nav-legacy-actions", StringComparison.Ordinal));
-		html.IndexOf("Reference", StringComparison.Ordinal).Should().BeLessThan(html.IndexOf("api-hub-switcher", StringComparison.Ordinal));
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("api-identity-version-label\">v9</span>").And.Contain("version v9\"");
+		html.Should().Contain(">v9 (latest)</a>");
+		CountOccurrences(html, "(latest)").Should().Be(1);
+	}
+
+	[Test]
+	public async Task ApiIdentityWithoutVersionsOrOtherApisIsPlainText()
+	{
+		var bar = new ApiIdentity("Alpha API", null, [], null, [], new ApiSpecDownload("/a.json", "/a.yaml"));
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("api-identity-product--static").And.Contain("Alpha API");
+		html.Should().NotContain("popovertarget");
+	}
+
+	[Test]
+	public async Task ApiIdentityWithVersionsOnlyListsTheVersions()
+	{
+		var bar = new ApiIdentity(
+			"Alpha API",
+			null,
+			[],
+			"/docs/api/",
+			[new NavigationSelectOption("main", "/a/", true), new NavigationSelectOption("v8", "/a/v8/", false)],
+			new ApiSpecDownload("/a.json", "/a.yaml")
+		);
+
+		var html = await _ApiIdentity.Create(bar).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		html.Should().Contain("id=\"api-version-switcher\"").And.NotContain("All APIs").And.NotContain("api-menu-sep");
+	}
+
+	static int CountOccurrences(string text, string value) => text.Split(value).Length - 1;
+
+	[Test]
+	public async Task DocsBarsCarryNoApiChrome()
+	{
+		foreach (var navigationPreviewEnabled in new[] { false, true })
+		{
+			var html = await Render(TopNav, "/docs/", navigationPreviewEnabled: navigationPreviewEnabled);
+
+			html.Should().NotContain("api-identity");
+			html.Should().NotContain("api-hub-switcher");
+		}
 	}
 
 	[Test]
@@ -291,28 +344,6 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 	}
 
 	[Test]
-	public async Task ApiChromeUsesCatalogHomeAndSpecDownload()
-	{
-		var model = CreateModel(TopNav, "/docs/api/doc/elasticsearch/", navigationPreviewEnabled: false) with
-		{
-			PageFeedbackSurface = "api",
-			ApiCatalogUrl = "/docs/api/",
-			SpecJsonUrl = "/docs/api/doc/elasticsearch.json",
-			SpecYamlUrl = "/docs/api/doc/elasticsearch.yaml",
-			LegacyBarProductSwitcher = [new NavigationSelectOption("Elasticsearch", "/docs/api/doc/elasticsearch/", true)]
-		};
-
-		var html = await _SecondaryNav.Create(model).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
-
-		html.Should().Contain(">APIs</a>");
-		html.Should().NotContain("Release notes").And.NotContain("Troubleshoot").And.NotContain("Reference");
-		html.Should().Contain("Download source");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.json\"").And.Contain("download");
-		html.Should().Contain("href=\"/docs/api/doc/elasticsearch.yaml\"");
-		html.Should().NotContain("<version-dropdown");
-	}
-
-	[Test]
 	public async Task UnrelatedPagesLeaveEveryItemInactive()
 	{
 		var html = await Render(TopNav, currentUrl: "/docs/troubleshoot/");
@@ -326,22 +357,18 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		string currentUrl,
 		IRootNavigationItem<INavigationModel, INavigationItem>? root = null,
 		bool showVersionDropdown = false,
-		bool navigationPreviewEnabled = true,
-		bool showLegacyBarVersionDropdown = false,
-		IReadOnlyList<NavigationSelectOption>? productSwitcher = null
+		bool navigationPreviewEnabled = true
 	)
 	{
 		var model = CreateModel(topNav, currentUrl, root, navigationPreviewEnabled);
-		if (showVersionDropdown || showLegacyBarVersionDropdown || productSwitcher is { Count: > 0 })
+		if (showVersionDropdown)
 		{
 			model = model with
 			{
-				ShowVersionDropdown = showVersionDropdown,
-				ShowLegacyBarVersionDropdown = showLegacyBarVersionDropdown,
+				ShowVersionDropdown = true,
 				AllVersionsUrl = "/docs/versions/",
-				CurrentVersion = showLegacyBarVersionDropdown ? "9.0+" : "8.19",
-				VersionDropdownSerializedModel = "[]",
-				LegacyBarProductSwitcher = productSwitcher ?? []
+				CurrentVersion = "8.19",
+				VersionDropdownSerializedModel = "[]"
 			};
 		}
 

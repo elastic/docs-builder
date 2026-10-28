@@ -11,6 +11,7 @@ export interface DocsConfig {
     rootPath: string // '/docs' for assembler, '' for codex and isolated
     apiBasePath: string // '/docs/_api' for assembler, '/api' for codex
     airGapped: boolean
+    wafIntegrationUrl?: string // AWS WAF JS SDK URL; unset means plain fetch
 }
 
 declare global {

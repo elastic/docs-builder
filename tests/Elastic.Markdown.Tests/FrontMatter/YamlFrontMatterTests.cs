@@ -2,15 +2,214 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Diagnostics;
+using Elastic.Markdown.IO;
+using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FrontMatter;
+
+// Regression coverage for `layout:` front matter: MarkdownPageLayoutConverter must be looked up by
+// SharpYaml for the *nullable* enum type (YamlFrontMatter.Layout is `MarkdownPageLayout?`), not just
+// the non-nullable enum, or every hyphenated value below fails with "Invalid enum scalar".
+public class LayoutLandingPage() : DirectiveTest("""
+	---
+	layout: landing-page
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.LandingPage);
+	}
+}
+
+public class LayoutNotFound() : DirectiveTest("""
+	---
+	layout: not-found
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.NotFound);
+	}
+}
+
+public class LayoutArchive() : DirectiveTest("""
+	---
+	layout: archive
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.Archive);
+	}
+}
+
+public class LayoutFullSearch() : DirectiveTest("""
+	---
+	layout: full-search
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.FullSearch);
+	}
+}
+
+public class LayoutHub() : DirectiveTest("""
+	---
+	layout: hub
+	---
+
+	:::{hero}
+	:title: Test Page
+	:::
+	""")
+{
+	[Test]
+	public void ReadsLayout()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().Be(MarkdownPageLayout.Hub);
+	}
+}
+
+public class LayoutOmitted() : DirectiveTest("""
+	# Test Page
+	""")
+{
+	[Test]
+	public void LayoutIsNull()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.YamlFrontMatter.Layout.Should().BeNull();
+	}
+}
+
+// Regression coverage for the diagnostics wiring in `YamlSerialization.Deserialize`: an unmapped
+// front-matter key is an error reported at the key's file line (the body starts below the opening `---`).
+// Comment-only front matter deserializes to null. It must read as empty front matter, not fail the page.
+public class CommentOnlyFrontMatter() : DirectiveTest("""
+	---
+	# no keys yet
+	---
+
+	# Test Page
+	""")
+{
+	[Test]
+	public void ReadsAsEmpty()
+	{
+		Collector.Diagnostics.Should().BeEmpty();
+		File.YamlFrontMatter.Should().NotBeNull();
+		File.Title.Should().Be("Test Page");
+	}
+}
+
+public class UnknownFrontMatterKeyIsAHint() : DirectiveTest(
+	"""
+	---
+	navigation_title: Test
+	navigaton_title: typo
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ReportsHintAtFileLineWithSuggestion()
+	{
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Line.Should().Be(3);
+		diagnostic.Column.Should().Be(1);
+		diagnostic.Length.Should().Be("navigaton_title".Length);
+		diagnostic.Message.Should().Contain("Unknown key 'navigaton_title'").And.Contain("Did you mean 'navigation_title'?");
+	}
+}
+
+public class UnknownFrontMatterKeyWithoutSuggestionListsValidKeys() : DirectiveTest(
+	"""
+	---
+	totally_unknown_key: some-value
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ListsValidKeys()
+	{
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Line.Should().Be(2);
+		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'").And.Contain("Valid keys:").And.Contain("navigation_title");
+	}
+}
+
+public class AllUnknownFrontMatterKeysAreHints() : DirectiveTest(
+	"""
+	---
+	type: connector
+	comment: Something
+	navigation_title: Test
+	---
+
+	# Test Page
+	"""
+)
+{
+	[Test]
+	public void ReportsOneHintPerKeyAndNoErrors()
+	{
+		Collector.Errors.Should().Be(0);
+		Collector.Diagnostics.Should().HaveCount(2).And.OnlyContain(d => d.Severity == Severity.Hint);
+		Collector
+			.Diagnostics
+			.Select(d => d.Message)
+			.Should()
+			.Contain(m => m.Contains("Unknown key 'type'"))
+			.And
+			.Contain(m => m.Contains("Unknown key 'comment'"));
+	}
+}
 
 public class YamlFrontMatterTests() : DirectiveTest(
 	"""
 ---
 navigation_title: "Documentation Guide"
+meta_title: "Elastic Docs for {{key}}"
 sub:
   key: "value"
 ---
@@ -24,6 +223,9 @@ sub:
 
 	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide");
+
+	[Test]
+	public void ReadsMetaTitle() => File.MetaTitle.Should().Be("Elastic Docs for value");
 
 	[Test]
 	public void ReadsSubstitutions()
@@ -59,6 +261,21 @@ sub:
 {
 	[Test]
 	public void ReadsNavigationTitle() => File.NavigationTitle.Should().Be("Documentation Guide: value");
+}
+
+public class MetaTitleEmptyAfterSubstitution() : DirectiveTest(
+	"""
+---
+title: Elastic Docs v3
+meta_title: "{{empty}}"
+sub:
+  empty: ""
+---
+"""
+)
+{
+	[Test]
+	public void TreatsAnEmptyResultAsNoOverride() => File.MetaTitle.Should().BeNull();
 }
 
 public class ProductsSingle() : DirectiveTest("""
