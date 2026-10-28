@@ -33,6 +33,34 @@ public static class MarkdownNavigationTitleReader
 		return TitleCaseFromFileName(markdownFile.Name);
 	}
 
+	/// <summary>The text of the first level-one heading after the front matter, or null when the file has none or cannot be read.</summary>
+	public static string? GetFirstHeading(IFileSystem readFileSystem, IFileInfo markdownFile)
+	{
+		try
+		{
+			var inFrontMatter = false;
+			var lineNumber = 0;
+			foreach (var line in readFileSystem.File.ReadLines(markdownFile.FullName))
+			{
+				lineNumber++;
+				if (line.Trim() == "---" && (lineNumber == 1 || inFrontMatter))
+				{
+					inFrontMatter = !inFrontMatter;
+					continue;
+				}
+
+				if (!inFrontMatter && line.StartsWith("# ", StringComparison.Ordinal))
+					return line[2..].Trim();
+			}
+		}
+		catch (IOException)
+		{
+			// A missing child file is reported where the page is built.
+		}
+
+		return null;
+	}
+
 	private static string? ReadFrontMatterNavigationTitle(string content)
 	{
 		if (!content.StartsWith("---"))

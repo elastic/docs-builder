@@ -63,7 +63,7 @@ public record ApiOperation(
 	}
 }
 
-public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem
+public class OperationNavigationItem : ILeafNavigationItem<ApiOperation>, IEndpointOrOperationNavigationItem, IApiAliasedNavigationItem
 {
 	public OperationNavigationItem(
 		string? urlPathPrefix,

@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
@@ -165,6 +166,13 @@ public static class ApiOverviewBuilder
 						Url = schemaItem.Url,
 						SchemaId = schemaItem.Model.SchemaId
 					});
+					break;
+				// The landing page lists topics in its own block, so the Topics heading adds no row.
+				case TopicsNavigationItem topics:
+					AddProductRows(topics, rows, versionsConfig, designSystem);
+					break;
+				case TopicNavigationItem topic:
+					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.MarkdownPage, Title = topic.NavigationTitle, Url = topic.Url });
 					break;
 				case SimpleMarkdownNavigationItem markdownPage:
 					rows.Add(new ApiOverviewRow

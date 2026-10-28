@@ -16,9 +16,12 @@ public sealed record XTagGroups(IReadOnlyList<string> OrderedGroupNames, IReadOn
 /// <summary>Metadata parsed from a global OpenAPI tag object.</summary>
 public sealed record OpenApiTagMetadata(string DisplayName, string Description, ApiTagExternalDoc? ExternalDocs);
 
+/// <summary>One entry of the <c>x-topics</c> document extension: a page of prose with a title.</summary>
+public sealed record OpenApiTopic(string Title, string Content);
+
 /// <summary>
 /// The single home for reading Elastic's <c>x-*</c> OpenAPI extensions
-/// (<c>x-tagGroups</c>, <c>x-displayName</c>, <c>x-namespace</c>, <c>x-api-name</c>,
+/// (<c>x-tagGroups</c>, <c>x-topics</c>, <c>x-displayName</c>, <c>x-namespace</c>, <c>x-api-name</c>,
 /// <c>x-beta</c>, <c>x-codeSamples</c>) out of the raw JsonNode extension values.
 /// </summary>
 public static class OpenApiExtensionReader
@@ -98,6 +101,34 @@ public static class OpenApiExtensionReader
 
 		return new XTagGroups(orderedGroupNames, tagToGroup);
 	}
+
+	/// <summary>Parses the <c>x-topics</c> document extension in spec order. Entries without a title are skipped.</summary>
+	public static IReadOnlyList<OpenApiTopic> ParseXTopics(OpenApiDocument openApiDocument)
+	{
+		if (openApiDocument.Extensions?.TryGetValue("x-topics", out var extension) != true || extension is not JsonNodeExtension jsonExt)
+			return [];
+
+		if (jsonExt.Node is not JsonArray array)
+			return [];
+
+		var topics = new List<OpenApiTopic>(array.Count);
+		foreach (var element in array)
+		{
+			if (element is not JsonObject topic)
+				continue;
+
+			var title = ReadString(topic, "title");
+			if (string.IsNullOrWhiteSpace(title))
+				continue;
+
+			topics.Add(new OpenApiTopic(title.Trim(), ReadString(topic, "content") ?? string.Empty));
+		}
+
+		return topics;
+	}
+
+	private static string? ReadString(JsonObject obj, string property) =>
+		obj.TryGetPropertyValue(property, out var node) && node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
 	/// <summary>
 	/// Parses global OpenAPI tag objects: description, <c>externalDocs</c>, and <c>x-displayName</c>.

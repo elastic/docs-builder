@@ -97,9 +97,24 @@ public static partial class ApiUrlBuilder
 
 	public const string AuthenticationSegment = "authentication";
 	public const string ServersSegment = "servers";
+	public const string TopicSegment = "topic";
 
 	/// <summary>Child markdown slugs that collide with generated API Explorer paths.</summary>
-	public static readonly string[] ReservedChildSegments = ["types", "group", "operation", AuthenticationSegment, ServersSegment];
+	public static readonly string[] ReservedChildSegments =
+	[
+		"types",
+		"group",
+		"operation",
+		TopicSegment,
+		AuthenticationSegment,
+		ServersSegment
+	];
+
+	/// <summary>URL leaf for an <c>x-topics</c> page under <c>.../topic/</c>, the same as Bump.sh: <c>Rate limiting</c> becomes <c>topic-rate-limiting</c>.</summary>
+	public static string TopicMoniker(string title) => $"topic-{TagSlug(title)}";
+
+	public static string TopicUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{TopicSegment}/{moniker}";
 
 	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";

@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
@@ -152,25 +153,24 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Add explicit children declared via 'children:' below the landing page and before the
-		// generated OpenAPI groups, in declared order.
+		// Topic pages sit under a Topics heading below the landing page and before the generated OpenAPI groups.
+		// They come from the spec's x-topics; a spec without them falls back to the docset's children: pages.
 		var finalNavigationItems = new List<INavigationItem>();
-		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
+		var children = ChildFiles(apiConfig, versionMajor);
+		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
+		topicsNavigation.NavigationItems = topics.Count > 0
+			? CreateTopicNavigationItems(apiUrlSuffix, topics, children, topicsNavigation)
+			: CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation);
+		if (topicsNavigation.NavigationItems.Count > 0)
+			finalNavigationItems.Add(topicsNavigation);
 
-		if (apiConfig?.Children.Count > 0)
-		{
-			foreach (var childFile in apiConfig.Children)
-			{
-				if (ApiSupplementalName.TryParseVersionSuffix(childFile.Name, out _, out var fileMajor) && fileMajor != versionMajor)
-					continue;
-
-				var childNavItem = CreateMarkdownNavigationItem(apiUrlSuffix, childFile, rootNavigation, rootNavigation, markdownSlugs);
-				finalNavigationItems.Add(childNavItem);
-			}
-		}
-
+		// A topic titled Authentication replaces the generated Authentication page; the topic page still lists the schemes.
+		var hasAuthenticationTopic = topics.Any(ApiTopicPage.IsAuthentication);
 		finalNavigationItems.AddRange(
-			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument)
+			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
+				item => !(hasAuthenticationTopic && item.Model.Kind == ApiStructuralKind.Authentication)
+			)
 		);
 
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
@@ -185,6 +185,113 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 		return rootNavigation;
 	}
+
+	private static IReadOnlyList<IFileInfo> ChildFiles(ResolvedApiConfiguration? apiConfig, int? versionMajor) =>
+		apiConfig is null
+			? []
+			: [
+				.. apiConfig.Children.Where(
+					file => !ApiSupplementalName.TryParseVersionSuffix(file.Name, out _, out var fileMajor) || fileMajor == versionMajor
+				)
+			];
+
+	private List<INavigationItem> CreateTopicNavigationItems(
+		string apiUrlSuffix,
+		IReadOnlyList<OpenApiTopic> topics,
+		IReadOnlyList<IFileInfo> children,
+		TopicsNavigationItem topicsNavigation
+	)
+	{
+		var replacedChildren = ReplacedChildUrls(apiUrlSuffix, topics, children);
+		var items = new List<INavigationItem>(topics.Count);
+		foreach (var topic in topics)
+		{
+			if (ApiTopicPage.IsAuthentication(topic))
+			{
+				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					topicsNavigation.Landing,
+					topic
+				);
+				authentication.Parent = topicsNavigation;
+				items.Add(authentication);
+				continue;
+			}
+
+			var url = ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, ApiUrlBuilder.TopicMoniker(topic.Title));
+			items.Add(new TopicNavigationItem(url, new ApiTopicPage(topic.Title, topic.Content), topicsNavigation.Landing, topicsNavigation)
+			{
+				AliasUrls = replacedChildren.TryGetValue(topic.Title, out var aliases) ? aliases : []
+			});
+		}
+
+		return items;
+	}
+
+	/// <summary>
+	/// The spec's topics replace the docset's <c>children:</c> pages. A child forwards to the topic whose title matches its
+	/// first heading, so its URL keeps working.
+	/// </summary>
+	private Dictionary<string, IReadOnlyList<string>> ReplacedChildUrls(
+		string apiUrlSuffix,
+		IReadOnlyList<OpenApiTopic> topics,
+		IReadOnlyList<IFileInfo> children
+	)
+	{
+		var titles = topics
+			.Where(topic => !ApiTopicPage.IsAuthentication(topic))
+			.Select(static topic => topic.Title)
+			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var aliases = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+		foreach (var child in children)
+		{
+			var heading = MarkdownNavigationTitleReader.GetFirstHeading(context.ReadFileSystem, child);
+			if (heading is null || !titles.Contains(heading))
+			{
+				_logger.LogWarning(
+					"API '{ApiKey}' ignores children: page '{File}', because the spec declares x-topics and none of them is titled '{Heading}'.",
+					apiUrlSuffix,
+					child.Name,
+					heading
+				);
+				continue;
+			}
+
+			_logger.LogInformation(
+				"API '{ApiKey}' ignores children: page '{File}' and forwards it to the x-topics entry '{Heading}'.",
+				apiUrlSuffix,
+				child.Name,
+				heading
+			);
+			if (!aliases.TryGetValue(heading, out var urls))
+				aliases[heading] = urls = [];
+			urls.Add(ChildUrl(apiUrlSuffix, SimpleMarkdownNavigationItem.CreateSlugFromFile(child)));
+		}
+
+		return aliases.ToDictionary(
+			static pair => pair.Key,
+			static pair => (IReadOnlyList<string>)pair.Value,
+			StringComparer.OrdinalIgnoreCase
+		);
+	}
+
+	private List<INavigationItem> CreateChildNavigationItems(
+		string apiUrlSuffix,
+		IReadOnlyList<IFileInfo> children,
+		TopicsNavigationItem topicsNavigation
+	)
+	{
+		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		return [
+			.. children.Select(
+				child => CreateMarkdownNavigationItem(apiUrlSuffix, child, topicsNavigation.Landing, topicsNavigation, markdownSlugs)
+			)
+		];
+	}
+
+	private string ChildUrl(string apiUrlSuffix, string slug) =>
+		$"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
 
 	private SimpleMarkdownNavigationItem CreateMarkdownNavigationItem(
 		string apiUrlSuffix,
@@ -206,7 +313,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
 
-		var url = $"{ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix)}/{slug}/";
+		var url = ChildUrl(apiUrlSuffix, slug);
 		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
 
 		// Create simple navigation item - will be handled by regular documentation system

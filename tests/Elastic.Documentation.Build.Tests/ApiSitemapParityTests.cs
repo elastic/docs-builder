@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Build.Tests;
 // TODO: Delete this class once the API Explorer migration (elastic/docs-eng-team#436) is finalised.
 public class ApiSitemapParityTests
 {
-	// Mirrors modules/elastic-docs-v3/api-root-redirects.json in elastic/docs-infra (#459).
+	// Mirrors modules/elastic-docs-v3/api-root-redirects.json in elastic/docs-infra (#459), which the native viewer resolves exact match first.
 	private const string ApiDocPrefix = "/docs/api/doc/";
 	private static readonly IReadOnlyDictionary<string, string> RedirectedRoots = new Dictionary<string, string>
 	{
@@ -18,6 +18,19 @@ public class ApiSitemapParityTests
 		["elastic-cloud-serverless"] = "cloud-serverless"
 	};
 	private static readonly IReadOnlySet<string> GoneRoots = new HashSet<string> { "observability-serverless" };
+
+	// Exact page redirects from the same file. Bump.sh served a Servers page for specs that declare no servers,
+	// and Cloud Billing renamed its Budgets tag.
+	private static readonly IReadOnlyDictionary<string, string> RedirectedPages = new Dictionary<string, string>
+	{
+		["/docs/api/doc/elasticsearch/servers"] = "/docs/api/doc/elasticsearch",
+		["/docs/api/doc/elasticsearch/v8/servers"] = "/docs/api/doc/elasticsearch/v8",
+		["/docs/api/doc/elasticsearch/v9/servers"] = "/docs/api/doc/elasticsearch/v9",
+		["/docs/api/doc/elasticsearch-serverless/servers"] = "/docs/api/doc/elasticsearch-serverless",
+		["/docs/api/doc/cloud-enterprise/servers"] = "/docs/api/doc/cloud-enterprise",
+		["/docs/api/doc/cloud-enterprise/v3/servers"] = "/docs/api/doc/cloud-enterprise/v3",
+		["/docs/api/doc/cloud-billing/group/endpoint-budgets"] = "/docs/api/doc/cloud-billing/group/endpoint-billing-budgets"
+	};
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
@@ -35,8 +48,10 @@ public class ApiSitemapParityTests
 		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
 		await Assert.That(productionUrls).IsNotEmpty();
 		var gone = productionUrls.Where(url => GoneRoots.Contains(RootOf(url))).ToArray();
-		var redirected = productionUrls.Where(url => RedirectedRoots.ContainsKey(RootOf(url))).ToArray();
-		// Redirected pages are served by a prefix redirect, so verify the page exists at its redirect target.
+		var redirected = productionUrls.Where(
+			url => RedirectedPages.ContainsKey(url.AbsolutePath) || RedirectedRoots.ContainsKey(RootOf(url))
+		).ToArray();
+		// Redirected pages are served by an exact or prefix redirect, so verify the page exists at its redirect target.
 		var auditedPaths = productionUrls.Except(gone).Select(RedirectTarget).Distinct().ToArray();
 		var outputRoot = Environment.GetEnvironmentVariable("API_SITEMAP_PARITY_OUTPUT")
 			?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
@@ -70,6 +85,9 @@ public class ApiSitemapParityTests
 
 	private static string RedirectTarget(Uri url)
 	{
+		if (RedirectedPages.TryGetValue(url.AbsolutePath, out var page))
+			return page;
+
 		var root = RootOf(url);
 		return RedirectedRoots.TryGetValue(root, out var newRoot)
 			? string.Concat(ApiDocPrefix, newRoot, url.AbsolutePath.AsSpan(ApiDocPrefix.Length + root.Length))

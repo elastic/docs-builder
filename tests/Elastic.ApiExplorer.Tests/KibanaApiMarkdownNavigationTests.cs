@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -79,7 +80,13 @@ public class KibanaApiMarkdownNavigationTests
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
-		var introNav = navigation.NavigationItems.OfType<SimpleMarkdownNavigationItem>().First();
+		var introNav = navigation
+			.NavigationItems
+			.OfType<TopicsNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<SimpleMarkdownNavigationItem>()
+			.First();
 
 		return (navigation, introNav, context, doc);
 	}
@@ -120,13 +127,14 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Test]
-	public void IntroNav_ShouldAppearFirstInNavigation()
+	public void IntroNav_ShouldAppearFirstUnderTopicsHeading()
 	{
 		var (navigation, introNav) = SetupKibanaNavigation();
 
-		var firstItem = navigation.NavigationItems.First();
-		firstItem.Should().Be(introNav);
-		firstItem.Should().BeOfType<SimpleMarkdownNavigationItem>();
+		var topics = navigation.NavigationItems.First().Should().BeOfType<TopicsNavigationItem>().Subject;
+		topics.NavigationTitle.Should().Be("Topics");
+		topics.NavigationItems.First().Should().Be(introNav);
+		introNav.Parent.Should().Be(topics);
 	}
 
 	[Test]
