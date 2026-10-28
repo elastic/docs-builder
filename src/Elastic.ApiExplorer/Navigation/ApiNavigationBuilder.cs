@@ -172,22 +172,28 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
 			? topLevelNavigationItems
 			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
-		if (finalNavigationItems.Count > 0 && endpointItems.Count > 0)
-			finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-		if (endpointItems.Count > 0)
-			finalNavigationItems.AddRange(endpointItems);
-
+		AddSection(finalNavigationItems, endpointItems, rootNavigation);
 		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
-		if (typesNavigation is not null)
-		{
-			if (finalNavigationItems.Count > 0)
-				finalNavigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
-			finalNavigationItems.Add(typesNavigation);
-		}
+		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
 
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
+	}
+
+	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
+	private static void AddSection(
+		List<INavigationItem> navigationItems,
+		IReadOnlyList<INavigationItem> section,
+		LandingNavigationItem rootNavigation
+	)
+	{
+		if (section.Count == 0)
+			return;
+
+		if (navigationItems.Count > 0)
+			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
+		navigationItems.AddRange(section);
 	}
 
 	private void CreateTagNavigationItems(
