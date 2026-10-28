@@ -668,6 +668,8 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 			renderer.WriteLine($"   - {option.Label}: {option.Description}");
 			if (!string.IsNullOrEmpty(option.Code))
 				renderer.WriteLine($"     `{option.Code}`");
+			foreach (var command in option.Commands)
+				renderer.WriteLine($"     - {command.Label}: `{command.Code}`");
 			if (!string.IsNullOrEmpty(option.Url))
 				renderer.WriteLine($"     [{option.UrlLabel ?? "Get started"}]({HubLinkForLlm(renderer, option.Url)})");
 		}

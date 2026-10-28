@@ -228,20 +228,21 @@
 		--code-size: var(--text-xs);
 		--code-leading: 1.2;
 	}
-	/* A long command scrolls sideways inside its box instead of being clipped. */
+	/* A long command wraps inside its box, so the whole command stays visible.
+	   The box keeps the option button's height for a one-line command. */
 	.hub-get-started .hub-get-started-install pre {
 		display: flex;
 		align-items: center;
 		box-sizing: border-box;
-		height: 37px;
+		min-height: 37px;
 		margin: 0;
-		padding: 0 36px 0 12px;
-		overflow-x: auto;
+		padding: 8px 36px 8px 12px;
 		background: var(--color-ink-navy);
 		border-radius: 8px;
 	}
 	.hub-get-started .hub-get-started-install code {
-		white-space: nowrap;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 
 	.hub-get-started .hub-get-started-track {
@@ -383,8 +384,35 @@
 		line-height: 1.45;
 	}
 	.hub-get-started .hub-get-started-option .hub-get-started-install,
+	.hub-get-started .hub-get-started-option .hub-get-started-commands,
 	.hub-get-started .hub-get-started-option-btn {
 		margin-top: auto;
+	}
+	/* Labeled variants of one command, stacked, each in its own copyable chip. */
+	.hub-get-started .hub-get-started-commands {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	/* Stacked chips share one width, so their edges line up. */
+	.hub-get-started .hub-get-started-commands .hub-get-started-install {
+		width: 100%;
+		margin-top: 0;
+	}
+	.hub-get-started .hub-get-started-command-label {
+		font-size: var(--text-sm);
+		font-weight: 600;
+		color: var(--color-ink-light, #4c4c4c);
+	}
+	.hub-get-started .hub-get-started-command-label:not(:first-child) {
+		margin-top: 8px;
+	}
+	/* A command stack is taller than a button, so a button beside one stays under its own
+	   text instead of dropping to the bottom of the row. */
+	.hub-get-started
+		.hub-get-started-fork:has(.hub-get-started-commands)
+		.hub-get-started-option-btn {
+		margin-top: 0;
 	}
 	/* Same height as the command chip, and smaller than the body type. */
 	.hub-get-started .hub-get-started-option-btn {

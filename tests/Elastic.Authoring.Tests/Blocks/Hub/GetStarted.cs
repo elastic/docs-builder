@@ -260,3 +260,60 @@ public class GetStartedWithAFirstStepThatHasNoOptions : MarkdownTest
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
 }
+
+public class GetStartedWithLabeledCommands : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Run it
+		    options:
+		      - label: Run locally
+		        commands:
+		          - label: Server only
+		            code: install --server-only
+		          - label: Server and UI
+		            code: install
+		        language: sh
+		      - label: Cloud
+		        url: /index.md
+		:::
+		""";
+
+	[Test, DisplayName("labels each command")]
+	public async Task LabelsEachCommand() =>
+		await Docs.ConvertsToContainingRawHtml("""<span class="hub-get-started-command-label">Server and UI</span>""");
+
+	[Test, DisplayName("renders each command in its own code block")]
+	public async Task RendersEachCommandInItsOwnCodeBlock()
+	{
+		await Docs.ConvertsToContainingHtml("""<code class="language-sh">install --server-only</code>""");
+		await Docs.ConvertsToContainingHtml("""<code class="language-sh">install</code>""");
+	}
+
+	[Test, DisplayName("has no errors")]
+	public async Task HasNoErrors() => await Docs.HasNoErrors();
+}
+
+public class GetStartedWithCodeAndCommands : MarkdownTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Run it
+		    options:
+		      - label: Run locally
+		        code: install
+		        commands:
+		          - label: Server only
+		            code: install --server-only
+		:::
+		""";
+
+	[Test, DisplayName("rejects code and commands together")]
+	public async Task RejectsCodeAndCommandsTogether() => await Docs.HasError("either `code` or `commands`");
+}
