@@ -20,6 +20,17 @@ public record ApiTopicPage(string Title, string Content) : IApiModel<TopicViewMo
 	/// <summary>A topic titled Authentication becomes the <c>/authentication</c> page, as on Bump.sh.</summary>
 	public bool IsAuthentication => string.Equals(Title, ApiUrlBuilder.AuthenticationSegment, StringComparison.OrdinalIgnoreCase);
 
+	/// <summary>
+	/// True when a <c>children:</c> page covers this topic: its first heading matches the title, or its text matches the
+	/// content, ignoring whitespace differences.
+	/// </summary>
+	public bool IsCoveredBy(string? heading, string? body) =>
+		string.Equals(heading, Title, StringComparison.OrdinalIgnoreCase)
+			|| (!string.IsNullOrWhiteSpace(Content) && CollapseWhitespace(body) == CollapseWhitespace(Content));
+
+	private static string CollapseWhitespace(string? text) =>
+		string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
 	public TopicViewModel? CreatePageModel(ApiRenderContext context) => TopicViewModel.Create(this, context);
 
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, TopicViewModel? pageModel, Cancel ctx = default)

@@ -113,8 +113,12 @@ public static partial class ApiUrlBuilder
 	/// <summary>URL leaf for an <c>x-topics</c> page under <c>.../topic/</c>, the same as Bump.sh: <c>Rate limiting</c> becomes <c>topic-rate-limiting</c>.</summary>
 	public static string TopicMoniker(string title) => $"topic-{TagSlug(title)}";
 
-	public static string TopicUrl(string? urlPathPrefix, string apiUrlSuffix, string moniker) =>
-		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{TopicSegment}/{moniker}";
+	public static string TopicUrl(string? urlPathPrefix, string apiUrlSuffix, string title) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{TopicSegment}/{TopicMoniker(title)}";
+
+	/// <summary>URL of a <c>children:</c> page, from its file slug.</summary>
+	public static string ChildUrl(string? urlPathPrefix, string apiUrlSuffix, string slug) =>
+		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{slug}/";
 
 	public static string AuthenticationUrl(string? urlPathPrefix, string apiUrlSuffix) =>
 		$"{ProductRoot(urlPathPrefix, apiUrlSuffix)}/{AuthenticationSegment}";
