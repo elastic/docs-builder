@@ -86,12 +86,32 @@ public class TopicPageTests
 			.Cast<TopicNavigationItem>()
 			.Select(t => (t.NavigationTitle, t.Url))
 			.Should()
-			.Equal(("Principles", "/api/doc/cloud/topic/topic-principles"), ("Rate limiting", "/api/doc/cloud/topic/topic-rate-limiting"));
+			.Equal(("Rate limiting", "/api/doc/cloud/topic/topic-rate-limiting"), ("Principles", "/api/doc/cloud/topic/topic-principles"));
 		items.Should().ContainSingle(item => item is SidebarSeparatorNavigationItem);
 		items
 			.IndexOf(items.OfType<SidebarSeparatorNavigationItem>().Single())
 			.Should()
 			.BeLessThan(items.FindIndex(item => item is TagNavigationItem));
+	}
+
+	[Test]
+	public async Task CreateNavigation_XTopics_PinsAuthenticationAndRateLimitingThenSortsByTitle()
+	{
+		var navigation = await Navigation(Spec([
+			"""{ "title": "Principles", "content": "REST." }""",
+			"""{ "title": "Errors", "content": "Codes." }""",
+			"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
+			"""{ "title": "authentication", "content": "Use an API key." }"""
+		]));
+
+		var titles = navigation
+			.NavigationItems
+			.OfType<TopicsNavigationItem>()
+			.Single()
+			.NavigationItems
+			.Select(item => item.NavigationTitle);
+
+		titles.Should().Equal("Authentication", "Rate limiting", "Errors", "Principles");
 	}
 
 	[Test]
@@ -164,7 +184,7 @@ public class TopicPageTests
 			ApiOverviewBuilder.Sections(ApiOverviewBuilder.Build(navigation, context.VersionsConfiguration))
 		);
 
-		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/topic/topic-principles", "/api/doc/cloud/authentication");
+		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/authentication", "/api/doc/cloud/topic/topic-principles");
 		index.Groups.SelectMany(group => group.Items).Select(row => row.Url).Should().NotContain(url => url!.Contains("/topic/"));
 	}
 

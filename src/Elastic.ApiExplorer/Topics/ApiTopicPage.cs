@@ -74,6 +74,9 @@ public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiGro
 {
 	public const string Title = "Topics";
 
+	/// <summary>Topics listed first, in this order. Every other topic follows alphabetically. Add a title here to pin it.</summary>
+	public static readonly string[] PinnedTitles = ["Authentication", "Rate limiting"];
+
 	public LandingNavigationItem Landing => rootNavigation;
 
 	/// <summary>Like <see cref="ClassificationNavigationItem"/>, the heading points at the product overview, so breadcrumbs fold it into the spec crumb.</summary>
@@ -82,6 +85,16 @@ public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiGro
 	public override string NavigationTitle => Title;
 
 	public override string Id { get; } = ShortId.Create("api-topics");
+
+	/// <summary>Pinned topics first, in <see cref="PinnedTitles"/> order, then the rest by title.</summary>
+	public static IReadOnlyList<INavigationItem> Order(IEnumerable<INavigationItem> items) =>
+		[.. items.OrderBy(PinnedRank).ThenBy(static item => item.NavigationTitle, StringComparer.OrdinalIgnoreCase)];
+
+	private static int PinnedRank(INavigationItem item)
+	{
+		var rank = Array.FindIndex(PinnedTitles, title => string.Equals(title, item.NavigationTitle, StringComparison.OrdinalIgnoreCase));
+		return rank < 0 ? PinnedTitles.Length : rank;
+	}
 }
 
 public class TopicViewModel(ApiRenderContext context) : ApiViewModel(context)

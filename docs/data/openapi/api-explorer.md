@@ -484,7 +484,7 @@ x-topics:
 
 Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
 
-The sidebar lists the topics under a **Topics** heading, above the endpoint groups and in the order of the spec. The heading only appears when the product has at least one topic page.
+The sidebar lists the topics under a **Topics** heading, above the endpoint groups. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading only appears when the product has at least one topic page.
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`, and `/topic/topic-authentication` redirects there. This also works for a spec without security schemes.
 

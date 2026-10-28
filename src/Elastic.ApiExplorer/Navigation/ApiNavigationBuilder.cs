@@ -159,9 +159,11 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
 		var children = ChildFiles(apiConfig, versionMajor);
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
-		topicsNavigation.NavigationItems = topics.Count > 0
-			? CreateTopicNavigationItems(apiUrlSuffix, topics, children, topicsNavigation)
-			: CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation);
+		topicsNavigation.NavigationItems = TopicsNavigationItem.Order(
+			topics.Count > 0
+				? CreateTopicNavigationItems(apiUrlSuffix, topics, children, topicsNavigation)
+				: CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation)
+		);
 		if (topicsNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.Add(topicsNavigation);
 
