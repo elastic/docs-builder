@@ -171,23 +171,12 @@ public static class ApiOverviewBuilder
 				case TopicsNavigationItem topics:
 					AddProductRows(topics, rows, versionsConfig, designSystem);
 					break;
-				case TopicNavigationItem topic:
-					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.MarkdownPage, Title = topic.NavigationTitle, Url = topic.Url });
-					break;
-				case SimpleMarkdownNavigationItem markdownPage:
+				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
 					rows.Add(new ApiOverviewRow
 					{
 						Kind = OverviewRowKind.MarkdownPage,
-						Title = markdownPage.NavigationTitle,
-						Url = markdownPage.Url
-					});
-					break;
-				case StructuralNavigationItem structuralPage:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.MarkdownPage,
-						Title = structuralPage.NavigationTitle,
-						Url = structuralPage.Url
+						Title = navigationItem.NavigationTitle,
+						Url = navigationItem.Url
 					});
 					break;
 				case ISidebarSeparatorNavigationItem:

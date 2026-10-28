@@ -11,7 +11,6 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
-using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -659,7 +658,8 @@ public class OpenApiGenerator(
 
 		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (item is not (ClassificationNavigationItem or TopicsNavigationItem))
+			// Sidebar headings group pages but have no page of their own.
+			if (item is not ISidebarHeadingNavigationItem)
 				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
 				CollectPages(child, pages);

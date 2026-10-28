@@ -153,29 +153,17 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		}
 		CreateSchemaNavigationItems(apiUrlSuffix, openApiDocument, rootNavigation, topLevelNavigationItems);
 
-		// Topic pages sit under a Topics heading below the landing page and before the generated OpenAPI groups. The docset's
-		// children: pages come first, in declared order. The spec's x-topics follow, except those a child page already covers.
 		var finalNavigationItems = new List<INavigationItem>();
-		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
-		var children = ChildFiles(apiConfig, versionMajor);
-		var coveredTopics = CoveredTopics(apiUrlSuffix, openApiDocument, topics, children);
-		var remainingTopics = topics.Where(topic => !coveredTopics.ContainsKey(topic)).ToArray();
-		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
-		topicsNavigation.NavigationItems =
-		[
-			.. CreateChildNavigationItems(
-				apiUrlSuffix,
-				children,
-				ReplacedTopicNames(apiUrlSuffix, openApiDocument, coveredTopics),
-				topicsNavigation
-			),
-			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
-		];
+		var (topicsNavigation, hasAuthenticationTopic) = CreateTopicsNavigation(
+			apiUrlSuffix,
+			openApiDocument,
+			ChildFiles(apiConfig, versionMajor),
+			rootNavigation
+		);
 		if (topicsNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.Add(topicsNavigation);
 
 		// A spec topic titled Authentication replaces the generated Authentication page; the topic page still lists the schemes.
-		var hasAuthenticationTopic = remainingTopics.Any(ApiTopicPage.IsAuthentication);
 		finalNavigationItems.AddRange(
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
 				item => !(hasAuthenticationTopic && item.Model.Kind == ApiStructuralKind.Authentication)
@@ -193,6 +181,36 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		rootNavigation.NavigationItems = finalNavigationItems;
 
 		return rootNavigation;
+	}
+
+	/// <summary>
+	/// The Topics heading, below the landing page and before the generated OpenAPI groups: the docset's <c>children:</c> pages
+	/// first, in declared order, then the spec's <c>x-topics</c> that no child covers. Also says whether a spec topic titled
+	/// Authentication takes over the generated Authentication page.
+	/// </summary>
+	private (TopicsNavigationItem Topics, bool HasAuthenticationTopic) CreateTopicsNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		IReadOnlyList<IFileInfo> children,
+		LandingNavigationItem rootNavigation
+	)
+	{
+		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
+		var hasSchemes = StructuralViewModel.HasSchemes(openApiDocument);
+		var coveredTopics = CoveredTopics(apiUrlSuffix, topics, children, hasSchemes: hasSchemes);
+		var remainingTopics = topics.Where(topic => !coveredTopics.ContainsKey(topic)).ToArray();
+		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
+		topicsNavigation.NavigationItems =
+		[
+			.. CreateChildNavigationItems(
+				apiUrlSuffix,
+				children,
+				ReplacedTopicNames(apiUrlSuffix, coveredTopics, hasSchemes: hasSchemes),
+				topicsNavigation
+			),
+			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
+		];
+		return (topicsNavigation, remainingTopics.Any(ApiTopicPage.IsAuthentication));
 	}
 
 	private static IReadOnlyList<IFileInfo> ChildFiles(ResolvedApiConfiguration? apiConfig, int? versionMajor) =>
@@ -258,29 +276,26 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		return items;
 	}
 
-	/// <summary>
-	/// The URLs each child takes over from the topics it replaces, for the version switcher: the topic page, and for an
-	/// Authentication topic the <c>/authentication</c> page another version builds from it. That page name stays with the
-	/// generated Authentication page when this version's spec declares security schemes.
-	/// </summary>
+	/// <summary>The URLs each child takes over from the topics it replaces, for the version switcher.</summary>
 	private Dictionary<IFileInfo, IReadOnlyList<string>> ReplacedTopicNames(
 		string apiUrlSuffix,
-		OpenApiDocument openApiDocument,
-		IReadOnlyDictionary<OpenApiTopic, IFileInfo> coveredTopics
-	)
-	{
-		var takesAuthentication = !StructuralViewModel.HasSchemes(openApiDocument);
-		return coveredTopics.GroupBy(static pair => pair.Value).ToDictionary(
+		IReadOnlyDictionary<OpenApiTopic, IFileInfo> coveredTopics,
+		bool hasSchemes
+	) =>
+		coveredTopics.GroupBy(static pair => pair.Value).ToDictionary(
 			group => group.Key,
-			group =>
-				(IReadOnlyList<string>)[
-					.. group.SelectMany(
-						pair => ApiTopicPage.IsAuthentication(pair.Key) && takesAuthentication
-							? [TopicUrl(apiUrlSuffix, pair.Key), ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix)]
-							: new[] { TopicUrl(apiUrlSuffix, pair.Key) }
-					)
-				]
+			group => (IReadOnlyList<string>)[.. group.SelectMany(pair => ReplacedNames(apiUrlSuffix, pair.Key, hasSchemes: hasSchemes))]
 		);
+
+	/// <summary>
+	/// The topic page, and for an Authentication topic the <c>/authentication</c> page another version builds from it. That page
+	/// name stays with the generated Authentication page when this version's spec declares security schemes.
+	/// </summary>
+	private IEnumerable<string> ReplacedNames(string apiUrlSuffix, OpenApiTopic topic, bool hasSchemes)
+	{
+		yield return TopicUrl(apiUrlSuffix, topic);
+		if (ApiTopicPage.IsAuthentication(topic) && !hasSchemes)
+			yield return ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix);
 	}
 
 	/// <summary>
@@ -290,9 +305,9 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	/// </summary>
 	private Dictionary<OpenApiTopic, IFileInfo> CoveredTopics(
 		string apiUrlSuffix,
-		OpenApiDocument openApiDocument,
 		IReadOnlyList<OpenApiTopic> topics,
-		IReadOnlyList<IFileInfo> children
+		IReadOnlyList<IFileInfo> children,
+		bool hasSchemes
 	)
 	{
 		var covered = new Dictionary<OpenApiTopic, IFileInfo>();
@@ -316,7 +331,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				match.Name
 			);
 			covered[topic] = match;
-			if (ApiTopicPage.IsAuthentication(topic) && !StructuralViewModel.HasSchemes(openApiDocument))
+			if (ApiTopicPage.IsAuthentication(topic) && !hasSchemes)
 			{
 				_logger.LogWarning(
 					"API '{ApiKey}' builds no /authentication page: the children: page '{File}' replaces the Authentication topic and the spec declares no security schemes. Redirect /authentication to the child page in elastic/docs-infra.",

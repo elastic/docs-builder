@@ -128,26 +128,15 @@ public class TopicPageTests
 	[Test]
 	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ChildReplacesTopic()
 	{
-		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
-		var folder = Directory.CreateDirectory(
-			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
-		).FullName;
-		try
-		{
-			var child = Path.Combine(folder, "auth-intro.md");
-			await File.WriteAllTextAsync(child, "# Authentication\n\nUse an API key.\n", TestContext.Current!.Execution.CancellationToken);
+		var navigation = await NavigationWithChild(
+			Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]),
+			"auth-intro.md",
+			"# Authentication\n\nUse an API key.\n"
+		);
 
-			var navigation = await Navigation(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]), [child]);
-
-			var all = ApiExplorerFixture.Walk(navigation).ToList();
-			all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
-			var page = all.OfType<SimpleMarkdownNavigationItem>().Single();
-			page.Url.Should().Be("/api/doc/cloud/auth-intro/");
-		}
-		finally
-		{
-			Directory.Delete(folder, recursive: true);
-		}
+		var all = ApiExplorerFixture.Walk(navigation).ToList();
+		all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
+		all.OfType<SimpleMarkdownNavigationItem>().Single().Url.Should().Be("/api/doc/cloud/auth-intro/");
 	}
 
 	[Test]
@@ -234,32 +223,15 @@ public class TopicPageTests
 	[Test]
 	public async Task CreateNavigation_ChildWithSameContentAsTopic_ReplacesTopic()
 	{
-		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
-		var folder = Directory.CreateDirectory(
-			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
-		).FullName;
-		try
-		{
-			var child = Path.Combine(folder, "spaces.md");
-			await File.WriteAllTextAsync(
-				child,
-				"# Spaces\n\nSpaces organize\nyour saved objects.\n",
-				TestContext.Current!.Execution.CancellationToken
-			);
+		var navigation = await NavigationWithChild(
+			Spec(["""{ "title": "Kibana spaces", "content": "Spaces organize your saved objects." }"""]),
+			"spaces.md",
+			"# Spaces\n\nSpaces organize\nyour saved objects.\n"
+		);
 
-			var navigation = await Navigation(
-				Spec(["""{ "title": "Kibana spaces", "content": "Spaces organize your saved objects." }"""]),
-				[child]
-			);
-
-			var all = ApiExplorerFixture.Walk(navigation).ToList();
-			all.OfType<TopicNavigationItem>().Should().BeEmpty();
-			all.OfType<SimpleMarkdownNavigationItem>().Should().ContainSingle();
-		}
-		finally
-		{
-			Directory.Delete(folder, recursive: true);
-		}
+		var all = ApiExplorerFixture.Walk(navigation).ToList();
+		all.OfType<TopicNavigationItem>().Should().BeEmpty();
+		all.OfType<SimpleMarkdownNavigationItem>().Should().ContainSingle();
 	}
 
 	[Test]
@@ -397,6 +369,25 @@ public class TopicPageTests
 				Children = [.. childFiles.Select(file => new FileSystem().FileInfo.New(file))]
 			};
 		return CreateGenerator(context).CreateNavigation("cloud", document, apiConfig);
+	}
+
+	/// <summary>Builds the navigation with one child page written to disk; the child is only read while the navigation is built.</summary>
+	private static async Task<LandingNavigationItem> NavigationWithChild(string spec, string fileName, string markdown)
+	{
+		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
+		var folder = Directory.CreateDirectory(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
+		);
+		try
+		{
+			var child = Path.Combine(folder.FullName, fileName);
+			await File.WriteAllTextAsync(child, markdown, TestContext.Current!.Execution.CancellationToken);
+			return await Navigation(spec, [child]);
+		}
+		finally
+		{
+			folder.Delete(recursive: true);
+		}
 	}
 
 	private static OpenApiGenerator CreateGenerator(BuildContext context) =>
