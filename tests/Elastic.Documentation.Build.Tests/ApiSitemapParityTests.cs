@@ -20,7 +20,7 @@ public class ApiSitemapParityTests
 	private static readonly IReadOnlySet<string> GoneRoots = new HashSet<string> { "observability-serverless" };
 
 	// Exact page redirects from the same file. Bump.sh served a Servers page for specs that declare no servers,
-	// and Cloud Billing renamed its Budgets tag.
+	// Cloud Billing renamed its Budgets tag, and Kibana removed Streams operations from its 9.6 spec.
 	private static readonly IReadOnlyDictionary<string, string> RedirectedPages = new Dictionary<string, string>
 	{
 		["/docs/api/doc/elasticsearch/servers"] = "/docs/api/doc/elasticsearch",
@@ -29,7 +29,15 @@ public class ApiSitemapParityTests
 		["/docs/api/doc/elasticsearch-serverless/servers"] = "/docs/api/doc/elasticsearch-serverless",
 		["/docs/api/doc/cloud-enterprise/servers"] = "/docs/api/doc/cloud-enterprise",
 		["/docs/api/doc/cloud-enterprise/v3/servers"] = "/docs/api/doc/cloud-enterprise/v3",
-		["/docs/api/doc/cloud-billing/group/endpoint-budgets"] = "/docs/api/doc/cloud-billing/group/endpoint-billing-budgets"
+		["/docs/api/doc/cloud-billing/group/endpoint-budgets"] = "/docs/api/doc/cloud-billing/group/endpoint-billing-budgets",
+		["/docs/api/doc/kibana/v9/group/endpoint-significant_events"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-delete-streams-name-queries-queryid"] =
+			"/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-get-streams-name-queries"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-get-streams-name-significant-events"] =
+			"/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-post-streams-name-queries-bulk"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-put-streams-name-queries-queryid"] = "/docs/api/doc/kibana/v9/group/endpoint-streams"
 	};
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
