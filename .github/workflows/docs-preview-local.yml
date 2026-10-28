@@ -87,6 +87,11 @@ jobs:
       deployments: none
       id-token: none
       pull-requests: read
+    env:
+      IGNORE_PATTERNS: |
+        .github/**
+        .libra/**
+        README.md
     outputs:
       any_modified: ${{ steps.check-files.outputs.any_modified }}
       all_changed_files: ${{ steps.check-files.outputs.all_changed_files }}
@@ -108,20 +113,12 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: '**'
-          files_ignore: |
-            .github/**
-            .libra/**
-            README.md
+          files_ignore: ${{ env.IGNORE_PATTERNS }}
 
       - name: Get modified file detail
         if: github.event_name == 'pull_request'
         id: check-modified-file-detail
         uses: actions/github-script@v9
-        env:
-          IGNORE_PATTERNS: |
-            .github/**
-            .libra/**
-            README.md
         with:
           script: |
             const ignorePatterns = process.env.IGNORE_PATTERNS;
@@ -212,7 +209,7 @@ jobs:
       id-token: write
       pull-requests: none
     outputs:
-      deployment_result: ${{ steps.deployment.outputs.result }}
+      deployment_result: ${{ steps.deployment.outputs.id }}
       path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
@@ -242,36 +239,12 @@ jobs:
             github.event_name == 'push'
             || github.event_name == 'pull_request'
           )
-        uses: actions/github-script@v9
         id: deployment
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref_name }}
+        uses: $/.github/actions/deployment-start
         with:
-          result-encoding: string
-          script: |
-            const { owner, repo } = context.repo;
-            const prNumber = process.env.PR_NUMBER;
-            const environment = 'docs-preview';
-            const task = prNumber ? `docs-preview-${prNumber}` : undefined;
-            const deployment = await github.rest.repos.createDeployment({
-                owner,
-                repo,
-                environment,
-                task,
-                ref: process.env.REF,
-                auto_merge: false,
-                transient_environment: true,
-                required_contexts: [],
-            })
-            await github.rest.repos.createDeploymentStatus({
-                deployment_id: deployment.data.id,
-                owner,
-                repo,
-                state: "in_progress",
-                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
-            return deployment.data.id
+          environment: docs-preview
+          task: ${{ github.event.pull_request.number && format('docs-preview-{0}', github.event.pull_request.number) || '' }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref_name }}
 
       - name: Generate env.PATH_PREFIX
         id: generate-path-prefix
@@ -362,14 +335,10 @@ jobs:
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        env:
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 6
-        run: |
-          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
-          aws cloudfront create-invalidation \
-            --distribution-id EKT7LT5PM8RKS \
-            --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
+        uses: $/.github/actions/upload-preview
+        with:
+          source: .artifacts/docs/html
+          path-prefix: ${{ env.PATH_PREFIX }}
 
       - name: Deploy redirects to CloudFront KVS
         if: >
@@ -397,24 +366,15 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v9
         if: >
           env.MATCH == 'true'
           && always()
-          && steps.deployment.outputs.result
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          LANDING_PAGE_PATH: ${{ env.PATH_PREFIX }}
+          && steps.deployment.outputs.id
+        uses: $/.github/actions/deployment-finish
         with:
-          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.internal-docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
+          deployment-id: ${{ steps.deployment.outputs.id }}
+          state: ${{ steps.internal-docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}
+          environment-url: https://docs-v3-preview.elastic.dev${{ env.PATH_PREFIX }}
 
   comment:
     if: >
