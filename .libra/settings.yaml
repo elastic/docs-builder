@@ -1,3 +1,4 @@
 version: 1
 publication:
   approve_on_clean: true
+# throwaway: verifies metadata-only PRs skip CI, do not merge
