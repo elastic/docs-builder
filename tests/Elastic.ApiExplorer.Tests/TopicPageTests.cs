@@ -180,6 +180,21 @@ public class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_TopicsWithTheSameUrl_KeepsTheFirst()
+	{
+		var navigation = await Navigation(Spec([
+			"""{ "title": "Rate limiting", "content": "First." }""",
+			"""{ "title": "Rate Limiting", "content": "Second." }""",
+			"""{ "title": "Authentication", "content": "Use an API key." }""",
+			"""{ "title": "authentication", "content": "Duplicate." }"""
+		]));
+
+		var all = ApiExplorerFixture.Walk(navigation).ToList();
+		all.OfType<TopicNavigationItem>().Should().ContainSingle().Which.Model.Content.Should().Be("First.");
+		all.OfType<StructuralNavigationItem>().Should().ContainSingle().Which.Model.Intro.Should().Be("Use an API key.");
+	}
+
+	[Test]
 	public async Task CreateNavigation_NoTopicsOrChildren_OmitsTopicsHeading()
 	{
 		var navigation = await Navigation(Spec(topics: null));

@@ -66,8 +66,23 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 	)
 	{
 		var items = new List<INavigationItem>(topics.Count);
+		var urls = new HashSet<string>(StringComparer.Ordinal);
 		foreach (var topic in topics)
 		{
+			var url = topic.IsAuthentication
+				? ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix)
+				: ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, topic.Title);
+			if (!urls.Add(url))
+			{
+				logger.LogWarning(
+					"API '{ApiKey}' skips x-topics entry '{Title}', because an earlier entry already builds the page {Url}. Give each topic a distinct title.",
+					apiUrlSuffix,
+					topic.Title,
+					url
+				);
+				continue;
+			}
+
 			if (topic.IsAuthentication)
 			{
 				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
@@ -81,7 +96,6 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 				continue;
 			}
 
-			var url = ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, topic.Title);
 			items.Add(new TopicNavigationItem(url, topic, topicsNavigation.Landing, topicsNavigation));
 		}
 
