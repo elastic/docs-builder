@@ -106,13 +106,7 @@ public class TopicViewModel(ApiRenderContext context) : ApiViewModel(context)
 
 	public static TopicViewModel Create(ApiTopicPage page, ApiRenderContext context)
 	{
-		var headings = ApiMarkdown.ReadHeadings(context.MarkdownRenderer, page.Content, context.CurrentNavigation.NavigationRoot.Url);
-		var anchors = headings.Select(static heading => heading.Slug).ToHashSet(StringComparer.Ordinal);
-		return new TopicViewModel(context)
-		{
-			Page = page,
-			Headings = headings,
-			ContentHtml = ApiMarkdown.RenderWithHeadingAnchors(context, page.Content, anchors)
-		};
+		var (contentHtml, headings) = ApiMarkdown.RenderWithHeadings(context, page.Content);
+		return new TopicViewModel(context) { Page = page, Headings = headings, ContentHtml = contentHtml };
 	}
 }

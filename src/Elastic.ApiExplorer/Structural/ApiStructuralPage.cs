@@ -173,13 +173,11 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		if (string.IsNullOrWhiteSpace(intro))
 			return (null, []);
 
-		var schemeSlugs = schemes.Select(static scheme => scheme.Slug).ToHashSet(StringComparer.Ordinal);
-		var headings = ApiMarkdown
-			.ReadHeadings(context.MarkdownRenderer, intro, context.CurrentNavigation.NavigationRoot.Url)
-			.Where(heading => !schemeSlugs.Contains(heading.Slug))
-			.ToArray();
-		var anchors = headings.Select(static heading => heading.Slug).ToHashSet(StringComparer.Ordinal);
-		return (ApiMarkdown.RenderWithHeadingAnchors(context, intro, anchors), headings);
+		return ApiMarkdown.RenderWithHeadings(
+			context,
+			intro,
+			schemes.Select(static scheme => scheme.Slug).ToHashSet(StringComparer.Ordinal)
+		);
 	}
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
