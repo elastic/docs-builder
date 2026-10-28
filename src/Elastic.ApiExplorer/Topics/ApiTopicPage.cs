@@ -54,17 +54,7 @@ public class TopicNavigationItem(
 	ApiTopicPage page,
 	IRootNavigationItem<INavigationModel, INavigationItem> root,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ILeafNavigationItem<ApiTopicPage>
-{
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = root;
-	public string Id { get; } = ShortId.Create(url);
-	public ApiTopicPage Model { get; } = page;
-	public string Url { get; } = url;
-	public bool Hidden => false;
-	public string NavigationTitle { get; } = page.Title;
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
-	public int NavigationIndex { get; set; }
-}
+) : ApiPageNavigationItem<ApiTopicPage>(url, page.Title, page, root, parent);
 
 /// <summary>The Topics sidebar heading. It groups the topic pages above the endpoint groups and starts expanded on every page.</summary>
 public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(
