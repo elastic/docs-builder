@@ -119,6 +119,26 @@ describe('flash of the linked target', () => {
         expect(flashing('prop-name')).toBe(false)
     })
 
+    it('flashes a property reached by an htmx search navigation', async () => {
+        const api = await open('')
+        api.initApiDocs()
+        document.body.innerHTML = MARKUP
+        history.pushState(null, '', '#prop')
+        api.initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop-name')).toBe(true)
+    })
+
+    it('flashes the same fragment again when navigation replaces the page', async () => {
+        const api = await open('#prop')
+        api.initApiDocs()
+        scrollIntoView()
+        document.body.innerHTML = MARKUP
+        api.initApiDocs()
+        scrollIntoView()
+        expect(flashing('prop-name')).toBe(true)
+    })
+
     it('waits until the target is on screen', async () => {
         ;(await open('#prop')).initApiDocs()
         vi.advanceTimersByTime(1000)

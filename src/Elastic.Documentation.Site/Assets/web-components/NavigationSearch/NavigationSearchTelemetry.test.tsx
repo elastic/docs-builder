@@ -2,6 +2,7 @@ import * as logging from '../../telemetry/logging'
 import { cooldownStore } from '../shared/cooldown.store'
 import { NavigationSearch } from './NavigationSearch'
 import { SearchResultsList } from './SearchResultsList'
+import { navigableSearchResults } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
 import * as queryHook from './useNavigationSearchQuery'
 import { EuiProvider } from '@elastic/eui'
@@ -35,7 +36,10 @@ const mockSearchResults = {
             description: 'Learn about Elasticsearch',
             score: 0.95,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Elasticsearch' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Elasticsearch', url: '/docs/elasticsearch' },
+            ],
         },
         {
             url: '/docs/kibana/dashboard',
@@ -43,7 +47,10 @@ const mockSearchResults = {
             description: 'Create dashboards',
             score: 0.85,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Kibana' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Kibana', url: '/docs/kibana' },
+            ],
         },
     ],
     totalResults: 2,
@@ -223,6 +230,8 @@ describe('Navigation Search Telemetry Integration', () => {
 describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
+        results: navigableSearchResults(mockSearchResults.results),
+        isLoading: false,
         isKeyboardNavigating: { current: false },
         onMouseMove: vi.fn(),
         onResultClick: vi.fn(),

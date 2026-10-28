@@ -67,6 +67,66 @@ describe('NavigationSearchWrapper type attribute', () => {
         })
     })
 
+    it('navigates into a matching property and records its anchor on Enter', async () => {
+        const url =
+            '/docs/api/doc/elasticsearch/operation/operation-search#req-track_total_hits'
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: url.split('#')[0],
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'track_total_hits',
+                                path: 'track_total_hits',
+                                type: 'boolean',
+                                location: 'request',
+                                description: 'Count hits accurately',
+                                anchor: 'req-track_total_hits',
+                                url,
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText(
+            'Type ❲/❳ to explore API'
+        )
+        await userEvent.type(input, 'track_total')
+        const child = await screen.findByRole('link', {
+            name: /track_total_hits boolean request Count hits accurately/,
+        })
+        expect(child).toHaveAttribute('href', url)
+        const clicked = jest.fn((event: Event) => event.preventDefault())
+        child.addEventListener('click', clicked)
+        await userEvent.click(input)
+        expect(input).toHaveFocus()
+        expect(navigationSearchStore.getState().selectedIndex).toBe(0)
+        await userEvent.keyboard('{ArrowDown}')
+        expect(navigationSearchStore.getState().selectedIndex).toBe(1)
+        await waitFor(() =>
+            expect(child).toHaveAttribute('data-selected', 'true')
+        )
+        await userEvent.keyboard('{Enter}')
+        expect(clicked).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                'navigation_search.result.anchor': 'req-track_total_hits',
+            })
+        )
+    })
+
     it('renders the sidebar variant without the sticky wrapper or divider', async () => {
         const { container } = render(
             <NavigationSearchWrapper type="api" variant="sidebar" />

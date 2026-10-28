@@ -13,6 +13,10 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
+	[Nested]
+	[JsonPropertyName("properties")]
+	public ApiPropertyEntry[] Properties { get; init; } = [];
+
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
 	/// parameters, each parameter stored as <c>*</c>, e.g. <c>*/_search</c> and <c>_search</c>.

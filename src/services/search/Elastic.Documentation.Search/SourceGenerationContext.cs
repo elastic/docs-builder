@@ -7,4 +7,6 @@ using System.Text.Json.Serialization;
 namespace Elastic.Documentation.Search;
 
 [JsonSerializable(typeof(RuleQueryMatchCriteria))]
+// The Elasticsearch client reads nested inner-hit sources as object, yielding a JsonElement.
+[JsonSerializable(typeof(object))]
 public sealed partial class SourceGenerationContext : JsonSerializerContext;

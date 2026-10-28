@@ -1,16 +1,14 @@
 import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { PropertyResultRow } from './PropertyResultRow'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
+import { type NavigableResult } from './apiPropertyResults'
 import {
     useSelectedIndex,
     useSearchActions,
     useSearchTerm,
 } from './navigationSearch.store'
-import {
-    useNavigationSearchQuery,
-    SearchResultItem,
-    type TypeFilter,
-} from './useNavigationSearchQuery'
+import { SearchResultItem, type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
     EuiBadge,
@@ -65,6 +63,8 @@ export const emptyStateCopy = (typeFilter: TypeFilter) =>
         : "We couldn't find a page that matches your search"
 
 export interface SearchResultsListProps {
+    results: NavigableResult[]
+    isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
@@ -72,6 +72,8 @@ export interface SearchResultsListProps {
 }
 
 export const SearchResultsList = ({
+    results,
+    isLoading,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
@@ -80,13 +82,11 @@ export const SearchResultsList = ({
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useNavigationSearchQuery(typeFilter)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
-    const isInitialLoading = isLoading && !data
+    const isInitialLoading = isLoading && results.length === 0
 
     // Scroll to top when search term changes
     useEffect(() => {
@@ -156,19 +156,84 @@ export const SearchResultsList = ({
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map((result, index) => (
-                <SearchResultRow
-                    key={result.url}
-                    index={index}
-                    result={result}
-                    isSelected={index === selectedIndex}
-                    isKeyboardNavigating={isKeyboardNavigating.current}
-                    onMouseEnter={() => handleMouseEnter(index)}
-                    onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={() => handleResultClick(result, index)}
-                    typeFilter={typeFilter}
-                />
-            ))}
+            {results.map((entry, index) => {
+                if (entry.kind !== 'operation') return null
+                const propertyCount =
+                    entry.result.type === 'api'
+                        ? (entry.result.properties?.length ?? 0)
+                        : 0
+                const properties = results.slice(
+                    index + 1,
+                    index + 1 + propertyCount
+                )
+                return (
+                    <div
+                        key={entry.result.url}
+                        css={css`
+                            margin: ${euiTheme.size.s};
+                            border: 1px solid
+                                ${euiTheme.colors.borderBaseSubdued};
+                            border-radius: ${euiTheme.size.s};
+                            overflow: hidden;
+                        `}
+                    >
+                        <SearchResultRow
+                            key={entry.result.url}
+                            index={index}
+                            result={entry.result}
+                            isSelected={index === selectedIndex}
+                            isKeyboardNavigating={isKeyboardNavigating.current}
+                            onMouseEnter={() => handleMouseEnter(index)}
+                            onMouseMove={() => handleItemMouseMove(index)}
+                            onClick={() =>
+                                handleResultClick(entry.result, index)
+                            }
+                            typeFilter={typeFilter}
+                        />
+                        {properties.map((child, offset) => {
+                            if (child.kind !== 'property') return null
+                            const propertyIndex = index + offset + 1
+                            return (
+                                <PropertyResultRow
+                                    key={child.property.url}
+                                    index={propertyIndex}
+                                    property={child.property}
+                                    searchTerm={searchTerm}
+                                    showLocation={
+                                        child.result.properties?.some(
+                                            (other) =>
+                                                other.path ===
+                                                    child.property.path &&
+                                                other.location !==
+                                                    child.property.location
+                                        ) ?? false
+                                    }
+                                    isSelected={propertyIndex === selectedIndex}
+                                    isKeyboardNavigating={
+                                        isKeyboardNavigating.current
+                                    }
+                                    onMouseEnter={() =>
+                                        handleMouseEnter(propertyIndex)
+                                    }
+                                    onMouseMove={() =>
+                                        handleItemMouseMove(propertyIndex)
+                                    }
+                                    onClick={() => {
+                                        trackResultClicked({
+                                            query: searchTerm,
+                                            position: propertyIndex,
+                                            url: child.property.url,
+                                            score: child.result.score,
+                                            anchor: child.property.anchor,
+                                        })
+                                        onResultClick()
+                                    }}
+                                />
+                            )
+                        })}
+                    </div>
+                )
+            })}
         </div>
     )
 }
@@ -382,7 +447,11 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: color-mix(
+                        in srgb,
+                        var(--color-yellow-40) 40%,
+                        transparent
+                    );
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -407,7 +476,11 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: color-mix(
+                        in srgb,
+                        var(--color-yellow-40) 40%,
+                        transparent
+                    );
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}

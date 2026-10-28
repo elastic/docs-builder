@@ -5,6 +5,7 @@
 using Elastic.Documentation.Search.Contract;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Clients.Elasticsearch.Core.Search;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
 namespace Elastic.Documentation.Search;
@@ -16,6 +17,9 @@ namespace Elastic.Documentation.Search;
 /// </summary>
 public static class SearchQueryBuilder
 {
+	public const string ApiPropertyHits = "api_properties";
+	private static readonly string[] ApiPropertySourceIncludes = ["api.properties.*"];
+
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
 	/// </summary>
@@ -36,6 +40,90 @@ public static class SearchQueryBuilder
 			new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
 		]
 	};
+
+	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter)
+	{
+		var input = searchQuery.Trim();
+		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
+			return null;
+		if (typeFilter != "api" && input.Any(char.IsWhiteSpace) && !input.Contains('.') && !input.Contains('_'))
+			return null;
+
+		var (_, property) = SplitApiPropertyQuery(input);
+		return new NestedQuery
+		{
+			Path = "api.properties",
+			IgnoreUnmapped = true,
+			ScoreMode = ChildScoreMode.Max,
+			Query = BuildPropertyMatchQuery(property),
+			InnerHits = new InnerHits
+			{
+				Name = ApiPropertyHits,
+				Size = 5,
+				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
+			}
+		};
+	}
+
+	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
+	{
+		var properties = BuildApiPropertyQuery(searchQuery, typeFilter);
+		if (properties is null)
+			return query;
+
+		var (operation, _) = SplitApiPropertyQuery(searchQuery.Trim());
+		if (operation.Length > 0 && (BuildBareWordEndpointQuery(operation) ?? BuildApiEndpointQuery(operation)) is { } endpoint)
+			properties = new BoolQuery { Must = [properties], Should = [endpoint] };
+
+		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
+	}
+
+	private static (string Operation, string Property) SplitApiPropertyQuery(string input)
+	{
+		var separator = input.AsSpan().LastIndexOfAny(" \t\r\n");
+		return separator < 0 ? ("", input) : (input[..separator].TrimEnd(), input[(separator + 1)..]);
+	}
+
+	private static Query BuildPropertyMatchQuery(string input)
+	{
+		var name = BuildPropertyNameQuery(input);
+		var separator = input.LastIndexOf('.');
+		if (separator < 0 || separator == input.Length - 1)
+			return name;
+
+		return new DisMaxQuery
+		{
+			Queries =
+			[
+				name,
+				new BoolQuery
+				{
+					Must = [BuildPropertyNameQuery(input[(separator + 1)..])],
+					Filter = [new MatchBoolPrefixQuery { Field = "api.properties.path.match", Query = input, Operator = Operator.And }]
+				}
+			]
+		};
+	}
+
+	private static Query BuildPropertyNameQuery(string name) =>
+		new DisMaxQuery
+		{
+			// Bound field scores below operation matches, regardless of term rarity in nested documents.
+			Queries =
+			[
+				new ConstantScoreQuery
+				{
+					Filter = new TermQuery { Field = "api.properties.name", Value = name, CaseInsensitive = true },
+					Boost = 1
+				},
+				new ConstantScoreQuery
+				{
+					// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
+					Filter = new PrefixQuery { Field = "api.properties.name", Value = name, CaseInsensitive = true },
+					Boost = 0.6f
+				}
+			]
+		};
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{

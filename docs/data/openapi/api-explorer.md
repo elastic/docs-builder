@@ -16,6 +16,12 @@ The cards for APIs that are in neither group show the API's deployments as small
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
+API search matches parameter and field names, including prefixes and qualified paths. Direct operation and endpoint matches rank above field matches. Combine an endpoint and a field, such as `_search knn`, to find the operation and its matching fields. Each matching operation lists up to three matching fields beneath it, with their paths, types, and locations. Child rows match the field's own name; ancestor names and descriptions provide context without adding unrelated children. Select a field to open its anchor, including fields inside collapsed sections. Arrow keys move through operations and fields in order; Enter opens the selected row.
+
+Every result uses the same bordered box, with matching fields grouped beneath the operation when present. Matches use the same yellow tint as the destination property's flash. Navigating to a field reveals it and flashes its name, including when search replaces the current page without a full reload.
+
+The assembler indexes fields from the same property trees used to render operation pages. Fields of a repeated shape appear under its first listing. On the existing semantic index, the indexer adds the nested `api.properties` mapping before incremental synchronization. Property changes participate in the document hash, so a field update is synchronized even when the operation description stays the same.
+
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
 :::
