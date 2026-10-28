@@ -443,12 +443,19 @@ public class OpenApiGeneratorMultiVersionTests
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		// spaces.v9.md replaces the Kibana spaces topic in main and v9; v8 still builds the topic page.
-		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch(), SpacesChild);
+		var context = CreateGenerateContext(
+			collector,
+			stack,
+			ProductsFor(product),
+			outputRoot,
+			GitForElasticsearch(),
+			("spaces.v9.md", "Kibana spaces")
+		);
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateVersionedReader(
-			("main", WithSpacesTopic(SpecDocument("Elasticsearch main"))),
-			("9.4", WithSpacesTopic(SpecDocument("Elasticsearch 9"))),
-			("8.19", WithSpacesTopic(SpecDocument("Elasticsearch 8")))
+			("main", WithTopic(SpecDocument("Elasticsearch main"), "Kibana spaces")),
+			("9.4", WithTopic(SpecDocument("Elasticsearch 9"), "Kibana spaces")),
+			("8.19", WithTopic(SpecDocument("Elasticsearch 8"), "Kibana spaces"))
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -463,11 +470,44 @@ public class OpenApiGeneratorMultiVersionTests
 		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/topic/topic-kibana-spaces\"");
 	}
 
-	private const string SpacesChild = "spaces.v9.md";
-
-	private static OpenApiDocument WithSpacesTopic(OpenApiDocument document)
+	[Test]
+	public async Task Generate_VersionPickerMatchesAChildPageWithTheAuthenticationPageItReplaces()
 	{
-		var topic = new JsonObject { ["title"] = "Kibana spaces", ["content"] = "Spaces organize saved objects." };
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		// The specs declare no security schemes, so v8 builds /authentication from the topic and v9 has only the child page.
+		var context = CreateGenerateContext(
+			collector,
+			stack,
+			ProductsFor(product),
+			outputRoot,
+			GitForElasticsearch(),
+			("auth.v9.md", "Authentication")
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", WithTopic(SpecDocument("Elasticsearch main"), "Authentication")),
+			("9.4", WithTopic(SpecDocument("Elasticsearch 9"), "Authentication")),
+			("8.19", WithTopic(SpecDocument("Elasticsearch 8"), "Authentication"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var files = context.WriteFileSystem.File;
+		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		files.Exists(Path.Join(root, "v9", "authentication", "index.html")).Should().BeFalse();
+		var authentication = files.ReadAllText(Path.Join(root, "v8", "authentication", "index.html"));
+		authentication.Should().Contain("href=\"/api/doc/elasticsearch/v9/auth\"");
+		var child = files.ReadAllText(Path.Join(root, "v9", "auth", "index.html"));
+		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/authentication\"");
+	}
+
+	private static OpenApiDocument WithTopic(OpenApiDocument document, string title)
+	{
+		var topic = new JsonObject { ["title"] = title, ["content"] = "Topic text." };
 		document.Extensions = new Dictionary<string, IOpenApiExtension> { ["x-topics"] = new JsonNodeExtension(new JsonArray(topic)) };
 		return document;
 	}
@@ -478,7 +518,7 @@ public class OpenApiGeneratorMultiVersionTests
 		ProductsConfiguration productsConfiguration,
 		string outputRoot,
 		GitCheckoutInformation git,
-		string? childFile = null
+		(string File, string Heading)? child = null
 	)
 	{
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-multi-version-test-{Guid.NewGuid():N}");
@@ -492,12 +532,12 @@ public class OpenApiGeneratorMultiVersionTests
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
-		if (childFile is not null)
+		if (child is { } page)
 		{
-			docsetYaml += $"\n      children:\n        - file: {childFile}\n";
+			docsetYaml += $"\n      children:\n        - file: {page.File}\n";
 			fs.AddFile(
-				Path.Join(repoRoot, "docs", "api", "elasticsearch", childFile),
-				new MockFileData("# Kibana spaces\n\nSpaces organize saved objects.\n")
+				Path.Join(repoRoot, "docs", "api", "elasticsearch", page.File),
+				new MockFileData($"# {page.Heading}\n\nChild text.\n")
 			);
 		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));

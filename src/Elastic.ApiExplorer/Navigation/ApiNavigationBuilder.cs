@@ -163,7 +163,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
 		topicsNavigation.NavigationItems =
 		[
-			.. CreateChildNavigationItems(apiUrlSuffix, children, coveredTopics, topicsNavigation),
+			.. CreateChildNavigationItems(
+				apiUrlSuffix,
+				children,
+				ReplacedTopicNames(apiUrlSuffix, openApiDocument, coveredTopics),
+				topicsNavigation
+			),
 			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
 		];
 		if (topicsNavigation.NavigationItems.Count > 0)
@@ -237,7 +242,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	private List<INavigationItem> CreateChildNavigationItems(
 		string apiUrlSuffix,
 		IReadOnlyList<IFileInfo> children,
-		IReadOnlyDictionary<OpenApiTopic, IFileInfo> coveredTopics,
+		IReadOnlyDictionary<IFileInfo, IReadOnlyList<string>> replacedTopicNames,
 		TopicsNavigationItem topicsNavigation
 	)
 	{
@@ -246,11 +251,36 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		foreach (var child in children)
 		{
 			var item = CreateMarkdownNavigationItem(apiUrlSuffix, child, topicsNavigation.Landing, topicsNavigation, markdownSlugs);
-			item.ReplacedTopicUrls = [.. coveredTopics.Where(pair => pair.Value == child).Select(pair => TopicUrl(apiUrlSuffix, pair.Key))];
+			item.ReplacedTopicUrls = replacedTopicNames.TryGetValue(child, out var names) ? names : [];
 			items.Add(item);
 		}
 
 		return items;
+	}
+
+	/// <summary>
+	/// The URLs each child takes over from the topics it replaces, for the version switcher: the topic page, and for an
+	/// Authentication topic the <c>/authentication</c> page another version builds from it. That page name stays with the
+	/// generated Authentication page when this version's spec declares security schemes.
+	/// </summary>
+	private Dictionary<IFileInfo, IReadOnlyList<string>> ReplacedTopicNames(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		IReadOnlyDictionary<OpenApiTopic, IFileInfo> coveredTopics
+	)
+	{
+		var takesAuthentication = !StructuralViewModel.HasSchemes(openApiDocument);
+		return coveredTopics.GroupBy(static pair => pair.Value).ToDictionary(
+			group => group.Key,
+			group =>
+				(IReadOnlyList<string>)[
+					.. group.SelectMany(
+						pair => ApiTopicPage.IsAuthentication(pair.Key) && takesAuthentication
+							? [TopicUrl(apiUrlSuffix, pair.Key), ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix)]
+							: new[] { TopicUrl(apiUrlSuffix, pair.Key) }
+					)
+				]
+		);
 	}
 
 	/// <summary>
