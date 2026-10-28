@@ -110,6 +110,7 @@ jobs:
           files: '**'
           files_ignore: |
             .github/**
+            .libra/**
             README.md
 
       - name: Get modified file detail
@@ -119,6 +120,7 @@ jobs:
         env:
           IGNORE_PATTERNS: |
             .github/**
+            .libra/**
             README.md
         with:
           script: |
