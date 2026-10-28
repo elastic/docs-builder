@@ -199,6 +199,9 @@ jobs:
         run: echo "SkipNpmBuild=true" >> "$GITHUB_ENV"
 
       - name: Compile
+        # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
+        env:
+          Curb_Bypass: true
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date

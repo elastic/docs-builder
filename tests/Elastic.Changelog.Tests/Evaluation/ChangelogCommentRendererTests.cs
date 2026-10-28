@@ -550,6 +550,30 @@ public class ChangelogCommentRendererTests
 	}
 
 	[Test]
+	public void RenderLabelsNeeded_ProductAndAreaMissing_CollapsesEachTable()
+	{
+		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
+			null,
+			"| `@Product:ECH` | cloud |",
+			null,
+			null,
+			areaLabelTable: "| `:Search` | Search |"
+		);
+
+		body.Should().Contain("<details><summary>Show the product labels</summary>\n\n| `@Product:ECH` | cloud |\n\n</details>");
+		body.Should().Contain("<details><summary>Show the area labels</summary>\n\n| `:Search` | Search |\n\n</details>");
+	}
+
+	[Test]
+	public void RenderLabelsNeeded_TypeMissing_KeepsTypeLabelsVisible() =>
+		ChangelogCommentRenderer
+			.RenderLabelsNeeded("type:bug,type:feature", null, null, null)
+			.Should()
+			.Contain("`type:bug`")
+			.And
+			.NotContain("<details>");
+
+	[Test]
 	public void RenderLabelsNeeded_TypeProductAndAreaMissing_ListsAllThreePivots()
 	{
 		var body = ChangelogCommentRenderer.RenderLabelsNeeded(
