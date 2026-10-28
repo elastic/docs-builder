@@ -1,7 +1,13 @@
 name: changes
 
-# Decides whether a pull request touches anything that can affect builds, tests or previews.
-# Pushes and manual runs always report true. Callers gate their slow work on the `code` output.
+# Decides which slow work a pull request needs. Pushes and manual runs always report true for everything.
+# - code: anything beyond repository metadata (.libra/, CODEOWNERS, ...) changed, so builds and previews run
+# - link-index-lambda / openapi-index-lambda: the lambda's transitive project references or shared build inputs changed
+# - dotnet: .NET code, build inputs or test fixtures changed, so Windows and macOS run the unit tests
+#   (Linux runs them on every PR)
+# - frontend-toolchain: npm dependencies or the Vite/Tailwind config changed, so Windows and macOS build the
+#   frontend natively instead of reusing the `frontend` job's output. Native npm packages (esbuild, rolldown,
+#   lightningcss, tailwind oxide) can break on one OS only.
 #
 # Matrix jobs that are required checks must gate per step instead of per job: a matrix job skipped
 # by `if` keeps its unexpanded name (e.g. `build (${{ matrix.os }})`), so the required check never reports.
@@ -12,6 +18,18 @@ on:
       code:
         description: "'true' unless every changed file is repository metadata that cannot affect a build"
         value: ${{ jobs.filter.outputs.code }}
+      link-index-lambda:
+        description: "'true' when the link index updater lambda needs a build"
+        value: ${{ jobs.filter.outputs.link-index-lambda }}
+      openapi-index-lambda:
+        description: "'true' when the OpenAPI index lambda needs a build"
+        value: ${{ jobs.filter.outputs.openapi-index-lambda }}
+      dotnet:
+        description: "'true' when .NET code, build inputs or test fixtures changed"
+        value: ${{ jobs.filter.outputs.dotnet }}
+      frontend-toolchain:
+        description: "'true' when npm dependencies or the frontend build config changed"
+        value: ${{ jobs.filter.outputs.frontend-toolchain }}
 
 permissions:
   contents: read
@@ -21,6 +39,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      link-index-lambda: ${{ steps.filter.outputs.link-index-lambda }}
+      openapi-index-lambda: ${{ steps.filter.outputs.openapi-index-lambda }}
+      dotnet: ${{ steps.filter.outputs.dotnet }}
+      frontend-toolchain: ${{ steps.filter.outputs.frontend-toolchain }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,16 +54,25 @@ jobs:
         env:
           EVENT_NAME: ${{ github.event_name }}
         run: |
+          outputs='code link-index-lambda openapi-index-lambda dotnet frontend-toolchain'
           if [ "$EVENT_NAME" != "pull_request" ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
+            for output in $outputs; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           fi
           git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
           cat changed.txt
           # Bot/review config, ownership and issue templates. Workflows and actions are deliberately not listed.
           metadata='^(\.libra/|\.github/(ISSUE_TEMPLATE/|updatecli/|CODEOWNERS$|copilot-instructions\.md$|dependabot\.yml$|release-drafter\.yml$|zizmor\.yml$|actionlint\.yaml$)|CODEOWNERS$|README\.md$)'
-          if grep -Evq "$metadata" changed.txt; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "code=false" >> "$GITHUB_OUTPUT"
-          fi
+          shared='^(global\.json|Directory\.(Build|Packages)\.props|src/Directory\.Build\.props|\.dockerignore|\.github/workflows/(ci|changes)\.yml)$'
+          link_index='^(src/infra/docs-lambda-index-publisher/|src/Elastic\.Documentation/|src/Elastic\.Documentation\.(Configuration|LinkIndex|Tooling)/|src/services/search/Elastic\.Documentation\.Search\.Contract/|config/|\.github/workflows/build-link-index-updater-lambda\.yml$)'
+          openapi_index='^(src/infra/docs-lambda-openapi-index/|src/Elastic\.Documentation\.OpenApiIndex/|\.github/workflows/build-openapi-index-lambda\.yml$)'
+          dotnet='(\.(cs|fs|fsx|csproj|fsproj|props|targets|cshtml|razor|resx|slnx)$|^(global\.json|dotnet-tools\.json|tests/|build/|\.github/workflows/(ci|changes)\.yml$|\.github/actions/bootstrap/))'
+          frontend_toolchain='^(\.nvmrc|src/Elastic\.Documentation\.Site/(package(-lock)?\.json|vite\.config\.ts|tailwind\.config\.js))$'
+          matches() { grep -Eq "$@" changed.txt && echo true || echo false; }
+          {
+            echo "code=$(grep -Evq "$metadata" changed.txt && echo true || echo false)"
+            echo "link-index-lambda=$(matches -e "$shared" -e "$link_index")"
+            echo "openapi-index-lambda=$(matches -e "$shared" -e "$openapi_index")"
+            echo "dotnet=$(matches -e "$dotnet")"
+            echo "frontend-toolchain=$(matches -e "$frontend_toolchain")"
+          } | tee -a "$GITHUB_OUTPUT"
