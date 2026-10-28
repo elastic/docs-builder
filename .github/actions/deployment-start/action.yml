@@ -7,8 +7,10 @@ inputs:
   environment:
     description: 'The GitHub environment name, e.g. docs-preview'
     required: true
-  task:
-    description: 'The deployment task, used to find the deployment again on cleanup. Empty for none.'
+  pr-number:
+    description: |
+      The pull request number. Names the deployment task `<environment>-<pr-number>`, which
+      `preview-cleanup.yml` looks up by when the PR closes. Empty for pushes.
     required: false
     default: ''
   ref:
@@ -28,16 +30,18 @@ runs:
       uses: actions/github-script@v9
       env:
         ENVIRONMENT: ${{ inputs.environment }}
-        TASK: ${{ inputs.task }}
+        PR_NUMBER: ${{ inputs.pr-number }}
         REF: ${{ inputs.ref }}
       with:
         script: |
           const { owner, repo } = context.repo;
+          const environment = process.env.ENVIRONMENT;
+          const prNumber = process.env.PR_NUMBER;
           const deployment = await github.rest.repos.createDeployment({
             owner,
             repo,
-            environment: process.env.ENVIRONMENT,
-            task: process.env.TASK || undefined,
+            environment,
+            task: prNumber ? `${environment}-${prNumber}` : undefined,
             ref: process.env.REF,
             auto_merge: false,
             transient_environment: true,

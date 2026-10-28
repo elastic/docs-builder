@@ -34,6 +34,7 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             const environment = process.env.ENVIRONMENT;
+            // `deployment-start` names the task `<environment>-<pr number>`.
             const deployments = await github.rest.repos.listDeployments({
               owner,
               repo,

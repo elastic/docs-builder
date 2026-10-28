@@ -78,7 +78,7 @@ jobs:
         uses: $/.github/actions/deployment-start
         with:
           environment: assembler-preview
-          task: assembler-preview-${{ env.PR_NUMBER }}
+          pr-number: ${{ env.PR_NUMBER }}
           ref: ${{ steps.pr-details.outputs.result || github.event.pull_request.head.sha }}
 
       - name: Bootstrap Action Workspace

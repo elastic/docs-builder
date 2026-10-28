@@ -209,7 +209,6 @@ jobs:
       id-token: write
       pull-requests: none
     outputs:
-      deployment_result: ${{ steps.deployment.outputs.id }}
       path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
@@ -243,7 +242,7 @@ jobs:
         uses: $/.github/actions/deployment-start
         with:
           environment: docs-preview
-          task: ${{ github.event.pull_request.number && format('docs-preview-{0}', github.event.pull_request.number) || '' }}
+          pr-number: ${{ github.event.pull_request.number }}
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref_name }}
 
       - name: Generate env.PATH_PREFIX
