@@ -9,11 +9,7 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-  deployments: write
-  id-token: write
-  pull-requests: read
+permissions: {}
 
 concurrency:
   group: assembler-preview-${{ github.event.pull_request.number || inputs.pr_number }}
@@ -25,9 +21,16 @@ env:
 jobs:
   scope:
     uses: $/.github/workflows/changes.yml
+    permissions:
+      contents: read
 
   build:
     needs: [scope]
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
+      pull-requests: read
     if: needs.scope.outputs.code == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: docs-internal-latest-16
     env:
