@@ -119,6 +119,7 @@ internal class ListingFrontMatterConverter : YamlConverter<ListingFrontMatter>
 [YamlSerializable(typeof(ChangelogDirectiveBundleConfigYaml))]
 [YamlSerializable(typeof(ApplicableTo))]
 [YamlSerializable(typeof(YamlFrontMatter))]
+[YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Wizard.WizardConfig))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.LinkCardData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]

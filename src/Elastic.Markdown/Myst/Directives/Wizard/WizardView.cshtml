@@ -1,0 +1,7 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Wizard.WizardViewModel>
+@if (!string.IsNullOrEmpty(Model.ConfigJson))
+{
+	<docs-wizard>
+		<script type="application/json" data-wizard-config>@(new HtmlString(Model.ConfigJson))</script>
+	</docs-wizard>
+}

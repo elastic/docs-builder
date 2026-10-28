@@ -1,0 +1,462 @@
+# Sample config for the {wizard} directive: "Which Elastic is right for you?". See wizard.md for the schema.
+#
+# The journey, in two halves:
+#   WHAT to build   goal -> (one follow-up that picks the solution, tier and first step)
+#   WHERE to run it place -> (self-managed: how)  or  (cloud: control -> requirements -> billing) -> replacing
+#
+# Every question changes something the result shows: the solution, the way to run it, the tier, the first step,
+# a note, or the migration card. The build warns about any question that doesn't.
+#
+# Answers this file uses
+#   solution  elasticsearch | vectordb | observability | security
+#   family    cloud | self           deployment  self_eck | self_ece | self_download (self-managed only)
+#   step      the first thing to do  tier        the Serverless feature tier (Observability and Security only)
+#   needs_hosted  yes when a requirement rules out Serverless               replacing  what they're moving from
+
+meta:
+  title: Which Elastic is right for you?
+  intro: >-
+    Tell us what you're trying to do. We'll match you to the right Elastic solution and the best way to run it,
+    in the cloud with nothing to set up or patch, or on your own infrastructure.
+  start_button: Let's go
+  start: goal
+  progress_label: Your progress
+
+screens:
+
+  # ------------------------------------------------------------------ WHAT to build
+  goal:
+    type: question
+    layout: cards
+    progress: 8
+    question: What are you trying to do?
+    why: Pick the closest match. We'll ask a few follow-up questions to set things up the right way.
+    options:
+      - label: Add search to my app or website
+        hint: Help people find products, documents or answers.
+        tags: [Site search, Product catalogs, Documents]
+        set: { solution: elasticsearch }
+        next: es_kind
+      - label: Build AI features on my own data
+        hint: Chatbots and assistants that understand meaning, not just keywords.
+        tags: [Chatbots, Question answering, Recommendations]
+        next: ai_kind
+      - label: Understand what's happening in my systems
+        hint: Spot problems, find the cause and keep apps and infrastructure healthy.
+        tags: [Slow apps, Outages, Errors]
+        set: { solution: observability }
+        next: obs_signals
+      - label: Find and stop security threats
+        hint: Investigate suspicious activity, respond to attacks and protect devices.
+        tags: [Attacks, Suspicious activity, Incident response]
+        set: { solution: security }
+        next: sec_goal
+      - label: Not sure yet? No problem.
+        hint: We'll start you with a general-purpose setup so you can explore. You can create more projects later.
+        wide: true
+        set: { solution: elasticsearch, step: explore }
+        next: place
+
+  ai_kind:
+    type: question
+    progress: 16
+    question: What should your AI be able to do?
+    why: This decides how we set up your project, and the first thing we'll point you to.
+    options:
+      - label: Answer questions using my own documents or data
+        hint: A chatbot or assistant grounded in your content (RAG)
+        set: { solution: vectordb, step: rag }
+        next: vdb_limits
+      - label: Find things by meaning, not just keywords
+        hint: Similar products, related articles, or text and image similarity
+        set: { solution: vectordb, step: semantic }
+        next: vdb_limits
+      - label: Do that, and also search by keywords, filters and numbers
+        hint: AI and traditional search together
+        set: { solution: elasticsearch, step: hybrid }
+        next: place
+      - label: I'm not sure
+        set: { solution: vectordb, step: semantic }
+        next: vdb_limits
+
+  vdb_limits:
+    type: question
+    multi: true
+    progress: 24
+    question: Do you need any of these?
+    why: A few things need the more general-purpose setup. If one of these matters to you, tell us and we'll adjust.
+    options:
+      - label: More than 1 TB of data in one project
+        set: { solution: elasticsearch }
+      - label: Search applications
+        set: { solution: elasticsearch }
+      - label: Custom machine learning nodes
+        set: { solution: elasticsearch }
+      - label: None of these, or I'm not sure
+        exclusive: true
+    next: place
+
+  es_kind:
+    type: question
+    progress: 16
+    question: What will people be searching?
+    why: This decides the first thing we'll point you to.
+    options:
+      - label: Text, products or documents on a site or in an app
+        hint: Full-text search, filters and facets
+        set: { step: fulltext }
+        next: place
+      - label: Data from files, databases or other systems
+        hint: Get it in first, then search it
+        set: { step: ingest }
+        next: place
+      - label: Text and AI together
+        hint: Hybrid search
+        set: { step: hybrid }
+        next: place
+      - label: I'm not sure
+        set: { step: explore }
+        next: place
+
+  obs_signals:
+    type: question
+    progress: 16
+    question: What do you want to monitor first?
+    why: This helps us pick the right starting level and the first thing to set up. Starting small is fine, and you can move up later.
+    options:
+      - label: Logs
+        hint: Collect, search and alert on log data
+        set: { step: logs, tier: obs_logs }
+        next: place
+      - label: My servers, containers and their health
+        set: { step: infra, tier: obs_complete }
+        next: place
+      - label: How my applications perform
+        hint: Find slow requests and trace them through your services
+        set: { step: apm, tier: obs_complete }
+        next: place
+      - label: All of the above
+        set: { step: obs_start, tier: obs_complete }
+        next: place
+      - label: I'm not sure
+        hint: Start with logs. You can upgrade the tier later.
+        set: { step: obs_start, tier: obs_logs }
+        next: place
+
+  sec_goal:
+    type: question
+    progress: 16
+    question: What's your main security goal?
+    why: This helps us pick the right starting level and the first thing to set up.
+    options:
+      - label: Collect and investigate security events in one place
+        hint: Detect threats across your logs and systems (SIEM)
+        set: { step: siem, tier: sec_essentials }
+        next: sec_advanced
+      - label: Add AI to a security tool I already use
+        hint: AI triage and threat hunting alongside your current SIEM
+        set: { step: sec_ai, tier: sec_ease }
+        next: place
+      - label: Protect laptops and servers from attacks
+        hint: Endpoint protection
+        set: { step: endpoint, tier: sec_essentials }
+        flag: endpoint_addon
+        next: sec_advanced
+      - label: Find risky settings in my cloud accounts
+        hint: Cloud security posture
+        set: { step: cloud, tier: sec_essentials }
+        flag: cloud_addon
+        next: sec_advanced
+      - label: I'm not sure
+        set: { step: siem, tier: sec_essentials }
+        next: sec_advanced
+
+  sec_advanced:
+    type: question
+    multi: true
+    progress: 24
+    question: Do you need any of these?
+    why: These need the higher level. If you don't need them, the starting level covers a traditional SIEM.
+    options:
+      - label: Entity analytics, such as user and entity behavior analytics (UEBA)
+        set: { tier: sec_complete }
+      - label: AI Assistant or Attack Discovery
+        set: { tier: sec_complete }
+      - label: Private connectivity or IP filtering
+        set: { tier: sec_complete }
+      - label: None of these
+        exclusive: true
+    next: place
+
+  # ------------------------------------------------------------------ WHERE to run it
+  place:
+    type: question
+    progress: 40
+    question: Where would you like to run it?
+    why: Elastic Cloud means no servers to set up, patch or scale. If your data has to stay on your own infrastructure, we'll point you to the right self-managed option.
+    options:
+      - label: In the cloud, managed by Elastic
+        hint: The fastest way to get started
+        set: { family: cloud }
+        next: control
+      - label: On my own infrastructure or network
+        hint: On-prem, regulated or air-gapped, or your own Kubernetes
+        set: { family: self }
+        next: runmode
+      - label: I'm not sure
+        hint: We'll start with the cloud and check along the way
+        set: { family: cloud }
+        next: control
+
+  runmode:
+    type: question
+    progress: 55
+    question: How will you run it?
+    why: Self-managed Elastic comes in three forms, depending on your infrastructure.
+    options:
+      - label: On Kubernetes
+        hint: Kubernetes-native orchestration with Elastic Cloud on Kubernetes (ECK)
+        set: { deployment: self_eck }
+        next: replacing
+      - label: As a platform for many clusters and teams
+        hint: Elastic Cloud Enterprise (ECE) runs your own Elastic Cloud on VMs or your own premises
+        set: { deployment: self_ece }
+        next: replacing
+      - label: On my own servers or VMs
+        hint: Install and operate it yourself
+        set: { deployment: self_download }
+        next: replacing
+      - label: I'm not sure
+        set: { deployment: self_download }
+        next: replacing
+
+  control:
+    type: question
+    multi: true
+    progress: 55
+    question: Do you need to control any of these yourself?
+    why: Serverless is fully managed and versionless, which keeps things simple. These need Cloud Hosted instead.
+    options:
+      - label: When Elastic upgrades, or which version I run
+        hint: Serverless upgrades automatically
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: Custom plugins, bundles or analyzer dictionaries
+        hint: Not available in Serverless today
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: Node sizing, hardware, data tiers or ILM policies
+        hint: Serverless sizes and tiers your data for you
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: Native or LDAP users, or audit logging
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: Snapshots I run myself, cross-cluster replication or Watcher
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: None of these
+        hint: Let Elastic handle it
+        exclusive: true
+        add: { serverless: 3 }
+    next: special
+
+  special:
+    type: question
+    multi: true
+    progress: 70
+    question: Do you have any of these requirements?
+    why: Regions, compliance programs and network options differ between Serverless and Cloud Hosted, so we'll check your match covers them.
+    options:
+      - label: FedRAMP
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+        flag: fedramp
+      - label: A specific cloud provider or region
+        hint: Cloud Hosted has more than 50 regions
+        add: { hosted: 1 }
+        flag: check_region
+      - label: Bring-your-own encryption key, or static IP addresses
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: Private connectivity on Google Cloud
+        hint: Serverless supports AWS PrivateLink and Azure Private Link
+        set: { needs_hosted: yes }
+        add: { hosted: 3 }
+      - label: HIPAA, PCI or another compliance program
+        flag: compliance
+      - label: Nothing special
+        exclusive: true
+    next: after_special
+
+  after_special:
+    type: route
+    rules:
+      - when: { key: needs_hosted, equals: yes }
+        next: replacing
+    else: billing
+
+  billing:
+    type: question
+    progress: 82
+    question: How would you like to pay?
+    why: Serverless is usage-based. Cloud Hosted is for capacity you provision. This only decides between the two when nothing else does.
+    options:
+      - label: Only for what I use
+        add: { serverless: 2 }
+        next: replacing
+      - label: For capacity I reserve
+        add: { hosted: 2 }
+        next: replacing
+      - label: I'm not sure
+        add: { serverless: 1 }
+        next: replacing
+
+  replacing:
+    type: question
+    progress: 92
+    question: Are you moving from something else?
+    why: We'll add the right migration help to your next steps.
+    options:
+      - label: Splunk
+        set: { replacing: Splunk }
+        next: done
+      - label: Datadog
+        set: { replacing: Datadog }
+        next: done
+      - label: An Elastic Stack I already run
+        set: { replacing: Elastic }
+        next: done
+      - label: Another tool
+        set: { replacing: other }
+        next: done
+      - label: No, I'm starting fresh
+        set: { replacing: none }
+        next: done
+
+  done:
+    type: result
+    progress: 100
+
+# ------------------------------------------------------------------ the result
+results:
+  heading: "{solution} on {deployment} is right for you"
+  answers_heading: Your answers
+  change_label: Change
+  start_over_label: Start over
+  back_label: Back
+
+  variables:
+    solution:
+      answer: solution
+      items:
+        elasticsearch:
+          name: Elasticsearch
+          blurb: The general-purpose project for search, relevance and analytics, including hybrid search that combines keywords and vectors.
+          docs: { title: Get started with Elasticsearch, href: "https://www.elastic.co/docs/solutions/search/get-started" }
+        vectordb:
+          name: Vector Database
+          blurb: Tuned for semantic search, RAG and embedding retrieval, with vector-optimized defaults and built-in models.
+          docs: { title: Vector database docs, href: "https://www.elastic.co/docs/solutions/vector-database" }
+        observability:
+          name: Observability
+          blurb: Logs, metrics and traces in one place, with search and alerting.
+          docs: { title: Get started with Observability, href: "https://www.elastic.co/docs/solutions/observability/get-started" }
+        security:
+          name: Security
+          blurb: SIEM, endpoint protection and cloud posture on one platform.
+          docs: { title: Get started with Security, href: "https://www.elastic.co/docs/solutions/security/get-started" }
+
+    deployment:
+      answer: deployment            # set directly on the self-managed path
+      score: [serverless, hosted]   # otherwise the higher score wins, and ties go to Serverless
+      items:
+        serverless:
+          name: Elastic Cloud Serverless
+          blurb: Elastic runs, scales and upgrades it for you, and you pay for what you use.
+          docs: { title: About Serverless, href: "https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/serverless" }
+        hosted:
+          name: Elastic Cloud Hosted
+          blurb: Elastic runs it, and you choose hardware, version and upgrade timing.
+          docs: { title: About Cloud Hosted, href: "https://www.elastic.co/docs/deploy-manage/deploy/elastic-cloud/cloud-hosted" }
+        self_download:
+          name: self-managed Elastic
+          blurb: You install and operate it on your own servers or VMs.
+          docs: { title: Self-managed deployment, href: "https://www.elastic.co/docs/deploy-manage/deploy/self-managed" }
+        self_eck:
+          name: Kubernetes with ECK
+          blurb: You run it on your own Kubernetes clusters with the Elastic operator.
+          docs: { title: About ECK, href: "https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s" }
+        self_ece:
+          name: Elastic Cloud Enterprise (ECE)
+          blurb: Run your own Elastic Cloud and manage many clusters from one place.
+          docs: { title: About ECE, href: "https://www.elastic.co/docs/deploy-manage/deploy/cloud-enterprise" }
+
+    tier:                           # Serverless Observability and Security only
+      answer: tier
+      optional: true
+      when: { key: deployment, equals: serverless }
+      items:
+        obs_logs:
+          name: Logs Essentials
+          blurb: "Tier: Logs Essentials covers log storage, dashboards, alerting and integrations. You can upgrade to Complete later, but not back."
+          docs: { title: Observability tiers, href: "https://www.elastic.co/docs/solutions/observability/observability-serverless-feature-tiers" }
+        obs_complete:
+          name: Complete
+          blurb: "Tier: Complete adds APM, machine learning, SLOs, infrastructure and hosts, Synthetics and the AI Assistant."
+          docs: { title: Observability tiers, href: "https://www.elastic.co/docs/solutions/observability/observability-serverless-feature-tiers" }
+        sec_ease:
+          name: EASE
+          blurb: "Tier: EASE adds AI triage and hunting alongside a third-party SIEM."
+          docs: { title: Security tiers, href: "https://www.elastic.co/docs/solutions/security/security-serverless-feature-tiers" }
+        sec_essentials:
+          name: Security Analytics Essentials
+          blurb: "Tier: Security Analytics Essentials covers a traditional SIEM."
+          docs: { title: Security tiers, href: "https://www.elastic.co/docs/solutions/security/security-serverless-feature-tiers" }
+        sec_complete:
+          name: Security Analytics Complete
+          blurb: "Tier: Security Analytics Complete adds entity analytics, the AI Assistant, Attack Discovery, private connectivity and IP filtering."
+          docs: { title: Security tiers, href: "https://www.elastic.co/docs/solutions/security/security-serverless-feature-tiers" }
+
+    first_step:
+      answer: step
+      items:
+        explore:  { name: Explore, docs: { title: "First step: explore Elasticsearch", href: "https://www.elastic.co/docs/solutions/search/get-started" } }
+        fulltext: { name: Full-text search, docs: { title: "First step: full-text search", href: "https://www.elastic.co/docs/solutions/search/full-text" } }
+        ingest:   { name: Ingest, docs: { title: "First step: get your data in", href: "https://www.elastic.co/docs/solutions/search/ingest-for-search" } }
+        hybrid:   { name: Hybrid search, docs: { title: "First step: hybrid search", href: "https://www.elastic.co/docs/solutions/search/hybrid-search" } }
+        semantic: { name: Semantic search, docs: { title: "First step: semantic search", href: "https://www.elastic.co/docs/solutions/search/semantic-search" } }
+        rag:      { name: RAG, docs: { title: "First step: build a RAG app", href: "https://www.elastic.co/docs/solutions/search/rag" } }
+        logs:     { name: Logs, docs: { title: "First step: send logs", href: "https://www.elastic.co/docs/solutions/observability/logs" } }
+        infra:    { name: Infrastructure, docs: { title: "First step: monitor hosts", href: "https://www.elastic.co/docs/solutions/observability/infra-and-hosts" } }
+        apm:      { name: APM, docs: { title: "First step: trace applications", href: "https://www.elastic.co/docs/solutions/observability/apm" } }
+        obs_start: { name: Observability, docs: { title: "First step: get started", href: "https://www.elastic.co/docs/solutions/observability/get-started" } }
+        siem:     { name: SIEM, docs: { title: "First step: detect with a SIEM", href: "https://www.elastic.co/docs/solutions/security/get-started/get-started-detect-with-siem" } }
+        sec_ai:   { name: AI for Security, docs: { title: "First step: AI for Security", href: "https://www.elastic.co/docs/solutions/security/ai" } }
+        endpoint: { name: Endpoint protection, docs: { title: "First step: set up Elastic Defend", href: "https://www.elastic.co/docs/solutions/security/configure-elastic-defend" } }
+        cloud:    { name: Cloud security, docs: { title: "First step: cloud security posture", href: "https://www.elastic.co/docs/solutions/security/cloud" } }
+
+  # The first rule that matches wins. The last one has no `when`, so there is always a button.
+  cta:
+    - when: { key: deployment, starts_with: self }
+      label: Read the install guide
+      href_from: deployment
+    - when: { key: deployment, equals: hosted }
+      label: Create a deployment
+      href: https://cloud.elastic.co/deployments/create
+    - label: Create your {solution} project
+      # Prototype only: wire the real deep link with the solution preselected.
+      href: https://cloud.elastic.co/projects/create
+
+  extra_docs:
+    - when: { key: replacing, in: [Splunk, Datadog, Elastic, other] }
+      title: Migrate your data to Elastic
+      href: https://www.elastic.co/docs/manage-data/migrate
+
+  flag_notes:
+    endpoint_addon: Endpoint protection is a paid add-on for Serverless Security projects.
+    cloud_addon: Cloud protection is a paid add-on for Serverless Security projects.
+    fedramp: "FedRAMP is offered with Elastic Cloud Hosted. Check the FedRAMP page for the tier and eligibility you need."
+    check_region: "Quick check before you start: confirm your cloud provider and region are available for your match."
+    compliance: "Quick check before you start: confirm your compliance program in the Elastic Trust Center."
+  close_call_note: "Good to know: {other} is also a strong fit if your needs change."
