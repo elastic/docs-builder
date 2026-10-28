@@ -44,7 +44,7 @@ public class TopicPageTests
 
 		var topics = OpenApiExtensionReader.ParseXTopics(document);
 
-		topics.Should().Equal(new OpenApiTopic("Rate limiting", "Calls are limited."), new OpenApiTopic("Principles", "REST."));
+		topics.Should().Equal(new ApiTopicPage("Rate limiting", "Calls are limited."), new ApiTopicPage("Principles", "REST."));
 	}
 
 	[Test]

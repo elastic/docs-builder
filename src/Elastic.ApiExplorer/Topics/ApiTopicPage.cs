@@ -6,7 +6,6 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -15,12 +14,11 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Topics;
 
-/// <summary>A page of prose from the spec's <c>x-topics</c> extension.</summary>
+/// <summary>One entry of the spec's <c>x-topics</c> extension, and the page of prose it renders as.</summary>
 public record ApiTopicPage(string Title, string Content) : IApiModel<TopicViewModel>
 {
 	/// <summary>A topic titled Authentication becomes the <c>/authentication</c> page, as on Bump.sh.</summary>
-	public static bool IsAuthentication(OpenApiTopic topic) =>
-		string.Equals(topic.Title, ApiUrlBuilder.AuthenticationSegment, StringComparison.OrdinalIgnoreCase);
+	public bool IsAuthentication => string.Equals(Title, ApiUrlBuilder.AuthenticationSegment, StringComparison.OrdinalIgnoreCase);
 
 	public TopicViewModel? CreatePageModel(ApiRenderContext context) => TopicViewModel.Create(this, context);
 

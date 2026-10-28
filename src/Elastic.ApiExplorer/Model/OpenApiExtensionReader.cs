@@ -5,6 +5,7 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
@@ -15,9 +16,6 @@ public sealed record XTagGroups(IReadOnlyList<string> OrderedGroupNames, IReadOn
 
 /// <summary>Metadata parsed from a global OpenAPI tag object.</summary>
 public sealed record OpenApiTagMetadata(string DisplayName, string Description, ApiTagExternalDoc? ExternalDocs);
-
-/// <summary>One entry of the <c>x-topics</c> document extension: a page of prose with a title.</summary>
-public sealed record OpenApiTopic(string Title, string Content);
 
 /// <summary>
 /// The single home for reading Elastic's <c>x-*</c> OpenAPI extensions
@@ -103,7 +101,7 @@ public static class OpenApiExtensionReader
 	}
 
 	/// <summary>Parses the <c>x-topics</c> document extension in spec order. Entries without a title are skipped.</summary>
-	public static IReadOnlyList<OpenApiTopic> ParseXTopics(OpenApiDocument openApiDocument)
+	public static IReadOnlyList<ApiTopicPage> ParseXTopics(OpenApiDocument openApiDocument)
 	{
 		if (openApiDocument.Extensions?.TryGetValue("x-topics", out var extension) != true || extension is not JsonNodeExtension jsonExt)
 			return [];
@@ -111,7 +109,7 @@ public static class OpenApiExtensionReader
 		if (jsonExt.Node is not JsonArray array)
 			return [];
 
-		var topics = new List<OpenApiTopic>(array.Count);
+		var topics = new List<ApiTopicPage>(array.Count);
 		foreach (var element in array)
 		{
 			if (element is not JsonObject topic)
@@ -121,7 +119,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrWhiteSpace(title))
 				continue;
 
-			topics.Add(new OpenApiTopic(title.Trim(), ReadString(topic, "content") ?? string.Empty));
+			topics.Add(new ApiTopicPage(title.Trim(), ReadString(topic, "content") ?? string.Empty));
 		}
 
 		return topics;

@@ -6,8 +6,8 @@ using System.IO.Abstractions;
 using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
-using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -109,7 +109,7 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 		string? urlPathPrefix,
 		string apiUrlSuffix,
 		LandingNavigationItem root,
-		OpenApiTopic topic
+		ApiTopicPage topic
 	)
 	{
 		var page = new ApiStructuralPage(ApiStructuralKind.Authentication, topic.Content);

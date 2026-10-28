@@ -210,7 +210,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			),
 			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
 		];
-		return (topicsNavigation, remainingTopics.Any(ApiTopicPage.IsAuthentication));
+		return (topicsNavigation, remainingTopics.Any(static topic => topic.IsAuthentication));
 	}
 
 	private static IReadOnlyList<IFileInfo> ChildFiles(ResolvedApiConfiguration? apiConfig, int? versionMajor) =>
@@ -224,14 +224,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 
 	private List<INavigationItem> CreateTopicNavigationItems(
 		string apiUrlSuffix,
-		IReadOnlyList<OpenApiTopic> topics,
+		IReadOnlyList<ApiTopicPage> topics,
 		TopicsNavigationItem topicsNavigation
 	)
 	{
 		var items = new List<INavigationItem>(topics.Count);
 		foreach (var topic in topics)
 		{
-			if (ApiTopicPage.IsAuthentication(topic))
+			if (topic.IsAuthentication)
 			{
 				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
 					context.UrlPathPrefix,
@@ -244,14 +244,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				continue;
 			}
 
-			items.Add(
-				new TopicNavigationItem(
-					TopicUrl(apiUrlSuffix, topic),
-					new ApiTopicPage(topic.Title, topic.Content),
-					topicsNavigation.Landing,
-					topicsNavigation
-				)
-			);
+			items.Add(new TopicNavigationItem(TopicUrl(apiUrlSuffix, topic), topic, topicsNavigation.Landing, topicsNavigation));
 		}
 
 		return items;
@@ -279,7 +272,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	/// <summary>The URLs each child takes over from the topics it replaces, for the version switcher.</summary>
 	private Dictionary<IFileInfo, IReadOnlyList<string>> ReplacedTopicNames(
 		string apiUrlSuffix,
-		IReadOnlyDictionary<OpenApiTopic, IFileInfo> coveredTopics,
+		IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics,
 		bool hasSchemes
 	) =>
 		coveredTopics.GroupBy(static pair => pair.Value).ToDictionary(
@@ -291,10 +284,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	/// The topic page, and for an Authentication topic the <c>/authentication</c> page another version builds from it. That page
 	/// name stays with the generated Authentication page when this version's spec declares security schemes.
 	/// </summary>
-	private IEnumerable<string> ReplacedNames(string apiUrlSuffix, OpenApiTopic topic, bool hasSchemes)
+	private IEnumerable<string> ReplacedNames(string apiUrlSuffix, ApiTopicPage topic, bool hasSchemes)
 	{
 		yield return TopicUrl(apiUrlSuffix, topic);
-		if (ApiTopicPage.IsAuthentication(topic) && !hasSchemes)
+		if (topic.IsAuthentication && !hasSchemes)
 			yield return ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix);
 	}
 
@@ -303,14 +296,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	/// its first heading matches the topic title or its text matches the topic content. The topic is not built;
 	/// elastic/docs-infra redirects its bump.sh URL to the child.
 	/// </summary>
-	private Dictionary<OpenApiTopic, IFileInfo> CoveredTopics(
+	private Dictionary<ApiTopicPage, IFileInfo> CoveredTopics(
 		string apiUrlSuffix,
-		IReadOnlyList<OpenApiTopic> topics,
+		IReadOnlyList<ApiTopicPage> topics,
 		IReadOnlyList<IFileInfo> children,
 		bool hasSchemes
 	)
 	{
-		var covered = new Dictionary<OpenApiTopic, IFileInfo>();
+		var covered = new Dictionary<ApiTopicPage, IFileInfo>();
 		if (topics.Count == 0 || children.Count == 0)
 			return covered;
 
@@ -331,7 +324,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				match.Name
 			);
 			covered[topic] = match;
-			if (ApiTopicPage.IsAuthentication(topic) && !hasSchemes)
+			if (topic.IsAuthentication && !hasSchemes)
 			{
 				_logger.LogWarning(
 					"API '{ApiKey}' builds no /authentication page: the children: page '{File}' replaces the Authentication topic and the spec declares no security schemes. Redirect /authentication to the child page in elastic/docs-infra.",
@@ -344,14 +337,14 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		return covered;
 	}
 
-	private static bool Covers((string? Heading, string? Body) child, OpenApiTopic topic) =>
+	private static bool Covers((string? Heading, string? Body) child, ApiTopicPage topic) =>
 		string.Equals(child.Heading, topic.Title, StringComparison.OrdinalIgnoreCase)
 			|| (!string.IsNullOrWhiteSpace(topic.Content) && CollapseWhitespace(child.Body) == CollapseWhitespace(topic.Content));
 
 	private static string CollapseWhitespace(string? text) =>
 		string.Join(' ', (text ?? string.Empty).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
-	private string TopicUrl(string apiUrlSuffix, OpenApiTopic topic) =>
+	private string TopicUrl(string apiUrlSuffix, ApiTopicPage topic) =>
 		ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, ApiUrlBuilder.TopicMoniker(topic.Title));
 
 	private string ChildUrl(string apiUrlSuffix, string slug) =>
