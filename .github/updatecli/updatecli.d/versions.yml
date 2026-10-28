@@ -25,15 +25,6 @@ actions:
       title: '[Automation] Bump product version numbers'
 
 sources:
-  latest-stack-version:
-    name: Get latest stack version
-    kind: json
-    spec:
-      files:
-        - https://elastic-release-api.s3.us-west-2.amazonaws.com/public/past-releases.json
-      engine: dasel/v2
-      key: "releases.last().version"
-
   latest-edot-android-version:
     name: Get latest release version for the apm-agent-android
     kind: githubrelease
@@ -461,16 +452,6 @@ sources:
         pattern: ">=9.0.0-0 <10.0.0"
 
 targets:
-  update-docs-docset-stack:
-    name: 'Update config/versions.yml stack {{ source "latest-stack-version" }}'
-    scmid: githubConfig
-    sourceid: latest-stack-version
-    kind: file
-    spec:
-      file: config/versions.yml
-      matchpattern: '(stack: &stack\s+base: [\d\.]+\s+current:)\s+(.+)'
-      replacepattern: '$1 {{ source "latest-stack-version" }}'
-
   update-docs-docset-android:
     name: 'Update config/versions.yml edot-android {{ source "latest-edot-android-version" }}'
     scmid: githubConfig

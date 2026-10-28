@@ -7,6 +7,9 @@
 #   docs-builder codex clone config/codex.example.yml
 #   docs-builder codex build config/codex.example.yml
 #   docs-builder codex serve
+#
+# Unknown keys are reported as errors, so a typo (e.g. `site_prefx`) fails the build
+# with a "Did you mean" suggestion instead of being silently ignored.
 
 # Site prefix for all codex URLs
 # All documentation sets will be served under this prefix
@@ -17,54 +20,34 @@ site_prefix: /
 # Title displayed on the codex index page
 title: "Elastic's Internal Dev Docs"
 
-# Documentation sets to include in the codex
-# Each documentation set is cloned from a git repository and built separately
-documentation_sets:
-  # APM Managed Intake Service documentation
-  - name: docs-eng-team
-    category: docs
-    display_name: "Docs Engineering"
-    icon: wordWrap
+# Environment name for this codex (e.g. "internal", "security").
+# Used as part of the Elasticsearch index namespace.
+environment: internal
 
-  # CI Developer Guide
-  - name: docs-content-internal
-    category: docs
-    display_name: "Docs Content Internal"
-    icon: ci
+# Base URL for canonical links and frontmatter URLs.
+canonical_base_url: https://codex.elastic.dev
+
+# Predefined groups. Documentation sets reference a group by its id (`codex.group` in their docset.yml).
+# Group landing: /g/{id}/ (or /{site_prefix}/g/{id}/ with prefix)
+# Group membership only affects which sidebar navigation is shown, not the URL.
+groups:
+  - id: docs
+    name: "Documentation"
+    description: "Docs engineering and content guides"
+    icon: docs
 
 # Configuration options reference:
 #
-# name (required):
-#   The identifier for the documentation set. Used as the default for
-#   origin (elastic/{name}) and repo_name.
+# groups[].id (required):
+#   Unique identifier, used in URLs (/g/{id}) and referenced by documentation sets.
 #
-# origin (optional):
-#   The git repository to clone from. Defaults to "elastic/{name}".
-#   Can be a short form like "elastic/my-repo" or a full URL.
+# groups[].name (required):
+#   Title shown on the codex landing page card.
 #
-# branch (required):
-#   The git branch to checkout.
+# groups[].description (optional):
+#   Short description shown on the codex landing page card.
 #
-# path (optional):
-#   The directory within the repository containing documentation.
-#   Defaults to "docs".
-#
-# category (optional):
-#   Group documentation sets under a category (group).
-#   Repos use stable URLs: /r/{repo_name}/ (or /{site_prefix}/r/{repo_name}/ with prefix)
-#   Group landing: /g/{category}/ (or /{site_prefix}/g/{category}/ with prefix)
-#   Group membership only affects which sidebar navigation is shown, not the URL.
-#
-# repo_name (optional):
-#   Override the name used for checkout directories and URL paths.
-#   Defaults to the value of "name". This allows including the same
-#   repository multiple times with different URL paths.
-#
-# display_name (optional):
-#   The title shown on the codex landing page card.
-#   If not specified, uses the documentation set's title from docset.yml.
-#
-# icon (optional):
+# groups[].icon (optional):
 #   Icon shown on the codex landing page card.
 #   Available icons: elasticsearch, kibana, observability, security,
 #   enterprise-search, logstash, beats, apm, fleet, cloud, integrations,

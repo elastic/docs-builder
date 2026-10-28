@@ -25,6 +25,9 @@ concurrency:
   group: docs-preview-local-${{ github.event_name == 'pull_request' && format('pr{0}-{1}', github.event.pull_request.number, github.event.pull_request.head.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
 jobs:
   match:
     if: github.event.repository.fork == false
@@ -289,8 +292,8 @@ jobs:
               exit 1;
               ;;
           esac
-          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
-          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
+          echo "PATH_PREFIX=${path_prefix}" >> "$GITHUB_ENV"
+          echo "result=${path_prefix}" >> "$GITHUB_OUTPUT"
 
       - name: Bootstrap Action Workspace
         if: >

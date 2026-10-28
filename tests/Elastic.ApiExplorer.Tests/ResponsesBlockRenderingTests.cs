@@ -51,8 +51,8 @@ public class ResponsesBlockRenderingTests
 	{
 		var html = await RenderHtml(Response("200", "success", "Successful response"));
 
-		html.Should().Contain(">Response</span>");
-		html.Should().NotContain(">Responses</span>");
+		html.Should().Contain(">Response</a>");
+		html.Should().NotContain(">Responses</a>");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 	}
 
@@ -63,16 +63,14 @@ public class ResponsesBlockRenderingTests
 		{
 			StatusCode = "400",
 			StatusClass = "error",
-			FirstContentType = "application/json",
 			Response = new OpenApiResponse { Description = "Invalid input data response" },
 			Contents =
 			[
-				new ApiResponseContent
+				new ApiMediaContent
 				{
 					ContentType = "application/json",
 					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
 					Properties = null,
-					ArrayItemProperties = null,
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants =
@@ -80,9 +78,7 @@ public class ResponsesBlockRenderingTests
 							Variant("PlatformErrorResponse", "res-400-variant-platform"),
 							Variant("SiemErrorResponse", "res-400-variant-siem")
 						],
-						ShouldCollapse = false,
-						ContainerId = "res-400-union-options",
-						UseHiddenUntilFound = false
+						ContainerId = "res-400-union-options"
 					}
 				}
 			],
@@ -96,6 +92,37 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
+	[Arguments("bedrock_config")]
+	[Arguments("Security_Lists_API_list_item")]
+	[Arguments("PlatformErrorResponse")]
+	public async Task Render_UnionVariant_ShowsItsNameWhateverTheIdStyle(string displayName)
+	{
+		var html = await RenderHtml(new ApiResponse
+		{
+			StatusCode = "400",
+			StatusClass = "error",
+			Response = new OpenApiResponse { Description = "Invalid input data response" },
+			Contents =
+			[
+				new ApiMediaContent
+				{
+					ContentType = "application/json",
+					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
+					Properties = null,
+					UnionVariants = new ApiUnionVariants
+					{
+						Variants = [Variant(displayName, "res-400-variant-x")],
+						ContainerId = "res-400-union-options"
+					}
+				}
+			],
+			Headers = []
+		});
+
+		html.Should().Contain($">{displayName}</span></code>");
+	}
+
+	[Test]
 	public async Task Render_ResponseDescription_RendersInlineCode()
 	{
 		var html = await RenderHtml(Response("200", "success", "Disabled by the `alerting:v2:enabled` setting."));
@@ -105,7 +132,7 @@ public class ResponsesBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_Response_PutsStatusAndMediaTypeAboveTheDescription()
+	public async Task Render_Response_PutsStatusDescriptionAndMediaTypeInThreeColumns()
 	{
 		var html = await RenderHtml(
 			Response("200", "success", "A JSON object containing pipelines statistics.\n\n- queue depth\n- worker utilization")
@@ -113,20 +140,17 @@ public class ResponsesBlockRenderingTests
 
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
 		button.Should().Contain("response-status-chip");
-		button.Should().Contain("application/json");
-		button.Should().Contain("response-toggle-icon");
+		button.Should().NotContain("application/json");
 		button.Should().NotContain("queue depth");
 		button.Should().NotContain("<ul>");
-		html.Should().Contain("<ul>");
 		html.Should().Contain("<li>queue depth</li>");
-		html
-			.IndexOf("response-description", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
-		html
-			.IndexOf("content-type-tag", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("response-description", StringComparison.Ordinal));
+		var status = html.IndexOf("</button>", StringComparison.Ordinal);
+		var description = html.IndexOf("response-description", StringComparison.Ordinal);
+		var mediaType = html.IndexOf("content-type-tag", StringComparison.Ordinal);
+		var icon = html.IndexOf("response-toggle-icon", StringComparison.Ordinal);
+		description.Should().BeGreaterThan(status);
+		mediaType.Should().BeGreaterThan(description);
+		icon.Should().BeGreaterThan(mediaType);
 	}
 
 	[Test]
@@ -137,13 +161,19 @@ public class ResponsesBlockRenderingTests
 		var button = html[html.IndexOf("<button", StringComparison.Ordinal)..html.IndexOf("</button>", StringComparison.Ordinal)];
 		button.Should().NotContain("<a ");
 		html.Should().Contain("href=\"https://www.elastic.co/guide\"");
-		html.IndexOf("<a ", StringComparison.Ordinal).Should().BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
+		html
+			.IndexOf("href=\"https://www.elastic.co/guide\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("</button>", StringComparison.Ordinal));
 	}
 
 	[Test]
 	public async Task Render_ResponseWithoutSchemaOrHeaders_RendersStaticRowWithoutEmptyBody()
 	{
-		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with { Contents = [] });
+		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with
+		{
+			Contents = [new ApiMediaContent { ContentType = "application/json", Type = null, Properties = null }]
+		});
 
 		html.Should().Contain("response-panel--static");
 		html.Should().Contain("response-status-row");
@@ -153,6 +183,40 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("response-toggle-icon");
 		html.Should().NotContain("response-panel-body");
 		html.Should().NotContain("response-200-fields");
+	}
+
+	[Test]
+	public async Task Render_ResponseWithTwoContentTypes_TagsTheActiveTypeAndPicksFromASelectInTheBody()
+	{
+		var response = Response("200", "success", "OK", "application/json");
+		var binary = new ApiMediaContent
+		{
+			ContentType = "application/zip",
+			Type = new TypeAnnotation([new TypeSpan("string(binary)")]),
+			Properties = null
+		};
+
+		var html = await RenderHtml(response with { Contents = [.. response.Contents, binary] });
+
+		html.Should().Contain(
+			"<span class=\"content-type-tag\" data-content-type-current=\"response-200-content\">application/json</span>"
+		);
+		html.Should().Contain("<label for=\"response-200-content-select\">Content type</label>");
+		html.Should().Contain("<option value=\"response-200-content-0\" selected=\"selected\">application/json</option>");
+		html.Should().Contain("<option value=\"response-200-content-1\">application/zip</option>");
+		html.Should().Contain("role=\"group\" aria-label=\"200 response content types\"");
+		html.Should().Contain("id=\"response-200-content-1\" hidden=\"until-found\"");
+		html.Should().Contain("string(binary)");
+	}
+
+	[Test]
+	public async Task Render_ResponseWithOneContentType_TagsItAndHasNoPicker()
+	{
+		var html = await RenderHtml(Response("200", "success", "OK"));
+
+		html.Should().Contain("<span class=\"content-type-tag\">application/json</span>");
+		html.Should().NotContain("data-content-type-current");
+		html.Should().NotContain("data-content-type-select");
 	}
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
@@ -166,7 +230,7 @@ public class ResponsesBlockRenderingTests
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		return new HtmlString(ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
+		return new HtmlString(ApiHtmlSanitizer.Sanitize(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
 	}
 
 	private static ApiResponse Response(
@@ -179,17 +243,10 @@ public class ResponsesBlockRenderingTests
 		{
 			StatusCode = statusCode,
 			StatusClass = statusClass,
-			FirstContentType = contentType,
 			Response = new OpenApiResponse { Description = description },
 			Contents =
 			[
-				new ApiResponseContent
-				{
-					ContentType = contentType,
-					Type = new TypeAnnotation([new TypeSpan("object")]),
-					Properties = null,
-					ArrayItemProperties = null
-				}
+				new ApiMediaContent { ContentType = contentType, Type = new TypeAnnotation([new TypeSpan("object")]), Properties = null }
 			],
 			Headers = []
 		};

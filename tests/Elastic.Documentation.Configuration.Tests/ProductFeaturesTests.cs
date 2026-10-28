@@ -108,12 +108,52 @@ public class ProductFeaturesTests
 	}
 
 	[Test]
+	public void DraArtifact_WhenSet_IsDistinctFromRepository()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    repository: 'widget-src'
+			    dra_artifact: 'widget-artifact'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		var product = config.Products["widget"];
+		product.Repository.Should().Be("widget-src");
+		product.DraArtifact.Should().Be("widget-artifact");
+	}
+
+	[Test]
+	public void DraArtifact_WhenOmitted_IsNull()
+	{
+		var config = ParseProducts(
+			"""
+			products:
+			  widget:
+			    display: 'Widget'
+			    versioning: 'stack'
+			    features:
+			      release-notes: dra
+			"""
+		);
+
+		config.Products["widget"].DraArtifact.Should().BeNull();
+	}
+
+	[Test]
 	[Arguments("true", ReleaseNotesPath.OnRelease)]
 	[Arguments("false", ReleaseNotesPath.None)]
-	[Arguments("prestage", ReleaseNotesPath.Prestage)]
-	[Arguments("Prestage", ReleaseNotesPath.Prestage)]
-	[Arguments("dra", ReleaseNotesPath.Prestage)]
-	[Arguments("Dra", ReleaseNotesPath.Prestage)]
+	[Arguments("dra", ReleaseNotesPath.DailyReleasableArtifacts)]
+	[Arguments("Dra", ReleaseNotesPath.DailyReleasableArtifacts)]
+	[Arguments("prestage", ReleaseNotesPath.DailyReleasableArtifacts)] // legacy alias
+
+	[Arguments("Prestage", ReleaseNotesPath.DailyReleasableArtifacts)] // legacy alias
+
 	[Arguments("on-release", ReleaseNotesPath.OnRelease)]
 	public void ReleaseNotesFeature_AcceptsBooleansAndPathStrings(string value, ReleaseNotesPath expected)
 	{

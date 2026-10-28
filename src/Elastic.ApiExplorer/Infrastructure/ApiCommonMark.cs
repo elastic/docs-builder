@@ -36,16 +36,41 @@ internal static class ApiCommonMark
 		_ = markdown.AppendLine();
 	}
 
+	/// <summary>A fenced code block. The fence is longer than any backtick run in the source, so a sample that holds a fence stays whole.</summary>
 	public static void Fence(StringBuilder markdown, string language, string? source)
 	{
 		if (string.IsNullOrEmpty(source))
 			return;
 
-		_ = markdown.Append("```");
+		var fence = new string('`', Math.Max(3, LongestBacktickRun(source) + 1));
+		_ = markdown.Append(fence);
 		_ = markdown.AppendLine(language);
 		_ = markdown.AppendLine(source.TrimEnd());
-		_ = markdown.AppendLine("```");
+		_ = markdown.AppendLine(fence);
 		_ = markdown.AppendLine();
+	}
+
+	/// <summary>Text as an inline code span. The delimiter is longer than any backtick run inside it, so the text survives as written.</summary>
+	public static string CodeSpan(string? text)
+	{
+		text ??= "";
+		var delimiter = new string('`', LongestBacktickRun(text) + 1);
+		// A backtick at either end would merge with the delimiter, so CommonMark strips one space of padding on each side.
+		var padding = text.StartsWith('`') || text.EndsWith('`') ? " " : "";
+		return $"{delimiter}{padding}{text}{padding}{delimiter}";
+	}
+
+	private static int LongestBacktickRun(string text)
+	{
+		var longest = 0;
+		var run = 0;
+		foreach (var character in text)
+		{
+			run = character == '`' ? run + 1 : 0;
+			longest = Math.Max(longest, run);
+		}
+
+		return longest;
 	}
 
 	public static string Link(string text, string? url)

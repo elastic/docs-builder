@@ -35,7 +35,7 @@ public class CardGroupBlock(DirectiveBlockParser parser, ParserContext context) 
 	public override void FinalizeAndValidate(ParserContext context)
 	{
 		Title = Prop("title");
-		Intro = Prop("intro");
+		Intro = DirectiveLinkValidator.ResolveMarkdownLinks(Prop("intro"), this, context);
 		Anchor = Prop("id");
 		Variant = Prop("variant");
 	}

@@ -2,11 +2,11 @@ import { initializeOtel } from './instrumentation'
 
 describe('initializeOtel', () => {
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('skips initialization for Elastic Synthetics traffic', () => {
-        jest.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+        vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
             'Mozilla/5.0 Chrome/120.0.0.0 Elastic/Synthetics'
         )
 
@@ -14,10 +14,10 @@ describe('initializeOtel', () => {
     })
 
     it('does not read document.cookie during initialization', () => {
-        jest.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+        vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
             'Mozilla/5.0 Chrome/120.0.0.0'
         )
-        const cookieSpy = jest.spyOn(document, 'cookie', 'get')
+        const cookieSpy = vi.spyOn(document, 'cookie', 'get')
 
         initializeOtel()
 

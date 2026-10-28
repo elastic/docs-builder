@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="GitHub.Actions.Core" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />

@@ -98,6 +98,52 @@ public class DocsSyncTests
 	}
 
 	[Test]
+	public async Task TestPlan_RetainsRecentHashedAssetsInsteadOfDeletingThem()
+	{
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var mockS3Client = A.Fake<IAmazonS3>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/_static/main-newhash0.js", new MockFileData("new") } },
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem),
+			null,
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		);
+		var start = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+		var remote = Enumerable
+			.Range(0, 11)
+			.Select(i => new S3Object { Key = $"docs/_static/main-old{i:D5}.js", LastModified = start.AddDays(i) })
+			.Append(new S3Object { Key = "docs/_static/styles.css", LastModified = start })
+			.ToList();
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects = remote
+		});
+		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
+
+		var plan = await planStrategy.Plan(null, [], Cancel.None);
+
+		plan.AddRequests.Should().ContainSingle(i => i.DestinationPath == "docs/_static/main-newhash0.js");
+		plan.RetainedPaths.Should().HaveCount(10);
+		plan.RetainedPaths.Should().NotContain("docs/_static/main-old00000.js");
+		plan
+			.DeleteRequests
+			.Select(i => i.DestinationPath)
+			.Should()
+			.BeEquivalentTo("docs/_static/main-old00000.js", "docs/_static/styles.css");
+		plan.TotalSyncRequests.Should().Be(3);
+	}
+
+	[Test]
 	[Arguments(0, 10_000, 10_000, 0, 10_000, 0.2, false)]
 	[Arguments(8_000, 10_000, 10_000, 0, 2000, 0.2, true)]
 	[Arguments(7900, 10_000, 10_000, 0, 2100, 0.2, false)]
@@ -235,6 +281,8 @@ public class DocsSyncTests
 	}
 
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
+
 	public async Task TestApply()
 	{
 		// Arrange
@@ -335,5 +383,70 @@ public class DocsSyncTests
 		tagObjects.Should().Contain(
 			t => t.Key == "docs.sync.files.total" && Convert.ToInt64(t.Value, System.Globalization.CultureInfo.InvariantCulture) == 6
 		);
+	}
+
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
+	public async Task Apply_SetsContentTypeOnSpecUploads()
+	{
+		// Arrange
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var moxTransferUtility = A.Fake<ITransferUtility>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/api/doc/es.yaml", new MockFileData("openapi: 3.1.0") },
+				{ "docs/api/doc/es.json", new MockFileData("{}") },
+				{ "docs/index.md", new MockFileData("# Index") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem)
+		);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 0,
+			TotalSourceFiles = 3,
+			TotalSyncRequests = 3,
+			AddRequests =
+			[
+				new AddRequest { LocalPath = "docs/api/doc/es.yaml", DestinationPath = "docs/api/doc/es.yaml" },
+				new AddRequest { LocalPath = "docs/api/doc/es.json", DestinationPath = "docs/api/doc/es.json" },
+				new AddRequest { LocalPath = "docs/index.md", DestinationPath = "docs/index.md" }
+			],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = []
+		};
+		// The SDK shares one Headers collection across the per-file requests of a directory upload,
+		// so a typed file must never share a directory upload with files of another type.
+		var uploads = new List<(string? ContentType, string[] Files)>();
+		A.CallTo(() => moxTransferUtility.UploadDirectoryAsync(A<TransferUtilityUploadDirectoryRequest>._, A<Cancel>._)).Invokes(
+			(TransferUtilityUploadDirectoryRequest request, Cancel _) => uploads.Add(
+				(request.ContentType, fileSystem.Directory.GetFiles(request.Directory, request.SearchPattern, request.SearchOption))
+			)
+		);
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), A.Fake<IAmazonS3>(), moxTransferUtility, "fake", context, collector);
+
+		// Act
+		await applier.Apply(plan, Cancel.None);
+
+		// Assert
+		uploads.Should().HaveCount(3);
+		var byType = uploads.ToDictionary(u => u.ContentType ?? "", u => u.Files.Select(f => Path.GetFileName(f)).ToArray());
+		byType["text/plain; charset=utf-8"].Should().BeEquivalentTo(["es.yaml"]);
+		byType["application/json"].Should().BeEquivalentTo(["es.json"]);
+		byType[""].Should().BeEquivalentTo(["index.md"]);
 	}
 }

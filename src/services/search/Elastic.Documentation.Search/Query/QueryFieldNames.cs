@@ -19,6 +19,7 @@ public static class QueryFieldNames
 	public static string Section { get; } = Doc.Fields.Section;
 	public static string NavigationDepth { get; } = $"{Doc.Fields.Navigation}.depth";
 	public static string NavigationTableOfContents { get; } = $"{Doc.Fields.Navigation}.table_of_contents";
+	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
 	public static string PathKeyword { get; } = $"{Doc.Fields.Path}.keyword";
 	public static string PathMatch { get; } = $"{Doc.Fields.Path}.match";
 	public static string TitleKeyword { get; } = $"{Doc.Fields.Title}.keyword";

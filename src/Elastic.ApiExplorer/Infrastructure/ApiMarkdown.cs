@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Buffers;
 using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,9 +10,9 @@ using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
-using Ganss.Xss;
 using Microsoft.AspNetCore.Html;
 
 namespace Elastic.ApiExplorer.Infrastructure;
@@ -22,29 +23,125 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static partial class ApiMarkdown
 {
-	public static HtmlString Render(ApiRenderContext context, string? markdown)
+	/// <summary>An HTML description cut before its first heading. <see cref="Remainder"/> is null when it has none.</summary>
+	public sealed record HtmlSplit(string Lead, string? Remainder);
+
+	public static HtmlString Render(ApiRenderContext context, string? markdown) => Render(context, markdown, headingAnchors: null);
+
+	/// <summary>
+	/// Renders a group intro and keeps the heading anchor ids in <paramref name="headingAnchors"/>, the slugs its sidebar
+	/// links target. Other pages strip them, because an operation or schema page owns ids such as <c>responses</c> that a
+	/// description heading could duplicate.
+	/// </summary>
+	public static HtmlString RenderWithHeadingAnchors(ApiRenderContext context, string? markdown, IReadOnlySet<string> headingAnchors) =>
+		Render(context, markdown, headingAnchors);
+
+	private static HtmlString Render(ApiRenderContext context, string? markdown, IReadOnlySet<string>? headingAnchors)
 	{
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		var rewritten = Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url);
+		var rewritten = ApiAdmonitions.Convert(Prepare(markdown, context.CurrentNavigation.NavigationRoot.Url));
 		var source = CreateVirtualSource(context);
 		var html = context.MarkdownRenderer.RenderApiDescription(rewritten, source);
-		return new HtmlString(SanitizeHtml(html));
+		if (string.IsNullOrEmpty(html))
+			return new HtmlString(html);
+
+		// Each group intro renders once, so only the shared descriptions go through the cache.
+		return new HtmlString(
+			headingAnchors is { Count: > 0 }
+				? ApiHtmlSanitizer.Sanitize(html, headingAnchors)
+				: context.SanitizedHtmlCache.GetOrAdd(html, static h => ApiHtmlSanitizer.Sanitize(h))
+		);
 	}
 
-	// HtmlSanitizer defaults already cover all standard HTML tags and exclude script/on*/etc.
-	// Add class so bump.sh verb/path badges (class="operation-verb get") are kept.
-	private static readonly HtmlSanitizer Sanitizer = new();
-
-	static ApiMarkdown() => Sanitizer.AllowedAttributes.Add("class");
+	/// <summary>
+	/// Reads the headings <see cref="Render"/> produces for <paramref name="markdown"/>, with the slugs of their anchor ids.
+	/// <paramref name="apiBaseUrl"/> must be the product root the page renders under, because link rewrites change heading slugs.
+	/// </summary>
+	public static IReadOnlyList<TocItem> ReadHeadings(IMarkdownStringRenderer renderer, string? markdown, string apiBaseUrl) =>
+		string.IsNullOrEmpty(markdown)
+			? []
+			: renderer.ReadApiDescriptionHeadings(ApiAdmonitions.Convert(Prepare(markdown, apiBaseUrl)), null);
 
 	/// <summary>
-	/// Sanitizes rendered description HTML through an allowlist before it is emitted as
-	/// <see cref="HtmlString"/>. Relies on <see cref="HtmlSanitizer"/> defaults (99 allowed
-	/// tags, safe attributes, http/https schemes only) with <c>class</c> added for bump.sh badges.
+	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
+	/// so an intro heading with the same slug is left out rather than linking to the post section.
 	/// </summary>
-	internal static string SanitizeHtml(string html) => string.IsNullOrEmpty(html) ? html : Sanitizer.Sanitize(html);
+	internal static IReadOnlyList<TocItem> ReadIntroHeadings(
+		IMarkdownStringRenderer renderer,
+		string? markdown,
+		string apiBaseUrl,
+		IReadOnlyList<ApiSupplementalSection> postSections
+	)
+	{
+		var headings = ReadHeadings(renderer, markdown, apiBaseUrl);
+		if (postSections.Count == 0)
+			return headings;
+
+		var postAnchors = ApiPostSection.Anchors(postSections).ToHashSet(StringComparer.Ordinal);
+		return [.. headings.Where(heading => !postAnchors.Contains(heading.Slug))];
+	}
+
+	/// <summary>
+	/// Splits rendered HTML before its first top-level heading. The description is rendered as one document first, so
+	/// reference-style links and the dropped page-title h1 behave exactly as without a split. A heading inside a
+	/// blockquote, list, or HTML wrapper is not a split point, so both fragments stay balanced; HTML that never
+	/// balances stays whole in the lead.
+	/// </summary>
+	public static HtmlSplit SplitAtFirstHeading(string html)
+	{
+		var depth = 0;
+		foreach (var tag in HtmlTag().EnumerateMatches(html))
+		{
+			var text = html.AsSpan(tag.Index, tag.Length);
+			if (text[1] == '/')
+				depth = Math.Max(0, depth - 1);
+			else if (depth == 0 && StartsSection(text))
+				return new HtmlSplit(html[..tag.Index], html[tag.Index..]);
+			else if (!IsVoidOrSelfClosing(text))
+				depth++;
+		}
+
+		return new HtmlSplit(html, null);
+	}
+
+	// The Myst renderer wraps each heading in <div class="heading-wrapper">, so that wrapper is where a section starts.
+	private static bool StartsSection(ReadOnlySpan<char> tag) =>
+		IsHeading(tag) || (tag.StartsWith("<div", StringComparison.Ordinal) && tag.Contains("heading-wrapper", StringComparison.Ordinal));
+
+	private static bool IsHeading(ReadOnlySpan<char> tag) =>
+		tag.Length > 3 && tag[1] == 'h' && tag[2] is >= '1' and <= '6' && !char.IsLetterOrDigit(tag[3]);
+
+	private static bool IsVoidOrSelfClosing(ReadOnlySpan<char> tag)
+	{
+		if (tag[^2] == '/')
+			return true;
+
+		var name = tag[1..];
+		var end = name.IndexOfAny(TagNameEnd);
+		name = end < 0 ? name : name[..end];
+		return VoidElements.Contains(name.ToString(), StringComparer.OrdinalIgnoreCase);
+	}
+
+	private static readonly SearchValues<char> TagNameEnd = SearchValues.Create(" \t\r\n>/");
+
+	private static readonly string[] VoidElements =
+	[
+		"area",
+		"base",
+		"br",
+		"col",
+		"embed",
+		"hr",
+		"img",
+		"input",
+		"link",
+		"meta",
+		"source",
+		"track",
+		"wbr"
+	];
 
 	/// <summary>
 	/// Keeps CommonMark readable: escape mustache substitutions and rewrite intra-API links.
@@ -54,7 +151,7 @@ public static partial class ApiMarkdown
 		if (string.IsNullOrEmpty(markdown))
 			return string.Empty;
 
-		var escaped = MustachePattern().Replace(markdown, match => $"`{match.Value}`");
+		var escaped = MustachePattern().Replace(markdown, match => ApiCommonMark.CodeSpan(match.Value));
 		return RewriteIntraApiLinks(escaped, apiBaseUrl);
 	}
 
@@ -82,6 +179,10 @@ public static partial class ApiMarkdown
 		var fullPath = Path.Join(context.BuildContext.OutputDirectory.FullName, relativePath, "description.md");
 		return context.BuildContext.WriteFileSystem.FileInfo.New(fullPath);
 	}
+
+	// Tag tokens, with quoted attribute values skipped so a ">" inside one does not end the tag.
+	[GeneratedRegex(@"</?[a-zA-Z][a-zA-Z0-9]*(?:[^>""']|""[^""]*""|'[^']*')*>")]
+	private static partial Regex HtmlTag();
 
 	[GeneratedRegex(@"\]\(\.\./group/([^)#]+)\)")]
 	private static partial Regex GroupLinkPattern();

@@ -1,3 +1,4 @@
+import { config } from '../config'
 import { PageFeedback } from './PageFeedback'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -10,13 +11,13 @@ const failedResponse = { ok: false, status: 503 } as Response
 describe('PageFeedback', () => {
     beforeEach(() => {
         sessionStorage.clear()
-        jest.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
-        global.fetch = jest.fn().mockResolvedValue(successfulResponse)
+        vi.spyOn(crypto, 'randomUUID').mockReturnValue(feedbackId)
+        global.fetch = vi.fn().mockResolvedValue(successfulResponse)
     })
 
     afterEach(() => {
         sessionStorage.clear()
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('records a positive reaction after the debounce and shows positive reasons', async () => {
@@ -132,7 +133,7 @@ describe('PageFeedback', () => {
 
     it('does not retry a failed immediate reaction', async () => {
         const user = userEvent.setup()
-        jest.mocked(global.fetch).mockResolvedValueOnce(failedResponse)
+        vi.mocked(global.fetch).mockResolvedValueOnce(failedResponse)
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
 
         await user.click(
@@ -300,7 +301,7 @@ describe('PageFeedback', () => {
         const initialSave = new Promise<Response>((resolve) => {
             resolveInitialSave = resolve
         })
-        jest.mocked(global.fetch)
+        vi.mocked(global.fetch)
             .mockReturnValueOnce(initialSave)
             .mockResolvedValueOnce(successfulResponse)
         render(<PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />)
@@ -327,7 +328,7 @@ describe('PageFeedback', () => {
 
     it('preserves selected reasons and comment when submission is retried', async () => {
         const user = userEvent.setup()
-        jest.mocked(global.fetch)
+        vi.mocked(global.fetch)
             .mockResolvedValueOnce(successfulResponse)
             .mockResolvedValueOnce(failedResponse)
             .mockResolvedValueOnce(successfulResponse)
@@ -447,5 +448,82 @@ describe('PageFeedback', () => {
                 })
             )
         )
+    })
+
+    describe('AWS WAF token', () => {
+        const sdkUrl = 'https://waf.example/challenge.js'
+        const findSdkScript = () =>
+            document.head.querySelector<HTMLScriptElement>(
+                `script[src="${sdkUrl}"]`
+            )
+
+        const submitPositiveFeedback = async () => {
+            const user = userEvent.setup()
+            render(
+                <PageFeedback pageUrl="/docs/test-page" pageTitle="Test page" />
+            )
+            await user.click(
+                screen.getByRole('button', {
+                    name: 'Yes, this page was helpful',
+                })
+            )
+            return user
+        }
+
+        afterEach(() => {
+            delete config.wafIntegrationUrl
+            delete window.AwsWafIntegration
+            document.head.querySelectorAll('script').forEach((s) => s.remove())
+        })
+
+        it('sends the PUT through AwsWafIntegration.fetch once the SDK loads', async () => {
+            config.wafIntegrationUrl = sdkUrl
+            const wafFetch = vi.fn().mockResolvedValue(successfulResponse)
+
+            await submitPositiveFeedback()
+            const script = findSdkScript()
+            expect(script).not.toBeNull()
+            window.AwsWafIntegration = { fetch: wafFetch }
+            act(() => {
+                script!.dispatchEvent(new Event('load'))
+            })
+
+            await waitFor(() =>
+                expect(wafFetch).toHaveBeenCalledWith(
+                    `/docs/_api/v1/page-feedback/${feedbackId}`,
+                    expect.objectContaining({
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        body: JSON.stringify({
+                            pageUrl: '/docs/test-page',
+                            pageTitle: 'Test page',
+                            reaction: 'thumbsUp',
+                        }),
+                    })
+                )
+            )
+            expect(global.fetch).not.toHaveBeenCalled()
+        })
+
+        it('uses plain fetch and loads no script when no SDK URL is configured', async () => {
+            await submitPositiveFeedback()
+
+            await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+            expect(document.head.querySelector('script')).toBeNull()
+        })
+
+        it('shows the error state and sends nothing when the SDK fails to load', async () => {
+            config.wafIntegrationUrl = sdkUrl
+
+            const user = await submitPositiveFeedback()
+            await user.click(screen.getByRole('checkbox', { name: /Accurate/ }))
+            await user.click(screen.getByRole('button', { name: 'Submit' }))
+            act(() => {
+                findSdkScript()!.dispatchEvent(new Event('error'))
+            })
+
+            expect(await screen.findByRole('alert')).toBeInTheDocument()
+            expect(global.fetch).not.toHaveBeenCalled()
+        })
     })
 })

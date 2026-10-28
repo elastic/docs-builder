@@ -4,7 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.Documentation.Links;
-using YamlDotNet.RepresentationModel;
+using SharpYaml.Model;
 using static Elastic.Documentation.SymlinkValidator;
 
 namespace Elastic.Documentation.Configuration.Builder;
@@ -22,7 +22,7 @@ public record RedirectFile
 		var redirectFileInfo = docsetConfigurationPath
 			.FileSystem
 			.FileInfo
-			.New(Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
+			.New(System.IO.Path.Join(docsetConfigurationPath.Directory!.FullName, redirectFileName));
 		Source = source ?? redirectFileInfo;
 		Context = context;
 
@@ -43,7 +43,7 @@ public record RedirectFile
 						Redirects = ReadRedirects(reader, entry.Entry);
 						break;
 					default:
-						reader.EmitWarning($"{entry.Key} is not a known configuration", entry.Key);
+						reader.EmitUnknownKey("$", entry.Entry.Key, KnownTopLevelKeys);
 						break;
 				}
 			}
@@ -55,19 +55,23 @@ public record RedirectFile
 		}
 	}
 
-	private static Dictionary<string, LinkRedirect>? ReadRedirects(YamlStreamReader reader, KeyValuePair<YamlNode, YamlNode> entry)
+	private static readonly string[] KnownTopLevelKeys = ["redirects"];
+	private static readonly string[] KnownRedirectKeys = ["to", "anchors", "many"];
+	private static readonly string[] KnownManyKeys = ["to", "anchors"];
+
+	private static Dictionary<string, LinkRedirect>? ReadRedirects(YamlStreamReader reader, KeyValuePair<YamlElement, YamlElement?> entry)
 	{
 		if (!reader.ReadObjectDictionary(entry, out var mapping))
 			return null;
 
 		var dictionary = new Dictionary<string, LinkRedirect>(StringComparer.OrdinalIgnoreCase);
 
-		foreach (var entryValue in mapping.Children)
+		foreach (var entryValue in mapping)
 		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+			if (entryValue.Key is not YamlValue scalar)
 				continue;
 			var key = scalar.Value;
-			if (entryValue.Value is YamlScalarNode)
+			if (entryValue.Value is YamlValue)
 			{
 				var to = reader.ReadString(entryValue);
 				dictionary.Add(
@@ -92,12 +96,12 @@ public record RedirectFile
 		return dictionary;
 	}
 
-	private static LinkRedirect? ReadLinkRedirect(YamlStreamReader reader, string file, YamlMappingNode mapping)
+	private static LinkRedirect? ReadLinkRedirect(YamlStreamReader reader, string file, YamlMapping mapping)
 	{
 		var redirect = new LinkRedirect();
-		foreach (var entryValue in mapping.Children)
+		foreach (var entryValue in mapping)
 		{
-			if (entryValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+			if (entryValue.Key is not YamlValue scalar)
 				continue;
 			var key = scalar.Value;
 			switch (key)
@@ -114,6 +118,9 @@ public record RedirectFile
 					var many = ReadManyRedirects(reader, file, entryValue.Value);
 					redirect = redirect with { Many = many };
 					continue;
+				default:
+					reader.EmitUnknownKey($"$.redirects['{file}']", entryValue.Key, KnownRedirectKeys);
+					continue;
 			}
 		}
 
@@ -126,20 +133,20 @@ public record RedirectFile
 		return string.IsNullOrEmpty(redirect.To) && redirect.Many is null or { Length: 0 } ? null : redirect;
 	}
 
-	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlNode node)
+	private static LinkSingleRedirect[]? ReadManyRedirects(YamlStreamReader reader, string file, YamlElement? node)
 	{
-		if (node is not YamlSequenceNode sequence)
+		if (node is not YamlSequence sequence)
 			return null;
 
 		var redirects = new List<LinkSingleRedirect>();
-		foreach (var entryValue in sequence.Children)
+		foreach (var entryValue in sequence)
 		{
-			if (entryValue is not YamlMappingNode mapping)
+			if (entryValue is not YamlMapping mapping)
 				continue;
 			var redirect = new LinkRedirect();
-			foreach (var keyValue in mapping.Children)
+			foreach (var keyValue in mapping)
 			{
-				if (keyValue.Key is not YamlScalarNode scalar || scalar.Value is null)
+				if (keyValue.Key is not YamlValue scalar)
 					continue;
 				var key = scalar.Value;
 				switch (key)
@@ -151,6 +158,9 @@ public record RedirectFile
 						var to = reader.ReadString(keyValue);
 						if (to is not null)
 							redirect = redirect with { To = to };
+						continue;
+					default:
+						reader.EmitUnknownKey($"$.redirects['{file}'].many", keyValue.Key, KnownManyKeys);
 						continue;
 				}
 			}

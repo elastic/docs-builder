@@ -1,0 +1,27 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<p>Whole pages of each kind of build, rendered with the real layouts around placeholder content. They need no repository, so they show what a page looks like before any content exists, and in both themes with the Theme button above.</p>
+</section>
+@foreach (var build in StyleGuidePreviewCatalog.Entries.GroupBy(e => e.Build))
+{
+	<section class="sg-section">
+		<h2>@build.Key</h2>
+		<div class="sg-previews">
+			@foreach (var entry in build)
+			{
+				<article class="sg-preview">
+					<a class="sg-preview__open" href="@StyleGuidePreviewCatalog.Route/@entry.Id" target="_blank" rel="noopener">
+						<span class="sg-preview__screen"><iframe class="sg-preview__frame" src="@StyleGuidePreviewCatalog.Route/@entry.Id" title="@entry.Title" loading="lazy" tabindex="-1"></iframe></span>
+					</a>
+					<h3 class="sg-preview__title"><a href="@StyleGuidePreviewCatalog.Route/@entry.Id" target="_blank" rel="noopener">@entry.Title</a></h3>
+					<p class="sg-preview__text">@entry.Description</p>
+				</article>
+			}
+		</div>
+	</section>
+}

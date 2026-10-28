@@ -15,8 +15,8 @@ public class HeroWithTitleOnly : MarkdownTest
 	[Test, DisplayName("renders the title as an h1")]
 	public async Task RendersTitleAsH1() => await Docs.ConvertsToContainingHtml("""<h1>Elasticsearch documentation hub</h1>""");
 
-	[Test, DisplayName("renders the fixed eyebrow")]
-	public async Task RendersFixedEyebrow() => await Docs.ConvertsToContainingHtml("""<span>Browse all Elastic docs</span>""");
+	[Test, DisplayName("renders no eyebrow link above the title")]
+	public async Task RendersNoEyebrow() => await Docs.DoesNotConvertToContainingHtml("hub-hero-eyebrow");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -89,14 +89,6 @@ public class HeroWithAnchorActions : MarkdownTest
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
-				<div class="hub-hero-eyebrow">
-					<a class="hub-hero-eyebrow-link" href="/">
-						<span>Browse all Elastic docs</span>
-						<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
-						</svg>
-					</a>
-				</div>
 				<div class="hub-hero-top">
 					<h1>Elasticsearch documentation hub</h1>
 				</div>
@@ -141,14 +133,6 @@ public class HeroWithAnExternalAction : MarkdownTest
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
-				<div class="hub-hero-eyebrow">
-					<a class="hub-hero-eyebrow-link" href="/">
-						<span>Browse all Elastic docs</span>
-						<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
-						</svg>
-					</a>
-				</div>
 				<div class="hub-hero-top">
 					<h1>Elasticsearch documentation hub</h1>
 				</div>
@@ -184,14 +168,6 @@ public class HeroWithAnInternalAction : MarkdownTest
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
-				<div class="hub-hero-eyebrow">
-					<a class="hub-hero-eyebrow-link" href="/">
-						<span>Browse all Elastic docs</span>
-						<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
-						</svg>
-					</a>
-				</div>
 				<div class="hub-hero-top">
 					<h1>Elasticsearch documentation hub</h1>
 				</div>
@@ -259,14 +235,6 @@ public class HeroWithACrossLinkAction : MarkdownTest
 			"""
 		<section class="hub-hero">
 			<div class="hub-hero-inner">
-				<div class="hub-hero-eyebrow">
-					<a class="hub-hero-eyebrow-link" href="/">
-						<span>Browse all Elastic docs</span>
-						<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"></path>
-						</svg>
-					</a>
-				</div>
 				<div class="hub-hero-top">
 					<h1>docs-builder documentation hub</h1>
 				</div>

@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
@@ -13,12 +13,16 @@ public static class ProductExtensions
 	public static ProductsConfiguration CreateProducts(this ConfigurationFileProvider provider, VersionsConfiguration versionsConfiguration)
 	{
 		using var reader = provider.ProductsFile.OpenText();
-		return CreateProducts(reader, versionsConfiguration);
+		return CreateProducts(reader, versionsConfiguration, provider.ProductsFile.FullName);
 	}
 
-	internal static ProductsConfiguration CreateProducts(TextReader reader, VersionsConfiguration versionsConfiguration)
+	internal static ProductsConfiguration CreateProducts(
+		TextReader reader,
+		VersionsConfiguration versionsConfiguration,
+		string? sourceName = null
+	)
 	{
-		var productsDto = ConfigurationFileProvider.Deserializer.Deserialize<ProductConfigDto>(reader);
+		var productsDto = ConfigurationFileProvider.Deserialize<ProductConfigDto>(reader, sourceName);
 
 		var products = productsDto.Products.ToDictionary(kvp => kvp.Key, kvp =>
 		{
@@ -37,6 +41,7 @@ public static class ProductExtensions
 				DisplayName = kvp.Value.Display,
 				VersioningSystem = versioningSystem,
 				Repository = kvp.Value.Repository ?? kvp.Key,
+				DraArtifact = kvp.Value.DraArtifact,
 				Features = features
 			};
 		});
@@ -101,9 +106,9 @@ public static class ProductExtensions
 	/// <summary>
 	/// Resolves <c>features.release-notes</c> into an onboarding path. Backward compatible with the
 	/// historical boolean flag: omitted/<c>true</c> mean on-release participation, <c>false</c> opts
-	/// out; the strings <c>prestage</c>/<c>dra</c>/<c>on-release</c> select the path explicitly.
-	/// Unknown future values are tolerated and treated as <c>on-release</c> so that a newer
-	/// <c>config/products.yml</c> does not crash an older released binary.
+	/// out; <c>dra</c> (or the legacy alias <c>prestage</c>) and <c>on-release</c> select the path
+	/// explicitly. Unknown future values are tolerated and treated as <c>on-release</c> so that a
+	/// newer <c>config/products.yml</c> does not crash an older released binary.
 	/// </summary>
 	/// <returns>The resolved path and an optional warning message for unknown values.</returns>
 	private static (ReleaseNotesPath Path, string? Warning) ResolveReleaseNotesPath(
@@ -124,7 +129,8 @@ public static class ProductExtensions
 
 		return value.ToLowerInvariant() switch
 		{
-			"prestage" or "dra" => (ReleaseNotesPath.Prestage, null),
+			"dra" or "prestage" => (ReleaseNotesPath.DailyReleasableArtifacts, null), // prestage = legacy alias
+
 			"on-release" => (ReleaseNotesPath.OnRelease, null),
 			_ =>
 				(ReleaseNotesPath.OnRelease, $"Product '{productId}' has unrecognised 'release-notes' value '{value}'; treating as 'on-release'. Allowed values: true, false, dra, on-release.")
@@ -134,26 +140,33 @@ public static class ProductExtensions
 
 // Private DTOs for deserialization. These match the YAML structure directly.
 
-internal sealed record ProductConfigDto
+public sealed record ProductConfigDto
 {
-	[YamlMember(Alias = "products")]
+	[YamlPropertyName("products")]
 	public Dictionary<string, ProductDto> Products { get; set; } = [];
 }
 
-internal sealed record ProductDto
+public sealed record ProductDto
 {
-	[YamlMember(Alias = "display")]
+	[YamlPropertyName("display")]
 	public string Display { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "versioning")]
+	[YamlPropertyName("versioning")]
 	public string? Versioning { get; set; }
 
 	public string? Repository { get; set; }
 
 	/// <summary>
-	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and
-	/// the <c>prestage</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
+	/// The DRA manifest artifact key. When set, the bundle command looks up this key in the build
+	/// manifest instead of <c>repository ?? id</c>. Leave unset when the artifact name matches the
+	/// repository name.
 	/// </summary>
-	[YamlMember(Alias = "features")]
+	public string? DraArtifact { get; set; }
+
+	/// <summary>
+	/// Feature values are strings so <c>release-notes</c> accepts both the historical booleans and
+	/// the <c>dra</c>/<c>on-release</c> path names; parsing happens in <see cref="ProductExtensions"/>.
+	/// </summary>
+	[YamlPropertyName("features")]
 	public Dictionary<string, string>? Features { get; set; }
 }

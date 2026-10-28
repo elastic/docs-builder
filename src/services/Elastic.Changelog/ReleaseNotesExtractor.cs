@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
-using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog;
 
@@ -12,22 +11,16 @@ public sealed record ReleaseNoteExtractionResult(string? Content, bool WasTrunca
 
 internal static class ReleaseNoteExtractionDiagnostics
 {
-	public static void EmitHint(IDiagnosticsCollector collector, string source, int prNumber, ReleaseNoteExtractionResult extraction)
+	/// <summary>
+	/// The release note section is optional, so a pull request without one, or with more than a paragraph, is a decision and not
+	/// a diagnostic.
+	/// </summary>
+	public static void Record(DecisionLog decisions, int prNumber, ReleaseNoteExtractionResult extraction)
 	{
 		if (extraction.Content == null)
-		{
-			collector.EmitHint(
-				source,
-				$"No release note description was found for PR #{prNumber}. Add a 'Release note' section to the PR body if the entry needs more detail than its title."
-			);
-		}
+			decisions.Record("notes", "no release note", $"#{prNumber}");
 		else if (extraction.WasTruncated)
-		{
-			collector.EmitHint(
-				source,
-				$"The release note description for PR #{prNumber} contains content after the first paragraph or heading. Only the first paragraph was used."
-			);
-		}
+			decisions.Record("notes", "first paragraph only", $"#{prNumber}");
 	}
 }
 
@@ -45,6 +38,46 @@ public static partial class ReleaseNotesExtractor
 	[GeneratedRegex(@"(?:\n|^)\s*#*\s*release[\s-]?notes?[:\s-]*(.*?)(?:(\r?\n|\r){2}|$|((\r?\n|\r)\s*#+))", RegexOptions.IgnoreCase
 		| RegexOptions.Singleline)]
 	private static partial Regex ReleaseNoteRegex();
+
+	// A line that starts a section: a markdown heading ("## Impact") or a bare label ("Impact: ...").
+	// Group 1 = heading hashes (empty for a label), group 2 = colon (if any), group 3 = inline text after the name.
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**impact\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ImpactStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{0,6})[ \t]*\**actions?\**[ \t]*(:?)\**[ \t]*(.*)$", RegexOptions.IgnoreCase)]
+	private static partial Regex ActionStartRegex();
+
+	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
+	private static partial Regex HeadingRegex();
+
+	// Blockquote markers at the start of a line: "> ", ">" or nested ">> " and "> > ". Markdown allows up to three
+	// spaces before the marker; four spaces or a tab start an indented code block, whose ">" is content.
+	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+")]
+	private static partial Regex BlockquoteMarkerRegex();
+
+	/// <summary>
+	/// Removes the blockquote markers from the start of a line. Authors write the release note as a quotation under
+	/// its heading (<c>&gt; Adds a page...</c>); the marker is their formatting, not part of the note, and a
+	/// description that keeps it renders as a quotation or shows a literal <c>&gt;</c>.
+	/// </summary>
+	private static string StripBlockquoteMarkers(string line) => BlockquoteMarkerRegex().Replace(line, string.Empty);
+
+	/// <summary>
+	/// <see cref="StripBlockquoteMarkers"/> for every line of a text, except the lines of fenced code blocks: a
+	/// <c>&gt;</c> inside a code sample is a redirect or a prompt, not a quotation marker.
+	/// </summary>
+	private static string StripBlockquoteMarkersOutsideCode(string text)
+	{
+		var lines = text.Split('\n');
+		var inCode = MarkCodeLines(lines);
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (!inCode[i])
+				lines[i] = StripBlockquoteMarkers(lines[i]);
+		}
+
+		return string.Join('\n', lines);
+	}
 
 	/// <summary>
 	/// Strips HTML comments from markdown text.
@@ -79,6 +112,129 @@ public static partial class ReleaseNotesExtractor
 	public static string? FindReleaseNote(string? markdown) => ExtractReleaseNote(markdown).Content;
 
 	/// <summary>
+	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
+	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// after their content or at the next heading. HTML comments are stripped first.
+	/// </summary>
+	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
+
+	/// <summary>Finds the "Action" section of a PR description. See <see cref="FindImpact"/> for the recognized forms.</summary>
+	public static string? FindAction(string? markdown) => FindSection(markdown, ActionStartRegex());
+
+	/// <summary>
+	/// Marks the fence lines and every line between them, so section boundaries are never read from code samples.
+	/// Follows CommonMark: a closing fence uses the same character as the opening one, is at least as long, and has nothing after it.
+	/// </summary>
+	private static bool[] MarkCodeLines(string[] lines)
+	{
+		var inCode = new bool[lines.Length];
+		var openChar = '\0';
+		var openLength = 0;
+		for (var i = 0; i < lines.Length; i++)
+		{
+			var trimmed = lines[i].TrimStart();
+			var fenceChar = trimmed.Length > 0 && trimmed[0] is '`' or '~' ? trimmed[0] : '\0';
+			var runLength = 0;
+			if (fenceChar != '\0')
+			{
+				while (runLength < trimmed.Length && trimmed[runLength] == fenceChar)
+					runLength++;
+			}
+
+			if (openChar == '\0')
+			{
+				if (runLength < 3)
+					continue;
+				openChar = fenceChar;
+				openLength = runLength;
+				inCode[i] = true;
+			}
+			else
+			{
+				inCode[i] = true;
+				var closes = fenceChar == openChar && runLength >= openLength && string.IsNullOrWhiteSpace(trimmed[runLength..]);
+				if (closes)
+					openChar = '\0';
+			}
+		}
+
+		return inCode;
+	}
+
+	/// <summary>A match is a section start when it is a bare heading (<c>## Impact</c>) or a label with a colon (<c>Impact: ...</c>).</summary>
+	private static bool IsSectionStart(Match start, out int hashes, out string inline)
+	{
+		hashes = 0;
+		inline = string.Empty;
+		if (!start.Success)
+			return false;
+
+		hashes = start.Groups[1].Value.Length;
+		inline = start.Groups[3].Value.Trim();
+		var hasColon = start.Groups[2].Value.Length > 0;
+		return (hashes > 0 && inline.Length == 0) || hasColon;
+	}
+
+	private static string? FindSection(string? markdown, Regex startRegex)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return null;
+
+		var lines = StripHtmlComments(markdown).Replace("\r\n", "\n").Split('\n');
+		var inCode = MarkCodeLines(lines);
+		for (var i = 0; i < lines.Length; i++)
+		{
+			// A heading or label inside a fenced code block is content, not a section.
+			if (inCode[i])
+				continue;
+
+			var start = startRegex.Match(lines[i]);
+			if (!start.Success)
+				continue;
+
+			// Prose such as "Impact of this change..." or "Actions taken in CI" must not match.
+			if (!IsSectionStart(start, out var hashes, out var inline))
+				continue;
+
+			var isHeading = hashes > 0 && inline.Length == 0;
+
+			var content = new List<string>();
+			if (inline.Length > 0)
+				content.Add(inline);
+
+			for (var j = i + 1; j < lines.Length; j++)
+			{
+				var line = lines[j];
+				if (inCode[j])
+				{
+					content.Add(line);
+					continue;
+				}
+
+				// One section never swallows the next: stop at the start of either Impact or Action.
+				if (
+					IsSectionStart(ImpactStartRegex().Match(line), out _, out _)
+					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
+				)
+					break;
+				var heading = HeadingRegex().Match(line);
+				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+					break;
+				// Label sections stop at the first blank line once they have content.
+				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)
+					break;
+				content.Add(StripBlockquoteMarkers(line));
+			}
+
+			var text = string.Join('\n', content).Trim();
+			if (text.Length > 0)
+				return text;
+		}
+
+		return null;
+	}
+
+	/// <summary>
 	/// Extracts release note content and reports when later PR body content was not included.
 	/// </summary>
 	/// <param name="markdown">The PR description body.</param>
@@ -88,8 +244,10 @@ public static partial class ReleaseNotesExtractor
 		if (string.IsNullOrWhiteSpace(markdown))
 			return new ReleaseNoteExtractionResult(null, false);
 
-		// Strip HTML comments first to avoid extracting template instructions
-		var cleanedMarkdown = StripHtmlComments(markdown);
+		// Strip HTML comments first to avoid extracting template instructions. Then read the body with "\n" line
+		// endings, as FindSection does: GitHub sends "\r\n", and the terminator below matches a single "\r\n" as
+		// "\r" + "\n", which cut a multi-line note at its first line.
+		var cleanedMarkdown = StripHtmlComments(markdown).Replace("\r\n", "\n");
 
 		// Regex breakdown:
 		// - (?:\n|^)\s*#*\s* - start of line, optional whitespace and markdown headers
@@ -101,7 +259,7 @@ public static partial class ReleaseNotesExtractor
 
 		if (match.Success && match.Groups.Count > 1)
 		{
-			var releaseNote = match.Groups[1].Value.Trim();
+			var releaseNote = StripBlockquoteMarkersOutsideCode(match.Groups[1].Value).Trim();
 			var content = string.IsNullOrWhiteSpace(releaseNote) ? null : releaseNote;
 			var remainingContent = cleanedMarkdown[(match.Index + match.Length)..];
 			return new ReleaseNoteExtractionResult(content, content != null && !string.IsNullOrWhiteSpace(remainingContent));

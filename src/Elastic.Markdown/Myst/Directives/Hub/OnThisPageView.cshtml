@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Hub.OnThisPageViewModel>
+
+@if (Model.Items.Count > 0)
+{
+	<nav class="hub-on-this-page" aria-label="On this page">
+		<div class="hub-on-this-page-label">On this page</div>
+		<ul class="hub-on-this-page-list">
+			@foreach (var item in Model.Items)
+			{
+				<li><a href="@($"#{item.Anchor}")">@item.Title</a></li>
+			}
+		</ul>
+	</nav>
+}

@@ -1,0 +1,10 @@
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.MediaContentsModel>
+@* The content type the body below currently shows; the picker in the body (_ContentTypeSelect) updates it (api-union-chips.ts). *@
+@if (Model.HasChoice)
+{
+	<span class="content-type-tag" data-content-type-current="@Model.IdPrefix">@Model.Contents[0].ContentType</span>
+}
+else if (Model.Contents.Count > 0)
+{
+	<span class="content-type-tag">@Model.Contents[0].ContentType</span>
+}

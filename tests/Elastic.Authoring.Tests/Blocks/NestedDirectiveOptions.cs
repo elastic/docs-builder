@@ -5,8 +5,8 @@
 namespace Elastic.Authoring.Tests.Blocks;
 
 // DirectiveBlockParser.TryContinue stops an ancestor directive consuming an option line once
-// it has opened a nested directive child. Without the guard the ancestor also takes every
-// descendant's options, and the last one wins.
+// a nested directive is still open (including when a list sits between them). Without the
+// guard the ancestor also takes every descendant's options, and the last one wins.
 //
 // No existing directive pair shares an option name, so the collision is latent for them:
 // {tab-set} reads group while {tab-item} reads sync and selected, and {applies-switch} and
