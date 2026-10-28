@@ -175,6 +175,20 @@ public class TopicPageTests
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
 		authentication.Should().Contain("Use an API key.").And.Contain("Api key (apiKey)");
+		// The Topics heading is expanded on pages outside it too, such as the product landing page.
+		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
+		// Only the Topics toggle is checked there: every other group stays collapsed.
+		System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(landing, "<input[^>]*\\bchecked\\b[^>]*>")
+			.Select(m => m.Value)
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.Contain("checked data-nav-default-open");
 		// elastic/docs-infra redirects the bump.sh topic URL; the build writes no page there.
 		files.Exists(Path.Join(root, "topic", "topic-authentication", "index.html")).Should().BeFalse();
 	}

@@ -569,6 +569,24 @@ describe('collapseAllFolders', () => {
             document.querySelector<HTMLInputElement>('#folder-a')?.checked
         ).toBe(false)
     })
+
+    it('keeps a default-open group expanded', () => {
+        document.body.innerHTML = pagesNav(
+            'nav-tree-guides',
+            'Get started',
+            '<input id="folder-a" type="checkbox" checked><input id="topics" type="checkbox" checked data-nav-default-open>'
+        )
+        const nav = document.querySelector<HTMLElement>('#pages-nav')!
+
+        collapseAllFolders(nav)
+
+        expect(
+            document.querySelector<HTMLInputElement>('#folder-a')?.checked
+        ).toBe(false)
+        expect(
+            document.querySelector<HTMLInputElement>('#topics')?.checked
+        ).toBe(true)
+    })
 })
 
 describe('ensureSubtreeClips', () => {

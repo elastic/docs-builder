@@ -486,7 +486,7 @@ x-topics:
 
 Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
 
-The sidebar lists the topics under a **Topics** heading, above the endpoint groups and after any `children:` pages. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading only appears when the product has at least one topic page.
+The sidebar lists the topics under a **Topics** heading, above the endpoint groups and after any `children:` pages. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 
@@ -545,7 +545,7 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 }
 ```
 
-The default sidebar matches bump.sh. The product overview and the **Topics** heading sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag. A second divider sets the **Types** heading apart after the tag folders. Like Topics, Types is a heading with no page of its own.
+The default sidebar matches bump.sh. The product overview and the **Topics** heading sit in one group, and the Topics heading starts expanded on every page. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag. A second divider sets the **Types** heading apart after the tag folders. Like Topics, Types is a heading with no page of its own.
 
 Operations that share `x-namespace` and `x-api-name` render as **one page** when they are the same call (same parameters, request body and responses), built around the dominant method on the longest path. A sibling with a different contract keeps its own page. Specs without those extensions group by operation summary instead. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any query string and `#fragment`. Code samples carried by any of the merged operations show the dominant method of the path they call.
 
