@@ -20,7 +20,8 @@ public class ApiSitemapParityTests
 	private static readonly IReadOnlySet<string> GoneRoots = new HashSet<string> { "observability-serverless" };
 
 	// Exact page redirects from the same file. Bump.sh served a Servers page for specs that declare no servers,
-	// Cloud Billing renamed its Budgets tag, and Kibana removed Streams operations from its 9.6 spec.
+	// Cloud Billing renamed its Budgets tag, Kibana removed Streams operations from its 9.6 spec, and some bump.sh topic
+	// pages are a children: page or the /authentication page in the native viewer.
 	private static readonly IReadOnlyDictionary<string, string> RedirectedPages = new Dictionary<string, string>
 	{
 		["/docs/api/doc/elasticsearch/servers"] = "/docs/api/doc/elasticsearch",
@@ -30,6 +31,11 @@ public class ApiSitemapParityTests
 		["/docs/api/doc/cloud-enterprise/servers"] = "/docs/api/doc/cloud-enterprise",
 		["/docs/api/doc/cloud-enterprise/v3/servers"] = "/docs/api/doc/cloud-enterprise/v3",
 		["/docs/api/doc/cloud-billing/group/endpoint-budgets"] = "/docs/api/doc/cloud-billing/group/endpoint-billing-budgets",
+		["/docs/api/doc/kibana/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/kibana-api-overview",
+		["/docs/api/doc/kibana/v8/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/v8/kibana-api-overview",
+		["/docs/api/doc/kibana/v9/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/v9/kibana-api-overview",
+		["/docs/api/doc/cloud/topic/topic-authentication"] = "/docs/api/doc/cloud/authentication",
+		["/docs/api/doc/cloud-billing/topic/topic-authentication"] = "/docs/api/doc/cloud-billing/authentication",
 		["/docs/api/doc/kibana/v9/group/endpoint-significant_events"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
 		["/docs/api/doc/kibana/v9/operation/operation-delete-streams-name-queries-queryid"] =
 			"/docs/api/doc/kibana/v9/group/endpoint-streams",

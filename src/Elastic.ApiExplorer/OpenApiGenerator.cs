@@ -592,13 +592,13 @@ public class OpenApiGenerator(
 		}, async (page, token) =>
 		{
 			_ = await Render(page.Item, page.Model, renderContext, navigationRenderer, token).ConfigureAwait(false);
-			if (page.Item is IApiAliasedNavigationItem { AliasUrls.Count: > 0 } aliased)
-				await WriteRedirects(aliased, token).ConfigureAwait(false);
+			if (page.Item is OperationNavigationItem { AliasUrls.Count: > 0 } collapsed)
+				await WriteRedirects(collapsed, token).ConfigureAwait(false);
 		}).ConfigureAwait(false);
 	}
 
-	/// <summary>Alias URLs of a page, such as the former per-operation URLs of a collapsed page, forward to it, keeping any <c>#fragment</c>.</summary>
-	private async Task WriteRedirects(IApiAliasedNavigationItem page, Cancel ctx)
+	/// <summary>Former per-operation URLs of a collapsed page forward to it, keeping any <c>#fragment</c>.</summary>
+	private async Task WriteRedirects(OperationNavigationItem page, Cancel ctx)
 	{
 		var html = ApiRedirectPage.Html(page.Url);
 		foreach (var alias in page.AliasUrls)
@@ -616,8 +616,8 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// Every name of every page in one version's tree, relative to its product root. A page with aliases, such as a collapsed
-	/// operation, is reachable by its canonical path and by each alias path. Each name maps to all names of that page, canonical first.
+	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
+	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
 	/// </summary>
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
@@ -637,7 +637,7 @@ public class OpenApiGenerator(
 
 	private static string[] RelativeNames(INavigationItem item, string root)
 	{
-		var urls = item is IApiAliasedNavigationItem aliased ? aliased.AliasUrls.Prepend(item.Url) : [item.Url];
+		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
 		return [
 			.. urls
 				.Select(static url => url.TrimEnd('/'))

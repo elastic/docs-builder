@@ -87,7 +87,7 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are listed first under the **Topics** heading in the sidebar, in the order you declare them. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic, and the topic URL, such as `/topic/topic-kibana-spaces`, redirects to the child page. Links to the bump.sh page keep working.
+Child pages are listed first under the **Topics** heading in the sidebar, in the order you declare them. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
 
 Child pages also behave as follows:
 
@@ -488,9 +488,9 @@ Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slu
 
 The sidebar lists the topics under a **Topics** heading, above the endpoint groups and after any `children:` pages. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading only appears when the product has at least one topic page.
 
-A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`, and `/topic/topic-authentication` redirects there. This also works for a spec without security schemes.
+A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 
-A `children:` page whose first heading or text matches a topic replaces it, and the topic URL redirects to the child page. Refer to [`children:`](#api-children).
+A `children:` page whose first heading or text matches a topic replaces it. Refer to [`children:`](#api-children).
 
 ### Tag labels [x-displayname]
 

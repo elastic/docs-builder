@@ -126,7 +126,7 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ForwardsTopicUrlToChild()
+	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ChildReplacesTopic()
 	{
 		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
 		var folder = Directory.CreateDirectory(
@@ -143,7 +143,6 @@ public class TopicPageTests
 			all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
 			var page = all.OfType<SimpleMarkdownNavigationItem>().Single();
 			page.Url.Should().Be("/api/doc/cloud/auth-intro/");
-			page.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-authentication");
 		}
 		finally
 		{
@@ -152,7 +151,7 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task Generate_XTopics_WritesTopicPagesAndRedirects()
+	public async Task Generate_XTopics_WritesTopicPagesWithoutRedirects()
 	{
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-topics-{Guid.NewGuid():N}");
@@ -187,8 +186,8 @@ public class TopicPageTests
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
 		authentication.Should().Contain("Use an API key.").And.Contain("Api key (apiKey)");
-		var redirect = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-authentication", "index.html"), ct);
-		redirect.Should().Contain("http-equiv=\"refresh\" content=\"0; url=/api/doc/elasticsearch/authentication\"");
+		// elastic/docs-infra redirects the bump.sh topic URL; the build writes no page there.
+		files.Exists(Path.Join(root, "topic", "topic-authentication", "index.html")).Should().BeFalse();
 	}
 
 	[Test]
@@ -200,14 +199,14 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenAndXTopics_ForwardsTopicToChildWithSameTitle()
+	public async Task CreateNavigation_ChildrenAndXTopics_ChildWithSameTitleReplacesTopic()
 	{
 		var navigation = await Navigation(Spec(["""{ "title": "Kibana spaces", "content": "Spaces." }"""]), [KibanaOverview]);
 
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
 		var child = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
 		child.Url.Should().Be("/api/doc/cloud/kibana-api-overview/");
-		child.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
+		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
 	}
 
 	[Test]
@@ -229,11 +228,10 @@ public class TopicPageTests
 				(nameof(StructuralNavigationItem), "/api/doc/cloud/authentication"),
 				(nameof(TopicNavigationItem), "/api/doc/cloud/topic/topic-principles")
 			);
-		topics.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().BeEmpty();
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildWithSameContentAsTopic_ForwardsTopicToChild()
+	public async Task CreateNavigation_ChildWithSameContentAsTopic_ReplacesTopic()
 	{
 		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
 		var folder = Directory.CreateDirectory(
@@ -255,7 +253,7 @@ public class TopicPageTests
 
 			var all = ApiExplorerFixture.Walk(navigation).ToList();
 			all.OfType<TopicNavigationItem>().Should().BeEmpty();
-			all.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
+			all.OfType<SimpleMarkdownNavigationItem>().Should().ContainSingle();
 		}
 		finally
 		{
@@ -275,7 +273,6 @@ public class TopicPageTests
 		authentication.Hidden.Should().BeFalse();
 		authentication.Parent.Should().BeOfType<TopicsNavigationItem>();
 		authentication.Model.Intro.Should().Be("Use an API key.");
-		authentication.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-authentication");
 	}
 
 	[Test]

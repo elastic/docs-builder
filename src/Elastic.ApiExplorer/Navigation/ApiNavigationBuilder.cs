@@ -158,12 +158,12 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var finalNavigationItems = new List<INavigationItem>();
 		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
 		var children = ChildFiles(apiConfig, versionMajor);
-		var replacedTopics = MatchTopicsToChildren(apiUrlSuffix, topics, children);
-		var remainingTopics = topics.Where(topic => !replacedTopics.ContainsKey(topic)).ToArray();
+		var coveredTopics = CoveredTopics(apiUrlSuffix, topics, children);
+		var remainingTopics = topics.Where(topic => !coveredTopics.Contains(topic)).ToArray();
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
 		topicsNavigation.NavigationItems =
 		[
-			.. CreateChildNavigationItems(apiUrlSuffix, children, replacedTopics, topicsNavigation),
+			.. CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation),
 			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
 		];
 		if (topicsNavigation.NavigationItems.Count > 0)
@@ -237,35 +237,26 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 	private List<INavigationItem> CreateChildNavigationItems(
 		string apiUrlSuffix,
 		IReadOnlyList<IFileInfo> children,
-		IReadOnlyDictionary<OpenApiTopic, IFileInfo> replacedTopics,
 		TopicsNavigationItem topicsNavigation
 	)
 	{
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var items = new List<INavigationItem>(children.Count);
-		foreach (var child in children)
-		{
-			var item = CreateMarkdownNavigationItem(apiUrlSuffix, child, topicsNavigation.Landing, topicsNavigation, markdownSlugs);
-			item.AliasUrls = [.. replacedTopics.Where(pair => pair.Value == child).Select(pair => TopicUrl(apiUrlSuffix, pair.Key))];
-			items.Add(item);
-		}
-
-		return items;
+		return [
+			.. children.Select(
+				child => CreateMarkdownNavigationItem(apiUrlSuffix, child, topicsNavigation.Landing, topicsNavigation, markdownSlugs)
+			)
+		];
 	}
 
 	/// <summary>
 	/// The spec topics that a <c>children:</c> page already covers, because the child's first heading matches the topic title
-	/// or its text matches the topic content. The topic is not built, and its URL forwards to the child.
+	/// or its text matches the topic content. The topic is not built; elastic/docs-infra redirects its bump.sh URL to the child.
 	/// </summary>
-	private Dictionary<OpenApiTopic, IFileInfo> MatchTopicsToChildren(
-		string apiUrlSuffix,
-		IReadOnlyList<OpenApiTopic> topics,
-		IReadOnlyList<IFileInfo> children
-	)
+	private HashSet<OpenApiTopic> CoveredTopics(string apiUrlSuffix, IReadOnlyList<OpenApiTopic> topics, IReadOnlyList<IFileInfo> children)
 	{
-		var matches = new Dictionary<OpenApiTopic, IFileInfo>();
+		var covered = new HashSet<OpenApiTopic>();
 		if (topics.Count == 0 || children.Count == 0)
-			return matches;
+			return covered;
 
 		var childPages = children
 			.Select(child => (File: child, Page: MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child)))
@@ -278,15 +269,15 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 				continue;
 
 			_logger.LogInformation(
-				"API '{ApiKey}' builds no page for x-topics entry '{Title}', because the children: page '{File}' covers it; the topic URL forwards there.",
+				"API '{ApiKey}' builds no page for x-topics entry '{Title}', because the children: page '{File}' covers it.",
 				apiUrlSuffix,
 				topic.Title,
 				match.Name
 			);
-			matches[topic] = match;
+			_ = covered.Add(topic);
 		}
 
-		return matches;
+		return covered;
 	}
 
 	private static bool Covers((string? Heading, string? Body) child, OpenApiTopic topic) =>

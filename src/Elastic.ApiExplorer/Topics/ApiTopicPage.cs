@@ -45,7 +45,7 @@ public class TopicNavigationItem(
 	ApiTopicPage page,
 	IRootNavigationItem<INavigationModel, INavigationItem> root,
 	INodeNavigationItem<INavigationModel, INavigationItem> parent
-) : ILeafNavigationItem<ApiTopicPage>, IApiAliasedNavigationItem
+) : ILeafNavigationItem<ApiTopicPage>
 {
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; } = root;
 	public string Id { get; } = ShortId.Create(url);
@@ -55,9 +55,6 @@ public class TopicNavigationItem(
 	public string NavigationTitle { get; } = page.Title;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = parent;
 	public int NavigationIndex { get; set; }
-
-	/// <summary><c>children:</c> pages that the spec's topics replace forward here.</summary>
-	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 }
 
 /// <summary>The Topics sidebar heading. It has no page; it groups the topic pages above the endpoint groups.</summary>

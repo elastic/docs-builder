@@ -55,7 +55,7 @@ public record ApiStructuralPage(ApiStructuralKind Kind, string? Intro = null) : 
 	}
 }
 
-public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>, IApiAliasedNavigationItem
+public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 {
 	public StructuralNavigationItem(
 		string? urlPathPrefix,
@@ -82,9 +82,6 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>, 
 	// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
 	// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
 	public bool Hidden { get; init; } = true;
-
-	/// <summary>The Bump.sh topic URL of an Authentication topic, which forwards here.</summary>
-	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
@@ -116,11 +113,7 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>, 
 	)
 	{
 		var page = new ApiStructuralPage(ApiStructuralKind.Authentication, topic.Content);
-		return new StructuralNavigationItem(urlPathPrefix, apiUrlSuffix, page, root, root)
-		{
-			Hidden = false,
-			AliasUrls = [ApiUrlBuilder.TopicUrl(urlPathPrefix, apiUrlSuffix, ApiUrlBuilder.TopicMoniker(topic.Title))]
-		};
+		return new StructuralNavigationItem(urlPathPrefix, apiUrlSuffix, page, root, root) { Hidden = false };
 	}
 }
 
