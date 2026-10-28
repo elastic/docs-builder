@@ -220,3 +220,5 @@ Tagged `edge;latest;<version>` on release, `edge` on every push to main.
 
 AOT compilation is validated on every CI run by building the container image and
 running `essc --help` against it.
+
+This paragraph exists only to exercise the preview workflows and goes away with the verification PR.
