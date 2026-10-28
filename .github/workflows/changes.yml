@@ -1,0 +1,47 @@
+name: changes
+
+# Decides whether a pull request touches anything that can affect builds, tests or previews.
+# Pushes and manual runs always report true. Callers gate their slow work on the `code` output.
+#
+# Matrix jobs that are required checks must gate per step instead of per job: a matrix job skipped
+# by `if` keeps its unexpanded name (e.g. `build (${{ matrix.os }})`), so the required check never reports.
+
+on:
+  workflow_call:
+    outputs:
+      code:
+        description: "'true' unless every changed file is repository metadata that cannot affect a build"
+        value: ${{ jobs.filter.outputs.code }}
+
+permissions:
+  contents: read
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # pull_request checks out the merge commit: HEAD^1 is the base branch tip
+          fetch-depth: 2
+
+      - id: filter
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only --no-renames HEAD^1 HEAD > changed.txt
+          cat changed.txt
+          # Bot/review config, ownership and issue templates. Workflows and actions are deliberately not listed.
+          metadata='^(\.libra/|\.github/(ISSUE_TEMPLATE/|updatecli/|CODEOWNERS$|copilot-instructions\.md$|dependabot\.yml$|release-drafter\.yml$|zizmor\.yml$|actionlint\.yaml$)|CODEOWNERS$|README\.md$)'
+          if grep -Evq "$metadata" changed.txt; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
