@@ -483,8 +483,11 @@ public class BundleGitRefTests() : ChangelogTestBase()
 				return Yaml(PoolEntryByName);
 			if (path.EndsWith("sturdier-snapshots.yaml", StringComparison.Ordinal))
 				return Yaml(PoolEntryByPrs);
-			if (path.EndsWith("notes-2026-08-13.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-heads-up.yml","bundle_seq":0}]}""");
+			if (path.EndsWith("notes-cloud-hosted-2026-08-13.json", StringComparison.Ordinal))
+				return Json(
+					/*lang=json,strict*/
+					"""{"schema_version":1,"product":"cloud-hosted","version":"2026-08-13","notes":[{"path":"main/note-heads-up.yml","bundle_seq":0}]}"""
+				);
 			if (path.EndsWith("note-heads-up.yml", StringComparison.Ordinal))
 				return Yaml(note);
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
