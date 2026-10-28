@@ -617,7 +617,7 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
-	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
+	/// canonical path and its former per-operation paths, and a <c>children:</c> page also answers to the topic URLs it replaces. Each name maps to all names of that page, canonical first.
 	/// </summary>
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
@@ -637,7 +637,12 @@ public class OpenApiGenerator(
 
 	private static string[] RelativeNames(INavigationItem item, string root)
 	{
-		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
+		var urls = item switch
+		{
+			OperationNavigationItem collapsed => collapsed.AliasUrls.Prepend(item.Url),
+			SimpleMarkdownNavigationItem child => child.ReplacedTopicUrls.Prepend(item.Url),
+			_ => [item.Url]
+		};
 		return [
 			.. urls
 				.Select(static url => url.TrimEnd('/'))

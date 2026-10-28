@@ -37,6 +37,12 @@ public class SimpleMarkdownNavigationItem(
 	public Uri Identifier { get; } = new("about:blank");
 	public string Slug { get; } = CreateSlugFromFile(fileInfo);
 
+	/// <summary>
+	/// URLs of the spec's <c>x-topics</c> pages this page replaces. The version switcher matches pages by them; the build writes
+	/// no redirect pages there, elastic/docs-infra redirects them.
+	/// </summary>
+	public IReadOnlyList<string> ReplacedTopicUrls { get; internal set; } = [];
+
 	/// <inheritdoc />
 	public IApiModel Model => this;
 

@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -434,12 +435,50 @@ public class OpenApiGeneratorMultiVersionTests
 		older.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-ping\"");
 	}
 
+	[Test]
+	public async Task Generate_VersionPickerMatchesAChildPageWithTheTopicItReplaces()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		// spaces.v9.md replaces the Kibana spaces topic in main and v9; v8 still builds the topic page.
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch(), SpacesChild);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", WithSpacesTopic(SpecDocument("Elasticsearch main"))),
+			("9.4", WithSpacesTopic(SpecDocument("Elasticsearch 9"))),
+			("8.19", WithSpacesTopic(SpecDocument("Elasticsearch 8")))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var files = context.WriteFileSystem.File;
+		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		files.Exists(Path.Join(root, "v9", "topic", "topic-kibana-spaces", "index.html")).Should().BeFalse();
+		var topic = files.ReadAllText(Path.Join(root, "v8", "topic", "topic-kibana-spaces", "index.html"));
+		topic.Should().Contain("href=\"/api/doc/elasticsearch/v9/spaces\"");
+		var child = files.ReadAllText(Path.Join(root, "v9", "spaces", "index.html"));
+		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/topic/topic-kibana-spaces\"");
+	}
+
+	private const string SpacesChild = "spaces.v9.md";
+
+	private static OpenApiDocument WithSpacesTopic(OpenApiDocument document)
+	{
+		var topic = new JsonObject { ["title"] = "Kibana spaces", ["content"] = "Spaces organize saved objects." };
+		document.Extensions = new Dictionary<string, IOpenApiExtension> { ["x-topics"] = new JsonNodeExtension(new JsonArray(topic)) };
+		return document;
+	}
+
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
 		VersionsConfiguration versionsConfiguration,
 		ProductsConfiguration productsConfiguration,
 		string outputRoot,
-		GitCheckoutInformation git
+		GitCheckoutInformation git,
+		string? childFile = null
 	)
 	{
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-multi-version-test-{Guid.NewGuid():N}");
@@ -453,6 +492,14 @@ public class OpenApiGeneratorMultiVersionTests
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
+		if (childFile is not null)
+		{
+			docsetYaml += $"\n      children:\n        - file: {childFile}\n";
+			fs.AddFile(
+				Path.Join(repoRoot, "docs", "api", "elasticsearch", childFile),
+				new MockFileData("# Kibana spaces\n\nSpaces organize saved objects.\n")
+			);
+		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, versionsConfiguration, productsConfiguration);
 

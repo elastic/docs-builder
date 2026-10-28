@@ -206,6 +206,7 @@ public class TopicPageTests
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
 		var child = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
 		child.Url.Should().Be("/api/doc/cloud/kibana-api-overview/");
+		child.ReplacedTopicUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
 		ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Should().BeEmpty();
 	}
 
