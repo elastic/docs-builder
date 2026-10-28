@@ -87,9 +87,9 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are a fallback for specs without topics. When the spec declares [`x-topics`](#x-topics), the API Explorer builds the topic pages and ignores `children:`. A child page whose first heading matches a topic title redirects to that topic, so its URL keeps working. Any other child page is skipped with a build warning. `children:` is deprecated: move its content to `x-topics` in the spec.
+Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them. They take priority over the spec's [`x-topics`](#x-topics): when a product declares `children:`, the API Explorer ignores its `x-topics`. A topic URL such as `/topic/topic-kibana-spaces` redirects to the child page whose first heading matches the topic title, so links to the bump.sh page keep working. A topic with no matching child is skipped with a build warning.
 
-When the spec has no `x-topics`, child pages behave as follows:
+Child pages also behave as follows:
 
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
@@ -470,6 +470,8 @@ The same accordion applies to **Path Parameters**, **Query Parameters**, and **R
 
 ### Topic pages [x-topics]
 
+`x-topics` is deprecated: write these pages as [`children:`](#api-children) pages instead. The API Explorer only uses `x-topics` when the product declares no `children:`.
+
 The document-level `x-topics` extension lists pages of prose that explain the API as a whole, such as rate limits or how to use spaces. Each entry has a `title` and a Markdown `content`:
 
 ```yaml
@@ -488,7 +490,7 @@ The sidebar lists the topics under a **Topics** heading, above the endpoint grou
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`, and `/topic/topic-authentication` redirects there. This also works for a spec without security schemes.
 
-When the spec has no `x-topics`, the Topics heading lists the [`children:`](#api-children) pages instead, in the order the docset declares them.
+When the product declares `children:`, the Topics heading lists those pages instead, and the spec's topics redirect to them. Refer to [`children:`](#api-children).
 
 ### Tag labels [x-displayname]
 

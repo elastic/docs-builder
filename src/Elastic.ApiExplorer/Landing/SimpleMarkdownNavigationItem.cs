@@ -24,7 +24,7 @@ public class SimpleMarkdownNavigationItem(
 	string title,
 	IFileInfo fileInfo,
 	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
-) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>
+) : INavigationItem, IApiModel, ILeafNavigationItem<IApiModel>, IApiAliasedNavigationItem
 {
 	public string Url { get; } = url;
 	public string NavigationTitle { get; } = title;
@@ -36,6 +36,9 @@ public class SimpleMarkdownNavigationItem(
 	public string Id { get; } = $"markdown-{Path.GetFileNameWithoutExtension(fileInfo.Name)}";
 	public Uri Identifier { get; } = new("about:blank");
 	public string Slug { get; } = CreateSlugFromFile(fileInfo);
+
+	/// <summary>Bump.sh topic URLs of the spec's <c>x-topics</c> entries that this page replaces, which forward here.</summary>
+	public IReadOnlyList<string> AliasUrls { get; internal set; } = [];
 
 	/// <inheritdoc />
 	public IApiModel Model => this;

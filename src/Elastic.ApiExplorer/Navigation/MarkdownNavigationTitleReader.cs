@@ -53,9 +53,9 @@ public static class MarkdownNavigationTitleReader
 					return line[2..].Trim();
 			}
 		}
-		catch (IOException)
+		catch
 		{
-			// A missing child file is reported where the page is built.
+			// An unreadable child file is reported where the page is built.
 		}
 
 		return null;

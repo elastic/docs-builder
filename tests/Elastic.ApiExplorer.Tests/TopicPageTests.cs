@@ -115,7 +115,7 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenWithoutXTopics_KeepDeclaredOrder()
+	public async Task CreateNavigation_Children_KeepDeclaredOrder()
 	{
 		var folder = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "api", "cloud");
 		var navigation = await Navigation(Spec(topics: null), [Path.Combine(folder, "z-first.md"), Path.Combine(folder, "a-second.md")]);
@@ -126,7 +126,7 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_AuthenticationTopicAndAuthenticationChild_ForwardsChildToAuthenticationPage()
+	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ForwardsTopicUrlToChild()
 	{
 		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
 		var folder = Directory.CreateDirectory(
@@ -139,8 +139,11 @@ public class TopicPageTests
 
 			var navigation = await Navigation(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]), [child]);
 
-			var authentication = ApiExplorerFixture.Walk(navigation).OfType<StructuralNavigationItem>().Single();
-			authentication.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-authentication", "/api/doc/cloud/auth-intro/");
+			var all = ApiExplorerFixture.Walk(navigation).ToList();
+			all.OfType<StructuralNavigationItem>().Should().BeEmpty("the child page replaces the Authentication topic");
+			var page = all.OfType<SimpleMarkdownNavigationItem>().Single();
+			page.Url.Should().Be("/api/doc/cloud/auth-intro/");
+			page.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-authentication");
 		}
 		finally
 		{
@@ -197,24 +200,24 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_XTopicsAndChildren_ForwardsChildToTopicWithSameTitle()
+	public async Task CreateNavigation_ChildrenAndXTopics_ForwardsTopicToChildWithSameTitle()
 	{
 		var navigation = await Navigation(Spec(["""{ "title": "Kibana spaces", "content": "Spaces." }"""]), [KibanaOverview]);
 
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
-		var topic = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<TopicNavigationItem>().Subject;
-		topic.Url.Should().Be("/api/doc/cloud/topic/topic-kibana-spaces");
-		topic.AliasUrls.Should().Equal("/api/doc/cloud/kibana-api-overview/");
+		var child = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<SimpleMarkdownNavigationItem>().Subject;
+		child.Url.Should().Be("/api/doc/cloud/kibana-api-overview/");
+		child.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-kibana-spaces");
 	}
 
 	[Test]
-	public async Task CreateNavigation_XTopicsAndUnmatchedChild_IgnoresChild()
+	public async Task CreateNavigation_ChildrenAndUnmatchedTopic_IgnoresTopic()
 	{
 		var navigation = await Navigation(Spec(["""{ "title": "Principles", "content": "REST." }"""]), [KibanaOverview]);
 
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
-		all.OfType<SimpleMarkdownNavigationItem>().Should().BeEmpty();
-		all.OfType<TopicNavigationItem>().Single().AliasUrls.Should().BeEmpty();
+		all.OfType<TopicNavigationItem>().Should().BeEmpty();
+		all.OfType<SimpleMarkdownNavigationItem>().Single().AliasUrls.Should().BeEmpty();
 	}
 
 	[Test]

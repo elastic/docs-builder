@@ -83,8 +83,8 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>, 
 	// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
 	public bool Hidden { get; init; } = true;
 
-	/// <summary>The Bump.sh topic URL of an Authentication topic, and any <c>children:</c> page it replaces, which forward here.</summary>
-	public IReadOnlyList<string> AliasUrls { get; internal set; } = [];
+	/// <summary>The Bump.sh topic URL of an Authentication topic, which forwards here.</summary>
+	public IReadOnlyList<string> AliasUrls { get; init; } = [];
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
