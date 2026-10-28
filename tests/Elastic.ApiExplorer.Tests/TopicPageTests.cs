@@ -115,6 +115,80 @@ public class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_ChildrenWithoutXTopics_KeepDeclaredOrder()
+	{
+		var folder = Path.Combine(Paths.WorkingDirectoryRoot.FullName, "api", "cloud");
+		var navigation = await Navigation(Spec(topics: null), [Path.Combine(folder, "z-first.md"), Path.Combine(folder, "a-second.md")]);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics.NavigationItems.Cast<SimpleMarkdownNavigationItem>().Select(child => child.Slug).Should().Equal("z-first", "a-second");
+	}
+
+	[Test]
+	public async Task CreateNavigation_AuthenticationTopicAndAuthenticationChild_ForwardsChildToAuthenticationPage()
+	{
+		// The build only reads files under the working directory root, so the child lives in the ignored .artifacts folder.
+		var folder = Directory.CreateDirectory(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", $"api-topics-{Guid.NewGuid():N}")
+		).FullName;
+		try
+		{
+			var child = Path.Combine(folder, "auth-intro.md");
+			await File.WriteAllTextAsync(child, "# Authentication\n\nUse an API key.\n", TestContext.Current!.Execution.CancellationToken);
+
+			var navigation = await Navigation(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]), [child]);
+
+			var authentication = ApiExplorerFixture.Walk(navigation).OfType<StructuralNavigationItem>().Single();
+			authentication.AliasUrls.Should().Equal("/api/doc/cloud/topic/topic-authentication", "/api/doc/cloud/auth-intro/");
+		}
+		finally
+		{
+			Directory.Delete(folder, recursive: true);
+		}
+	}
+
+	[Test]
+	public async Task Generate_XTopics_WritesTopicPagesAndRedirects()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-topics-{Guid.NewGuid():N}");
+		var context = OpenApiGeneratorSpecDownloadTests.CreateGenerateContext(outputRoot);
+		var document = await Load(
+			Spec(
+				[
+					"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
+					"""{ "title": "Authentication", "content": "Use an API key." }"""
+				],
+				withSchemes: true
+			)
+		);
+		using var versionIndexClient = new VersionIndexClient(
+			OpenApiGeneratorSpecDownloadTests.BaseUri,
+			OpenApiGeneratorSpecDownloadTests.MainOnlyHandler(),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			OpenApiGeneratorSpecDownloadTests.CreateSequentialReader(document)
+		);
+
+		await generator.Generate(ct);
+
+		var files = context.WriteFileSystem.File;
+		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
+		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
+		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
+		authentication.Should().Contain("Use an API key.").And.Contain("Api key (apiKey)");
+		var redirect = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-authentication", "index.html"), ct);
+		redirect.Should().Contain("http-equiv=\"refresh\" content=\"0; url=/api/doc/elasticsearch/authentication\"");
+	}
+
+	[Test]
 	public async Task CreateNavigation_NoTopicsOrChildren_OmitsTopicsHeading()
 	{
 		var navigation = await Navigation(Spec(topics: null));
@@ -125,7 +199,7 @@ public class TopicPageTests
 	[Test]
 	public async Task CreateNavigation_XTopicsAndChildren_ForwardsChildToTopicWithSameTitle()
 	{
-		var navigation = await Navigation(Spec(["""{ "title": "Kibana spaces", "content": "Spaces." }"""]), KibanaOverview);
+		var navigation = await Navigation(Spec(["""{ "title": "Kibana spaces", "content": "Spaces." }"""]), [KibanaOverview]);
 
 		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
 		var topic = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<TopicNavigationItem>().Subject;
@@ -136,7 +210,7 @@ public class TopicPageTests
 	[Test]
 	public async Task CreateNavigation_XTopicsAndUnmatchedChild_IgnoresChild()
 	{
-		var navigation = await Navigation(Spec(["""{ "title": "Principles", "content": "REST." }"""]), KibanaOverview);
+		var navigation = await Navigation(Spec(["""{ "title": "Principles", "content": "REST." }"""]), [KibanaOverview]);
 
 		var all = ApiExplorerFixture.Walk(navigation).ToList();
 		all.OfType<SimpleMarkdownNavigationItem>().Should().BeEmpty();
@@ -265,18 +339,18 @@ public class TopicPageTests
 			""";
 	}
 
-	private static async Task<LandingNavigationItem> Navigation(string spec, string? childFile = null, BuildContext? context = null)
+	private static async Task<LandingNavigationItem> Navigation(string spec, string[]? childFiles = null, BuildContext? context = null)
 	{
 		context ??= CreateContext();
 		var document = await Load(spec);
-		var apiConfig = childFile is null
+		var apiConfig = childFiles is null
 			? null
 			: new ResolvedApiConfiguration
 			{
 				ProductKey = "cloud",
 				Product = new Product { Id = "cloud", DisplayName = "Cloud" },
 				SpecFileName = "cloud.json",
-				Children = [new FileSystem().FileInfo.New(childFile)]
+				Children = [.. childFiles.Select(file => new FileSystem().FileInfo.New(file))]
 			};
 		return CreateGenerator(context).CreateNavigation("cloud", document, apiConfig);
 	}

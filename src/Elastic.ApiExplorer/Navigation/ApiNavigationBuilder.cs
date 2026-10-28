@@ -159,11 +159,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
 		var children = ChildFiles(apiConfig, versionMajor);
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
-		topicsNavigation.NavigationItems = TopicsNavigationItem.Order(
-			topics.Count > 0
-				? CreateTopicNavigationItems(apiUrlSuffix, topics, children, topicsNavigation)
-				: CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation)
-		);
+		// Spec topics follow the pinned and alphabetical order; children: pages keep the order the docset declares.
+		topicsNavigation.NavigationItems = topics.Count > 0
+			? TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, topics, children, topicsNavigation))
+			: CreateChildNavigationItems(apiUrlSuffix, children, topicsNavigation);
 		if (topicsNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.Add(topicsNavigation);
 
@@ -208,6 +207,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var items = new List<INavigationItem>(topics.Count);
 		foreach (var topic in topics)
 		{
+			var childAliases = replacedChildren.TryGetValue(topic.Title, out var aliases) ? aliases : [];
 			if (ApiTopicPage.IsAuthentication(topic))
 			{
 				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
@@ -217,6 +217,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					topic
 				);
 				authentication.Parent = topicsNavigation;
+				authentication.AliasUrls = [.. authentication.AliasUrls, .. childAliases];
 				items.Add(authentication);
 				continue;
 			}
@@ -224,7 +225,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			var url = ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, ApiUrlBuilder.TopicMoniker(topic.Title));
 			items.Add(new TopicNavigationItem(url, new ApiTopicPage(topic.Title, topic.Content), topicsNavigation.Landing, topicsNavigation)
 			{
-				AliasUrls = replacedChildren.TryGetValue(topic.Title, out var aliases) ? aliases : []
+				AliasUrls = childAliases
 			});
 		}
 
@@ -241,10 +242,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		IReadOnlyList<IFileInfo> children
 	)
 	{
-		var titles = topics
-			.Where(topic => !ApiTopicPage.IsAuthentication(topic))
-			.Select(static topic => topic.Title)
-			.ToHashSet(StringComparer.OrdinalIgnoreCase);
+		var titles = topics.Select(static topic => topic.Title).ToHashSet(StringComparer.OrdinalIgnoreCase);
 		var aliases = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 		foreach (var child in children)
 		{

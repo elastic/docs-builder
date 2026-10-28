@@ -488,7 +488,7 @@ The sidebar lists the topics under a **Topics** heading, above the endpoint grou
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`, and `/topic/topic-authentication` redirects there. This also works for a spec without security schemes.
 
-When the spec has no `x-topics`, the Topics heading lists the [`children:`](#api-children) pages instead.
+When the spec has no `x-topics`, the Topics heading lists the [`children:`](#api-children) pages instead, in the order the docset declares them.
 
 ### Tag labels [x-displayname]
 
