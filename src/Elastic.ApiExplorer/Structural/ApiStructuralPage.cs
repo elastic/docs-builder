@@ -55,7 +55,7 @@ public record ApiStructuralPage(ApiStructuralKind Kind, string? Intro = null) : 
 	}
 }
 
-public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
+public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 {
 	public StructuralNavigationItem(
 		string? urlPathPrefix,
@@ -63,28 +63,15 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 		ApiStructuralPage page,
 		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
 		INodeNavigationItem<INavigationModel, INavigationItem> parent
-	)
-	{
-		NavigationRoot = root;
-		Model = page;
-		NavigationTitle = page.Title;
-		Parent = parent;
-		Url = page.Kind == ApiStructuralKind.Authentication
+	) : base(UrlFor(urlPathPrefix, apiUrlSuffix, page.Kind), page.Title, page, root, parent) =>
+		// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
+		// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
+		Hidden = true;
+
+	private static string UrlFor(string? urlPathPrefix, string apiUrlSuffix, ApiStructuralKind kind) =>
+		kind == ApiStructuralKind.Authentication
 			? ApiUrlBuilder.AuthenticationUrl(urlPathPrefix, apiUrlSuffix)
 			: ApiUrlBuilder.ServersUrl(urlPathPrefix, apiUrlSuffix);
-		Id = ShortId.Create(Url);
-	}
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	public string Id { get; }
-	public ApiStructuralPage Model { get; }
-	public string Url { get; }
-	// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
-	// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
-	public bool Hidden { get; init; } = true;
-	public string NavigationTitle { get; }
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-	public int NavigationIndex { get; set; }
 
 	public static IReadOnlyList<StructuralNavigationItem> Create(
 		string? urlPathPrefix,
