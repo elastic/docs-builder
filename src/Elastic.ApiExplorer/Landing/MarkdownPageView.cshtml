@@ -8,6 +8,6 @@
 	@Model.BodyHtml
 	@if (Model.Authentication is { } authentication)
 	{
-		@(await RenderPartialAsync<_AuthenticationSection, AuthenticationSectionModel>(authentication))
+		@(await RenderPartialAsync<_AuthenticationTabs, AuthenticationSectionModel>(authentication))
 	}
 </section>

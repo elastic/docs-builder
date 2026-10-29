@@ -104,9 +104,6 @@ public class StructuralNavigationItem : ApiPageNavigationItem<ApiStructuralPage>
 
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
-	/// <summary>The id of the Authentication section, which an intro heading with the same slug must not take.</summary>
-	private const string AuthenticationAnchor = "authentication";
-
 	public required ApiStructuralPage Page { get; init; }
 	public required IReadOnlyList<AuthRequirement> Requirements { get; init; }
 	public required IReadOnlyList<ApiServerDisplay> Servers { get; init; }
@@ -123,13 +120,7 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 
 	protected override string? LayoutPageTitle => Page.Title;
 
-	protected override IReadOnlyList<TocItem> GetTocItems() =>
-		Page.Kind == ApiStructuralKind.Authentication
-			? [
-				.. IntroHeadings,
-				.. Requirements.Count > 0 ? [new TocItem("Authentication", AuthenticationAnchor, 2)] : Array.Empty<TocItem>()
-			]
-			: [];
+	protected override IReadOnlyList<TocItem> GetTocItems() => Page.Kind == ApiStructuralKind.Authentication ? IntroHeadings : [];
 
 	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
 	{
@@ -157,13 +148,12 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 		};
 	}
 
-	// The Authentication section owns its anchor, so an intro heading with the same slug gets none.
 	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(string? intro, ApiRenderContext context)
 	{
 		if (string.IsNullOrWhiteSpace(intro))
 			return (null, []);
 
-		return ApiMarkdown.RenderWithHeadings(context, intro, new HashSet<string>([AuthenticationAnchor], StringComparer.Ordinal));
+		return ApiMarkdown.RenderWithHeadings(context, intro);
 	}
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };

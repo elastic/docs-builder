@@ -27,7 +27,7 @@
 	}
 	else if (Model.Page.Kind == ApiStructuralKind.Authentication)
 	{
-		@(await RenderPartialAsync<_AuthenticationSection, AuthenticationSectionModel>(Model.Authentication))
+		@(await RenderPartialAsync<_AuthenticationTabs, AuthenticationSectionModel>(Model.Authentication))
 	}
 	else
 	{
