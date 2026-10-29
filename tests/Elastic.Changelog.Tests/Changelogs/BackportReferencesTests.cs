@@ -15,6 +15,9 @@ public class BackportReferencesTests
 {
 	private const string Sha = "0123456789abcdef0123456789abcdef01234567";
 
+	private static readonly int[][] SingleNumberGroups = [[20], [21]];
+	private static readonly int[][] ChainedNumberGroups = [[20], [21, 201]];
+
 	private static BackportCandidates Extract(string title, string? body = null, int number = 500, params string[] commits) =>
 		BackportReferences.Extract("elastic", "kibana", number, title, body, commits);
 
@@ -176,14 +179,11 @@ public class BackportReferencesTests
 		Extract("Backport (#20)", null, 500, "Follow up on #10", "Feature (#20)", "Other change (#21)")
 			.SubjectGroups
 			.Should()
-			.BeEquivalentTo(new[] { new[] { 20 }, new[] { 21 } });
+			.BeEquivalentTo(SingleNumberGroups);
 
 	[Test]
 	public void Extract_ChainedBackportSubject_KeepsEveryNumberAtTheEnd() =>
-		Extract("First (#20)", null, 500, "First (#20)", "Second (#21) (#201)")
-			.SubjectGroups
-			.Should()
-			.BeEquivalentTo(new[] { new[] { 20 }, new[] { 21, 201 } });
+		Extract("First (#20)", null, 500, "First (#20)", "Second (#21) (#201)").SubjectGroups.Should().BeEquivalentTo(ChainedNumberGroups);
 
 	[Test]
 	public void Choose_ChainedBackportWhoseIntermediateFailedValidation_KeepsTheOriginal() =>

@@ -19,7 +19,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// (including pagination) and GraphQL <c>associatedPullRequests</c> resolution across the
 /// squash / merge-commit / no-PR / multi-PR shapes.
 /// </summary>
-public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
+public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 {
 	private const string Owner = "elastic";
 	private const string Repo = "widget";
@@ -74,11 +74,8 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	/// </summary>
 	private static string DefaultDetails(string query)
 	{
-		var pullRequests = System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(query, @" p(\d+): pullRequest")
+		var pullRequests = AliasedPullRequestRegex()
+			.Matches(query)
 			.Select(
 				m =>
 					$$"""
@@ -142,11 +139,8 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var handler = Handler(_ => CompareJson(commits.Count, commits.Select(c => c.Sha)), req =>
 		{
 			_ = Interlocked.Increment(ref associations);
-			var asked = System
-				.Text
-				.RegularExpressions
-				.Regex
-				.Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(), "(?<=u0022)[0-9a-f]{40}")
+			var asked = CommitShaRegex()
+				.Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
 				.Select(m => m.Value)
 				.ToHashSet();
 			return GraphQlJson([.. commits.Where(c => asked.Contains(c.Sha))]);
@@ -176,13 +170,13 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			(sha2, [PrNode(12, mergeCommitSha: sha2)])
 		];
 
-		var first = await ResolveWithCacheAsync(commits);
-		var second = await ResolveWithCacheAsync(commits);
+		var (firstResult, firstAssociations, _) = await ResolveWithCacheAsync(commits);
+		var (secondResult, secondAssociations, _) = await ResolveWithCacheAsync(commits);
 
-		first.Associations.Should().Be(1);
-		second.Associations.Should().Be(0, "both commits were learned by the first run");
-		second.Result!.PullRequests.Select(p => p.Number).Should().Equal(first.Result!.PullRequests.Select(p => p.Number));
-		second.Result.PullRequests.Select(p => p.CommitShas.Single()).Should().Equal(sha1, sha2);
+		firstAssociations.Should().Be(1);
+		secondAssociations.Should().Be(0, "both commits were learned by the first run");
+		secondResult!.PullRequests.Select(p => p.Number).Should().Equal(firstResult!.PullRequests.Select(p => p.Number));
+		secondResult.PullRequests.Select(p => p.CommitShas.Single()).Should().Equal(sha1, sha2);
 	}
 
 	[Test]
@@ -194,15 +188,14 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		static string WithLabel(string label) =>
 			$$"""{ "data": { "repository": { "p11": { "title": "T", "updatedAt": "2026-10-01T00:00:00Z", "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "{{label}}" } ] } } } } }""";
 
-		var first = await ResolveWithCacheAsync(commits, _ => WithLabel("before"));
-		var second = await ResolveWithCacheAsync(commits, _ => WithLabel("after"));
+		var (firstResult, _, _) = await ResolveWithCacheAsync(commits, _ => WithLabel("before"));
+		var (secondResult, secondAssociations, _) = await ResolveWithCacheAsync(commits, _ => WithLabel("after"));
 
-		first.Result!.PullRequests.Single().Labels.Should().Equal("before");
-		second.Associations.Should().Be(0);
+		firstResult!.PullRequests.Single().Labels.Should().Equal("before");
+		secondAssociations.Should().Be(0);
 		// A label can change after the merge, so it is never cached.
-		second.Result!.PullRequests.Single().Labels.Should().Equal("after");
-		second
-			.Result
+		secondResult!.PullRequests.Single().Labels.Should().Equal("after");
+		secondResult
 			.PullRequests
 			.Single()
 			.UpdatedAt
@@ -222,11 +215,11 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		];
 
 		_ = await ResolveWithCacheAsync(commits);
-		var second = await ResolveWithCacheAsync(commits);
+		var (result, associations, _) = await ResolveWithCacheAsync(commits);
 
-		second.Associations.Should().Be(1, "GitHub may link a pull request to the other two later, so only the merged one is remembered");
-		second.Result!.CommitsWithoutPullRequest.Should().BeEquivalentTo([direct, unmerged]);
-		second.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
+		associations.Should().Be(1, "GitHub may link a pull request to the other two later, so only the merged one is remembered");
+		result!.CommitsWithoutPullRequest.Should().BeEquivalentTo([direct, unmerged]);
+		result.PullRequests.Select(p => p.Number).Should().Equal(30);
 	}
 
 	[Test]
@@ -237,16 +230,16 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		IReadOnlyList<(string, string[])> commits = [(direct, []), (merged, [PrNode(30, mergeCommitSha: merged)])];
 
 		_ = await ResolveWithCacheAsync(commits, time: time);
-		var sameDay = await ResolveWithCacheAsync(commits, time: time);
+		var (_, sameDayAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
 		time.Advance(TimeSpan.FromHours(25));
-		var nextDay = await ResolveWithCacheAsync(commits, time: time);
-		var dayAfter = await ResolveWithCacheAsync(commits, time: time);
+		var (_, nextDayAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
+		var (dayAfterResult, dayAfterAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
 
-		sameDay.Associations.Should().Be(1, "the direct commit is too young to be believed");
-		nextDay.Associations.Should().Be(1, "a negative older than a day is asked of GitHub once more");
-		dayAfter.Associations.Should().Be(0, "the fresh negative confirmed it, so nothing is asked");
-		dayAfter.Result!.CommitsWithoutPullRequest.Should().Equal(direct);
-		dayAfter.Result.PullRequests.Select(p => p.Number).Should().Equal(30);
+		sameDayAssociations.Should().Be(1, "the direct commit is too young to be believed");
+		nextDayAssociations.Should().Be(1, "a negative older than a day is asked of GitHub once more");
+		dayAfterAssociations.Should().Be(0, "the fresh negative confirmed it, so nothing is asked");
+		dayAfterResult!.CommitsWithoutPullRequest.Should().Equal(direct);
+		dayAfterResult.PullRequests.Select(p => p.Number).Should().Equal(30);
 	}
 
 	[Test]
@@ -255,10 +248,13 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var (sha1, sha2) = (Sha(1), Sha(2));
 		_ = await ResolveWithCacheAsync([(sha1, [PrNode(11, mergeCommitSha: sha1)])]);
 
-		var second = await ResolveWithCacheAsync([(sha1, [PrNode(11, mergeCommitSha: sha1)]), (sha2, [PrNode(12, mergeCommitSha: sha2)])]);
+		var (result, associations, _) = await ResolveWithCacheAsync([
+			(sha1, [PrNode(11, mergeCommitSha: sha1)]),
+			(sha2, [PrNode(12, mergeCommitSha: sha2)])
+		]);
 
-		second.Associations.Should().Be(1);
-		second.Result!.PullRequests.Select(p => p.Number).Should().Equal(11, 12);
+		associations.Should().Be(1);
+		result!.PullRequests.Select(p => p.Number).Should().Equal(11, 12);
 	}
 
 	[Test]
@@ -451,13 +447,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			// The batches may arrive in any order, so the answer follows the commits the request names. Every commit
 			// resolves to its own squashed PR (number = index + 1).
 			_ = Interlocked.Increment(ref graphQlBatches);
-			var batch = System
-				.Text
-				.RegularExpressions
-				.Regex
-				.Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(), "(?<=u0022)[0-9a-f]{40}")
-				.Select(m => m.Value)
-				.ToList();
+			var batch = CommitShaRegex().Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).Select(m => m.Value).ToList();
 			return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
 		});
 
@@ -490,7 +480,11 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			pages.Enqueue(page);
 			var now = Interlocked.Increment(ref inFlight);
 			int seen;
-			while (now > (seen = Volatile.Read(ref maxInFlight)) && Interlocked.CompareExchange(ref maxInFlight, now, seen) != seen) { }
+			while (now > (seen = Volatile.Read(ref maxInFlight)))
+			{
+				if (Interlocked.CompareExchange(ref maxInFlight, now, seen) == seen)
+					break;
+			}
 
 			// Later pages answer sooner, so the pages do not finish in order.
 			await Task.Delay(Math.Max(10, 130 - (page * 10)));
@@ -764,4 +758,10 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("(?<=u0022)[0-9a-f]{40}")]
+	private static partial System.Text.RegularExpressions.Regex CommitShaRegex();
+
+	[System.Text.RegularExpressions.GeneratedRegex(@" p(\d+): pullRequest")]
+	private static partial System.Text.RegularExpressions.Regex AliasedPullRequestRegex();
 }

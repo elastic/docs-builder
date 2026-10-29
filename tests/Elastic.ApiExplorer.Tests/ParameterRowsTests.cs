@@ -18,7 +18,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 /// <summary>Query and header parameters are property rows: a <c>deepObject</c> map lists its values like a body map does.</summary>
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
-public class ParameterRowsTests(ApiExplorerFixture fixture)
+public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 {
 	private OperationNavigationItem DocsGet =>
 		fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
@@ -147,13 +147,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("<span class=\"optional type-status\">optional</span>");
 		html.Should().Contain("<p class=\"api-path-param-optional-hint\">Leave it out to use <code>/_search</code>.</p>");
-		System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(html, "required type-status")
-			.Should()
-			.ContainSingle("only the parameter every route needs reads required");
+		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
 		markdown
@@ -345,4 +339,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 
 		return fs.File.ReadAllText("/out.html");
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("required type-status")]
+	private static partial System.Text.RegularExpressions.Regex RequiredStatusRegex();
 }

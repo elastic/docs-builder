@@ -98,7 +98,7 @@ public static class CrossLinkResolverAssertions
 		{
 			Origin = GitCheckoutInformation.Unavailable,
 			UrlPathPrefix = null,
-			Links = new Dictionary<string, LinkMetadata>(linksData),
+			Links = [with(linksData)],
 			CrossLinks = [],
 			Redirects = redirectRules
 		};
