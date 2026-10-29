@@ -1,0 +1,546 @@
+# A second sample for the {wizard} directive: "Which search approach and setup fit your use case?"
+# Built from https://www.elastic.co/docs/solutions/search/search-approaches (the approaches and their "Use when"
+# criteria) and the pages it links to (the configuration choices). It shows a wizard with no products to sell:
+# the result is a recommendation made of several parts.
+#
+# Answers this file uses
+#   approach   full_text | semantic | multimodal | vector | hybrid | geospatial
+#   setup      the field type or workflow to set up
+#   model      the embedding model (optional)       storage   how to store dense vectors (optional)
+#   hosting    where a multimodal model runs        ranking   the reranker (optional)
+#   ql         the query language to use
+
+meta:
+  title: Which search approach and setup fit your use case?
+  intro: >-
+    Tell us what people search for and how they phrase it. We'll recommend a search approach, how to set it up,
+    and where to start.
+  start_button: Find my approach
+  start: content
+  progress_label: Your progress
+
+screens:
+
+  # ------------------------------------------------------------------ what and how
+  content:
+    type: question
+    progress: 8
+    question: What are people searching for?
+    why: This picks the family of search approaches that can work for your content.
+    options:
+      - label: Words and documents
+        hint: Articles, products, support content, anything made of text
+        set: { ql: query_dsl }
+        next: phrasing
+      - label: Images, audio, video or PDFs
+        hint: For example, finding a picture by describing it
+        set: { ql: query_dsl }
+        next: modalities
+      - label: Places on a map
+        hint: Results that depend on location or distance
+        set: { ql: query_dsl }
+        next: geo_kind
+      - label: I'm not sure
+        set: { ql: query_dsl }
+        next: phrasing
+
+  phrasing:
+    type: question
+    progress: 20
+    question: How will people phrase their searches?
+    why: This is the main thing that separates the approaches. Starting with keyword search and adding more later is a valid choice.
+    options:
+      - label: With the exact words and phrases in my content
+        hint: Names, product codes, keywords
+        set: { approach: full_text }
+        next: language
+      - label: In everyday language, where the wording may differ from my content
+        hint: Synonyms and questions, not just matching words
+        set: { approach: semantic }
+        next: semantic_control
+      - label: Both, and I want exact matches and matches by meaning in one set of results
+        set: { approach: hybrid }
+        next: fusion
+      - label: I already have embeddings, or I need direct control over vectors and models
+        set: { approach: vector }
+        next: vector_kind
+      - label: I'm not sure
+        hint: We'll start with keyword search, which is a powerful tool in itself
+        set: { approach: full_text }
+        next: language
+
+  # ------------------------------------------------------------------ full-text
+  language:
+    type: question
+    progress: 40
+    question: Is your content mostly in one language?
+    why: The standard analyzer works well for most use cases. If you search in one language, tuning the analysis for it can improve matching.
+    options:
+      - label: Yes, one language, and I want to tune for it
+        set: { setup: text_language }
+        next: rerank
+      - label: English or mixed, so the defaults are fine
+        set: { setup: text_standard }
+        next: rerank
+      - label: I'm not sure
+        set: { setup: text_standard }
+        next: rerank
+
+  # ------------------------------------------------------------------ semantic
+  semantic_control:
+    type: question
+    progress: 36
+    question: How much setup do you want?
+    why: There are three ways to set up semantic search, from simplest to most work.
+    options:
+      - label: As little as possible
+        hint: Elasticsearch creates the embeddings for you
+        set: { setup: semantic_text }
+        flag: set_inference_id
+        next: semantic_model
+      - label: I want to choose the inference endpoint myself
+        hint: You create the endpoint and the mapping
+        set: { setup: inference_api }
+        next: semantic_model
+      - label: I need to deploy my own model on my own machine learning nodes
+        hint: The most complex option
+        set: { setup: eland }
+        next: rerank
+      - label: I'm not sure
+        set: { setup: semantic_text }
+        flag: set_inference_id
+        next: semantic_model
+
+  semantic_model:
+    type: question
+    progress: 48
+    question: What matters most for your results?
+    why: Dense models suit natural language understanding. ELSER uses sparse vectors, which makes results easier to explain.
+    options:
+      - label: Natural language understanding, including other languages
+        hint: A dense model
+        set: { model: jina_eis }
+        next: after_model
+      - label: Results I can explain
+        hint: ELSER, which is built in
+        set: { model: elser }
+        next: after_model
+      - label: I'm not sure
+        set: { model: jina_eis }
+        next: after_model
+
+  after_model:
+    type: route
+    rules:
+      - when: { key: model, equals: elser }
+        next: rerank
+    else: storage
+
+  # ------------------------------------------------------------------ vector
+  vector_kind:
+    type: question
+    progress: 36
+    question: What kind of vectors do you have?
+    why: You bring the embeddings, so you also split your data into chunks yourself.
+    options:
+      - label: Dense embeddings from my own model
+        set: { setup: dense_vector }
+        next: storage
+      - label: Sparse vectors, such as term weights
+        hint: For example, ELSER output
+        set: { setup: sparse_vector }
+        next: rerank
+      - label: I'm not sure
+        set: { setup: dense_vector }
+        next: storage
+
+  storage:
+    type: question
+    progress: 56
+    question: How big is your dataset compared to your memory?
+    why: Dense vectors take a lot of memory. Compression trades a little accuracy for a lot of space.
+    options:
+      - label: Typical production size
+        hint: Up to 32x smaller, and the usual choice
+        set: { storage: bbq_hnsw }
+        next: rerank
+      - label: Very large, and memory is tight
+        hint: Slower, and it may need a specific license
+        set: { storage: bbq_disk }
+        flag: bbq_disk
+        next: rerank
+      - label: Small, and I want the most accurate results
+        hint: Brute-force search
+        set: { storage: bbq_flat }
+        next: rerank
+      - label: I'd rather not compress as hard
+        hint: 4x smaller
+        set: { storage: int8_hnsw }
+        next: rerank
+      - label: I'm not sure
+        set: { storage: bbq_hnsw }
+        next: rerank
+
+  # ------------------------------------------------------------------ hybrid
+  fusion:
+    type: question
+    progress: 36
+    question: How should keyword and meaning scores combine?
+    why: Hybrid search runs both kinds of search and merges the results. The meaning side is usually a `semantic_text` field.
+    options:
+      - label: Merge the two rankings
+        hint: Simple, and the recommended way
+        set: { setup: hybrid_rrf, ql: retrievers }
+        next: rerank
+      - label: Weight keyword against meaning myself
+        hint: A weighted sum of the scores
+        set: { setup: hybrid_linear, ql: retrievers }
+        next: rerank
+      - label: I'm not sure
+        set: { setup: hybrid_rrf, ql: retrievers }
+        next: rerank
+
+  # ------------------------------------------------------------------ multimodal
+  modalities:
+    type: question
+    progress: 28
+    question: Which kinds of content do you need to search?
+    why: Different models cover different content types. All of them put the content in one vector space so you can search across it.
+    options:
+      - label: Text and images
+        hint: Multilingual
+        set: { approach: multimodal, setup: semantic_field, model: jina_clip_v2 }
+        flag: multimodal_preview
+        next: mm_hosting
+      - label: Text, images and PDFs
+        set: { approach: multimodal, setup: semantic_field, model: jina_v4 }
+        flag: multimodal_preview
+        next: mm_hosting
+      - label: Also audio or video
+        set: { approach: multimodal, setup: semantic_field, model: jina_v5_omni_small }
+        flag: multimodal_preview
+        next: mm_hosting
+      - label: A compact model for edge devices
+        set: { approach: multimodal, setup: semantic_field, model: jina_v5_omni_nano }
+        flag: multimodal_preview
+        next: mm_hosting
+      - label: I'm not sure
+        set: { approach: multimodal, setup: semantic_field, model: jina_v5_omni_small }
+        flag: multimodal_preview
+        next: mm_hosting
+
+  mm_hosting:
+    type: question
+    progress: 56
+    question: Where should the model run?
+    why: You use the same model to index and to search, so decide where it lives first.
+    options:
+      - label: Managed by Elastic
+        hint: The Elastic Inference Service, with no machine learning nodes to run
+        set: { hosting: eis }
+        next: pipeline
+      - label: A hosted API
+        hint: The Jina API
+        set: { hosting: jina_api }
+        next: pipeline
+      - label: On my own infrastructure
+        hint: Docker on-prem, for air-gapped or compliance needs
+        set: { hosting: docker }
+        next: pipeline
+      - label: In my own cloud account
+        hint: Through a cloud marketplace endpoint
+        set: { hosting: marketplace }
+        next: pipeline
+      - label: I'm not sure
+        set: { hosting: eis }
+        next: pipeline
+
+  # ------------------------------------------------------------------ geospatial
+  geo_kind:
+    type: question
+    progress: 40
+    question: Are your locations single points or areas?
+    why: This decides the field type. Location queries can also be combined with keyword search.
+    options:
+      - label: Single points
+        hint: A latitude and longitude
+        set: { approach: geospatial, setup: geo_point }
+        next: pipeline
+      - label: Areas, lines or shapes
+        hint: Polygons, circles, routes
+        set: { approach: geospatial, setup: geo_shape }
+        next: pipeline
+      - label: I'm not sure
+        set: { approach: geospatial, setup: geo_point }
+        next: pipeline
+
+  # ------------------------------------------------------------------ for every text approach
+  rerank:
+    type: question
+    progress: 70
+    question: Are your top results ordered well enough?
+    why: Reranking takes the first results and orders them more carefully. It's worth adding when retrieval finds the right results but not at the top.
+    options:
+      - label: Yes, the best result is usually near the top
+        next: pipeline
+      - label: No, I need finer ordering of the top results
+        set: { ql: retrievers }
+        next: rerank_where
+      - label: I'm not sure
+        next: pipeline
+
+  rerank_where:
+    type: question
+    progress: 80
+    question: Where should the reranking model run?
+    why: This picks the reranker. Each one has its own limits.
+    options:
+      - label: Managed by Elastic
+        hint: The Elastic Inference Service
+        set: { ranking: rerank_jina }
+        next: pipeline
+      - label: On my own machine learning nodes
+        hint: English only, in technical preview
+        set: { ranking: rerank_elastic }
+        flag: rerank_elastic
+        next: pipeline
+      - label: With a provider I already use
+        hint: For example Cohere or Google Vertex AI
+        set: { ranking: rerank_external }
+        next: pipeline
+      - label: I'm not sure
+        set: { ranking: rerank_jina }
+        next: pipeline
+
+  pipeline:
+    type: question
+    progress: 92
+    question: Will your queries do more than find and rank results?
+    why: Aggregations, text generation and extra processing steps need a more capable query language.
+    options:
+      - label: Yes, I also want aggregations, generated text or piped steps
+        set: { ql: esql }
+        next: done
+      - label: No, just search and rank
+        next: done
+      - label: I'm not sure
+        next: done
+
+  done:
+    type: result
+    progress: 100
+
+# ------------------------------------------------------------------ the result
+results:
+  heading: "Start with {approach}"
+  answers_heading: Your answers
+  change_label: Change
+  start_over_label: Start over
+  back_label: Back
+
+  variables:
+    approach:
+      answer: approach
+      items:
+        full_text:
+          name: full-text search
+          blurb: Keyword matching with analyzers and relevance tuning. It's fast and needs no machine learning setup.
+          docs: { title: Full-text search, href: "https://www.elastic.co/docs/solutions/search/full-text" }
+        semantic:
+          name: semantic search
+          blurb: Meaning-based retrieval for queries in everyday language or with synonyms, instead of exact index terms.
+          docs: { title: Semantic search, href: "https://www.elastic.co/docs/solutions/search/semantic-search" }
+        multimodal:
+          name: multimodal search
+          blurb: Meaning-based search across text, images, audio, video and documents in one vector space.
+          docs: { title: Multimodal search, href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        vector:
+          name: vector search
+          blurb: Similarity search over embeddings you bring, with direct control over vector fields and models.
+          docs: { title: Vector search, href: "https://www.elastic.co/docs/solutions/search/vector" }
+        hybrid:
+          name: hybrid search
+          blurb: Full-text and vector search in one request, for exact keyword matches and matches by meaning together.
+          docs: { title: Hybrid search, href: "https://www.elastic.co/docs/solutions/search/hybrid-search" }
+        geospatial:
+          name: geospatial search
+          blurb: Location-based search and spatial relationships, such as distance or regions on a map.
+          docs: { title: Geospatial search, href: "https://www.elastic.co/docs/explore-analyze/geospatial-analysis" }
+
+    setup:
+      answer: setup
+      items:
+        text_standard:
+          name: text fields with the standard analyzer
+          blurb: "Setup: the standard analyzer is the default and works well for most use cases."
+          docs: { title: "Setup: analyzers", href: "https://www.elastic.co/docs/manage-data/data-store/text-analysis" }
+        text_language:
+          name: text fields with a language analyzer
+          blurb: "Setup: choose an analyzer tuned for your language to improve matching."
+          docs: { title: "Setup: analyzers", href: "https://www.elastic.co/docs/manage-data/data-store/text-analysis" }
+        semantic_text:
+          name: a semantic_text field
+          blurb: "Setup: a `semantic_text` field is the simplest and recommended workflow. Elasticsearch creates the embeddings and splits long text into chunks."
+          docs: { title: "Setup: semantic_text", href: "https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text" }
+        inference_api:
+          name: the inference API workflow
+          blurb: "Setup: create the inference endpoint and the mapping yourself, for more control."
+          docs: { title: "Setup: semantic search workflows", href: "https://www.elastic.co/docs/solutions/search/semantic-search" }
+        eland:
+          name: a model you deploy yourself
+          blurb: "Setup: the most complex workflow. Deploy your own model with Eland on your own machine learning nodes."
+          docs: { title: "Setup: semantic search workflows", href: "https://www.elastic.co/docs/solutions/search/semantic-search" }
+        dense_vector:
+          name: a dense_vector field
+          blurb: "Setup: store your embeddings in a `dense_vector` field and query with `knn`. You split your data into chunks yourself."
+          docs: { title: "Setup: dense_vector and kNN", href: "https://www.elastic.co/docs/solutions/search/vector/bring-own-vectors" }
+        sparse_vector:
+          name: a sparse_vector field
+          blurb: "Setup: store sparse vectors in a `sparse_vector` field and query with the `sparse_vector` query."
+          docs: { title: "Setup: vector search", href: "https://www.elastic.co/docs/solutions/search/vector" }
+        hybrid_rrf:
+          name: reciprocal rank fusion (RRF)
+          blurb: "Setup: RRF merges the keyword and vector rankings, and is the recommended way to combine them. Use a `semantic_text` field for the meaning side."
+          docs: { title: "Setup: hybrid search", href: "https://www.elastic.co/docs/solutions/search/hybrid-search" }
+        hybrid_linear:
+          name: the linear retriever
+          blurb: "Setup: the linear retriever adds the scores with weights you choose, and a normalizer such as `minmax`."
+          docs: { title: "Setup: the linear retriever", href: "https://www.elastic.co/docs/reference/elasticsearch/rest-apis/retrievers/linear-retriever" }
+        semantic_field:
+          name: a semantic field
+          blurb: "Setup: a `semantic` field holds images, audio, video and PDFs. It has no default endpoint, so you set an `inference_id`."
+          docs: { title: "Setup: multimodal search tutorial", href: "https://www.elastic.co/docs/solutions/search/multimodal-search/multimodal-search-tutorial" }
+        geo_point:
+          name: a geo_point field
+          blurb: "Setup: a `geo_point` field stores a latitude and longitude for single locations."
+          docs: { title: "Setup: geospatial analysis", href: "https://www.elastic.co/docs/explore-analyze/geospatial-analysis" }
+        geo_shape:
+          name: a geo_shape field
+          blurb: "Setup: a `geo_shape` field stores points, lines, circles and polygons."
+          docs: { title: "Setup: geospatial analysis", href: "https://www.elastic.co/docs/explore-analyze/geospatial-analysis" }
+
+    model:
+      answer: model
+      optional: true
+      items:
+        jina_eis:
+          name: Jina on the Elastic Inference Service
+          blurb: "Model: Jina on EIS is the recommended endpoint for `semantic_text`, and it's managed by Elastic."
+          docs: { title: "Model: semantic_text", href: "https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text" }
+        elser:
+          name: ELSER
+          blurb: "Model: ELSER is built in, needs no external model, and gives results that are easier to explain."
+          docs: { title: "Model: semantic_text", href: "https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text" }
+        jina_clip_v2:
+          name: jina-clip-v2
+          blurb: "Model: jina-clip-v2 covers text and images in many languages, with 1024 dimensions."
+          docs: { title: "Model: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        jina_v4:
+          name: jina-embeddings-v4
+          blurb: "Model: jina-embeddings-v4 covers text, images and PDFs, with 2048 dimensions. It isn't available on EIS."
+          docs: { title: "Model: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        jina_v5_omni_small:
+          name: jina-embeddings-v5-omni-small
+          blurb: "Model: jina-embeddings-v5-omni-small covers text, images, audio, video and PDFs, with 1024 dimensions."
+          docs: { title: "Model: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        jina_v5_omni_nano:
+          name: jina-embeddings-v5-omni-nano
+          blurb: "Model: jina-embeddings-v5-omni-nano is compact, for edge deployment, with 768 dimensions."
+          docs: { title: "Model: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+
+    storage:
+      answer: storage
+      optional: true
+      items:
+        bbq_hnsw:
+          name: bbq_hnsw
+          blurb: "Storage: `bbq_hnsw` is up to 32x smaller and suits most production use. It needs at least 64 dimensions."
+          docs: { title: "Storage: compress vectors", href: "https://www.elastic.co/docs/solutions/search/vector/vector-storage-for-semantic-search" }
+        bbq_disk:
+          name: bbq_disk
+          blurb: "Storage: `bbq_disk` is for large datasets with limited memory. It's slower."
+          docs: { title: "Storage: compress vectors", href: "https://www.elastic.co/docs/solutions/search/vector/vector-storage-for-semantic-search" }
+        bbq_flat:
+          name: bbq_flat
+          blurb: "Storage: `bbq_flat` suits smaller datasets and gives the most accurate results, but it searches by brute force, so it's slower."
+          docs: { title: "Storage: compress vectors", href: "https://www.elastic.co/docs/solutions/search/vector/vector-storage-for-semantic-search" }
+        int8_hnsw:
+          name: int8_hnsw
+          blurb: "Storage: `int8_hnsw` is 4x smaller, with gentler compression."
+          docs: { title: "Storage: compress vectors", href: "https://www.elastic.co/docs/solutions/search/vector/vector-storage-for-semantic-search" }
+
+    hosting:
+      answer: hosting
+      optional: true
+      items:
+        eis:
+          name: the Elastic Inference Service
+          blurb: "Hosting: EIS is managed, so there are no machine learning nodes to run."
+          docs: { title: "Hosting: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        jina_api:
+          name: the Jina API
+          blurb: "Hosting: call the Jina API as an inference endpoint."
+          docs: { title: "Hosting: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        docker:
+          name: Docker on your own infrastructure
+          blurb: "Hosting: run the model on-prem with Docker, for air-gapped or compliance needs."
+          docs: { title: "Hosting: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+        marketplace:
+          name: your own cloud account
+          blurb: "Hosting: use a cloud marketplace endpoint so the model runs in your own AWS, Azure or Google Cloud account."
+          docs: { title: "Hosting: multimodal search", href: "https://www.elastic.co/docs/solutions/search/multimodal-search" }
+
+    ranking:
+      answer: ranking
+      optional: true
+      items:
+        rerank_jina:
+          name: the Jina reranker on EIS
+          blurb: "Reranking: the Jina reranker on EIS is the recommended choice. Rerank only a small set of top results."
+          docs: { title: "Reranking: semantic reranking", href: "https://www.elastic.co/docs/solutions/search/ranking/semantic-reranking" }
+        rerank_elastic:
+          name: Elastic Rerank
+          blurb: "Reranking: Elastic Rerank runs on your own machine learning nodes. It's in technical preview, English only, with a 512-token window."
+          docs: { title: "Reranking: Elastic Rerank", href: "https://www.elastic.co/docs/explore-analyze/machine-learning/nlp/ml-nlp-rerank" }
+        rerank_external:
+          name: an external reranker
+          blurb: "Reranking: connect a provider such as Cohere or Google Vertex AI through the inference API."
+          docs: { title: "Reranking: semantic reranking", href: "https://www.elastic.co/docs/solutions/search/ranking/semantic-reranking" }
+
+    query_language:
+      answer: ql
+      items:
+        query_dsl:
+          name: Query DSL
+          blurb: "Query language: Query DSL gives fine-grained control and the widest client support, for single-stage queries."
+          docs: { title: "Query languages for search", href: "https://www.elastic.co/docs/solutions/search/querying-for-search" }
+        retrievers:
+          name: retrievers
+          blurb: "Query language: retrievers build multi-stage pipelines, such as RRF, linear fusion and reranking."
+          docs: { title: "Query languages for search", href: "https://www.elastic.co/docs/solutions/search/querying-for-search" }
+        esql:
+          name: ES|QL
+          blurb: "Query language: ES|QL adds aggregations, `FORK` and `FUSE` for hybrid search, `RERANK`, text generation and piped steps."
+          docs: { title: "Query languages for search", href: "https://www.elastic.co/docs/solutions/search/querying-for-search" }
+
+  # The first rule that matches wins. The last one has no `when`, so there is always a button.
+  cta:
+    - when: { key: approach, equals: multimodal }
+      label: Follow the multimodal search tutorial
+      href: https://www.elastic.co/docs/solutions/search/multimodal-search/multimodal-search-tutorial
+    - when: { key: approach, equals: semantic }
+      label: Get started with semantic_text
+      href: https://www.elastic.co/docs/solutions/search/semantic-search/semantic-search-semantic-text
+    - label: Read the {approach} guide
+      href_from: approach
+
+  extra_docs:
+    - when: { key: approach, in: [full_text, semantic, multimodal, vector, hybrid, geospatial] }
+      title: Compare all search approaches
+      href: https://www.elastic.co/docs/solutions/search/search-approaches
+
+  flag_notes:
+    set_inference_id: "For production, set `inference_id` explicitly. The default endpoint can change across versions and deployment types."
+    bbq_disk: "Check that `bbq_disk` is available for your version and license before you rely on it."
+    multimodal_preview: "The `semantic` field for multimodal search is in technical preview and isn't recommended for production yet."
+    rerank_elastic: "Elastic Rerank is in technical preview, and it only supports English."

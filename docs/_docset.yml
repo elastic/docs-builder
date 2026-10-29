@@ -165,6 +165,7 @@ toc:
       - file: comments.md
       - file: contributors.md
       - file: csv-include.md
+      - file: wizard.md
       - file: dropdowns.md
       - file: definition-lists.md
       - file: explore.md

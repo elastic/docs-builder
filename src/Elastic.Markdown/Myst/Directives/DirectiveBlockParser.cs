@@ -25,6 +25,7 @@ using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
+using Elastic.Markdown.Myst.Directives.Wizard;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using static System.StringSplitOptions;
@@ -201,6 +202,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{vector-sizing-calculator}") > 0)
 			return new VectorSizingBlock(this, context);
+
+		if (info.IndexOf("{wizard}") > 0)
+			return new WizardBlock(this, context);
 
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);
