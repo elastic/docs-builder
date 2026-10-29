@@ -4,14 +4,7 @@
 	<span class="api-title-badges">
 		@if (Model.AuthText is { } authText)
 		{
-			if (Model.AuthHref is { } authHref)
-			{
-				<a class="api-badge" href="@authHref">@authText</a>
-			}
-			else
-			{
-				<span class="api-badge">@authText</span>
-			}
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel(authText, Model.DesignSystem, Model.AuthHref)))
 		}
 		@if (Model.Availability is { } availability)
 		{
@@ -19,7 +12,7 @@
 		}
 		@if (Model.Deprecated)
 		{
-			<span class="api-badge api-badge--danger">Deprecated</span>
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel("Deprecated", Model.DesignSystem, Danger: true)))
 		}
 	</span>
 }

@@ -42,7 +42,9 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await RenderAsync(nav);
 
-		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("<a class=\"api-badge\" href=\"#authentication\">Auth</a>");
+		Slice(html, "class=\"api-title-badges\"", "</header>")
+			.Should()
+			.Contain("<a class=\"applicable-info\" href=\"#authentication\"><span class=\"applicable-name\">Auth</span></a>");
 		html.Should().Contain("data-section=\"authentication\"");
 	}
 

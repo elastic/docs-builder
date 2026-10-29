@@ -38,6 +38,9 @@ public record ApiOverviewRow
 
 	public bool Deprecated { get; init; }
 
+	/// <summary>True when the design system look is on, which picks the markup of the row's badges.</summary>
+	public bool DesignSystem { get; init; }
+
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
 }
@@ -234,6 +237,7 @@ public static class ApiOverviewBuilder
 				showTooltip: false,
 				designSystem: designSystem
 			),
-			Deprecated = operation.Model.Operation.Deprecated
+			Deprecated = operation.Model.Operation.Deprecated,
+			DesignSystem = designSystem
 		};
 }

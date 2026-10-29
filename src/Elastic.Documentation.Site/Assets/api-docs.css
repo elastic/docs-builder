@@ -1912,31 +1912,21 @@ a.type-linked:hover {
 	@apply mr-2;
 }
 
-/* Badges under the title (Auth, Deprecated) look like the applicable-info badge next to them: a white pill with a grey outline. */
-.api-title-badges .api-badge {
-	@apply border-grey-20 mr-2 inline-flex items-center rounded-sm border bg-white py-1 pr-1.5 pl-1.5;
-	font-size: 0.65em;
-	/* The leading of the availability badge's text-xs name, so the badges in the row are one height. */
-	line-height: calc(1 / 0.75);
-	text-wrap: nowrap;
-}
-
-/* Deprecated keeps a red cue, in the outline and the text. */
-.api-title-badges .api-badge--danger {
+/* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+.api-title-badges .applicable-info.api-badge--danger {
 	@apply text-red-90 border-red-50;
 }
 
-/* A badge that links is underlined, since the pill alone does not say it can be clicked. */
-.api-title-badges a.api-badge {
-	@apply underline;
+.api-title-badges a.applicable-info {
+	@apply cursor-pointer underline;
 	text-underline-offset: 2px;
 }
 
-.api-title-badges a.api-badge:hover {
+.api-title-badges a.applicable-info:hover {
 	@apply border-blue-elastic text-blue-elastic;
 }
 
-.api-title-badges a.api-badge:focus-visible {
+.api-title-badges a.applicable-info:focus-visible {
 	outline: 2px solid var(--color-blue-elastic);
 	outline-offset: 2px;
 }

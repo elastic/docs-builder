@@ -53,7 +53,7 @@
 			</li>
 		}
 	</ul>
-	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, operation.Deprecated, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
 </header>
 <section id="elastic-api-v3">
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
