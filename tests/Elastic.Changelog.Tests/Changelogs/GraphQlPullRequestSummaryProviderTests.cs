@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -22,7 +23,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 	[GeneratedRegex(@" p(?<n>\d+): pullRequest")]
 	private static partial Regex AliasRegex();
 
-	private sealed class FakeGitHub
+	private sealed partial class FakeGitHub
 	{
 		public Dictionary<int, (string Title, string? Body, string[] Labels)> PullRequests { get; } = [];
 		public List<int> BatchSizes { get; } = [];
@@ -31,14 +32,14 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 
 		public string Respond(string query)
 		{
-			var more = Regex.Match(query, @"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""");
+			var more = LabelPageRegex().Match(query);
 			if (more.Success)
-				return $$"""{ "data": { "repository": { "p": { "labels": {{LabelPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value))}} } } } }""";
+				return $$"""{ "data": { "repository": { "p": { "labels": {{LabelPage(int.Parse(more.Groups[1].Value, CultureInfo.InvariantCulture), int.Parse(more.Groups[2].Value, CultureInfo.InvariantCulture))}} } } } }""";
 
 			Queries.Add(query);
 			var fields = new List<string>();
 			var errors = new List<string>();
-			var numbers = AliasRegex().Matches(query).Select(m => int.Parse(m.Groups["n"].Value)).ToList();
+			var numbers = AliasRegex().Matches(query).Select(m => int.Parse(m.Groups["n"].Value, CultureInfo.InvariantCulture)).ToList();
 			BatchSizes.Add(numbers.Count);
 			foreach (var n in numbers)
 			{
@@ -74,6 +75,9 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 				: """{ "hasNextPage": false, "endCursor": null }""";
 			return $$"""{ "pageInfo": {{pageInfo}}, "nodes": [{{string.Join(",", page.Select(l => $$"""{ "name": {{JsonSerializer.Serialize(l)}} }"""))}}] }""";
 		}
+
+		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ labels\(first: 100, after: ""(\d+)""")]
+		private static partial Regex LabelPageRegex();
 	}
 
 	private GraphQlPullRequestSummaryProvider Provider(FakeGitHub github, string token = "test-token") =>
@@ -128,7 +132,7 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 	{
 		var github = new FakeGitHub();
 		github.PullRequests[7] =
-			("Faster search", "Some context.\n\nFixes #123\n\n## Release Note\nSearch is faster.\n\nInternal details.", [
+			("Faster search", "Some context.\n\nFixes #123\n\n## Release Note\nSearch is faster.\n\nInternal details.\n\n## Impact\nSlow queries time out sooner.\n\n## Action\nRaise the timeout.", [
 				">enhancement",
 				"v9.5.0"
 			]);
@@ -142,6 +146,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 		summary.ReleaseNote.Content.Should().Be("Search is faster.");
 		summary.ReleaseNote.WasTruncated.Should().BeTrue();
 		summary.LinkedIssues.Should().Equal("https://github.com/elastic/widget/issues/123");
+		summary.Impact.Should().Be("Slow queries time out sooner.");
+		summary.Action.Should().Be("Raise the timeout.");
 	}
 
 	[Test]
@@ -154,6 +160,8 @@ public partial class GraphQlPullRequestSummaryProviderTests() : ChangelogTestBas
 
 		result![7]!.ReleaseNote.Content.Should().BeNull();
 		result[7]!.LinkedIssues.Should().BeEmpty();
+		result[7]!.Impact.Should().BeNull();
+		result[7]!.Action.Should().BeNull();
 	}
 
 	[Test]

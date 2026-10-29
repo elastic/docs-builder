@@ -14,6 +14,8 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 internal static class ResultsAssertions
 {
+	private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
+
 	/// <summary>
 	/// Finds the <see cref="MarkdownResult"/> for <paramref name="path"/> in the generator output.
 	/// Mirrors F# <c>converts</c>. Called from <see cref="Scenario.Converts(string)"/>.
@@ -22,10 +24,8 @@ internal static class ResultsAssertions
 	internal static MarkdownResult Finds(string path, GeneratorResults results)
 	{
 		var normalized = path.Replace('/', Path.DirectorySeparatorChar);
-		var result = results.MarkdownResults.FirstOrDefault(m => m.File.RelativePath == normalized);
-
-		if (result is null)
-			throw new AwesomeAssertions.Execution.AssertionFailedException($"{path} not part of the markdown results");
+		var result = results.MarkdownResults.FirstOrDefault(m => m.File.RelativePath == normalized)
+			?? throw new AwesomeAssertions.Execution.AssertionFailedException($"{path} not part of the markdown results");
 
 		return result;
 	}
@@ -45,10 +45,10 @@ internal static class ResultsAssertions
 
 		var actualRaw = fs.File.ReadAllText(fi.FullName);
 		using var actualDoc = JsonDocument.Parse(actualRaw);
-		var actualPretty = JsonSerializer.Serialize(actualDoc, new JsonSerializerOptions { WriteIndented = true });
+		var actualPretty = JsonSerializer.Serialize(actualDoc, IndentedJson);
 
 		using var expectedDoc = JsonDocument.Parse(expected);
-		var expectedPretty = JsonSerializer.Serialize(expectedDoc, new JsonSerializerOptions { WriteIndented = true });
+		var expectedPretty = JsonSerializer.Serialize(expectedDoc, IndentedJson);
 
 		var diff = HtmlAssertions.Diff(expectedPretty, actualPretty);
 		if (!string.IsNullOrEmpty(diff))

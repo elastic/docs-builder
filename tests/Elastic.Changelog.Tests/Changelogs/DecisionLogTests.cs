@@ -191,7 +191,10 @@ public class DecisionLogTests
 		logged.Should().OnlyHaveUniqueItems();
 	}
 
+	// Runs alone, on dedicated threads: the logger blocks a thread on purpose, and on a busy runner a
+	// starved thread pool can delay the background work past the deadlines below.
 	[Test]
+	[NotInParallel]
 	public async Task Dispose_AnotherThreadIsStillLogging_WaitsForItToFinish()
 	{
 		using var logging = new ManualResetEventSlim();
@@ -200,10 +203,10 @@ public class DecisionLogTests
 		var log = new DecisionLog(logger, maxItems: 1);
 
 		// The first decision fills the section, so this thread takes it and blocks inside the logger.
-		var recording = Task.Run(() => log.Record("entries", "pool", "#1"));
+		var recording = Task.Factory.StartNew(() => log.Record("entries", "pool", "#1"), TaskCreationOptions.LongRunning);
 		logging.Wait(TimeSpan.FromSeconds(10)).Should().BeTrue();
 
-		var disposing = Task.Run(log.Dispose);
+		var disposing = Task.Factory.StartNew(log.Dispose, TaskCreationOptions.LongRunning);
 		await Task.Delay(200);
 		disposing.IsCompleted.Should().BeFalse("the decision is taken from the section but not logged yet");
 

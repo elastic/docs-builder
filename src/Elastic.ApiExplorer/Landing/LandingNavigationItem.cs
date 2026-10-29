@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using RazorSlices;
@@ -62,6 +63,18 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
+
+	/// <summary>The page the <c>auth</c> badge on endpoints links to, when the product has one.</summary>
+	public string? AuthenticationUrl { get; set; }
+
+	/// <summary>The product landing of a root: itself, or the landing a classification heading hangs from.</summary>
+	public static LandingNavigationItem? Of(IRootNavigationItem<INavigationModel, INavigationItem> root) => root switch
+	{
+		LandingNavigationItem landing => landing,
+		ClassificationNavigationItem classification => classification.Landing,
+		_ => null
+	};
+
 	public string Url => Index.Url;
 	public bool Hidden => false;
 	public Uri Identifier { get; } = new Uri("todo://");
@@ -134,6 +147,8 @@ public class ClassificationNavigationItem(
 	parent
 ), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
 {
+	public LandingNavigationItem Landing => rootNavigation;
+
 	/// <summary>
 	/// Classifications have no dedicated page. Kept as the product overview URL for any code that still
 	/// reads <see cref="INavigationItem.Url"/>; Nav V2 renders these as non-clickable sidebar headings.
@@ -165,10 +180,12 @@ public class TagNavigationItem(
 {
 	private readonly string _url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/group/{tag.TagUrlSegment}";
 
-	internal void ApplyIntroHeadings(string? markdown)
+	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
-		var headings = IntroHeadings.Parse(markdown).Select(heading => new IntroHeadingNavigationItem(this, heading));
+		var headings = introHeadings.Select(
+			heading => new IntroHeadingNavigationItem(this, new IntroHeading(heading.Heading, heading.Slug))
+		);
 		NavigationItems = [.. headings, .. operations];
 	}
 
@@ -181,6 +198,8 @@ public class TagNavigationItem(
 	/// <inheritdoc />
 	public override string Id { get; } = ShortId.Create(tag.Name);
 }
+
+public sealed record IntroHeading(string Title, string Slug) : INavigationModel;
 
 public sealed class IntroHeadingNavigationItem(TagNavigationItem parent, IntroHeading heading) : ILeafNavigationItem<IntroHeading>
 {

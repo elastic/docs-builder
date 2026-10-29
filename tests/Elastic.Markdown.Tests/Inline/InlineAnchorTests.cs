@@ -106,6 +106,13 @@ public class InlineAnchorInHeading() : BlockTest<HeadingBlock>("""
 			</div>
 			"""
 		);
+
+	[Test]
+	public void TableOfContentsLinksToTheRenderedHeadingId()
+	{
+		File.PageTableOfContent.Keys.Should().Equal("hello-world");
+		File.PageTableOfContent["hello-world"].Heading.Should().Be("Hello world");
+	}
 }
 
 [InheritsTests]
@@ -155,6 +162,10 @@ To follow this tutorial you will need to install the following components:
 These are new requirements
 
 With a custom anchor that exists temporarily. $$$custom-anchor$$$
+
+## Install steps $$$install-anchor$$$
+
+Steps.
 """;
 		fileSystem.AddFile(@"docs/testing/req.md", inclusion);
 		fileSystem.AddFile(@"docs/_static/img/observability.png", new MockFileData(""));
@@ -186,6 +197,41 @@ public class ExternalPageInlineAnchorCanBeLinkedToo() : InlineAnchorLinkTestBase
 			"""<p><a href="/docs/testing/req#custom-anchor" hx-get="/docs/testing/req#custom-anchor" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
 		);
 
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+[InheritsTests]
+public class ExternalPageHeadingWithInlineAnchorCanBeLinked() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-steps)
+"""
+)
+{
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+[InheritsTests]
+public class ExternalPageHeadingSlugWithInlineAnchorTextIsNotAnAnchor() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-steps-install-anchor)
+"""
+)
+{
+	// The heading renders as id="install-steps"; the inline anchor text is not part of its slug.
+	[Test]
+	public void HasAnError() =>
+		Collector.Diagnostics.Should().ContainSingle().Which.Message.Should().Contain("install-steps-install-anchor");
+}
+
+[InheritsTests]
+public class ExternalPageInlineAnchorInHeadingCanBeLinked() : InlineAnchorLinkTestBase(
+	"""
+[Install steps](testing/req.md#install-anchor)
+"""
+)
+{
 	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

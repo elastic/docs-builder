@@ -3,7 +3,7 @@ type HljsModule = typeof import('./hljs')
 async function loadModule(): Promise<HljsModule> {
     // Re-import per test so the module-level registration cache and the shared hljs
     // singleton start clean, isolating what each test loads.
-    jest.resetModules()
+    vi.resetModules()
     return await import('./hljs')
 }
 
@@ -33,6 +33,30 @@ describe('initHighlight', () => {
         expect(hljs.listLanguages()).toContain('bash')
         expect(hljs.listLanguages()).toContain('python')
         expect(hljs.listLanguages()).toContain('javascript')
+    })
+
+    it('registers the added grammars and the fish and batch aliases', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('fish')
+
+        await initHighlight()
+
+        for (const name of [
+            'clojure',
+            'diff',
+            'gherkin',
+            'graphql',
+            'makefile',
+        ]) {
+            expect(hljs.getLanguage(name)).toBeDefined()
+        }
+        expect(hljs.getLanguage('fish')?.name).toBe(
+            hljs.getLanguage('bash')?.name
+        )
+        expect(hljs.getLanguage('batch')?.name).toBe(
+            hljs.getLanguage('dos')?.name
+        )
+        expect(hljs.getLanguage('Gherkin')).toBeDefined()
     })
 
     it('loads no node_modules language when there are no code blocks', async () => {
@@ -99,7 +123,7 @@ describe('initHighlight', () => {
     it('does not re-highlight a block when invoked concurrently', async () => {
         const { initHighlight, hljs } = await loadModule()
         setCodeBlocks('bash')
-        const spy = jest.spyOn(hljs, 'highlightElement')
+        const spy = vi.spyOn(hljs, 'highlightElement')
 
         await Promise.all([initHighlight(), initHighlight()])
 
@@ -145,17 +169,17 @@ describe('highlightCodeBlocks', () => {
 })
 
 describe('toLanguageFn', () => {
-    // Parcel's dynamic import() resolves a language module to the LanguageFn directly,
-    // while Babel/Jest wrap it as { default: fn }. Both must yield the function; a
-    // regression here silently breaks highlighting only in the Parcel production build.
-    it('returns the function when the module is the function itself (Parcel)', async () => {
+    // A bundler's dynamic import() can resolve a language module to the LanguageFn directly,
+    // while some test runners wrap it as { default: fn }. Both must yield the function; a
+    // regression here silently breaks highlighting only in the production bundle.
+    it('returns the function when the module is the function itself (bundler)', async () => {
         const { toLanguageFn } = await loadModule()
         const fn = () => ({ contains: [] })
 
         expect(toLanguageFn(fn)).toBe(fn)
     })
 
-    it('returns the default export when wrapped in a namespace (Babel/Jest)', async () => {
+    it('returns the default export when wrapped in a namespace (test runners)', async () => {
         const { toLanguageFn } = await loadModule()
         const fn = () => ({ contains: [] })
 

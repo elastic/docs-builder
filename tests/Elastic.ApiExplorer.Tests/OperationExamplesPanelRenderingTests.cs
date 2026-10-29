@@ -14,7 +14,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OperationExamplesPanelRenderingTests
+public partial class OperationExamplesPanelRenderingTests
 {
 	private static Cancel Ct => TestContext.Current!.Execution.CancellationToken;
 
@@ -26,7 +26,7 @@ public class OperationExamplesPanelRenderingTests
 		Title = "A simple term search",
 		TabId = "term",
 		CodeSamples = [Sample("Console", "GET /_search"), Sample("curl"), Sample("Python"), Sample("Java", "client.search(s -> s)")],
-		Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+		Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 	};
 
 	private static readonly ExampleScenario Slicing = new()
@@ -41,6 +41,35 @@ public class OperationExamplesPanelRenderingTests
 
 	private static ValueTask<string> RenderScenario(ExampleScenario scenario) =>
 		_ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
+
+	[Test]
+	public async Task Render_GeneratedResponseMedia_ShowsProvenanceAndSeparateCopyActions()
+	{
+		var html = await RenderScenario(new ExampleScenario
+		{
+			Title = "Subscription",
+			TabId = "subscription",
+			Responses =
+			[
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples =
+					[
+						new ExampleDisplay("200", null, "{}", null) { MediaType = "application/json", Generated = true },
+						new ExampleDisplay("200", null, "false", null) { MediaType = "application/problem+json" }
+					]
+				}
+			]
+		});
+
+		html.Should().Contain("Generated from the API spec</span>");
+		html.Should().Contain("Unions use the first variant");
+		System.Net.WebUtility.HtmlDecode(html).Should().Contain("application/json").And.Contain("application/problem+json");
+		CodeCardRegex().Count(html).Should().Be(3);
+		CodeActionsRegex().Count(html).Should().Be(3);
+		Status200Regex().Count(html).Should().Be(2);
+	}
 
 	[Test]
 	public async Task Render_MultipleScenarios_ShowsChipsAndKeepsOthersFindable()
@@ -152,15 +181,7 @@ public class OperationExamplesPanelRenderingTests
 
 		html.Should().Contain("data-generated");
 		// One note per generated card, inside the card after its code, so it is about this sample and no other.
-		var cards = System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(
-				html,
-				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
-				System.Text.RegularExpressions.RegexOptions.Singleline
-			);
+		var cards = CarouselCardRegex().Matches(html);
 		cards.Should().HaveCount(2);
 		foreach (var card in cards.Select(static c => c.Value))
 		{
@@ -236,14 +257,12 @@ public class OperationExamplesPanelRenderingTests
 				new ExampleResponse
 				{
 					StatusCode = "200",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>")
+					Examples = [new ExampleDisplay("200", new Microsoft.AspNetCore.Html.HtmlString("<p>Found it.</p>"), "{}", null)]
 				},
 				new ExampleResponse
 				{
 					StatusCode = "404",
-					JsonValue = "{}",
-					DescriptionHtml = new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>")
+					Examples = [new ExampleDisplay("404", new Microsoft.AspNetCore.Html.HtmlString("<p>No such thing.</p>"), "{}", null)]
 				}
 			]
 		});
@@ -265,15 +284,20 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "get",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}", StatusDescription = "Unauthorized" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse
+				{
+					StatusCode = "200",
+					Examples = [new ExampleDisplay("200", null, "{}", null)],
+					StatusDescription = "Unauthorized"
+				},
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 
 		// A tab without one renders an empty value, which the tooltip script skips.
 		html.Should().Contain("data-status=\"200\"");
-		Regex.Matches(html, "data-tippy-content=\"Unauthorized\"").Should().ContainSingle();
-		Regex.Matches(html, "data-status=\"404\"[^>]*data-tippy-content=\"\"").Should().ContainSingle();
+		UnauthorizedTooltipRegex().Matches(html).Should().ContainSingle();
+		EmptyTooltipOn404Regex().Matches(html).Should().ContainSingle();
 	}
 
 	[Test]
@@ -297,7 +321,7 @@ public class OperationExamplesPanelRenderingTests
 		{
 			Title = "Match all",
 			TabId = "match-all",
-			Responses = [new ExampleResponse { StatusCode = "200", JsonValue = "{}" }]
+			Responses = [new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] }]
 		});
 
 		request.Should().Contain("api-code-card");
@@ -314,8 +338,8 @@ public class OperationExamplesPanelRenderingTests
 			TabId = "match-all",
 			Responses =
 			[
-				new ExampleResponse { StatusCode = "200", JsonValue = "{}" },
-				new ExampleResponse { StatusCode = "404", JsonValue = "{}" }
+				new ExampleResponse { StatusCode = "200", Examples = [new ExampleDisplay("200", null, "{}", null)] },
+				new ExampleResponse { StatusCode = "404", Examples = [new ExampleDisplay("200", null, "{}", null)] }
 			]
 		});
 
@@ -383,4 +407,22 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().Contain("<span class=\"api-rail-label\">Request</span>");
 		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
 	}
+
+	[GeneratedRegex("data-code-card")]
+	private static partial Regex CodeCardRegex();
+
+	[GeneratedRegex("data-code-actions")]
+	private static partial Regex CodeActionsRegex();
+
+	[GeneratedRegex("data-status=\"200\"")]
+	private static partial Regex Status200Regex();
+
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline)]
+	private static partial Regex CarouselCardRegex();
+
+	[GeneratedRegex("data-tippy-content=\"Unauthorized\"")]
+	private static partial Regex UnauthorizedTooltipRegex();
+
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"")]
+	private static partial Regex EmptyTooltipOn404Regex();
 }

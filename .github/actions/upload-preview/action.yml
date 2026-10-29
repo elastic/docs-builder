@@ -1,0 +1,28 @@
+name: Upload preview
+description: |
+  Syncs a built site to the preview bucket and invalidates its CloudFront paths.
+  Run after `aws-auth`.
+
+inputs:
+  source:
+    description: 'Directory holding the built site'
+    required: true
+  path-prefix:
+    description: 'URL path the site is served under, with a leading slash'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Sync to S3 and invalidate CloudFront
+      shell: bash
+      env:
+        AWS_RETRY_MODE: standard
+        AWS_MAX_ATTEMPTS: 6
+        SOURCE: ${{ inputs.source }}
+        PATH_PREFIX: ${{ inputs.path-prefix }}
+      run: |
+        aws s3 sync "${SOURCE}" "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
+        aws cloudfront create-invalidation \
+          --distribution-id EKT7LT5PM8RKS \
+          --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"

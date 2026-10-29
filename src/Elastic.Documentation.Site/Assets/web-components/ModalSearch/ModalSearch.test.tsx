@@ -3,15 +3,15 @@ import { modalSearchStore } from './modalSearch.store'
 import { EuiProvider } from '@elastic/eui'
 import { act, render, screen } from '@testing-library/react'
 
-jest.mock('../AskAi/InfoBanner', () => ({
+vi.mock('../AskAi/InfoBanner', () => ({
     InfoBanner: () => null,
 }))
 
-jest.mock('../AskAi/KeyboardShortcutsFooter', () => ({
+vi.mock('../AskAi/KeyboardShortcutsFooter', () => ({
     KeyboardShortcutsFooter: () => null,
 }))
 
-jest.mock('./useModalSearchQuery', () => ({
+vi.mock('./useModalSearchQuery', () => ({
     useModalSearchQuery: () => ({
         isLoading: false,
         isFetching: false,
@@ -20,10 +20,10 @@ jest.mock('./useModalSearchQuery', () => ({
     }),
 }))
 
-jest.mock('./useModalSearchTelemetry', () => ({
+vi.mock('./useModalSearchTelemetry', () => ({
     useModalSearchTelemetry: () => ({
-        trackOpened: jest.fn(),
-        trackClosed: jest.fn(),
+        trackOpened: vi.fn(),
+        trackClosed: vi.fn(),
     }),
 }))
 
@@ -82,7 +82,7 @@ describe('ModalSearch', () => {
 
         const result = document.createElement('a')
         result.setAttribute('data-search-result-index', '0')
-        const aborted = jest.fn()
+        const aborted = vi.fn()
         const onAbort = (event: Event) => {
             if ((event as CustomEvent).detail?.elt === result) aborted()
         }
@@ -110,7 +110,7 @@ describe('ModalSearch', () => {
 
         const result = document.createElement('a')
         result.setAttribute('data-search-result-index', '0')
-        const aborted = jest.fn()
+        const aborted = vi.fn()
         const onAbort = (event: Event) => {
             if ((event as CustomEvent).detail?.elt === result) aborted()
         }

@@ -72,7 +72,13 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig = null,
 		int? versionMajor = null
-	) => new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig, versionMajor);
+	) =>
+		new ApiNavigationBuilder(_logger, context, markdownStringRenderer).CreateNavigation(
+			apiUrlSuffix,
+			openApiDocument,
+			apiConfig,
+			versionMajor
+		);
 
 	public async Task Generate(Cancel ctx = default)
 	{
@@ -472,7 +478,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		ApplySupplementalIntroHeadings(navigation, tags);
+		ApplySupplementalIntroHeadings(navigation, navigation.Url, tags);
 
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
@@ -544,21 +550,25 @@ public class OpenApiGenerator(
 		return result;
 	}
 
-	private static void ApplySupplementalIntroHeadings(INavigationItem item, IReadOnlyDictionary<string, ApiSupplementalDoc> tags)
+	private void ApplySupplementalIntroHeadings(
+		INavigationItem item,
+		string apiBaseUrl,
+		IReadOnlyDictionary<string, ApiSupplementalDoc> tags
+	)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
 
 		var children = node.NavigationItems.ToArray();
-		if (
-			item is TagNavigationItem tag
-			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
-			&& !string.IsNullOrWhiteSpace(doc.Description)
-		)
-			tag.ApplyIntroHeadings(doc.Description);
+		// Same description and post sections as TagLandingViewModel, so the sidebar links only to anchors the page keeps.
+		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
+		{
+			var description = doc.DescriptionOr(tag.Index.Model.Description);
+			tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(markdownStringRenderer, description, apiBaseUrl, doc.PostSections));
+		}
 
 		foreach (var child in children)
-			ApplySupplementalIntroHeadings(child, tags);
+			ApplySupplementalIntroHeadings(child, apiBaseUrl, tags);
 	}
 
 	private async Task RenderNavigationItems(
@@ -606,7 +616,7 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
-	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
+	/// canonical path and its former per-operation paths, and a <c>children:</c> page also answers to the topic URLs it replaces. Each name maps to all names of that page, canonical first.
 	/// </summary>
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
@@ -626,7 +636,12 @@ public class OpenApiGenerator(
 
 	private static string[] RelativeNames(INavigationItem item, string root)
 	{
-		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
+		var urls = item switch
+		{
+			OperationNavigationItem collapsed => collapsed.AliasUrls.Prepend(item.Url),
+			SimpleMarkdownNavigationItem child => child.ReplacedTopicUrls.Prepend(item.Url),
+			_ => [item.Url]
+		};
 		return [
 			.. urls
 				.Select(static url => url.TrimEnd('/'))
@@ -643,7 +658,8 @@ public class OpenApiGenerator(
 
 		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (item is not ClassificationNavigationItem)
+			// Sidebar headings group pages but have no page of their own.
+			if (item is not ISidebarHeadingNavigationItem)
 				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
 				CollectPages(child, pages);

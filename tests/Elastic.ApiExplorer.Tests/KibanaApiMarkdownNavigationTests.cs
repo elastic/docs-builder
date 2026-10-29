@@ -10,6 +10,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
@@ -79,7 +80,13 @@ public class KibanaApiMarkdownNavigationTests
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("kibana", doc, apiConfig);
-		var introNav = navigation.NavigationItems.OfType<SimpleMarkdownNavigationItem>().First();
+		var introNav = navigation
+			.NavigationItems
+			.OfType<TopicsNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<SimpleMarkdownNavigationItem>()
+			.First();
 
 		return (navigation, introNav, context, doc);
 	}
@@ -103,6 +110,8 @@ public class KibanaApiMarkdownNavigationTests
 		// The H1 ("Kibana spaces") and the navigation title ("Spaces") differ from the meta title.
 		html.Should().Contain("<title>Kibana spaces for browser tabs | ");
 		html.Should().Contain("<h1>Kibana spaces</h1>");
+		// The class lets the CSS give the page's own first heading the title style of the other API pages.
+		html.Should().Contain("<section id=\"elastic-docs-v3\" class=\"api-markdown-page\">");
 		// The structured breadcrumb uses the parsed H1, not the navigation title or the override.
 		html.Should().Contain("\"name\": \"Kibana spaces\"");
 		html.Should().NotContain("\"name\": \"Spaces\"");
@@ -120,13 +129,14 @@ public class KibanaApiMarkdownNavigationTests
 	}
 
 	[Test]
-	public void IntroNav_ShouldAppearFirstInNavigation()
+	public void IntroNav_ShouldAppearFirstUnderTopicsHeading()
 	{
 		var (navigation, introNav) = SetupKibanaNavigation();
 
-		var firstItem = navigation.NavigationItems.First();
-		firstItem.Should().Be(introNav);
-		firstItem.Should().BeOfType<SimpleMarkdownNavigationItem>();
+		var topics = navigation.NavigationItems.First().Should().BeOfType<TopicsNavigationItem>().Subject;
+		topics.NavigationTitle.Should().Be("Topics");
+		topics.NavigationItems.First().Should().Be(introNav);
+		introNav.Parent.Should().Be(topics);
 	}
 
 	[Test]

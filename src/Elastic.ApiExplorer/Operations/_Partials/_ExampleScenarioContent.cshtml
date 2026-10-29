@@ -142,15 +142,36 @@
 			{
 				var response = responses[i];
 				<div class="example-response-panel" data-status="@response.StatusCode" data-code-panel="@response.StatusCode" role="tabpanel" hidden="@(i == 0 ? null : "hidden")">
-					@if (response.JsonValue is not null)
+					@foreach (var example in response.Examples)
 					{
-						@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(response.JsonValue), response.JsonValue, LineNumbers: true)))
+						<div class="example-media-body"@(response.Examples.Count > 1 ? new HtmlString(" data-code-card") : HtmlString.Empty)>
+						@if (response.Examples.Count > 1)
+						{
+							<div class="example-block-header"><span class="api-rail-label">@example.MediaType</span><span data-code-actions></span></div>
+						}
+						@if (example != response.Examples[0] && example.DescriptionHtml is { } mediaCaption)
+						{
+							@(await RenderPartialAsync<_ExampleCaption, HtmlString>(mediaCaption))
+						}
+						@if (example.JsonValue is not null)
+						{
+							@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(CodeSample.HighlightClassForExampleBody(example.JsonValue), example.JsonValue, LineNumbers: true)))
+						}
+						else if (!string.IsNullOrEmpty(example.ExternalValue))
+						{
+							<p class="external-example">External example: <a href="@example.ExternalValue">@example.ExternalValue</a></p>
+						}
+						@if (example.JsonValue is null && string.IsNullOrEmpty(example.ExternalValue))
+						{
+							<p class="example-empty">No example</p>
+						}
+						@if (example.Generated)
+						{
+							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tippy-content="@ResponseBodyExample.Note">Generated from the API spec</span></p>
+						}
+						</div>
 					}
-					else if (!string.IsNullOrEmpty(response.ExternalValue))
-					{
-						<p class="external-example">External example: <a href="@response.ExternalValue">@response.ExternalValue</a></p>
-					}
-					else
+					@if (response.Examples.Count == 0)
 					{
 						<p class="example-empty">@(response.IsNoBody ? "No body" : "No example")</p>
 					}

@@ -42,7 +42,7 @@ public class OperationBaseUrlRenderingTests(ApiExplorerFixture fixture)
 		}
 
 		html.Should().NotBeNull("the fixture has an operation with examples");
-		var rail = html!.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
 		var baseUrl = html.IndexOf("api-rail-facts--rail", rail, StringComparison.Ordinal);
 		baseUrl.Should().BeGreaterThan(rail);
 		html.IndexOf("id=\"api-examples-panel\"", baseUrl, StringComparison.Ordinal).Should().BeGreaterThan(baseUrl);

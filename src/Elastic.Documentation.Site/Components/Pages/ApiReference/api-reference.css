@@ -1962,10 +1962,26 @@ a.type-linked:hover {
 	font-weight: var(--weight-regular);
 }
 
-.api-title-badges .deprecated-badge,
 .api-title-badges .beta-badge {
 	margin-right: var(--space-2);
 	display: inline;
+}
+
+/* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+.api-title-badges .applies-badge.api-badge--danger {
+	border-color: var(--color-danger);
+	color: var(--color-danger);
+}
+
+.api-title-badges a.applies-badge {
+	cursor: pointer;
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+.api-title-badges a.applies-badge:focus-visible {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: 2px;
 }
 
 /* Deprecated badge - red warning style */

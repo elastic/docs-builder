@@ -1,0 +1,34 @@
+name: Finish deployment
+description: Sets the final status and preview URL on a deployment created by `deployment-start`.
+
+inputs:
+  deployment-id:
+    description: 'The id output of `deployment-start`'
+    required: true
+  state:
+    description: 'success, failure or inactive'
+    required: true
+  environment-url:
+    description: 'The preview URL'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Update deployment status
+      uses: actions/github-script@v9
+      env:
+        DEPLOYMENT_ID: ${{ inputs.deployment-id }}
+        STATE: ${{ inputs.state }}
+        ENVIRONMENT_URL: ${{ inputs.environment-url }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          await github.rest.repos.createDeploymentStatus({
+            owner,
+            repo,
+            deployment_id: Number(process.env.DEPLOYMENT_ID),
+            state: process.env.STATE,
+            environment_url: process.env.ENVIRONMENT_URL,
+            log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+          });

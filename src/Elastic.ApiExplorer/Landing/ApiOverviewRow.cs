@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Navigation;
@@ -36,6 +37,9 @@ public record ApiOverviewRow
 	public ApplicableToViewModel? Availability { get; init; }
 
 	public bool Deprecated { get; init; }
+
+	/// <summary>True when the design system look is on, which picks the markup of the row's badges.</summary>
+	public bool DesignSystem { get; init; }
 
 	/// <summary>The full schema id shown next to schema rows.</summary>
 	public string? SchemaId { get; init; }
@@ -153,6 +157,10 @@ public static class ApiOverviewBuilder
 				case OperationNavigationItem operation:
 					rows.Add(OperationRow(operation, versionsConfig, designSystem));
 					break;
+				case TypesNavigationItem types:
+					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = types.NavigationTitle });
+					AddProductRows(types, rows, versionsConfig, designSystem);
+					break;
 				case SchemaCategoryNavigationItem schemaCategory:
 					rows.Add(new ApiOverviewRow { Kind = OverviewRowKind.SchemaCategoryHeading, Title = schemaCategory.NavigationTitle });
 					AddProductRows(schemaCategory, rows, versionsConfig, designSystem);
@@ -166,20 +174,16 @@ public static class ApiOverviewBuilder
 						SchemaId = schemaItem.Model.SchemaId
 					});
 					break;
-				case SimpleMarkdownNavigationItem markdownPage:
-					rows.Add(new ApiOverviewRow
-					{
-						Kind = OverviewRowKind.MarkdownPage,
-						Title = markdownPage.NavigationTitle,
-						Url = markdownPage.Url
-					});
+				// The landing page lists topics in its own block, so the Topics heading adds no row.
+				case TopicsNavigationItem topics:
+					AddProductRows(topics, rows, versionsConfig, designSystem);
 					break;
-				case StructuralNavigationItem structuralPage:
+				case TopicNavigationItem or SimpleMarkdownNavigationItem or StructuralNavigationItem:
 					rows.Add(new ApiOverviewRow
 					{
 						Kind = OverviewRowKind.MarkdownPage,
-						Title = structuralPage.NavigationTitle,
-						Url = structuralPage.Url
+						Title = navigationItem.NavigationTitle,
+						Url = navigationItem.Url
 					});
 					break;
 				case ISidebarSeparatorNavigationItem:
@@ -233,6 +237,7 @@ public static class ApiOverviewBuilder
 				showTooltip: false,
 				designSystem: designSystem
 			),
-			Deprecated = operation.Model.Operation.Deprecated
+			Deprecated = operation.Model.Operation.Deprecated,
+			DesignSystem = designSystem
 		};
 }

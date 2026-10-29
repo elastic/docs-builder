@@ -4,9 +4,9 @@
 
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Site.ApplicabilityBadges;
 using Elastic.Documentation.Versions;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst.Roles.AppliesTo;
 using RazorSlices;
 

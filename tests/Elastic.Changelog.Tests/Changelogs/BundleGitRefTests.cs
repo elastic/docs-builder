@@ -159,7 +159,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns(new GitHubPrInfo
 		{
 			Title = "Sharper autocomplete",
-			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Body =
+				"Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.\n\n## Impact\nSaved searches that relied on alphabetical order change position.\n\n## Action\nPin the indices you need at the top.",
 			Labels = [">feature"],
 			LinkedIssues = []
 		});
@@ -186,7 +187,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
@@ -196,10 +197,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Faster hosted search");
 		bundle.Should().Contain("Sturdier snapshots");
 
-		// The synthesized entry carries PR-body release-note text, the label-derived type, and the
-		// profile's output products.
+		// The synthesized entry carries PR-body release-note text, the Impact and Action sections,
+		// the label-derived type, and the profile's output products.
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
+		bundle.Should().Contain("impact: Saved searches that relied on alphabetical order change position.");
+		bundle.Should().Contain("action: Pin the indices you need at the top.");
 		bundle.Should().Contain("name: 300.yaml");
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 
@@ -265,7 +268,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 		bundle.Should().Contain("Faster hosted search");
@@ -405,7 +408,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.Be(1, "the second target reads the pool the first one read");
 		pool.RequestedPaths.Count(r => r.EndsWith("100.yaml", StringComparison.Ordinal)).Should().Be(1);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().HaveCount(2);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().HaveCount(2);
 	}
 
 	[Test]
@@ -505,7 +508,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 		bundle.Should().Contain("Faster hosted search");
@@ -535,7 +538,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty("dry-run must not write a bundle");
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().BeEmpty("dry-run must not write a bundle");
 	}
 
 	[Test]
@@ -646,7 +649,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("Unlabeled change");
@@ -724,7 +727,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		if (files.Length == 0)
 			return (result, null);
 		var content = await FileSystem.File.ReadAllTextAsync(files.Single(), TestContext.Current!.Execution.CancellationToken);

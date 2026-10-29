@@ -100,7 +100,10 @@ public partial record OperationPageModel
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
 	/// <summary>The alternative ways to authenticate. Empty when the spec declares no schemes.</summary>
+	/// <summary>Only the alternatives an operation sets for itself. What every endpoint inherits is on the Authentication page.</summary>
 	public required IReadOnlyList<AuthRequirement> AuthRequirements { get; init; }
+
+	public AuthBadge? AuthBadge { get; init; }
 
 	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
 	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
@@ -158,7 +161,7 @@ public partial record OperationPageModel
 			});
 		}
 
-		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
+		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown, analyzer);
 		var scenarios = WithClientDocs(
 			WithOperationIdentity(
 				GeneratedCodeSamples.Fill(
@@ -217,7 +220,10 @@ public partial record OperationPageModel
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			RequiredPrivileges = privileges.Rows,
-			AuthRequirements = OpenApiAuthSchemeResolver.Resolve(operation, document)
+			AuthRequirements = OpenApiAuthSchemeResolver.OverridesDocument(operation, document)
+				? OpenApiAuthSchemeResolver.Resolve(operation, document)
+				: [],
+			AuthBadge = OpenApiAuthSchemeResolver.Badge(operation, document)
 		};
 	}
 

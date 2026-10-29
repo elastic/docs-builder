@@ -360,9 +360,10 @@ function initGlobalClickHandlers(): void {
     document.addEventListener('click', function (e) {
         const target = e.target as HTMLElement
 
-        // Only handle clicks within API doc sections; the path list sits in the header, outside them
+        // Only handle clicks within API doc sections; the path list sits in the header, outside them.
+        // #elastic-docs-v3 holds the topic, structural and Markdown pages, such as the shared Authentication section.
         const apiSection = target.closest(
-            '#elastic-api-v3, #schema-definition, #paths'
+            '#elastic-api-v3, #elastic-docs-v3, #schema-definition, #paths'
         ) as HTMLElement
         if (!apiSection) return
 

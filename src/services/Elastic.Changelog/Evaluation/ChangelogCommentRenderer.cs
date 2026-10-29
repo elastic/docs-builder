@@ -296,10 +296,10 @@ internal static class ChangelogCommentRenderer
 			sections.Add($"\nAdd a type label that matches your {WrapInlineCode("pivot.types")} configuration in {configRef}.");
 
 		if (hasProductIssue)
-			sections.Add(string.Join("\n", "", "📦 Add one or more **product** labels to your PR:", "", productLabelTable));
+			sections.Add(RenderCollapsedLabelTable("📦", "product", productLabelTable!));
 
 		if (hasAreaIssue)
-			sections.Add(string.Join("\n", "", "🗂️ Add one or more **area** labels to your PR:", "", areaLabelTable));
+			sections.Add(RenderCollapsedLabelTable("🗂️", "area", areaLabelTable!));
 
 		string skipSection;
 		if (!string.IsNullOrWhiteSpace(skipLabels))
@@ -326,6 +326,23 @@ internal static class ChangelogCommentRenderer
 
 		return Truncate(string.Join("\n", allParts));
 	}
+
+	/// <summary>
+	/// Label tables can list dozens of labels, so they collapse to keep the comment short.
+	/// GitHub only renders a table inside <c>&lt;details&gt;</c> when blank lines surround it.
+	/// </summary>
+	private static string RenderCollapsedLabelTable(string emoji, string pivot, string table) =>
+		string.Join(
+			"\n",
+			"",
+			$"{emoji} Add one or more **{pivot}** labels to your PR.",
+			"",
+			$"<details><summary>Show the {pivot} labels</summary>",
+			"",
+			table,
+			"",
+			"</details>"
+		);
 
 	/// <summary>
 	/// Renders the opt-in success body: whether the PR will be part of the release notes and, when it will, its type, products and areas.

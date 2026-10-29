@@ -3,11 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using System.Runtime.InteropServices;
+using Slugify;
 
 namespace Elastic.Documentation.Extensions;
 
 public static class StringExtensions
 {
+	private static readonly SlugHelper SlugHelper = new();
+
+	public static string Slugify(this string? text) => SlugHelper.GenerateSlug(text);
+
 	public static string OptionalWindowsReplace(this string relativePath)
 	{
 		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
