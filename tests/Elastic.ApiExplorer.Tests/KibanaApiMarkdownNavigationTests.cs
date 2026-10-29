@@ -110,6 +110,8 @@ public class KibanaApiMarkdownNavigationTests
 		// The H1 ("Kibana spaces") and the navigation title ("Spaces") differ from the meta title.
 		html.Should().Contain("<title>Kibana spaces for browser tabs | ");
 		html.Should().Contain("<h1>Kibana spaces</h1>");
+		// The class lets the CSS give the page's own first heading the title style of the other API pages.
+		html.Should().Contain("<section id=\"elastic-docs-v3\" class=\"api-markdown-page\">");
 		// The structured breadcrumb uses the parsed H1, not the navigation title or the override.
 		html.Should().Contain("\"name\": \"Kibana spaces\"");
 		html.Should().NotContain("\"name\": \"Spaces\"");

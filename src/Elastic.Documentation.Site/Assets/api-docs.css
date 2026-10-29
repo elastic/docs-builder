@@ -153,9 +153,10 @@
 	margin-top: 16px;
 }
 
-/* Operation / group page title — Figma APIs 10079:2802 */
+/* Operation / group page title — Figma APIs 10079:2802. A children: page keeps its H1 in its own Markdown, so its first heading takes the same style. */
 .api-page-intro h1,
-#elastic-api-v3 h1 {
+#elastic-api-v3 h1,
+.api-markdown-page > .heading-wrapper:first-child h1 {
 	margin: 0;
 	padding-top: 0;
 	color: var(--color-ink-navy, #111c2c);
