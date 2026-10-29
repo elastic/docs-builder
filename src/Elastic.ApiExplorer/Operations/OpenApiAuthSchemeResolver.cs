@@ -34,9 +34,9 @@ public record AuthBadge(AuthBadgeKind Kind, AuthBadgeTarget Target)
 {
 	public string Text => Kind switch
 	{
-		AuthBadgeKind.Optional => "auth optional",
-		AuthBadgeKind.None => "no auth",
-		_ => "auth"
+		AuthBadgeKind.Optional => "Auth optional",
+		AuthBadgeKind.None => "No auth",
+		_ => "Auth"
 	};
 
 	/// <summary>The word the CommonMark output says after <c>Authentication:</c>.</summary>

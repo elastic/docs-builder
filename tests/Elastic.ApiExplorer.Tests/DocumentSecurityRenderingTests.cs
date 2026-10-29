@@ -23,7 +23,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("inherits");
 
-		html.Should().Contain("<a class=\"auth-badge\" href=\"/api/doc/fixture/authentication\">auth</a>");
+		html.Should().Contain("<a class=\"api-badge\" href=\"/api/doc/fixture/authentication\">Auth</a>");
 		html.Should().NotContain(AuthenticationSection);
 	}
 
@@ -32,7 +32,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("repeats");
 
-		html.Should().Contain("href=\"/api/doc/fixture/authentication\">auth</a>");
+		html.Should().Contain("href=\"/api/doc/fixture/authentication\">Auth</a>");
 		html.Should().NotContain(AuthenticationSection);
 	}
 
@@ -41,7 +41,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("narrows");
 
-		html.Should().Contain("<a class=\"auth-badge\" href=\"#authentication\">auth</a>");
+		html.Should().Contain("<a class=\"api-badge\" href=\"#authentication\">Auth</a>");
 		html.Should().Contain(AuthenticationSection).And.Contain("Authorization: Bearer &lt;token&gt;");
 	}
 
@@ -50,7 +50,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("optional");
 
-		html.Should().Contain("href=\"#authentication\">auth optional</a>");
+		html.Should().Contain("href=\"#authentication\">Auth optional</a>");
 		html.Should().Contain("Authentication is optional.");
 	}
 
@@ -59,7 +59,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("relaxes");
 
-		html.Should().Contain("href=\"#authentication\">auth optional</a>");
+		html.Should().Contain("href=\"#authentication\">Auth optional</a>");
 		html.Should().Contain(AuthenticationSection).And.Contain("Authentication is optional.");
 	}
 
@@ -77,7 +77,7 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 	{
 		var html = await RenderOperationAsync("anonymous");
 
-		html.Should().Contain("<span class=\"auth-badge\">no auth</span>");
+		html.Should().Contain("<span class=\"api-badge\">No auth</span>");
 		html.Should().NotContain(AuthenticationSection);
 	}
 

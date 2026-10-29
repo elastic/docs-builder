@@ -42,7 +42,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().Contain("class=\"api-title-badges\"");
 		html.Should().Contain("<applies-to-popover");
 		html.Should().Contain("show-popover=\"false\"");
-		html.Should().Contain("deprecated-badge");
+		html.Should().Contain("api-badge--danger");
 	}
 
 	[Test]
@@ -57,7 +57,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("<applies-to-popover");
 		html.Should().Contain("lifecycle-name=\"Beta\"");
-		html.Should().NotContain("deprecated-badge");
+		html.Should().NotContain("api-badge--danger");
 	}
 
 	[Test]

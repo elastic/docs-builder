@@ -1907,22 +1907,36 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-.api-title-badges .deprecated-badge {
-	@apply mr-2 inline;
-}
-
 /* x-state availability, rendered with the same applies_to badge as Markdown pages */
 .api-title-badges .applies {
 	@apply mr-2;
 }
 
-/* auth badge - neutral grey like the version badge, since authentication is a fact about the endpoint, not a warning. A link when it points at where authentication is explained. */
-.api-title-badges .auth-badge {
-	@apply text-grey-70 bg-grey-10 mr-2 inline-block rounded px-1 py-0.5 text-xs font-medium;
+/* Badges under the title (Auth, Deprecated) look like the applicable-info badge next to them: a white pill with a grey outline. */
+.api-title-badges .api-badge {
+	@apply border-grey-20 mr-2 inline-flex items-center rounded-sm border bg-white py-1 pr-1.5 pl-1.5;
+	font-size: 0.65em;
+	text-wrap: nowrap;
 }
 
-.api-title-badges a.auth-badge:hover {
-	@apply text-blue-elastic underline;
+/* Deprecated keeps a red cue, in the outline and the text. */
+.api-title-badges .api-badge--danger {
+	@apply text-red-90 border-red-50;
+}
+
+/* A badge that links is underlined, since the pill alone does not say it can be clicked. */
+.api-title-badges a.api-badge {
+	@apply underline;
+	text-underline-offset: 2px;
+}
+
+.api-title-badges a.api-badge:hover {
+	@apply border-blue-elastic text-blue-elastic;
+}
+
+.api-title-badges a.api-badge:focus-visible {
+	outline: 2px solid var(--color-blue-elastic);
+	outline-offset: 2px;
 }
 
 /* Deprecated badge - red warning style */

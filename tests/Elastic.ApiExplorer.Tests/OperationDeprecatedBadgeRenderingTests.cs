@@ -28,11 +28,11 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 			.IndexOf("class=\"api-title-badges\"", StringComparison.Ordinal)
 			.Should()
 			.BeGreaterThan(html.IndexOf("id=\"paths\"", StringComparison.Ordinal));
-		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("deprecated-badge");
+		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("api-badge--danger");
 
 		var listing = Slice(html, "id=\"paths\"", "</ul>");
 		listing.Should().Contain("api-url-list-item");
-		listing.Should().NotContain("deprecated-badge");
+		listing.Should().NotContain("api-badge--danger");
 		listing.Should().NotContain("deprecated-path");
 	}
 
@@ -42,9 +42,7 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
 		var html = await RenderAsync(nav);
 
-		Slice(html, "class=\"api-title-badges\"", "</header>")
-			.Should()
-			.Contain("<a class=\"auth-badge\" href=\"#authentication\">auth</a>");
+		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("<a class=\"api-badge\" href=\"#authentication\">Auth</a>");
 		html.Should().Contain("data-section=\"authentication\"");
 	}
 
@@ -54,7 +52,7 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
 		var html = await RenderAsync(nav);
 
-		html.Should().NotContain("auth-badge").And.NotContain("data-section=\"authentication\"");
+		html.Should().NotContain(">Auth<").And.NotContain("data-section=\"authentication\"");
 	}
 
 	private async Task<string> RenderAsync(OperationNavigationItem nav)

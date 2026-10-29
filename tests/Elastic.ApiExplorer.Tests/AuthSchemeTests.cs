@@ -138,7 +138,7 @@ public class AuthSchemeTests
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{}, { "apiKeyAuth": [] }"""));
 
-		OpenApiAuthSchemeResolver.Badge(op, doc)!.Text.Should().Be("auth optional");
+		OpenApiAuthSchemeResolver.Badge(op, doc)!.Text.Should().Be("Auth optional");
 	}
 
 	[Test]

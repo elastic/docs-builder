@@ -449,14 +449,14 @@ The **Authentication** section shows how to send a credential. It is collapsed b
 
 The API Explorer reads the document-level `security`, or one alternative per scheme in `components.securitySchemes` when the document has none. The full section lives on the product's `/authentication` page. An endpoint page shows its own section, below **Required authorization** and in the on-page table of contents, only when the operation sets a `security` that names other alternatives than the document's. An empty operation `security: []` is an explicit override to none and shows no section.
 
-Every endpoint with authentication has an `auth` badge in the row under its path, before the availability badge:
+Every endpoint with authentication has an `Auth` badge in the row under its path, before the availability badge. The badges in that row, `Auth` and `Deprecated`, share the outlined look of the availability badge. `Deprecated` keeps a red outline and text, and a badge that links is underlined:
 
 | Badge | When | Links to |
 |---|---|---|
-| `auth` | The operation inherits the document `security` | The Authentication page |
-| `auth` | The operation sets its own, different `security` | Its own **Authentication** section |
-| `auth optional` | One alternative is empty (`{}`), which OpenAPI reads as "no authentication is fine too" | The Authentication page |
-| `no auth` | The operation sets `security: []` | Nothing |
+| `Auth` | The operation inherits the document `security` | The Authentication page |
+| `Auth` | The operation sets its own, different `security` | Its own **Authentication** section |
+| `Auth optional` | One alternative is empty (`{}`), which OpenAPI reads as "no authentication is fine too" | The Authentication page |
+| `No auth` | The operation sets `security: []` | Nothing |
 
 A spec that declares no `security` shows no badge.
 

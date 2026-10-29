@@ -6,11 +6,11 @@
 		{
 			if (Model.AuthHref is { } authHref)
 			{
-				<a class="auth-badge" href="@authHref">@authText</a>
+				<a class="api-badge" href="@authHref">@authText</a>
 			}
 			else
 			{
-				<span class="auth-badge">@authText</span>
+				<span class="api-badge">@authText</span>
 			}
 		}
 		@if (Model.Availability is { } availability)
@@ -19,7 +19,7 @@
 		}
 		@if (Model.Deprecated)
 		{
-			<span class="deprecated-badge type-status">deprecated</span>
+			<span class="api-badge api-badge--danger">Deprecated</span>
 		}
 	</span>
 }
