@@ -68,9 +68,19 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 
 		MarkAuthenticationChild(childItems, authenticationChild);
 		rootNavigation.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
-		topicsNavigation.NavigationItems = [.. childItems, .. TopicsNavigationItem.Order(topicItems)];
+		topicsNavigation.NavigationItems = AuthenticationFirst([.. childItems, .. TopicsNavigationItem.Order(topicItems)]);
 		return (topicsNavigation, listsAuthentication);
 	}
+
+	/// <summary>The Authentication page leads the Topics heading, then the <c>children:</c> pages in declared order, then the spec's topics.</summary>
+	private static List<INavigationItem> AuthenticationFirst(IReadOnlyList<INavigationItem> items) =>
+		[.. items.Where(IsAuthenticationPage), .. items.Where(static item => !IsAuthenticationPage(item))];
+
+	private static bool IsAuthenticationPage(INavigationItem item) =>
+		item is StructuralNavigationItem { Model.Kind: ApiStructuralKind.Authentication } or SimpleMarkdownNavigationItem
+		{
+			ShowsAuthentication: true
+		};
 
 	/// <summary>A child stands for the Authentication topic when it covers the spec's topic, or its first heading is Authentication.</summary>
 	private bool IsAuthenticationChild(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics) =>

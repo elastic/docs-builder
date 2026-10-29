@@ -126,6 +126,20 @@ public class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_ChildrenAndSchemes_ListsTheGeneratedAuthenticationPageFirst()
+	{
+		var navigation = await Navigation(Spec(topics: null, withSchemes: true), [KibanaOverview]);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics
+			.NavigationItems
+			.Select(item => item.GetType().Name)
+			.Should()
+			.Equal(nameof(StructuralNavigationItem), nameof(SimpleMarkdownNavigationItem));
+	}
+
+	[Test]
 	public async Task CreateNavigation_SchemesWithoutTopics_ListsTheGeneratedAuthenticationPageUnderTopics()
 	{
 		var navigation = await Navigation(Spec(topics: null, withSchemes: true));
@@ -266,7 +280,7 @@ public class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenAndUnmatchedTopics_ListsChildrenThenTopics()
+	public async Task CreateNavigation_ChildrenAndUnmatchedTopics_ListsAuthenticationThenChildrenThenTopics()
 	{
 		var navigation = await Navigation(
 			Spec(["""{ "title": "Principles", "content": "REST." }""", """{ "title": "Authentication", "content": "Use an API key." }"""]),
@@ -280,8 +294,8 @@ public class TopicPageTests
 			.Select(item => (item.GetType().Name, item.Url))
 			.Should()
 			.Equal(
-				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
 				(nameof(StructuralNavigationItem), "/api/doc/cloud/authentication"),
+				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
 				(nameof(TopicNavigationItem), "/api/doc/cloud/topic/topic-principles")
 			);
 	}
