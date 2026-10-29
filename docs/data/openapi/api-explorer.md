@@ -314,7 +314,7 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
-Each section is a collapsible heading, folded by default. Its summary punctuation says what the names are:
+Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Its summary punctuation says what the names are:
 
 | Summary | Meaning |
 |---|---|
@@ -323,7 +323,7 @@ Each section is a collapsible heading, folded by default. Its summary punctuatio
 | `A + B` | Needed together, such as the privileges in **Required authorization** |
 | `a, b` | Anything else, such as parameters or the fields of a form |
 
-The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the folded section, which then opens. This relies on `hidden="until-found"`: in a browser without it, the folded sections can't be searched.
+The names in a summary aren't searchable text, so find-in-page (<kbd>Ctrl</kbd>+<kbd>F</kbd>) skips them and finds the same field inside the section, which opens if a reader has folded it. Sections start expanded, so find-in-page reaches them on first load. Reaching a section a reader has folded relies on `hidden="until-found"`: in a browser without it, a folded section can't be searched.
 
 Path, query and header parameters list like request body properties, each in its own section. An `object` or map parameter, such as one with `style: deepObject`, shows its fields under the parameter. Header parameters named `Accept`, `Content-Type` or `Authorization` aren't listed, because OpenAPI ignores them: the media types and security schemes describe those headers.
 
@@ -416,7 +416,7 @@ The paths come from either of two sources, and both produce the same rows:
 
 ### Required authorization [x-req-auth]
 
-The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is folded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
+The **Required authorization** section lists the privileges an operation needs. It follows the description and also appears in the on-page table of contents. Like the other sections it is expanded by default. Its header names the privileges: `a + b` when they are needed together and `a | b` when they are alternatives.
 
 Add the operation-level `x-req-auth` extension to list those privileges. It is a JSON array of strings. Each non-empty string becomes one row, with leading and trailing whitespace trimmed.
 
@@ -445,7 +445,7 @@ A line that mixes `OR` and `AND`, or a bullet with extra words around the values
 
 ### Authentication
 
-The **Authentication** section shows how to send a credential. It is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`.
+The **Authentication** section shows how to send a credential. It is expanded by default, and a reader who already has auth set up can fold it. The header shows the scheme names, for example `Api key | Basic | Bearer`.
 
 The API Explorer reads the document-level `security`, or one alternative per scheme in `components.securitySchemes` when the document has none. The full section lives on the product's `/authentication` page. An endpoint page shows its own section, below **Required authorization** and in the on-page table of contents, only when the operation sets a `security` that names other alternatives than the document's. An empty operation `security: []` is an explicit override to none and shows no section.
 

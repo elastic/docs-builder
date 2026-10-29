@@ -37,10 +37,9 @@ public enum SummaryStyle
 /// <summary>Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.</summary>
 public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, SummaryStyle Style = SummaryStyle.Fields)
 {
-	public static HtmlString WrapAttributes() => new("class=\"api-param-section collapsed\" data-param-section");
+	public static HtmlString WrapAttributes() => new("class=\"api-param-section expanded\" data-param-section");
 
-	public static HtmlString BodyAttributes(string listId) =>
-		new($"class=\"api-param-section-body\" id=\"{listId}\" hidden=\"until-found\"");
+	public static HtmlString BodyAttributes(string listId) => new($"class=\"api-param-section-body\" id=\"{listId}\"");
 }
 
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>

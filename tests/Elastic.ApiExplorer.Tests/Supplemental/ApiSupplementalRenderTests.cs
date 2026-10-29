@@ -77,13 +77,13 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
+	public async Task Operation_QueryParameters_RenderExpandedWithNameSummary()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("data-param-section");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
 		html.Should().Contain("api-param-summary-item");
@@ -121,7 +121,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"path-params\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
@@ -132,7 +132,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
