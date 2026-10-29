@@ -201,7 +201,13 @@ public class TopicPageTests
 		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication.Should().Contain("Use an API key.").And.Contain("api-authorization-panel");
+		authentication
+			.Should()
+			.Contain("Use an API key.")
+			.And
+			.Contain("api-authorization-panel")
+			.And
+			.Contain("<label class=\"tabs-label\"");
 		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
 		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
 		// The Topics heading is expanded on pages outside it too, such as the product landing page.

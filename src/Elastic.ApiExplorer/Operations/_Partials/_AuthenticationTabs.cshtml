@@ -3,7 +3,8 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthenticationSectionModel>
 @{
 	var requirements = Model.Requirements;
-	var useTabs = requirements.Count > 1;
+	// On a page of its own no heading names the scheme, so even a single alternative gets its tab.
+	var useTabs = requirements.Count > 1 || Model.AlwaysTabs;
 }
 @* The credentials themselves, without a heading: the endpoint section wraps them in a collapsible one, and the Authentication page shows them as they are. *@
 	@if (Model.Optional)

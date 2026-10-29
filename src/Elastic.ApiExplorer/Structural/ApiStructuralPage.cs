@@ -116,7 +116,8 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	public bool ShowEmptyMessage =>
 		IntroHtml is null && (Page.Kind == ApiStructuralKind.Authentication ? Requirements.Count == 0 : Servers.Count == 0);
 
-	public AuthenticationSectionModel Authentication => new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
+	public AuthenticationSectionModel Authentication =>
+		new(Requirements, AuthenticationOptional, markdown => RenderMarkdown(markdown), AlwaysTabs: true);
 
 	protected override string? LayoutPageTitle => Page.Title;
 

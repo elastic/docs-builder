@@ -29,7 +29,12 @@ public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(cont
 	public AuthenticationSectionModel? Authentication =>
 		AuthenticationRequirements.Count == 0
 			? null
-			: new AuthenticationSectionModel(AuthenticationRequirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
+			: new AuthenticationSectionModel(
+				AuthenticationRequirements,
+				AuthenticationOptional,
+				markdown => RenderMarkdown(markdown),
+				AlwaysTabs: true
+			);
 
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => string.IsNullOrWhiteSpace(MetaTitle) ? PageTitle : MetaTitle;
