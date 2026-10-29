@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22.23.4-bookworm-slim AS node
+FROM node:26.13.0-bookworm-slim AS node
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
@@ -12,7 +12,7 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates clang curl git \
+    && apt-get install -y --no-install-recommends ca-certificates clang curl git libatomic1 \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
