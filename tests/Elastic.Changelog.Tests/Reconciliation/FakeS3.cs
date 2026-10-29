@@ -49,6 +49,12 @@ internal sealed class FakeS3
 	/// <summary>Runs before each <c>DeleteObject</c> is evaluated, with the 1-based call number.</summary>
 	public Action<int>? BeforeDelete { get; set; }
 
+	/// <summary>When set, thrown from <c>DeleteObject</c> for that key before the store is mutated.</summary>
+	public Func<string, Exception?>? DeleteFault { get; set; }
+
+	/// <summary>When set, thrown from <c>PutObject</c> for that key before the store is mutated.</summary>
+	public Func<string, Exception?>? PutFault { get; set; }
+
 	/// <summary>Runs after a <c>GetObject</c> resolved its content (which is returned unchanged), with the key and 1-based call number — simulates the source changing right after a read.</summary>
 	public Action<string, int>? AfterGet { get; set; }
 
@@ -204,6 +210,9 @@ internal sealed class FakeS3
 		lock (_lock)
 			n = ++_puts;
 		BeforePut?.Invoke(n);
+		var fault = PutFault?.Invoke(request.Key);
+		if (fault is not null)
+			throw fault;
 
 		lock (_lock)
 		{
@@ -227,6 +236,9 @@ internal sealed class FakeS3
 		lock (_lock)
 			n = ++_deletes;
 		BeforeDelete?.Invoke(n);
+		var fault = DeleteFault?.Invoke(request.Key);
+		if (fault is not null)
+			throw fault;
 
 		lock (_lock)
 		{
