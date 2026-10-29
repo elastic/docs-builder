@@ -7,6 +7,7 @@ using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -33,7 +34,8 @@ public record AuthenticationSchemeDisplay(
 
 public record ApiServerDisplay(string Url, string? Description);
 
-public record ApiStructuralPage(ApiStructuralKind Kind) : IApiModel<StructuralViewModel>
+/// <param name="Intro">Markdown shown above the schemes, from an <c>x-topics</c> entry titled Authentication.</param>
+public record ApiStructuralPage(ApiStructuralKind Kind, string? Intro = null) : IApiModel<StructuralViewModel>
 {
 	public string Title => Kind == ApiStructuralKind.Authentication ? "Authentication" : "Servers";
 
@@ -78,7 +80,8 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 	public ApiStructuralPage Model { get; }
 	public string Url { get; }
 	// Authentication and Servers are still generated so old Bump.sh links keep working; operation pages show both inline.
-	public bool Hidden => true;
+	// An Authentication page written as a topic is prose a reader looks for, so it is listed with the other topics.
+	public bool Hidden { get; init; } = true;
 	public string NavigationTitle { get; }
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
@@ -97,6 +100,21 @@ public class StructuralNavigationItem : ILeafNavigationItem<ApiStructuralPage>
 			items.Add(new(urlPathPrefix, apiUrlSuffix, new ApiStructuralPage(ApiStructuralKind.Servers), root, root));
 		return items;
 	}
+
+	/// <summary>
+	/// The Authentication page for a spec that writes it as an <c>x-topics</c> entry, with or without security schemes.
+	/// The caller sets <see cref="Parent"/> to the Topics heading.
+	/// </summary>
+	public static StructuralNavigationItem ForAuthenticationTopic(
+		string? urlPathPrefix,
+		string apiUrlSuffix,
+		LandingNavigationItem root,
+		ApiTopicPage topic
+	)
+	{
+		var page = new ApiStructuralPage(ApiStructuralKind.Authentication, topic.Content);
+		return new StructuralNavigationItem(urlPathPrefix, apiUrlSuffix, page, root, root) { Hidden = false };
+	}
 }
 
 public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(context)
@@ -105,28 +123,62 @@ public class StructuralViewModel(ApiRenderContext context) : ApiViewModel(contex
 	public required IReadOnlyList<AuthenticationSchemeDisplay> Schemes { get; init; }
 	public required IReadOnlyList<ApiServerDisplay> Servers { get; init; }
 	public required string EmptyMessage { get; init; }
+	public HtmlString? IntroHtml { get; init; }
+	public IReadOnlyList<TocItem> IntroHeadings { get; init; } = [];
+
+	/// <summary>The empty message only shows when the page has nothing else to say.</summary>
+	public bool ShowEmptyMessage =>
+		IntroHtml is null && (Page.Kind == ApiStructuralKind.Authentication ? Schemes.Count == 0 : Servers.Count == 0);
 
 	protected override string? LayoutPageTitle => Page.Title;
 
 	protected override IReadOnlyList<TocItem> GetTocItems() =>
-		Page.Kind == ApiStructuralKind.Authentication ? Schemes.Select(scheme => new TocItem(scheme.Heading, scheme.Slug, 2)).ToArray() : [];
+		Page.Kind == ApiStructuralKind.Authentication
+			? [.. IntroHeadings, .. Schemes.Select(scheme => new TocItem(scheme.Heading, scheme.Slug, 2))]
+			: [];
 
-	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context) =>
-		page.Kind == ApiStructuralKind.Authentication
-			? new StructuralViewModel(context)
-			{
-				Page = page,
-				Schemes = ReadSchemes(context),
-				Servers = [],
-				EmptyMessage = "This API does not declare authentication schemes."
-			}
-			: new StructuralViewModel(context)
+	public static StructuralViewModel Create(ApiStructuralPage page, ApiRenderContext context)
+	{
+		if (page.Kind != ApiStructuralKind.Authentication)
+		{
+			return new StructuralViewModel(context)
 			{
 				Page = page,
 				Schemes = [],
 				Servers = ReadServers(context.Model),
 				EmptyMessage = "This API does not declare servers."
 			};
+		}
+
+		var schemes = ReadSchemes(context);
+		var (introHtml, introHeadings) = RenderIntro(page.Intro, schemes, context);
+		return new StructuralViewModel(context)
+		{
+			Page = page,
+			Schemes = schemes,
+			Servers = [],
+			EmptyMessage = "This API does not declare authentication schemes.",
+			IntroHtml = introHtml,
+			IntroHeadings = introHeadings
+		};
+	}
+
+	// Scheme headings own their anchors, so an intro heading with the same slug gets none.
+	private static (HtmlString? Html, IReadOnlyList<TocItem> Headings) RenderIntro(
+		string? intro,
+		IReadOnlyList<AuthenticationSchemeDisplay> schemes,
+		ApiRenderContext context
+	)
+	{
+		if (string.IsNullOrWhiteSpace(intro))
+			return (null, []);
+
+		return ApiMarkdown.RenderWithHeadings(
+			context,
+			intro,
+			schemes.Select(static scheme => scheme.Slug).ToHashSet(StringComparer.Ordinal)
+		);
+	}
 
 	internal static bool HasSchemes(OpenApiDocument document) => document.Components?.SecuritySchemes is { Count: > 0 };
 
@@ -172,6 +224,7 @@ internal static class StructuralCommonMark
 		var markdown = new StringBuilder();
 		var apiBaseUrl = page.CurrentNavigationItem.NavigationRoot.Url;
 		ApiCommonMark.Heading(markdown, 1, page.Page.Title);
+		ApiCommonMark.Prepared(markdown, page.Page.Intro, apiBaseUrl);
 		if (page.Page.Kind == ApiStructuralKind.Authentication)
 			WriteSchemes(markdown, page, apiBaseUrl);
 		else
@@ -181,7 +234,7 @@ internal static class StructuralCommonMark
 
 	private static void WriteSchemes(StringBuilder markdown, StructuralViewModel page, string apiBaseUrl)
 	{
-		if (page.Schemes.Count == 0)
+		if (page.ShowEmptyMessage)
 		{
 			ApiCommonMark.Paragraph(markdown, page.EmptyMessage);
 			return;
@@ -198,7 +251,7 @@ internal static class StructuralCommonMark
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)
 	{
-		if (page.Servers.Count == 0)
+		if (page.ShowEmptyMessage)
 		{
 			ApiCommonMark.Paragraph(markdown, page.EmptyMessage);
 			return;

@@ -65,6 +65,23 @@ public static partial class ApiMarkdown
 			: renderer.ReadApiDescriptionHeadings(ApiAdmonitions.Convert(Prepare(markdown, apiBaseUrl)), null);
 
 	/// <summary>
+	/// Renders a page's prose with anchors on its headings, and returns those headings for the page's table of contents.
+	/// A heading whose slug is in <paramref name="reservedSlugs"/> gets no anchor, because another part of the page owns that id.
+	/// </summary>
+	public static (HtmlString Html, IReadOnlyList<TocItem> Headings) RenderWithHeadings(
+		ApiRenderContext context,
+		string? markdown,
+		IReadOnlySet<string>? reservedSlugs = null
+	)
+	{
+		var headings = ReadHeadings(context.MarkdownRenderer, markdown, context.CurrentNavigation.NavigationRoot.Url)
+			.Where(heading => reservedSlugs?.Contains(heading.Slug) != true)
+			.ToArray();
+		var anchors = headings.Select(static heading => heading.Slug).ToHashSet(StringComparer.Ordinal);
+		return (RenderWithHeadingAnchors(context, markdown, anchors), headings);
+	}
+
+	/// <summary>
 	/// The intro headings that get an anchor on a group page, and so a sidebar entry. A post section owns its anchor,
 	/// so an intro heading with the same slug is left out rather than linking to the post section.
 	/// </summary>
