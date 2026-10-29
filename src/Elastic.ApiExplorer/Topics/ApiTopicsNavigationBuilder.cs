@@ -66,21 +66,34 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 			topicItems.Add(generated);
 		}
 
+		foreach (var item in childItems)
+			item.PinnedTitle = PinnedTitleOf(item.FileInfo, coveredTopics);
 		MarkAuthenticationChild(childItems, authenticationChild);
 		rootNavigation.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
-		topicsNavigation.NavigationItems = AuthenticationFirst([.. childItems, .. TopicsNavigationItem.Order(topicItems)]);
+		topicsNavigation.NavigationItems = PinnedFirst([.. childItems, .. TopicsNavigationItem.Order(topicItems)]);
 		return (topicsNavigation, listsAuthentication);
 	}
 
-	/// <summary>The Authentication page leads the Topics heading, then the <c>children:</c> pages in declared order, then the spec's topics.</summary>
-	private static List<INavigationItem> AuthenticationFirst(IReadOnlyList<INavigationItem> items) =>
-		[.. items.Where(IsAuthenticationPage), .. items.Where(static item => !IsAuthenticationPage(item))];
+	/// <summary>
+	/// Authentication, then Rate limiting, lead the Topics heading whether they come from a <c>children:</c> page or the spec. The rest
+	/// keep their order: the <c>children:</c> pages as declared, then the spec's topics by title.
+	/// </summary>
+	private static List<INavigationItem> PinnedFirst(IReadOnlyList<INavigationItem> items) => [.. items.OrderBy(PinnedRank)];
 
-	private static bool IsAuthenticationPage(INavigationItem item) =>
-		item is StructuralNavigationItem { Model.Kind: ApiStructuralKind.Authentication } or SimpleMarkdownNavigationItem
-		{
-			ShowsAuthentication: true
-		};
+	private static int PinnedRank(INavigationItem item) =>
+		TopicsNavigationItem.PinnedRank(item is SimpleMarkdownNavigationItem { PinnedTitle: { } title } ? title : item.NavigationTitle);
+
+	/// <summary>The pinned title a child page stands for: its first heading, or the title of the spec topic it covers.</summary>
+	private string? PinnedTitleOf(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics)
+	{
+		var heading = MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child).Heading;
+		var covered = coveredTopics.Where(pair => pair.Value == child).Select(static pair => pair.Key.Title);
+		return TopicsNavigationItem.PinnedTitles.FirstOrDefault(
+			pinned => string.Equals(pinned, heading, StringComparison.OrdinalIgnoreCase) || covered.Any(
+				title => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase)
+			)
+		);
+	}
 
 	/// <summary>A child stands for the Authentication topic when it covers the spec's topic, or its first heading is Authentication.</summary>
 	private bool IsAuthenticationChild(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics) =>

@@ -126,6 +126,43 @@ public class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_ChildrenAndTopics_ListsAuthenticationAndRateLimitingFirst()
+	{
+		var navigation = await NavigationWithChild(
+			Spec([
+				"""{ "title": "Principles", "content": "REST." }""",
+				"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
+				"""{ "title": "Authentication", "content": "Use an API key." }"""
+			]),
+			"overview.md",
+			"# Overview\n\nHow the API works.\n"
+		);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics
+			.NavigationItems
+			.Select(item => item.NavigationTitle)
+			.Should()
+			.Equal("Authentication", "Rate limiting", "Overview", "Principles");
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildTitledRateLimiting_StandsForThePinnedTopicWhateverItsNavigationTitle()
+	{
+		var navigation = await NavigationWithChild(
+			Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]),
+			"limits.md",
+			"# Rate limiting\n\nCalls are limited.\n"
+		);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics.NavigationItems.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Limits");
+		topics.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Single().PinnedTitle.Should().Be("Rate limiting");
+	}
+
+	[Test]
 	public async Task CreateNavigation_ChildrenAndSchemes_ListsTheGeneratedAuthenticationPageFirst()
 	{
 		var navigation = await Navigation(Spec(topics: null, withSchemes: true), [KibanaOverview]);

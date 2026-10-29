@@ -87,7 +87,7 @@ api:
         - file: kibana-api-overview.md
 ```
 
-Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them, after the Authentication page, which always comes first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
+Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
 
 Child pages also behave as follows:
 
@@ -497,7 +497,7 @@ x-topics:
 
 Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
 
-The sidebar lists the topics under a **Topics** heading, above the endpoint groups. The Authentication page always comes first. Any `children:` pages follow in the order the docset declares them, then the spec's topics: Rate limiting first when the spec has it, and the others in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
+The sidebar lists the topics under a **Topics** heading, above the endpoint groups. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
 
 A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 

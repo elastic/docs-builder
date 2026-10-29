@@ -48,6 +48,9 @@ public class SimpleMarkdownNavigationItem(
 	/// <summary>True for the page that stands for the Authentication topic: the spec's authentication tabs follow its Markdown.</summary>
 	public bool ShowsAuthentication { get; internal set; }
 
+	/// <summary>The pinned topic title, Authentication or Rate limiting, this page stands for, whatever its own navigation title is.</summary>
+	public string? PinnedTitle { get; internal set; }
+
 	/// <inheritdoc />
 	public IApiModel Model => this;
 
