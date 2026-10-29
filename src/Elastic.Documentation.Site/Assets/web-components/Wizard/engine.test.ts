@@ -4,6 +4,7 @@ import {
     follow,
     replayRemembered,
     resolve,
+    splitInlineCode,
     startEdit,
     type WizardConfig,
 } from './engine'
@@ -488,5 +489,28 @@ describe('optional and conditional variables', () => {
             { id: 'reqs', picks: [2] },
         ])
         expect(() => buildResult(required, state)).toThrow('No result for tier')
+    })
+})
+
+describe('splitInlineCode', () => {
+    it('marks backticked parts as code and keeps the rest as text', () => {
+        expect(splitInlineCode('Use a `semantic_text` field.')).toEqual([
+            { text: 'Use a ', code: false },
+            { text: 'semantic_text', code: true },
+            { text: ' field.', code: false },
+        ])
+    })
+
+    it('leaves an unmatched backtick alone', () => {
+        expect(splitInlineCode('a ` b')).toEqual([
+            { text: 'a ` b', code: false },
+        ])
+    })
+
+    it('handles several spans and empty text', () => {
+        expect(
+            splitInlineCode('`a` and `b`').filter((p) => p.code)
+        ).toHaveLength(2)
+        expect(splitInlineCode('')).toEqual([])
     })
 })

@@ -30,9 +30,9 @@ The argument is the path to the YAML file. It's resolved relative to the page, o
 
 ### Another example
 
-The same directive can drive any decision. This one helps writers choose a content type. It has one variable, no scoring and a single button.
+The same directive can drive any decision. This one helps readers choose a search approach and how to set it up, using the [search approaches](https://www.elastic.co/docs/solutions/search/search-approaches) page as its guide. Its result has seven parts, and most of them are optional, so it only shows the details that apply to the reader's path.
 
-:::{wizard} wizard-content-type-sample.yaml
+:::{wizard} wizard-search-approach-sample.yaml
 :::
 
 ## How the flow works
@@ -193,6 +193,8 @@ variables:
     when: { key: deployment, equals: serverless }
     items: { ... }
 ```
+
+Wrap text in backticks to show it as inline code. This works in `intro`, `why`, `hint`, result blurbs and notes.
 
 In text, `{name}` inserts the chosen item's name for the variable `name`. In `cta` and `extra_docs`, a condition's `key` can be an answer or a variable, and a variable's value is the key of its chosen item. Use `href_from: name` to link to the chosen item's docs page.
 

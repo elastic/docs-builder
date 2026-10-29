@@ -2,6 +2,7 @@ import {
     buildResult,
     replayRemembered,
     resolve,
+    splitInlineCode,
     startEdit,
     type HistoryEntry,
     type Remembered,
@@ -33,6 +34,13 @@ function h(
         if (kid) el.append(kid)
     }
     return el
+}
+
+/** Text from the config, with `backticked` parts shown as code. Built from nodes, never innerHTML. */
+function rich(text: string): Child[] {
+    return splitInlineCode(text).map((part) =>
+        part.code ? h('code', {}, part.text) : part.text
+    )
 }
 
 /** Config links are author-controlled, but never let one become a script URL. */
@@ -205,7 +213,7 @@ class DocsWizard extends HTMLElement {
                 'div',
                 { class: 'intro' },
                 h('h2', { class: 'title' }, config.meta.title),
-                config.meta.intro ? h('p', {}, config.meta.intro) : null,
+                config.meta.intro ? h('p', {}, rich(config.meta.intro)) : null,
                 h(
                     'button',
                     {
@@ -236,7 +244,9 @@ class DocsWizard extends HTMLElement {
                 'span',
                 {},
                 h('span', { class: 'label' }, option.label),
-                option.hint ? h('span', { class: 'hint' }, option.hint) : null,
+                option.hint
+                    ? h('span', { class: 'hint' }, rich(option.hint))
+                    : null,
                 option.tags?.length
                     ? h(
                           'span',
@@ -291,7 +301,7 @@ class DocsWizard extends HTMLElement {
                       'div',
                       { class: 'why' },
                       h('b', {}, 'Why we ask: '),
-                      screen.why
+                      rich(screen.why)
                   )
                 : null,
             list,
@@ -356,7 +366,7 @@ class DocsWizard extends HTMLElement {
             h(
                 'div',
                 { class: 'blurbs' },
-                result.blurbs.map((b) => h('p', {}, b))
+                result.blurbs.map((b) => h('p', {}, rich(b)))
             ),
             h(
                 'div',
@@ -372,7 +382,7 @@ class DocsWizard extends HTMLElement {
                     result.cta.label
                 )
             ),
-            result.notes.map((note) => h('div', { class: 'note' }, note)),
+            result.notes.map((note) => h('div', { class: 'note' }, rich(note))),
             h('h3', {}, 'Next steps'),
             h(
                 'div',

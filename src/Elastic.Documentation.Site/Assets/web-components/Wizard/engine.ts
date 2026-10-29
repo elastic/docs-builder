@@ -228,6 +228,20 @@ export function startEdit(
     return { history: history.slice(0, index), remembered }
 }
 
+/** Splits text on `backticks` so a component can show code spans without using innerHTML. */
+export function splitInlineCode(
+    text: string
+): { text: string; code: boolean }[] {
+    return text
+        .split(/(`[^`]+`)/)
+        .filter(Boolean)
+        .map((part) =>
+            part.length > 2 && part.startsWith('`') && part.endsWith('`')
+                ? { text: part.slice(1, -1), code: true }
+                : { text: part, code: false }
+        )
+}
+
 export function fill(template: string, vars: Record<string, string>): string {
     return template.replace(/\{(\w+)\}/g, (_, k: string) =>
         k in vars ? vars[k] : `{${k}}`

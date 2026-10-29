@@ -61,6 +61,7 @@ h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: v
 .recap .a { font-weight: 600; }
 .option[data-previous="true"] { border-color: var(--wizard-accent); }
 .option .was { display: inline-block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--wizard-accent); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; background: var(--wizard-accent-tint); border-radius: 4px; padding: 1px 5px; }
 .error { color: #a4161a; }
 @media (max-width: 480px) { .card { padding: 20px; } h2.title { font-size: 22px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }

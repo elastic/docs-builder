@@ -453,7 +453,28 @@ public class WizardDeploymentSampleTests() : WizardShippedSampleTests("wizard-de
 }
 
 [InheritsTests]
-public class WizardContentTypeSampleTests() : WizardShippedSampleTests("wizard-content-type-sample.yaml");
+public class WizardSearchApproachSampleTests() : WizardShippedSampleTests("wizard-search-approach-sample.yaml")
+{
+	[Test]
+	public void CoversEverySearchApproachOnThePage()
+	{
+		var variables = Block!.Config!.Results.Variables;
+		variables["approach"].Items.Keys.Should().BeEquivalentTo("full_text", "semantic", "multimodal", "vector", "hybrid", "geospatial");
+		variables["query_language"].Items.Keys.Should().BeEquivalentTo("query_dsl", "retrievers", "esql");
+	}
+
+	[Test]
+	public void OnlyShowsTheDetailsThatApplyToTheReadersPath()
+	{
+		var variables = Block!.Config!.Results.Variables;
+		variables["approach"].Optional.Should().BeFalse();
+		variables["setup"].Optional.Should().BeFalse();
+		variables["model"].Optional.Should().BeTrue();
+		variables["storage"].Optional.Should().BeTrue();
+		variables["hosting"].Optional.Should().BeTrue();
+		variables["ranking"].Optional.Should().BeTrue();
+	}
+}
 
 [InheritsTests]
 public class WizardCardsAndTagsTests() : DirectiveTest<WizardBlock>("""
