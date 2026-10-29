@@ -69,11 +69,17 @@ public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSid
 
 	/// <summary>Pinned topics first, in <see cref="PinnedTitles"/> order, then the rest by title.</summary>
 	public static IReadOnlyList<INavigationItem> Order(IEnumerable<INavigationItem> items) =>
-		[.. items.OrderBy(PinnedRank).ThenBy(static item => item.NavigationTitle, StringComparer.OrdinalIgnoreCase)];
+		[
+			.. items.OrderBy(static item => PinnedRank(item.NavigationTitle)).ThenBy(
+				static item => item.NavigationTitle,
+				StringComparer.OrdinalIgnoreCase
+			)
+		];
 
-	private static int PinnedRank(INavigationItem item)
+	/// <summary>The position of a pinned title in <see cref="PinnedTitles"/>, or one past the end for any other page.</summary>
+	internal static int PinnedRank(string? title)
 	{
-		var rank = Array.FindIndex(PinnedTitles, title => string.Equals(title, item.NavigationTitle, StringComparison.OrdinalIgnoreCase));
+		var rank = Array.FindIndex(PinnedTitles, pinned => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase));
 		return rank < 0 ? PinnedTitles.Length : rank;
 	}
 }

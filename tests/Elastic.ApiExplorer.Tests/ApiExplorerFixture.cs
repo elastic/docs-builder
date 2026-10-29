@@ -45,8 +45,10 @@ public sealed class PassthroughMarkdownRenderer : IMarkdownStringRenderer
 /// <summary>
 /// Loads the fixture spec and builds its navigation tree once for all tests sharing the fixture.
 /// </summary>
-public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
+public class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 {
+	protected virtual string SpecFileName => "api-explorer-fixture.json";
+
 	public BuildContext Context { get; private set; } = null!;
 	public OpenApiDocument Document { get; private set; } = null!;
 	public LandingNavigationItem Navigation { get; private set; } = null!;
@@ -59,7 +61,7 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 		Context = new BuildContext(new DiagnosticsCollector([]), DocumentationFileSystem.Resolve(invocation), configurationContext);
 
 		var fs = new FileSystem();
-		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
+		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", SpecFileName);
 		Document = await OpenApiReader.Instance.ReadAsync(fs.FileInfo.New(path))
 			?? throw new InvalidOperationException($"Could not read fixture spec at {path}");
 
@@ -82,4 +84,10 @@ public sealed class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 				yield return descendant;
 		}
 	}
+}
+
+/// <summary>A small spec with document-level <c>security</c>, and operations that inherit it, repeat it, narrow it, make it optional and drop it.</summary>
+public sealed class DocumentSecurityFixture : ApiExplorerFixture
+{
+	protected override string SpecFileName => "api-explorer-document-security.json";
 }

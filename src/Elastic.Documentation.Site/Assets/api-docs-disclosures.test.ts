@@ -70,6 +70,19 @@ describe('disclosure clicks on API pages', () => {
         expect(byId('section-body').hasAttribute('hidden')).toBe(true)
     })
 
+    it('toggles a param section on a topic page, where the content sits in #elastic-docs-v3', () => {
+        document.body.innerHTML = markup().replace(
+            'id="elastic-api-v3"',
+            'id="elastic-docs-v3"'
+        )
+
+        document
+            .querySelector<HTMLButtonElement>('.api-param-section-toggle')!
+            .click()
+
+        expect(isExpanded('section')).toBe(true)
+    })
+
     it('toggles a param section from its title and sets the hash without a jump', () => {
         const pushState = vi.spyOn(history, 'pushState')
         document.querySelector<HTMLAnchorElement>('.headerlink')!.click()

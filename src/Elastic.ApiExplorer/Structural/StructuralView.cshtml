@@ -1,4 +1,5 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Structural.StructuralViewModel>
+@using Elastic.ApiExplorer.Operations
 @using Elastic.ApiExplorer.Structural
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
@@ -12,10 +13,12 @@
 		}
 	}
 }
-<section id="elastic-docs-v3">
+<header class="api-page-intro">
 	<div class="api-page-heading">
 		<h1>@Model.Page.Title</h1>
 	</div>
+</header>
+<section id="elastic-docs-v3">
 	@if (Model.IntroHtml is not null)
 	{
 		@Model.IntroHtml
@@ -26,18 +29,7 @@
 	}
 	else if (Model.Page.Kind == ApiStructuralKind.Authentication)
 	{
-		foreach (var scheme in Model.Schemes)
-		{
-			<h2 id="@scheme.Slug">@scheme.Heading</h2>
-			@if (scheme.DescriptionHtml is not null)
-			{
-				@scheme.DescriptionHtml
-			}
-			@if (!string.IsNullOrEmpty(scheme.CredentialExample))
-			{
-				@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
-			}
-		}
+		@(await RenderPartialAsync<_AuthenticationTabs, AuthenticationSectionModel>(Model.Authentication))
 	}
 	else
 	{

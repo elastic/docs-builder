@@ -126,6 +126,84 @@ public partial class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_ChildrenAndTopics_ListsAuthenticationAndRateLimitingFirst()
+	{
+		var navigation = await NavigationWithChild(
+			Spec([
+				"""{ "title": "Principles", "content": "REST." }""",
+				"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
+				"""{ "title": "Authentication", "content": "Use an API key." }"""
+			]),
+			"overview.md",
+			"# Overview\n\nHow the API works.\n"
+		);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics
+			.NavigationItems
+			.Select(item => item.NavigationTitle)
+			.Should()
+			.Equal("Authentication", "Rate limiting", "Overview", "Principles");
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildTitledRateLimiting_StandsForThePinnedTopicWhateverItsNavigationTitle()
+	{
+		var navigation = await NavigationWithChild(
+			Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]),
+			"limits.md",
+			"# Rate limiting\n\nCalls are limited.\n"
+		);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics.NavigationItems.Select(item => item.NavigationTitle).Should().Equal("Authentication", "Limits");
+		topics.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Single().PinnedTitle.Should().Be("Rate limiting");
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildrenAndSchemes_ListsTheGeneratedAuthenticationPageFirst()
+	{
+		var navigation = await Navigation(Spec(topics: null, withSchemes: true), [KibanaOverview]);
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+
+		topics
+			.NavigationItems
+			.Select(item => item.GetType().Name)
+			.Should()
+			.Equal(nameof(StructuralNavigationItem), nameof(SimpleMarkdownNavigationItem));
+	}
+
+	[Test]
+	public async Task CreateNavigation_SchemesWithoutTopics_ListsTheGeneratedAuthenticationPageUnderTopics()
+	{
+		var navigation = await Navigation(Spec(topics: null, withSchemes: true));
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var authentication = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Subject;
+		authentication.Hidden.Should().BeFalse();
+		navigation.AuthenticationUrl.Should().Be("/api/doc/cloud/authentication");
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheTabsAndTakesTheBadgeLink()
+	{
+		var navigation = await NavigationWithChild(
+			Spec(topics: null, withSchemes: true),
+			"auth-intro.md",
+			"# Authentication\n\nUse an API key.\n"
+		);
+
+		var all = ApiExplorerFixture.Walk(navigation).ToList();
+		var child = all.OfType<SimpleMarkdownNavigationItem>().Single();
+		child.ShowsAuthentication.Should().BeTrue();
+		navigation.AuthenticationUrl.Should().Be(child.Url);
+		all.OfType<StructuralNavigationItem>().Single().Hidden.Should().BeTrue("the generated page stays only for old links");
+	}
+
+	[Test]
 	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ChildReplacesTopic()
 	{
 		var navigation = await NavigationWithChild(
@@ -173,8 +251,18 @@ public partial class TopicPageTests
 		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
 		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
+		// The title sits in the same header as on an operation page, which sets its size and the space above it.
+		topic.Should().Contain("<header class=\"api-page-intro\">");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication.Should().Contain("Use an API key.").And.Contain("Api key (apiKey)");
+		authentication
+			.Should()
+			.Contain("Use an API key.")
+			.And
+			.Contain("api-authorization-panel")
+			.And
+			.Contain("<label class=\"tabs-label\"");
+		// The page shows the credentials open, under its own title, with no collapsible Authentication heading.
+		authentication.Should().NotContain("data-section=\"authentication\"").And.NotContain("api-param-section-toggle");
 		// The Topics heading is expanded on pages outside it too, such as the product landing page.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		// Only the Topics toggle is checked there: every other group stays collapsed.
@@ -226,7 +314,7 @@ public partial class TopicPageTests
 	}
 
 	[Test]
-	public async Task CreateNavigation_ChildrenAndUnmatchedTopics_ListsChildrenThenTopics()
+	public async Task CreateNavigation_ChildrenAndUnmatchedTopics_ListsAuthenticationThenChildrenThenTopics()
 	{
 		var navigation = await Navigation(
 			Spec(["""{ "title": "Principles", "content": "REST." }""", """{ "title": "Authentication", "content": "Use an API key." }"""]),
@@ -240,8 +328,8 @@ public partial class TopicPageTests
 			.Select(item => (item.GetType().Name, item.Url))
 			.Should()
 			.Equal(
-				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
 				(nameof(StructuralNavigationItem), "/api/doc/cloud/authentication"),
+				(nameof(SimpleMarkdownNavigationItem), "/api/doc/cloud/kibana-api-overview/"),
 				(nameof(TopicNavigationItem), "/api/doc/cloud/topic/topic-principles")
 			);
 	}
@@ -336,11 +424,11 @@ public partial class TopicPageTests
 		);
 
 		markdown.Should().Contain("Use an API key.");
-		markdown.Should().Contain("## Api key (apiKey)");
+		markdown.Should().Contain("- Api key: `Authorization: <value>`");
 		markdown!
 			.IndexOf("Use an API key.", StringComparison.Ordinal)
 			.Should()
-			.BeLessThan(markdown.IndexOf("## Api key", StringComparison.Ordinal));
+			.BeLessThan(markdown.IndexOf("- Api key", StringComparison.Ordinal));
 		markdown.Should().NotContain("does not declare");
 	}
 
