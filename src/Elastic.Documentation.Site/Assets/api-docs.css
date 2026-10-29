@@ -1916,6 +1916,8 @@ a.type-linked:hover {
 .api-title-badges .api-badge {
 	@apply border-grey-20 mr-2 inline-flex items-center rounded-sm border bg-white py-1 pr-1.5 pl-1.5;
 	font-size: 0.65em;
+	/* The leading of the availability badge's text-xs name, so the badges in the row are one height. */
+	line-height: calc(1 / 0.75);
 	text-wrap: nowrap;
 }
 
