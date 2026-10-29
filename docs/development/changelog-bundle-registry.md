@@ -80,8 +80,9 @@ narrowed reconciliation to the bundle tree):
   events. Authors cannot issue those deletes through docs-builder today: `changelog upload`
   does not delete objects, and `changelog remove` is local-only. For the author-facing
   add and exclude path, see [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
-- **Notes index** — `changelog/{org}/{repo}/notes-{version}.json`, one per version, **public
-  bucket only**, produced by the scrubber Lambda's `NotesIndexReconciler`. See
+- **Notes index** — `changelog/{org}/{repo}/notes-{product}-{version}.json` (product-scoped) plus a dual-written
+  legacy `changelog/{org}/{repo}/notes-{version}.json` (version union), **public bucket only**, produced by
+  the scrubber Lambda's `NotesIndexReconciler`. See
   [Notes-index format](#notes-index-format) below.
 - **Changelog-entry index** — `changelog/{org}/{repo}/{branch}/registry.json`, a **legacy
   client-authored pass-through**: the current `changelog upload` never writes one, but manifests
@@ -127,12 +128,24 @@ zero-bundle state. The reconciler deliberately restores the former.
 
 ## Notes-index format [notes-index-format]
 
-For each release version that has at least one note, the scrubber Lambda writes a notes index at
-`changelog/{org}/{repo}/notes-{version}.json`. Its schema (`schema_version: 1`):
+For each product and release version that has at least one note, the scrubber Lambda writes a
+product-scoped notes index at `changelog/{org}/{repo}/notes-{product}-{version}.json`. It also
+dual-writes a legacy version-union index at `changelog/{org}/{repo}/notes-{version}.json` so
+older `changelog bundle` clients that still GET the version-only key keep working. The product
+and version segments are concatenated into the new filename; consumers must not parse that slug
+apart.
+
+`changelog bundle` GETs the product-scoped key first and falls back to the version-only key
+only on HTTP 404. An empty product-scoped index does not fall back. `{changelog}` does not read
+these indexes; it loads bundle YAML from the product registry.
+
+Product-scoped schema (`schema_version: 1`):
 
 ```json
 {
   "schema_version": 1,
+  "product": "elasticsearch",
+  "version": "9.3.0",
   "notes": [
     { "path": "main/note-esql-oom.yml", "bundle_seq": 2 },
     { "path": "main/note-cve-2026-1234.yml", "bundle_seq": 1 }
@@ -140,9 +153,13 @@ For each release version that has at least one note, the scrubber Lambda writes 
 }
 ```
 
+The legacy `notes-{version}.json` body omits `product` and `version` and lists the union of note
+paths for that version across products.
+
 | Field | Meaning |
 |---|---|
 | `schema_version` | Schema version. Currently `1`. |
+| `product` / `version` | Set on product-scoped indexes; omitted from the legacy version-union body. |
 | `notes[].path` | Pool-relative path of the note within `changelog/{org}/{repo}/`. The leading segment before the first `/` is the branch. |
 | `notes[].bundle_seq` | Derived reporting field: `0` = no bundle published for this version yet, `1` = note shipped in the original bundle, `2` = note carried by the Lambda-generated `.amend-notes` sidecar. |
 
@@ -151,9 +168,11 @@ reconcile by comparing the notes index against the set of entries in the publish
 amend sidecars. Do not hand-edit `notes-{version}.json` or `.amend-notes` sidecars. Authors cannot
 delete pool objects through docs-builder today.
 
-A 404 on a notes index means "no notes published for this version". An empty `notes` array never
-appears — the index is deleted rather than emptied, following the same
-[absent ≠ empty](#absent-empty) rule as the bundle registry.
+A 404 on both the product-scoped index and the legacy version-union index means "no notes
+published for this product and version". An empty `notes` array never appears on a successfully
+reconciled index — the index is deleted rather than emptied, following the same
+[absent ≠ empty](#absent-empty) rule as the bundle registry. Until older clients stop reading
+`notes-{version}.json`, the Lambda keeps that key while any note still declares the version.
 
 ## Shallow per-tree change maps [shallow-maps]
 
@@ -302,6 +321,12 @@ run agree on whether the Docker bundle needs network access. The registry-fetch 
 entry still missing after its retry budget fails the bundle (an incomplete release would otherwise
 ship silently). `CdnChangelogEntryFetcher` reuses a shared `HttpClient` in production and disposes an
 owned client only when a test injects a handler, mirroring `CdnChangelogFetcher`.
+
+When CDN sourcing is on, the same fetcher also merges changelog notes for each concrete
+`--output-products` pair: it GETs `changelog/{org}/{repo}/notes-{product}-{version}.json` first
+and falls back to `notes-{version}.json` only on HTTP 404. See
+[Notes-index format](#notes-index-format). Checksum dedup keeps a single copy if two products at
+the same version still share the legacy index.
 
 ## Consumer: `{changelog}` directive `cdn:` mode (implemented)
 
