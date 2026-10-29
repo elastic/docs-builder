@@ -102,8 +102,12 @@ public class SimpleMarkdownNavigationItem(
 
 		var tabs = new StringBuilder();
 		ApiCommonMark.Heading(tabs, 2, "Authentication");
-		foreach (var requirement in requirements)
-			OperationCommonMark.WriteRequirement(tabs, requirement, apiBaseUrl);
+		OperationCommonMark.WriteAuthentication(
+			tabs,
+			requirements,
+			OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security),
+			apiBaseUrl
+		);
 		return $"{markdown?.TrimEnd()}\n\n{tabs}";
 	}
 

@@ -2,7 +2,11 @@
   "openapi": "3.0.3",
   "info": { "title": "Document security fixture", "version": "1.0.0" },
   "security": [{ "apiKey": [] }, { "basicAuth": [] }],
-  "tags": [{ "name": "access" }],
+  "tags": [{ "name": "access" }, { "name": "other" }],
+  "x-tagGroups": [
+    { "name": "Access", "tags": ["access"] },
+    { "name": "Other", "tags": ["other"] }
+  ],
   "paths": {
     "/inherits": {
       "get": {
@@ -39,11 +43,20 @@
         "responses": { "200": { "description": "ok" } }
       }
     },
+    "/relaxes": {
+      "get": {
+        "operationId": "relaxes",
+        "summary": "Accepts the document's credentials or none",
+        "tags": ["access"],
+        "security": [{}, { "apiKey": [] }, { "basicAuth": [] }],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
     "/anonymous": {
       "get": {
         "operationId": "anonymous",
         "summary": "Needs no authentication",
-        "tags": ["access"],
+        "tags": ["other"],
         "security": [],
         "responses": { "200": { "description": "ok" } }
       }

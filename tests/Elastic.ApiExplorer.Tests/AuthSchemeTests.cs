@@ -92,11 +92,29 @@ public class AuthSchemeTests
 	}
 
 	[Test]
+	public async Task OverridesDocument_DocumentAlternativesPlusAnonymous_IsTrue()
+	{
+		var (op, doc) = await Load(
+			EsShapedSpec(operationSecurity: """{}, { "apiKeyAuth": [] }, { "basicAuth": [] }, { "bearerAuth": [] }""")
+		);
+
+		OpenApiAuthSchemeResolver.OverridesDocument(op, doc).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task Badge_OnlyAnEmptyAlternative_SaysNoAuth()
+	{
+		var (op, doc) = await Load(EsShapedSpec(operationSecurity: "{}"));
+
+		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge(AuthBadgeKind.None, AuthBadgeTarget.None));
+	}
+
+	[Test]
 	public async Task Badge_InheritedSecurity_PointsAtThePage()
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: null));
 
-		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge("auth", "required", AuthBadgeTarget.Page));
+		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge(AuthBadgeKind.Required, AuthBadgeTarget.Page));
 	}
 
 	[Test]
@@ -104,7 +122,7 @@ public class AuthSchemeTests
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: """{ "apiKeyAuth": [] }"""));
 
-		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge("auth", "required", AuthBadgeTarget.Section));
+		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge(AuthBadgeKind.Required, AuthBadgeTarget.Section));
 	}
 
 	[Test]
@@ -112,7 +130,7 @@ public class AuthSchemeTests
 	{
 		var (op, doc) = await Load(EsShapedSpec(operationSecurity: ""));
 
-		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge("no auth", "none", AuthBadgeTarget.None));
+		OpenApiAuthSchemeResolver.Badge(op, doc).Should().Be(new AuthBadge(AuthBadgeKind.None, AuthBadgeTarget.None));
 	}
 
 	[Test]

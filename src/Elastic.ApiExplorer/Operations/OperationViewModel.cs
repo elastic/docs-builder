@@ -45,13 +45,18 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	public required OperationPageModel Page { get; init; }
 
 	public AuthorizationSectionModel Authorization =>
-		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown), Page.AuthBadge?.IsOptional == true);
+		new(
+			Page.AuthRequirements,
+			Page.RequiredPrivileges,
+			markdown => RenderMarkdown(markdown),
+			Page.AuthBadge?.Kind == AuthBadgeKind.Optional
+		);
 
 	/// <summary>Where the <c>auth</c> badge links: the Authentication page, or the endpoint's own section.</summary>
 	public string? AuthBadgeHref => Page.AuthBadge?.Target switch
 	{
 		AuthBadgeTarget.Section => "#authentication",
-		AuthBadgeTarget.Page => (CurrentNavigationItem.NavigationRoot as LandingNavigationItem)?.AuthenticationUrl,
+		AuthBadgeTarget.Page => LandingNavigationItem.Of(CurrentNavigationItem.NavigationRoot)?.AuthenticationUrl,
 		_ => null
 	};
 

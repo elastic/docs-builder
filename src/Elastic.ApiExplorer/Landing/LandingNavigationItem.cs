@@ -67,6 +67,14 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	/// <summary>The page the <c>auth</c> badge on endpoints links to, when the product has one.</summary>
 	public string? AuthenticationUrl { get; set; }
 
+	/// <summary>The product landing of a root: itself, or the landing a classification heading hangs from.</summary>
+	public static LandingNavigationItem? Of(IRootNavigationItem<INavigationModel, INavigationItem> root) => root switch
+	{
+		LandingNavigationItem landing => landing,
+		ClassificationNavigationItem classification => classification.Landing,
+		_ => null
+	};
+
 	public string Url => Index.Url;
 	public bool Hidden => false;
 	public Uri Identifier { get; } = new Uri("todo://");
@@ -139,6 +147,8 @@ public class ClassificationNavigationItem(
 	parent
 ), IRootNavigationItem<ApiClassification, INavigationItem>, ISidebarHeadingNavigationItem
 {
+	public LandingNavigationItem Landing => rootNavigation;
+
 	/// <summary>
 	/// Classifications have no dedicated page. Kept as the product overview URL for any code that still
 	/// reads <see cref="INavigationItem.Url"/>; Nav V2 renders these as non-clickable sidebar headings.

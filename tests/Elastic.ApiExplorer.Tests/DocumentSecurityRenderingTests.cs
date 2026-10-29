@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Topics;
@@ -51,6 +52,24 @@ public class DocumentSecurityRenderingTests(DocumentSecurityFixture fixture)
 
 		html.Should().Contain("href=\"#authentication\">auth optional</a>");
 		html.Should().Contain("Authentication is optional.");
+	}
+
+	[Test]
+	public async Task Render_DocumentAlternativesPlusAnonymous_IsAnOverrideNotInherited()
+	{
+		var html = await RenderOperationAsync("relaxes");
+
+		html.Should().Contain("href=\"#authentication\">auth optional</a>");
+		html.Should().Contain(AuthenticationSection).And.Contain("Authentication is optional.");
+	}
+
+	[Test]
+	public void CreateNavigation_TagGroups_RootsOperationsAtAClassificationThatStillFindsTheAuthenticationPage()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First();
+
+		nav.NavigationRoot.Should().BeOfType<ClassificationNavigationItem>();
+		LandingNavigationItem.Of(nav.NavigationRoot)!.AuthenticationUrl.Should().Be("/api/doc/fixture/authentication");
 	}
 
 	[Test]

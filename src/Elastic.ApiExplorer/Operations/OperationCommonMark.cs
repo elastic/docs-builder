@@ -135,7 +135,23 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		foreach (var requirement in page.AuthRequirements)
+		WriteAuthentication(markdown, page.AuthRequirements, page.AuthBadge?.Kind == AuthBadgeKind.Optional, apiBaseUrl);
+	}
+
+	/// <summary>The alternatives under an Authentication heading, on endpoint, Authentication and child pages alike.</summary>
+	internal static void WriteAuthentication(
+		StringBuilder markdown,
+		IReadOnlyList<AuthRequirement> requirements,
+		bool optional,
+		string apiBaseUrl
+	)
+	{
+		if (requirements.Count == 0)
+			return;
+
+		if (optional)
+			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
+		foreach (var requirement in requirements)
 			WriteRequirement(markdown, requirement, apiBaseUrl);
 
 		_ = markdown.AppendLine();

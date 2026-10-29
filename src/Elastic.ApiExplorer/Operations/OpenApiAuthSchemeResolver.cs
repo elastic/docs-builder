@@ -23,9 +23,24 @@ public enum AuthBadgeTarget
 	None
 }
 
-public record AuthBadge(string Text, string Summary, AuthBadgeTarget Target)
+public enum AuthBadgeKind
 {
-	public bool IsOptional => Summary == "optional";
+	Required,
+	Optional,
+	None
+}
+
+public record AuthBadge(AuthBadgeKind Kind, AuthBadgeTarget Target)
+{
+	public string Text => Kind switch
+	{
+		AuthBadgeKind.Optional => "auth optional",
+		AuthBadgeKind.None => "no auth",
+		_ => "auth"
+	};
+
+	/// <summary>The word the CommonMark output says after <c>Authentication:</c>.</summary>
+	public string Summary => Kind.ToString().ToLowerInvariant();
 }
 
 public static class OpenApiAuthSchemeResolver
@@ -53,8 +68,7 @@ public static class OpenApiAuthSchemeResolver
 
 	/// <summary>True when the operation declares its own <c>security</c> and it names other alternatives than the document's.</summary>
 	public static bool OverridesDocument(OpenApiOperation operation, OpenApiDocument document) =>
-		operation.Security is { Count: > 0 }
-			&& Signature(Alternatives(operation.Security, document)) != Signature(Alternatives(document.Security, document));
+		operation.Security is { Count: > 0 } && Signature(operation.Security, document) != Signature(document.Security, document);
 
 	/// <summary>The badge under an endpoint's path, or none when the spec says nothing about authentication.</summary>
 	public static AuthBadge? Badge(OpenApiOperation operation, OpenApiDocument document)
@@ -62,18 +76,22 @@ public static class OpenApiAuthSchemeResolver
 		var effective = operation.Security ?? document.Security;
 		if (effective is null)
 			return null;
-		if (effective.Count == 0)
-			return new AuthBadge("no auth", "none", AuthBadgeTarget.None);
+		// An empty list, or alternatives that name no scheme at all, mean no authentication.
+		if (effective.All(static requirement => requirement.Count == 0))
+			return new AuthBadge(AuthBadgeKind.None, AuthBadgeTarget.None);
 
 		var target = OverridesDocument(operation, document) ? AuthBadgeTarget.Section : AuthBadgeTarget.Page;
-		return AllowsAnonymous(effective) ? new AuthBadge("auth optional", "optional", target) : new AuthBadge("auth", "required", target);
+		return new AuthBadge(AllowsAnonymous(effective) ? AuthBadgeKind.Optional : AuthBadgeKind.Required, target);
 	}
 
-	private static string Signature(IReadOnlyList<AuthRequirement> alternatives) =>
-		string.Join(
-			'|',
-			alternatives.Select(static a => string.Join('\u001f', a.Schemes.Select(static s => s.Id))).Order(StringComparer.Ordinal)
+	/// <summary>The alternatives, in any order, and whether none at all is also fine, so dropping or adding the empty alternative counts as a change.</summary>
+	private static string Signature(IList<OpenApiSecurityRequirement>? requirements, OpenApiDocument document)
+	{
+		var alternatives = Alternatives(requirements, document).Select(
+			static a => string.Join('\u001f', a.Schemes.Select(static s => s.Id))
 		);
+		return $"{string.Join('|', alternatives.Order(StringComparer.Ordinal))}#{AllowsAnonymous(requirements)}";
+	}
 
 	private static string? DescriptionOf(IOpenApiSecurityScheme? scheme) =>
 		string.IsNullOrWhiteSpace(scheme?.Description) ? null : scheme.Description;

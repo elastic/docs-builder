@@ -203,12 +203,7 @@ internal static class StructuralCommonMark
 			return;
 		}
 
-		if (page.AuthenticationOptional)
-			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
-		foreach (var requirement in page.Requirements)
-			OperationCommonMark.WriteRequirement(markdown, requirement, apiBaseUrl);
-		if (page.Requirements.Count > 0)
-			_ = markdown.AppendLine();
+		OperationCommonMark.WriteAuthentication(markdown, page.Requirements, page.AuthenticationOptional, apiBaseUrl);
 	}
 
 	private static void WriteServers(StringBuilder markdown, StructuralViewModel page)
