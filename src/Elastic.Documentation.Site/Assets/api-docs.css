@@ -1913,6 +1913,11 @@ a.type-linked:hover {
 }
 
 /* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+/* The availability badge sits on the bottom of its line (applies-to-popover); without the same here the badge sits on the baseline and the wrapper is taller. */
+.api-title-badges .applies-inline > .applicable-info {
+	vertical-align: bottom;
+}
+
 .api-title-badges .applicable-info.api-badge--danger {
 	@apply text-red-90 border-red-50;
 }
