@@ -148,6 +148,11 @@
 	gap: 16px;
 }
 
+/* Topic and Authentication pages put their title in the same header, with the content below it. */
+.api-page-intro + #elastic-docs-v3 {
+	margin-top: 16px;
+}
+
 /* Operation / group page title — Figma APIs 10079:2802 */
 .api-page-intro h1,
 #elastic-api-v3 h1 {

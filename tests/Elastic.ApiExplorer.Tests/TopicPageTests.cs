@@ -200,6 +200,8 @@ public class TopicPageTests
 		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
 		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
+		// The title sits in the same header as on an operation page, which sets its size and the space above it.
+		topic.Should().Contain("<header class=\"api-page-intro\">");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
 		authentication
 			.Should()
