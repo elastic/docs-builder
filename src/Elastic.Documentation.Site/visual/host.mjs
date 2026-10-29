@@ -2,10 +2,9 @@
 // Feature flags are scrubbed from the child's environment so a flag exported in the developer's shell can never leak into a baseline.
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 
-const here = dirname(fileURLToPath(import.meta.url))
+const here = import.meta.dirname
 // VISUAL_ROOT points at another checkout whose binary, static files and config are used instead of this one, as the seed does for its base ref.
 const repoRoot = process.env.VISUAL_ROOT ?? resolve(here, '../../..')
 const dll =
@@ -76,7 +75,7 @@ function commandFor(hostMode, hostPort) {
 	}
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
 	if (!existsSync(dll)) {
 		throw new Error(
 			`${dll} not found. Run 'dotnet build src/tooling/docs-builder' first.`

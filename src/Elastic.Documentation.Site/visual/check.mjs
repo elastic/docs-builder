@@ -4,10 +4,9 @@ import { cleanEnv } from './host.mjs'
 import { git, repoRoot, withWorktree } from './worktree.mjs'
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join, resolve } from 'node:path'
 
-const here = dirname(fileURLToPath(import.meta.url))
+const here = import.meta.dirname
 const siteDir = resolve(here, '..')
 const seedRef = join(here, '__snapshots__', '.seed-ref')
 
