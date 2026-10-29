@@ -66,8 +66,11 @@ public class TopicNavigationItem(
 	public int NavigationIndex { get; set; }
 }
 
-/// <summary>The Topics sidebar heading. It groups the topic pages above the endpoint groups.</summary>
-public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(Title, rootNavigation)
+/// <summary>The Topics sidebar heading. It groups the topic pages above the endpoint groups and starts expanded on every page.</summary>
+public class TopicsNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(
+	Title,
+	rootNavigation
+), ISidebarExpandedNavigationItem
 {
 	public const string Title = "Topics";
 
