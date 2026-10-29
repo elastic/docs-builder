@@ -445,9 +445,20 @@ A line that mixes `OR` and `AND`, or a bullet with extra words around the values
 
 ### Authentication
 
-The **Authentication** section shows how to send a credential. It sits below **Required authorization** and is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`, and also appears in the on-page table of contents.
+The **Authentication** section shows how to send a credential. It is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`.
 
-The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field. An empty operation `security: []` is an explicit override to none and hides the section.
+The API Explorer reads the document-level `security`, or one alternative per scheme in `components.securitySchemes` when the document has none. The full section lives on the product's `/authentication` page. An endpoint page shows its own section, below **Required authorization** and in the on-page table of contents, only when the operation sets a `security` that names other alternatives than the document's. An empty operation `security: []` is an explicit override to none and shows no section.
+
+Every endpoint with authentication has an `auth` badge in the row under its path, before the availability badge:
+
+| Badge | When | Links to |
+|---|---|---|
+| `auth` | The operation inherits the document `security` | The Authentication page |
+| `auth` | The operation sets its own, different `security` | Its own **Authentication** section |
+| `auth optional` | One alternative is empty (`{}`), which OpenAPI reads as "no authentication is fine too" | The Authentication page |
+| `no auth` | The operation sets `security: []` | Nothing |
+
+A spec that declares no `security` shows no badge.
 
 Each listed scheme is resolved against `components.securitySchemes`, in the order the spec lists them:
 
@@ -464,7 +475,7 @@ Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in th
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
-The `/authentication` page is still generated, so old links keep working. It is not in the navigation, and operation pages do not link to it. The exception is a spec with an `x-topics` entry titled `Authentication`: the page then shows that topic above the schemes and is listed under **Topics**. Refer to [Topic pages](#x-topics).
+The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it under **Topics**. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
 
@@ -488,7 +499,7 @@ Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slu
 
 The sidebar lists the topics under a **Topics** heading, above the endpoint groups and after any `children:` pages. Authentication comes first and Rate limiting second, when the spec has them. The other topics follow in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
 
-A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the schemes from `components.securitySchemes`. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
+A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
 
 A `children:` page whose first heading or text matches a topic replaces it. Refer to [`children:`](#api-children).
 

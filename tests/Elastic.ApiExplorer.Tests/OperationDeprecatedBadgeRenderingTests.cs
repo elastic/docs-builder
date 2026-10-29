@@ -36,6 +36,27 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 		listing.Should().NotContain("deprecated-path");
 	}
 
+	[Test]
+	public async Task Render_OperationWithItsOwnSecurity_ShowsAnAuthBadgeLinkingToItsSection()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var html = await RenderAsync(nav);
+
+		Slice(html, "class=\"api-title-badges\"", "</header>")
+			.Should()
+			.Contain("<a class=\"auth-badge\" href=\"#authentication\">auth</a>");
+		html.Should().Contain("data-section=\"authentication\"");
+	}
+
+	[Test]
+	public async Task Render_OperationWithoutSecurity_ShowsNoAuthBadgeOrSection()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
+		var html = await RenderAsync(nav);
+
+		html.Should().NotContain("auth-badge").And.NotContain("data-section=\"authentication\"");
+	}
+
 	private async Task<string> RenderAsync(OperationNavigationItem nav)
 	{
 		var renderContext = new ApiRenderContext(

@@ -33,8 +33,11 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 				)
 			];
 
-	/// <summary>The Topics heading, and whether a spec topic titled Authentication takes over the generated Authentication page.</summary>
-	public (TopicsNavigationItem Topics, bool HasAuthenticationTopic) Create(
+	/// <summary>
+	/// The Topics heading, and whether it lists the generated Authentication page. When a <c>children:</c> page stands for the
+	/// Authentication topic it lists that page instead, and the generated page stays hidden so old links keep working.
+	/// </summary>
+	public (TopicsNavigationItem Topics, bool ListsAuthentication) Create(
 		string apiUrlSuffix,
 		OpenApiDocument openApiDocument,
 		IReadOnlyList<IFileInfo> children,
@@ -45,19 +48,49 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 		var hasSchemes = StructuralViewModel.HasSchemes(openApiDocument);
 		var coveredTopics = CoveredTopics(apiUrlSuffix, topics, children, hasSchemes: hasSchemes);
 		var remainingTopics = topics.Where(topic => !coveredTopics.ContainsKey(topic)).ToArray();
+		var authenticationChild = children.FirstOrDefault(child => IsAuthenticationChild(child, coveredTopics));
 		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
-		topicsNavigation.NavigationItems =
-		[
-			.. CreateChildNavigationItems(
-				apiUrlSuffix,
-				children,
-				ReplacedTopicNames(apiUrlSuffix, coveredTopics, hasSchemes: hasSchemes),
-				topicsNavigation
-			),
-			.. TopicsNavigationItem.Order(CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation))
-		];
-		return (topicsNavigation, remainingTopics.Any(static topic => topic.IsAuthentication));
+		var childItems = CreateChildNavigationItems(
+			apiUrlSuffix,
+			children,
+			ReplacedTopicNames(apiUrlSuffix, coveredTopics, hasSchemes: hasSchemes),
+			topicsNavigation
+		);
+		var topicItems = CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation);
+		var hasAuthenticationTopic = remainingTopics.Any(static topic => topic.IsAuthentication);
+		var listsAuthentication = authenticationChild is null && (hasAuthenticationTopic || hasSchemes);
+		if (authenticationChild is null && hasSchemes && !hasAuthenticationTopic)
+		{
+			var generated = StructuralNavigationItem.ForGeneratedAuthentication(context.UrlPathPrefix, apiUrlSuffix, rootNavigation);
+			generated.Parent = topicsNavigation;
+			topicItems.Add(generated);
+		}
+
+		MarkAuthenticationChild(childItems, authenticationChild);
+		rootNavigation.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
+		topicsNavigation.NavigationItems = [.. childItems, .. TopicsNavigationItem.Order(topicItems)];
+		return (topicsNavigation, listsAuthentication);
 	}
+
+	/// <summary>A child stands for the Authentication topic when it covers the spec's topic, or its first heading is Authentication.</summary>
+	private bool IsAuthenticationChild(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics) =>
+		coveredTopics.Any(pair => pair.Key.IsAuthentication && pair.Value == child)
+			|| string.Equals(
+				MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child).Heading,
+				ApiUrlBuilder.AuthenticationSegment,
+				StringComparison.OrdinalIgnoreCase
+			);
+
+	private static void MarkAuthenticationChild(List<SimpleMarkdownNavigationItem> items, IFileInfo? authenticationChild)
+	{
+		foreach (var item in items.Where(item => item.FileInfo == authenticationChild))
+			item.ShowsAuthentication = true;
+	}
+
+	/// <summary>Where the <c>auth</c> badge on endpoints points: the child page that stands for Authentication, else the generated page.</summary>
+	private string? AuthenticationPageUrl(string apiUrlSuffix, List<SimpleMarkdownNavigationItem> childItems, bool listsAuthentication) =>
+		childItems.FirstOrDefault(static item => item.ShowsAuthentication)?.Url
+			?? (listsAuthentication ? ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix) : null);
 
 	private List<INavigationItem> CreateTopicNavigationItems(
 		string apiUrlSuffix,
@@ -102,7 +135,7 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 		return items;
 	}
 
-	private List<INavigationItem> CreateChildNavigationItems(
+	private List<SimpleMarkdownNavigationItem> CreateChildNavigationItems(
 		string apiUrlSuffix,
 		IReadOnlyList<IFileInfo> children,
 		IReadOnlyDictionary<IFileInfo, IReadOnlyList<string>> replacedTopicNames,
@@ -110,7 +143,7 @@ public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
 	)
 	{
 		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var items = new List<INavigationItem>(children.Count);
+		var items = new List<SimpleMarkdownNavigationItem>(children.Count);
 		foreach (var child in children)
 		{
 			var item = CreateChildNavigationItem(apiUrlSuffix, child, topicsNavigation, markdownSlugs);

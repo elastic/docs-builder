@@ -21,6 +21,16 @@ public class MarkdownPageViewModel(ApiRenderContext context) : ApiViewModel(cont
 
 	public string? DescriptionMarkdown { get; init; }
 
+	/// <summary>Set on the page that stands for the Authentication topic: the tabs follow its Markdown.</summary>
+	public IReadOnlyList<AuthRequirement> AuthenticationRequirements { get; init; } = [];
+
+	public bool AuthenticationOptional { get; init; }
+
+	public AuthenticationSectionModel? Authentication =>
+		AuthenticationRequirements.Count == 0
+			? null
+			: new AuthenticationSectionModel(AuthenticationRequirements, AuthenticationOptional, markdown => RenderMarkdown(markdown));
+
 	/// <inheritdoc />
 	protected override string? LayoutPageTitle => string.IsNullOrWhiteSpace(MetaTitle) ? PageTitle : MetaTitle;
 

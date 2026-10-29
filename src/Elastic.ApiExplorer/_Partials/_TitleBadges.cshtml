@@ -2,6 +2,17 @@
 @if (Model.Any)
 {
 	<span class="api-title-badges">
+		@if (Model.AuthText is { } authText)
+		{
+			if (Model.AuthHref is { } authHref)
+			{
+				<a class="auth-badge" href="@authHref">@authText</a>
+			}
+			else
+			{
+				<span class="auth-badge">@authText</span>
+			}
+		}
 		@if (Model.Availability is { } availability)
 		{
 			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>

@@ -44,6 +44,8 @@ internal static class OperationCommonMark
 	{
 		if (operation.Deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
+		if (page.AuthBadge is { } auth)
+			ApiCommonMark.Paragraph(markdown, $"Authentication: {auth.Summary}");
 		if (page.Availability is null)
 			return;
 

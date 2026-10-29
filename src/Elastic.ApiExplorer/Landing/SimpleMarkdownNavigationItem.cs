@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using System.Text;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
@@ -43,6 +45,9 @@ public class SimpleMarkdownNavigationItem(
 	/// </summary>
 	public IReadOnlyList<string> ReplacedTopicUrls { get; internal set; } = [];
 
+	/// <summary>True for the page that stands for the Authentication topic: the spec's authentication tabs follow its Markdown.</summary>
+	public bool ShowsAuthentication { get; internal set; }
+
 	/// <inheritdoc />
 	public IApiModel Model => this;
 
@@ -78,7 +83,9 @@ public class SimpleMarkdownNavigationItem(
 			PageTitle = rendered.Title ?? NavigationTitle,
 			MetaTitle = rendered.MetaTitle,
 			BodyHtml = new HtmlString(rendered.Html),
-			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent))
+			DescriptionMarkdown = ApiSeoDescription.FirstParagraph(ApiMarkdownFrontMatter.StripLeadingFrontMatter(markdownContent)),
+			AuthenticationRequirements = ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [],
+			AuthenticationOptional = ShowsAuthentication && OpenApiAuthSchemeResolver.AllowsAnonymous(context.Model.Security)
 		};
 		var slice = MarkdownPageView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -87,7 +94,17 @@ public class SimpleMarkdownNavigationItem(
 	public async Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default)
 	{
 		var markdownContent = await context.BuildContext.ReadFileSystem.File.ReadAllTextAsync(FileInfo.FullName, ctx).ConfigureAwait(false);
-		return ApiMarkdown.Prepare(markdownContent, context.CurrentNavigation.NavigationRoot.Url);
+		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
+		var markdown = ApiMarkdown.Prepare(markdownContent, apiBaseUrl);
+		var requirements = ShowsAuthentication ? StructuralViewModel.ReadRequirements(context.Model) : [];
+		if (requirements.Count == 0)
+			return markdown;
+
+		var tabs = new StringBuilder();
+		ApiCommonMark.Heading(tabs, 2, "Authentication");
+		foreach (var requirement in requirements)
+			OperationCommonMark.WriteRequirement(tabs, requirement, apiBaseUrl);
+		return $"{markdown?.TrimEnd()}\n\n{tabs}";
 	}
 
 	// pageModel is unused (no pre-built model for markdown pages); delegate to the real implementation.

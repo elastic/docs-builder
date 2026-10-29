@@ -1,3 +1,4 @@
+@using Elastic.ApiExplorer.Operations
 @inherits RazorSlice<Elastic.ApiExplorer.Landing.MarkdownPageViewModel>
 @implements IUsesLayout<Elastic.ApiExplorer._Layout, ApiLayoutViewModel>
 @functions {
@@ -5,4 +6,8 @@
 }
 <section id="elastic-docs-v3">
 	@Model.BodyHtml
+	@if (Model.Authentication is { } authentication)
+	{
+		@(await RenderPartialAsync<_AuthenticationSection, AuthenticationSectionModel>(authentication))
+	}
 </section>

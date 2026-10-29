@@ -153,7 +153,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
 
 		var finalNavigationItems = new List<INavigationItem>();
-		var (topicsNavigation, hasAuthenticationTopic) = _topics.Create(
+		var (topicsNavigation, listsAuthentication) = _topics.Create(
 			apiUrlSuffix,
 			openApiDocument,
 			ApiTopicsNavigationBuilder.ChildFiles(apiConfig, versionMajor),
@@ -162,10 +162,10 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 		if (topicsNavigation.NavigationItems.Count > 0)
 			finalNavigationItems.Add(topicsNavigation);
 
-		// A spec topic titled Authentication replaces the generated Authentication page; the topic page still lists the schemes.
+		// The Topics heading lists the Authentication page itself, unless a children: page stands for it. The generated page then stays hidden for old links.
 		finalNavigationItems.AddRange(
 			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
-				item => !(hasAuthenticationTopic && item.Model.Kind == ApiStructuralKind.Authentication)
+				item => !(listsAuthentication && item.Model.Kind == ApiStructuralKind.Authentication)
 			)
 		);
 

@@ -63,6 +63,10 @@ public class LandingNavigationItem : IApiGroupingNavigationItem<ApiLanding, INav
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public int NavigationIndex { get; set; }
+
+	/// <summary>The page the <c>auth</c> badge on endpoints links to, when the product has one.</summary>
+	public string? AuthenticationUrl { get; set; }
+
 	public string Url => Index.Url;
 	public bool Hidden => false;
 	public Uri Identifier { get; } = new Uri("todo://");

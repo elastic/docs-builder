@@ -126,6 +126,33 @@ public class TopicPageTests
 	}
 
 	[Test]
+	public async Task CreateNavigation_SchemesWithoutTopics_ListsTheGeneratedAuthenticationPageUnderTopics()
+	{
+		var navigation = await Navigation(Spec(topics: null, withSchemes: true));
+
+		var topics = navigation.NavigationItems.OfType<TopicsNavigationItem>().Single();
+		var authentication = topics.NavigationItems.Should().ContainSingle().Which.Should().BeOfType<StructuralNavigationItem>().Subject;
+		authentication.Hidden.Should().BeFalse();
+		navigation.AuthenticationUrl.Should().Be("/api/doc/cloud/authentication");
+	}
+
+	[Test]
+	public async Task CreateNavigation_ChildTitledAuthentication_ShowsTheTabsAndTakesTheBadgeLink()
+	{
+		var navigation = await NavigationWithChild(
+			Spec(topics: null, withSchemes: true),
+			"auth-intro.md",
+			"# Authentication\n\nUse an API key.\n"
+		);
+
+		var all = ApiExplorerFixture.Walk(navigation).ToList();
+		var child = all.OfType<SimpleMarkdownNavigationItem>().Single();
+		child.ShowsAuthentication.Should().BeTrue();
+		navigation.AuthenticationUrl.Should().Be(child.Url);
+		all.OfType<StructuralNavigationItem>().Single().Hidden.Should().BeTrue("the generated page stays only for old links");
+	}
+
+	[Test]
 	public async Task CreateNavigation_ChildrenAndAuthenticationTopic_ChildReplacesTopic()
 	{
 		var navigation = await NavigationWithChild(
@@ -174,7 +201,7 @@ public class TopicPageTests
 		var topic = await files.ReadAllTextAsync(Path.Join(root, "topic", "topic-rate-limiting", "index.html"), ct);
 		topic.Should().Contain("<h1>Rate limiting</h1>").And.Contain("Calls are limited.");
 		var authentication = await files.ReadAllTextAsync(Path.Join(root, "authentication", "index.html"), ct);
-		authentication.Should().Contain("Use an API key.").And.Contain("Api key (apiKey)");
+		authentication.Should().Contain("Use an API key.").And.Contain("data-section=\"authentication\"");
 		// The Topics heading is expanded on pages outside it too, such as the product landing page.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		// Only the Topics toggle is checked there: every other group stays collapsed.
@@ -339,11 +366,11 @@ public class TopicPageTests
 		);
 
 		markdown.Should().Contain("Use an API key.");
-		markdown.Should().Contain("## Api key (apiKey)");
+		markdown.Should().Contain("- Api key: `Authorization: <value>`");
 		markdown!
 			.IndexOf("Use an API key.", StringComparison.Ordinal)
 			.Should()
-			.BeLessThan(markdown.IndexOf("## Api key", StringComparison.Ordinal));
+			.BeLessThan(markdown.IndexOf("- Api key", StringComparison.Ordinal));
 		markdown.Should().NotContain("does not declare");
 	}
 
