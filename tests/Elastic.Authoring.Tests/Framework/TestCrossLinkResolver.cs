@@ -19,10 +19,10 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 public sealed class TestCrossLinkResolver : ICrossLinkResolver
 {
-	private readonly Dictionary<string, RepositoryLinks> _references = new();
+	private readonly Dictionary<string, RepositoryLinks> _references = [];
 	private readonly HashSet<string> _declared = [];
 	private readonly IsolatedBuildEnvironmentUriResolver _uriResolver = new();
-	private FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
+	private readonly FetchedCrossLinks _crossLinks = FetchedCrossLinks.Empty;
 
 	public TestCrossLinkResolver(ConfigurationFile config)
 	{

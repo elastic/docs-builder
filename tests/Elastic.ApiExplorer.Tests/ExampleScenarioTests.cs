@@ -316,7 +316,7 @@ public class ExampleScenarioTests
 
 		scenarios.Should().ContainSingle();
 		scenarios[0].RequestDescriptionHtml.Should().BeNull();
-		scenarios[0].Responses.Should().ContainSingle().Which.DescriptionHtml!.Value.ToString().Should().Contain("A successful response.");
+		scenarios[0].Responses.Should().ContainSingle().Which.DescriptionHtml!.Value!.ToString().Should().Contain("A successful response.");
 	}
 
 	[Test]
@@ -329,10 +329,10 @@ public class ExampleScenarioTests
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [ok, missing], []);
 
 		scenarios.Should().ContainSingle();
-		scenarios[0].RequestDescriptionHtml!.Value.ToString().Should().Contain("Searches by term.");
+		scenarios[0].RequestDescriptionHtml!.Value!.ToString().Should().Contain("Searches by term.");
 		scenarios[0]
 			.Responses
-			.Select(r => r.DescriptionHtml!.Value.ToString())
+			.Select(r => r.DescriptionHtml!.Value!.ToString())
 			.Should()
 			.Equal("<p>Returns the hit.</p>", "<p>No such index.</p>");
 	}
@@ -345,7 +345,7 @@ public class ExampleScenarioTests
 		var scenario = page.Scenarios.Should().ContainSingle().Which;
 		scenario.RequestDescriptionHtml.Should().BeNull();
 		var ok = scenario.Responses.Single(static r => r.StatusCode == "200");
-		ok.DescriptionHtml!.Value.ToString().Should().Contain("A successful response from");
+		ok.DescriptionHtml!.Value!.ToString().Should().Contain("A successful response from");
 		ok.StatusDescription.Should().Be("Analytics collection found");
 		scenario.Responses.Single(static r => r.StatusCode == "404").StatusDescription.Should().Be("No such collection");
 	}
@@ -425,9 +425,9 @@ public class ExampleScenarioTests
 		var term = page.Scenarios.Single(static s => s.Title == "A simple term search");
 		var lead = page.Scenarios.Single(static s => s.Title == "A lead-in");
 		// The test renderer leaves backticks alone; on the site they become <code>. The words must all be there.
-		var termText = term.RequestDescriptionHtml!.Value.ToString();
+		var termText = term.RequestDescriptionHtml!.Value!.ToString();
 		termText.Should().Contain("Run ").And.Contain("GET /my-index-000001/_search?from=40&amp;size=20").And.Contain("to run a search.");
-		var leadText = lead.RequestDescriptionHtml!.Value.ToString();
+		var leadText = lead.RequestDescriptionHtml!.Value!.ToString();
 		leadText.Should().Contain("A successful response from ").And.Contain("POST /x");
 	}
 

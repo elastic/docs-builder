@@ -255,7 +255,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Should().HaveCount(2);
+		variants.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
@@ -274,7 +274,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}

@@ -14,7 +14,7 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class OperationExamplesPanelRenderingTests
+public partial class OperationExamplesPanelRenderingTests
 {
 	private static Cancel Ct => TestContext.Current!.Execution.CancellationToken;
 
@@ -66,9 +66,9 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().Contain("Generated from the API spec</span>");
 		html.Should().Contain("Unions use the first variant");
 		System.Net.WebUtility.HtmlDecode(html).Should().Contain("application/json").And.Contain("application/problem+json");
-		Regex.Matches(html, "data-code-card").Count.Should().Be(3);
-		Regex.Matches(html, "data-code-actions").Count.Should().Be(3);
-		Regex.Matches(html, "data-status=\"200\"").Count.Should().Be(2);
+		CodeCardRegex().Count(html).Should().Be(3);
+		CodeActionsRegex().Count(html).Should().Be(3);
+		Status200Regex().Count(html).Should().Be(2);
 	}
 
 	[Test]
@@ -181,15 +181,7 @@ public class OperationExamplesPanelRenderingTests
 
 		html.Should().Contain("data-generated");
 		// One note per generated card, inside the card after its code, so it is about this sample and no other.
-		var cards = System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(
-				html,
-				"<section class=\"api-code-card api-code-carousel-card.*?</section>",
-				System.Text.RegularExpressions.RegexOptions.Singleline
-			);
+		var cards = CarouselCardRegex().Matches(html);
 		cards.Should().HaveCount(2);
 		foreach (var card in cards.Select(static c => c.Value))
 		{
@@ -304,8 +296,8 @@ public class OperationExamplesPanelRenderingTests
 
 		// A tab without one renders an empty value, which the tooltip script skips.
 		html.Should().Contain("data-status=\"200\"");
-		Regex.Matches(html, "data-tippy-content=\"Unauthorized\"").Should().ContainSingle();
-		Regex.Matches(html, "data-status=\"404\"[^>]*data-tippy-content=\"\"").Should().ContainSingle();
+		UnauthorizedTooltipRegex().Matches(html).Should().ContainSingle();
+		EmptyTooltipOn404Regex().Matches(html).Should().ContainSingle();
 	}
 
 	[Test]
@@ -415,4 +407,22 @@ public class OperationExamplesPanelRenderingTests
 		html.Should().Contain("<span class=\"api-rail-label\">Request</span>");
 		html.Should().Contain("<span class=\"api-rail-label\">Response</span>");
 	}
+
+	[GeneratedRegex("data-code-card")]
+	private static partial Regex CodeCardRegex();
+
+	[GeneratedRegex("data-code-actions")]
+	private static partial Regex CodeActionsRegex();
+
+	[GeneratedRegex("data-status=\"200\"")]
+	private static partial Regex Status200Regex();
+
+	[GeneratedRegex("<section class=\"api-code-card api-code-carousel-card.*?</section>", RegexOptions.Singleline)]
+	private static partial Regex CarouselCardRegex();
+
+	[GeneratedRegex("data-tippy-content=\"Unauthorized\"")]
+	private static partial Regex UnauthorizedTooltipRegex();
+
+	[GeneratedRegex("data-status=\"404\"[^>]*data-tippy-content=\"\"")]
+	private static partial Regex EmptyTooltipOn404Regex();
 }

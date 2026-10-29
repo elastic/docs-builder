@@ -58,7 +58,7 @@ public class DashboardOpenApiNavigationTests
 		var doc = await OpenApiReader.Instance.ReadAsync(fi);
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-		var navigation = generator.CreateNavigation("blank", doc);
+		var navigation = generator.CreateNavigation("blank", doc!);
 
 		var titles = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().Select(o => o.NavigationTitle).ToArray();
 		titles.Should().ContainSingle().Which.Should().Be("Get Script");
@@ -78,7 +78,7 @@ public class DashboardOpenApiNavigationTests
 		var doc = await OpenApiReader.Instance.ReadAsync(fi);
 
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-		var navigation = generator.CreateNavigation("colliding", doc);
+		var navigation = generator.CreateNavigation("colliding", doc!);
 
 		var operations = Flatten(navigation.NavigationItems).OfType<OperationNavigationItem>().ToArray();
 		operations.Should().HaveCount(2);

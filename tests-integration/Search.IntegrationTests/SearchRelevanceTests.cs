@@ -28,70 +28,75 @@ public class SearchRelevanceTests
 	/// Theory data for search queries mapped to expected first hit URLs.
 	/// Same as SearchIntegrationTests but with detailed explain output on failures.
 	/// </summary>
-	public static IEnumerable<(string, string, string[]?)> SearchQueryTestCases()
+	public static IEnumerable<Func<(string, string, string[]?)>> SearchQueryTestCases()
 	{
 		//TODO these results reflect today's result, we still have some work to do to improve the relevance of the search results
 
 		// Elasticsearch specific queries
-		yield return ("elasticsearch get started", "/docs/solutions/search/get-started", null);
-		yield return ("elasticsearch getting started", "/docs/solutions/search/get-started", null);
-		yield return ("elastic common schema", "/docs/reference/ecs", null);
-		yield return ("ecs", "/docs/reference/ecs", null);
-		yield return ("c# client", "/docs/reference/elasticsearch/clients/dotnet/installation", [
-			"/docs/reference/elasticsearch/clients/dotnet"
-		]);
-		yield return ("dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", [
-			"/docs/reference/elasticsearch/clients/dotnet"
-		]);
-		yield return ("runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [
-			"/docs/solutions/security/endpoint-response-actions"
-		]);
-		yield return ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return ("index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
-		yield return ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
-		yield return ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
-		yield return ("_security/user/alice/_password", "/docs/api/doc/elasticsearch/operation/operation-security-change-password", null);
-		yield return ("data-streams", "/docs/manage-data/data-store/data-streams", null);
-		yield return ("datastream", "/docs/manage-data/data-store/data-streams", null);
-		yield return ("data stream", "/docs/manage-data/data-store/data-streams", null);
-		yield return ("saml sso", "/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication", [
-			"/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"
-		]);
-		yield return ("templates", "/docs/manage-data/data-store/templates", null);
+		yield return () => ("elasticsearch get started", "/docs/solutions/search/get-started", null);
+		yield return () => ("elasticsearch getting started", "/docs/solutions/search/get-started", null);
+		yield return () => ("elastic common schema", "/docs/reference/ecs", null);
+		yield return () => ("ecs", "/docs/reference/ecs", null);
+		yield return () =>
+			("c# client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"]);
+		yield return () =>
+			("dotnet client", "/docs/reference/elasticsearch/clients/dotnet/installation", ["/docs/reference/elasticsearch/clients/dotnet"]);
+		yield return () =>
+			("runscript", "/docs/api/doc/kibana/operation/operation-runscriptaction", [
+				"/docs/solutions/security/endpoint-response-actions"
+			]);
+		yield return () => ("_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return () => ("/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return () => ("GET /_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return () => ("index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return () => ("my-index/_search", "/docs/api/doc/elasticsearch/operation/operation-search", null);
+		yield return () => ("_cat/indices/logs-2026", "/docs/api/doc/elasticsearch/operation/operation-cat-indices", null);
+		yield return () => ("_bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk", null);
+		yield return () =>
+			("_security/user/alice/_password", "/docs/api/doc/elasticsearch/operation/operation-security-change-password", null);
+		yield return () => ("data-streams", "/docs/manage-data/data-store/data-streams", null);
+		yield return () => ("datastream", "/docs/manage-data/data-store/data-streams", null);
+		yield return () => ("data stream", "/docs/manage-data/data-store/data-streams", null);
+		yield return () =>
+			("saml sso", "/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication", [
+				"/docs/deploy-manage/users-roles/cloud-organization/configure-saml-authentication"
+			]);
+		yield return () => ("templates", "/docs/manage-data/data-store/templates", null);
 		// different results because of the exact match on title, QueryDSL needs to be normalized in the content
-		yield return ("query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", [
-			"/docs/explore-analyze/query-filter/languages/querydsl"
-		]);
-		yield return ("querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]);
-		yield return ("Agent policy", "/docs/reference/fleet/agent-policy", null);
-		yield return ("aliases", "/docs/manage-data/data-store/aliases", null);
-		yield return ("Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null);
-		yield return ("lens", "/docs/explore-analyze/visualize/lens", null);
-		yield return ("machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null);
-		yield return ("machine learning", "/docs/reference/machine-learning", null);
-		yield return ("ml", "/docs/reference/machine-learning", null);
-		yield return ("elasticsearch", "/docs/reference/elasticsearch", null);
-		yield return ("kibana", "/docs/reference/kibana", null);
-		yield return ("cloud", "/docs/reference/cloud", null);
-		yield return ("logstash", "/docs/reference/logstash", null);
-		yield return ("logstash release", "/docs/release-notes/logstash", null);
-		yield return ("esql", "/docs/reference/query-languages/esql", null);
-		yield return ("ES|QL", "/docs/reference/query-languages/esql", null);
-		yield return ("Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null);
+		yield return () =>
+			("query dsl", "/docs/explore-analyze/query-filter/languages/querydsl", [
+				"/docs/explore-analyze/query-filter/languages/querydsl"
+			]);
+		yield return () =>
+			("querydsl", "/docs/reference/query-languages/querydsl", ["/docs/explore-analyze/query-filter/languages/querydsl"]);
+		yield return () => ("Agent policy", "/docs/reference/fleet/agent-policy", null);
+		yield return () => ("aliases", "/docs/manage-data/data-store/aliases", null);
+		yield return () => ("Kibana privilege", "/docs/deploy-manage/users-roles/cluster-or-deployment-auth/kibana-privileges", null);
+		yield return () => ("lens", "/docs/explore-analyze/visualize/lens", null);
+		yield return () => ("machine learning node", "/docs/deploy-manage/autoscaling/autoscaling-in-ece-and-ech", null);
+		yield return () => ("machine learning", "/docs/reference/machine-learning", null);
+		yield return () => ("ml", "/docs/reference/machine-learning", null);
+		yield return () => ("elasticsearch", "/docs/reference/elasticsearch", null);
+		yield return () => ("kibana", "/docs/reference/kibana", null);
+		yield return () => ("cloud", "/docs/reference/cloud", null);
+		yield return () => ("logstash", "/docs/reference/logstash", null);
+		yield return () => ("logstash release", "/docs/release-notes/logstash", null);
+		yield return () => ("esql", "/docs/reference/query-languages/esql", null);
+		yield return () => ("ES|QL", "/docs/reference/query-languages/esql", null);
+		yield return () => ("Output plugins for Logstash", "/docs/reference/logstash/plugins/output-plugins", null);
 		// exact match on title wins but with variations we prefer the more general topic page
-		yield return ("Sending data to Elastic Cloud Hosted", "/docs/reference/logstash/connecting-to-cloud", [
-			"/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint"
-		]);
-		yield return ("Send data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", [
-			"/docs/reference/logstash/connecting-to-cloud"
-		]);
-		yield return ("universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null);
-		yield return ("agg", "/docs/explore-analyze/query-filter/aggregations", null);
-		yield return ("a", "/docs/reference/apm/observability/apm", null);
-		yield return ("index.number_of_replicas", "/docs/reference/elasticsearch/index-settings/index-modules", null);
+		yield return () =>
+			("Sending data to Elastic Cloud Hosted", "/docs/reference/logstash/connecting-to-cloud", [
+				"/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint"
+			]);
+		yield return () =>
+			("Send data to Elastic Cloud Hosted", "/docs/solutions/observability/get-started/quickstart-elastic-cloud-otel-endpoint", [
+				"/docs/reference/logstash/connecting-to-cloud"
+			]);
+		yield return () => ("universal profiling", "/docs/solutions/observability/infra-and-hosts/universal-profiling", null);
+		yield return () => ("agg", "/docs/explore-analyze/query-filter/aggregations", null);
+		yield return () => ("a", "/docs/reference/apm/observability/apm", null);
+		yield return () => ("index.number_of_replicas", "/docs/reference/elasticsearch/index-settings/index-modules", null);
 		//{ "index.use_time_series_doc_values_format", "/docs/reference/elasticsearch/index-settings/index-modules", null},
 		//universal profiling
 	}

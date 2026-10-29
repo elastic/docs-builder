@@ -33,7 +33,11 @@ public class BatchRunnerTests
 			_ = Interlocked.Increment(ref _started);
 			var now = Interlocked.Increment(ref _running);
 			int seen;
-			while (now > (seen = Volatile.Read(ref _max)) && Interlocked.CompareExchange(ref _max, now, seen) != seen) { }
+			while (now > (seen = Volatile.Read(ref _max)))
+			{
+				if (Interlocked.CompareExchange(ref _max, now, seen) == seen)
+					break;
+			}
 
 			try
 			{

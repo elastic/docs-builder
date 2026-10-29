@@ -23,7 +23,7 @@ using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
-public class TopicPageTests
+public partial class TopicPageTests
 {
 	private static readonly string KibanaOverview = Path.Combine(
 		Paths.WorkingDirectoryRoot.FullName,
@@ -178,11 +178,8 @@ public class TopicPageTests
 		// The Topics heading is expanded on pages outside it too, such as the product landing page.
 		var landing = await files.ReadAllTextAsync(Path.Join(root, "index.html"), ct);
 		// Only the Topics toggle is checked there: every other group stays collapsed.
-		System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(landing, "<input[^>]*\\bchecked\\b[^>]*>")
+		CheckedToggleRegex()
+			.Matches(landing)
 			.Select(m => m.Value)
 			.Should()
 			.ContainSingle()
@@ -304,7 +301,7 @@ public class TopicPageTests
 		);
 
 		index.Topics.Select(row => row.Url).Should().Equal("/api/doc/cloud/authentication", "/api/doc/cloud/topic/topic-principles");
-		index.Groups.SelectMany(group => group.Items).Select(row => row.Url).Should().NotContain(url => url!.Contains("/topic/"));
+		index.Groups.SelectMany(group => group.Items).Select(row => row.Url).Should().NotContain(url => url.Contains("/topic/"));
 	}
 
 	[Test]
@@ -445,4 +442,7 @@ public class TopicPageTests
 			throw new InvalidOperationException(string.Join(", ", errors.Select(e => e.Message)));
 		return result.Document!;
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("<input[^>]*\\bchecked\\b[^>]*>")]
+	private static partial System.Text.RegularExpressions.Regex CheckedToggleRegex();
 }

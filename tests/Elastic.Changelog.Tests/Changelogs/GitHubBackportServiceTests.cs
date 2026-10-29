@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -27,7 +28,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	private static partial Regex AliasRegex();
 
 	/// <summary>What GitHub knows: backport details, and the pull requests the validation and trailer lookups find.</summary>
-	private sealed class FakeGitHub
+	private sealed partial class FakeGitHub
 	{
 		public Dictionary<int, (string Title, string? Body, string[] Messages)> Backports { get; } = [];
 		public Dictionary<int, (bool Merged, string Branch, string Repo)> PullRequests { get; } = [];
@@ -46,13 +47,13 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			if (query.Contains("def: defaultBranchRef", StringComparison.Ordinal))
 				fields.Add("\"def\": { \"name\": \"main\" }");
 
-			var more = Regex.Match(query, @"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""");
+			var more = CommitPageRegex().Match(query);
 			if (more.Success)
 				fields.Add(
-					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value), 100)} }}"
+					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value, CultureInfo.InvariantCulture), int.Parse(more.Groups[2].Value, CultureInfo.InvariantCulture), 100)} }}"
 				);
 
-			if (query.Contains(" v", StringComparison.Ordinal) && Regex.IsMatch(query, @" v\d+: pullRequest"))
+			if (query.Contains(" v", StringComparison.Ordinal) && ValidationAliasRegex().IsMatch(query))
 			{
 				ValidationRequests++;
 				if (ValidationError != null)
@@ -61,7 +62,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 
 			foreach (Match m in AliasRegex().Matches(query))
 			{
-				var n = int.Parse(m.Groups["n"].Value);
+				var n = int.Parse(m.Groups["n"].Value, CultureInfo.InvariantCulture);
 				var alias = m.Groups["alias"].Value;
 				if (alias[0] == 'v' && !PullRequests.ContainsKey(n))
 					errors.Add(
@@ -104,6 +105,12 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			PullRequests.TryGetValue(n, out var pr)
 				? $"{{ \"number\": {n}, \"merged\": {(pr.Merged ? "true" : "false")}, \"baseRefName\": \"{pr.Branch}\", \"baseRepository\": {{ \"nameWithOwner\": \"{pr.Repo}\" }} }}"
 				: "null";
+
+		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""")]
+		private static partial Regex CommitPageRegex();
+
+		[GeneratedRegex(@" v\d+: pullRequest")]
+		private static partial Regex ValidationAliasRegex();
 	}
 
 	private static (bool Merged, string Branch, string Repo) Merged(string branch = "main", string repo = $"{Owner}/{Repo}") =>

@@ -129,7 +129,7 @@ public class ScreenshotClassInsideListInAppliesSwitch : MarkdownTest
 	public async Task KeepsScreenshotClassInsideList() => await Docs.ConvertsToContainingRawHtml("class=\"screenshot\"");
 }
 
-public class EmptyAltAttribute : MarkdownTest
+public class EmptyAltText : MarkdownTest
 {
 	protected override string Markdown => """
 		:::{image} img/some-image.png

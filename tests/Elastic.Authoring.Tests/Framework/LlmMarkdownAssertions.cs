@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Site.ApplicabilityBadges;
@@ -37,7 +38,7 @@ internal static class LlmMarkdownAssertions
 
 		var metadata = new StringBuilder();
 		metadata.AppendLine("---");
-		metadata.AppendLine($"title: {sourceFile.Title}");
+		metadata.AppendLine(CultureInfo.InvariantCulture, $"title: {sourceFile.Title}");
 
 		var frontMatter = sourceFile.YamlFrontMatter;
 		if (frontMatter?.AppliesTo is { } appliesTo && appliesTo != ApplicableTo.All && appliesTo != ApplicableTo.Default)
@@ -61,14 +62,14 @@ internal static class LlmMarkdownAssertions
 					var availabilityText = popoverData?.AvailabilityItems.Length > 0
 						? string.Join(", ", popoverData.AvailabilityItems.Select(a => a.Text))
 						: "Available";
-					metadata.AppendLine($"  - {displayName}: {availabilityText}");
+					metadata.AppendLine(CultureInfo.InvariantCulture, $"  - {displayName}: {availabilityText}");
 				}
 			}
 		}
 
 		metadata.AppendLine("---");
 		metadata.AppendLine();
-		metadata.AppendLine($"# {sourceFile.Title}");
+		metadata.AppendLine(CultureInfo.InvariantCulture, $"# {sourceFile.Title}");
 		metadata.Append(llmBody);
 		return metadata.ToString().Trim();
 	}
