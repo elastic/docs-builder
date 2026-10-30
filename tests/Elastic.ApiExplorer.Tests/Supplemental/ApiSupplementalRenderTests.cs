@@ -191,14 +191,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("data-api-section-links");
-		html.Should().MatchRegex(
-			"""href="#query-params" data-section-link="query-params">\s*Query\s*<span class="api-section-links-count">\d+</span>"""
-		);
-		html.Should().Contain("href=\"#request-body\" data-section-link=\"request-body\"");
-		html.Should().Contain("href=\"#responses\" data-section-link=\"responses\"");
+		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc>");
+		html.Should().MatchRegex("""href="#query-params" data-toc-link>\s*Query\s*<span class="api-example-chip-count">\d+</span>""");
+		html.Should().Contain("href=\"#request-body\" data-toc-link");
+		html.Should().Contain("href=\"#responses\" data-toc-link");
 		html
-			.IndexOf("data-api-section-links", StringComparison.Ordinal)
+			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"query-params\"", StringComparison.Ordinal), "the bar sits above the sections it links to");
 	}
