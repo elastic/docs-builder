@@ -314,7 +314,7 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
-Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Its summary punctuation says what the names are:
+Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Each status code under **Responses** works the same way, and opening one leaves the others as they are. Its summary punctuation says what the names are:
 
 | Summary | Meaning |
 |---|---|
