@@ -36,8 +36,9 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
 		html.Should().Contain("aria-expanded=\"true\"");
 		html.Should().Contain("response-panel expanded");
-		html.Should().Contain("id=\"response-200-fields\"");
-		html.Should().Contain("id=\"response-400-fields\"");
+		html.Should().Contain("id=\"response-200-fields\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().Contain("id=\"response-400-fields\">");
+		html.Should().NotContain("id=\"response-200-fields\" hidden").And.NotContain("id=\"response-400-fields\" hidden");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html.Should().NotContain("api-responses-select");
