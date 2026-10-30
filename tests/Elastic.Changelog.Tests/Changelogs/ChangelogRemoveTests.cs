@@ -606,9 +606,7 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			Directory = _changelogDir,
 			Profile = "release",
 			ProfileArgument = "9.3.0", // version string
-
 			ProfileReport = urlFile, // URL list file (Phase 3.4)
-
 			Config = configPath,
 			DryRun = true
 		};
@@ -767,7 +765,6 @@ public class ChangelogRemoveTests : ChangelogTestBase
 			// Matching by PR URL with the explicit elastic org (CLI override)
 			Prs = ["https://github.com/elastic/elasticsearch/pull/1001"],
 			Owner = "elastic", // CLI --owner overrides config-org
-
 			Config = configPath
 		};
 

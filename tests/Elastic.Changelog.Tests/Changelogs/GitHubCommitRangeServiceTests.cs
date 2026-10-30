@@ -595,7 +595,7 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var sha1 = Sha(1);
 		var handler = Handler(
 			_ => CompareJson(1, [sha1]),
-			_ => /*lang=json,strict*/  """{ "data": null, "errors": [ { "message": "boom" } ] }"""
+			_ => /*lang=json,strict*/ """{ "data": null, "errors": [ { "message": "boom" } ] }"""
 		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);

@@ -52,11 +52,8 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		// Configure pipe for low-latency streaming
 		var pipeOptions = new PipeOptions(
 			minimumSegmentSize: 1024, // Smaller segments for faster processing
-
 			pauseWriterThreshold: 64 * 1024, // 64KB high water mark
-
 			resumeWriterThreshold: 32 * 1024, // 32KB low water mark
-
 			readerScheduler: PipeScheduler.Inline,
 			writerScheduler: PipeScheduler.Inline,
 			useSynchronizationContext: false
