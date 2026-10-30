@@ -34,8 +34,8 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("text/plain");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("aria-expanded=\"false\"");
-		html.Should().Contain("response-panel collapsed");
+		html.Should().Contain("aria-expanded=\"true\"");
+		html.Should().Contain("response-panel expanded");
 		html.Should().Contain("id=\"response-200-fields\"");
 		html.Should().Contain("id=\"response-400-fields\"");
 		html.Should().NotContain("<select");

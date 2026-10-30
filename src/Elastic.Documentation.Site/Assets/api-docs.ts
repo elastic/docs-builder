@@ -115,15 +115,8 @@ function setDisclosureExpanded(
     if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
 }
 
-/** Responses behave as an accordion and keep the examples rail on the same status code. */
+/** Opening a response keeps the examples rail on the same status code. */
 function onResponseOpened(panel: HTMLElement): void {
-    panel
-        .closest('[data-api-responses]')
-        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
-        .forEach((other) => {
-            if (other !== panel)
-                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
-        })
     const status = panel.dataset.status
     if (!status) return
     document
