@@ -227,7 +227,6 @@ public class AssembleSources
 			string? parent,
 			int depth,
 			int order, //TODO Remove this parameter
-
 			Uri? topLevelSource,
 			Uri? parentSource
 		)

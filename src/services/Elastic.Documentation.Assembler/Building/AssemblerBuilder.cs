@@ -147,7 +147,6 @@ public class AssemblerBuilder(
 		{
 			Uri? uri;
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
-
 			{
 				_ = linkResolver.TryResolve(
 					specificErrorMessage => context.Collector.EmitError(
@@ -160,7 +159,6 @@ public class AssemblerBuilder(
 				);
 			}
 			else // Relative links
-
 			{
 				uri = linkResolver.UriResolver.Resolve(
 					new Uri($"{repository}://{path}"),
