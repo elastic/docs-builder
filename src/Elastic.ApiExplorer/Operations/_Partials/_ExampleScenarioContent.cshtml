@@ -16,18 +16,7 @@
 @if (samples.Count > 0)
 {
 	<div class="api-code-carousel" data-api-carousel>
-		<div class="api-code-carousel-head">
-			<span class="api-rail-label">Request</span>
-			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
-				<strong>@samples[0].Language</strong>
-				<span>1 / @samples.Count @(samples.Count == 1 ? "language" : "languages")</span>
-			</span>
-			@if (samples.Count > 1)
-			{
-				<button type="button" class="api-code-carousel-arrow" data-carousel-step="-1" aria-label="Previous language" disabled>&lsaquo;</button>
-				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
-			}
-		</div>
+		<div class="api-code-carousel-head"><span class="api-rail-label">Request</span></div>
 		@if (scenario.RequestDescriptionHtml is { } requestCaption)
 		{
 			@(await RenderPartialAsync<_ExampleCaption, HtmlString>(requestCaption))

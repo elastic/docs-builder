@@ -144,7 +144,7 @@ function activeLanguage(carousel: HTMLElement): string | undefined {
     )?.dataset.lang
 }
 
-/** Marks a card active and updates the position label, arrows and dots. Returns false if the language is missing. */
+/** Marks a card active and updates the dots. Returns false if the language is missing. */
 function setActive(carousel: HTMLElement, language: string): boolean {
     const all = cards(carousel)
     const index = all.findIndex((card) =>
@@ -162,26 +162,6 @@ function setActive(carousel: HTMLElement, language: string): boolean {
             dot.setAttribute('aria-current', match ? 'true' : 'false')
         })
 
-    const position = carousel.querySelector<HTMLElement>(
-        '[data-carousel-position]'
-    )
-    if (position) {
-        const label = all.length === 1 ? 'language' : 'languages'
-        const name = document.createElement('strong')
-        name.textContent = all[index].dataset.lang ?? language
-        const count = document.createElement('span')
-        count.textContent = `${index + 1} / ${all.length} ${label}`
-        position.replaceChildren(name, ' ', count)
-    }
-
-    carousel
-        .querySelectorAll<HTMLButtonElement>('[data-carousel-step]')
-        .forEach((button) => {
-            const step = Number(button.dataset.carouselStep)
-            button.disabled =
-                (step < 0 && index === 0) ||
-                (step > 0 && index === all.length - 1)
-        })
     return true
 }
 
@@ -605,22 +585,6 @@ function onClick(event: MouseEvent) {
         showLanguage(carousel, dot.dataset.carouselDot)
         pickLanguage(examples, dot.dataset.carouselDot)
         return
-    }
-
-    const arrow = target.closest<HTMLElement>('[data-carousel-step]')
-    if (arrow) {
-        const language = step(carousel, Number(arrow.dataset.carouselStep))
-        if (language) pickLanguage(examples, language)
-        return
-    }
-
-    // The dimmed neighbour peeking in from the edge brings its language into view.
-    const peek = target.closest<HTMLElement>(
-        '.api-code-carousel-card:not(.is-active)'
-    )
-    if (peek?.dataset.lang && !window.getSelection()?.toString()) {
-        showLanguage(carousel, peek.dataset.lang)
-        pickLanguage(examples, peek.dataset.lang)
     }
 }
 
