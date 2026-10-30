@@ -803,6 +803,27 @@
           }
         }
       },
+      "fixture.AllOfUnionBody": {
+        "type": "object",
+        "description": "Exercises the allOf-wraps-union-ref pattern: the union must read the same as when referenced directly.",
+        "properties": {
+          "text": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.TextToAnalyze" }
+            ],
+            "description": "Text to analyze."
+          },
+          "direct": {
+            "$ref": "#/components/schemas/fixture.TextToAnalyze"
+          }
+        }
+      },
+      "fixture.TextToAnalyze": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" } }
+        ]
+      },
       "fixture.InlineArrayEnumBody": {
         "type": "object",
         "description": "Exercises the array-of-inline-enum pattern where items has an inline enum rather than a $ref.",

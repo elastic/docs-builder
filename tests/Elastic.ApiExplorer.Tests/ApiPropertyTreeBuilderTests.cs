@@ -292,6 +292,20 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfUnionRef_ReadsLikeTheUnionReferencedDirectly()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.AllOfUnionBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var direct = list!.Items.Single(p => p.Name == "direct");
+		var wrapped = list.Items.Single(p => p.Name == "text");
+		wrapped.Union.Should().NotBeNull("the One of: row names the union's options");
+		wrapped.Type.Spans.Select(s => s.Text).Should().Equal(direct.Type.Spans.Select(s => s.Text));
+		wrapped.Union.Should().BeEquivalentTo(direct.Union);
+	}
+
+	[Test]
 	public void BuildPropertyList_ArrayOfInlineEnum_ShowsEnumValues()
 	{
 		var builder = CreateBuilder();

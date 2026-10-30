@@ -661,6 +661,10 @@ public class SchemaAnalyzer(
 				IsEnum = true
 			};
 
+		// The same wrapper around a union $ref keeps the union and its options, so it reads as the $ref alone would.
+		if (allOf.Count == 1 && UnionSchemas.IsUnion(resolvedTarget))
+			return ClassifyReference(refSchemas[0], refId);
+
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
