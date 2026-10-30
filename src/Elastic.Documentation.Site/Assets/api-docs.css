@@ -4237,17 +4237,8 @@ html:has(.api-page-shell) {
 	color: #111c2c;
 }
 
-.api-section-links-count {
-	padding: 0 8px;
-	border-radius: 999px;
-	background: #eef1f7;
-	color: #516381;
-	font-size: 12px;
-	line-height: 20px;
-}
-
 /* A section reached from the bar stops below the bar instead of under it. */
-.api-section-links ~ .api-param-section,
-.api-section-links ~ .responses-block {
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header {
 	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
 }
