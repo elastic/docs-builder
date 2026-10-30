@@ -35,16 +35,20 @@ public partial class ElasticsearchMarkdownExporter
 	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
+	private DocumentHashInputs HashInputs =>
+		new(_semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash, _forceReindexSalt);
+
 	/// <summary>
 	/// Assigns hash, last updated, and batch index date to a documentation document.
 	/// </summary>
-	private void AssignDocumentMetadata(DocumentationDocument doc)
+	internal static void AssignDocumentMetadata(DocumentationDocument doc, DocumentHashInputs inputs) =>
+		doc.Hash = ComputeDocumentHash(doc, inputs);
+
+	internal static string ComputeDocumentHash(DocumentationDocument doc, DocumentHashInputs inputs)
 	{
-		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
-		var lexicalHash = _lexicalTypeContext.Hash;
 		var hash = HashedBulkUpdate.CreateHash(
-			semanticHash,
-			lexicalHash,
+			inputs.SemanticHash,
+			inputs.LexicalHash,
 			doc.Path,
 			doc.Type,
 			doc.Body ?? string.Empty,
@@ -54,10 +58,11 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.Depth.ToString("N0"),
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
-			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
+			inputs.FixedSynonymsHash,
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
+			DocumentMetadataFingerprint.Create(doc)
 		);
-		doc.Hash = hash;
+		return ForceReindexSalt.Apply(hash, inputs.ForceReindexSalt);
 	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
@@ -243,7 +248,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		CommonEnrichments(doc, currentNavigation);
 		AssignContentHash(doc);
-		AssignDocumentMetadata(doc);
+		AssignDocumentMetadata(doc, HashInputs);
 
 		return await WriteDocumentAsync(doc, ctx);
 	}
@@ -285,7 +290,7 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Headings = headings;
 			CommonEnrichments(doc, null);
 			AssignContentHash(doc);
-			AssignDocumentMetadata(doc);
+			AssignDocumentMetadata(doc, HashInputs);
 
 			if (!await WriteDocumentAsync(doc, ctx))
 			{
