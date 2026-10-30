@@ -85,6 +85,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("data-param-section");
 		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"query-params-list\"");
+		html.Should().Contain("id=\"query-params-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"query-params-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
 		html.Should().Contain("api-param-summary-item");
 	}
@@ -203,6 +206,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
+		html.Should().Contain("id=\"request-body-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"request-body-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
 		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
