@@ -186,6 +186,22 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SectionLinks_ListEachSectionInPageOrderWithCounts()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc>");
+		html.Should().MatchRegex("""href="#query-params" data-toc-link>\s*Query\s*<span class="api-example-chip-count">\d+</span>""");
+		html.Should().Contain("href=\"#request-body\" data-toc-link");
+		html.Should().Contain("href=\"#responses\" data-toc-link");
+		html
+			.IndexOf("api-section-links", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("id=\"query-params\"", StringComparison.Ordinal), "the bar sits above the sections it links to");
+	}
+
+	[Test]
 	public async Task Operation_SectionHeadings_TitleIsHeaderLinkOutsideToggle()
 	{
 		var nav = SearchOperation();

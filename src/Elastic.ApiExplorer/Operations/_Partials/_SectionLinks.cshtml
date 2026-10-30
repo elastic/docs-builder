@@ -1,0 +1,14 @@
+@inherits RazorSlice<IReadOnlyList<Elastic.ApiExplorer.Operations.SectionLink>>
+@* Quick links to the sections below. The scroll-spy of the "On this page" outline (ds/toc.ts) marks the link of the section in view. *@
+<nav class="api-section-links" aria-label="Sections of this endpoint" data-toc>
+	@foreach (var link in Model)
+	{
+		<a href="#@link.Anchor" data-toc-link>
+			@link.Label
+			@if (link.Count is > 1)
+			{
+				<span class="api-example-chip-count">@link.Count</span>
+			}
+		</a>
+	}
+</nav>

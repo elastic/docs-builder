@@ -4201,3 +4201,44 @@ html:has(.api-page-shell) {
 		}
 	}
 }
+
+/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
+.api-section-links {
+	position: sticky;
+	top: var(--offset-top, 0px);
+	z-index: 5;
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 24px;
+	margin: 24px 0 0;
+	overflow-x: auto;
+	background: #fff;
+	border-bottom: 1px solid #e3e8f2;
+}
+
+.api-section-links a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 48px;
+	border-bottom: 2px solid transparent;
+	color: #516381;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.api-section-links a:hover {
+	color: #1d2a3e;
+}
+
+.api-section-links a[aria-current] {
+	border-bottom-color: #0b64dd;
+	color: #111c2c;
+}
+
+/* A section reached from the bar stops below the bar instead of under it. */
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
+}

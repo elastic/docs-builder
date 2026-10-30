@@ -8,6 +8,7 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
@@ -311,6 +312,7 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
+    initToc()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
