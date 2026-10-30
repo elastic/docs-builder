@@ -85,7 +85,10 @@ public class AuthorizationSectionRenderingTests
 		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"integrations-all\"></code>");
 		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"fleet-agent-policies-all\"></code>");
 		html.Should().Contain("api-param-summary is-all");
-		html.Should().Contain("id=\"required-authorization-list\" hidden=\"until-found\"");
+		html.Should().Contain("id=\"required-authorization-list\"");
+		html.Should().Contain("id=\"required-authorization-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"required-authorization-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"required-authorization-list\"");
 		html.Should().Contain("<span class=\"api-type-badge\">integrations-all</span>", "the rows are still listed in the body");
 	}
 

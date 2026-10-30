@@ -58,7 +58,7 @@ function syncMarkup(statuses: string[], railStatuses = statuses): string {
         </section>`
 }
 
-describe('responses accordion and examples rail sync', () => {
+describe('responses and examples rail sync', () => {
     beforeAll(() => {
         initApiDocs()
         // jsdom does not implement scrollIntoView
@@ -73,12 +73,12 @@ describe('responses accordion and examples rail sync', () => {
     const tab = (s: string) => byStatus('example-response-tab', s)
     const railPanel = (s: string) => byStatus('example-response-panel', s)
 
-    it('closes the open response when another one opens', () => {
+    it('keeps the open response open when another one opens', () => {
         document.body.innerHTML = syncMarkup(['200', '400'])
         toggle('200').click()
         toggle('400').click()
 
-        expect(panel('200').classList.contains('expanded')).toBe(false)
+        expect(panel('200').classList.contains('expanded')).toBe(true)
         expect(panel('400').classList.contains('expanded')).toBe(true)
     })
 
@@ -91,13 +91,13 @@ describe('responses accordion and examples rail sync', () => {
         expect(railPanel('200').hasAttribute('hidden')).toBe(true)
     })
 
-    it('opens the main response for a clicked rail tab and closes the others', () => {
+    it('opens the main response for a clicked rail tab and keeps the others', () => {
         document.body.innerHTML = syncMarkup(['200', '400'])
         toggle('200').click()
         tab('400').click()
 
         expect(panel('400').classList.contains('expanded')).toBe(true)
-        expect(panel('200').classList.contains('expanded')).toBe(false)
+        expect(panel('200').classList.contains('expanded')).toBe(true)
     })
 
     it('leaves the main column alone for a rail status it does not list', () => {
@@ -108,7 +108,7 @@ describe('responses accordion and examples rail sync', () => {
         expect(panel('200').classList.contains('expanded')).toBe(true)
     })
 
-    it('closes the open response when a hash target opens another', () => {
+    it('keeps the open response open when a hash target opens another', () => {
         document.body.innerHTML = syncMarkup(['200', '400'])
         panel('400').querySelector('.response-panel-body')!.innerHTML =
             '<span id="inside-400"></span>'
@@ -117,7 +117,7 @@ describe('responses accordion and examples rail sync', () => {
         window.dispatchEvent(new HashChangeEvent('hashchange'))
 
         expect(panel('400').classList.contains('expanded')).toBe(true)
-        expect(panel('200').classList.contains('expanded')).toBe(false)
+        expect(panel('200').classList.contains('expanded')).toBe(true)
     })
 })
 

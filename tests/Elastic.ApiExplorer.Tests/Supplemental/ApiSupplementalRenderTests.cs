@@ -77,14 +77,17 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
+	public async Task Operation_QueryParameters_RenderExpandedWithNameSummary()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
 		html.Should().Contain("data-param-section");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"query-params-list\"");
+		html.Should().Contain("id=\"query-params-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"query-params-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
 		html.Should().Contain("api-param-summary-item");
 	}
@@ -121,7 +124,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"path-params\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
 		html.Should().NotContain(">Parameters</a>");
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
@@ -132,7 +135,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("api-param-section expanded");
 		html.Should().Contain("id=\"path-params-list\"");
 		html.Should().Contain("aria-controls=\"path-params-list\"");
 		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
@@ -177,7 +180,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("toggle-label\">show properties</span>");
+		html.Should().Contain("toggle-label\">hide properties</span>");
 		html.Should().NotContain("toggle-label\">Show ");
 		html.Should().NotContain("toggle-label\">Hide ");
 	}
@@ -203,6 +206,9 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
+		html.Should().Contain("id=\"request-body-list\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().NotContain("id=\"request-body-list\" hidden");
+		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
 		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
