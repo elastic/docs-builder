@@ -101,11 +101,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # The nullean/curb action always runs the moving `edge` image, so call the release image by digest instead.
       - name: Lint
-        uses: nullean/curb@747187f178444c46e0098a9e50241b523bf7b9f8 # 0.8.1
+        uses: docker://ghcr.io/nullean/curb@sha256:fd955b3a58d7ba79f5d03f425166d137ef333dea6226a651b23f894dfac8e370 # 0.9.0
         with:
-          command: check
-          path: .
+          args: check .
 
   # Builds the frontend assets once for the `build` jobs. `npm ci` takes about 6 minutes on
   # Windows runners, and the Vite output is identical on every OS.

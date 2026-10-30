@@ -21,13 +21,13 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ExampleScenarioTests
 {
-	private const string IndexBody = /*lang=json,strict*/  """{"message":"GET /search HTTP/1.1 200 1070000"}""";
+	private const string IndexBody = /*lang=json,strict*/ """{"message":"GET /search HTTP/1.1 200 1070000"}""";
 
 	[Test]
 	public void BuildExampleScenarios_MergesRequestAndResponseByTitle()
 	{
-		var request = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/  """{"input":[{"type":"image"}]}""", null);
-		var response = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/  """{"embeddings":[]}""", null);
+		var request = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/ """{"input":[{"type":"image"}]}""", null);
+		var response = new ExampleDisplay("Multimodal", null, /*lang=json,strict*/ """{"embeddings":[]}""", null);
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [response], []);
 
@@ -41,8 +41,8 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SuffixedSamplesJoinTheExampleOfTheSameTitle()
 	{
-		var first = new ExampleDisplay("A simple term search", null, /*lang=json,strict*/  """{"query":{"term":{"a":1}}}""", null);
-		var second = new ExampleDisplay("A point in time search", null, /*lang=json,strict*/  """{"pit":{"id":"x"}}""", null);
+		var first = new ExampleDisplay("A simple term search", null, /*lang=json,strict*/ """{"query":{"term":{"a":1}}}""", null);
+		var second = new ExampleDisplay("A point in time search", null, /*lang=json,strict*/ """{"pit":{"id":"x"}}""", null);
 		CodeSample[] samples =
 		[
 			new("Console", "GET /_search\n{\"query\":{\"term\":{\"a\":1}}}", "language-console"),
@@ -63,7 +63,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SuffixMatchesTheHumanizedKeyOfAnExampleWithoutSummary()
 	{
-		var first = new ExampleDisplay("First", null, /*lang=json,strict*/  """{"a":1}""", null);
+		var first = new ExampleDisplay("First", null, /*lang=json,strict*/ """{"a":1}""", null);
 		var second = new ExampleDisplay(
 			OperationPageModel.HumanizeExampleKey("secondRequest"),
 			null, /*lang=json,strict*/
@@ -85,7 +85,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SuffixedSamplesOfAnotherTitleStillBecomeTheirOwnExample()
 	{
-		var first = new ExampleDisplay("First", null, /*lang=json,strict*/  """{"a":1}""", null);
+		var first = new ExampleDisplay("First", null, /*lang=json,strict*/ """{"a":1}""", null);
 		CodeSample[] samples =
 		[
 			new("Console", "GET /_x\n{\"a\":1}", "language-console"),
@@ -100,7 +100,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SuffixedSamplesBecomeTheirOwnExamples()
 	{
-		var ok = new ExampleDisplay("searchDashboardsResponse", null, /*lang=json,strict*/  """{"items":[]}""", null, "200");
+		var ok = new ExampleDisplay("searchDashboardsResponse", null, /*lang=json,strict*/ """{"items":[]}""", null, "200");
 		CodeSample[] samples =
 		[
 			new("Console", "GET kbn:/api/dashboards", "language-console"),
@@ -123,8 +123,8 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_GroupsResponsesByStatusCode()
 	{
-		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");
-		var bad = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"error":"bad"}""", null, "400");
+		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"ok":true}""", null, "200");
+		var bad = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok, bad], []);
 
@@ -137,12 +137,12 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SharesUnmatchedErrorResponsesAcrossRequestScenarios()
 	{
-		var ipRequest = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"type":"ip"}""", null);
-		var keywordRequest = new ExampleDisplay("keyword", null, /*lang=json,strict*/  """{"type":"keyword"}""", null);
-		var ipOk = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"id":"1"}""", null, "200");
-		var keywordOk = new ExampleDisplay("keyword", null, /*lang=json,strict*/  """{"id":"2"}""", null, "200");
-		var badRequest = new ExampleDisplay("badRequest", null, /*lang=json,strict*/  """{"error":"bad"}""", null, "400");
-		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/  """{"error":"auth"}""", null, "401");
+		var ipRequest = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"type":"ip"}""", null);
+		var keywordRequest = new ExampleDisplay("keyword", null, /*lang=json,strict*/ """{"type":"keyword"}""", null);
+		var ipOk = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"id":"1"}""", null, "200");
+		var keywordOk = new ExampleDisplay("keyword", null, /*lang=json,strict*/ """{"id":"2"}""", null, "200");
+		var badRequest = new ExampleDisplay("badRequest", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
+		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/ """{"error":"auth"}""", null, "401");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios(
 			[ipRequest, keywordRequest],
@@ -163,9 +163,9 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SharedResponseDoesNotOverwriteScenarioStatus()
 	{
-		var request = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"type":"ip"}""", null);
-		var ok = new ExampleDisplay("ip", null, /*lang=json,strict*/  """{"id":"scenario"}""", null, "200");
-		var sharedOk = new ExampleDisplay("genericOk", null, /*lang=json,strict*/  """{"id":"shared"}""", null, "200");
+		var request = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"type":"ip"}""", null);
+		var ok = new ExampleDisplay("ip", null, /*lang=json,strict*/ """{"id":"scenario"}""", null, "200");
+		var sharedOk = new ExampleDisplay("genericOk", null, /*lang=json,strict*/ """{"id":"shared"}""", null, "200");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [ok, sharedOk], []);
 
@@ -177,8 +177,8 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_CollapsesResponseOnlyNamedStatusesIntoOneScenario()
 	{
-		var bad = new ExampleDisplay("badRequest", null, /*lang=json,strict*/  """{"error":"bad"}""", null, "400");
-		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/  """{"error":"auth"}""", null, "401");
+		var bad = new ExampleDisplay("badRequest", null, /*lang=json,strict*/ """{"error":"bad"}""", null, "400");
+		var unauthorized = new ExampleDisplay("unauthorized", null, /*lang=json,strict*/ """{"error":"auth"}""", null, "401");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([], [bad, unauthorized], []);
 
@@ -225,7 +225,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_CodeSamplesWithDifferentBody_BecomeTheirOwnExample()
 	{
-		var request = new ExampleDisplay("createAgentRequestExample", null, /*lang=json,strict*/  """{"id":"created-agent-id"}""", null);
+		var request = new ExampleDisplay("createAgentRequestExample", null, /*lang=json,strict*/ """{"id":"created-agent-id"}""", null);
 		var console = new CodeSample(
 			"Console",
 			"""
@@ -246,7 +246,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SyntheticCurlWithoutBody_KeepsRequestExampleVisible()
 	{
-		var request = new ExampleDisplay("default", null, /*lang=json,strict*/  """{"name":"x"}""", null);
+		var request = new ExampleDisplay("default", null, /*lang=json,strict*/ """{"name":"x"}""", null);
 		var curl = new CodeSample("curl", "curl -X POST \"${KIBANA_URL}/api/things\"", "language-bash");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([request], [], [curl]);
@@ -353,7 +353,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void EnsureResponseTabs_DoesNotReplaceExistingResponseExamples()
 	{
-		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/  """{"ok":true}""", null, "200");
+		var ok = new ExampleDisplay("Create", null, /*lang=json,strict*/ """{"ok":true}""", null, "200");
 		var scenarios = OperationPageModel.BuildExampleScenarios([], [ok], []);
 		var responses = new OpenApiResponses
 		{
@@ -442,7 +442,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_SamplesMatchingNoExample_BecomeTheirOwnFirstExample()
 	{
-		var esql = new ExampleDisplay("Execute builtin ES|QL tool", null, /*lang=json,strict*/  """{"tool_id":"esql"}""", null);
+		var esql = new ExampleDisplay("Execute builtin ES|QL tool", null, /*lang=json,strict*/ """{"tool_id":"esql"}""", null);
 		var samples = new[] { new CodeSample("Console", "POST kbn:/api/tools/_execute\n{\"tool_id\":\"search\"}", "language-console") };
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([esql], [], samples);
@@ -496,8 +496,8 @@ public class ExampleScenarioTests
 	[Test]
 	public void BuildExampleScenarios_ExactBodyBeatsEarlierContainedBody()
 	{
-		var inner = new ExampleDisplay("Inner", null, /*lang=json,strict*/  """{"a":1}""", null);
-		var outer = new ExampleDisplay("Outer", null, /*lang=json,strict*/  """{"x":{"a":1}}""", null);
+		var inner = new ExampleDisplay("Inner", null, /*lang=json,strict*/ """{"a":1}""", null);
+		var outer = new ExampleDisplay("Outer", null, /*lang=json,strict*/ """{"x":{"a":1}}""", null);
 		var console = new CodeSample("Console", "POST /_things\n{\"x\":{\"a\":1}}", "language-console");
 
 		var scenarios = OperationPageModel.BuildExampleScenarios([inner, outer], [], [console]);
@@ -513,7 +513,7 @@ public class ExampleScenarioTests
 		{
 			Title = "Search slicing",
 			TabId = "slicing",
-			RequestJson = /*lang=json,strict*/  """{"slice":{"id":0}}""",
+			RequestJson = /*lang=json,strict*/ """{"slice":{"id":0}}""",
 			RequestLine = ("GET", "/_search")
 		};
 		var spec = new[]
@@ -768,7 +768,7 @@ public class ExampleScenarioTests
 	[Test]
 	public void GeneratedCodeSamples_KibanaExample_KeepsTheKbnPrefixAndUsesTheShortestRoute()
 	{
-		var esql = new ExampleScenario { Title = "ES|QL", TabId = "esql", RequestJson = /*lang=json,strict*/  """{"tool_id":"esql"}""" };
+		var esql = new ExampleScenario { Title = "ES|QL", TabId = "esql", RequestJson = /*lang=json,strict*/ """{"tool_id":"esql"}""" };
 		var spec = new[] { new CodeSample("Console", "POST kbn:/api/agent_builder/tools/_execute\n{}", "language-console") };
 		var endpoint = OperationEndpoint.FromVariants(
 			[

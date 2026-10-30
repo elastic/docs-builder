@@ -405,8 +405,8 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 		var parentFile = $"9.3.0{parentExtension}";
 		var amendFile = $"9.3.0.amend-1{parentExtension}";
 		var bundleRegistry = cdnAmendYaml is null
-			? /*lang=json,strict*/  $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" } ] }"""
-			: /*lang=json,strict*/  $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" }, { "file": "{{amendFile}}", "target": "9.3.0" } ] }""";
+			? /*lang=json,strict*/ $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" } ] }"""
+			: /*lang=json,strict*/ $$"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "9.4.0.yaml", "target": "9.4.0" }, { "file": "{{parentFile}}", "target": "9.3.0" }, { "file": "{{amendFile}}", "target": "9.3.0" } ] }""";
 		var poolRegistry = /*lang=json,strict*/
 			"""{ "schema_version": 1, "product": "elasticsearch", "bundles": [ { "file": "late.yaml" } ] }""";
 		return new StubHandler(req =>

@@ -397,7 +397,6 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var input = new CreateChangelogArguments
 		{
 			Prs = parsedPrs, // PRs read from file
-
 			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()
@@ -485,7 +484,6 @@ public class PrIntegrationTests() : CreateChangelogTestBase()
 		var input = new CreateChangelogArguments
 		{
 			Prs = allPrs.ToArray(), // Mixed PRs from comma-separated and file
-
 			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory()

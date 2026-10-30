@@ -107,7 +107,6 @@ public class CommentBlockParser : BlockParser
 			var countClosingTags = 0;
 			for (var i = processor.Line.End; i
 				>= processor.Line.Start - 1; i--) // Go up to Start - 1 in order to match the space after the first ###
-
 			{
 				c = processor.Line.Text[i];
 				if (endState == 0)

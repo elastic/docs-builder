@@ -116,8 +116,7 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
-			Dropdowns =
-				false // Explicitly set to false for clarity
+			Dropdowns = false // Explicitly set to false for clarity
 		};
 
 		// Act

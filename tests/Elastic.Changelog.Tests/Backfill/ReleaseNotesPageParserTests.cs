@@ -210,7 +210,6 @@ public class ReleaseNotesPageParserTests()
 
 	[Test]
 	[Arguments("Performance improvements")] // contains no known keyword substring
-
 	[Arguments("Infrastructure changes")]
 	public void Parse_SubstringFallback_UnrecognizedHeadingWithBullets_BecomesOtherEntries(string sectionHeading)
 	{

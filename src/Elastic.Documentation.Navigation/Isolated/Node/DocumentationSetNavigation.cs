@@ -289,7 +289,6 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 				context,
 				fileNavigation,
 				homeAccessor // Depth will be set by child
-
 			);
 			if (childNav != null)
 				children.Add(childNav);
@@ -401,7 +400,6 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 			tocDirectory,
 			fullTocPath,
 			parent, // Temporary null parent
-
 			isolatedHomeProvider.PathPrefix,
 			Git,
 			_tableOfContentNodes,
