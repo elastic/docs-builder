@@ -14,6 +14,11 @@ describe('section links', () => {
                 <h2 id="query-params"></h2>
                 <h2 id="responses"></h2>
             </section>`
+        // jsdom has no layout: a page taller than the window, scrolled to the top
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 5000,
+            configurable: true,
+        })
         // jsdom has no layout: the first section is in view, the second is below the fold
         const top = { 'query-params': -100, responses: 900 }
         for (const [id, y] of Object.entries(top))
