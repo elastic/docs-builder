@@ -824,6 +824,43 @@
           { "type": "array", "items": { "type": "string" } }
         ]
       },
+      "fixture.WrappedUnionEdgesBody": {
+        "type": "object",
+        "description": "allOf wrappers around a union that refers to itself, and around a union with fields shared by its variants.",
+        "properties": {
+          "nested": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.NestedTerms" }
+            ],
+            "description": "A term, or a list of nested terms."
+          },
+          "shared": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.SharedFieldsUnion" }
+            ],
+            "description": "A union with a field every variant has."
+          },
+          "sharedDirect": {
+            "$ref": "#/components/schemas/fixture.SharedFieldsUnion"
+          }
+        }
+      },
+      "fixture.NestedTerms": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "allOf": [ { "$ref": "#/components/schemas/fixture.NestedTerms" } ] } }
+        ]
+      },
+      "fixture.SharedFieldsUnion": {
+        "type": "object",
+        "properties": {
+          "common": { "type": "string" }
+        },
+        "oneOf": [
+          { "type": "object", "properties": { "a": { "type": "string" } } },
+          { "type": "object", "properties": { "b": { "type": "integer" } } }
+        ]
+      },
       "fixture.InlineArrayEnumBody": {
         "type": "object",
         "description": "Exercises the array-of-inline-enum pattern where items has an inline enum rather than a $ref.",

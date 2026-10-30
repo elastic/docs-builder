@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Union $refs this instance is classifying through an allOf wrapper; a wrapper that refers back to one stays a plain named type.
+	private readonly HashSet<string> _expandingWrappedUnionRefs = [with(StringComparer.Ordinal)];
+
 	// Referenced maps this instance is classifying; a map whose values refer back to it stays a plain named type.
 	private readonly HashSet<string> _expandingMapRefs = [with(StringComparer.Ordinal)];
 
@@ -53,6 +56,17 @@ public class SchemaAnalyzer(
 	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
 	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
 	/// </summary>
+	/// <summary>
+	/// The union <c>$ref</c> that an <c>allOf</c> with that one member wraps, as OpenAPI 3.1 does to attach a description;
+	/// otherwise the schema itself. The union's fields, variants and discriminator are read from what this returns.
+	/// </summary>
+	public IOpenApiSchema UnwrapUnionRef(IOpenApiSchema schema) =>
+		schema is not OpenApiSchemaReference
+			&& schema.AllOf is [OpenApiSchemaReference reference]
+			&& schema.Properties is not { Count: > 0 }
+			&& !UnionSchemas.IsUnion(schema)
+			&& UnionSchemas.IsUnion(ResolveSchema(reference)) ? reference : schema;
+
 	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
 
 	/// <summary>
@@ -662,8 +676,8 @@ public class SchemaAnalyzer(
 			};
 
 		// The same wrapper around a union $ref keeps the union and its options, so it reads as the $ref alone would.
-		if (allOf.Count == 1 && UnionSchemas.IsUnion(resolvedTarget))
-			return ClassifyReference(refSchemas[0], refId);
+		if (allOf.Count == 1 && UnionSchemas.IsUnion(resolvedTarget) && ClassifyWrappedUnion(refSchemas[0], refId) is { } union)
+			return union;
 
 		return new TypeInfo
 		{
@@ -833,6 +847,22 @@ public class SchemaAnalyzer(
 	/// <c>$ref</c> and object flag, which come out the same in any order, and the guard is empty again once a
 	/// classification returns.
 	/// </remarks>
+	/// <summary>A union <c>$ref</c> behind an <c>allOf</c> wrapper; null when that union is already being classified.</summary>
+	private TypeInfo? ClassifyWrappedUnion(OpenApiSchemaReference reference, string refId)
+	{
+		if (!_expandingWrappedUnionRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyReference(reference, refId);
+		}
+		finally
+		{
+			_ = _expandingWrappedUnionRefs.Remove(refId);
+		}
+	}
+
 	private TypeInfo? ClassifyReferencedAllOfUnion(string refId, IOpenApiSchema target)
 	{
 		if (target.AllOf is not { Count: > 0 } allOf || !AllOfUnion.TrySplit(allOf, this, out var split) || !_expandingAllOfRefs.Add(refId))

@@ -186,13 +186,13 @@ public partial class ApiPropertyTreeBuilder
 
 	/// <summary>Variants listed below the union's own properties, labelled so they read apart from those properties.</summary>
 	private ApiUnionVariants? BuildLabelledVariants(PropertyRow row, PropertyTreeScope childScope, List<UnionOption> variants) =>
-		BuildUnionVariants(variants, childScope, _analyzer.GetUnionDiscriminator(row.Schema)) is { } built
+		BuildUnionVariants(variants, childScope, _analyzer.GetUnionDiscriminator(row.Shape)) is { } built
 			? built with { Label = SchemaHelpers.UnionLabel(row.TypeInfo.UnionKeyword) }
 			: null;
 
 	private ApiUnionVariants BuildVariantChildren(PropertyRow row, PropertyTreeScope childScope, ChildPlan.Variants plan)
 	{
-		var union = plan.Inner?.Schema ?? row.Schema;
+		var union = plan.Inner?.Schema ?? row.Shape;
 		var variants = BuildUnionVariants(plan.Options, childScope, _analyzer.GetUnionDiscriminator(union));
 		if (variants is null || plan.Inner is null)
 			return variants ?? ApiUnionVariants.Empty;

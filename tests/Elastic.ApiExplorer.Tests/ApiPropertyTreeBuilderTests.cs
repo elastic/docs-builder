@@ -306,6 +306,36 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfWrappedRecursiveUnion_Terminates()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		list!.Items.Single(p => p.Name == "nested").Union.Should().NotBeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedUnionWithSharedFields_ListsThemLikeTheDirectRef()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var direct = list!.Items.Single(p => p.Name == "sharedDirect");
+		var wrapped = list.Items.Single(p => p.Name == "shared");
+		direct.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+		wrapped.Children.Kind.Should().Be(direct.Children.Kind);
+		wrapped.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+	}
+
+	[Test]
 	public void BuildPropertyList_ArrayOfInlineEnum_ShowsEnumValues()
 	{
 		var builder = CreateBuilder();
