@@ -488,3 +488,31 @@ public class FullSearchLayout() : DesignSystemLayoutTest("full-search")
 		await Docs.DoesNotConvertToContainingHtml("<full-page-search");
 	}
 }
+
+public class GetStartedLabeledCommandsComponent : DesignSystemDirectiveTest
+{
+	protected override string Markdown =>
+		"""
+		:::{get-started}
+		title: Get started
+		steps:
+		  - title: Run it
+		    options:
+		      - label: Run locally
+		        commands:
+		          - label: Server only
+		            code: install --server-only
+		          - label: Server and UI
+		            code: install
+		        language: sh
+		:::
+		""";
+
+	[Test, DisplayName("gives each labeled command its own copy button")]
+	public async Task Renders()
+	{
+		await Docs.ConvertsToContainingRawHtml("""<span class="get-started__command-label">Server only</span>""");
+		await Docs.ConvertsToContainingRawHtml("data-copy-text=\"install --server-only\"");
+		await Docs.ConvertsToContainingRawHtml("data-copy-text=\"install\"");
+	}
+}

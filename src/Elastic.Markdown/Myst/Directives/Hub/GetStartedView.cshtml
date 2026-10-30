@@ -135,17 +135,21 @@
 		if (!string.IsNullOrWhiteSpace(option.DescriptionHtml))
 			writer.Write($"<p class=\"hub-get-started-option-desc\">{option.DescriptionHtml}</p>");
 		if (!string.IsNullOrWhiteSpace(option.Code))
+			WriteCommand(writer, option.Code, option.Language);
+		else if (option.Commands.Count > 0)
 		{
-			var language = string.IsNullOrWhiteSpace(option.Language) ? "text" : option.Language;
-			writer.Write("<div class=\"hub-get-started-install highlight\"><pre><code class=\"language-");
-			writer.Write(System.Net.WebUtility.HtmlEncode(language));
-			writer.Write("\">");
-			writer.Write(System.Net.WebUtility.HtmlEncode(option.Code));
-			writer.Write("</code></pre></div>");
+			writer.Write("<div class=\"hub-get-started-commands\">");
+			foreach (var command in option.Commands)
+			{
+				if (!string.IsNullOrWhiteSpace(command.Label))
+					writer.Write($"<span class=\"hub-get-started-command-label\">{System.Net.WebUtility.HtmlEncode(command.Label)}</span>");
+				WriteCommand(writer, command.Code, option.Language);
+			}
+			writer.Write("</div>");
 		}
 		if (!string.IsNullOrWhiteSpace(option.Url))
 		{
-			if (!string.IsNullOrWhiteSpace(option.Code))
+			if (option.HasCode)
 			{
 				writer.Write("<a class=\"hub-get-started-option-link\" ");
 				writer.Write(Model.LinkAttributes(option.Url));
@@ -163,5 +167,14 @@
 			}
 		}
 		return new HtmlString(builder.ToString());
+	}
+
+	private static void WriteCommand(System.IO.TextWriter writer, string code, string? language)
+	{
+		writer.Write("<div class=\"hub-get-started-install highlight\"><pre><code class=\"language-");
+		writer.Write(System.Net.WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(language) ? "text" : language));
+		writer.Write("\">");
+		writer.Write(System.Net.WebUtility.HtmlEncode(code));
+		writer.Write("</code></pre></div>");
 	}
 }
