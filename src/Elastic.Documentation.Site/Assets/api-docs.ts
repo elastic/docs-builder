@@ -310,7 +310,54 @@ function updateExamplesButtonVisibility(): void {
     examplesBtn.classList.toggle('visible', belowFold)
 }
 
+/** The section link whose section last crossed the line below the sticky bar; the last link at the page bottom. */
+export function updateSectionLinks(): void {
+    const links = Array.from(
+        document.querySelectorAll<HTMLAnchorElement>(
+            '[data-api-section-links] a[data-section-link]'
+        )
+    )
+    if (links.length === 0) return
+    const line =
+        (links[0].closest('nav')?.getBoundingClientRect().bottom ?? 0) + 16
+    let current = links[0]
+    for (const link of links) {
+        const section = document.getElementById(link.dataset.sectionLink ?? '')
+        if (section && section.getBoundingClientRect().top <= line)
+            current = link
+    }
+    const atBottom =
+        window.innerHeight + window.scrollY >= document.body.scrollHeight - 4
+    if (atBottom) current = links[links.length - 1]
+    for (const link of links) {
+        if (link === current) link.setAttribute('aria-current', 'location')
+        else link.removeAttribute('aria-current')
+    }
+}
+
+let sectionLinksBound = false
+
+function initSectionLinks(): void {
+    updateSectionLinks()
+    if (sectionLinksBound) return
+    sectionLinksBound = true
+    let ticking = false
+    window.addEventListener(
+        'scroll',
+        () => {
+            if (ticking) return
+            ticking = true
+            window.requestAnimationFrame(() => {
+                updateSectionLinks()
+                ticking = false
+            })
+        },
+        { passive: true }
+    )
+}
+
 function initOperationView(): void {
+    initSectionLinks()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true

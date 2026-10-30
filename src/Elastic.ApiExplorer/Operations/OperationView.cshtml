@@ -77,6 +77,11 @@
 			@pageModel.ExternalDocs.LinkText
 		</a>
 	}
+	@* The design-system stylesheet has no styles for the bar yet, so the flagged page leaves it out. *@
+	@if (!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 } sectionLinks)
+	{
+		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(sectionLinks))
+	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
 	@foreach (var section in pageModel.ParameterSections)
 	{

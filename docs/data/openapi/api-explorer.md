@@ -314,6 +314,8 @@ A request body leaves out `readOnly` fields, because only the server sets them, 
 
 A request or response body that declares more than one content type shows a **Content type** select at the top of its body, with the content types that have a schema first. Choosing one swaps the body below it. A response row shows the content type in view as a tag, and the select updates it. A content type with no schema, such as one the spec lists only to attach examples, shows "No schema is declared for this content type."
 
+A bar of quick links sits above the sections of an operation page: **Authorization**, **Path**, **Query**, **Header**, **Body** and **Response**, for the sections the operation has. A parameter or response link shows how many it lists. The bar stays under the page header while you scroll, a link jumps to its section, and the link of the section in view is underlined.
+
 Each section is a collapsible heading, expanded when the page loads. A reader can fold it and open it again. Each status code under **Responses** works the same way, and opening one leaves the others as they are. The **hide properties** toggle on an object field is open on load too, so nested fields show without a click; select it to fold them. Its summary punctuation says what the names are:
 
 | Summary | Meaning |

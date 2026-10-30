@@ -1,0 +1,14 @@
+@inherits RazorSlice<IReadOnlyList<Elastic.ApiExplorer.Operations.SectionLink>>
+@* Quick links to the sections below. api-docs.ts marks the link of the section in view with aria-current. *@
+<nav class="api-section-links" aria-label="Sections of this endpoint" data-api-section-links>
+	@foreach (var link in Model)
+	{
+		<a href="#@link.Anchor" data-section-link="@link.Anchor">
+			@link.Label
+			@if (link.Count is > 1)
+			{
+				<span class="api-section-links-count">@link.Count</span>
+			}
+		</a>
+	}
+</nav>
