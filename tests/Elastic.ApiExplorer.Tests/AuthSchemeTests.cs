@@ -274,7 +274,7 @@ public class AuthSchemeTests
 			"" => """ "security": [], """,
 			_ => $""" "security": [ {operationSecurity} ], """
 		};
-		return /*lang=json,strict*/  $$"""
+		return /*lang=json,strict*/ $$"""
 			{
 			  "openapi": "3.0.3",
 			  "info": { "title": "t", "version": "1" },

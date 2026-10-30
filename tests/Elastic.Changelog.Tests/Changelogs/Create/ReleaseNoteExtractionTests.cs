@@ -462,8 +462,7 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
-			ExtractReleaseNotes =
-				null // CLI did not specify; config default applies
+			ExtractReleaseNotes = null // CLI did not specify; config default applies
 		};
 
 		// Act

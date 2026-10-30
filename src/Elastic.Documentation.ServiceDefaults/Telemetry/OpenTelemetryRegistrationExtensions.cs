@@ -102,7 +102,6 @@ public static class OpenTelemetryRegistrationExtensions
 							};
 						})
 						.AddProcessor<EuidSpanProcessor>() // Automatically add euid to all child spans
-
 						.AddHttpClientInstrumentation();
 					registration.Tracing?.Invoke(options, tracing);
 				})

@@ -181,7 +181,7 @@ public class RequestBodyExampleTests
 	public async Task Build_BelowTheDepthLimit_StillGivesScalarsTheirValue()
 	{
 		// Seven required objects deep: the innermost object is cut, but the scalar beside it keeps its example.
-		var nested = /*lang=json,strict*/  """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
+		var nested = /*lang=json,strict*/ """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
 		for (var i = 0; i < 6; i++)
 		{
 			nested =

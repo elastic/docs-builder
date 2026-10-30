@@ -304,7 +304,6 @@ public class ReleaseVersionTests() : ChangelogTestBase()
 				Repository = "elastic/elasticsearch",
 				Version = "v9.2.0",
 				Output = null, // no --output CLI and no bundle.directory in config
-
 				CreateBundle = false
 			};
 

@@ -20,7 +20,6 @@ public enum VersionSpecKind
 	GreaterThanOrEqual, // x.x, x.x+, x.x.x, x.x.x+
 	Range, // x.x-y.y, x.x.x-y.y.y
 	Exact // =x.x, =x.x.x
-
 }
 
 /// <summary>

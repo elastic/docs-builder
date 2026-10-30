@@ -52,7 +52,7 @@ not a {substitution}
 			.NotContain("""{{hello-world}}""")
 			.And
 			.Contain( // treated as attributes to the block
-			"""{substitution}""")
+				"""{substitution}""")
 			.And
 			.Contain("""{{valid-key}}""");
 }
