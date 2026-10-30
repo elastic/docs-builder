@@ -101,8 +101,7 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title =
-				"9.2.0" // Title is provided
+			Title = "9.2.0" // Title is provided
 		};
 
 		// Act
@@ -264,8 +263,7 @@ public class TitleTargetTests() : RenderChangelogTestBase()
 		{
 			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
-			Title =
-				"2026-05-04" // Explicit title provided - should stay literal
+			Title = "2026-05-04" // Explicit title provided - should stay literal
 		};
 
 		// Act

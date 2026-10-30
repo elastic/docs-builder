@@ -2575,7 +2575,6 @@ public partial class ChangelogBundlingService(
 		{
 			var message = $"Applied rules - {string.Join(", ", ruleStats.Select(kvp => $"{kvp.Key}: {kvp.Value} entries"))}";
 			if (ruleStats.Count > 2) // More than one rule type being used
-
 			{
 				message += ". Review rules.bundle configuration and documentation if this distribution seems unexpected.";
 			}

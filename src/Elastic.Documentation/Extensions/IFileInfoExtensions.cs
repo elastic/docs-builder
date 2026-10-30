@@ -139,10 +139,8 @@ public static class IDirectoryInfoExtensions
 		for (var i = 0; i < roots.Count; i++)
 		{
 			if (IsSubPath(candidate, roots[i], fs)) // candidate already covered by an existing (wider) root
-
 				return;
 			if (IsSubPath(roots[i], candidate, fs)) // candidate is wider; it supersedes the existing root
-
 			{
 				roots[i] = candidate;
 				return;
