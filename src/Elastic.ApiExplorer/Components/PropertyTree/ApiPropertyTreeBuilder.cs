@@ -345,8 +345,8 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			: null;
 
-	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
-	private static bool ComputeDefaultExpanded() => false;
+	// Object rows start expanded and stay foldable. The request body root is the property list, so its fields are always visible.
+	private static bool ComputeDefaultExpanded() => true;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
