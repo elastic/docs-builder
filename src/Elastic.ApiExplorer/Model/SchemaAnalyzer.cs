@@ -847,22 +847,6 @@ public class SchemaAnalyzer(
 	/// <c>$ref</c> and object flag, which come out the same in any order, and the guard is empty again once a
 	/// classification returns.
 	/// </remarks>
-	/// <summary>A union <c>$ref</c> behind an <c>allOf</c> wrapper; null when that union is already being classified.</summary>
-	private TypeInfo? ClassifyWrappedUnion(OpenApiSchemaReference reference, string refId)
-	{
-		if (!_expandingWrappedUnionRefs.Add(refId))
-			return null;
-
-		try
-		{
-			return ClassifyReference(reference, refId);
-		}
-		finally
-		{
-			_ = _expandingWrappedUnionRefs.Remove(refId);
-		}
-	}
-
 	private TypeInfo? ClassifyReferencedAllOfUnion(string refId, IOpenApiSchema target)
 	{
 		if (target.AllOf is not { Count: > 0 } allOf || !AllOfUnion.TrySplit(allOf, this, out var split) || !_expandingAllOfRefs.Add(refId))
@@ -876,6 +860,22 @@ public class SchemaAnalyzer(
 		finally
 		{
 			_ = _expandingAllOfRefs.Remove(refId);
+		}
+	}
+
+	/// <summary>A union <c>$ref</c> behind an <c>allOf</c> wrapper; null when that union is already being classified.</summary>
+	private TypeInfo? ClassifyWrappedUnion(OpenApiSchemaReference reference, string refId)
+	{
+		if (!_expandingWrappedUnionRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyReference(reference, refId);
+		}
+		finally
+		{
+			_ = _expandingWrappedUnionRefs.Remove(refId);
 		}
 	}
 

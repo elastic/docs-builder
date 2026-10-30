@@ -319,6 +319,35 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnDiscriminator_KeepsIt()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var selected = list!.Items.Single(p => p.Name == "selected");
+		selected.Union!.DiscriminatorProperty.Should().Be("kind");
+		selected.Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: a", "kind: b");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnRequiredSets_KeepsThem()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var needs = list!.Items.Single(p => p.Name == "needs");
+		needs.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires exactly one of:", ["a", "b"]));
+	}
+
+	[Test]
 	public void BuildPropertyList_AllOfWrappedUnionWithSharedFields_ListsThemLikeTheDirectRef()
 	{
 		var builder = CreateBuilder();

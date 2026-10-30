@@ -66,7 +66,8 @@ public partial class ApiPropertyTreeBuilder(
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
-		// The schema the row's fields and union variants come from: Schema, or the union an allOf wrapper points to.
+		// The schema the row's fields and variants come from: Schema, or the union an allOf wrapper points to. The
+		// discriminator still comes from Schema, whose flattened allOf carries both the wrapper's and the union's.
 		IOpenApiSchema Shape,
 		TypeInfo TypeInfo,
 		string AnchorId,
@@ -320,7 +321,7 @@ public partial class ApiPropertyTreeBuilder(
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
 			EnumValues = MixesLiteralsWithObjects(typeInfo, expansion) ? [] : typeInfo.EnumValues ?? [],
 			// Kept on a repeat too, so it hashes like the row it repeats; the views show "Same … as" in its place.
-			Union = typeInfo.IsUnion ? BuildUnionDisplay(row.Shape, typeInfo, expansion) : null,
+			Union = typeInfo.IsUnion ? BuildUnionDisplay(propSchema, typeInfo, expansion) : null,
 			Repeats = repeats,
 			// Type annotation already reads "…[]"; skip the redundant "Array of:" row.
 			ArrayItemTypeName = null,
@@ -329,7 +330,8 @@ public partial class ApiPropertyTreeBuilder(
 			OptionalRoute = row.OptionalRoute,
 			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
-			Requires = DescribeRequiredAlternatives(row.Shape),
+			// The wrapper's own required sets win; otherwise those of the union it points to.
+			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,

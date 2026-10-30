@@ -842,6 +842,29 @@
           },
           "sharedDirect": {
             "$ref": "#/components/schemas/fixture.SharedFieldsUnion"
+          },
+          "selected": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.KindUnion" }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "a": "#/components/schemas/fixture.KindA",
+                "b": "#/components/schemas/fixture.KindB"
+              }
+            },
+            "description": "The wrapper names the field that picks the variant; the union itself does not."
+          },
+          "needs": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.SharedFieldsUnion" }
+            ],
+            "oneOf": [
+              { "required": ["a"] },
+              { "required": ["b"] }
+            ],
+            "description": "The wrapper asks for one of the variant fields."
           }
         }
       },
@@ -850,6 +873,20 @@
           { "type": "string" },
           { "type": "array", "items": { "allOf": [ { "$ref": "#/components/schemas/fixture.NestedTerms" } ] } }
         ]
+      },
+      "fixture.KindUnion": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/fixture.KindA" },
+          { "$ref": "#/components/schemas/fixture.KindB" }
+        ]
+      },
+      "fixture.KindA": {
+        "type": "object",
+        "properties": { "kind": { "type": "string", "enum": ["a"] }, "alpha": { "type": "string" } }
+      },
+      "fixture.KindB": {
+        "type": "object",
+        "properties": { "kind": { "type": "string", "enum": ["b"] }, "beta": { "type": "integer" } }
       },
       "fixture.SharedFieldsUnion": {
         "type": "object",
