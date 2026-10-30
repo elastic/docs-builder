@@ -14,6 +14,10 @@ function setup() {
 
 describe('initToc', () => {
     beforeEach(() => {
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 5000,
+            configurable: true,
+        })
         Object.defineProperty(window, 'innerHeight', {
             value: 800,
             configurable: true,
@@ -68,6 +72,52 @@ describe('initToc', () => {
         expect(
             document
                 .querySelector('[href="#one"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+    })
+
+    it('marks the last heading at the bottom of the page, though it never reaches the line', () => {
+        setup()
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 700 }) as DOMRect
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 800,
+            configurable: true,
+        })
+        initToc()
+
+        expect(
+            document
+                .querySelector('[href="#two"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#one"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
+    })
+
+    it('stops tracking an outline that left the page', () => {
+        setup()
+        const toc = document.querySelector('[data-toc]')!
+        const oldHeading = document.getElementById('two')!
+        initToc()
+        // a new page arrives and its outline is bound too
+        setup()
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 100 }) as DOMRect
+        initToc()
+        // the old heading now crosses the line, so a spy still tracking the old page would mark its link
+        oldHeading.getBoundingClientRect = () => ({ top: 100 }) as DOMRect
+        window.dispatchEvent(new Event('scroll'))
+
+        expect(
+            toc.querySelector('[href="#two"]')!.hasAttribute('aria-current')
+        ).toBe(false)
+        expect(
+            document
+                .querySelector('[href="#two"]')!
                 .getAttribute('aria-current')
         ).toBe('location')
     })
