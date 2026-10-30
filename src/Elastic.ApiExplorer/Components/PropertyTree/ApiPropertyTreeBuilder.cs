@@ -66,6 +66,9 @@ public partial class ApiPropertyTreeBuilder(
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
+		// The schema the row's fields and variants come from: Schema, or the union an allOf wrapper points to. The
+		// discriminator still comes from Schema, whose flattened allOf carries both the wrapper's and the union's.
+		IOpenApiSchema Shape,
 		TypeInfo TypeInfo,
 		string AnchorId,
 		bool IsRequired,
@@ -169,6 +172,7 @@ public partial class ApiPropertyTreeBuilder(
 		return new PropertyRow(
 			name,
 			schema,
+			_analyzer.UnwrapUnionRef(schema),
 			typeInfo,
 			string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}",
 			IsRequired: false,
@@ -283,7 +287,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
-		var expansion = ComputeExpansion(propSchema, typeInfo, scope, isRecursive);
+		var expansion = ComputeExpansion(row.Shape, typeInfo, scope, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
@@ -326,7 +330,8 @@ public partial class ApiPropertyTreeBuilder(
 			OptionalRoute = row.OptionalRoute,
 			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
-			Requires = DescribeRequiredAlternatives(propSchema),
+			// The wrapper's own required sets win; otherwise those of the union it points to.
+			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,

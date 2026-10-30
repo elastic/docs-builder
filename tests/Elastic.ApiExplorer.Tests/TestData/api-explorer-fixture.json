@@ -803,6 +803,101 @@
           }
         }
       },
+      "fixture.AllOfUnionBody": {
+        "type": "object",
+        "description": "Exercises the allOf-wraps-union-ref pattern: the union must read the same as when referenced directly.",
+        "properties": {
+          "text": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.TextToAnalyze" }
+            ],
+            "description": "Text to analyze."
+          },
+          "direct": {
+            "$ref": "#/components/schemas/fixture.TextToAnalyze"
+          }
+        }
+      },
+      "fixture.TextToAnalyze": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" } }
+        ]
+      },
+      "fixture.WrappedUnionEdgesBody": {
+        "type": "object",
+        "description": "allOf wrappers around a union that refers to itself, and around a union with fields shared by its variants.",
+        "properties": {
+          "nested": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.NestedTerms" }
+            ],
+            "description": "A term, or a list of nested terms."
+          },
+          "shared": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.SharedFieldsUnion" }
+            ],
+            "description": "A union with a field every variant has."
+          },
+          "sharedDirect": {
+            "$ref": "#/components/schemas/fixture.SharedFieldsUnion"
+          },
+          "selected": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.KindUnion" }
+            ],
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "a": "#/components/schemas/fixture.KindA",
+                "b": "#/components/schemas/fixture.KindB"
+              }
+            },
+            "description": "The wrapper names the field that picks the variant; the union itself does not."
+          },
+          "needs": {
+            "allOf": [
+              { "$ref": "#/components/schemas/fixture.SharedFieldsUnion" }
+            ],
+            "oneOf": [
+              { "required": ["a"] },
+              { "required": ["b"] }
+            ],
+            "description": "The wrapper asks for one of the variant fields."
+          }
+        }
+      },
+      "fixture.NestedTerms": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "allOf": [ { "$ref": "#/components/schemas/fixture.NestedTerms" } ] } }
+        ]
+      },
+      "fixture.KindUnion": {
+        "oneOf": [
+          { "$ref": "#/components/schemas/fixture.KindA" },
+          { "$ref": "#/components/schemas/fixture.KindB" }
+        ]
+      },
+      "fixture.KindA": {
+        "type": "object",
+        "properties": { "kind": { "type": "string", "enum": ["a"] }, "alpha": { "type": "string" } }
+      },
+      "fixture.KindB": {
+        "type": "object",
+        "properties": { "kind": { "type": "string", "enum": ["b"] }, "beta": { "type": "integer" } }
+      },
+      "fixture.SharedFieldsUnion": {
+        "type": "object",
+        "properties": {
+          "common": { "type": "string" }
+        },
+        "oneOf": [
+          { "type": "object", "properties": { "a": { "type": "string" } } },
+          { "type": "object", "properties": { "b": { "type": "integer" } } }
+        ]
+      },
       "fixture.InlineArrayEnumBody": {
         "type": "object",
         "description": "Exercises the array-of-inline-enum pattern where items has an inline enum rather than a $ref.",
