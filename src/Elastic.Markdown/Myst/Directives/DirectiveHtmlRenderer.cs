@@ -32,6 +32,7 @@ using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
 using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
+using Elastic.Markdown.Myst.Directives.Wizard;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Elastic.Markdown.Myst.Roles;
 using Markdig;
@@ -152,6 +153,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case VectorSizingBlock vectorSizingBlock:
 				WriteVectorSizing(renderer, vectorSizingBlock);
+				return;
+			case WizardBlock wizardBlock:
+				WriteWizard(renderer, wizardBlock);
 				return;
 			case ListSubPagesBlock listSubPagesBlock:
 				WriteListSubPages(renderer, listSubPagesBlock);
@@ -900,6 +904,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 
 		var html = document.ToHtml(MarkdownParser.ChangelogPipeline);
 		_ = renderer.Write(html);
+	}
+
+	private static void WriteWizard(HtmlRenderer renderer, WizardBlock block)
+	{
+		var slice = WizardView.Create(new WizardViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
 	}
 
 	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
