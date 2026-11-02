@@ -2771,7 +2771,7 @@ button.example-response-tab:focus-visible {
 		--api-column-gap: 24px;
 		--api-content-cap: calc(
 			var(--max-api-content-width) + var(--api-column-gap) +
-				var(--max-examples-grow-width)
+				var(--max-examples-width)
 		);
 		width: 100%;
 		max-width: var(--api-content-cap);
@@ -3008,15 +3008,8 @@ button.example-response-tab:focus-visible {
 
 	.api-page-grid {
 		column-gap: var(--api-column-gap);
-		/* The examples rail starts at its fixed width and takes up to 45% of a wider page. */
-		grid-template-columns:
-			minmax(0, 1fr)
-			minmax(var(--max-examples-width), 45%);
+		grid-template-columns: minmax(0, 1fr) var(--max-examples-width);
 	}
-}
-
-#api-content-grid {
-	--max-examples-grow-width: calc(var(--spacing) * 160);
 }
 
 /* Wrap lines (api-code-wrap.ts): examples rail only. The gutter is hidden because wrapped lines
@@ -3976,6 +3969,14 @@ html:has(.api-page-shell) {
 #api-examples-panel .example-block-body {
 	max-height: var(--api-response-cap);
 	overflow: auto;
+}
+
+/* Beside the article the response fills the window below the request instead of stopping at 12 lines,
+   so a tall window shows more of it. The 12-line cap stays as the minimum. */
+@media (min-width: 1024px) {
+	#api-examples-panel .example-block-body {
+		max-height: max(var(--api-response-cap), calc(100dvh - 32rem));
+	}
 }
 
 /* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
