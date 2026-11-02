@@ -278,6 +278,34 @@ public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	}
 
 	[Test]
+	public async Task ResolvePullRequests_ComparePageGatewayError_IsRetriedAndResolves()
+	{
+		var sha1 = Sha(1);
+		var compareRequests = 0;
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.AbsolutePath == "/graphql")
+			{
+				var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+				return Json(IsDetailsQuery(body) ? DefaultDetails(body) : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]));
+			}
+
+			return ++compareRequests == 1 ? new HttpResponseMessage(HttpStatusCode.BadGateway) : Json(CompareJson(1, [sha1]));
+		});
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		compareRequests.Should().Be(2);
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
+	}
+
+	[Test]
 	public async Task ResolvePullRequests_MergeCommitPr_DeduplicatesAcrossCommits()
 	{
 		// Two branch commits belong to the same merge-commit PR; its merge commit is a third sha
