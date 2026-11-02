@@ -84,3 +84,4 @@ The following directives are available:
 - [Tables](tables.md) - Data tables
 - [Version blocks](version-variables.md) - API version information
 - [Vector sizing calculator](vector-sizing-calculator.md) - Interactive dense_vector sizing estimates
+- [Amazon S3 cost calculator](s3-cost-calculator.md) - Interactive AWS cost estimates for ES|QL Data Federation queries on Amazon S3

@@ -24,6 +24,7 @@ using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.RelatedLearning;
+using Elastic.Markdown.Myst.Directives.S3CostCalculator;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
@@ -152,6 +153,9 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 				return;
 			case VectorSizingBlock vectorSizingBlock:
 				WriteVectorSizing(renderer, vectorSizingBlock);
+				return;
+			case S3CostCalculatorBlock s3CostCalculatorBlock:
+				WriteS3CostCalculator(renderer, s3CostCalculatorBlock);
 				return;
 			case ListSubPagesBlock listSubPagesBlock:
 				WriteListSubPages(renderer, listSubPagesBlock);
@@ -905,6 +909,12 @@ public class DirectiveHtmlRenderer : HtmlObjectRenderer<DirectiveBlock>
 	private static void WriteVectorSizing(HtmlRenderer renderer, VectorSizingBlock block)
 	{
 		var slice = VectorSizingView.Create(new VectorSizingViewModel { DirectiveBlock = block });
+		RenderRazorSlice(slice, renderer);
+	}
+
+	private static void WriteS3CostCalculator(HtmlRenderer renderer, S3CostCalculatorBlock block)
+	{
+		var slice = S3CostCalculatorView.Create(new S3CostCalculatorViewModel { DirectiveBlock = block });
 		RenderRazorSlice(slice, renderer);
 	}
 

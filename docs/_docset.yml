@@ -182,6 +182,7 @@ toc:
       - file: math.md
       - file: on-this-page.md
       - file: vector-sizing-calculator.md
+      - file: s3-cost-calculator.md
       - file: diagrams.md
       - file: lists.md
       - file: task-lists.md

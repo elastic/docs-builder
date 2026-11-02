@@ -17,6 +17,7 @@ using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
 using Elastic.Markdown.Myst.Directives.RelatedLearning;
+using Elastic.Markdown.Myst.Directives.S3CostCalculator;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.Directives.Storybook;
@@ -201,6 +202,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 
 		if (info.IndexOf("{vector-sizing-calculator}") > 0)
 			return new VectorSizingBlock(this, context);
+
+		if (info.IndexOf("{s3-cost-calculator}") > 0)
+			return new S3CostCalculatorBlock(this, context);
 
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);

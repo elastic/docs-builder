@@ -1,0 +1,46 @@
+/* Host: custom elements are inline by default. */
+s3-cost-calculator {
+	display: block;
+	width: 100%;
+	min-width: 0;
+	margin-top: 16px;
+}
+
+s3-cost-calculator:not(:defined) {
+	min-height: 120px;
+	border-radius: 8px;
+	background: var(--euiColorEmptyShade, #f5f7fa);
+}
+
+.s3CostCalc__grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	border: 1px solid #e3e8f2;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #fff;
+}
+
+@media (min-width: 1024px) {
+	.s3CostCalc__grid {
+		grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+	}
+}
+
+.s3CostCalc__panel {
+	box-sizing: border-box;
+	padding: 32px;
+	min-width: 0;
+}
+
+.s3CostCalc__panel--results {
+	background: #f6f9fc;
+}
+
+@media (min-width: 1024px) {
+	.s3CostCalc__panel--results {
+		position: sticky;
+		top: 0;
+		align-self: start;
+	}
+}
