@@ -3040,7 +3040,8 @@ html[data-api-code-wrap] #api-examples-panel {
 	}
 }
 
-.api-code-wrap-btn[aria-pressed='true'] {
+/* Same specificity as the shared header-button rule in code-block.css, which would otherwise win. */
+[data-code-card] [data-code-actions] .api-code-wrap-btn[aria-pressed='true'] {
 	background-color: var(--code-hover);
 	color: var(--api-code-accent);
 }

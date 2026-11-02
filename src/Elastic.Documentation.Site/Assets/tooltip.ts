@@ -36,6 +36,12 @@ export function initTooltips(): void {
     })
 }
 
+/** Sets a tooltip's text, updating an already created tippy too (it caches its first content). */
+export function setTooltip(el: HTMLElement, text: string): void {
+    el.dataset.tippyContent = text
+    ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(text)
+}
+
 const flashes = new WeakMap<HTMLElement, { original: string; timer: number }>()
 
 /** Swaps a tooltip's text for a moment (e.g. "Copied!"), updating an already created tippy too. */
@@ -43,13 +49,9 @@ export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
     const pending = flashes.get(el)
     if (pending) window.clearTimeout(pending.timer)
     const original = pending?.original ?? el.dataset.tippyContent ?? ''
-    const set = (value: string) => {
-        el.dataset.tippyContent = value
-        ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
-    }
-    set(text)
+    setTooltip(el, text)
     const timer = window.setTimeout(() => {
-        set(original)
+        setTooltip(el, original)
         flashes.delete(el)
     }, ms)
     flashes.set(el, { original, timer })

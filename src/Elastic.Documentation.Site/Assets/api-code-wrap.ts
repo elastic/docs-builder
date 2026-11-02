@@ -1,4 +1,4 @@
-import { initTooltips } from './tooltip'
+import { initTooltips, setTooltip } from './tooltip'
 
 export const apiCodeWrapStorageKey = 'api-code-wrap'
 
@@ -32,9 +32,7 @@ function syncButtons(): void {
         .querySelectorAll<HTMLButtonElement>('[data-code-wrap-toggle]')
         .forEach((button) => {
             button.setAttribute('aria-pressed', String(wrapped))
-            button.dataset.tippyContent = wrapped
-                ? 'Disable line wrapping'
-                : 'Wrap lines'
+            setTooltip(button, wrapped ? 'Disable line wrapping' : 'Wrap lines')
             button.setAttribute('aria-label', 'Wrap lines')
         })
 }
