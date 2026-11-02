@@ -64,5 +64,17 @@ h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: v
 code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .9em; background: var(--wizard-accent-tint); border-radius: 4px; padding: 1px 5px; }
 .error { color: #a4161a; }
 @media (max-width: 480px) { .card { padding: 20px; } h2.title { font-size: 22px; } }
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.chrome { display: flex; justify-content: flex-end; margin: -14px -8px 6px 0; }
+.expand { font-size: 13px; color: var(--wizard-muted); }
+.expand:hover { color: var(--wizard-accent); }
+.placeholder { display: flex; align-items: center; justify-content: center; min-height: 120px; border: 2px dashed var(--wizard-line); border-radius: var(--wizard-radius); color: var(--wizard-muted); font-size: 14px; }
+dialog.modal { padding: 0; border: 0; background: var(--wizard-surface); color: inherit; width: min(780px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); overflow: auto; border-radius: var(--wizard-radius); box-shadow: 0 24px 70px rgba(10,15,30,.4); }
+dialog.modal::backdrop { background: rgba(10,15,30,.6); }
+dialog.modal[open] { animation: wizard-pop .18s ease-out; }
+dialog.modal[open]::backdrop { animation: wizard-fade .18s ease-out; }
+.modal .card { margin: 0; border: 0; box-shadow: none; border-radius: 0; padding: 36px; }
+@keyframes wizard-pop { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes wizard-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 480px) { dialog.modal { width: calc(100vw - 16px); max-height: calc(100dvh - 16px); } .modal .card { padding: 22px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } dialog.modal, dialog.modal::backdrop { animation: none !important; } }
 `

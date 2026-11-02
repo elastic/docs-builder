@@ -56,6 +56,12 @@ class DocsWizard extends HTMLElement {
     private started = false
     private multiPicks = new Set<number>()
     private root: ShadowRoot
+    /** Where the card sits on the page. While expanded it holds a placeholder instead, so the page doesn't jump. */
+    private inline!: HTMLElement
+    /** The expanded view: a native dialog, so Escape, the backdrop and focus return all work without extra code. */
+    private dialog!: HTMLDialogElement
+    private modalBody!: HTMLElement
+    private expanded = false
 
     constructor() {
         super()
@@ -63,6 +69,7 @@ class DocsWizard extends HTMLElement {
     }
 
     connectedCallback() {
+        this.buildShell()
         const script = this.querySelector<HTMLScriptElement>(
             'script[data-wizard-config]'
         )
@@ -72,26 +79,101 @@ class DocsWizard extends HTMLElement {
             this.showError('The wizard config could not be read.')
             return
         }
+        this.dialog.setAttribute('aria-label', this.config.meta.title)
         this.render()
+    }
+
+    private buildShell() {
+        this.expanded = false
+        this.inline = h('div', { class: 'slot' })
+        this.modalBody = h('div', { class: 'modal-body' })
+        this.dialog = h(
+            'dialog',
+            { class: 'modal', 'aria-label': 'Guide' },
+            this.modalBody
+        ) as HTMLDialogElement
+        // A click on the backdrop lands on the dialog itself, not on its content.
+        this.dialog.addEventListener('click', (event) => {
+            if (event.target === this.dialog) this.dialog.close()
+        })
+        // Fires for Escape, the backdrop and the Close button alike.
+        this.dialog.addEventListener('close', () => this.collapsed())
+        this.root.replaceChildren(
+            h('style', {}, styles),
+            this.inline,
+            this.dialog
+        )
+    }
+
+    private canExpand(): boolean {
+        return typeof this.dialog?.showModal === 'function'
+    }
+
+    /** Moves the card into the dialog. Answers survive because it's the same card, re-rendered in a new place. */
+    private expand() {
+        if (this.expanded || !this.canExpand()) return
+        this.inline.style.minHeight = `${this.inline.offsetHeight}px`
+        this.expanded = true
+        this.dialog.showModal()
+        this.render()
+    }
+
+    private collapsed() {
+        this.expanded = false
+        this.inline.style.minHeight = ''
+        this.render()
+        // The button that opened the dialog was replaced, so give focus back to its replacement.
+        this.root.querySelector<HTMLElement>('.expand')?.focus()
+    }
+
+    private chrome(): Node | null {
+        if (!this.canExpand()) return null
+        return h(
+            'div',
+            { class: 'chrome' },
+            h(
+                'button',
+                {
+                    class: 'link expand',
+                    type: 'button',
+                    'aria-label': this.expanded
+                        ? 'Close expanded view'
+                        : 'Expand to a larger view',
+                    onclick: () =>
+                        this.expanded ? this.dialog.close() : this.expand(),
+                },
+                this.expanded ? 'Close' : 'Expand'
+            )
+        )
     }
 
     private mount(...nodes: (Child | Child[])[]) {
         const card = h(
             'div',
             { class: 'card', 'aria-live': 'polite' },
+            this.chrome(),
             nodes.flat()
         )
-        this.root.replaceChildren(h('style', {}, styles), card)
+        if (this.expanded) {
+            this.modalBody.replaceChildren(card)
+            this.inline.replaceChildren(
+                h('div', { class: 'placeholder' }, 'Open in the expanded view')
+            )
+        } else {
+            this.inline.replaceChildren(card)
+            this.modalBody.replaceChildren()
+        }
         const title = card.querySelector<HTMLElement>('h2.title')
         title?.setAttribute('tabindex', '-1')
         title?.focus({ preventScroll: true })
     }
 
     private showError(message: string) {
-        this.root.replaceChildren(
-            h('style', {}, styles),
+        this.inline.replaceChildren(
             h('div', { class: 'card error', role: 'alert' }, message)
         )
+        this.modalBody.replaceChildren()
+        if (this.dialog.open) this.dialog.close()
     }
 
     private render() {
@@ -221,7 +303,10 @@ class DocsWizard extends HTMLElement {
                         type: 'button',
                         onclick: () => {
                             this.started = true
-                            this.render()
+                            // Starting opens the expanded view. Already expanded, or no dialog support: just move on.
+                            if (this.canExpand() && !this.expanded)
+                                this.expand()
+                            else this.render()
                         },
                     },
                     config.meta.start_button ?? 'Start'
