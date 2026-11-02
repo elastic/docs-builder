@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Text.RegularExpressions;
+using AngleSharp.Html.Parser;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Operations;
 
@@ -22,7 +23,12 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 			.Select(match => match.Groups[1].Value)
 			.Should()
 			.Equal("h1", "h2", "h2", "h2", "h2", "h2", "h2", "h3");
-		await Verify(html, "html").IgnoreParametersForVerified();
+
+		// Snapshot the operation content only. The page chrome around it embeds the frontend bundle name and the
+		// CI git branch, commit and ref, which differ on every build.
+		var document = await new HtmlParser().ParseDocumentAsync(html);
+		var content = document.QuerySelector("main#content-container")!.OuterHtml;
+		await Verify(content, "html").IgnoreParametersForVerified();
 	}
 
 	[GeneratedRegex("<(h[1-6])\\b")]
