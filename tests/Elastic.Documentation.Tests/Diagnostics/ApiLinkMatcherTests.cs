@@ -13,6 +13,7 @@ public class ApiLinkMatcherTests
 	[Arguments("https://www.elastic.co/docs/api/doc/kibana/v8/operation/operation-x", "/docs/api/doc/kibana/v8/operation/operation-x")]
 	[Arguments("https://elastic.co/docs/api/doc/kibana/", "/docs/api/doc/kibana")]
 	[Arguments("http://www.elastic.co/docs/api/doc/Kibana/Group/Endpoint-Foo?x=1#frag", "/docs/api/doc/kibana/group/endpoint-foo")]
+	[Arguments("https://www.elastic.co/docs/api/doc/elasticsearch//operation/operation-bulk", "/docs/api/doc/elasticsearch/operation/operation-bulk")]
 	public void TryGetApiPath_ApiUrl_ReturnsNormalizedPath(string url, string expected)
 	{
 		ApiLinkMatcher.TryGetApiPath(url, out var path).Should().BeTrue();

@@ -67,7 +67,10 @@ public static class ApiLinkValidator
 		var report = new ApiLinkReport(links.Length, [.. broken.Select(b => new ApiLinkReportEntry(b.Url, b.File, b.Line))]);
 		var path = fileSystem.Path.Join(outputDirectory, ReportFileName);
 		var json = JsonSerializer.Serialize(report, ApiLinkReportJsonContext.Default.ApiLinkReport);
-		await fileSystem.File.WriteAllTextAsync(path, json, Encoding.UTF8, ctx).ConfigureAwait(false);
+		await fileSystem
+			.File
+			.WriteAllTextAsync(path, json, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), ctx)
+			.ConfigureAwait(false);
 		return path;
 	}
 }

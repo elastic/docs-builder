@@ -2,12 +2,14 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
+
 namespace Elastic.Documentation.Diagnostics;
 
 /// <summary>A link to an API reference page, recorded during the Markdown build and checked once the API pages exist.</summary>
 public readonly record struct ApiLinkReference(string Url, string File, int Line, int Column, int Length);
 
-public static class ApiLinkMatcher
+public static partial class ApiLinkMatcher
 {
 	public const string ApiDocPrefix = "/docs/api/doc/";
 
@@ -36,5 +38,9 @@ public static class ApiLinkMatcher
 		return true;
 	}
 
-	public static string Normalize(string path) => Uri.UnescapeDataString(path).TrimEnd('/').ToLowerInvariant();
+	public static string Normalize(string path) =>
+		DuplicateSlashes().Replace(Uri.UnescapeDataString(path), "/").TrimEnd('/').ToLowerInvariant();
+
+	[GeneratedRegex("/{2,}")]
+	private static partial Regex DuplicateSlashes();
 }
