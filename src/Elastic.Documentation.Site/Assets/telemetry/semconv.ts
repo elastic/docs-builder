@@ -253,3 +253,31 @@ export const ATTR_EVENT_NAME = 'event.name'
  * @example "ui"
  */
 export const ATTR_EVENT_CATEGORY = 'event.category'
+
+// ============================================================================
+// AGENT PROMPT ATTRIBUTES (Custom)
+// ============================================================================
+
+/**
+ * Title of the {agent-prompt} block the event relates to. The prompt text itself is never sent.
+ * @example "Run this quickstart with your AI agent"
+ */
+export const ATTR_AGENT_PROMPT_TITLE = 'agent_prompt.title'
+
+/**
+ * Which control on the page triggered the event: the inline card, or the dialog it opens.
+ * @example "inline" | "dialog"
+ */
+export const ATTR_AGENT_PROMPT_LOCATION = 'agent_prompt.location'
+
+/**
+ * Length of the prompt in characters.
+ * @example 1204
+ */
+export const ATTR_AGENT_PROMPT_LENGTH = 'agent_prompt.length'
+
+/**
+ * Zero-based position of the block among the {agent-prompt} blocks on the page.
+ * @example 0
+ */
+export const ATTR_AGENT_PROMPT_INDEX = 'agent_prompt.index'

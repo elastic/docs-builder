@@ -1,0 +1,32 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.AgentPrompt.AgentPromptViewModel>
+@{
+	var characters = Model.Prompt.Length.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+}
+<div class="agent-prompt">
+	<p class="agent-prompt-eyebrow">
+		<svg class="agent-prompt-eyebrow-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"/>
+		</svg>
+		<span>Agent prompt</span>
+	</p>
+	<div class="agent-prompt-text">
+		<p class="agent-prompt-title">@Model.Title</p>
+		<p class="agent-prompt-description">@Model.Description</p>
+	</div>
+	<button type="button" class="agent-prompt-open">Review prompt &middot; @characters characters</button>
+	<div class="agent-prompt-actions">
+		<button type="button" class="agent-prompt-button agent-prompt-copy">Copy prompt</button>
+	</div>
+	<dialog class="agent-prompt-dialog" aria-label="@Model.Title">
+		<div class="agent-prompt-dialog-header">
+			<span class="agent-prompt-dialog-title">@Model.Title</span>
+			<button type="button" class="agent-prompt-close" aria-label="Close">&times;</button>
+		</div>
+		<p class="agent-prompt-dialog-description">@Model.Description</p>
+		<p class="agent-prompt-label">Prompt &middot; @characters characters</p>
+		<pre class="agent-prompt-body"><code>@Model.Prompt</code></pre>
+		<div class="agent-prompt-dialog-footer">
+			<button type="button" class="agent-prompt-button agent-prompt-copy">Copy prompt</button>
+		</div>
+	</dialog>
+</div>
