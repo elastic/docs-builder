@@ -46,10 +46,19 @@ A regular paragraph.
 	}
 
 	[Test]
-	public void RendersEyebrowAndPromptLength()
+	public void RendersCompactCardNamedForAssistiveTechnology()
 	{
-		Html.Should().Contain("class=\"agent-prompt-eyebrow\"");
-		Html.Should().Contain("Agent prompt");
+		Html.Should().Contain("role=\"group\" aria-label=\"Agent prompt\"");
+		Html.Should().NotContain("agent-prompt-eyebrow");
+	}
+
+	[Test]
+	public void DefaultDescriptionSaysThePromptNeedsAnAgentThatCanRunCommands() =>
+		Html.Should().Contain("Copy this prompt into an AI coding agent that can run commands.");
+
+	[Test]
+	public void RendersPromptLength()
+	{
 		var length = Block!.Prompt!.Length.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 		Html.Should().Contain($"Review prompt &middot; {length} characters");
 		Html.Should().Contain($"Prompt &middot; {length} characters");

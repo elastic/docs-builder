@@ -2,7 +2,7 @@
 
 The `{agent-prompt}` directive adds a copyable prompt that readers paste into an AI coding agent. The agent then does the page's steps for them and reports what it did.
 
-The prompt isn't shown on the page. Readers see a compact card with a title, a one-line description, a **Review prompt** button that shows the number of characters, and a **Copy prompt** button. **Review prompt** opens a dialog with the full text and a copy button.
+The prompt isn't shown on the page. Readers see one compact row with a title, a one-line description, a **Review prompt** button that shows the number of characters, and a **Copy prompt** button. **Review prompt** opens a dialog with the full text and a copy button.
 
 ## Usage
 
@@ -63,7 +63,7 @@ Ask me before you create anything that costs money or delete anything.
 | Property | Required | Description |
 |---|---|---|
 | `:title:` | No | Heading of the card and the dialog. Defaults to "Get started with your AI agent". |
-| `:description:` | No | One line under the heading. Defaults to "Copy this prompt into an AI coding agent that can run commands. It does the steps on this page for you and reports what it did." |
+| `:description:` | No | One line under the heading. Defaults to "Copy this prompt into an AI coding agent that can run commands." |
 
 The directive emits a build error if the body has no fenced code block. The prompt is left out of the LLM and plain text renderings of the page.
 

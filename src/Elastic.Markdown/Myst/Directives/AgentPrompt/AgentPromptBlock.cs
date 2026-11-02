@@ -15,8 +15,7 @@ namespace Elastic.Markdown.Myst.Directives.AgentPrompt;
 public class AgentPromptBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
 {
 	public const string DefaultTitle = "Get started with your AI agent";
-	public const string DefaultDescription =
-		"Copy this prompt into an AI coding agent that can run commands. It does the steps on this page for you and reports what it did.";
+	public const string DefaultDescription = "Copy this prompt into an AI coding agent that can run commands.";
 
 	public override string Directive => "agent-prompt";
 
