@@ -5,20 +5,9 @@ import { navigationSearchStore } from './navigationSearch.store'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-vi.mock('htmx.org', () => ({
-    default: {
-        on: vi.fn(),
-        off: vi.fn(),
-        process: vi.fn(),
-        ajax: vi.fn(),
-    },
-}))
-
-vi.mock('../../telemetry/logging', () => ({
-    logInfo: vi.fn(),
-    logWarn: vi.fn(),
-    logError: vi.fn(),
-}))
+vi.mock('../../telemetry/logging', async () =>
+    (await import('../../test-utils/mocks')).logging()
+)
 
 const emptySearch = {
     results: [],
@@ -116,26 +105,14 @@ describe('NavigationSearchWrapper slash shortcut', () => {
         })
     })
 
-    afterEach(() => {
-        document.body.innerHTML = ''
-        vi.restoreAllMocks()
-    })
-
-    it('focuses the api input on "/" without typing the slash', async () => {
+    it.each([
+        ['/', 'slash'],
+        ['s', 'letter'],
+    ])('focuses the api input on "%s" without typing the %s', async (key) => {
         render(<NavigationSearchWrapper type="api" />)
         const input = await screen.findByPlaceholderText(apiPlaceholder)
 
-        await userEvent.keyboard('/')
-
-        expect(input).toHaveFocus()
-        expect(input).toHaveValue('')
-    })
-
-    it('focuses the api input on "s" without typing the letter', async () => {
-        render(<NavigationSearchWrapper type="api" />)
-        const input = await screen.findByPlaceholderText(apiPlaceholder)
-
-        await userEvent.keyboard('s')
+        await userEvent.keyboard(key)
 
         expect(input).toHaveFocus()
         expect(input).toHaveValue('')

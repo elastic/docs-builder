@@ -110,7 +110,6 @@ const mockIsRateLimitError = vi.mocked(isRateLimitError)
 
 describe('ErrorCallout', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         mockSearchState.countdown = null
         mockSearchState.hasActiveCooldown = false
         mockSearchState.awaitingNewInput = false
@@ -140,25 +139,29 @@ describe('ErrorCallout', () => {
     })
 
     describe('Rate limit handler calls', () => {
-        it('should call useSearchRateLimitHandler when domain is search', () => {
-            const error = new Error('Test error') as ApiError
-            error.statusCode = 500
+        it.each([
+            [
+                'search',
+                mockUseSearchRateLimitHandler,
+                mockUseAskAiRateLimitHandler,
+            ],
+            [
+                'askAi',
+                mockUseAskAiRateLimitHandler,
+                mockUseSearchRateLimitHandler,
+            ],
+        ] as const)(
+            'should call the %s rate limit handler with the error only for its own domain',
+            (domain, active, inactive) => {
+                const error = new Error('Test error') as ApiError
+                error.statusCode = 500
 
-            render(<ErrorCallout error={error} domain="search" />)
+                render(<ErrorCallout error={error} domain={domain} />)
 
-            expect(mockUseSearchRateLimitHandler).toHaveBeenCalledWith(error)
-            expect(mockUseAskAiRateLimitHandler).toHaveBeenCalledWith(null)
-        })
-
-        it('should call useAskAiRateLimitHandler when domain is askAi', () => {
-            const error = new Error('Test error') as ApiError
-            error.statusCode = 500
-
-            render(<ErrorCallout error={error} domain="askAi" />)
-
-            expect(mockUseAskAiRateLimitHandler).toHaveBeenCalledWith(error)
-            expect(mockUseSearchRateLimitHandler).toHaveBeenCalledWith(null)
-        })
+                expect(active).toHaveBeenCalledWith(error)
+                expect(inactive).toHaveBeenCalledWith(null)
+            }
+        )
 
         it('should pass null to rate limit handler when error is null', () => {
             render(<ErrorCallout error={null} domain="search" />)
@@ -242,29 +245,22 @@ describe('ErrorCallout', () => {
     })
 
     describe('429 rate limit errors', () => {
-        it('should hide 429 error when cooldown is not active', () => {
+        it.each([
+            [
+                'cooldown is not active',
+                { hasActiveCooldown: false, awaitingNewInput: false },
+            ],
+            [
+                'cooldown finished and pending acknowledgment',
+                { hasActiveCooldown: true, awaitingNewInput: true },
+            ],
+        ])('should hide 429 error when %s', (_name, state) => {
             const error = new Error('Rate limit') as ApiError
             error.statusCode = 429
             error.name = 'ApiError'
             error.retryAfter = 10
             mockIsRateLimitError.mockReturnValue(true)
-            mockSearchState.hasActiveCooldown = false
-
-            const { container } = render(
-                <ErrorCallout error={error} domain="search" />
-            )
-
-            expect(container.firstChild).toBeNull()
-        })
-
-        it('should hide 429 error when cooldown finished and pending acknowledgment', () => {
-            const error = new Error('Rate limit') as ApiError
-            error.statusCode = 429
-            error.name = 'ApiError'
-            error.retryAfter = 10
-            mockIsRateLimitError.mockReturnValue(true)
-            mockSearchState.hasActiveCooldown = true
-            mockSearchState.awaitingNewInput = true
+            Object.assign(mockSearchState, state)
 
             const { container } = render(
                 <ErrorCallout error={error} domain="search" />
