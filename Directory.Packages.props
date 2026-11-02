@@ -128,6 +128,8 @@
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
     <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
+    <PackageVersion Include="Verify.AngleSharp" Version="5.1.2" />
+    <PackageVersion Include="Verify.TUnit" Version="31.28.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />

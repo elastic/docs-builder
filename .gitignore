@@ -405,3 +405,6 @@ FodyWeavers.xsd
 # Elastic synthetics
 .synthetics/
 .worktrees/
+
+# Verify snapshot testing
+*.received.*

@@ -1,0 +1,1487 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="h-screen" xmlns="http://www.w3.org/1999/html">
+<head hx-head="merge">
+		<meta charset="utf-8">
+	<title>Run a search | Fixture API</title>
+		<meta name="description" content="Returns hits that match the query defined in the request.">
+		<link rel="preload" href="/_static/./asset-InterVariable-CWi-zmRD.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/_static/./asset-MierB-Regular-VQaLvwwm.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/_static/./asset-MierB-Bold-DKla8B8n.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/_static/./asset-MierB-Demi-DgRVmELL.woff2" as="font" type="font/woff2" crossorigin>
+		<link rel="preload" href="/_static/./asset-SpaceGrotesk-Variable-BhU9QXUp.woff2" as="font" type="font/woff2" crossorigin>
+	<link rel="stylesheet preload" as="style" type="text/css" href="/_static/styles.css?v=ASSET_HASH" crossorigin/>
+			<link rel="stylesheet preload" as="style" type="text/css" href="/_static/isolated.css?v=ASSET_HASH" crossorigin/>
+	<script>window.__DOCS_CONFIG__={"buildType":"isolated","serviceName":"docs-frontend","telemetryEnabled":false,"rootPath":"","apiBasePath":"/docs/_api","airGapped":false,"wafIntegrationUrl":null};</script>
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	<script type="module" src="/_static/main-DJwvDbwG.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="icon" href="/favicon.ico" sizes="32x32"/> 	<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"/>
+
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
+		<meta name="docs:nav-active" content="/api/doc/fixture/operation/operation-search">
+	<meta name="docs:current-section" content="49C266BA">
+	<meta property="og:type" content="website"/>
+	<meta property="og:title" content="Run a search | Fixture API"/>
+		<meta property="og:description" content="Returns hits that match the query defined in the request."/>
+		<script type="application/ld+json">
+		{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Docs",
+      "item": "http://localhost/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "APIs",
+      "item": "http://localhost/api"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Fixture API",
+      "item": "http://localhost/api/doc/fixture"
+    },
+    {
+      "@type": "ListItem",
+      "position": 4,
+      "name": "Search APIs",
+      "item": "http://localhost/api/doc/fixture/group/endpoint-search"
+    },
+    {
+      "@type": "ListItem",
+      "position": 5,
+      "name": "Run a search"
+    }
+  ]
+}
+		</script>
+		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>
+		<meta property="og:image:alt" content="Elastic | The Search AI Company"/>
+
+				<link rel="alternate" type="text/markdown" href="/api/doc/fixture/operation/operation-search.md" title="Markdown export"/>
+
+</head>
+
+<body
+	hx-history="false"
+	class="group/body text-ink has-[#primary-nav-hamburger:checked]:overflow-hidden min-h-screen build-type-isolated"
+	hx-ext="preload, head-support"
+	hx-boost="true"
+	hx-push-url="true"
+	hx-target="#main-container"
+	hx-select="#main-container"
+	hx-swap="outerHTML show:none"
+	>
+<svg xmlns="http://www.w3.org/2000/svg" class="hidden" aria-hidden="true">
+	<defs>
+		<symbol id="icon-chevron-down" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z"/>
+		</symbol>
+		<symbol id="icon-chevron-updown" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M8 2.293l3.354 3.353-.708.708L8 3.707 5.354 6.354l-.708-.708L8 2.293ZM8 13.707l-3.354-3.353.708-.708L8 12.293l2.646-2.647.708.708L8 13.707Z"/>
+		</symbol>
+		<symbol id="icon-chevron-limit-right" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M8.293 8 2.646 2.354l.708-.708L9.707 8l-6.353 6.354-.708-.707L8.293 8ZM12 13V3h1v10h-1Z"/>
+		</symbol>
+		<symbol id="icon-documentation" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z"/>
+		</symbol>
+		<symbol id="icon-code" viewBox="0 0 16 16">
+			<path fill="currentColor" d="m7.492 13.59 2-11-.984-.18-2 11 .984.18ZM4.854 5.354 2.207 8l2.647 2.646-.707.708L.793 8l3.354-3.354.707.708ZM15.207 8l-3.353-3.354-.707.708L13.793 8l-2.646 2.646.707.708L15.207 8Z"/>
+		</symbol>
+		<symbol id="icon-external" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"/>
+			<path fill="currentColor" d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"/>
+		</symbol>
+		<symbol id="icon-grid" viewBox="0 0 16 16">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z"/>
+		</symbol>
+		<symbol id="icon-list-bullet" viewBox="0 0 16 16" shape-rendering="crispEdges">
+			<path fill="currentColor" d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"/>
+		</symbol>
+		<symbol id="icon-wrench" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M13.121 7.121a3 3 0 0 0 .874-2.287L11.707 7.12 8.878 4.293l2.288-2.288A3 3 0 0 0 8.173 6.01l.106.298-5.986 5.986a1 1 0 0 0 1.414 1.414l5.986-5.986.298.105a3 3 0 0 0 3.13-.705m.707.708a4 4 0 0 1-3.863 1.034l-5.55 5.551a2 2 0 1 1-2.83-2.828l5.552-5.551a3.997 3.997 0 0 1 4.328-5.008l.143.028a.88.88 0 0 1 .62.628.97.97 0 0 1-.258.933l-1.677 1.677 1.414 1.414 1.677-1.677a.97.97 0 0 1 .933-.26c.29.079.54.3.628.622l.027.143.02.22a4 4 0 0 1-1.164 3.074"/>
+		</symbol>
+		<symbol id="icon-refresh-time" viewBox="0 0 16 16">
+			<path fill="currentColor" d="M11 9h1v2h2v1h-3V9Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M7.754 13.995a4.5 4.5 0 1 1 7.491-4.99 4.5 4.5 0 0 1-7.49 4.99ZM15 11.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z"/>
+			<path fill="currentColor" d="M7.222 14.957a5.501 5.501 0 0 1-.713-1.144A6.003 6.003 0 0 1 3.757 3.757l.007-.007.003-.002.013-.014A4.337 4.337 0 0 1 4 3.525V6h1V2H1v1h2.1l-.03.03-.018.019-.004.004a7.001 7.001 0 0 0 4.175 11.904Zm7.735-7.735A7.001 7.001 0 0 0 8 1v1a6.003 6.003 0 0 1 5.813 4.509c.412.19.796.431 1.144.713Z"/>
+		</symbol>
+		<symbol id="icon-chevron-double-down" viewBox="0 0 24 24">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m12 10.293 5.646-5.647.708.708L12 11.707l-6.354-6.353.708-.708L12 10.293Z"/>
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="m12 16.293 5.646-5.647.708.708L12 17.707l-6.354-6.353.708-.708L12 16.293Z"/>
+		</symbol>
+		<symbol id="icon-api-arrow" viewBox="0 0 12 12">
+			<path fill="currentColor" d="M9.75 6.75H9V3.53027L2.51514 10.0151 1.98486 9.48486 8.46973 3H5.25V2.25h4.5V6.75Z"/>
+		</symbol>
+		<symbol id="icon-api-x" viewBox="0 0 12 12">
+			<path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M5.46967 6 1.98484 2.51517 2.51517 1.98484 6 5.46967 9.48484 1.98484 10.0152 2.51517 6.53033 6 10.0152 9.48484 9.48484 10.0152 6 6.53033 2.51517 10.0152 1.98484 9.48484 5.46967 6Z"/>
+		</symbol>
+	</defs>
+</svg>
+
+<div class="sticky top-0 z-30 h-12" id="isolated-header" hx-preserve>
+	<elastic-docs-header title="Fixture API"
+	                     logo-href="/"
+	                     github-repository="docs-builder"
+	                     github-link="https://github.com/elastic/docs-builder/tree/main/docs"
+	                     git-branch="main"
+	                     git-commit="be2f977"
+	                     branded="false"
+	                     elastic-org="false">
+	</elastic-docs-header>
+</div>
+<div id="main-container" class="relative">
+	<div class="min-h-screen w-full mx-auto api-page-shell">
+		<div class="min-h-screen grid grid-cols-1 md:grid-cols-[var(--max-sidebar-width)_1fr] gap-4">
+			<div id="api-content-grid" class="min-w-0 md:col-start-2 md:row-start-1 mx-4 md:mx-0">
+				<div class="api-page-grid">
+					<main id="content-container" class="api-page-main relative pt-6 pb-12">
+						<input type="checkbox" class="hidden" id="pages-nav-hamburger">
+						<label role="button" class="api-pages-nav-toggle md:hidden cursor-pointer" for="pages-nav-hamburger" aria-label="Open navigation">
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+		stroke="currentColor" class="size-6" aria-hidden="true">
+		<path stroke-linecap="round" stroke-linejoin="round"
+			d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"/>
+	</svg>
+</label>
+
+						<div class="api-page-toolbar">
+							<ol id="breadcrumbs" class="flex flex-wrap gap-1 items-center w-full pt-6">
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/"
+				hx-disable=true
+				preload="mousedown">
+				<span class="hover:text-black">Docs</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/api"
+				
+				preload="mousedown">
+				<span class="hover:text-black">APIs</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/api/doc/fixture"
+				
+				preload="mousedown">
+				<span class="hover:text-black">Fixture API</span>
+			</a>
+				<span class="px-1">/</span>
+		</li>
+		<li class="text-ink-light text-sm leading-[1.2em]">
+			<a
+				itemprop="item"
+				href="/api/doc/fixture/group/endpoint-search"
+				
+				preload="mousedown">
+				<span class="hover:text-black">Search APIs</span>
+			</a>
+		</li>
+</ol>
+
+						</div>
+						<article id="markdown-content" class="content-container markdown-content">
+							
+<header class="api-page-intro">
+	<div class="api-page-heading">
+		<h1>Run a search</h1>
+	</div>
+		<dl class="api-rail-facts api-rail-facts--inline">
+			<div class="api-rail-fact">
+	<dt>Base URL</dt>
+	<dd class="api-rail-fact-list">
+<span class="api-server">
+	<span class="api-server-field">
+		<code>https://fixture.example.com</code>
+		<button
+	type="button"
+	class="copybtn copybtn--in-header api-url-copy"
+	aria-label="Copy endpoint"
+	data-tippy-content="Copy"
+	data-copy="https://fixture.example.com">
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+	</svg>
+</button>
+
+	</span>
+		<span class="api-server-description">Fixture server</span>
+</span>
+	</dd>
+</div>
+
+		</dl>
+
+	<ul id="paths" class="api-url-listing" aria-label="Paths">
+			<li class="api-url-list-item">
+				<span class="api-url-row">
+					<span class="api-url">
+	<span class="api-method api-method-post">
+	<span class="api-method-icon" aria-hidden="true">
+			<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-arrow"/></svg>
+	</span>
+	<span class="api-method-label">POST</span>
+</span>
+
+	<span class="api-url-path">/<a class="api-url-param" href="#path-index">{index}</a>/_search</span>
+</span>
+
+					<button
+	type="button"
+	class="copybtn copybtn--in-header api-url-copy"
+	aria-label="Copy endpoint"
+	data-tippy-content="Copy"
+	data-copy="POST /{index}/_search">
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+	</svg>
+</button>
+
+				</span>
+			</li>
+	</ul>
+		<span class="api-title-badges">
+<span class="applies applies-inline">
+		<a class="applicable-info" href="#authentication"><span class="applicable-name">Auth</span></a>
+</span>
+			<span class="applies applies-inline">
+	<applies-to-popover
+		badge-key="Stack"
+		badge-version="7.7&#x2B;"
+		lifecycle-class="ga"
+		lifecycle-name="GA"
+		show-lifecycle-name="false"
+		show-version="true"
+		has-multiple-lifecycles="false"
+		popover-data='{"productDescription":"The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.","availabilityItems":[{"text":"Generally available since 7.7","lifecycleDescription":"This functionality is generally available and ready for production usage."}],"additionalInfo":"Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.","showVersionNote":true,"versionNote":"This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes."}'
+		show-popover="true"
+		is-inline="true"
+	></applies-to-popover>
+</span>
+	</span>
+
+</header>
+<section id="elastic-api-v3">
+		<div class="api-operation-description" id="description">
+<p>Returns hits that match the query defined in the request.
+
+Supports pagination through `size` and `from`.</p>				<a href="https://www.elastic.co/docs/fixture/search-reference" class="docs-reference-btn">
+					Read the reference documentation
+				</a>
+		</div>
+		<div class="api-param-section collapsed" data-param-section>
+		<h2 class="section-header api-param-section-header" id="required-authorization" data-section="required-authorization" aria-label="Required authorization">
+	<a class="headerlink api-param-section-title" href="#required-authorization">Required authorization</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="required-authorization-list"
+		aria-label="Toggle Required authorization">
+		<span class="api-param-summary" data-param-summary >
+	<span class="api-param-summary-list">
+	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+</span>
+
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>
+
+		<div class="api-param-section-body" id="required-authorization-list" hidden="until-found">
+			<dl class="property-list api-privileges">
+					<div class="prerequisite-item">
+						<dt>
+<p>Requires the `read` index privilege for the target data stream or index.</p>						</dt>
+					</div>
+					<div class="prerequisite-item">
+						<dt>
+<p>Requires the `monitor` cluster privilege when profiling is enabled.</p>						</dt>
+					</div>
+			</dl>
+		</div>
+	</div>
+	<div class="api-param-section collapsed" data-param-section>
+		<h2 class="section-header api-param-section-header" id="authentication" data-section="authentication" aria-label="Authentication">
+	<a class="headerlink api-param-section-title" href="#authentication">Authentication</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="authentication-list"
+		aria-label="Toggle Authentication">
+		<span class="api-param-summary is-variants" data-param-summary data-param-more-noun="variant">
+	<span class="api-param-summary-list">
+			<code class="api-param-summary-item" data-name="Api key"></code>
+			<code class="api-param-summary-item" data-name="Basic"></code>
+			<code class="api-param-summary-item" data-name="Bearer"></code>
+	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+</span>
+
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>
+
+		<div class="api-param-section-body" id="authentication-list" hidden="until-found">
+				<div class="api-tabs api-authentication-tabs">
+				<input class="tabs-input" id="authentication-tab-0" name="authentication-tabs" type="radio" checked="checked" tabindex="0">
+				<label class="tabs-label" for="authentication-tab-0">Api key</label>
+			<div class="tabs-content api-authorization-panel">
+<div class="highlight-http notranslate">
+	<div class="highlight">
+		<pre><code class="language-http">Authorization: &lt;value&gt;</code></pre>
+	</div>
+</div>
+<p>Send the encoded key with the ApiKey prefix.</p>			</div>
+				<input class="tabs-input" id="authentication-tab-1" name="authentication-tabs" type="radio" tabindex="0">
+				<label class="tabs-label" for="authentication-tab-1">Basic</label>
+			<div class="tabs-content api-authorization-panel">
+<div class="highlight-http notranslate">
+	<div class="highlight">
+		<pre><code class="language-http">Authorization: Basic &lt;credentials&gt;</code></pre>
+	</div>
+</div>
+			</div>
+				<input class="tabs-input" id="authentication-tab-2" name="authentication-tabs" type="radio" tabindex="0">
+				<label class="tabs-label" for="authentication-tab-2">Bearer</label>
+			<div class="tabs-content api-authorization-panel">
+<div class="highlight-http notranslate">
+	<div class="highlight">
+		<pre><code class="language-http">Authorization: Bearer &lt;token&gt;</code></pre>
+	</div>
+</div>
+			</div>
+	</div>
+
+		</div>
+	</div>
+
+
+<div class="api-param-section collapsed" data-param-section>
+<h2 class="section-header api-param-section-header" id="path-params" data-section="path-params" aria-label="Path parameters">
+	<a class="headerlink api-param-section-title" href="#path-params">Path parameters</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="path-params-list"
+		aria-label="Toggle Path parameters">
+		<span class="api-param-summary" data-param-summary >
+	<span class="api-param-summary-list">
+			<code class="api-param-summary-item" data-name="index"></code>
+	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+</span>
+
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>
+
+<div class="api-param-section-body" id="path-params-list" hidden="until-found">
+<dl class="property-list">
+<div class="property-item depth-0 last-sibling   ">
+	<dt id="path-index">
+		<a class="property-anchor" href="#path-index" aria-label="Link to index">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>index</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+			<span class="required type-status">required</span>
+	</dt>
+		<dd>
+			<p>A comma-separated list of index names to search.</p>
+		</dd>
+	
+</div>
+</dl>
+
+</div>
+</div>
+<div class="api-param-section collapsed" data-param-section>
+<h2 class="section-header api-param-section-header" id="query-params" data-section="query-params" aria-label="Query parameters">
+	<a class="headerlink api-param-section-title" href="#query-params">Query parameters</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="query-params-list"
+		aria-label="Toggle Query parameters">
+		<span class="api-param-summary" data-param-summary >
+	<span class="api-param-summary-list">
+			<code class="api-param-summary-item" data-name="expand_wildcards"></code>
+			<code class="api-param-summary-item" data-name="q"></code>
+			<code class="api-param-summary-item" data-name="routing"></code>
+			<code class="api-param-summary-item" data-name="timeout"></code>
+			<code class="api-param-summary-item" data-name="pretty"></code>
+	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+</span>
+
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>
+
+<div class="api-param-section-body" id="query-params-list" hidden="until-found">
+<dl class="property-list">
+<div class="property-item depth-0    ">
+	<dt id="query-expand_wildcards">
+		<a class="property-anchor" href="#query-expand_wildcards" aria-label="Link to expand_wildcards">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>expand_wildcards</code>
+		<code class="schema-type"><span class="type-wrapper enum-icon" data-tippy-content="">enum</span></code>
+
+	</dt>
+		<dd>
+			<p>The type of index that wildcard patterns can match.</p>
+		</dd>
+	<dd class="enum-values">
+	<span class="values-label">Values:</span>
+		<code class="enum-value">all</code>
+		<code class="enum-value">open</code>
+		<code class="enum-value">closed</code>
+		<code class="enum-value">hidden</code>
+</dd>
+
+</div>
+<div class="property-item depth-0    ">
+	<dt id="query-q">
+		<a class="property-anchor" href="#query-q" aria-label="Link to q">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>q</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span><span class="schema-type-group"><span class="schema-type-sep"> &#xB7; </span><span class="type-constraint" data-tippy-content="">min length: 1</span></span><span class="schema-type-group"><span class="schema-type-sep"> &#xB7; </span><span class="type-constraint" data-tippy-content="">max length: 2048</span></span></code>
+
+	</dt>
+		<dd>
+			<p>A query in the Lucene query string syntax.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="query-routing">
+		<a class="property-anchor" href="#query-routing" aria-label="Link to routing">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>routing</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+		<dd>
+			<p>A custom value used to route operations to a specific shard.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="query-timeout">
+		<a class="property-anchor" href="#query-timeout" aria-label="Link to timeout">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>timeout</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">integer</span><span class="schema-type-sep"> | </span><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+		<dd>
+			<p>The period to wait for a response, as an integer number of milliseconds or a duration string.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0 last-sibling   deprecated">
+	<dt id="query-pretty">
+		<a class="property-anchor" href="#query-pretty" aria-label="Link to pretty">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>pretty</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">boolean</span></code>
+
+			<span class="deprecated-badge type-status">deprecated</span>
+	</dt>
+		<dd>
+			<p>Pretty-print the response body.</p>
+		</dd>
+	
+</div>
+</dl>
+
+</div>
+</div>
+		<div class="api-param-section collapsed" data-param-section>
+		<h2 class="section-header api-param-section-header" id="request-body" data-section="request-body" aria-label="Request body">
+	<a class="headerlink api-param-section-title" href="#request-body">Request body</a>
+	<button
+		type="button"
+		class="api-param-section-toggle"
+		aria-expanded="false"
+		aria-controls="request-body-list"
+		aria-label="Toggle Request body">
+		<span class="api-param-summary" data-param-summary >
+		<span class="api-param-summary-brace">{ </span>
+	<span class="api-param-summary-list">
+			<code class="api-param-summary-item" data-name="query"></code>
+			<code class="api-param-summary-item" data-name="fields"></code>
+			<code class="api-param-summary-item" data-name="aggs"></code>
+			<code class="api-param-summary-item" data-name="settings"></code>
+			<code class="api-param-summary-item" data-name="sort"></code>
+			<code class="api-param-summary-item" data-name="mode"></code>
+			<code class="api-param-summary-item" data-name="pit"></code>
+			<code class="api-param-summary-item" data-name="legacy_size"></code>
+	</span>
+	<span class="api-param-more" data-param-more hidden>
+		<span class="api-param-more-badge" data-param-more-count></span>
+	</span>
+		<span class="api-param-summary-brace"> }</span>
+</span>
+
+		<span class="api-param-chevron" aria-hidden="true"></span>
+	</button>
+</h2>
+
+		<div class="api-param-section-body" id="request-body-list" hidden="until-found">
+			<p><p>The search definition using the fixture Query DSL.</p></p>
+
+		<dl class="property-list">
+<div class="property-item depth-0    ">
+	<dt id="req-query">
+		<a class="property-anchor" href="#req-query" aria-label="Link to query">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>query</code>
+		<code class="schema-type"><span class="type-wrapper object-icon" data-tippy-content="">{}</span><span class="schema-type-sep"> </span><a href="/api/doc/fixture/types/_types-query_dsl-querycontainer" class="type-linked" data-tippy-content="" data-hx-boost="false">Query</a></code>
+
+			<span class="required type-status">required</span>
+	</dt>
+		<dd>
+			<p>A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="req-fields">
+		<a class="property-anchor" href="#req-fields" aria-label="Link to fields">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>fields</code>
+		<code class="schema-type"><span class="type-wrapper union-icon" data-tippy-content="">union</span><span class="schema-type-sep"> </span><span class="type-primitive" data-tippy-content="">string</span><span class="schema-type-sep"> | </span><span class="type-primitive" data-tippy-content="">string</span><span class="type-wrapper array-icon" data-tippy-content="">[]</span></code>
+
+	</dt>
+		<dd>
+			<p>A field or list of fields to return, exercising the X | X[] simple-union path.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="req-aggs">
+		<a class="property-anchor" href="#req-aggs" aria-label="Link to aggs">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>aggs</code>
+		<code class="schema-type"><span class="type-wrapper map-keyword" data-tippy-content="">map</span><span class="schema-type-sep"> </span><span class="type-primitive" data-tippy-content="">string</span><span class="schema-type-sep"> to </span><span class="type-wrapper object-icon" data-tippy-content="">{}</span><span class="schema-type-sep"> </span><a href="/api/doc/fixture/types/_types-aggregations-aggregationcontainer" class="type-linked" data-tippy-content="" data-hx-boost="false">Aggregation</a></code>
+
+	</dt>
+		<dd>
+			<p>Aggregations to run, keyed by name.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="req-settings">
+		<a class="property-anchor" href="#req-settings" aria-label="Link to settings">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>settings</code>
+		<code class="schema-type"><span class="type-wrapper map-keyword" data-tippy-content="">map</span><span class="schema-type-sep"> </span><span class="type-primitive" data-tippy-content="">string</span><span class="schema-type-sep"> to </span><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+		<dd>
+			<p>Free-form string settings, exercising the plain dictionary path.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0  has-children  ">
+	<dt id="req-sort">
+		<a class="property-anchor" href="#req-sort" aria-label="Link to sort">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>sort</code>
+		<code class="schema-type"><span class="type-wrapper union-icon" data-tippy-content="">union</span><span class="schema-type-sep"> </span><span class="type-wrapper" data-tippy-content="">oneOf</span></code>
+
+	</dt>
+		<dd>
+			<p>How to sort matching documents.</p>
+		</dd>
+	
+			<dd class="union-options">
+				<span class="values-label">One of:</span>
+			</dd>
+				<div class="nested-properties" id="req-sort--children">
+					<div class="union-variants-container union-variant-chips" id="req-sort-union-options">
+		<div class="api-example-chips-row union-chips-row" data-chip-row>
+			<div class="api-example-chips" role="tablist" aria-label="Variants">
+					<button
+						type="button"
+						role="tab"
+						class="api-example-chip is-active"
+						data-chip="req-sort-variant-sortfield"
+						aria-controls="req-sort-variant-sortfield"
+						aria-selected="true">
+						<span class="api-example-chip-title" data-chip-title>SortField</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						class="api-example-chip"
+						data-chip="req-sort-variant-scoresort"
+						aria-controls="req-sort-variant-scoresort"
+						aria-selected="false"
+						tabindex="-1">
+						<span class="api-example-chip-title" data-chip-title>ScoreSort</span>
+					</button>
+			</div>
+			<button type="button" class="api-example-more" data-chip-more aria-haspopup="menu" aria-expanded="false" aria-controls="req-sort-union-options-menu" popovertarget="req-sort-union-options-menu" hidden>
+				<span data-chip-more-label></span>
+				<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+			</button>
+			<div id="req-sort-union-options-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu>
+				<div role="menu" aria-label="More variants">
+						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="req-sort-variant-sortfield" hidden>
+							<span class="api-example-menu-item-title" data-chip-item-title>SortField</span>
+						</button>
+						<button type="button" role="menuitem" class="api-example-menu-item" data-chip="req-sort-variant-scoresort" hidden>
+							<span class="api-example-menu-item-title" data-chip-item-title>ScoreSort</span>
+						</button>
+				</div>
+			</div>
+		</div>
+	<div class="union-variants">
+		<div class="union-variant-item has-children expanded" id="req-sort-variant-sortfield">
+				<div class="union-variant-description"><p>Sort by a field value.</p></div>
+					<div class="expand-toggle-row union-expand-toggle">
+						<button class="expand-toggle">
+							<span class="toggle-icon">&#x2212;</span>
+							<span class="toggle-label">hide properties</span>
+						</button>
+					</div>
+					<div class="nested-properties" id="req-sort-variant-sortfield--children">
+						<dl class="property-list">
+<div class="property-item depth-2    ">
+	<dt id="req-sort-variant-sortfield-field">
+		<a class="property-anchor" href="#req-sort-variant-sortfield-field" aria-label="Link to sort.field">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="sort.field" data-tippy-theme="mono">field</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+			<span class="required type-status">required</span>
+	</dt>
+		<dd>
+			<p>A field name or field path.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-2 last-sibling   ">
+	<dt id="req-sort-variant-sortfield-order">
+		<a class="property-anchor" href="#req-sort-variant-sortfield-order" aria-label="Link to sort.order">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="sort.order" data-tippy-theme="mono">order</code>
+		<code class="schema-type"><span class="type-wrapper enum-icon" data-tippy-content="">enum</span></code>
+
+	</dt>
+	<dd class="enum-values">
+	<span class="values-label">Values:</span>
+		<code class="enum-value">asc</code>
+		<code class="enum-value">desc</code>
+</dd>
+
+</div>
+</dl>
+
+					</div>
+		</div>
+		<div class="union-variant-item has-children expanded" id="req-sort-variant-scoresort" hidden="until-found">
+				<div class="union-variant-description"><p>Sort by relevance score.</p></div>
+					<div class="expand-toggle-row union-expand-toggle">
+						<button class="expand-toggle">
+							<span class="toggle-icon">&#x2212;</span>
+							<span class="toggle-label">hide properties</span>
+						</button>
+					</div>
+					<div class="nested-properties" id="req-sort-variant-scoresort--children">
+						<dl class="property-list">
+<div class="property-item depth-2 last-sibling   ">
+	<dt id="req-sort-variant-scoresort-order">
+		<a class="property-anchor" href="#req-sort-variant-scoresort-order" aria-label="Link to sort.order">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="sort.order" data-tippy-theme="mono">order</code>
+		<code class="schema-type"><span class="type-wrapper enum-icon" data-tippy-content="">enum</span></code>
+
+	</dt>
+	<dd class="enum-values">
+	<span class="values-label">Values:</span>
+		<code class="enum-value">asc</code>
+		<code class="enum-value">desc</code>
+</dd>
+
+</div>
+</dl>
+
+					</div>
+		</div>
+	</div>
+</div>
+
+				</div>
+</div>
+<div class="property-item depth-0    ">
+	<dt id="req-mode">
+		<a class="property-anchor" href="#req-mode" aria-label="Link to mode">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>mode</code>
+		<code class="schema-type"><span class="type-wrapper enum-icon" data-tippy-content="">enum</span></code>
+
+	</dt>
+		<dd>
+			<p>Trade accuracy for speed.</p>
+		</dd>
+	<dd class="enum-values">
+	<span class="values-label">Values:</span>
+		<code class="enum-value">fast</code>
+		<code class="enum-value">accurate</code>
+</dd>
+
+</div>
+<div class="property-item depth-0  has-children collapsed ">
+	<dt id="req-pit">
+		<a class="property-anchor" href="#req-pit" aria-label="Link to pit">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>pit</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">object</span></code>
+
+	</dt>
+		<dd>
+			<p>A point in time to search, exercising inline nested object expansion.</p>
+		</dd>
+	
+		<dd class="expand-toggle-row">
+			<button class="expand-toggle" aria-expanded="false" aria-controls="req-pit--children">
+				<span class="toggle-icon">&#x2B;</span>
+				<span class="toggle-label">show properties</span>
+			</button>
+		</dd>
+				<div class="nested-properties" id="req-pit--children" hidden="until-found">
+					<dl class="property-list">
+<div class="property-item depth-1    ">
+	<dt id="req-pit-id">
+		<a class="property-anchor" href="#req-pit-id" aria-label="Link to pit.id">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="pit.id" data-tippy-theme="mono">id</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+			<span class="required type-status">required</span>
+	</dt>
+	
+</div>
+<div class="property-item depth-1 last-sibling   ">
+	<dt id="req-pit-keep_alive">
+		<a class="property-anchor" href="#req-pit-keep_alive" aria-label="Link to pit.keep_alive">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="pit.keep_alive" data-tippy-theme="mono">keep_alive</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+	
+</div>
+</dl>
+
+					
+				</div>
+</div>
+<div class="property-item depth-0 last-sibling   deprecated">
+	<dt id="req-legacy_size">
+		<a class="property-anchor" href="#req-legacy_size" aria-label="Link to legacy_size">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>legacy_size</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">integer</span></code>
+
+			<span class="deprecated-badge type-status">deprecated</span>
+			<span class="applies applies-inline">
+	<applies-to-popover
+		badge-key="Stack"
+		badge-version="7.0&#x2B;"
+		lifecycle-class="deprecated"
+		lifecycle-name="Deprecated"
+		show-lifecycle-name="true"
+		show-version="true"
+		has-multiple-lifecycles="false"
+		popover-data='{"productDescription":"The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.","availabilityItems":[{"text":"Deprecated since 7.0","lifecycleDescription":"This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update."}],"additionalInfo":"Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.","showVersionNote":true,"versionNote":"This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes."}'
+		show-popover="true"
+		is-inline="true"
+	></applies-to-popover>
+</span>
+	</dt>
+		<dd>
+			<p>Use `size` on the query string instead.</p>
+		</dd>
+	
+</div>
+</dl>
+
+		</div>
+		</div>
+
+<div class="responses-block" data-api-responses>
+	<h2 class="section-header responses-header" id="responses" data-section="responses">
+		<a class="headerlink responses-title" href="#responses">Responses</a>
+	</h2>
+	<div class="responses-list">
+			<div class="response-panel collapsed" data-status="200">
+				<div class="response-summary">
+					<button
+						type="button"
+						class="response-status-toggle"
+						aria-expanded="false"
+						aria-controls="response-200-fields"
+						aria-describedby="response-200-description">
+						<span class="response-status-chip status-success">200</span>
+					</button>
+						<div class="response-description" id="response-200-description"><p>Search results</p></div>
+						<span class="content-type-tag">application/json</span>
+
+					<span class="response-toggle-icon" aria-hidden="true"></span>
+				</div>
+				<div class="response-panel-body" id="response-200-fields" hidden="until-found">
+					<dl class="property-list">
+<div class="property-item depth-0    ">
+	<dt id="res-200-took">
+		<a class="property-anchor" href="#res-200-took" aria-label="Link to took">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>took</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">integer</span></code>
+
+	</dt>
+		<dd>
+			<p>The time the request took in milliseconds.</p>
+		</dd>
+	
+</div>
+<div class="property-item depth-0    ">
+	<dt id="res-200-timed_out">
+		<a class="property-anchor" href="#res-200-timed_out" aria-label="Link to timed_out">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>timed_out</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">boolean</span></code>
+
+	</dt>
+	
+</div>
+<div class="property-item depth-0  has-children collapsed ">
+	<dt id="res-200-hits">
+		<a class="property-anchor" href="#res-200-hits" aria-label="Link to hits">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>hits</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">object</span><span class="type-wrapper array-icon" data-tippy-content="">[]</span></code>
+
+	</dt>
+		<dd>
+			<p>The matching documents.</p>
+		</dd>
+	
+		<dd class="expand-toggle-row">
+			<button class="expand-toggle" aria-expanded="false" aria-controls="res-200-hits--children">
+				<span class="toggle-icon">&#x2B;</span>
+				<span class="toggle-label">show properties</span>
+			</button>
+		</dd>
+				<div class="nested-properties" id="res-200-hits--children" hidden="until-found">
+					<dl class="property-list">
+<div class="property-item depth-1    ">
+	<dt id="res-200-hits-_id">
+		<a class="property-anchor" href="#res-200-hits-_id" aria-label="Link to hits[]._id">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="hits[]._id" data-tippy-theme="mono">_id</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+	
+</div>
+<div class="property-item depth-1    ">
+	<dt id="res-200-hits-_score">
+		<a class="property-anchor" href="#res-200-hits-_score" aria-label="Link to hits[]._score">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="hits[]._score" data-tippy-theme="mono">_score</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">number</span></code>
+
+	</dt>
+	
+</div>
+<div class="property-item depth-1 last-sibling   ">
+	<dt id="res-200-hits-_source">
+		<a class="property-anchor" href="#res-200-hits-_source" aria-label="Link to hits[]._source">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="hits[]._source" data-tippy-theme="mono">_source</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">object</span></code>
+
+	</dt>
+	
+</div>
+</dl>
+
+					
+				</div>
+</div>
+<div class="property-item depth-0 last-sibling   ">
+	<dt id="res-200-aggregations">
+		<a class="property-anchor" href="#res-200-aggregations" aria-label="Link to aggregations">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>aggregations</code>
+		<code class="schema-type"><span class="type-wrapper map-keyword" data-tippy-content="">map</span><span class="schema-type-sep"> </span><span class="type-primitive" data-tippy-content="">string</span><span class="schema-type-sep"> to </span><span class="type-wrapper object-icon" data-tippy-content="">{}</span><span class="schema-type-sep"> </span><a href="/api/doc/fixture/types/_types-aggregations-aggregate" class="type-linked" data-tippy-content="" data-hx-boost="false">Aggregation result</a></code>
+
+	</dt>
+		<dd>
+			<p>Aggregation results keyed by name.</p>
+		</dd>
+	
+</div>
+</dl>
+
+						<div class="response-headers">
+							<h3>Response headers</h3>
+							<dl class="property-list">
+									<div class="header-item">
+										<dt id="header-200-X-Found">
+											<a class="property-anchor" href="#header-200-X-Found" aria-label="Link to X-Found">
+												<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+											</a>
+											<code>X-Found</code>
+<code class="schema-type"><span class="type-primitive" data-tippy-content="">boolean</span></code>
+												<span class="required type-status">required</span>
+										</dt>
+											<dd><p>Whether any documents matched.</p></dd>
+									</div>
+							</dl>
+						</div>
+				</div>
+			</div>
+			<div class="response-panel collapsed" data-status="404">
+				<div class="response-summary">
+					<button
+						type="button"
+						class="response-status-toggle"
+						aria-expanded="false"
+						aria-controls="response-404-fields"
+						aria-describedby="response-404-description">
+						<span class="response-status-chip status-error">404</span>
+					</button>
+						<div class="response-description" id="response-404-description"><p>The target index does not exist.</p></div>
+						<span class="content-type-tag">application/json</span>
+
+					<span class="response-toggle-icon" aria-hidden="true"></span>
+				</div>
+				<div class="response-panel-body" id="response-404-fields" hidden="until-found">
+					<dl class="property-list">
+<div class="property-item depth-0  has-children collapsed ">
+	<dt id="res-404-error">
+		<a class="property-anchor" href="#res-404-error" aria-label="Link to error">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>error</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">object</span></code>
+
+	</dt>
+	
+		<dd class="expand-toggle-row">
+			<button class="expand-toggle" aria-expanded="false" aria-controls="res-404-error--children">
+				<span class="toggle-icon">&#x2B;</span>
+				<span class="toggle-label">show properties</span>
+			</button>
+		</dd>
+				<div class="nested-properties" id="res-404-error--children" hidden="until-found">
+					<dl class="property-list">
+<div class="property-item depth-1    ">
+	<dt id="res-404-error-type">
+		<a class="property-anchor" href="#res-404-error-type" aria-label="Link to error.type">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="error.type" data-tippy-theme="mono">type</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+	
+</div>
+<div class="property-item depth-1 last-sibling   ">
+	<dt id="res-404-error-reason">
+		<a class="property-anchor" href="#res-404-error-reason" aria-label="Link to error.reason">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code data-tippy-content="error.reason" data-tippy-theme="mono">reason</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">string</span></code>
+
+	</dt>
+	
+</div>
+</dl>
+
+					
+				</div>
+</div>
+<div class="property-item depth-0 last-sibling   ">
+	<dt id="res-404-status">
+		<a class="property-anchor" href="#res-404-status" aria-label="Link to status">
+			<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+		</a>
+			<code>status</code>
+		<code class="schema-type"><span class="type-primitive" data-tippy-content="">integer</span></code>
+
+	</dt>
+	
+</div>
+</dl>
+
+				</div>
+			</div>
+	</div>
+</div>
+</section>
+
+						</article>
+					</main>
+					<div class="api-page-rail">
+<div class="api-page-actions" role="group" aria-label="Page actions">
+	<div class="api-page-actions-split">
+		<button type="button" class="api-page-actions-button" data-copy-page="/api/doc/fixture/operation/operation-search.md">
+			<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+			<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+			<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+			</svg>
+			<span class="api-page-actions-label">Copy page</span>
+		</button>
+		<details class="api-page-actions-dropdown nav-select-dropdown">
+			<summary class="api-page-actions-chevron" aria-label="More page actions" aria-haspopup="menu">
+				<span class="api-page-actions-chevron-icon" aria-hidden="true">
+					<svg viewBox="0 0 16 16"><use href="#icon-chevron-down"/></svg>
+				</span>
+			</summary>
+			<div class="api-page-actions-menu" role="menu">
+				<button type="button" class="api-page-actions-option" role="menuitem" data-copy-page="/api/doc/fixture/operation/operation-search.md">
+					<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+					<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+					<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+					</svg>
+					Copy page
+				</button>
+				<a class="api-page-actions-option" role="menuitem" href="/api/doc/fixture/operation/operation-search.md" target="_blank" rel="noopener" hx-boost="false">
+					<svg class="api-page-actions-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 -1 24 24" aria-hidden="true">
+					<path fill="currentColor" d="M22.131725 19.247H1.9386225C1.0239525 19.247 0.25 18.47305 0.25 17.558375v-11.11675c0 -0.914675 0.7739525 -1.688625 1.6886225 -1.688625H22.061375c0.914675 0 1.688625 0.77395 1.688625 1.688625v11.11675c0 0.914675 -0.7036 1.688625 -1.618275 1.688625ZM1.9386225 5.87875c-0.2814375 0 -0.562875 0.281425 -0.562875 0.562875v11.11675c0 0.3518 0.2814375 0.562875 0.562875 0.562875H22.061375c0.3518 0 0.562875 -0.281425 0.562875 -0.562875v-11.11675c0 -0.3518 -0.281425 -0.562875 -0.562875 -0.562875l-20.1227525 0ZM3.62725 15.86975V8.130225h2.2515l2.2515 2.814375 2.251475 -2.814375h2.2515V15.86975h-2.2515V11.437125L8.13025 14.2515l-2.2515 -2.814375V15.86975h-2.2515Zm14.1422 0L14.392225 12.140725h2.251475v-4.0105h2.2515v3.940125h2.2515L17.76945 15.86975Z" stroke-width="0.25"></path>
+					</svg>
+					View as Markdown
+				</a>
+					<div class="api-menu-sep" role="separator"></div>
+<a class="api-page-actions-option" role="menuitem" href="/api/doc/fixture.json" download hx-boost="false">
+	<svg class="api-page-actions-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8.5 1v8.793l2.646-2.647.708.708L8 11.207 4.146 7.854l.708-.708L7.5 9.793V1h1ZM3 13h10v1H3v-1Z"/></svg>
+
+	Download OpenAPI spec (JSON)
+</a>
+<a class="api-page-actions-option" role="menuitem" href="/api/doc/fixture.yaml" download hx-boost="false">
+	<svg class="api-page-actions-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8.5 1v8.793l2.646-2.647.708.708L8 11.207 4.146 7.854l.708-.708L7.5 9.793V1h1ZM3 13h10v1H3v-1Z"/></svg>
+
+	Download OpenAPI spec (YAML)
+</a>
+			</div>
+		</details>
+	</div>
+</div>
+									<dl class="api-rail-facts api-rail-facts--rail">
+				<div class="api-rail-fact">
+	<dt>Base URL</dt>
+	<dd class="api-rail-fact-list">
+<span class="api-server">
+	<span class="api-server-field">
+		<code>https://fixture.example.com</code>
+		<button
+	type="button"
+	class="copybtn copybtn--in-header api-url-copy"
+	aria-label="Copy endpoint"
+	data-tippy-content="Copy"
+	data-copy="https://fixture.example.com">
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+		<path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
+		<path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+	</svg>
+</button>
+
+	</span>
+		<span class="api-server-description">Fixture server</span>
+</span>
+	</dd>
+</div>
+
+			</dl>
+<aside id="api-examples-panel">
+	<nav class="api-examples-panel-nav markdown-content simple-scrollbar">
+		<div class="api-examples" data-api-examples>
+			<p class="api-examples-heading" id="api-examples-heading" role="heading" aria-level="2">Examples</p>
+				<div class="api-example-chips-row" data-example-chips>
+					<div class="api-example-chips" role="tablist" aria-labelledby="api-examples-heading">
+							<button
+								type="button"
+								role="tab"
+								class="api-example-chip is-active"
+								data-scenario="match-all-documents"
+								aria-selected="true">
+								<span class="api-example-chip-title">Match all documents</span>
+									<span class="api-example-chip-count" data-tippy-content="2 languages">
+										<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>2<span class="sr-only"> languages</span>
+									</span>
+							</button>
+							<button
+								type="button"
+								role="tab"
+								class="api-example-chip"
+								data-scenario="boolean-query"
+								aria-selected="false">
+								<span class="api-example-chip-title">Boolean query</span>
+									<span class="api-example-chip-count" data-tippy-content="1 language">
+										<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-code"/></svg>1<span class="sr-only"> language</span>
+									</span>
+							</button>
+					</div>
+					<button type="button" class="api-example-more" data-example-more aria-haspopup="menu" aria-expanded="false" aria-controls="api-example-menu" popovertarget="api-example-menu" hidden>
+						<span data-example-more-label></span>
+						<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+					</button>
+					<div id="api-example-menu" class="api-example-menu simple-scrollbar" popover="auto" data-example-menu>
+						<div role="menu" aria-label="More examples">
+								<button type="button" role="menuitem" class="api-example-menu-item" data-scenario="match-all-documents" hidden>
+									<span class="api-example-menu-item-title">Match all documents</span>
+										<span class="api-example-chip-count">2</span>
+								</button>
+								<button type="button" role="menuitem" class="api-example-menu-item" data-scenario="boolean-query" hidden>
+									<span class="api-example-menu-item-title">Boolean query</span>
+										<span class="api-example-chip-count">1</span>
+								</button>
+						</div>
+					</div>
+				</div>
+				<div class="api-examples-scenario-panel api-examples-body" data-scenario="match-all-documents">
+					<div class="api-rail-request" data-rail-request>
+	<div class="api-code-carousel" data-api-carousel>
+		<div class="api-code-carousel-head">
+			<span class="api-rail-label">Request</span>
+			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
+				<strong>Console</strong>
+				<span>1 / 2 languages</span>
+			</span>
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="-1" aria-label="Previous language" disabled>&lsaquo;</button>
+				<button type="button" class="api-code-carousel-arrow" data-carousel-step="1" aria-label="Next language">&rsaquo;</button>
+		</div>
+<div class="api-example-caption" data-example-description>
+	<div class="api-example-caption-text"><p>The simplest possible search request.</p></div>
+	<button type="button" class="api-example-caption-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
+</div>
+		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="Match all documents code samples. Use the arrow keys to switch language.">
+				<section class="api-code-card api-code-carousel-card is-active" data-code-card data-lang="Console" aria-label="Console">
+					<header class="api-code-carousel-card-header">
+						<span class="api-lang-badge" data-lang="Console" aria-hidden="true"></span>
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">Console</span>
+								<a class="api-code-carousel-card-client" href="https://www.elastic.co/docs/explore-analyze/query-filter/tools/console">Kibana Dev Tools</a>
+						</span>
+						<span class="api-code-carousel-card-actions" data-code-actions></span>
+					</header>
+					<div class="api-code-carousel-card-body">
+						<div class="highlight-console notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4</div><pre><code class="language-console">POST /my-index/_search&#xA;{&#xA;  &quot;query&quot;: { &quot;match_all&quot;: {} }&#xA;}</code></pre></div>
+	</div>
+</div>
+
+					</div>
+				</section>
+				<section class="api-code-card api-code-carousel-card" data-code-card data-lang="Python" aria-label="Python">
+					<header class="api-code-carousel-card-header">
+						<span class="api-lang-badge" data-lang="Python" aria-hidden="true"></span>
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">Python</span>
+								<span class="api-code-carousel-card-client">Elasticsearch Python Client</span>
+						</span>
+						<span class="api-code-carousel-card-actions" data-code-actions></span>
+					</header>
+					<div class="api-code-carousel-card-body">
+						<div class="highlight-python notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1</div><pre><code class="language-python">resp = client.search(index=&quot;my-index&quot;, query={&quot;match_all&quot;: {}})</code></pre></div>
+	</div>
+</div>
+
+					</div>
+				</section>
+		</div>
+			<div class="api-code-carousel-dots" role="group" aria-label="Languages">
+					<button type="button" class="api-code-carousel-dot is-active" data-carousel-dot="Console" aria-label="Console" data-tippy-content="Console" aria-current="true">
+						<span class="api-lang-badge" data-lang="Console" aria-hidden="true"></span>
+					</button>
+					<button type="button" class="api-code-carousel-dot" data-carousel-dot="Python" aria-label="Python" data-tippy-content="Python" aria-current="false">
+						<span class="api-lang-badge" data-lang="Python" aria-hidden="true"></span>
+					</button>
+			</div>
+	</div>
+
+</div>
+	<div class="api-rail-response">
+	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
+			<div data-caption-status="200">
+				<div class="api-example-caption" data-example-description>
+	<div class="api-example-caption-text"><p>Two documents matched.</p></div>
+	<button type="button" class="api-example-caption-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
+</div>
+
+			</div>
+	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
+		<div class="example-block-header">
+			<div class="example-response-tabs" role="tablist" aria-label="Response status">
+					<button
+						type="button"
+						role="tab"
+						class="example-response-tab is-active"
+						data-status="200"
+						aria-selected="true"
+						tabindex="0"
+						data-tippy-content="Search results">
+						<span class="example-response-tab-label">200</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						class="example-response-tab"
+						data-status="404"
+						aria-selected="false"
+						tabindex="-1"
+						data-tippy-content="The target index does not exist.">
+						<span class="example-response-tab-label">404</span>
+					</button>
+			</div>
+			<div class="example-block-actions" data-code-actions></div>
+		</div>
+		<div class="example-block-body">
+				<div class="example-response-panel" data-status="200" data-code-panel="200" role="tabpanel">
+						<div class="example-media-body">
+<div class="highlight-json notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4&#xA;5&#xA;6&#xA;7&#xA;8&#xA;9&#xA;10</div><pre><code class="language-json">{&#xA;  &quot;took&quot;: 5,&#xA;  &quot;timed_out&quot;: false,&#xA;  &quot;hits&quot;: [&#xA;    {&#xA;      &quot;_id&quot;: &quot;1&quot;,&#xA;      &quot;_score&quot;: 1.0&#xA;    }&#xA;  ]&#xA;}</code></pre></div>
+	</div>
+</div>
+						</div>
+				</div>
+				<div class="example-response-panel" data-status="404" data-code-panel="404" role="tabpanel" hidden="hidden">
+						<div class="example-media-body">
+<div class="highlight-json notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4&#xA;5&#xA;6&#xA;7</div><pre><code class="language-json">{&#xA;  &quot;error&quot;: {&#xA;    &quot;type&quot;: &quot;index_not_found_exception&quot;,&#xA;    &quot;reason&quot;: &quot;no such index [my-index]&quot;&#xA;  },&#xA;  &quot;status&quot;: 404&#xA;}</code></pre></div>
+	</div>
+</div>
+							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tippy-content="Generated from the API spec. Values are representative. Unions use the first variant; deeply nested or large bodies may omit fields.">Generated from the API spec</span></p>
+						</div>
+				</div>
+		</div>
+	</div>
+	</div>
+
+				</div>
+				<div class="api-examples-scenario-panel api-examples-body" data-scenario="boolean-query" hidden="until-found">
+					<div class="api-rail-request" data-rail-request>
+	<div class="api-code-carousel" data-api-carousel>
+		<div class="api-code-carousel-head">
+			<span class="api-rail-label">Request</span>
+			<span class="api-code-carousel-position" data-carousel-position aria-live="polite">
+				<strong>Console</strong>
+				<span>1 / 1 language</span>
+			</span>
+		</div>
+		<div class="api-code-carousel-strip" data-carousel-strip tabindex="0" aria-label="Boolean query code samples. Use the arrow keys to switch language.">
+				<section class="api-code-card api-code-carousel-card is-active" data-code-card data-lang="Console" aria-label="Console" data-generated>
+					<header class="api-code-carousel-card-header">
+						<span class="api-lang-badge" data-lang="Console" aria-hidden="true"></span>
+						<span class="api-code-carousel-card-title">
+							<span class="api-code-carousel-card-language">Console</span>
+								<a class="api-code-carousel-card-client" href="https://www.elastic.co/docs/explore-analyze/query-filter/tools/console">Kibana Dev Tools</a>
+						</span>
+						<span class="api-code-carousel-card-actions" data-code-actions></span>
+					</header>
+					<div class="api-code-carousel-card-body">
+						<div class="highlight-console notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4&#xA;5&#xA;6&#xA;7&#xA;8&#xA;9&#xA;10&#xA;11&#xA;12</div><pre><code class="language-console">POST /INDEX/_search&#xA;{&#xA;  &quot;query&quot;: {&#xA;    &quot;bool&quot;: {&#xA;      &quot;must&quot;: [&#xA;        {&#xA;          &quot;match_all&quot;: {}&#xA;        }&#xA;      ]&#xA;    }&#xA;  }&#xA;}</code></pre></div>
+	</div>
+</div>
+
+							<p class="api-code-carousel-card-note"><span tabindex="0" data-tippy-content="This sample was generated from the API spec, not written by hand. Check placeholder values such as string or INDEX before you run it.">Generated from the API spec</span></p>
+					</div>
+				</section>
+		</div>
+	</div>
+
+</div>
+	<div class="api-rail-response">
+	<div class="api-code-carousel-head"><span class="api-rail-label">Response</span></div>
+			<div data-caption-status="200">
+				<div class="api-example-caption" data-example-description>
+	<div class="api-example-caption-text"><p>Two documents matched.</p></div>
+	<button type="button" class="api-example-caption-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
+</div>
+
+			</div>
+	<div class="api-code-card example-block example-block--response" data-api-response-samples data-code-card>
+		<div class="example-block-header">
+			<div class="example-response-tabs" role="tablist" aria-label="Response status">
+					<button
+						type="button"
+						role="tab"
+						class="example-response-tab is-active"
+						data-status="200"
+						aria-selected="true"
+						tabindex="0"
+						data-tippy-content="Search results">
+						<span class="example-response-tab-label">200</span>
+					</button>
+					<button
+						type="button"
+						role="tab"
+						class="example-response-tab"
+						data-status="404"
+						aria-selected="false"
+						tabindex="-1"
+						data-tippy-content="The target index does not exist.">
+						<span class="example-response-tab-label">404</span>
+					</button>
+			</div>
+			<div class="example-block-actions" data-code-actions></div>
+		</div>
+		<div class="example-block-body">
+				<div class="example-response-panel" data-status="200" data-code-panel="200" role="tabpanel">
+						<div class="example-media-body">
+<div class="highlight-json notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4&#xA;5&#xA;6&#xA;7&#xA;8&#xA;9&#xA;10</div><pre><code class="language-json">{&#xA;  &quot;took&quot;: 5,&#xA;  &quot;timed_out&quot;: false,&#xA;  &quot;hits&quot;: [&#xA;    {&#xA;      &quot;_id&quot;: &quot;1&quot;,&#xA;      &quot;_score&quot;: 1.0&#xA;    }&#xA;  ]&#xA;}</code></pre></div>
+	</div>
+</div>
+						</div>
+				</div>
+				<div class="example-response-panel" data-status="404" data-code-panel="404" role="tabpanel" hidden="hidden">
+						<div class="example-media-body">
+<div class="highlight-json notranslate" data-line-numbers>
+	<div class="highlight">
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">1&#xA;2&#xA;3&#xA;4&#xA;5&#xA;6&#xA;7</div><pre><code class="language-json">{&#xA;  &quot;error&quot;: {&#xA;    &quot;type&quot;: &quot;index_not_found_exception&quot;,&#xA;    &quot;reason&quot;: &quot;no such index [my-index]&quot;&#xA;  },&#xA;  &quot;status&quot;: 404&#xA;}</code></pre></div>
+	</div>
+</div>
+							<p class="api-code-carousel-card-note" data-generated><span tabindex="0" data-tippy-content="Generated from the API spec. Values are representative. Unions use the first variant; deeply nested or large bodies may omit fields.">Generated from the API spec</span></p>
+						</div>
+				</div>
+		</div>
+	</div>
+	</div>
+
+				</div>
+		</div>
+	</nav>
+</aside>
+
+					</div>
+					
+
+
+				</div>
+			</div>
+			<aside class="sidebar font-sans bg-white fixed md:sticky shadow-2xl md:shadow-none left-full group-has-[#pages-nav-hamburger:checked]/body:left-0 bottom-0 md:left-auto top-[calc(var(--offset-top)+1px)] w-[80%] md:w-auto shrink-0 border-r border-r-grey-20 z-[10000] md:z-auto transition-[top,max-height] duration-300 md:col-start-1 md:row-start-1">
+	<nav
+		id="pages-nav"
+		
+		class="sidebar-nav h-full simple-scrollbar">
+			<div class="api-sidebar-chrome sticky top-0 z-10 bg-white px-4 pt-4 pb-3 flex flex-col gap-3 border-b border-grey-20">
+					<div class="api-sidebar-identity">
+							<div class="api-identity-product api-identity-product--static">
+		<span class="api-identity-title">Fixture API</span>
+	</div>
+
+					</div>
+			</div>
+		
+	</nav>
+	<label role="button" for="pages-nav-hamburger" class="absolute md:hidden top-7 -right-12 bg-white p-1 rounded-full border-1 border-grey-20 cursor-pointer z-99">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+		</svg>
+	</label>
+</aside>
+<label for="pages-nav-hamburger" aria-hidden="true" class="hidden group-has-[#pages-nav-hamburger:checked]/body:block md:hidden! fixed top-0 left-0 right-0 bottom-0 bg-black/50 z-[9999] ">
+
+</label>
+
+		</div>
+	</div>
+</div>
+
+	<footer hx-disable="true" class="py-8 px-6 w-full mx-auto bg-ink-dark">
+		<div class="max-w-(--max-layout-width) w-full mx-auto text-grey-20 text-[12px]">
+			<a href="https://www.elastic.co/">
+				<img class="block" loading="lazy" alt="Elastic logo" src="/_static/logo-elastic-horizontal-white.svg?v=ASSET_HASH" width="120" height="41"/>
+			</a>
+			<p class="mt-4">
+				© YEAR Elasticsearch B.V. All Rights Reserved.
+			</p>
+			<ul class="mt-2 flex gap-3">
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/terms-of-use">Terms of Use</a>
+				</li>
+				<li>
+					<a class="underline hover:text-white" href="https://www.elastic.co/legal/privacy-statement">Privacy</a>
+				</li>
+			</ul>
+		</div>
+	</footer>
+
+
+</body>
+</html>

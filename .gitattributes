@@ -1,0 +1,4 @@
+# Verify snapshots must have stable line endings across OSes
+*.verified.txt text eol=lf
+*.verified.html text eol=lf
+*.verified.json text eol=lf
