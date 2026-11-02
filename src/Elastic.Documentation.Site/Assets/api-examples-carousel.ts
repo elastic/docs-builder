@@ -2,6 +2,7 @@
  * Examples rail on API operation pages: example chips pick a scenario, each scenario shows a
  * scroll-snap carousel with one card per language. Console is the default language; an explicit pick is remembered across pages.
  */
+import { iconButton } from './api-icon-button'
 import {
     ChipRowParts,
     fitChipRow,
@@ -406,16 +407,6 @@ function observeStrip(carousel: HTMLElement) {
     strip
         .querySelectorAll<HTMLElement>('.api-code-carousel-card-body > *')
         .forEach((content) => resize.observe(content))
-}
-
-function iconButton(className: string, label: string, icon: string) {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = className
-    button.dataset.tippyContent = label
-    button.setAttribute('aria-label', label)
-    button.innerHTML = icon
-    return button
 }
 
 /** The code a preview of the card would show: its visible panel's, or its only block. Null when there is none. */

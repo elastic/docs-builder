@@ -1,3 +1,4 @@
+import { iconButton } from './api-icon-button'
 import { initTooltips, setTooltip } from './tooltip'
 
 export const apiCodeWrapStorageKey = 'api-code-wrap'
@@ -33,7 +34,6 @@ function syncButtons(): void {
         .forEach((button) => {
             button.setAttribute('aria-pressed', String(wrapped))
             setTooltip(button, wrapped ? 'Disable line wrapping' : 'Wrap lines')
-            button.setAttribute('aria-label', 'Wrap lines')
         })
 }
 
@@ -45,11 +45,8 @@ function toggleWrap(): void {
 }
 
 function createButton(): HTMLButtonElement {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'api-code-wrap-btn'
+    const button = iconButton('api-code-wrap-btn', 'Wrap lines', wrapIcon)
     button.dataset.codeWrapToggle = ''
-    button.innerHTML = wrapIcon
     button.addEventListener('click', toggleWrap)
     return button
 }

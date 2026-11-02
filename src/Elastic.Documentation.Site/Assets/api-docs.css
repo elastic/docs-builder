@@ -3023,17 +3023,13 @@ html[data-api-code-wrap] #api-examples-panel {
 			flex: 1 1 auto;
 		}
 
-		> pre code {
-			white-space: pre-wrap;
-			overflow-wrap: anywhere;
-		}
-
 		.code-line-gutter {
 			display: none;
 		}
 	}
 
-	pre code {
+	/* Also beats the unwrapped gutter layout's white-space: pre on .code-lines > pre code. */
+	:is(pre, .code-lines > pre) code {
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 		overflow-x: visible;
@@ -3046,15 +3042,9 @@ html[data-api-code-wrap] #api-examples-panel {
 	color: var(--api-code-accent);
 }
 
-.api-code-wrap-btn:focus-visible {
+:is(.api-code-wrap-btn, .api-code-preview-btn):focus-visible {
 	outline: 2px solid var(--color-blue-elastic, #0b64dd);
 	outline-offset: 2px;
-}
-
-[data-code-actions]:has(.api-code-wrap-btn) {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
 }
 
 .api-code-sample-title {
@@ -4076,12 +4066,7 @@ html:has(.api-page-shell) {
 	display: none;
 }
 
-.api-code-preview-btn:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
-}
-
-[data-code-actions]:has(.api-code-preview-btn) {
+[data-code-actions]:has(:is(.api-code-preview-btn, .api-code-wrap-btn)) {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
