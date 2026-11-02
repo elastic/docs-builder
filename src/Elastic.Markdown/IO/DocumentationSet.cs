@@ -183,7 +183,9 @@ public class DocumentationSet : INavigationTraversable
 				if (!Uri.TryCreate(to, UriKind.Absolute, out _))
 					Context.EmitError(Configuration.SourceFile, $"Redirect {from} points to {to} which is not a valid URI");
 				else if (ApiLinkMatcher.TryGetApiPath(to, out _))
-					Context.Collector.EmitApiLink(new ApiLinkReference(to, Configuration.SourceFile.FullName, 1, 1, to.Length));
+					Context.Collector.EmitApiLink(
+						new ApiLinkReference(to, (Configuration.RedirectsSource ?? Configuration.SourceFile).FullName, 1, 1, to.Length)
+					);
 
 				return;
 			}
