@@ -2771,7 +2771,7 @@ button.example-response-tab:focus-visible {
 		--api-column-gap: 24px;
 		--api-content-cap: calc(
 			var(--max-api-content-width) + var(--api-column-gap) +
-				var(--max-examples-width)
+				var(--max-examples-grow-width)
 		);
 		width: 100%;
 		max-width: var(--api-content-cap);
@@ -3008,8 +3008,59 @@ button.example-response-tab:focus-visible {
 
 	.api-page-grid {
 		column-gap: var(--api-column-gap);
-		grid-template-columns: minmax(0, 1fr) var(--max-examples-width);
+		/* The examples rail starts at its fixed width and takes up to 45% of a wider page. */
+		grid-template-columns:
+			minmax(0, 1fr)
+			minmax(var(--max-examples-width), 45%);
 	}
+}
+
+#api-content-grid {
+	--max-examples-grow-width: calc(var(--spacing) * 160);
+}
+
+/* Wrap lines (api-code-wrap.ts): examples rail only. The gutter is hidden because wrapped lines
+   would no longer line up with their numbers. */
+html[data-api-code-wrap] #api-examples-panel {
+	.highlight .code-lines {
+		> pre,
+		> pre code {
+			width: auto;
+			min-width: 0;
+			flex: 1 1 auto;
+		}
+
+		> pre code {
+			white-space: pre-wrap;
+			overflow-wrap: anywhere;
+		}
+
+		.code-line-gutter {
+			display: none;
+		}
+	}
+
+	pre code {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		overflow-x: visible;
+	}
+}
+
+.api-code-wrap-btn[aria-pressed='true'] {
+	background-color: var(--code-hover);
+	color: var(--api-code-accent);
+}
+
+.api-code-wrap-btn:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+[data-code-actions]:has(.api-code-wrap-btn) {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .api-code-sample-title {

@@ -27,7 +27,7 @@ export function initTooltips(): void {
         onCreate: (instance) => {
             if (
                 instance.reference.matches(
-                    '.copybtn, .api-code-preview-btn, .property-anchor-icon'
+                    '.copybtn, .api-code-preview-btn, .api-code-wrap-btn, .property-anchor-icon'
                 )
             )
                 instance.setProps({ hideOnClick: false })
