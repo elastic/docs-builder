@@ -107,7 +107,7 @@
 }
 
 .agent-prompt-dialog::backdrop {
-	background: rgb(0 0 0 / 0.5);
+	background: color-mix(in oklab, var(--color-emphasis) 50%, transparent);
 }
 
 .agent-prompt-dialog-header {
