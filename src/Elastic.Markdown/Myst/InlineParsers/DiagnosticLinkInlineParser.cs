@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Elastic.Documentation;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
@@ -153,9 +154,25 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 		link.SetData("isCrossLink", false);
 
 		if (ValidateExternalUri(link, processor, uri))
+		{
+			RecordApiLink(link, context, url);
 			return;
+		}
 
 		ProcessInternalLink(link, processor, context);
+	}
+
+	private static void RecordApiLink(LinkInline link, ParserContext context, string? url)
+	{
+		if (context.SkipValidation || !ApiLinkMatcher.TryGetApiPath(url, out _))
+			return;
+
+		context
+			.Build
+			.Collector
+			.EmitApiLink(
+				new ApiLinkReference(url!, context.MarkdownSourcePath.FullName, link.Line + 1, Math.Max(link.Column, 1), url!.Length)
+			);
 	}
 
 	private static bool ValidateBasicUrl(LinkInline link, InlineProcessor processor, string? url)

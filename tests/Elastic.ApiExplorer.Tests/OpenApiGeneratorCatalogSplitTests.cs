@@ -57,6 +57,28 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task GenerateProducts_RecordsEveryRenderedPageInGeneratedUrls()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"))
+		);
+
+		_ = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
+
+		generator.GeneratedUrls.Should().Contain("/docs/api/doc/elasticsearch");
+		generator.GeneratedUrls.Should().Contain("/docs/api/doc/elasticsearch/group/endpoint-core");
+		generator.GeneratedUrls.Should().OnlyContain(url => url == url.ToLowerInvariant() && !url.EndsWith('/'));
+		generator.GeneratedUrls.Should().Contain(url => url.Contains("/operation/operation-"));
+	}
+
+	[Test]
 	public async Task ResolveCanonicalDocuments_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");

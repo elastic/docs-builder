@@ -24,7 +24,7 @@ namespace Elastic.Documentation.Assembler.Building;
 /// </summary>
 public static class AssemblerOpenApiBuildStep
 {
-	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
+	public static async Task<AssemblerOpenApiResult> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
 		AssembleSources assembleSources,
@@ -41,14 +41,14 @@ public static class AssemblerOpenApiBuildStep
 		if (!features.AssemblerApiExplorerEnabled)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return [];
+			return AssemblerOpenApiResult.Empty;
 		}
 
 		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		if (owners.Count == 0)
 		{
 			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
-			return [];
+			return AssemblerOpenApiResult.Empty;
 		}
 
 		var stopwatch = Stopwatch.StartNew();
@@ -105,7 +105,8 @@ public static class AssemblerOpenApiBuildStep
 			assembleContext.OutputWithPathPrefixDirectory.FullName,
 			stopwatch.ElapsedMilliseconds
 		);
-		return catalogEntries;
+		var generatedUrls = planned.SelectMany(p => p.Generator.GeneratedUrls).ToHashSet(StringComparer.Ordinal);
+		return new AssemblerOpenApiResult(catalogEntries, generatedUrls);
 	}
 
 	private static async Task WriteApiLlmsTxt(AssembleContext assembleContext, IReadOnlyList<ApiCatalogEntry> catalogEntries, Cancel ctx)
@@ -165,3 +166,8 @@ public static class AssemblerOpenApiBuildStep
 }
 
 internal sealed record AssemblerApiOwner(AssemblerDocumentationSet Set);
+
+public sealed record AssemblerOpenApiResult(IReadOnlyList<ApiCatalogEntry> CatalogEntries, IReadOnlySet<string> GeneratedUrls)
+{
+	public static AssemblerOpenApiResult Empty { get; } = new([], new HashSet<string>());
+}

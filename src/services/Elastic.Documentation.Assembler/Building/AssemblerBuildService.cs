@@ -176,15 +176,26 @@ public class AssemblerBuildService(
 		if (exporters.Contains(Exporter.Html))
 		{
 			var openApiStopwatch = Stopwatch.StartNew();
-			catalogEntries = await AssemblerOpenApiBuildStep.BuildAsync(
+			var openApiResult = await AssemblerOpenApiBuildStep.BuildAsync(
 				logFactory,
 				assembleContext,
 				assembleSources,
 				navigation.TopNav,
 				ctx
 			);
+			catalogEntries = openApiResult.CatalogEntries;
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
+
+			var apiLinkReportPath = await ApiLinkValidator.ValidateAsync(
+				collector,
+				openApiResult.GeneratedUrls,
+				assembleContext.WriteFileSystem,
+				assembleContext.OutputDirectory.FullName,
+				ctx
+			);
+			if (apiLinkReportPath is not null)
+				await githubActionsService.SetOutputAsync("api-link-report-path", apiLinkReportPath);
 
 			// Build-time sitemap uses current date as placeholder for backwards compatibility.
 			// Production sitemap with correct content_last_updated dates is generated via

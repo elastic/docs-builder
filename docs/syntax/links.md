@@ -113,6 +113,16 @@ Link to websites and resources outside the Elastic docs:
 
 External links display an arrow indicator next to the link text.
 
+### Links to API reference pages
+
+Links to `https://www.elastic.co/docs/api/doc/...` pages, including `redirects.yml` targets, are checked when the assembler builds with the API Explorer enabled. Each link is compared with the API pages that build generates. A link that doesn't match produces a warning, and the assembler writes the full list to `api-link-report.json` next to `redirects.json`.
+
+```markdown
+[Search API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search)
+```
+
+If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. Only the page is checked, not the `#anchor`. Old bump.sh URLs that resolve only through edge redirects are also reported, so link to the canonical URL.
+
 ### Linked images
 
 Wrap an image in a link to make the image itself clickable. Combine the image syntax with the link syntax:

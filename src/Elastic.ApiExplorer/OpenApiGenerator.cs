@@ -15,6 +15,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -66,6 +67,10 @@ public class OpenApiGenerator(
 	private readonly VersionIndexClient _versionIndexClient = versionIndexClient ?? new VersionIndexClient();
 	private readonly IOpenApiSpecificationReader _openApiReader = openApiReader ?? OpenApiReader.Instance;
 	private readonly ConcurrentDictionary<string, Task<ResolvedProductDocuments>> _documents = new(StringComparer.OrdinalIgnoreCase);
+	private readonly ConcurrentDictionary<string, byte> _generatedUrls = new(StringComparer.Ordinal);
+
+	/// <summary>Normalized URL path of every page this generator rendered, including redirect stubs for collapsed operations.</summary>
+	public IReadOnlyCollection<string> GeneratedUrls => [.. _generatedUrls.Keys];
 
 	public LandingNavigationItem CreateNavigation(
 		string apiUrlSuffix,
@@ -580,6 +585,8 @@ public class OpenApiGenerator(
 	{
 		var pages = new List<(INavigationItem Item, IApiModel Model)>();
 		CollectPages(root, pages);
+		foreach (var (item, _) in pages)
+			RecordUrl(item.Url);
 
 		// Pages of one version render in parallel. When two items share a URL the last one wins,
 		// as it did when pages were written sequentially in depth-first order.
@@ -596,12 +603,15 @@ public class OpenApiGenerator(
 		}).ConfigureAwait(false);
 	}
 
+	private void RecordUrl(string url) => _ = _generatedUrls.TryAdd(ApiLinkMatcher.Normalize(url), 0);
+
 	/// <summary>Former per-operation URLs of a collapsed page forward to it, keeping any <c>#fragment</c>.</summary>
 	private async Task WriteRedirects(OperationNavigationItem page, Cancel ctx)
 	{
 		var html = ApiRedirectPage.Html(page.Url);
 		foreach (var alias in page.AliasUrls)
 		{
+			RecordUrl(alias);
 			await WriteSpecSibling(
 				ApiOutputPaths.RelativeHtmlFile(alias, context.UrlPathPrefix),
 				async (stream, c) =>
