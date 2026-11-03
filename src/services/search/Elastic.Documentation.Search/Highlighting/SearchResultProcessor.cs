@@ -67,9 +67,12 @@ public static class SearchResultProcessor
 		if (hit.InnerHits is null)
 			return [];
 
+		// A reading's inner hits are computed from its nested query alone, so a reading the document did not
+		// match still carries them; only a named reading this hit matched counts.
+		var matched = MatchedQueryNames(hit);
 		return hit
 			.InnerHits
-			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key))
+			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key) && (matched is null || matched.Contains(group.Key)))
 			.SelectMany(group => group.Value.Hits.Hits)
 			.OrderByDescending(h => h.Score ?? 0)
 			.Select(
@@ -80,6 +83,13 @@ public static class SearchResultProcessor
 			.Take(3)
 			.ToArray();
 	}
+
+	/// <summary>The named queries this hit matched, or null when the query named none.</summary>
+	private static IReadOnlySet<string>? MatchedQueryNames<TDocument>(Hit<TDocument> hit) =>
+		hit.MatchedQueries?.Match<IReadOnlySet<string>>(
+			names => (names ?? []).ToHashSet(StringComparer.Ordinal),
+			scored => (scored?.Keys ?? []).ToHashSet(StringComparer.Ordinal)
+		);
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,

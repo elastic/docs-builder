@@ -90,8 +90,10 @@ public static class SearchQueryBuilder
 		var endpoint = BuildEndpointHalfQuery(reading.Operation);
 		if (endpoint is null)
 			return endpointRequired ? null : properties;
+		// Named after its inner hits, so the result processor can tell which reading a hit matched: inner hits
+		// are computed from the nested query alone, even for a reading whose endpoint did not hold.
 		return endpointRequired
-			? new BoolQuery { Must = [properties, endpoint] }
+			? new BoolQuery { Must = [properties, endpoint], QueryName = innerHitsName }
 			: new BoolQuery { Must = [properties], Should = [endpoint] };
 	}
 

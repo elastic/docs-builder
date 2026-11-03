@@ -153,6 +153,7 @@ public class ApiPropertySearchTests
 		must[0].GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"knn\"");
 		must[1].GetRawText().Should().Contain("\"api.endpoints\":[\"_search\"");
 		knn.TryGetProperty("should", out _).Should().BeFalse();
+		readings.EnumerateArray().Should().AllSatisfy(r => r.GetProperty("bool").TryGetProperty("_name", out _).Should().BeTrue());
 		var names = System
 			.Text
 			.RegularExpressions
@@ -192,11 +193,23 @@ public class ApiPropertySearchTests
 	{
 		var second =
 			$$$""","api_properties_1":{"hits":{"total":{"value":1,"relation":"eq"},"max_score":4,"hits":[{{{InnerHit("req-b", 4, "b")}}}]}}""";
-		var json = SearchResponseJson(InnerHit("req-a", 5, "a"), second);
+		var json = SearchResponseJson(InnerHit("req-a", 5, "a"), second, "\"matched_queries\":[\"api_properties\",\"api_properties_1\"],");
 
 		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "a", new Dictionary<string, string[]>());
 
 		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "req-b");
+	}
+
+	[Test]
+	public void ProcessHit_InnerHitsOfAReadingTheDocumentDidNotMatch_AreDropped()
+	{
+		var second =
+			$$$""","api_properties_1":{"hits":{"total":{"value":1,"relation":"eq"},"max_score":4,"hits":[{{{InnerHit("req-b", 4, "b")}}}]}}""";
+		var json = SearchResponseJson(InnerHit("req-a", 5, "a"), second, "\"matched_queries\":[\"api_properties\"],");
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "a", new Dictionary<string, string[]>());
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-a");
 	}
 
 	[Test]
@@ -258,15 +271,15 @@ public class ApiPropertySearchTests
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
 	}
 
-	private static string SearchResponseJson(string innerHits, string moreInnerHitGroups = "") =>
+	private static string SearchResponseJson(string innerHits, string moreInnerHitGroups = "", string matchedQueries = "") =>
 		"""
 		{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
-		{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
+		{"_index":"test","_id":"search","_score":1,__MATCHED__"_source":{"title":"Search","search_title":"Search","path":"/search"},
 		"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}__MORE_GROUPS__}}]}}
-		""".Replace(
-			"__INNER_HITS__",
-			innerHits
-		).Replace("__MORE_GROUPS__", moreInnerHitGroups);
+		"""
+			.Replace("__INNER_HITS__", innerHits)
+			.Replace("__MORE_GROUPS__", moreInnerHitGroups)
+			.Replace("__MATCHED__", matchedQueries);
 
 	private static string InnerHit(string anchor, double score, string path) =>
 		$$$"""
