@@ -30,7 +30,12 @@ const HTTP_METHODS = new Set([
     'options',
 ])
 
-const pathKey = (path: string) => path.toLowerCase().replace(/^\/+/, '')
+/** A path as a query word can name it: lower case, no leading slash, and a `{parameter}` stands as `*` so a word never matches a placeholder. */
+const pathKey = (path: string) =>
+    path
+        .toLowerCase()
+        .replace(/\{[^}]*\}/g, '*')
+        .replace(/^\/+/, '')
 
 const canBeField = (word: string) =>
     word.length > 0 &&
