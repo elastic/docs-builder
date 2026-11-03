@@ -2944,14 +2944,19 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
-		/* Stays in view while the sections scroll, however long the page is. When the examples are taller than the
-		   window the rail scrolls as a whole, so the code blocks keep their line caps. */
+		/* Stays in view while the sections scroll, however long the page is. The rail itself does not clip, so the
+		   Copy page menu can open past its edge; the examples below it shrink to the window and scroll. */
 		position: sticky;
 		top: var(--offset-top, 0px);
 		align-self: start;
 		max-height: calc(100vh - var(--offset-top, 0px));
-		overflow: hidden auto;
 		box-sizing: border-box;
+	}
+
+	.api-page-rail > :not(.api-page-actions) {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: hidden auto;
 	}
 
 	.api-page-rail > .api-page-actions {
