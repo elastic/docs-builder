@@ -45,6 +45,40 @@ describe('navigationSearchBreadcrumbs', () => {
         ).toEqual(['API', 'Kibana API'])
     })
 
+    it('keeps the group crumb after the product as written', () => {
+        expect(
+            navigationSearchBreadcrumbs(
+                [
+                    { url: '/docs/api', title: 'API' },
+                    {
+                        url: '/docs/api/doc/elasticsearch',
+                        title: 'elasticsearch',
+                    },
+                    {
+                        url: '/docs/api/doc/elasticsearch/group/endpoint-ml-anomaly',
+                        title: 'Machine learning anomaly detection',
+                    },
+                ],
+                'api',
+                'assembler'
+            )
+        ).toEqual([
+            'API',
+            'Elasticsearch API',
+            'Machine learning anomaly detection',
+        ])
+    })
+
+    it('returns only API when the product crumb is missing', () => {
+        expect(
+            navigationSearchBreadcrumbs(
+                [{ url: '/docs/api', title: 'API' }],
+                'api',
+                'assembler'
+            )
+        ).toEqual(['API'])
+    })
+
     it('keeps the Docs prefix and drops the first parent when type is omitted', () => {
         expect(
             navigationSearchBreadcrumbs(

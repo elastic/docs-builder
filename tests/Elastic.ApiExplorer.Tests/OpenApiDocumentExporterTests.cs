@@ -445,7 +445,14 @@ public class OpenApiDocumentExporterTests
 		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
 		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
 		follow.Headings.Should().Equal("ccr");
-		follow.Api.Group.Should().Be("Cross-cluster replication");
+		follow
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument
+			{
+				Title = "Cross-cluster replication",
+				Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr"
+			});
 	}
 
 	[Test]
@@ -461,6 +468,9 @@ public class OpenApiDocumentExporterTests
 		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
 
 		doc.Headings.Should().Equal("ccr");
-		doc.Api!.Group.Should().Be("Ccr");
+		doc
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
 	}
 }

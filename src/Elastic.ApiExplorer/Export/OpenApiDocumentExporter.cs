@@ -143,6 +143,13 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				// Infer product and repository metadata
 				var inference = documentInferrer?.InferForOpenApi(productId ?? product);
 
+				var groupParent = GroupParent(headings, tagMetadata, productUrl);
+				ParentDocument[] parents =
+				[
+					new ParentDocument { Title = "API", Path = "/docs/api" },
+					new ParentDocument { Title = productLabel, Path = productUrl }
+				];
+
 				var api = new ApiOperationMetadata
 				{
 					Properties = trees.IndexEntries(plainDescriptions),
@@ -160,7 +167,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Method = method,
 					Path = path.Key,
 					OperationId = operationId,
-					Group = headings is [var tag, ..] ? OpenApiExtensionReader.TagMetadataFor(tag, tagMetadata).DisplayName : null,
 					Deprecated = operation.Value.Deprecated
 				};
 
@@ -169,17 +175,13 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					ContentType = "api",
 					Path = url,
 					Title = title,
-					SearchTitle = BuildSearchTitle(title, productLabel, api),
+					SearchTitle = BuildSearchTitle(title, productLabel, groupParent?.Title, api),
 					Description = description,
 					Body = body,
 					Headings = headings,
 					Links = [],
 					Applies = applies?.ToAppliesTo(),
-					Parents =
-					[
-						new ParentDocument { Title = "API", Path = "/docs/api" },
-						new ParentDocument { Title = productLabel, Path = productUrl }
-					],
+					Parents = groupParent is null ? parents : [.. parents, groupParent],
 					Api = api,
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
@@ -192,6 +194,23 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 			}
 		}
 	}
+
+	/// <summary>
+	/// The breadcrumb entry for the operation's first tag, matching the group page the operation page links to;
+	/// null when untagged.
+	/// </summary>
+	private static ParentDocument? GroupParent(
+		string[] tags,
+		IReadOnlyDictionary<string, OpenApiTagMetadata> tagMetadata,
+		string productUrl
+	) =>
+		tags is [var tag, ..]
+			? new ParentDocument
+			{
+				Title = OpenApiExtensionReader.TagMetadataFor(tag, tagMetadata).DisplayName,
+				Path = $"{productUrl}/group/{ApiUrlBuilder.TagMoniker(tag)}"
+			}
+			: null;
 
 	/// <summary>
 	/// Display label for the product crumb, e.g. <c>elasticsearch</c> → <c>Elasticsearch API</c>.
@@ -207,11 +226,11 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// <c>ml flush</c>. The product label lives here rather than in <c>Title</c>, so result rows do
 	/// not repeat "Elasticsearch API" on every hit.
 	/// </summary>
-	internal static string BuildSearchTitle(string title, string productLabel, ApiOperationMetadata api)
+	internal static string BuildSearchTitle(string title, string productLabel, string? group, ApiOperationMetadata api)
 	{
 		var searchTitle = $"{title} - {productLabel} - {api.OperationId} - {api.Method} {api.Path}";
-		if (!string.IsNullOrWhiteSpace(api.Group))
-			searchTitle += $" - {api.Group}";
+		if (!string.IsNullOrWhiteSpace(group))
+			searchTitle += $" - {group}";
 		var words = ApiSearchWords.Of(api.OperationId, api.Path);
 		return words.Length == 0 ? searchTitle : $"{searchTitle} - {string.Join(' ', words)}";
 	}

@@ -47,11 +47,11 @@ export const navigationSearchBreadcrumbs = (
     buildType: string
 ) => {
     if (typeFilter === 'api') {
+        const [, product, ...rest] = parents
         return [
             'API',
-            ...parents
-                .slice(1)
-                .map((parent) => formatApiProductCrumb(parent.title)),
+            ...(product ? [formatApiProductCrumb(product.title)] : []),
+            ...rest.map((parent) => parent.title),
         ]
     }
 

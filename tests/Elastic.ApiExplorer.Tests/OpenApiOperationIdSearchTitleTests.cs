@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
 using Microsoft.OpenApi;
 
@@ -165,11 +166,34 @@ public class OpenApiOperationIdSearchTitleTests
 				"Force buffered data to be processed - Elasticsearch API - ml-flush-job - POST /_ml/anomaly_detectors/{job_id}/_flush - Machine learning anomaly detection - ml flush job anomaly detectors"
 			);
 		flush.Headings.Should().Equal("ml anomaly");
-		flush.Api!.Group.Should().Be("Machine learning anomaly detection");
-		flush.Api.Deprecated.Should().BeFalse();
+		flush
+			.Parents
+			.Should()
+			.BeEquivalentTo(
+				[
+					new ParentDocument { Title = "API", Path = "/docs/api" },
+					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" },
+					new ParentDocument
+					{
+						Title = "Machine learning anomaly detection",
+						Path = "/docs/api/doc/elasticsearch/group/endpoint-ml-anomaly"
+					}
+				],
+				o => o.WithStrictOrdering()
+			);
+		flush.Api!.Deprecated.Should().BeFalse();
 		docs["ml-close-job"].Api!.Deprecated.Should().BeTrue();
 		var bulk = docs["_bulk"];
 		bulk.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk - bulk");
-		bulk.Api!.Group.Should().BeNull();
+		bulk
+			.Parents
+			.Should()
+			.BeEquivalentTo(
+				[
+					new ParentDocument { Title = "API", Path = "/docs/api" },
+					new ParentDocument { Title = "Elasticsearch API", Path = "/docs/api/doc/elasticsearch" }
+				],
+				o => o.WithStrictOrdering()
+			);
 	}
 }
