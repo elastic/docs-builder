@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation;
@@ -11,11 +12,20 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
 
+/// <summary>The Authentication section: the alternatives to authenticate with, on the Authentication page and on endpoints that set their own.</summary>
+public record AuthenticationSectionModel(
+	IReadOnlyList<AuthRequirement> Requirements,
+	bool Optional,
+	Func<string?, HtmlString> RenderMarkdown,
+	bool AlwaysTabs = false
+);
+
 /// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
-	Func<string?, HtmlString> RenderMarkdown
+	Func<string?, HtmlString> RenderMarkdown,
+	bool AuthenticationOptional = false
 )
 {
 	/// <summary>Every privilege, one name each, for the heading's summary.</summary>
@@ -36,7 +46,20 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 	public required OperationPageModel Page { get; init; }
 
 	public AuthorizationSectionModel Authorization =>
-		new(Page.AuthRequirements, Page.RequiredPrivileges, markdown => RenderMarkdown(markdown));
+		new(
+			Page.AuthRequirements,
+			Page.RequiredPrivileges,
+			markdown => RenderMarkdown(markdown),
+			Page.AuthBadge?.Kind == AuthBadgeKind.Optional
+		);
+
+	/// <summary>Where the <c>auth</c> badge links: the Authentication page, or the endpoint's own section.</summary>
+	public string? AuthBadgeHref => Page.AuthBadge?.Target switch
+	{
+		AuthBadgeTarget.Section => "#authentication",
+		AuthBadgeTarget.Page => LandingNavigationItem.Of(CurrentNavigationItem.NavigationRoot)?.AuthenticationUrl,
+		_ => null
+	};
 
 	protected override string? LayoutPageTitle =>
 		OpenApiExtensionReader.GetSummary(Operation.Operation) ?? CurrentNavigationItem.NavigationTitle;

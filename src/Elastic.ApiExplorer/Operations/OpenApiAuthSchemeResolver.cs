@@ -15,19 +15,100 @@ public record AuthRequirement(IReadOnlyList<AuthScheme> Schemes)
 	public string Label => string.Join(" + ", Schemes.Select(static s => s.Label));
 }
 
+/// <summary>Where an endpoint's <c>auth</c> badge points: the Authentication page, the endpoint's own section, or nowhere.</summary>
+public enum AuthBadgeTarget
+{
+	Page,
+	Section,
+	None
+}
+
+public enum AuthBadgeKind
+{
+	Required,
+	Optional,
+	None
+}
+
+public record AuthBadge(AuthBadgeKind Kind, AuthBadgeTarget Target)
+{
+	public string Text => Kind switch
+	{
+		AuthBadgeKind.Optional => "Auth optional",
+		AuthBadgeKind.None => "No auth",
+		_ => "Auth"
+	};
+
+	/// <summary>The word the CommonMark output says after <c>Authentication:</c>.</summary>
+	public string Summary => Kind.ToString().ToLowerInvariant();
+}
+
 public static class OpenApiAuthSchemeResolver
 {
+	/// <summary>The alternatives every endpoint inherits: the document's <c>security</c>, or one per declared scheme when the document has none.</summary>
+	public static IReadOnlyList<AuthRequirement> ResolveDocument(OpenApiDocument document)
+	{
+		if (document.Security is { Count: > 0 })
+			return Alternatives(document.Security, document);
+
+		var schemes = new List<AuthRequirement>();
+		foreach (var (id, scheme) in document.Components?.SecuritySchemes ?? new Dictionary<string, IOpenApiSecurityScheme>())
+		{
+			var target = Target(scheme, document);
+			if (LabelFor(target) is { } label)
+				schemes.Add(new AuthRequirement([new AuthScheme(id, label, CredentialExample(target), DescriptionOf(target))]));
+		}
+
+		return schemes;
+	}
+
+	/// <summary>True when one of the alternatives is empty, which OpenAPI reads as "no authentication is fine too".</summary>
+	public static bool AllowsAnonymous(IList<OpenApiSecurityRequirement>? requirements) =>
+		requirements?.Any(static requirement => requirement.Count == 0) == true;
+
+	/// <summary>True when the operation declares its own <c>security</c> and it names other alternatives than the document's.</summary>
+	public static bool OverridesDocument(OpenApiOperation operation, OpenApiDocument document) =>
+		operation.Security is { Count: > 0 } && Signature(operation.Security, document) != Signature(document.Security, document);
+
+	/// <summary>The badge under an endpoint's path, or none when the spec says nothing about authentication.</summary>
+	public static AuthBadge? Badge(OpenApiOperation operation, OpenApiDocument document)
+	{
+		var effective = operation.Security ?? document.Security;
+		if (effective is null)
+			return null;
+		// An empty list, or alternatives that name no scheme at all, mean no authentication.
+		if (effective.All(static requirement => requirement.Count == 0))
+			return new AuthBadge(AuthBadgeKind.None, AuthBadgeTarget.None);
+
+		var target = OverridesDocument(operation, document) ? AuthBadgeTarget.Section : AuthBadgeTarget.Page;
+		return new AuthBadge(AllowsAnonymous(effective) ? AuthBadgeKind.Optional : AuthBadgeKind.Required, target);
+	}
+
+	/// <summary>The alternatives, in any order, and whether none at all is also fine, so dropping or adding the empty alternative counts as a change.</summary>
+	private static string Signature(IList<OpenApiSecurityRequirement>? requirements, OpenApiDocument document)
+	{
+		var alternatives = Alternatives(requirements, document).Select(
+			static a => string.Join('\u001f', a.Schemes.Select(static s => s.Id))
+		);
+		return $"{string.Join('|', alternatives.Order(StringComparer.Ordinal))}#{AllowsAnonymous(requirements)}";
+	}
+
+	private static string? DescriptionOf(IOpenApiSecurityScheme? scheme) =>
+		string.IsNullOrWhiteSpace(scheme?.Description) ? null : scheme.Description;
+
 	/// <summary>The alternatives (OR) from the operation's security, or the document's when the operation has none. Each holds the schemes (AND) it needs.</summary>
 	public static IReadOnlyList<AuthRequirement> Resolve(OpenApiOperation operation, OpenApiDocument document)
 	{
 		// Omitted operation security is null (inherit). An empty list is an explicit override to none.
 		var requirements = operation.Security ?? document.Security;
-		if (requirements is not { Count: > 0 })
-			return [];
+		return requirements is { Count: > 0 } ? Alternatives(requirements, document) : [];
+	}
 
+	private static List<AuthRequirement> Alternatives(IEnumerable<OpenApiSecurityRequirement>? requirements, OpenApiDocument document)
+	{
 		var seen = new HashSet<string>(StringComparer.Ordinal);
 		var alternatives = new List<AuthRequirement>();
-		foreach (var requirement in requirements)
+		foreach (var requirement in requirements ?? [])
 		{
 			var schemes = SchemesOf(requirement, document);
 			// The unit separator cannot be part of a scheme name, so {a, b} and {"a-b"} stay different alternatives.

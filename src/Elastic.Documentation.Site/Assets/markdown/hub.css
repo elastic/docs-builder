@@ -228,20 +228,21 @@
 		--code-size: var(--text-xs);
 		--code-leading: 1.2;
 	}
-	/* A long command scrolls sideways inside its box instead of being clipped. */
+	/* A long command wraps inside its box, so the whole command stays visible.
+	   The box keeps the option button's height for a one-line command. */
 	.hub-get-started .hub-get-started-install pre {
 		display: flex;
 		align-items: center;
 		box-sizing: border-box;
-		height: 37px;
+		min-height: 37px;
 		margin: 0;
-		padding: 0 36px 0 12px;
-		overflow-x: auto;
+		padding: 8px 36px 8px 12px;
 		background: var(--color-ink-navy);
 		border-radius: 8px;
 	}
 	.hub-get-started .hub-get-started-install code {
-		white-space: nowrap;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
 	}
 
 	.hub-get-started .hub-get-started-track {

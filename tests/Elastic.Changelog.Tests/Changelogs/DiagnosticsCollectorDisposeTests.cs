@@ -121,7 +121,10 @@ public class DiagnosticsCollectorDisposeTests
 	// If the service command completes before the thread pool picks up the Task.Run delegate,
 	// _readerStarted is still false when WaitForDrain runs. Previously this threw; now it
 	// waits briefly for the reader to start and then drains successfully.
+	// Runs alone: the reader starts on the thread pool and must come up within WaitForDrain's 2s
+	// deadline, which other tests blocking pool threads can push past on a busy runner.
 	[Test]
+	[NotInParallel]
 	public async Task WaitForDrain_AfterStartAsync_WaitsForReaderEvenIfNotStartedYet()
 	{
 		var output = new RecordingOutput();

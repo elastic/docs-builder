@@ -123,7 +123,7 @@ public class UnionVariantTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == property).Children.Variants!.Variants;
-		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items.First().Name == "type");
+		variants.Where(v => v.Properties is not null).Should().OnlyContain(v => v.Properties!.Items[0].Name == "type");
 	}
 
 	[Test]
@@ -160,7 +160,7 @@ public class UnionVariantTests
 		var list = builder.BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" });
 
 		var variants = list!.Items.Single(p => p.Name == "pets").Children.Variants!.Variants;
-		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items.First().Name == "type");
+		variants.Should().HaveCount(2).And.OnlyContain(v => v.Properties!.Items[0].Name == "type");
 	}
 
 	[Test]

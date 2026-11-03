@@ -16,7 +16,7 @@ using Elastic.Markdown.StyleGuide;
 
 namespace Elastic.Markdown.Tests;
 
-public class StyleGuidePreviewTests
+public partial class StyleGuidePreviewTests
 {
 	private static BuildContext Template()
 	{
@@ -116,8 +116,11 @@ public class StyleGuidePreviewTests
 		Crumbs(grouped).Should().Be(Crumbs(ungrouped) + 1, "the group adds one step to the trail");
 	}
 
-	private static int Crumbs(string? html) => System.Text.RegularExpressions.Regex.Count(html ?? string.Empty, "breadcrumb__item");
+	private static int Crumbs(string? html) => BreadcrumbItemRegex().Count(html ?? string.Empty);
 
 	[Test]
 	public async Task UnknownPreview_IsNull() => (await RenderAsync("nope")).Should().BeNull();
+
+	[System.Text.RegularExpressions.GeneratedRegex("breadcrumb__item")]
+	private static partial System.Text.RegularExpressions.Regex BreadcrumbItemRegex();
 }

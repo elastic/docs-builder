@@ -148,9 +148,15 @@
 	gap: 16px;
 }
 
-/* Operation / group page title — Figma APIs 10079:2802 */
+/* Topic and Authentication pages put their title in the same header, with the content below it. */
+.api-page-intro + #elastic-docs-v3 {
+	margin-top: 16px;
+}
+
+/* Operation / group page title — Figma APIs 10079:2802. A children: page keeps its H1 in its own Markdown, so its first heading takes the same style. */
 .api-page-intro h1,
-#elastic-api-v3 h1 {
+#elastic-api-v3 h1,
+.api-markdown-page > .heading-wrapper:first-child h1 {
 	margin: 0;
 	padding-top: 0;
 	color: var(--color-ink-navy, #111c2c);
@@ -1901,13 +1907,33 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-.api-title-badges .deprecated-badge {
-	@apply mr-2 inline;
-}
-
 /* x-state availability, rendered with the same applies_to badge as Markdown pages */
 .api-title-badges .applies {
 	@apply mr-2;
+}
+
+/* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+/* The availability badge sits on the bottom of its line (applies-to-popover); without the same here the badge sits on the baseline and the wrapper is taller. */
+.api-title-badges .applies-inline > .applicable-info {
+	vertical-align: bottom;
+}
+
+.api-title-badges .applicable-info.api-badge--danger {
+	@apply text-red-90 border-red-50;
+}
+
+.api-title-badges a.applicable-info {
+	@apply cursor-pointer underline;
+	text-underline-offset: 2px;
+}
+
+.api-title-badges a.applicable-info:hover {
+	@apply border-blue-elastic text-blue-elastic;
+}
+
+.api-title-badges a.applicable-info:focus-visible {
+	outline: 2px solid var(--color-blue-elastic);
+	outline-offset: 2px;
 }
 
 /* Deprecated badge - red warning style */

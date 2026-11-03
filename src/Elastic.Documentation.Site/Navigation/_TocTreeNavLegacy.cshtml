@@ -50,11 +50,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true">
+							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip">
+			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>
@@ -80,11 +80,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true">
+							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip">
+			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>

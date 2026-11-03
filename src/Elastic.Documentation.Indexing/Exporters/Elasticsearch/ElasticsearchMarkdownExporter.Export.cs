@@ -187,7 +187,6 @@ public partial class ElasticsearchMarkdownExporter
 			.Select(
 				h => h.GetData("header") as string ?? string.Empty
 			) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
 		var summary = !string.IsNullOrEmpty(body)
@@ -203,7 +202,6 @@ public partial class ElasticsearchMarkdownExporter
 			Path = url,
 			Title = file.Title,
 			SearchTitle = file.Title, //updated in CommonEnrichments
-
 			Body = body,
 			Description = fileContext.SourceFile.YamlFrontMatter?.Description,
 			Summary = summary,
@@ -282,7 +280,6 @@ public partial class ElasticsearchMarkdownExporter
 				.Select(
 					h => h.GetData("header") as string ?? string.Empty
 				) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-
 				.Where(text => !string.IsNullOrEmpty(text))
 				.ToArray();
 			var summary = !string.IsNullOrEmpty(doc.Body)

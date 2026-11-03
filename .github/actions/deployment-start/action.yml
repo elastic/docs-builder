@@ -1,0 +1,57 @@
+name: Start deployment
+description: |
+  Creates a transient GitHub deployment for a preview and marks it in progress.
+  Pair with `deployment-finish` once the outcome is known.
+
+inputs:
+  environment:
+    description: 'The GitHub environment name, e.g. docs-preview'
+    required: true
+  pr-number:
+    description: |
+      The pull request number. Names the deployment task `<environment>-<pr-number>`, which
+      `preview-cleanup.yml` looks up by when the PR closes. Empty for pushes.
+    required: false
+    default: ''
+  ref:
+    description: 'The commit SHA or branch to deploy'
+    required: true
+
+outputs:
+  id:
+    description: 'The deployment id'
+    value: ${{ steps.create.outputs.id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Create deployment
+      id: create
+      uses: actions/github-script@v9
+      env:
+        ENVIRONMENT: ${{ inputs.environment }}
+        PR_NUMBER: ${{ inputs.pr-number }}
+        REF: ${{ inputs.ref }}
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const environment = process.env.ENVIRONMENT;
+          const prNumber = process.env.PR_NUMBER;
+          const deployment = await github.rest.repos.createDeployment({
+            owner,
+            repo,
+            environment,
+            task: prNumber ? `${environment}-${prNumber}` : undefined,
+            ref: process.env.REF,
+            auto_merge: false,
+            transient_environment: true,
+            required_contexts: [],
+          });
+          await github.rest.repos.createDeploymentStatus({
+            owner,
+            repo,
+            deployment_id: deployment.data.id,
+            state: 'in_progress',
+            log_url: `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+          });
+          core.setOutput('id', deployment.data.id);

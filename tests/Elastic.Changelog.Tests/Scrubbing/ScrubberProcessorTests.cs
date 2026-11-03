@@ -157,7 +157,7 @@ public class ScrubberProcessorTests
 		// manifests (and Phase 3's cleanup will delete them) — those events may never touch the
 		// public registry object directly, only schedule a reconcile that derives the public
 		// manifest from public state.
-		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/registry.json", /*lang=json,strict*/  """{"private":"manifest"}""");
+		_ = _s3.Seed(PrivateBucket, "bundle/elasticsearch/registry.json", /*lang=json,strict*/ """{"private":"manifest"}""");
 		_ = _s3.Seed(PublicBucket, "bundle/elasticsearch/es-9.1.0.yaml", BundleYaml());
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "bundle/elasticsearch/registry.json")], Ctx);
@@ -176,7 +176,7 @@ public class ScrubberProcessorTests
 		// Pool registry keys (changelog/{org}/{repo}/{branch}/registry.json) are retired — no client
 		// writes them since #3760. A stale event from an old client is silently dropped.
 		const string poolRegistry = "changelog/elastic/kibana/main/registry.json";
-		const string content = /*lang=json,strict*/  """{"schema_version":1,"bundles":[{"file":"100.yaml"}]}""";
+		const string content = /*lang=json,strict*/ """{"schema_version":1,"bundles":[{"file":"100.yaml"}]}""";
 		_ = _s3.Seed(PrivateBucket, poolRegistry, content);
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", poolRegistry)], Ctx);
@@ -480,7 +480,7 @@ public class ScrubberProcessorTests
 	public async Task Process_ClientUploadedNotesIndex_IsRejectedWithNoPublicWrite()
 	{
 		// The notes index is reconciler-owned; a client that uploads notes-*.json must be blocked.
-		_s3.Seed(PrivateBucket, "changelog/elastic/kibana/notes-9.0.0.json", /*lang=json,strict*/  """{"notes":[]}""");
+		_s3.Seed(PrivateBucket, "changelog/elastic/kibana/notes-9.0.0.json", /*lang=json,strict*/ """{"notes":[]}""");
 
 		var failed = await _processor.ProcessAsync([Message("ObjectCreated:Put", "changelog/elastic/kibana/notes-9.0.0.json")], Ctx);
 

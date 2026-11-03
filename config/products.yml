@@ -343,10 +343,10 @@ products:
     versioning: 'stack'
 
   # Products shipped via the DRA pipeline, not yet in the public docs site.
-  # ems-server, endpoint-dev, and prodfiler are on the DRA bump list. Leave
-  # release-notes: false until https://github.com/elastic/catalog-info/pull/4862
-  # is merged, the Vault role is in place, and the preview workflow requests
-  # that token. cloud-defend is not on that list.
+  # ems-server, endpoint-dev, and prodfiler are private. The unified release
+  # notes preview reads them with the token from
+  # https://github.com/elastic/catalog-info/pull/4862. cloud-defend is not on
+  # the DRA bump list.
   cloud-defend:
     display: 'Elastic Cloud Defend'
     features:
@@ -372,12 +372,12 @@ products:
     repository: 'ems-server'
     features:
       public-reference: false
-      release-notes: false
+      release-notes: dra
   endpoint-dev:
     display: 'Endpoint Dev'
     features:
       public-reference: false
-      release-notes: false
+      release-notes: dra
   ml-cpp:
     display: 'Machine Learning C++'
     features:
@@ -387,4 +387,4 @@ products:
     display: 'Elastic Universal Profiling'
     features:
       public-reference: false
-      release-notes: false
+      release-notes: dra

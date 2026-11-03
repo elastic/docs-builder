@@ -104,7 +104,7 @@ public class ApiLayoutVersionDropdownTests
 		var layout = CreateLayout(buildType: BuildType.Assembler, catalogEntries: Catalog);
 
 		layout.ApiContext.Should().NotBeNull();
-		layout.ApiContext!.Title.Should().Be("Elasticsearch");
+		layout.ApiContext.Title.Should().Be("Elasticsearch");
 		layout.ApiContext.HubUrl.Should().Be("/docs/api");
 		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Select(p => p.Label).Should().Equal("Elasticsearch", "Kibana");
 		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Should().ContainSingle(p => p.Selected && p.Label == "Elasticsearch");
@@ -120,7 +120,7 @@ public class ApiLayoutVersionDropdownTests
 		var layout = CreateLayout(catalogEntries: Catalog);
 
 		layout.ApiContext.Should().NotBeNull();
-		layout.ApiContext!.ProductGroups.SelectMany(g => g.Products).Should().HaveCount(2);
+		layout.ApiContext.ProductGroups.SelectMany(g => g.Products).Should().HaveCount(2);
 	}
 
 	private static readonly ApiCatalogEntry[] Catalog =

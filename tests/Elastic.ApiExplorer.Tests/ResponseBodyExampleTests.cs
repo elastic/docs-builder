@@ -27,7 +27,7 @@ public class ResponseBodyExampleTests
 		var body = await BuildFrom(schema);
 
 		body.Should().NotBeNull();
-		JsonNode.Parse(body!)?.ToJsonString().Should().Be(expected == "null" ? null : expected);
+		JsonNode.Parse(body)?.ToJsonString().Should().Be(expected == "null" ? null : expected);
 	}
 
 	[Test]
@@ -105,7 +105,7 @@ public class ResponseBodyExampleTests
 		);
 
 		body.Should().NotBeNull();
-		body!.Length.Should().BeLessThan(1000);
+		body.Length.Should().BeLessThan(1000);
 		JsonNode.Parse(body).Should().NotBeNull();
 	}
 
