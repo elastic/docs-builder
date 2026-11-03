@@ -46,7 +46,9 @@ public partial class DefaultSearchService<TDocument>(
 		"api.method",
 		"api.path",
 		"api.operation_id",
-		"api.routes"
+		"api.routes",
+		// optional, so the required-member test cannot catch its absence; without it every hit reads as current
+		"api.deprecated"
 	];
 
 	private static readonly string[] SearchSourceIncludes =

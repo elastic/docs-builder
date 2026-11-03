@@ -53,6 +53,7 @@ public partial class NavigationSearchService(
 						Title = item.Title,
 						Description = item.Description,
 						Routes = item.Document.Api?.Routes ?? [],
+						Deprecated = item.Document.Api?.Deprecated ?? false,
 						Properties = item
 							.Properties
 							.Select(
