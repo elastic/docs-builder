@@ -45,7 +45,15 @@ public static class ApiLinkValidator
 		if (generatedUrls.Count == 0)
 			return null;
 
-		var links = collector.ApiLinks.ToArray();
+		// A snippet is parsed once per page that includes it, and a card's targets are seen by more than one parser,
+		// so report each URL once per file, at its first position.
+		var links = collector
+			.ApiLinks
+			.OrderBy(l => l.File, StringComparer.Ordinal)
+			.ThenBy(l => l.Line)
+			.ThenBy(l => l.Column)
+			.DistinctBy(l => (l.Url, l.File))
+			.ToArray();
 		if (links.Length == 0)
 			return null;
 

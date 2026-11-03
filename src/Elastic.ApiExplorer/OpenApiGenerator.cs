@@ -603,7 +603,14 @@ public class OpenApiGenerator(
 		}).ConfigureAwait(false);
 	}
 
-	private void RecordUrl(string url) => _ = _generatedUrls.TryAdd(ApiLinkMatcher.Normalize(url), 0);
+	// Narrative links use the production path (/docs/api/doc/...), while a build such as a PR preview serves the same
+	// pages under another prefix, so record each page under the production path.
+	private void RecordUrl(string url)
+	{
+		var prefix = context.UrlPathPrefix ?? string.Empty;
+		var relative = prefix.Length > 0 && url.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? url[prefix.Length..] : url;
+		_ = _generatedUrls.TryAdd(ApiLinkMatcher.Normalize($"/docs{relative}"), 0);
+	}
 
 	/// <summary>Former per-operation URLs of a collapsed page forward to it, keeping any <c>#fragment</c>.</summary>
 	private async Task WriteRedirects(OperationNavigationItem page, Cancel ctx)

@@ -79,6 +79,26 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
+	public async Task GenerateProducts_PreviewPathPrefix_RecordsUrlsUnderTheProductionPath()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot, urlPathPrefix: "elastic/docs-builder/docs/123");
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"))
+		);
+
+		_ = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
+
+		generator.GeneratedUrls.Should().Contain("/docs/api/doc/elasticsearch");
+		generator.GeneratedUrls.Should().OnlyContain(url => url.StartsWith("/docs/api/doc/"));
+	}
+
+	[Test]
 	public async Task ResolveCanonicalDocuments_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
@@ -628,7 +648,8 @@ public class OpenApiGeneratorCatalogSplitTests
 		string outputRoot,
 		string? docsetYaml = null,
 		string? displayName = null,
-		BuildType buildType = BuildType.Isolated
+		BuildType buildType = BuildType.Isolated,
+		string urlPathPrefix = "docs"
 	)
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -680,7 +701,7 @@ public class OpenApiGeneratorCatalogSplitTests
 			),
 			configurationContext
 		)
-		{ UrlPathPrefix = "docs", BuildType = buildType };
+		{ UrlPathPrefix = urlPathPrefix, BuildType = buildType };
 	}
 
 	private static OpenApiDocument SpecDocument(string title) =>

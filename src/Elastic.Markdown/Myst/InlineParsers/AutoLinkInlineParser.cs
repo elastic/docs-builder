@@ -86,6 +86,8 @@ public class AutoLinkInlineParser : InlineParser
 
 		processor.Inline = linkInline;
 
+		DiagnosticLinkInlineParser.RecordApiLink(linkInline, context, url);
+
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
 			processor.EmitHint(
