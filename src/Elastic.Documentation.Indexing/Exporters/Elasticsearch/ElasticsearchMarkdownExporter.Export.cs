@@ -187,9 +187,7 @@ public partial class ElasticsearchMarkdownExporter
 			) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-		var summary = !string.IsNullOrEmpty(body)
-			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
-			: string.Empty;
+		var summary = BuildSummary(body, headings);
 
 		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
 		// this PR will add a service for us to resolve to a versioning scheme.
@@ -295,10 +293,11 @@ public partial class ElasticsearchMarkdownExporter
 	internal static void ApplyApiPlainText(DocumentationDocument doc, string plainTextBody)
 	{
 		doc.Body = plainTextBody;
-		doc.Summary = plainTextBody.Length > 0
-			? plainTextBody[..Math.Min(plainTextBody.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
-			: string.Empty;
+		doc.Summary = BuildSummary(plainTextBody, doc.Headings);
 	}
+
+	private static string BuildSummary(string body, IEnumerable<string> headings) =>
+		string.IsNullOrEmpty(body) ? string.Empty : body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings);
 
 	private async IAsyncEnumerable<DocumentationDocument> ExportApiDocuments(
 		OpenApiDocumentExporter exporter,

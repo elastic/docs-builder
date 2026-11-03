@@ -442,7 +442,6 @@ public class OpenApiDocumentExporterTests
 
 		var docs = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
 
-		docs.Should().NotBeEmpty();
 		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
 		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
 		follow.Headings.Should().Equal("ccr");

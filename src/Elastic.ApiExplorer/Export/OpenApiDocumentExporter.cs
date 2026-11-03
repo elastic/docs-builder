@@ -14,7 +14,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -161,7 +160,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Method = method,
 					Path = path.Key,
 					OperationId = operationId,
-					Group = GroupName(headings.FirstOrDefault(), tagMetadata),
+					Group = headings is [var tag, ..] ? OpenApiExtensionReader.TagMetadataFor(tag, tagMetadata).DisplayName : null,
 					Deprecated = operation.Value.Deprecated
 				};
 
@@ -199,14 +198,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	internal static string ProductApiLabel(string product) =>
 		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
-
-	/// <summary>The tag's display name as the API navigation shows it.</summary>
-	private static string? GroupName(string? tag, Dictionary<string, OpenApiTagMetadata> tagMetadata)
-	{
-		if (tag is null)
-			return null;
-		return tagMetadata.TryGetValue(tag, out var meta) ? meta.DisplayName : tag.CapitalizeFirstLetter();
-	}
 
 	/// <summary>
 	/// Search tokens users type for an operation: the title, the product label, the raw operation id

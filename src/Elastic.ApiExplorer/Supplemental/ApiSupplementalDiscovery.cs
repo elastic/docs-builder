@@ -132,8 +132,7 @@ public static class ApiSupplementalDiscovery
 
 				foreach (var tagRef in operation.Tags)
 				{
-					var name = OpenApiExtensionReader.TagName(tagRef);
-					if (!string.IsNullOrEmpty(name))
+					if (OpenApiExtensionReader.TagName(tagRef) is { } name)
 						_ = tags.Add(name);
 				}
 			}
