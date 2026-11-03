@@ -41,7 +41,7 @@ const cases: Array<[string, NavigableResult, string]> = [
         { kind: 'operation', result: operation },
         'Go to operation',
     ],
-    ['a docs page', { kind: 'operation', result: page }, 'Jump to'],
+    ['a docs page', { kind: 'operation', result: page }, 'Go to page'],
     [
         'a property',
         { kind: 'property', result: operation, property },
@@ -57,6 +57,6 @@ it('labels the operation and each of its properties in order', () => {
     expect(navigableSearchResults([operation, page]).map(goToLabel)).toEqual([
         'Go to operation',
         'Go to property',
-        'Jump to',
+        'Go to page',
     ])
 })

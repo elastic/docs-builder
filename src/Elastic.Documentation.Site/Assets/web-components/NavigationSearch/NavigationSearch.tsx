@@ -3,7 +3,6 @@ import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
     GO_TO_LABELS,
-    goToLabel,
     navigableSearchResults,
     type NavigableResult,
 } from './apiPropertyResults'
@@ -213,8 +212,8 @@ export const NavigationSearch = ({
     )
 }
 
-const keyboardShortcuts = (enterLabel: string) => [
-    { keys: ['returnKey'], label: enterLabel },
+const KEYBOARD_SHORTCUTS = [
+    { keys: ['returnKey'], label: GO_TO_LABELS.page },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
     { keys: ['Esc'], label: 'Close' },
 ]
@@ -236,12 +235,6 @@ const SearchDropdownContent = ({
     onResultClick,
     typeFilter,
 }: SearchDropdownContentProps) => {
-    const selected = results[useSelectedIndex()]
-    const enterLabel = selected
-        ? goToLabel(selected)
-        : typeFilter === 'api'
-          ? GO_TO_LABELS.operation
-          : GO_TO_LABELS.page
     return (
         <>
             <SearchResultsList
@@ -252,15 +245,15 @@ const SearchDropdownContent = ({
                 onResultClick={onResultClick}
                 typeFilter={typeFilter}
             />
-            <SearchDropdownFooter enterLabel={enterLabel} />
+            <SearchDropdownFooter />
         </>
     )
 }
 
-const SearchDropdownFooter = ({ enterLabel }: { enterLabel: string }) => {
+const SearchDropdownFooter = () => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const shortcuts = keyboardShortcuts(enterLabel)
+    const shortcuts = KEYBOARD_SHORTCUTS
 
     if (isMobile) {
         return null

@@ -22,7 +22,7 @@ export type NavigableResult =
       }
 
 export const GO_TO_LABELS = {
-    page: 'Jump to',
+    page: 'Go to page',
     operation: 'Go to operation',
     property: 'Go to property',
 } as const
