@@ -1072,6 +1072,44 @@ public class TagMetadataTests
 	}
 
 	[Test]
+	public async Task GroupIntro_NestedHeadings_StayOutOfTheSidebar()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": { "operationId": "get-dashboards", "tags": ["dashboards"], "responses": { "200": { "description": "ok" } } }
+			    }
+			  },
+			  "tags": [ { "name": "dashboards", "x-displayName": "Dashboards" } ]
+			}
+			""";
+
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
+		tag.Should().NotBeNull();
+
+		var renderer = new HeadingsRenderer([
+			new TocItem("When to use this API", "when-to-use-this-api", 2),
+			new TocItem("Get started", "get-started", 2),
+			new TocItem("Try it now", "try-it-now", 3),
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("Embedding", "embedding", 3)
+		]);
+		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, []));
+
+		tag
+			.NavigationItems
+			.OfType<IntroHeadingNavigationItem>()
+			.Select(heading => heading.NavigationTitle)
+			.Should()
+			.Equal("When to use this API", "Get started", "Panel types");
+	}
+
+	[Test]
 	public async Task GroupIntro_HeadingSharingAPostSectionAnchor_IsLeftOutOfTheSidebar()
 	{
 		var openApiJson = /*lang=json,strict*/
