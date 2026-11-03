@@ -277,3 +277,25 @@ describe('property rows', () => {
         expect(navigationSearchStore.getState().selectedIndex).toBe(3)
     })
 })
+
+describe('deprecated operations', () => {
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('search')
+    })
+
+    it('shows a Deprecated badge beside the title of a deprecated operation', () => {
+        const { container } = renderList({
+            groups: groupSearchResults([{ ...operation, deprecated: true }]),
+        })
+        const badges = container.querySelectorAll(
+            '.title-text .deprecated-badge'
+        )
+        expect(badges).toHaveLength(1)
+        expect(badges[0]).toHaveTextContent('Deprecated')
+    })
+
+    it('shows no badge for an operation that is not deprecated', () => {
+        const { container } = renderList()
+        expect(container.querySelector('.deprecated-badge')).toBeNull()
+    })
+})
