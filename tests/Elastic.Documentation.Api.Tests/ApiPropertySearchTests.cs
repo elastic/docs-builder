@@ -25,6 +25,7 @@ public class ApiPropertySearchTests
 	[Arguments("trav", "api")]
 	[Arguments("flight.travel", "api")]
 	[Arguments("track_total", null)]
+	[Arguments("knn_field search", null)]
 	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter)
 	{
 		using var json = JsonDocument.Parse(
@@ -217,6 +218,8 @@ public class ApiPropertySearchTests
 	[Arguments("trav", "docs")]
 	[Arguments("trav", null)]
 	[Arguments("index", "all")]
+	[Arguments("elasticsearch index_name settings", null)]
+	[Arguments("/_search knn", null)]
 	[Arguments("", "api")]
 	[Arguments("/_search", "api")]
 	[Arguments("GET /_search", "api")]

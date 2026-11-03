@@ -123,12 +123,14 @@ public static class SearchQueryBuilder
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
 			return [];
-		// The docs-wide search only tries words that look like identifiers; a plain word would lift every API
-		// operation that happens to have a field of that name above the pages about it.
-		if (typeFilter != "api" && !input.Contains('.') && !input.Contains('_'))
-			return [];
+		var readings = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
+		// API operation that happens to have a field of that name above the pages about it.
+		return typeFilter == "api" ? readings : readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray();
+	}
 
-		var words = input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+	private static IReadOnlyList<(string Operation, string Property)> ParseReadings(string[] words)
+	{
 		var endpointWords = words.Select(
 			(w, i) => w.StartsWith('/') || (HttpMethods.Contains(w) && i + 1 < words.Length && words[i + 1].StartsWith('/'))
 		).ToArray();
