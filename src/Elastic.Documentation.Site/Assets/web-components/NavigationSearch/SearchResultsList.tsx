@@ -151,12 +151,12 @@ export const SearchResultsList = ({
 
     const handleResultClick = (
         result: SearchResultItem,
-        index: number,
+        rank: number,
         property?: ApiPropertyResult
     ) => {
         trackResultClicked({
             query: searchTerm,
-            position: index,
+            position: rank,
             url: property?.url ?? result.url,
             score: result.score,
             anchor: property?.anchor,
@@ -166,7 +166,7 @@ export const SearchResultsList = ({
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map(({ result, index, properties }) => (
+            {results.map(({ result, index, rank, properties }) => (
                 <div
                     key={result.url}
                     css={css`
@@ -183,7 +183,7 @@ export const SearchResultsList = ({
                         isKeyboardNavigating={isKeyboardNavigating.current}
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseMove={() => handleItemMouseMove(index)}
-                        onClick={() => handleResultClick(result, index)}
+                        onClick={() => handleResultClick(result, rank)}
                         typeFilter={typeFilter}
                         searchTerm={searchTerm}
                     />
@@ -206,11 +206,7 @@ export const SearchResultsList = ({
                                     handleItemMouseMove(propertyIndex)
                                 }
                                 onClick={() =>
-                                    handleResultClick(
-                                        result,
-                                        propertyIndex,
-                                        property
-                                    )
+                                    handleResultClick(result, rank, property)
                                 }
                             />
                         )

@@ -89,6 +89,8 @@ export interface PropertyRow {
 export interface ResultGroup {
     result: SearchResultItem
     index: number
+    /** Position among the results; what a click reports, for the operation and for each of its properties. */
+    rank: number
     properties: PropertyRow[]
 }
 
@@ -97,8 +99,13 @@ export const groupSearchResults = (
     results: SearchResultItem[]
 ): ResultGroup[] => {
     let index = 0
-    return results.map((result) => {
-        const group: ResultGroup = { result, index: index++, properties: [] }
+    return results.map((result, rank) => {
+        const group: ResultGroup = {
+            result,
+            index: index++,
+            rank,
+            properties: [],
+        }
         const properties =
             result.type === 'api' ? (result.properties ?? []) : []
         group.properties = properties.map((property) => ({

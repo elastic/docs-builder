@@ -50,6 +50,7 @@ it('numbers rows in keyboard order: each operation, then its properties', () => 
         [0, [1, 2, 3]],
         [4, []],
     ])
+    expect(groups.map((group) => group.rank)).toEqual([0, 1])
     expect(navigableRowCount(groups)).toBe(5)
 })
 

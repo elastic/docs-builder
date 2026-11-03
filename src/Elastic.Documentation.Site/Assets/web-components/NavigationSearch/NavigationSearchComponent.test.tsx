@@ -115,6 +115,7 @@ describe('NavigationSearchWrapper type attribute', () => {
             'navigation_search_result_clicked',
             expect.objectContaining({
                 [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-track_total_hits',
+                'navigation_search.result.position': 0,
             })
         )
     })
