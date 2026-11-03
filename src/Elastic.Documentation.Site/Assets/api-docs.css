@@ -4158,11 +4158,7 @@ html:has(.api-page-shell) {
 /* Marks what a link points at: one soft pulse. A property row pulses on its name; the padding with a
    matching negative margin gives the tint room around the text without moving anything. */
 .api-link-target-flash {
-	--api-link-flash-tint: color-mix(
-		in srgb,
-		var(--color-yellow-40, #facb3d) 40%,
-		transparent
-	);
+	--api-link-flash-tint: var(--search-highlight-tint);
 	animation: api-link-target-flash 2.4s ease-in-out;
 }
 

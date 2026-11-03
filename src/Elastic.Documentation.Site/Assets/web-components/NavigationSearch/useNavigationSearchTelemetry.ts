@@ -12,6 +12,7 @@ import {
     ATTR_NAVIGATION_SEARCH_RESULT_URL,
     ATTR_NAVIGATION_SEARCH_RESULT_POSITION,
     ATTR_NAVIGATION_SEARCH_RESULT_SCORE,
+    ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR,
     ATTR_NAVIGATION_SEARCH_TRIGGER,
     ATTR_NAVIGATION_SEARCH_CLOSE_REASON,
     ATTR_NAVIGATION_SEARCH_HAD_RESULTS,
@@ -104,7 +105,7 @@ export const useNavigationSearchTelemetry = (
                 [ATTR_NAVIGATION_SEARCH_RESULT_URL]: url,
                 [ATTR_NAVIGATION_SEARCH_RESULT_SCORE]: score,
                 ...(anchor
-                    ? { 'navigation_search.result.anchor': anchor }
+                    ? { [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: anchor }
                     : {}),
                 ...(surface
                     ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }

@@ -18,7 +18,7 @@ namespace Elastic.Documentation.Search;
 public static class SearchQueryBuilder
 {
 	public const string ApiPropertyHits = "api_properties";
-	private static readonly string[] ApiPropertySourceIncludes = ["api.properties.*"];
+	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
 
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
@@ -41,7 +41,23 @@ public static class SearchQueryBuilder
 		]
 	};
 
-	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter)
+	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
+		ParseApiPropertyQuery(searchQuery, typeFilter) is { } parts ? BuildNestedPropertyQuery(parts.Property) : null;
+
+	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
+	{
+		if (ParseApiPropertyQuery(searchQuery, typeFilter) is not var (operation, property))
+			return query;
+
+		var properties = BuildNestedPropertyQuery(property);
+		if (operation.Length > 0 && (BuildBareWordEndpointQuery(operation) ?? BuildApiEndpointQuery(operation)) is { } endpoint)
+			properties = new BoolQuery { Must = [properties], Should = [endpoint] };
+
+		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
+	}
+
+	/// <summary>The operation and field halves of a query that may match API fields, or null when the query never can.</summary>
+	private static (string Operation, string Property)? ParseApiPropertyQuery(string searchQuery, string? typeFilter)
 	{
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
@@ -49,10 +65,14 @@ public static class SearchQueryBuilder
 		if (typeFilter != "api" && input.Any(char.IsWhiteSpace) && !input.Contains('.') && !input.Contains('_'))
 			return null;
 
-		var (_, property) = SplitApiPropertyQuery(input);
-		return new NestedQuery
+		var separator = input.AsSpan().LastIndexOfAny(" \t\r\n");
+		return separator < 0 ? ("", input) : (input[..separator].TrimEnd(), input[(separator + 1)..]);
+	}
+
+	private static Query BuildNestedPropertyQuery(string property) =>
+		new NestedQuery
 		{
-			Path = "api.properties",
+			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
 			Query = BuildPropertyMatchQuery(property),
@@ -63,26 +83,6 @@ public static class SearchQueryBuilder
 				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
 			}
 		};
-	}
-
-	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
-	{
-		var properties = BuildApiPropertyQuery(searchQuery, typeFilter);
-		if (properties is null)
-			return query;
-
-		var (operation, _) = SplitApiPropertyQuery(searchQuery.Trim());
-		if (operation.Length > 0 && (BuildBareWordEndpointQuery(operation) ?? BuildApiEndpointQuery(operation)) is { } endpoint)
-			properties = new BoolQuery { Must = [properties], Should = [endpoint] };
-
-		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
-	}
-
-	private static (string Operation, string Property) SplitApiPropertyQuery(string input)
-	{
-		var separator = input.AsSpan().LastIndexOfAny(" \t\r\n");
-		return separator < 0 ? ("", input) : (input[..separator].TrimEnd(), input[(separator + 1)..]);
-	}
 
 	private static Query BuildPropertyMatchQuery(string input)
 	{
@@ -99,7 +99,10 @@ public static class SearchQueryBuilder
 				new BoolQuery
 				{
 					Must = [BuildPropertyNameQuery(input[(separator + 1)..])],
-					Filter = [new MatchBoolPrefixQuery { Field = "api.properties.path.match", Query = input, Operator = Operator.And }]
+					Filter =
+					[
+						new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
+					]
 				}
 			]
 		};
@@ -113,13 +116,13 @@ public static class SearchQueryBuilder
 			[
 				new ConstantScoreQuery
 				{
-					Filter = new TermQuery { Field = "api.properties.name", Value = name, CaseInsensitive = true },
+					Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
 					Boost = 1
 				},
 				new ConstantScoreQuery
 				{
 					// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
-					Filter = new PrefixQuery { Field = "api.properties.name", Value = name, CaseInsensitive = true },
+					Filter = new PrefixQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
 					Boost = 0.6f
 				}
 			]

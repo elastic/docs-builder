@@ -47,7 +47,7 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 			new SchemaAnalyzer(spec),
 			new ParameterRowSource(TestSpecs.BuilderFor(spec), null, OperationEndpoint.Build(operation, null, []))
 		);
-		var entries = trees.IndexEntries();
+		var entries = trees.IndexEntries(new Dictionary<string, string>());
 
 		entries.Should().Contain(
 			p => p.Path == "flight.travel_agency" && p.Anchor == "req-flight-travel_agency" && p.Type == "string" && p.Description ==

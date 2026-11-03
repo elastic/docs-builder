@@ -1,34 +1,28 @@
+import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
-import { EuiProvider } from '@elastic/eui'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 
 const renderRow = (searchTerm: string, path: string) =>
-    render(
-        <EuiProvider
-            colorMode="light"
-            globalStyles={false}
-            utilityClasses={false}
-        >
-            <PropertyResultRow
-                property={{
-                    name: path.split('.').pop() ?? path,
-                    path,
-                    type: 'object',
-                    location: 'request',
-                    description: 'Property description',
-                    anchor: 'req-property',
-                    url: '/docs/api/search#req-property',
-                }}
-                searchTerm={searchTerm}
-                showLocation={false}
-                index={1}
-                isSelected={false}
-                isKeyboardNavigating={false}
-                onMouseEnter={vi.fn()}
-                onMouseMove={vi.fn()}
-                onClick={vi.fn()}
-            />
-        </EuiProvider>
+    renderWithProviders(
+        <PropertyResultRow
+            property={{
+                name: path.split('.').pop() ?? path,
+                path,
+                type: 'object',
+                location: 'request',
+                description: 'Property description',
+                anchor: 'req-property',
+                url: '/docs/api/search#req-property',
+            }}
+            searchTerm={searchTerm}
+            showLocation={false}
+            index={1}
+            isSelected={false}
+            isKeyboardNavigating={false}
+            onMouseEnter={vi.fn()}
+            onMouseMove={vi.fn()}
+            onClick={vi.fn()}
+        />
     )
 
 it.each([

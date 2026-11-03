@@ -3,8 +3,8 @@ import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
     GO_TO_LABELS,
-    navigableSearchResults,
-    type NavigableResult,
+    groupSearchResults,
+    navigableRowCount,
 } from './apiPropertyResults'
 import {
     useSearchTerm,
@@ -27,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -52,8 +52,10 @@ export const NavigationSearch = ({
     const { trackOpened, trackClosed } =
         useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
-    const navigableResults = navigableSearchResults(results)
+    const groups = useMemo(
+        () => groupSearchResults(data?.results ?? []),
+        [data]
+    )
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
@@ -62,7 +64,7 @@ export const NavigationSearch = ({
         trackClosed({
             reason: 'navigate',
             query: searchTerm,
-            hadResults: results.length > 0,
+            hadResults: groups.length > 0,
             hadSelection: selectedIndex >= 0,
         })
     }
@@ -73,7 +75,7 @@ export const NavigationSearch = ({
         handleInputKeyDown,
         handleMouseMove,
     } = useNavigationSearchKeyboardNavigation({
-        resultsCount: navigableResults.length,
+        resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
@@ -97,7 +99,7 @@ export const NavigationSearch = ({
             trackClosed({
                 reason: 'escape',
                 query: searchTerm,
-                hadResults: results.length > 0,
+                hadResults: groups.length > 0,
                 hadSelection: selectedIndex >= 0,
             })
             setSearchTerm('')
@@ -125,7 +127,7 @@ export const NavigationSearch = ({
             trackClosed({
                 reason: 'blur',
                 query: searchTerm,
-                hadResults: results.length > 0,
+                hadResults: groups.length > 0,
                 hadSelection: selectedIndex >= 0,
             })
         }
@@ -198,14 +200,15 @@ export const NavigationSearch = ({
         >
             {hasContent && (
                 <div ref={popoverContentRef}>
-                    <SearchDropdownContent
-                        results={navigableResults}
+                    <SearchResultsList
+                        results={groups}
                         isLoading={isSearching}
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
                         typeFilter={typeFilter}
                     />
+                    <SearchDropdownFooter />
                 </div>
             )}
         </EuiInputPopover>
@@ -218,42 +221,9 @@ const KEYBOARD_SHORTCUTS = [
     { keys: ['Esc'], label: 'Close' },
 ]
 
-interface SearchDropdownContentProps {
-    results: NavigableResult[]
-    isLoading: boolean
-    isKeyboardNavigating: React.MutableRefObject<boolean>
-    onMouseMove: () => void
-    onResultClick: () => void
-    typeFilter: TypeFilter
-}
-
-const SearchDropdownContent = ({
-    results,
-    isLoading,
-    isKeyboardNavigating,
-    onMouseMove,
-    onResultClick,
-    typeFilter,
-}: SearchDropdownContentProps) => {
-    return (
-        <>
-            <SearchResultsList
-                results={results}
-                isLoading={isLoading}
-                isKeyboardNavigating={isKeyboardNavigating}
-                onMouseMove={onMouseMove}
-                onResultClick={onResultClick}
-                typeFilter={typeFilter}
-            />
-            <SearchDropdownFooter />
-        </>
-    )
-}
-
 const SearchDropdownFooter = () => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const shortcuts = KEYBOARD_SHORTCUTS
 
     if (isMobile) {
         return null
@@ -276,7 +246,7 @@ const SearchDropdownFooter = () => {
                 gap: ${euiTheme.size.base};
             `}
         >
-            {shortcuts.map((shortcut, index) => (
+            {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
                 <KeyboardShortcutItem
                     key={index}
                     keys={shortcut.keys}

@@ -8,7 +8,6 @@ import {
     ATTR_ERROR_TYPE,
 } from '../../telemetry/semconv'
 import { traceSpan } from '../../telemetry/tracing'
-import { ApiPropertyResult } from '../NavigationSearch/apiPropertyResults'
 import {
     useIsNavigationSearchAwaitingNewInput,
     useNavigationSearchCooldownActions,
@@ -44,7 +43,6 @@ const SearchResultItem = z.object({
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
-    properties: z.array(ApiPropertyResult).optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>

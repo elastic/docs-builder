@@ -68,6 +68,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 
+		var plainDescriptions = new Dictionary<string, string>();
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -160,7 +161,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					],
 					Api = new ApiOperationMetadata
 					{
-						Properties = trees.IndexEntries(),
+						Properties = trees.IndexEntries(plainDescriptions),
 						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
 						Method = method,
 						Path = path.Key,

@@ -9,7 +9,12 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 internal static class ApiPropertyIndex
 {
-	public static IEnumerable<ApiPropertyEntry> Entries(IEnumerable<ApiProperty> properties, string location) =>
+	/// <param name="plainDescriptions">Plain text per description markdown, shared across a spec: shared schemas repeat the same text on every operation.</param>
+	public static IEnumerable<ApiPropertyEntry> Entries(
+		IEnumerable<ApiProperty> properties,
+		string location,
+		Dictionary<string, string> plainDescriptions
+	) =>
 		properties.Select(
 			property => new ApiPropertyEntry
 			{
@@ -18,30 +23,27 @@ internal static class ApiPropertyIndex
 				Type = property.Type.Text,
 				Location = location,
 				Anchor = property.AnchorId,
-				Description = ApiMarkdown.StripHtml(ApiSeoDescription.ToPlainText(property.DescriptionMarkdown ?? ""))
+				Description = PlainText(property.DescriptionMarkdown ?? "", plainDescriptions)
 			}
 		);
 
-	public static IEnumerable<ApiProperty> Flatten(ApiPropertyList properties)
+	private static string PlainText(string markdown, Dictionary<string, string> plainDescriptions)
 	{
-		foreach (var property in properties.Items)
-		{
-			yield return property;
-			if (property.Children.Properties is { } children)
-			{
-				foreach (var child in Flatten(children))
-					yield return child;
-			}
-			if (property.Children.Dictionary is { } dictionary)
-			{
-				foreach (var child in Flatten(dictionary.Properties))
-					yield return child;
-			}
-			foreach (var child in Flatten(property.Children.Variants))
-				yield return child;
-		}
+		if (!plainDescriptions.TryGetValue(markdown, out var text))
+			plainDescriptions[markdown] = text = ApiMarkdown.StripHtml(ApiSeoDescription.ToPlainText(markdown));
+		return text;
 	}
 
+	/// <summary>Every property in page order: each property, then its nested, dictionary and variant children.</summary>
+	public static IEnumerable<ApiProperty> Flatten(ApiPropertyList? properties) =>
+		properties?.Items.SelectMany(
+			property => Flatten(property.Children.Properties)
+				.Concat(Flatten(property.Children.Dictionary?.Properties))
+				.Concat(Flatten(property.Children.Variants))
+				.Prepend(property)
+		)
+			?? [];
+
 	public static IEnumerable<ApiProperty> Flatten(ApiUnionVariants? variants) =>
-		variants?.Variants.Where(v => v.ShowProperties && v.Properties is not null).SelectMany(v => Flatten(v.Properties!)) ?? [];
+		variants?.Variants.Where(v => v.ShowProperties && v.Properties is not null).SelectMany(v => Flatten(v.Properties)) ?? [];
 }

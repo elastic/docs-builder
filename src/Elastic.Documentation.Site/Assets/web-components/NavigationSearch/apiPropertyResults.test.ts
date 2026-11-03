@@ -1,29 +1,28 @@
-import {
-    goToLabel,
-    navigableSearchResults,
-    type ApiPropertyResult,
-    type NavigableResult,
-} from './apiPropertyResults'
+import { groupSearchResults, navigableRowCount } from './apiPropertyResults'
 import type { SearchResultItem } from './useNavigationSearchQuery'
 
-const property: ApiPropertyResult = {
-    name: 'knn',
-    path: 'knn',
-    type: 'object',
-    description: 'Nearest neighbours',
-    anchor: 'req-knn',
-    location: 'request',
-    url: '/docs/api/doc/elasticsearch/operation/operation-search#req-knn',
-}
+const property = (path: string, location: 'query' | 'request') => ({
+    name: path.split('.').pop() ?? path,
+    path,
+    type: 'boolean',
+    description: 'Count hits',
+    anchor: `${location}-${path}`,
+    location,
+    url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
+})
 
-const operation: SearchResultItem = {
+const search: SearchResultItem = {
     type: 'api',
     url: '/docs/api/doc/elasticsearch/operation/operation-search',
     title: 'Search',
-    description: 'Search documents',
+    description: 'Run a search',
     score: 5,
     parents: [],
-    properties: [property],
+    properties: [
+        property('track_total_hits', 'query'),
+        property('track_total_hits', 'request'),
+        property('size', 'request'),
+    ],
 }
 
 const page: SearchResultItem = {
@@ -35,28 +34,39 @@ const page: SearchResultItem = {
     parents: [],
 }
 
-const cases: Array<[string, NavigableResult, string]> = [
-    [
-        'an API operation',
-        { kind: 'operation', result: operation },
-        'Go to operation',
-    ],
-    ['a docs page', { kind: 'operation', result: page }, 'Go to page'],
-    [
-        'a property',
-        { kind: 'property', result: operation, property },
-        'Go to property',
-    ],
-]
-
-it.each(cases)('labels the Enter action for %s', (_, entry, label) => {
-    expect(goToLabel(entry)).toBe(label)
+it('numbers rows in keyboard order: each operation, then its properties', () => {
+    const groups = groupSearchResults([search, page])
+    expect(
+        groups.map((group) => [
+            group.index,
+            group.properties.map((row) => row.index),
+        ])
+    ).toEqual([
+        [0, [1, 2, 3]],
+        [4, []],
+    ])
+    expect(navigableRowCount(groups)).toBe(5)
 })
 
-it('labels the operation and each of its properties in order', () => {
-    expect(navigableSearchResults([operation, page]).map(goToLabel)).toEqual([
-        'Go to operation',
-        'Go to property',
-        'Go to page',
+it('shows a location only when the same path appears in two locations', () => {
+    const [group] = groupSearchResults([search])
+    expect(
+        group.properties.map((row) => [
+            row.property.path,
+            row.property.location,
+            row.showLocation,
+        ])
+    ).toEqual([
+        ['track_total_hits', 'query', true],
+        ['track_total_hits', 'request', true],
+        ['size', 'request', false],
     ])
+})
+
+it('lists no properties under a docs page even when the payload carries some', () => {
+    const [group] = groupSearchResults([
+        { ...page, properties: [property('size', 'request')] },
+    ])
+    expect(group.properties).toEqual([])
+    expect(navigableRowCount(groupSearchResults([page]))).toBe(1)
 })

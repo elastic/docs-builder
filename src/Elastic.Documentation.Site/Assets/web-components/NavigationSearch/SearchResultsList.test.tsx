@@ -5,9 +5,9 @@ import {
     formatApiProductCrumb,
     navigationSearchBreadcrumbs,
 } from './SearchResultsList'
-import { navigableSearchResults } from './apiPropertyResults'
+import { groupSearchResults, type ResultGroup } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
-import type { SearchResultItem } from './useNavigationSearchQuery'
+import type { SearchResultItem, TypeFilter } from './useNavigationSearchQuery'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
@@ -102,16 +102,33 @@ const operation: SearchResultItem = {
     ],
 }
 
-const renderList = (isKeyboardNavigating = false) => {
+const page: SearchResultItem = {
+    type: 'docs',
+    url: '/docs/elasticsearch',
+    title: 'Elasticsearch',
+    description: 'Learn about Elasticsearch',
+    score: 1,
+    parents: [],
+}
+
+const renderList = ({
+    groups = groupSearchResults([operation]),
+    isKeyboardNavigating = false,
+    typeFilter = 'api',
+}: {
+    groups?: ResultGroup[]
+    isKeyboardNavigating?: boolean
+    typeFilter?: TypeFilter
+} = {}) => {
     const onMouseMove = vi.fn()
     renderWithProviders(
         <SearchResultsList
-            results={navigableSearchResults([operation])}
+            results={groups}
             isLoading={false}
             isKeyboardNavigating={{ current: isKeyboardNavigating }}
             onMouseMove={onMouseMove}
             onResultClick={vi.fn()}
-            typeFilter="api"
+            typeFilter={typeFilter}
         />
     )
     return { onMouseMove }
@@ -120,6 +137,16 @@ const renderList = (isKeyboardNavigating = false) => {
 describe('property rows', () => {
     beforeEach(() => {
         navigationSearchStore.getState().actions.setSearchTerm('track_total')
+    })
+
+    it('names the Enter action after each row destination', () => {
+        renderList({
+            groups: groupSearchResults([operation, page]),
+            typeFilter: 'all',
+        })
+        expect(screen.getAllByText('Go to operation')).toHaveLength(1)
+        expect(screen.getAllByText('Go to property')).toHaveLength(3)
+        expect(screen.getAllByText('Go to page')).toHaveLength(1)
     })
 
     it('shows the location only when the same path appears in two locations', () => {
@@ -154,7 +181,7 @@ describe('property rows', () => {
     })
 
     it('hands a mouse move back to the parent while the keyboard is driving', async () => {
-        const { onMouseMove } = renderList(true)
+        const { onMouseMove } = renderList({ isKeyboardNavigating: true })
         const row = screen.getByRole('link', {
             name: 'size boolean request Count hits',
         })

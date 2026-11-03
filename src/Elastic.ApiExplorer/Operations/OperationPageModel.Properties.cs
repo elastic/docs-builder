@@ -17,19 +17,22 @@ internal record OperationPropertyTrees(
 	IReadOnlyList<ApiResponse> Responses
 )
 {
-	public ApiPropertyEntry[] IndexEntries() =>
-		[
-			.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Path), "path"),
-			.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Query), "query"),
-			.. ApiPropertyIndex.Entries(ApiPropertyIndex.Flatten(Header), "header"),
-			.. ApiPropertyIndex.Entries(Request.SelectMany(Rows), "request"),
-			.. Responses.SelectMany(response => ApiPropertyIndex.Entries(response.Contents.SelectMany(Rows), "response"))
+	public ApiPropertyEntry[] IndexEntries(Dictionary<string, string> plainDescriptions)
+	{
+		IEnumerable<ApiPropertyEntry> Entries(IEnumerable<ApiProperty> rows, string location) =>
+			ApiPropertyIndex.Entries(rows, location, plainDescriptions);
+
+		return [
+			.. Entries(ApiPropertyIndex.Flatten(Path), "path"),
+			.. Entries(ApiPropertyIndex.Flatten(Query), "query"),
+			.. Entries(ApiPropertyIndex.Flatten(Header), "header"),
+			.. Entries(Request.SelectMany(Rows), "request"),
+			.. Entries(Responses.SelectMany(response => response.Contents).SelectMany(Rows), "response")
 		];
+	}
 
 	private static IEnumerable<ApiProperty> Rows(ApiMediaContent content) =>
-		(content.Properties is { } properties ? ApiPropertyIndex.Flatten(properties) : []).Concat(
-			ApiPropertyIndex.Flatten(content.UnionVariants)
-		);
+		ApiPropertyIndex.Flatten(content.Properties).Concat(ApiPropertyIndex.Flatten(content.UnionVariants));
 }
 
 public partial record OperationPageModel

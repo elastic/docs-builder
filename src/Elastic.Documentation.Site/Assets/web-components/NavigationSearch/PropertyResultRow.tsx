@@ -33,8 +33,17 @@ export const PropertyResultRow = ({
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
-    const propertySearch =
-        searchTerm.trim().split(/\s+/).pop()?.split('.').filter(Boolean) ?? []
+    const [lastWord = ''] = searchTerm.trim().split(/\s+/).slice(-1)
+    const propertySearch = lastWord.split('.').filter(Boolean)
+    const highlight = (text: string) => (
+        <EuiHighlight
+            search={propertySearch}
+            highlightAll
+            hasScreenReaderHelpText={false}
+        >
+            {text}
+        </EuiHighlight>
+    )
     return (
         <a
             ref={ref}
@@ -76,11 +85,7 @@ export const PropertyResultRow = ({
                     border-left: 1px solid ${euiTheme.colors.borderBaseSubdued};
                 }
                 mark {
-                    background-color: color-mix(
-                        in srgb,
-                        var(--color-yellow-40) 40%,
-                        transparent
-                    );
+                    background-color: var(--search-highlight-tint);
                     color: ${euiTheme.colors.textParagraph};
                     font-weight: ${euiTheme.font.weight.bold};
                     font-size: inherit;
@@ -124,12 +129,6 @@ export const PropertyResultRow = ({
                 }
                 &:hover:not([data-keyboard-navigating='true']) {
                     background: ${euiTheme.colors.backgroundBaseHighlighted};
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
-                }
-                &[data-selected='true'] .jump-to-indicator {
-                    visibility: visible;
                 }
                 &:focus-visible {
                     outline: 2px solid ${euiTheme.colors.primary};
@@ -138,22 +137,8 @@ export const PropertyResultRow = ({
             `}
         >
             <code className="property-path" title={property.path}>
-                <EuiHighlight
-                    search={propertySearch}
-                    highlightAll
-                    hasScreenReaderHelpText={false}
-                >
-                    {property.path.slice(0, leafOffset)}
-                </EuiHighlight>
-                <strong>
-                    <EuiHighlight
-                        search={propertySearch}
-                        highlightAll
-                        hasScreenReaderHelpText={false}
-                    >
-                        {property.path.slice(leafOffset)}
-                    </EuiHighlight>
-                </strong>
+                {highlight(property.path.slice(0, leafOffset))}
+                <strong>{highlight(property.path.slice(leafOffset))}</strong>
             </code>
             <code title={property.type}>{property.type}</code>
             <span className={showLocation ? 'property-location' : 'sr-only'}>

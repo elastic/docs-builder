@@ -3,7 +3,7 @@ import { renderWithProviders } from '../../test-utils/render'
 import { resetCooldownStore } from '../../test-utils/stores'
 import { NavigationSearch } from './NavigationSearch'
 import { SearchResultsList } from './SearchResultsList'
-import { navigableSearchResults } from './apiPropertyResults'
+import { groupSearchResults } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
 import * as queryHook from './useNavigationSearchQuery'
 import { screen, waitFor } from '@testing-library/react'
@@ -188,7 +188,7 @@ describe('Navigation Search Telemetry Integration', () => {
 describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
-        results: navigableSearchResults(mockSearchResults.results),
+        results: groupSearchResults(mockSearchResults.results),
         isLoading: false,
         isKeyboardNavigating: { current: false },
         onMouseMove: vi.fn(),

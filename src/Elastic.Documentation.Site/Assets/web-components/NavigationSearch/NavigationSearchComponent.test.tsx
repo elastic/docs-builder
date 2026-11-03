@@ -1,4 +1,5 @@
 import { logInfo } from '../../telemetry/logging'
+import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
@@ -113,7 +114,7 @@ describe('NavigationSearchWrapper type attribute', () => {
         expect(logInfo).toHaveBeenCalledWith(
             'navigation_search_result_clicked',
             expect.objectContaining({
-                'navigation_search.result.anchor': 'req-track_total_hits',
+                [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-track_total_hits',
             })
         )
     })

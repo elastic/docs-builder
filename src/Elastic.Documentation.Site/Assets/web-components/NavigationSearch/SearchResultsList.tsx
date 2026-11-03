@@ -3,7 +3,11 @@ import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
-import { goToLabel, type NavigableResult } from './apiPropertyResults'
+import {
+    GO_TO_LABELS,
+    type ApiPropertyResult,
+    type ResultGroup,
+} from './apiPropertyResults'
 import {
     useSelectedIndex,
     useSearchActions,
@@ -62,7 +66,7 @@ export const emptyStateCopy = (typeFilter: TypeFilter) =>
         : "We couldn't find a page that matches your search"
 
 export interface SearchResultsListProps {
-    results: NavigableResult[]
+    results: ResultGroup[]
     isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
@@ -143,96 +147,73 @@ export const SearchResultsList = ({
         }
     }
 
-    const handleResultClick = (result: SearchResultItem, index: number) => {
+    const handleResultClick = (
+        result: SearchResultItem,
+        index: number,
+        property?: ApiPropertyResult
+    ) => {
         trackResultClicked({
             query: searchTerm,
             position: index,
-            url: result.url,
+            url: property?.url ?? result.url,
             score: result.score,
+            anchor: property?.anchor,
         })
         onResultClick()
     }
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map((entry, index) => {
-                if (entry.kind !== 'operation') return null
-                const propertyCount =
-                    entry.result.type === 'api'
-                        ? (entry.result.properties?.length ?? 0)
-                        : 0
-                const properties = results.slice(
-                    index + 1,
-                    index + 1 + propertyCount
-                )
-                return (
-                    <div
-                        key={entry.result.url}
-                        css={css`
-                            margin: ${euiTheme.size.s};
-                            border: 1px solid
-                                ${euiTheme.colors.borderBaseSubdued};
-                            border-radius: ${euiTheme.size.s};
-                            overflow: hidden;
-                        `}
-                    >
-                        <SearchResultRow
-                            key={entry.result.url}
-                            index={index}
-                            result={entry.result}
-                            isSelected={index === selectedIndex}
-                            isKeyboardNavigating={isKeyboardNavigating.current}
-                            onMouseEnter={() => handleMouseEnter(index)}
-                            onMouseMove={() => handleItemMouseMove(index)}
-                            onClick={() =>
-                                handleResultClick(entry.result, index)
-                            }
-                            typeFilter={typeFilter}
-                        />
-                        {properties.map((child, offset) => {
-                            if (child.kind !== 'property') return null
-                            const propertyIndex = index + offset + 1
-                            return (
-                                <PropertyResultRow
-                                    key={child.property.url}
-                                    index={propertyIndex}
-                                    property={child.property}
-                                    searchTerm={searchTerm}
-                                    showLocation={
-                                        child.result.properties?.some(
-                                            (other) =>
-                                                other.path ===
-                                                    child.property.path &&
-                                                other.location !==
-                                                    child.property.location
-                                        ) ?? false
-                                    }
-                                    isSelected={propertyIndex === selectedIndex}
-                                    isKeyboardNavigating={
-                                        isKeyboardNavigating.current
-                                    }
-                                    onMouseEnter={() =>
-                                        handleMouseEnter(propertyIndex)
-                                    }
-                                    onMouseMove={() =>
-                                        handleItemMouseMove(propertyIndex)
-                                    }
-                                    onClick={() => {
-                                        trackResultClicked({
-                                            query: searchTerm,
-                                            position: propertyIndex,
-                                            url: child.property.url,
-                                            score: child.result.score,
-                                            anchor: child.property.anchor,
-                                        })
-                                        onResultClick()
-                                    }}
-                                />
-                            )
-                        })}
-                    </div>
-                )
-            })}
+            {results.map(({ result, index, properties }) => (
+                <div
+                    key={result.url}
+                    css={css`
+                        margin: ${euiTheme.size.s};
+                        border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                        border-radius: ${euiTheme.size.s};
+                        overflow: hidden;
+                    `}
+                >
+                    <SearchResultRow
+                        index={index}
+                        result={result}
+                        isSelected={index === selectedIndex}
+                        isKeyboardNavigating={isKeyboardNavigating.current}
+                        onMouseEnter={() => handleMouseEnter(index)}
+                        onMouseMove={() => handleItemMouseMove(index)}
+                        onClick={() => handleResultClick(result, index)}
+                        typeFilter={typeFilter}
+                    />
+                    {properties.map(
+                        ({ property, index: propertyIndex, showLocation }) => (
+                            <PropertyResultRow
+                                key={property.url}
+                                index={propertyIndex}
+                                property={property}
+                                searchTerm={searchTerm}
+                                showLocation={showLocation}
+                                isSelected={propertyIndex === selectedIndex}
+                                isKeyboardNavigating={
+                                    isKeyboardNavigating.current
+                                }
+                                onMouseEnter={() =>
+                                    handleMouseEnter(propertyIndex)
+                                }
+                                onMouseMove={() =>
+                                    handleItemMouseMove(propertyIndex)
+                                }
+                                onClick={() =>
+                                    handleResultClick(
+                                        result,
+                                        propertyIndex,
+                                        property
+                                    )
+                                }
+                            />
+                        )
+                    )}
+                </div>
+            ))}
         </div>
     )
 }
@@ -316,10 +297,6 @@ const SearchResultRow = ({
                             text-decoration: underline;
                         }
                     }
-
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
                 }
 
                 &[data-selected='true'] {
@@ -331,10 +308,6 @@ const SearchResultRow = ({
                             color: ${euiTheme.colors.textParagraph};
                             text-decoration: underline;
                         }
-                    }
-
-                    .jump-to-indicator {
-                        visibility: visible;
                     }
                 }
             `}
@@ -354,7 +327,11 @@ const SearchResultRow = ({
             </div>
             {!isMobile && (
                 <JumpToIndicator
-                    label={goToLabel({ kind: 'operation', result })}
+                    label={
+                        result.type === 'api'
+                            ? GO_TO_LABELS.operation
+                            : GO_TO_LABELS.page
+                    }
                 />
             )}
         </a>
@@ -446,11 +423,7 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: color-mix(
-                        in srgb,
-                        var(--color-yellow-40) 40%,
-                        transparent
-                    );
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -475,11 +448,7 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: color-mix(
-                        in srgb,
-                        var(--color-yellow-40) 40%,
-                        transparent
-                    );
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}

@@ -149,20 +149,25 @@ public class ApiPropertySearchTests
 			InnerHit("req-a", 4.5, "other.a"),
 			InnerHit("req-c", 3, "c")
 		);
-		var json = """
-			{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
-			{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
-			"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}}}]}}
-			""".Replace(
-			"__INNER_HITS__",
-			innerHits
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
+			"a",
+			new Dictionary<string, string[]>()
 		);
-
-		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "a", new Dictionary<string, string[]>());
 
 		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "req-b", "req-c");
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
 	}
+
+	private static string SearchResponseJson(string innerHits) =>
+		"""
+		{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
+		{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
+		"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}}}]}}
+		""".Replace(
+			"__INNER_HITS__",
+			innerHits
+		);
 
 	private static string InnerHit(string anchor, double score, string path) =>
 		$$$"""
@@ -189,28 +194,10 @@ public class ApiPropertySearchTests
 	[Test]
 	public void ProcessHit_NestedPropertySource_ReturnsMatchingProperty()
 	{
-		const string json =
-			"""
-		{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
-		{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
-		"inner_hits":{"api_properties":{"hits":{"total":{"value":1,"relation":"eq"},"max_score":5,"hits":[
-		{"_index":"test","_id":"search","_score":5,"_nested":{"field":"api.properties","offset":0},
-		"_source":{"name":"track_total_hits","path":"track_total_hits","type":"boolean","anchor":"req-track_total_hits","location":"request","description":"Count hits"}}
-		]}}}}]}}
-		""";
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-		using var accessor = new ElasticsearchClientAccessor(
-			new DocumentationEndpoints
-			{
-				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
-			},
-			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
-		);
-		var response = accessor
-			.Client
-			.RequestResponseSerializer
-			.Deserialize<Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument>>(stream);
-		var result = SearchResultProcessor.ProcessHit(response.Hits.Single(), "track_total", new Dictionary<string, string[]>());
+		var json = SearchResponseJson(InnerHit("req-track_total_hits", 5, "track_total_hits"));
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "track_total", new Dictionary<string, string[]>());
+
 		result.Properties.Should().ContainSingle().Which.Anchor.Should().Be("req-track_total_hits");
 	}
 }

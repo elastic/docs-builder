@@ -12,6 +12,10 @@ export const JumpToIndicator = ({ label }: { label: string }) => {
                 color: ${euiTheme.colors.textSubdued};
                 margin-left: ${euiTheme.size.xxxxl};
                 visibility: hidden;
+                a[data-selected='true'] &,
+                a:hover:not([data-keyboard-navigating='true']) & {
+                    visibility: visible;
+                }
             `}
         >
             <EuiBadge color="hollow">
