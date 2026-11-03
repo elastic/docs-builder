@@ -11,52 +11,74 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Exporters;
 
+/// <summary>A link target with the file and 1-based position it was written at.</summary>
+public readonly record struct OutboundLink(string Url, string File, int Line, int Column);
+
 /// <summary>
-/// Collects the link targets of a parsed markdown document for the search index.
+/// Collects the link targets of a parsed markdown document for the search index and for link checks.
 /// </summary>
 public static class OutboundLinkExtractor
 {
 	/// <summary>
 	/// Returns the distinct link targets in document order, or <c>null</c> when the page has none.
-	/// Covers inline links, <c>{page-card}</c> and <c>{link-card}</c> targets, and the content of
+	/// Covers inline links, autolinks, <c>{page-card}</c> and <c>{link-card}</c> targets, and the content of
 	/// <c>{include}</c> snippets. Images, same-page anchors and links inside comments are skipped.
 	/// </summary>
 	public static string[]? Extract(MarkdownDocument document)
 	{
-		var links = new List<string?>();
-		Collect(document, links, []);
-		var distinct = links
-			.OfType<string>()
-			.Where(url => !string.IsNullOrWhiteSpace(url) && !url.StartsWith('#'))
-			.Distinct(StringComparer.Ordinal)
-			.ToArray();
+		var distinct = ExtractWithLocations(document, string.Empty).Select(link => link.Url).Distinct(StringComparer.Ordinal).ToArray();
 		return distinct.Length > 0 ? distinct : null;
 	}
 
-	private static void Collect(MarkdownDocument document, List<string?> links, HashSet<string> visitedIncludes)
+	/// <summary>
+	/// Returns every link occurrence in document order with the file it was written in. Links inside an
+	/// <c>{include}</c> snippet report the snippet file and the line within it.
+	/// </summary>
+	public static IReadOnlyList<OutboundLink> ExtractWithLocations(MarkdownDocument document, string file)
+	{
+		var links = new List<OutboundLink>();
+		Collect(document, file, links, []);
+		return [.. links.Where(link => !string.IsNullOrWhiteSpace(link.Url) && !link.Url.StartsWith('#'))];
+	}
+
+	private static void Collect(MarkdownDocument document, string file, List<OutboundLink> links, HashSet<string> visitedIncludes)
 	{
 		foreach (var obj in document.Descendants<MarkdownObject>())
 		{
 			switch (obj)
 			{
 				case LinkInline { IsImage: false } link when !IsInComment(link):
-					links.Add(link.Url);
+					Add(links, link.Url, file, link);
 					break;
 				case AutolinkInline autolink when !IsInComment(autolink):
-					links.Add(autolink.Url);
+					Add(links, autolink.Url, file, autolink);
 					break;
 				case PageCardBlock card:
-					links.Add(card.ResolvedUrl);
+					Add(links, card.ResolvedUrl, file, card);
 					break;
 				case LinkCardBlock card:
-					links.Add(card.Data.Link);
-					links.AddRange(card.Data.Links.Select(l => l.Url));
+					AddCardTarget(links, card.Data.Link, file, card);
+					foreach (var linkItem in card.Data.Links)
+						AddCardTarget(links, linkItem.Url, file, card);
 					break;
 				case IncludeBlock { Found: true, Literal: false, IncludePath: { } path } include when visitedIncludes.Add(path):
-					Collect(include.ParseSnippet(), links, visitedIncludes);
+					Collect(include.ParseSnippet(), path, links, visitedIncludes);
 					break;
 			}
 		}
+	}
+
+	// The autolink scan already reports https:// targets in a card's YAML body at their exact position.
+	private static void AddCardTarget(List<OutboundLink> links, string? url, string file, MarkdownObject card)
+	{
+		if (url is not null && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+			Add(links, url, file, card);
+	}
+
+	private static void Add(List<OutboundLink> links, string? url, string file, MarkdownObject source)
+	{
+		if (url is not null)
+			links.Add(new OutboundLink(url, file, source.Line + 1, Math.Max(source.Column, 1)));
 	}
 
 	private static bool IsInComment(Inline inline)

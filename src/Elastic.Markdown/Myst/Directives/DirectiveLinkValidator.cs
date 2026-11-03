@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation;
-using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Links;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
@@ -91,22 +90,7 @@ internal static class DirectiveLinkValidator
 			return url;
 
 		if (IsExternal(trimmed))
-		{
-			if (ApiLinkMatcher.TryGetApiPath(trimmed, out _))
-				context
-					.Build
-					.Collector
-					.EmitApiLink(
-						new ApiLinkReference(
-							trimmed,
-							block.CurrentFile.FullName,
-							block.Line + 1,
-							System.Math.Max(block.Column, 1),
-							trimmed.Length
-						)
-					);
 			return url;
-		}
 
 		if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && CrossLinkValidator.IsCrossLink(uri))
 			return ResolveCrossLink(url, uri, block, context);

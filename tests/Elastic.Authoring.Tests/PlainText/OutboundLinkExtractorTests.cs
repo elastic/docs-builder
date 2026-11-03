@@ -96,3 +96,52 @@ public class NoLinksOnAPage : GeneratorTest
 		OutboundLinkExtractor.Extract(result.Document).Should().BeNull();
 	}
 }
+
+public class OutboundLinkLocations : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			Index(
+				"""
+				[Search](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search) and
+				<https://www.elastic.co/docs/api/doc/kibana/operation/operation-auto>.
+
+				% [note](https://www.elastic.co/docs/api/doc/hidden)
+
+				:::{link-card}
+				title: Bulk
+				link: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk
+				links:
+				  - label: Get
+				    url: https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-get
+				:::
+
+				:::{include} _snippets/api.md
+				:::
+				"""
+			),
+			Snippet("_snippets/api.md", "Read the [guide](https://www.elastic.co/docs/api/doc/kibana/operation/operation-snippet)."),
+		];
+
+	[Test]
+	public async Task ExtractWithLocations_PageWithApiLinks_ReturnsEveryOccurrenceWithItsFile()
+	{
+		var result = await Docs.Converts("index.md").Inner;
+
+		var links = OutboundLinkExtractor.ExtractWithLocations(result.Document, "index.md");
+
+		links
+			.Select(l => l.Url)
+			.Should()
+			.Equal(
+				"https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search",
+				"https://www.elastic.co/docs/api/doc/kibana/operation/operation-auto",
+				"https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk",
+				"https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-get",
+				"https://www.elastic.co/docs/api/doc/kibana/operation/operation-snippet"
+			);
+		links.Should().OnlyContain(l => l.Line > 0 && l.Column > 0);
+		links.Take(4).Should().OnlyContain(l => l.File == "index.md");
+		links[4].File.Should().EndWith("api.md");
+	}
+}
