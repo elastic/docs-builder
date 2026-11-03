@@ -5,6 +5,7 @@
 using Elastic.Documentation.Search.Contract;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Clients.Elasticsearch.Core.Search;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
 namespace Elastic.Documentation.Search;
@@ -16,6 +17,20 @@ namespace Elastic.Documentation.Search;
 /// </summary>
 public static class SearchQueryBuilder
 {
+	public const string ApiPropertyHits = "api_properties";
+
+	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
+	public static bool IsApiPropertyHits(string innerHitsName) =>
+		innerHitsName == ApiPropertyHits || innerHitsName.StartsWith(ApiPropertyHits + "_", StringComparison.Ordinal);
+
+	private static string InnerHitsName(int reading) => reading == 0 ? ApiPropertyHits : $"{ApiPropertyHits}_{reading}";
+
+	private static readonly HashSet<string> HttpMethods = new(
+		["get", "post", "put", "patch", "delete", "head", "options"],
+		StringComparer.OrdinalIgnoreCase
+	);
+	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
+
 	/// <summary>
 	/// Rank-feature and term boosts applied as <c>should</c> clauses on top of the base query.
 	/// </summary>
@@ -36,6 +51,165 @@ public static class SearchQueryBuilder
 			new TermQuery { Field = QueryFieldNames.Hidden, Value = true }
 		]
 	};
+
+	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
+	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
+		ParseApiPropertyQuery(searchQuery, typeFilter).Readings is [var first, ..]
+			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, allowPrefix: typeFilter == "api")
+			: null;
+
+	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
+	{
+		var parsed = ParseApiPropertyQuery(searchQuery, typeFilter);
+		var branches = parsed
+			.Readings
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, allowPrefix: typeFilter == "api"))
+			.OfType<Query>()
+			.ToList();
+		if (branches.Count == 0)
+			return query;
+
+		var properties = branches.Count == 1 ? branches[0] : new BoolQuery { Should = branches, MinimumShouldMatch = 1 };
+		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
+	}
+
+	private static Query? BuildReadingQuery(
+		(string Operation, string Property) reading,
+		string innerHitsName,
+		bool endpointRequired,
+		bool allowPrefix
+	)
+	{
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, allowPrefix);
+		var endpoint = reading.Operation.Length == 0 ? null : BuildEndpointHalfQuery(reading.Operation);
+		if (endpoint is null && endpointRequired)
+			return null;
+		// Named after its inner hits so the result processor can tell which reading a hit matched: inner hits are
+		// computed from the nested query alone, even for a reading whose endpoint did not hold, and a hit the lexical
+		// branch alone matched carries no name. The name sits on the whole reading, as Elasticsearch reports a named
+		// clause that matched even when its parent did not.
+		if (endpoint is null)
+			return new BoolQuery { Must = [properties], QueryName = innerHitsName };
+		return endpointRequired
+			? new BoolQuery { Must = [properties, endpoint], QueryName = innerHitsName }
+			: new BoolQuery { Must = [properties], Should = [endpoint], QueryName = innerHitsName };
+	}
+
+	/// <summary>
+	/// The endpoint half as typed and, for a bare word, as its underscore alias too: `deployments` is a route of
+	/// its own while `search` means `_search`, and a required endpoint must accept either.
+	/// </summary>
+	private static Query? BuildEndpointHalfQuery(string operation)
+	{
+		var candidates = new[] { BuildApiEndpointQuery(operation), BuildBareWordEndpointQuery(operation) }.OfType<Query>().ToList();
+		return candidates.Count switch
+		{
+			0 => null,
+			1 => candidates[0],
+			_ => new DisMaxQuery { Queries = candidates }
+		};
+	}
+
+	/// <summary>
+	/// The ways a query may split into an endpoint half and a field half; empty when it never names a field.
+	/// A word that starts with a slash, or an HTTP method right before one, can only be endpoint, so the field is the
+	/// last word that is neither; on its own, `get` or `options` may name a field. Two plain words are ambiguous, so
+	/// both orders are returned, the last word as the field first.
+	/// </summary>
+	private static ApiPropertyReadings ParseApiPropertyQuery(string searchQuery, string? typeFilter)
+	{
+		var input = searchQuery.Trim();
+		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
+			return ApiPropertyReadings.None;
+		var parsed = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
+		// API operation that happens to have a field of that name above the pages about it. Dropping a reading
+		// leaves the others as demanding as the query made them.
+		return typeFilter == "api"
+			? parsed
+			: parsed with { Readings = parsed.Readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray() };
+	}
+
+	private static ApiPropertyReadings ParseReadings(string[] words)
+	{
+		var endpointWords = words.Select(
+			(w, i) => w.StartsWith('/') || (HttpMethods.Contains(w) && i + 1 < words.Length && words[i + 1].StartsWith('/'))
+		).ToArray();
+		// With one reading the endpoint only lifts the operation. With two, the index decides which reading holds,
+		// so each requires its endpoint: a bare word that names no endpoint, such as `_knn`, matches nothing.
+		if (!endpointWords.Any(e => e) && words.Length == 2)
+			return new ApiPropertyReadings([(words[0], words[1]), (words[1], words[0])], EndpointRequired: true);
+
+		var field = Array.LastIndexOf(endpointWords, false);
+		if (field < 0)
+			return ApiPropertyReadings.None;
+		return new ApiPropertyReadings([(string.Join(' ', words.Where((_, i) => i != field)), words[field])], EndpointRequired: false);
+	}
+
+	/// <summary>The readings of a query, and whether each must match its endpoint rather than only be lifted by it.</summary>
+	private sealed record ApiPropertyReadings(IReadOnlyList<(string Operation, string Property)> Readings, bool EndpointRequired)
+	{
+		public static readonly ApiPropertyReadings None = new([], EndpointRequired: false);
+	}
+
+	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, bool allowPrefix) =>
+		new NestedQuery
+		{
+			Path = QueryFieldNames.ApiProperties,
+			IgnoreUnmapped = true,
+			ScoreMode = ChildScoreMode.Max,
+			Query = BuildPropertyMatchQuery(property, allowPrefix),
+			InnerHits = new InnerHits
+			{
+				Name = innerHitsName,
+				Size = 5,
+				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
+			}
+		};
+
+	private static Query BuildPropertyMatchQuery(string input, bool allowPrefix)
+	{
+		var name = BuildPropertyNameQuery(input, allowPrefix);
+		var separator = input.LastIndexOf('.');
+		if (separator < 0 || separator == input.Length - 1)
+			return name;
+
+		return new DisMaxQuery
+		{
+			Queries =
+			[
+				name,
+				new BoolQuery
+				{
+					Must = [BuildPropertyNameQuery(input[(separator + 1)..], allowPrefix)],
+					Filter =
+					[
+						new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
+					]
+				}
+			]
+		};
+	}
+
+	/// <summary>
+	/// Bound field scores below operation matches, regardless of term rarity in nested documents. Only an
+	/// API-filtered lookup matches by prefix: in the docs-wide search a prefix such as `s` would lift hundreds of operations.
+	/// </summary>
+	private static Query BuildPropertyNameQuery(string name, bool allowPrefix)
+	{
+		var exact = new ConstantScoreQuery
+		{
+			Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
+			Boost = 1
+		};
+		// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
+		var prefix = new ConstantScoreQuery
+		{
+			Filter = new PrefixQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
+			Boost = 0.6f
+		};
+		return new DisMaxQuery { Queries = allowPrefix ? [exact, prefix] : [exact] };
+	}
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{

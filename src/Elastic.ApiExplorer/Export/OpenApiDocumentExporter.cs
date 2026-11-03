@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -16,6 +17,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
@@ -66,6 +68,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
 
+		var plainDescriptions = new Dictionary<string, string>();
 		foreach (var path in openApiDocument.Paths)
 		{
 			if (path.Value.Operations == null)
@@ -117,6 +120,23 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				}
 
 				var body = bodyBuilder.ToString();
+				var apiOperation = new ApiOperation(operation.Key, operation.Value, path.Key, path.Value, product);
+				var builder = new ApiPropertyTreeBuilder(
+					openApiDocument,
+					new PropertyDisplayOptions
+					{
+						// Listing identity keys on the markdown and the index stores plain text, so nothing here needs the HTML.
+						RenderMarkdown = _ => HtmlString.Empty,
+						ApiRootUrl = productUrl,
+						VersionsConfiguration = versionsConfiguration
+					}
+				);
+				var endpoint = OperationEndpoint.Build(apiOperation, operation.Value.Description, []);
+				var trees = OperationPageModel.BuildPropertyTrees(
+					apiOperation,
+					new SchemaAnalyzer(openApiDocument),
+					new ParameterRowSource(builder, null, endpoint)
+				);
 
 				// Extract tags as headings
 				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
@@ -143,6 +163,17 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					],
 					Api = new ApiOperationMetadata
 					{
+						Properties = trees.IndexEntries(plainDescriptions),
+						Routes = endpoint
+							.Rows
+							.Select(
+								row => new ApiRouteEntry
+								{
+									Path = row.Route,
+									Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
+								}
+							)
+							.ToArray(),
 						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
 						Method = method,
 						Path = path.Key,

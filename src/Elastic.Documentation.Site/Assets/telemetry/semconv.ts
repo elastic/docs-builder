@@ -201,6 +201,13 @@ export const ATTR_NAVIGATION_SEARCH_RESULT_SCORE =
     'navigation_search.result.score'
 
 /**
+ * Anchor of the clicked property on its operation page
+ * @example "req-track_total_hits"
+ */
+export const ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR =
+    'navigation_search.result.anchor'
+
+/**
  * Retry-After header value in seconds (for rate limiting)
  * @example 30
  */

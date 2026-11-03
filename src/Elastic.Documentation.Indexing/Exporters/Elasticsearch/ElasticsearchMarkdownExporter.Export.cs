@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.IO.Abstractions;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
@@ -35,14 +36,12 @@ public partial class ElasticsearchMarkdownExporter
 	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
-	/// <summary>
-	/// Assigns hash, last updated, and batch index date to a documentation document.
-	/// </summary>
-	private void AssignDocumentMetadata(DocumentationDocument doc)
-	{
-		var semanticHash = _semanticTypeContext?.Hash ?? string.Empty;
-		var lexicalHash = _lexicalTypeContext.Hash;
-		var hash = HashedBulkUpdate.CreateHash(
+	private void AssignDocumentMetadata(DocumentationDocument doc) =>
+		doc.Hash = DocumentHash(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
+
+	/// <summary>The change-detection hash. Everything the index stores for a page takes part, so a metadata-only edit still syncs.</summary>
+	internal static string DocumentHash(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
+		HashedBulkUpdate.CreateHash(
 			semanticHash,
 			lexicalHash,
 			doc.Path,
@@ -54,12 +53,13 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.Depth.ToString("N0"),
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
-			_fixedSynonymsHash,
+			synonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
-			string.Join(",", doc.Links ?? [])
+			string.Join(",", doc.Links ?? []),
+			doc.Api is null
+				? string.Empty
+				: JsonSerializer.Serialize(doc.Api, Documentation.Search.Contract.SourceGenerationContext.Default.ApiOperationMetadata)
 		);
-		doc.Hash = hash;
-	}
 
 	/// <summary>Computes and assigns the whitespace-normalized content hash for change detection.</summary>
 	private static void AssignContentHash(DocumentationDocument doc) =>

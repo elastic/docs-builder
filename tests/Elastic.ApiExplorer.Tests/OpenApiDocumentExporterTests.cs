@@ -271,6 +271,58 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	public async Task ConvertToDocuments_UnionsThatDifferOnlyByDescription_IndexBothListings()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+		{
+		  "openapi":"3.0.3", "info":{"title":"Fields","version":"1"},
+		  "paths":{"/thing":{"post":{"operationId":"thing","responses":{"200":{"description":"OK"}},
+		    "requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{
+		      "choice":{"oneOf":[
+		        {"type":"object","description":"Code it","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]},
+		      "pick":{"oneOf":[
+		        {"type":"object","description":"Code it, but differently","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it, but differently","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]}
+		    }}}}}}}}
+		}
+		"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "fields").Single();
+
+		// Large enough to be shared, alike in every way but the variant descriptions: the page keeps both listings, so the index must too.
+		doc.Api!.Properties.Select(p => p.Path).Should().Contain(["choice.c1", "choice.n6", "pick.c1", "pick.n6"]);
+	}
+
+	[Test]
+	public void Operation_MethodList_IndexesEveryRouteWithItsMethods()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources", raw, "esql-get-data-source");
+
+		doc.Api!
+			.Routes
+			.Select(r => $"{string.Join(",", r.Methods)} {r.Path}")
+			.Should()
+			.Equal("PUT /_query/data_source/{name}", "GET /_query/data_source");
+	}
+
+	[Test]
 	public void Operation_OnlyMethodList_IndexesTheSummary()
 	{
 		const string raw =
