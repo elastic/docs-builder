@@ -99,11 +99,15 @@ describe('NavigationSearchWrapper type attribute', () => {
         await userEvent.click(input)
         expect(input).toHaveFocus()
         expect(navigationSearchStore.getState().selectedIndex).toBe(0)
+        expect(screen.getAllByText('Go to operation')).toHaveLength(2)
+        expect(screen.getAllByText('Go to property')).toHaveLength(1)
         await userEvent.keyboard('{ArrowDown}')
         expect(navigationSearchStore.getState().selectedIndex).toBe(1)
         await waitFor(() =>
             expect(child).toHaveAttribute('data-selected', 'true')
         )
+        expect(screen.getAllByText('Go to property')).toHaveLength(2)
+        expect(screen.getAllByText('Go to operation')).toHaveLength(1)
         await userEvent.keyboard('{Enter}')
         expect(clicked).toHaveBeenCalledTimes(1)
         expect(logInfo).toHaveBeenCalledWith(

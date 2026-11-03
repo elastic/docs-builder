@@ -2,17 +2,7 @@ import { PropertyResultRow } from './PropertyResultRow'
 import { EuiProvider } from '@elastic/eui'
 import { render, screen } from '@testing-library/react'
 
-it.each([
-    ['search knn', 'retriever.knn', ['knn']],
-    ['_search KNN', 'retriever.knn', ['knn']],
-    ['search track_total', 'track_total_hits', ['track_total']],
-    [
-        'elasticsearch.remote_cluster',
-        '[].elasticsearch.remote_cluster',
-        ['elasticsearch', 'remote_cluster'],
-    ],
-    ['_search knn.field', 'knn.field', ['knn', 'field']],
-])('highlights the property match for %s', (searchTerm, path, matches) => {
+const renderRow = (searchTerm: string, path: string) =>
     render(
         <EuiProvider
             colorMode="light"
@@ -40,9 +30,27 @@ it.each([
             />
         </EuiProvider>
     )
+
+it.each([
+    ['search knn', 'retriever.knn', ['knn']],
+    ['_search KNN', 'retriever.knn', ['knn']],
+    ['search track_total', 'track_total_hits', ['track_total']],
+    [
+        'elasticsearch.remote_cluster',
+        '[].elasticsearch.remote_cluster',
+        ['elasticsearch', 'remote_cluster'],
+    ],
+    ['_search knn.field', 'knn.field', ['knn', 'field']],
+])('highlights the property match for %s', (searchTerm, path, matches) => {
+    renderRow(searchTerm, path)
     const row = screen.getByRole('link')
     expect(
         Array.from(row.querySelectorAll('mark'), (mark) => mark.textContent)
     ).toEqual(matches)
     expect(row.querySelector('code')).toHaveTextContent(path)
+})
+
+it('offers "Go to property" as the Enter action', () => {
+    renderRow('knn', 'retriever.knn')
+    expect(screen.getByText('Go to property')).toBeInTheDocument()
 })

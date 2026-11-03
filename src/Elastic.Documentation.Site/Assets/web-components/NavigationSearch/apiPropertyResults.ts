@@ -21,6 +21,19 @@ export type NavigableResult =
           property: ApiPropertyResult
       }
 
+export const GO_TO_LABELS = {
+    page: 'Jump to',
+    operation: 'Go to operation',
+    property: 'Go to property',
+} as const
+
+export const goToLabel = (entry: NavigableResult): string => {
+    if (entry.kind === 'property') return GO_TO_LABELS.property
+    return entry.result.type === 'api'
+        ? GO_TO_LABELS.operation
+        : GO_TO_LABELS.page
+}
+
 export const navigableSearchResults = (
     results: SearchResultItem[]
 ): NavigableResult[] =>

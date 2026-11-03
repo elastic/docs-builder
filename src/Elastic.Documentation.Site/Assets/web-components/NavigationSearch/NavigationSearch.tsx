@@ -2,6 +2,8 @@ import { availableIcons } from '../../eui-icons-cache'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
+    GO_TO_LABELS,
+    goToLabel,
     navigableSearchResults,
     type NavigableResult,
 } from './apiPropertyResults'
@@ -211,14 +213,8 @@ export const NavigationSearch = ({
     )
 }
 
-const KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to' },
-    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
-    { keys: ['Esc'], label: 'Close' },
-]
-
-const API_KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to API' },
+const keyboardShortcuts = (enterLabel: string) => [
+    { keys: ['returnKey'], label: enterLabel },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
     { keys: ['Esc'], label: 'Close' },
 ]
@@ -240,6 +236,12 @@ const SearchDropdownContent = ({
     onResultClick,
     typeFilter,
 }: SearchDropdownContentProps) => {
+    const selected = results[useSelectedIndex()]
+    const enterLabel = selected
+        ? goToLabel(selected)
+        : typeFilter === 'api'
+          ? GO_TO_LABELS.operation
+          : GO_TO_LABELS.page
     return (
         <>
             <SearchResultsList
@@ -250,16 +252,15 @@ const SearchDropdownContent = ({
                 onResultClick={onResultClick}
                 typeFilter={typeFilter}
             />
-            <SearchDropdownFooter typeFilter={typeFilter} />
+            <SearchDropdownFooter enterLabel={enterLabel} />
         </>
     )
 }
 
-const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
+const SearchDropdownFooter = ({ enterLabel }: { enterLabel: string }) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const shortcuts =
-        typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
+    const shortcuts = keyboardShortcuts(enterLabel)
 
     if (isMobile) {
         return null

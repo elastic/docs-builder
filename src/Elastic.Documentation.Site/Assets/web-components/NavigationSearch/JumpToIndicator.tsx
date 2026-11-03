@@ -1,0 +1,22 @@
+import { EuiBadge, EuiIcon, useEuiTheme } from '@elastic/eui'
+import { css } from '@emotion/react'
+
+export const JumpToIndicator = ({ label }: { label: string }) => {
+    const { euiTheme } = useEuiTheme()
+
+    return (
+        <div
+            className="jump-to-indicator"
+            css={css`
+                flex-shrink: 0;
+                color: ${euiTheme.colors.textSubdued};
+                margin-left: ${euiTheme.size.xxxxl};
+                visibility: hidden;
+            `}
+        >
+            <EuiBadge color="hollow">
+                {label} <EuiIcon type="returnKey" size="s" />
+            </EuiBadge>
+        </div>
+    )
+}

@@ -1,6 +1,11 @@
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
-import type { ApiPropertyResult } from './apiPropertyResults'
-import { EuiHighlight, useEuiTheme } from '@elastic/eui'
+import { JumpToIndicator } from './JumpToIndicator'
+import { GO_TO_LABELS, type ApiPropertyResult } from './apiPropertyResults'
+import {
+    EuiHighlight,
+    useEuiTheme,
+    useIsWithinMaxBreakpoint,
+} from '@elastic/eui'
 import { css } from '@emotion/react'
 
 export const PropertyResultRow = ({
@@ -25,6 +30,7 @@ export const PropertyResultRow = ({
     onClick: () => void
 }) => {
     const { euiTheme } = useEuiTheme()
+    const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
     const propertySearch =
@@ -110,8 +116,18 @@ export const PropertyResultRow = ({
                 .property-description {
                     flex: 1;
                 }
+                .jump-to-indicator {
+                    order: 2;
+                    margin-left: ${euiTheme.size.s};
+                }
                 &:hover:not([data-keyboard-navigating='true']) {
                     background: ${euiTheme.colors.backgroundBaseHighlighted};
+                    .jump-to-indicator {
+                        visibility: visible;
+                    }
+                }
+                &[data-selected='true'] .jump-to-indicator {
+                    visibility: visible;
                 }
                 &:focus-visible {
                     outline: 2px solid ${euiTheme.colors.primary};
@@ -142,6 +158,7 @@ export const PropertyResultRow = ({
                 {property.location}
             </span>
             <span className="property-description">{property.description}</span>
+            {!isMobile && <JumpToIndicator label={GO_TO_LABELS.property} />}
         </a>
     )
 }

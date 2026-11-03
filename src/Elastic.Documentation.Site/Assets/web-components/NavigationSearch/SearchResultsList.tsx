@@ -1,8 +1,9 @@
 import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
-import { type NavigableResult } from './apiPropertyResults'
+import { goToLabel, type NavigableResult } from './apiPropertyResults'
 import {
     useSelectedIndex,
     useSearchActions,
@@ -11,8 +12,6 @@ import {
 import { SearchResultItem, type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
-    EuiBadge,
-    EuiIcon,
     EuiLoadingSpinner,
     useEuiTheme,
     useEuiOverflowScroll,
@@ -355,7 +354,7 @@ const SearchResultRow = ({
             </div>
             {!isMobile && (
                 <JumpToIndicator
-                    label={typeFilter === 'api' ? 'Jump to API' : 'Jump to'}
+                    label={goToLabel({ kind: 'operation', result })}
                 />
             )}
         </a>
@@ -486,26 +485,6 @@ const Description = ({ text }: { text: string }) => {
             `}
         >
             <SanitizedHtmlContent htmlContent={text} ellipsis />
-        </div>
-    )
-}
-
-const JumpToIndicator = ({ label }: { label: string }) => {
-    const { euiTheme } = useEuiTheme()
-
-    return (
-        <div
-            className="jump-to-indicator"
-            css={css`
-                flex-shrink: 0;
-                color: ${euiTheme.colors.textSubdued};
-                margin-left: ${euiTheme.size.xxxxl};
-                visibility: hidden;
-            `}
-        >
-            <EuiBadge color="hollow">
-                {label} <EuiIcon type="returnKey" size="s" />
-            </EuiBadge>
         </div>
     )
 }
