@@ -406,5 +406,3 @@ FodyWeavers.xsd
 .synthetics/
 .worktrees/
 
-# Verify snapshot testing
-*.received.*
