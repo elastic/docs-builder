@@ -55,7 +55,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
 			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
+			string.Join(",", doc.Links ?? [])
 		);
 		doc.Hash = hash;
 	}

@@ -4,31 +4,95 @@
 
 using AwesomeAssertions;
 using Elastic.Markdown.Exporters;
-using Markdig;
 
 namespace Elastic.Authoring.Tests.PlainText;
 
-public class OutboundLinkExtractorTests
+public class OutboundLinksOnAPage : GeneratorTest
 {
-	private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().Build();
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			Index(
+				"""
+				See [Elastic](https://www.elastic.co/docs) and <https://example.com/auto>.
+				Again [Elastic](https://www.elastic.co/docs), a [section](#below), and ![logo](logo.png).
+
+				% [internal note](https://example.com/note)
+
+				## Below
+				"""
+			),
+			Static("logo.png"),
+		];
 
 	[Test]
-	public void Extract_PageWithLinks_ReturnsDistinctTargetsWithoutAnchorsOrImages()
+	public async Task Extract_PageWithLinks_ReturnsDistinctTargetsWithoutAnchorsImagesOrComments()
 	{
-		const string markdown =
-			"""
-			See [Elastic](https://www.elastic.co/docs) and <https://example.com/auto>.
-			Again [Elastic](https://www.elastic.co/docs), a [section](#below), and ![logo](logo.png).
+		var result = await Docs.Converts("index.md").Inner;
 
-			## Below
-			""";
-
-		var links = OutboundLinkExtractor.Extract(Markdig.Markdown.Parse(markdown, Pipeline));
-
-		links.Should().Equal("https://www.elastic.co/docs", "https://example.com/auto");
+		OutboundLinkExtractor.Extract(result.Document).Should().Equal("https://www.elastic.co/docs", "https://example.com/auto");
 	}
+}
+
+public class OutboundLinksFromAnIncludedSnippet : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			Index("""
+				:::{include} _snippets/links.md
+				:::
+				"""),
+			Snippet("_snippets/links.md", "Read the [guide](https://example.com/guide)."),
+		];
 
 	[Test]
-	public void Extract_PageWithoutLinks_ReturnsNull() =>
-		OutboundLinkExtractor.Extract(Markdig.Markdown.Parse("Plain text with no links.", Pipeline)).Should().BeNull();
+	public async Task Extract_LinksOnlyInSnippet_ReturnsSnippetLinks()
+	{
+		var result = await Docs.Converts("index.md").Inner;
+
+		OutboundLinkExtractor.Extract(result.Document).Should().Equal("https://example.com/guide");
+	}
+}
+
+public class OutboundLinksFromCardDirectives : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files =>
+		[
+			Index(
+				"""
+				:::{page-card} [Other](other.md)
+				Another page.
+				:::
+
+				:::{link-card}
+				title: Writing content
+				link: /index.md
+				links:
+				  - label: Other
+				    url: /other.md
+				:::
+				"""
+			),
+			Page("other.md", "# Other"),
+		];
+
+	[Test]
+	public async Task Extract_LinksOnlyInCards_ReturnsCardTargets()
+	{
+		var result = await Docs.Converts("index.md").Inner;
+
+		OutboundLinkExtractor.Extract(result.Document).Should().Equal("/other", "/index.md", "/other.md");
+	}
+}
+
+public class NoLinksOnAPage : GeneratorTest
+{
+	protected override IReadOnlyCollection<TestFile> Files => [Index("Plain text with no links.")];
+
+	[Test]
+	public async Task Extract_PageWithoutLinks_ReturnsNull()
+	{
+		var result = await Docs.Converts("index.md").Inner;
+
+		OutboundLinkExtractor.Extract(result.Document).Should().BeNull();
+	}
 }
