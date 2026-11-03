@@ -125,8 +125,8 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					openApiDocument,
 					new PropertyDisplayOptions
 					{
-						// Listing sharing keys on the rendered description, so a blank renderer would merge listings the page keeps apart.
-						RenderMarkdown = markdown => new HtmlString(markdown),
+						// Listing identity keys on the markdown and the index stores plain text, so nothing here needs the HTML.
+						RenderMarkdown = _ => HtmlString.Empty,
 						ApiRootUrl = productUrl,
 						VersionsConfiguration = versionsConfiguration
 					}
