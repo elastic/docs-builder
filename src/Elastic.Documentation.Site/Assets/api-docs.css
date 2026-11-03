@@ -3373,14 +3373,27 @@ navigation-search[variant='hero'] {
 	column-gap: 14px;
 }
 
-/* The description's section headings sit under the 36px title, so they step down from it instead of matching it. */
-.api-landing .docs-measure h2 {
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it. */
+.api-landing .docs-measure h2,
+.api-group .api-tag-description h2 {
 	margin-top: 32px;
 	font-size: var(--text-2xl);
 }
 
-.api-landing .docs-measure h3 {
+.api-landing .docs-measure h3,
+.api-group .api-tag-description h3 {
 	font-size: var(--text-xl);
+}
+
+/* A group title is 24px below 40rem, so its intro headings step down one more size. */
+@container api-group (max-width: 39.99rem) {
+	.api-group .api-tag-description h2 {
+		font-size: var(--text-xl);
+	}
+
+	.api-group .api-tag-description h3 {
+		font-size: var(--text-lg);
+	}
 }
 
 /* The index starts after the intro with the same 32px that separates its groups. */
