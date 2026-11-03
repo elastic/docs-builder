@@ -458,11 +458,17 @@ const Title = ({
                 <span
                     className="api-title-badges"
                     css={css`
-                        display: inline-block;
+                        /* An atomic inline, so the row's hover underline stops at the title text. Middle alignment lands 1px low beside the bold title. */
+                        display: inline-flex;
+                        align-items: center;
+                        position: relative;
+                        top: -1px;
                         margin-left: ${euiTheme.size.s};
-                        vertical-align: baseline;
+                        vertical-align: middle;
+                        line-height: 1;
                         font-weight: ${euiTheme.font.weight.regular};
                         .applies {
+                            display: inline-flex;
                             margin-right: 0;
                         }
                         .applicable-info {
