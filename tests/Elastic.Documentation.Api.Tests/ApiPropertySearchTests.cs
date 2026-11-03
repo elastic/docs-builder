@@ -41,6 +41,8 @@ public class ApiPropertySearchTests
 	[Arguments("GET /_search knn", "knn")]
 	[Arguments("knn /_search", "knn")]
 	[Arguments("knn GET /_search", "knn")]
+	[Arguments("options", "options")]
+	[Arguments("_bulk delete", "delete")]
 	[Arguments("track_total", "track_total")]
 	[Arguments("trav", "trav")]
 	public void BuildApiPropertyQuery_FieldTerm_MatchesOnlyItsOwnNameWithBoundedScores(string input, string name)

@@ -88,8 +88,9 @@ public static class SearchQueryBuilder
 
 	/// <summary>
 	/// The ways a query may split into an endpoint half and a field half; empty when it never names a field.
-	/// A word that starts with a slash or is an HTTP method can only be endpoint, so the field is the last word
-	/// that is neither. Two plain words are ambiguous, so both orders are returned, the last word as the field first.
+	/// A word that starts with a slash, or an HTTP method right before one, can only be endpoint, so the field is the
+	/// last word that is neither; on its own, `get` or `options` may name a field. Two plain words are ambiguous, so
+	/// both orders are returned, the last word as the field first.
 	/// </summary>
 	private static IReadOnlyList<(string Operation, string Property)> ParseApiPropertyQuery(string searchQuery, string? typeFilter)
 	{
@@ -100,11 +101,13 @@ public static class SearchQueryBuilder
 			return [];
 
 		var words = input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-		var marked = words.Any(w => w.StartsWith('/') || HttpMethods.Contains(w));
-		if (!marked && words.Length == 2)
+		var endpointWords = words.Select(
+			(w, i) => w.StartsWith('/') || (HttpMethods.Contains(w) && i + 1 < words.Length && words[i + 1].StartsWith('/'))
+		).ToArray();
+		if (!endpointWords.Any(e => e) && words.Length == 2)
 			return [(words[0], words[1]), (words[1], words[0])];
 
-		var field = Array.FindLastIndex(words, w => !w.StartsWith('/') && !HttpMethods.Contains(w));
+		var field = Array.LastIndexOf(endpointWords, false);
 		if (field < 0)
 			return [];
 		return [(string.Join(' ', words.Where((_, i) => i != field)), words[field])];

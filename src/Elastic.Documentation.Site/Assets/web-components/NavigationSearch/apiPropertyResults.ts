@@ -37,23 +37,29 @@ const pathKey = (path: string) =>
         .replace(/\{[^}]*\}/g, '*')
         .replace(/^\/+/, '')
 
-const canBeField = (word: string) =>
-    word.length > 0 &&
-    !word.startsWith('/') &&
-    !HTTP_METHODS.has(word.toLowerCase())
+const words = (searchTerm: string) =>
+    searchTerm.trim().split(/\s+/).filter(Boolean)
+
+/** `GET` right before `/_search` is a method; on its own, `get` or `options` may well be a field name. */
+const isMethodBeforePath = (all: string[], i: number) =>
+    HTTP_METHODS.has(all[i].toLowerCase()) &&
+    (all[i + 1]?.startsWith('/') ?? false)
 
 /** The parts of a query that can name a field, split on dots, in either word order; what a property row highlights. */
-export const fieldSearchTerms = (searchTerm: string) =>
-    Array.from(
+export const fieldSearchTerms = (searchTerm: string) => {
+    const all = words(searchTerm)
+    return Array.from(
         new Set(
-            searchTerm
-                .trim()
-                .split(/\s+/)
-                .filter(canBeField)
+            all
+                .filter(
+                    (word, i) =>
+                        !word.startsWith('/') && !isMethodBeforePath(all, i)
+                )
                 .flatMap((word) => word.split('.'))
                 .filter(Boolean)
         )
     )
+}
 
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
@@ -61,11 +67,11 @@ export const fieldSearchTerms = (searchTerm: string) =>
  * with the page's primary route first, so that one wins among the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
-    const tokens = searchTerm
-        .toLowerCase()
-        .split(/\s+/)
+    const all = words(searchTerm)
+    const tokens = all
+        .filter((_, i) => !isMethodBeforePath(all, i))
         .map(pathKey)
-        .filter((word) => word.length > 1 && !HTTP_METHODS.has(word))
+        .filter((word) => word.length > 1)
     const containing = routes.filter((route) =>
         tokens.some((token) => pathKey(route.path).includes(token))
     )

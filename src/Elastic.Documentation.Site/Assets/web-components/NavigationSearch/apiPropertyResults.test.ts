@@ -92,7 +92,8 @@ it.each([
     ['in', ['in'], undefined],
     ['scroll', ['scroll'], '/_search/scroll'],
     ['knn', ['knn'], undefined],
-    ['get', [], undefined],
+    ['get', ['get'], undefined],
+    ['GET /_search', ['_search'], '/_search'],
     ['a', [], undefined],
 ])('picks the route for %s', (searchTerm, tokens, path) => {
     const matched = primaryRoute(routes, searchTerm)
@@ -107,6 +108,9 @@ it.each([
     ['GET /_search knn.field', ['knn', 'field']],
     ['_search knn', ['_search', 'knn']],
     ['/_search', []],
+    ['options', ['options']],
+    ['_bulk delete', ['_bulk', 'delete']],
+    ['get knn', ['get', 'knn']],
 ])('takes the field terms of %s', (searchTerm, terms) => {
     expect(fieldSearchTerms(searchTerm)).toEqual(terms)
 })
