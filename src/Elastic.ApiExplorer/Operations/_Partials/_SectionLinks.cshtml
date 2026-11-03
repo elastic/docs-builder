@@ -3,12 +3,6 @@
 <nav class="api-section-links" aria-label="Sections of this endpoint" data-toc>
 	@foreach (var link in Model)
 	{
-		<a href="#@link.Anchor" data-toc-link>
-			@link.Label
-			@if (link.Count is > 0)
-			{
-				<span class="api-example-chip-count">@link.Count</span>
-			}
-		</a>
+		<a href="#@link.Anchor" data-toc-link>@link.Label</a>
 	}
 </nav>
