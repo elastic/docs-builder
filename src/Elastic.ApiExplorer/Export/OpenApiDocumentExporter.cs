@@ -94,7 +94,6 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				var summary = operation.Value.Summary?.Trim();
 				var title = string.IsNullOrEmpty(summary) ? operationId : summary;
 				var method = operation.Key.ToString().ToUpperInvariant();
-				var searchTitle = BuildSearchTitle(title, productLabel, operationId, $"{method} {path.Key}");
 				var description = IndexedHitText(summary, operation.Value.Description, operationId);
 
 				// Build body content from operation details
@@ -145,12 +144,33 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 				// Infer product and repository metadata
 				var inference = documentInferrer?.InferForOpenApi(productId ?? product);
 
+				var api = new ApiOperationMetadata
+				{
+					Properties = trees.IndexEntries(plainDescriptions),
+					Routes = endpoint
+						.Rows
+						.Select(
+							row => new ApiRouteEntry
+							{
+								Path = row.Route,
+								Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
+							}
+						)
+						.ToArray(),
+					Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
+					Method = method,
+					Path = path.Key,
+					OperationId = operationId,
+					Group = GroupName(headings.FirstOrDefault(), tagMetadata),
+					Deprecated = operation.Value.Deprecated
+				};
+
 				yield return new DocumentationDocument
 				{
 					ContentType = "api",
 					Path = url,
 					Title = title,
-					SearchTitle = searchTitle,
+					SearchTitle = BuildSearchTitle(title, productLabel, api),
 					Description = description,
 					Body = body,
 					Headings = headings,
@@ -161,26 +181,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 						new ParentDocument { Title = "API", Path = "/docs/api" },
 						new ParentDocument { Title = productLabel, Path = productUrl }
 					],
-					Api = new ApiOperationMetadata
-					{
-						Properties = trees.IndexEntries(plainDescriptions),
-						Routes = endpoint
-							.Rows
-							.Select(
-								row => new ApiRouteEntry
-								{
-									Path = row.Route,
-									Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
-								}
-							)
-							.ToArray(),
-						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
-						Method = method,
-						Path = path.Key,
-						OperationId = operationId,
-						Group = GroupName(headings.FirstOrDefault(), tagMetadata),
-						Deprecated = operation.Value.Deprecated
-					},
+					Api = api,
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
 						? inference
@@ -208,16 +209,20 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	}
 
 	/// <summary>
-	/// Search tokens users type for an operation: the product label, the raw operation id
-	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), and the HTTP method plus path
-	/// (e.g. <c>PUT /_bulk</c>). Keep ids and paths verbatim — no case or punctuation
-	/// rewriting — because that is what people paste. The product label lives here rather
-	/// than in <c>Title</c>, so result rows do not repeat "Elasticsearch API" on every hit.
+	/// Search tokens users type for an operation: the title, the product label, the raw operation id
+	/// (e.g. <c>_bulk</c>, <c>indices.get</c>), the HTTP method plus path (e.g. <c>PUT /_bulk</c>),
+	/// the group, and the plain words of the id and path (<see cref="ApiSearchWords"/>). The raw id
+	/// and path stay verbatim because that is what people paste; the words serve people who type
+	/// <c>ml flush</c>. The product label lives here rather than in <c>Title</c>, so result rows do
+	/// not repeat "Elasticsearch API" on every hit.
 	/// </summary>
-	internal static string BuildSearchTitle(string title, string productLabel, string operationId, string methodAndPath)
+	internal static string BuildSearchTitle(string title, string productLabel, ApiOperationMetadata api)
 	{
-		var searchTitle = $"{title} - {productLabel} - {operationId} - {methodAndPath}";
-		return operationId.Contains('.', StringComparison.Ordinal) ? $"{searchTitle} - {operationId.Replace('.', ' ')}" : searchTitle;
+		var searchTitle = $"{title} - {productLabel} - {api.OperationId} - {api.Method} {api.Path}";
+		if (!string.IsNullOrWhiteSpace(api.Group))
+			searchTitle += $" - {api.Group}";
+		var words = ApiSearchWords.Of(api.OperationId, api.Path);
+		return words.Length == 0 ? searchTitle : $"{searchTitle} - {string.Join(' ', words)}";
 	}
 
 	/// <summary>

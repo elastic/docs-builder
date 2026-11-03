@@ -245,6 +245,12 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("search", "operation-search");
 		yield return ("_search", "operation-search");
 		yield return ("bulk", "operation-bulk");
+		yield return ("ml flush", "operation-ml-flush-job");
+		yield return ("flush ml", "operation-ml-flush-job");
+		yield return ("flush ML job", "operation-ml-flush-job");
+		yield return ("ml flush job", "operation-ml-flush-job");
+		yield return ("_ml _flush", "operation-ml-flush-job");
+		yield return ("flush", "operation-indices-flush");
 	}
 
 	[Test]
