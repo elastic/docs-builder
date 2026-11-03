@@ -44,7 +44,7 @@ public class SupplyingATitle : MarkdownTest
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml(
 			"""
-		<p><img src="/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>
+		<p><img src="/_static/img/observability.png" alt="Elasticsearch" title="Hello world" /></p>
 		"""
 		);
 }
@@ -58,7 +58,7 @@ public class SupplyingATitleWithWidthAndHeight : MarkdownTest
 	[Test, DisplayName("validate HTML: does not include width and height in title")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
-		<p><img src="/obs.png" width="250px" height="400px" alt="o" title="o"/></p>
+		<p><img src="/obs.png" width="250px" height="400px" alt="o" title="Title"/></p>
 		""");
 }
 
@@ -71,7 +71,7 @@ public class SupplyingATitleWithWidthAndHeightInPercentage : MarkdownTest
 	[Test, DisplayName("validate HTML: does not include width and height in title")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
-		<p><img src="/obs.png" width="50%" height="40%" alt="o" title="o"/></p>
+		<p><img src="/obs.png" width="50%" height="40%" alt="o" title="Title"/></p>
 		""");
 }
 
@@ -84,6 +84,6 @@ public class SupplyingATitleWithWidthOnly : MarkdownTest
 	[Test, DisplayName("validate HTML: sets height to width if not supplied")]
 	public async Task ValidateHtml() =>
 		await Docs.ConvertsToHtml("""
-		<p><img src="/obs.png" width="30%" height="30%" alt="o" title="o"/></p>
+		<p><img src="/obs.png" width="30%" height="30%" alt="o" title="Title"/></p>
 		""");
 }

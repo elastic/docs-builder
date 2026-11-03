@@ -89,7 +89,7 @@ public class InlineImageWithPixelSizingTest() : InlineTest<LinkInline>("""
 		);
 }
 
-// Test image sizing with title and sizing — explicit title in markdown is ignored; alt text is always used as title
+// Test image sizing with title and sizing — explicit title in markdown is used as the title; alt text stays as alt
 [InheritsTests]
 public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 	"""
@@ -104,7 +104,7 @@ public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
-			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="Elasticsearch" /></p>"""
+			"""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" width="50%" height="50%" title="My Title" /></p>"""
 		);
 }
 

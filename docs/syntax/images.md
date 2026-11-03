@@ -93,7 +93,7 @@ Titles are optional making this the minimal syntax required:
 ![Elasticsearch](/syntax/images/observability.png)
 ```
 
-For inline images, the alt text always overrides any title specified in the Markdown. This ensures consistent accessibility where both the `alt` and `title` attributes contain the same descriptive text.
+For inline images, the Markdown title is used as the `title` attribute, and the alt text is used as the `alt` attribute. If you don't specify a title, the alt text is used for both attributes.
 
 ```markdown
 ![Elasticsearch](/syntax/images/observability.png "Different title")
@@ -110,7 +110,7 @@ Image sizing is specified through the title argument. You can specify just the s
 ![alt](img.png "=W")
 ```
 
-In this case, the alt text will be used as both the `alt` and `title` attributes, and the size parameters will be applied.
+In this case, the alt text is used as both the `alt` and `title` attributes, and the size parameters are applied.
 
 `W` and `H` can be either an absolute number in pixels or a number followed by `%` to indicate relative sizing.
 

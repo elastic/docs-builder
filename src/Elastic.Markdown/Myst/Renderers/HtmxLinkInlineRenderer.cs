@@ -71,7 +71,7 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		}
 		else if (link.IsImage)
 		{
-			// Handle inline images with ALT override logic
+			// Handle inline images
 			WriteImage(renderer, link);
 		}
 		else
@@ -95,8 +95,14 @@ public class HtmxLinkInlineRenderer : LinkInlineRenderer
 		// Write any additional attributes (like width/height from styling instructions)
 		_ = renderer.WriteAttributes(link);
 
-		// Always use alt text as title for accessibility consistency
-		if (link.FirstChild != null)
+		// Use the Markdown title when provided, otherwise fall back to the alt text
+		if (!string.IsNullOrEmpty(link.Title))
+		{
+			_ = renderer.Write(" title=\"");
+			_ = renderer.WriteEscape(link.Title);
+			_ = renderer.Write('"');
+		}
+		else if (link.FirstChild != null)
 		{
 			_ = renderer.Write(" title=\"");
 			renderer.WriteChildren(link);
