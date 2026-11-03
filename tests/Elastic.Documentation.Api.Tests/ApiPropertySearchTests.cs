@@ -139,6 +139,54 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	public void ProcessHit_ManyInnerHits_KeepsTheThreeBestDistinctAnchorsInScoreOrder()
+	{
+		var innerHits = string.Join(
+			",",
+			InnerHit("req-b", 4, "b"),
+			InnerHit("req-a", 5, "a"),
+			InnerHit("req-d", 2, "d"),
+			InnerHit("req-a", 4.5, "other.a"),
+			InnerHit("req-c", 3, "c")
+		);
+		var json = """
+			{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
+			{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
+			"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}}}]}}
+			""".Replace(
+			"__INNER_HITS__",
+			innerHits
+		);
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "a", new Dictionary<string, string[]>());
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "req-b", "req-c");
+		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
+	}
+
+	private static string InnerHit(string anchor, double score, string path) =>
+		$$$"""
+		{"_index":"test","_id":"search","_score":{{{score.ToString(System.Globalization.CultureInfo.InvariantCulture)}}},"_nested":{"field":"api.properties","offset":0},
+		"_source":{"name":"{{{path.Split('.')[^1]}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"request","description":"Count hits"}}
+		""";
+
+	private static Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
+	{
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		using var accessor = new ElasticsearchClientAccessor(
+			new DocumentationEndpoints
+			{
+				Elasticsearch = new ElasticsearchEndpoint { Uri = new Uri("https://localhost:9200"), ApiKey = "test" }
+			},
+			new SearchConfiguration { Synonyms = [], Rules = [], DiminishTerms = [] }
+		);
+		return accessor
+			.Client
+			.RequestResponseSerializer
+			.Deserialize<Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument>>(stream);
+	}
+
+	[Test]
 	public void ProcessHit_NestedPropertySource_ReturnsMatchingProperty()
 	{
 		const string json =
