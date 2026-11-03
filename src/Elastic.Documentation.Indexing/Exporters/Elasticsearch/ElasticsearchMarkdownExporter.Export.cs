@@ -55,7 +55,8 @@ public partial class ElasticsearchMarkdownExporter
 			doc.Navigation.TableOfContents.ToString("N0"),
 			doc.ContentTier,
 			_fixedSynonymsHash,
-			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? [])
+			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
+			string.Join(",", doc.Links ?? [])
 		);
 		doc.Hash = hash;
 	}
@@ -176,6 +177,7 @@ public partial class ElasticsearchMarkdownExporter
 		// Plain-text, markup-stripped content — the single source of truth for search, AI enrichment
 		// input, and content hashing. docs-builder no longer feeds raw LLM-flavored Markdown into `body`.
 		var body = PlainTextExporter.ConvertToPlainText(fileContext.Document, fileContext.BuildContext);
+		var links = OutboundLinkExtractor.Extract(fileContext.Document);
 
 		var headings = fileContext
 			.Document
@@ -208,6 +210,7 @@ public partial class ElasticsearchMarkdownExporter
 				.Reverse()
 				.ToArray(),
 			Headings = headings,
+			Links = links,
 			Hidden = fileContext.NavigationItem.ExcludeFromIndexing
 		};
 

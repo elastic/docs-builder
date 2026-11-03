@@ -540,17 +540,6 @@ public class VersionIndexClientTests
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		public List<string> RequestedPaths { get; } = [];
-
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-		{
-			RequestedPaths.Add(request.RequestUri!.AbsolutePath);
-			return Task.FromResult(responder(request));
-		}
-	}
-
 	/// <summary>Bypasses the channel/background-reader machinery so tests can assert on emitted messages synchronously.</summary>
 	private sealed class CapturingDiagnosticsCollector() : DiagnosticsCollector([])
 	{

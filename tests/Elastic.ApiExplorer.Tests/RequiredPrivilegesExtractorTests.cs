@@ -125,34 +125,20 @@ public class RequiredPrivilegesExtractorTests
 			  }
 			}
 			""";
-		var path = Path.Join(Path.GetTempPath(), $"privileges-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new Microsoft.OpenApi.Reader.OpenApiReaderSettings(),
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var op = document.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			var result = RequiredPrivilegesExtractor.Extract(
-				op,
-				"Intro.\n\n## Required authorization\n\n* Index privileges: `read`\n",
-				null,
-				"/a"
-			);
+		var result = RequiredPrivilegesExtractor.Extract(
+			op,
+			"Intro.\n\n## Required authorization\n\n* Index privileges: `read`\n",
+			null,
+			"/a"
+		);
 
-			result.Rows.Select(r => r.Label).Should().Equal("Cluster privileges", "Needs the **admin** role");
-			result.Rows[0].Values.Should().Equal("monitor");
-			result.Rows[1].Values.Should().BeEmpty();
-			result.Description.Should().Be("Intro.");
-		}
-		finally
-		{
-			if (File.Exists(path))
-				File.Delete(path);
-		}
+		result.Rows.Select(r => r.Label).Should().Equal("Cluster privileges", "Needs the **admin** role");
+		result.Rows[0].Values.Should().Equal("monitor");
+		result.Rows[1].Values.Should().BeEmpty();
+		result.Description.Should().Be("Intro.");
 	}
 
 	[Test]
