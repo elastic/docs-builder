@@ -11,7 +11,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 

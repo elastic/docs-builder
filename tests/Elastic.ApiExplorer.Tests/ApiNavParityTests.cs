@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
@@ -10,13 +9,9 @@ using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.Navigation;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 

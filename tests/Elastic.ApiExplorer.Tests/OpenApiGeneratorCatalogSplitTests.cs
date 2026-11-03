@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
-using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using AwesomeAssertions;

@@ -13,13 +13,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 

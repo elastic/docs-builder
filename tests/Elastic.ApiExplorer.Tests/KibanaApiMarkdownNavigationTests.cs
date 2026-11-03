@@ -15,8 +15,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Site.Navigation;
@@ -69,13 +67,7 @@ public class KibanaApiMarkdownNavigationTests
 			Children = [introFile]
 		};
 
-		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext();
 		var doc = OpenApiReader.Instance.ReadAsync(specFile).GetAwaiter().GetResult();
 		doc.Should().NotBeNull("OpenAPI document should load successfully");
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
