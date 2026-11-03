@@ -64,12 +64,17 @@ public static class TestHelpers
 	}
 
 	/// <summary>A build context rooted at the working directory with the default test configuration.</summary>
-	public static BuildContext CreateBuildContext(DiagnosticsCollector? collector = null) =>
+	public static BuildContext CreateBuildContext(
+		DiagnosticsCollector? collector = null,
+		BuildType buildType = BuildType.Isolated,
+		string? urlPathPrefix = null
+	) =>
 		new(
 			collector ?? new DiagnosticsCollector([]),
 			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
 			CreateConfigurationContext(new FileSystem())
-		);
+		)
+		{ BuildType = buildType, UrlPathPrefix = urlPathPrefix };
 
 	/// <summary>A build context like <see cref="CreateBuildContext"/>, with the git scope and the versions and products configuration under test.</summary>
 	public static BuildContext CreateScopedBuildContext(
