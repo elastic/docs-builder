@@ -433,23 +433,8 @@ public class RequestBodyExampleTests
 			    "responses": { "200": { "description": "ok" } } } } },
 			  "components": { "schemas": { {{(extraSchemas.Length == 0 ? "\"Unused\": { \"type\": \"string\" }" : extraSchemas)}} } } }
 			""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"request-body-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
-			return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
+		return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
 	}
 }

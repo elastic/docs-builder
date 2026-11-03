@@ -286,11 +286,7 @@ public partial class ApiPagesNavRenderingTests
 	)
 	{
 		var fs = new FileSystem();
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		);
+		var context = TestHelpers.CreateBuildContext();
 		return new()
 		{
 			DocSetName = "Api Explorer",

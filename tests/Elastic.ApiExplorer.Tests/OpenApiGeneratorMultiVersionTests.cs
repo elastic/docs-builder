@@ -29,21 +29,6 @@ public class OpenApiGeneratorMultiVersionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	private static BuildContext CreateContext(
-		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
-		GitCheckoutInformation? git = null
-	) =>
-		new(
-			collector,
-			DocumentationFileSystem.Resolve(
-				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-				new DocumentationScopeOptions { Git = git }
-			),
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
-		);
-
 	private static ResolvedApiConfiguration ApiConfig(
 		Product product,
 		IFileInfo? localSpecFile = null,
@@ -97,7 +82,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var handler = MultiVersionHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateVersionedReader(
@@ -135,7 +120,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = CreateVersionedReader(
 			("main", SpecDocument("Elasticsearch main")),
@@ -164,7 +149,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
-		var context = CreateContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(
 			BaseUri,
 			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
@@ -195,7 +180,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
-		var context = CreateContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(
 			BaseUri,
 			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
@@ -226,7 +211,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var localDocument = SpecDocument("Elasticsearch local main");
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
@@ -260,7 +245,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var handler = new StubHandler(request =>
 		{
 			var path = request.RequestUri!.AbsolutePath;
@@ -302,7 +287,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product));
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("elasticsearch/v8", SpecDocument("Elasticsearch 8"));
 
@@ -618,10 +603,4 @@ public class OpenApiGeneratorMultiVersionTests
 				"application/json"
 			)
 		};
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

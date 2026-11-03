@@ -14,6 +14,7 @@ using Elastic.Documentation.Configuration.LegacyUrlMappings;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -61,6 +62,30 @@ public static class TestHelpers
 			SearchConfiguration = search
 		};
 	}
+
+	/// <summary>A build context rooted at the working directory with the default test configuration.</summary>
+	public static BuildContext CreateBuildContext(DiagnosticsCollector? collector = null) =>
+		new(
+			collector ?? new DiagnosticsCollector([]),
+			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
+			CreateConfigurationContext(new FileSystem())
+		);
+
+	/// <summary>A build context like <see cref="CreateBuildContext"/>, with the git scope and the versions and products configuration under test.</summary>
+	public static BuildContext CreateScopedBuildContext(
+		DiagnosticsCollector collector,
+		VersionsConfiguration? versionsConfiguration = null,
+		ProductsConfiguration? productsConfiguration = null,
+		GitCheckoutInformation? git = null
+	) =>
+		new(
+			collector,
+			DocumentationFileSystem.Resolve(
+				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
+				new DocumentationScopeOptions { Git = git }
+			),
+			CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
+		);
 
 	public static VersionsConfiguration CreateStackVersionsConfiguration(int currentMajor, int currentMinor = 0, int patch = 0) =>
 		new()

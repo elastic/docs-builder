@@ -24,21 +24,6 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	private static BuildContext CreateContext(
-		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
-		GitCheckoutInformation? git = null
-	) =>
-		new(
-			collector,
-			DocumentationFileSystem.Resolve(
-				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-				new DocumentationScopeOptions { Git = git }
-			),
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
-		);
-
 	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) =>
 		new() { ProductKey = product.Id, Product = product, SpecFileName = "elasticsearch-openapi.json", LocalSpecFile = localSpecFile };
 
@@ -58,7 +43,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 				StringComparer.OrdinalIgnoreCase
 			)
 		};
-		var context = CreateContext(collector, versionless, products);
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, products);
 		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
@@ -97,7 +82,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			Remote = "https://github.com/elastic/elasticsearch.git",
 			Ref = "refs/heads/main"
 		};
-		var context = CreateContext(collector, stack, git: git);
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, git: git);
 
 		var handler = new StubHandler(
 			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
@@ -154,7 +139,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			Remote = "https://github.com/elastic/elasticsearch.git",
 			Ref = "refs/heads/main"
 		};
-		var context = CreateContext(collector, stack, git: git);
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, git: git);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
@@ -195,17 +180,6 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 				"application/json"
 			)
 		};
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		public List<string> RequestedPaths { get; } = [];
-
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-		{
-			RequestedPaths.Add(request.RequestUri!.AbsolutePath);
-			return Task.FromResult(responder(request));
-		}
-	}
 
 	private sealed class ThrowingHandler : HttpMessageHandler
 	{

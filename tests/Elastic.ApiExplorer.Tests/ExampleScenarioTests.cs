@@ -898,11 +898,7 @@ public class ExampleScenarioTests
 				pathItem,
 				"Create a budget"
 			);
-			var build = new BuildContext(
-				new DiagnosticsCollector([]),
-				DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-				TestHelpers.CreateConfigurationContext(new FileSystem())
-			);
+			var build = TestHelpers.CreateBuildContext();
 			var context = new ApiRenderContext(
 				build,
 				document,

@@ -25,12 +25,7 @@ public class DashboardOpenApiNavigationTests
 	[Test]
 	public async Task CreateNavigation_SingleTagOpenApiSpec_HasSidebarItems()
 	{
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext();
 		var fs = new FileSystem();
 		var path = fs.Path.Combine(AppContext.BaseDirectory, "TestData", "dashboard-openapi.json");
 		var fi = fs.FileInfo.New(path);
@@ -47,12 +42,7 @@ public class DashboardOpenApiNavigationTests
 	[Test]
 	public async Task CreateNavigation_BlankSummary_TitlesOperationByHumanizedOperationId()
 	{
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext();
 		var fs = new FileSystem();
 		var fi = fs.FileInfo.New(fs.Path.Combine(AppContext.BaseDirectory, "TestData", "blank-summary-openapi.json"));
 		var doc = await OpenApiReader.Instance.ReadAsync(fi);
@@ -67,12 +57,7 @@ public class DashboardOpenApiNavigationTests
 	[Test]
 	public async Task CreateNavigation_OperationIdsWithTheSameTitle_StaySeparatePages()
 	{
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext();
 		var fs = new FileSystem();
 		var fi = fs.FileInfo.New(fs.Path.Combine(AppContext.BaseDirectory, "TestData", "colliding-operation-ids-openapi.json"));
 		var doc = await OpenApiReader.Instance.ReadAsync(fi);

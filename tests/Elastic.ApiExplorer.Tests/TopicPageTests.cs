@@ -36,7 +36,7 @@ public partial class TopicPageTests
 	[Test]
 	public async Task ParseXTopics_TopicsInSpec_ReturnsTitledTopicsInSpecOrder()
 	{
-		var document = await Load(Spec([
+		var document = await TestSpecs.LoadValidSpecAsync(Spec([
 			"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
 			"""{ "content": "no title" }""",
 			"""{ "title": "Principles", "content": "REST." }"""
@@ -50,7 +50,7 @@ public partial class TopicPageTests
 	[Test]
 	public async Task ParseXTopics_NoExtension_ReturnsEmpty()
 	{
-		var document = await Load(Spec(topics: null));
+		var document = await TestSpecs.LoadValidSpecAsync(Spec(topics: null));
 
 		OpenApiExtensionReader.ParseXTopics(document).Should().BeEmpty();
 	}
@@ -223,7 +223,7 @@ public partial class TopicPageTests
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-topics-{Guid.NewGuid():N}");
 		var context = OpenApiGeneratorSpecDownloadTests.CreateGenerateContext(outputRoot);
-		var document = await Load(
+		var document = await TestSpecs.LoadValidSpecAsync(
 			Spec(
 				[
 					"""{ "title": "Rate limiting", "content": "Calls are limited." }""",
@@ -378,7 +378,7 @@ public partial class TopicPageTests
 	[Test]
 	public async Task Overview_XTopics_ListsTopicsOutsideEndpointGroups()
 	{
-		var context = CreateContext();
+		var context = TestHelpers.CreateBuildContext();
 		var navigation = await Navigation(
 			Spec(["""{ "title": "Principles", "content": "REST." }""", """{ "title": "Authentication", "content": "Use an API key." }"""]),
 			context: context
@@ -395,8 +395,8 @@ public partial class TopicPageTests
 	[Test]
 	public async Task TopicPage_WritesCommonMarkWithTitleAndContent()
 	{
-		var context = CreateContext();
-		var document = await Load(Spec(["""{ "title": "Rate limiting", "content": "Calls are limited." }"""]));
+		var context = TestHelpers.CreateBuildContext();
+		var document = await TestSpecs.LoadValidSpecAsync(Spec(["""{ "title": "Rate limiting", "content": "Calls are limited." }"""]));
 		var navigation = CreateGenerator(context).CreateNavigation("cloud", document);
 		var topic = ApiExplorerFixture.Walk(navigation).OfType<TopicNavigationItem>().Single();
 
@@ -412,8 +412,10 @@ public partial class TopicPageTests
 	[Test]
 	public async Task AuthenticationTopicPage_WritesIntroAboveSchemes()
 	{
-		var context = CreateContext();
-		var document = await Load(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""], withSchemes: true));
+		var context = TestHelpers.CreateBuildContext();
+		var document = await TestSpecs.LoadValidSpecAsync(
+			Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""], withSchemes: true)
+		);
 		var navigation = CreateGenerator(context).CreateNavigation("cloud", document);
 		var authentication = ApiExplorerFixture.Walk(navigation).OfType<StructuralNavigationItem>().Single();
 
@@ -435,8 +437,8 @@ public partial class TopicPageTests
 	[Test]
 	public async Task AuthenticationTopicPage_NoSchemes_OmitsEmptyMessage()
 	{
-		var context = CreateContext();
-		var document = await Load(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]));
+		var context = TestHelpers.CreateBuildContext();
+		var document = await TestSpecs.LoadValidSpecAsync(Spec(["""{ "title": "Authentication", "content": "Use an API key." }"""]));
 		var navigation = CreateGenerator(context).CreateNavigation("cloud", document);
 		var authentication = ApiExplorerFixture.Walk(navigation).OfType<StructuralNavigationItem>().Single();
 
@@ -471,8 +473,8 @@ public partial class TopicPageTests
 
 	private static async Task<LandingNavigationItem> Navigation(string spec, string[]? childFiles = null, BuildContext? context = null)
 	{
-		context ??= CreateContext();
-		var document = await Load(spec);
+		context ??= TestHelpers.CreateBuildContext();
+		var document = await TestSpecs.LoadValidSpecAsync(spec);
 		var apiConfig = childFiles is null
 			? null
 			: new ResolvedApiConfiguration
@@ -507,13 +509,6 @@ public partial class TopicPageTests
 	private static OpenApiGenerator CreateGenerator(BuildContext context) =>
 		new(NullLoggerFactory.Instance, context, PassthroughMarkdownRenderer.Instance);
 
-	private static BuildContext CreateContext() =>
-		new(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(new FileSystem())
-		);
-
 	private static ApiRenderContext RenderContext(BuildContext context, OpenApiDocument document, INavigationItem current) =>
 		new(context, document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(context)))
 		{
@@ -521,15 +516,6 @@ public partial class TopicPageTests
 			CurrentNavigation = current,
 			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
 		};
-
-	private static async Task<OpenApiDocument> Load(string json)
-	{
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-		var result = await OpenApiDocument.LoadAsync(stream, settings: new OpenApiReaderSettings { LeaveStreamOpen = false });
-		if (result.Diagnostic?.Errors is { Count: > 0 } errors)
-			throw new InvalidOperationException(string.Join(", ", errors.Select(e => e.Message)));
-		return result.Document!;
-	}
 
 	[System.Text.RegularExpressions.GeneratedRegex("<input[^>]*\\bchecked\\b[^>]*>")]
 	private static partial System.Text.RegularExpressions.Regex CheckedToggleRegex();
