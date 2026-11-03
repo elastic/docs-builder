@@ -51,7 +51,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 			{
 				var op = pair.Operation;
 				var (ns, api) = OpenApiExtensionReader.GetNamespaceAndApiName(op.Value);
-				var tag = op.Value.Tags?.FirstOrDefault()?.Reference.Id;
+				var tag = op.Value.Tags?.FirstOrDefault() is { } firstTag ? OpenApiExtensionReader.TagName(firstTag) : null;
 				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
 
 				// Fall back to the operationId, then a deterministic route:method key; Guid.NewGuid() made grouping keys
@@ -103,8 +103,7 @@ public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdow
 					apis.Add(apiEndpoint);
 				}
 				var tagName = tagGroup.Key ?? "unknown";
-				if (!tagMetadataByName.TryGetValue(tagName, out var tagMeta))
-					tagMeta = new OpenApiTagMetadata(tagName.CapitalizeFirstLetter(), string.Empty, null);
+				var tagMeta = OpenApiExtensionReader.TagMetadataFor(tagName, tagMetadataByName);
 				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
 					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
 

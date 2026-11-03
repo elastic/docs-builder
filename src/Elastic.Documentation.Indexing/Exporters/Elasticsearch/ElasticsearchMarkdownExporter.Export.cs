@@ -187,9 +187,7 @@ public partial class ElasticsearchMarkdownExporter
 			) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
 			.Where(text => !string.IsNullOrEmpty(text))
 			.ToArray();
-		var summary = !string.IsNullOrEmpty(body)
-			? body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings)
-			: string.Empty;
+		var summary = BuildSummary(body, headings);
 
 		// this is temporary until https://github.com/elastic/docs-builder/pull/2070 lands
 		// this PR will add a service for us to resolve to a versioning scheme.
@@ -272,20 +270,7 @@ public partial class ElasticsearchMarkdownExporter
 
 			// Plain-text, markup-stripped content — the single source of truth for search, AI
 			// enrichment input, and content hashing.
-			doc.Body = PlainTextExporter.ConvertToPlainText(document, _context);
-
-			var headings = document
-				.Descendants<HeadingBlock>()
-				.Select(
-					h => h.GetData("header") as string ?? string.Empty
-				) // TODO: Confirm that 'header' data is correctly set for all HeadingBlock instances and that this extraction is reliable.
-				.Where(text => !string.IsNullOrEmpty(text))
-				.ToArray();
-			var summary = !string.IsNullOrEmpty(doc.Body)
-				? doc.Body[..Math.Min(doc.Body.Length, 400)] + " " + string.Join(" \n- ", doc.Headings)
-				: string.Empty;
-			doc.Summary = summary;
-			doc.Headings = headings;
+			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
 			AssignContentHash(doc);
 			AssignDocumentMetadata(doc);
@@ -300,6 +285,19 @@ public partial class ElasticsearchMarkdownExporter
 		_logger.LogInformation("Finished exporting OpenAPI documentation");
 		return true;
 	}
+
+	/// <summary>
+	/// Keeps the tag names <see cref="OpenApiDocumentExporter"/> put in <c>Headings</c>. The generated body's
+	/// own headings are only the title and "Parameters", so they would say nothing about the operation.
+	/// </summary>
+	internal static void ApplyApiPlainText(DocumentationDocument doc, string plainTextBody)
+	{
+		doc.Body = plainTextBody;
+		doc.Summary = BuildSummary(plainTextBody, doc.Headings);
+	}
+
+	private static string BuildSummary(string body, IEnumerable<string> headings) =>
+		string.IsNullOrEmpty(body) ? string.Empty : body[..Math.Min(body.Length, 400)] + " " + string.Join(" \n- ", headings);
 
 	private async IAsyncEnumerable<DocumentationDocument> ExportApiDocuments(
 		OpenApiDocumentExporter exporter,

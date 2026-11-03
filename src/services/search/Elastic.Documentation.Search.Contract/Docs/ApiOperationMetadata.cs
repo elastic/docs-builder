@@ -45,4 +45,9 @@ public record ApiOperationMetadata
 	[Keyword]
 	[JsonPropertyName("operation_id")]
 	public required string OperationId { get; init; }
+
+	/// <summary>Whether the spec marks the operation deprecated.</summary>
+	[Boolean]
+	[JsonPropertyName("deprecated")]
+	public bool Deprecated { get; init; }
 }
