@@ -69,7 +69,11 @@ public class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 		Navigation = generator.CreateNavigation("fixture", Document);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
 
 	public IEnumerable<INavigationItem> Walk() => Walk(Navigation);
 
