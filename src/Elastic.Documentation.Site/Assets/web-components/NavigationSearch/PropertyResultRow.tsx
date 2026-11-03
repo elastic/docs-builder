@@ -56,6 +56,8 @@ export const PropertyResultRow = ({
                 min-height: ${euiTheme.size.xl};
                 padding: ${euiTheme.size.xs} ${euiTheme.size.base};
                 padding-left: calc(${euiTheme.size.xl} + ${euiTheme.size.base});
+                /* the Enter badge lines up with the operation row's, which insets it by size.l */
+                padding-right: ${euiTheme.size.l};
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
                 &:last-child {
                     border-bottom: none;
