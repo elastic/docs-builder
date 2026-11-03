@@ -2,12 +2,9 @@ import { chatStore } from './chat.store'
 import { act } from 'react'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-vi.mock('idb-keyval', () => ({
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue(undefined),
-    del: vi.fn().mockResolvedValue(undefined),
-    createStore: vi.fn().mockReturnValue({}),
-}))
+vi.mock('idb-keyval', async () =>
+    (await import('../../test-utils/mocks')).idbKeyval()
+)
 
 describe('chat.store', () => {
     beforeEach(() => {
