@@ -148,7 +148,7 @@ describe('property rows', () => {
                 { path: '/_search', methods: ['POST', 'GET'] },
             ],
         }
-        navigationSearchStore.getState().actions.setSearchTerm('_search')
+        navigationSearchStore.getState().actions.setSearchTerm('search')
         const { container } = renderList({
             groups: groupSearchResults([withRoutes]),
         })
@@ -157,8 +157,25 @@ describe('property rows', () => {
         expect(lines[0]).toHaveTextContent('POST')
         expect(lines[0]).not.toHaveTextContent('GET')
         expect(lines[0]).toHaveTextContent('/{index}/_search')
-        expect(lines[0].querySelector('mark')).toHaveTextContent('_search')
+        expect(lines[0].querySelector('mark')).toHaveTextContent('search')
         expect(screen.queryByText('Returns search hits')).toBeNull()
+    })
+
+    it('shows the route a query names in full over the primary route', () => {
+        const withRoutes: SearchResultItem = {
+            ...operation,
+            routes: [
+                { path: '/{index}/_search', methods: ['POST', 'GET'] },
+                { path: '/_search', methods: ['POST', 'GET'] },
+            ],
+        }
+        navigationSearchStore.getState().actions.setSearchTerm('/_search')
+        const { container } = renderList({
+            groups: groupSearchResults([withRoutes]),
+        })
+        expect(container.querySelector('.route-line')).toHaveTextContent(
+            'POST/_search'
+        )
     })
 
     it('keeps the description when the query names no route', () => {

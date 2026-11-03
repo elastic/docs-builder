@@ -82,14 +82,16 @@ const routes = [
 ]
 
 it.each([
-    ['_search', ['_search'], '/{index}/_search'],
-    ['/_search', ['_search'], '/{index}/_search'],
-    ['GET /_search knn', ['_search', 'knn'], '/{index}/_search'],
+    ['_search', ['_search'], '/_search'],
+    ['/_search', ['_search'], '/_search'],
+    ['GET /_search knn', ['_search', 'knn'], '/_search'],
+    ['search', ['search'], '/{index}/_search'],
+    ['index', ['index'], '/{index}/_search'],
     ['scroll', ['scroll'], '/_search/scroll'],
     ['knn', ['knn'], undefined],
     ['get', [], undefined],
     ['a', [], undefined],
-])('picks the primary route for %s', (searchTerm, tokens, path) => {
+])('picks the route for %s', (searchTerm, tokens, path) => {
     const matched = primaryRoute(routes, searchTerm)
     expect(matched.tokens).toEqual(tokens)
     expect(matched.route?.path).toBe(path)

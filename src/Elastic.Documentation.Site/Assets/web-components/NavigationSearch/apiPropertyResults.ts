@@ -30,21 +30,27 @@ const HTTP_METHODS = new Set([
     'options',
 ])
 
+const pathKey = (path: string) => path.toLowerCase().replace(/^\/+/, '')
+
 /**
- * The query words that can name a path, and the first route in page order whose path contains one.
- * Routes arrive with the page's primary route first, so that one wins whenever it matches.
+ * The query words that can name a path, and the one route to show for them: the route whose whole
+ * path is a query word, else the first route in page order whose path contains one. Routes arrive
+ * with the page's primary route first, so that one wins among the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const tokens = searchTerm
         .toLowerCase()
         .split(/\s+/)
-        .map((word) => word.replace(/^\/+/, ''))
+        .map(pathKey)
         .filter((word) => word.length > 1 && !HTTP_METHODS.has(word))
+    const containing = routes.filter((route) =>
+        tokens.some((token) => pathKey(route.path).includes(token))
+    )
     return {
         tokens,
-        route: routes.find((route) =>
-            tokens.some((token) => route.path.toLowerCase().includes(token))
-        ),
+        route:
+            containing.find((route) => tokens.includes(pathKey(route.path))) ??
+            containing[0],
     }
 }
 
