@@ -138,9 +138,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					new ParameterRowSource(builder, null, endpoint)
 				);
 
-				// Extract tags as headings
-				var headings = operation.Value.Tags?.Select(t => t.Name).Where(n => !string.IsNullOrEmpty(n)).OfType<string>().ToArray()
-					?? [];
+				var headings = operation.Value.Tags?.Select(OpenApiExtensionReader.TagName).OfType<string>().ToArray() ?? [];
 
 				// Infer product and repository metadata
 				var inference = documentInferrer?.InferForOpenApi(productId ?? product);

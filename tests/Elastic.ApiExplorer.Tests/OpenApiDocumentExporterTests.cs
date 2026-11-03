@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.IO.Abstractions;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
@@ -431,5 +432,34 @@ public class OpenApiDocumentExporterTests
 		};
 
 		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTagNamesAsHeadings()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+
+		var docs = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+
+		docs.Should().NotBeEmpty();
+		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
+		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
+		follow.Headings.Should().Equal("ccr");
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_TagNotDeclaredGlobally_IndexesTagNameAsHeading()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},
+			 "paths":{"/{index}/_ccr/follow":{"put":{"operationId":"ccr-follow","tags":["ccr"],"responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+
+		doc.Headings.Should().Equal("ccr");
 	}
 }

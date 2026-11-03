@@ -4,6 +4,7 @@
 
 using System.IO.Abstractions;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Supplemental;
@@ -131,7 +132,7 @@ public static class ApiSupplementalDiscovery
 
 				foreach (var tagRef in operation.Tags)
 				{
-					var name = OperationTagName(tagRef);
+					var name = OpenApiExtensionReader.TagName(tagRef);
 					if (!string.IsNullOrEmpty(name))
 						_ = tags.Add(name);
 				}
@@ -140,9 +141,6 @@ public static class ApiSupplementalDiscovery
 
 		return (operations, tags);
 	}
-
-	private static string? OperationTagName(OpenApiTagReference tagRef) =>
-		!string.IsNullOrEmpty(tagRef.Name) ? tagRef.Name : tagRef.Reference?.Id;
 
 	internal static (Dictionary<string, string> UniqueBySlug, IReadOnlyList<TagSlugCollision> Collisions) IndexTags(
 		IReadOnlyCollection<string> tagNames

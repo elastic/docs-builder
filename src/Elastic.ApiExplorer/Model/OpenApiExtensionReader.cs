@@ -24,6 +24,16 @@ public sealed record OpenApiTagMetadata(string DisplayName, string Description, 
 /// </summary>
 public static class OpenApiExtensionReader
 {
+	/// <summary>
+	/// The tag an operation references, read from the reference id the way navigation does, so an operation
+	/// tagged with a name the document never declares still has one. Null when blank.
+	/// </summary>
+	public static string? TagName(OpenApiTagReference tag)
+	{
+		var name = tag.Reference?.Id ?? tag.Name;
+		return string.IsNullOrWhiteSpace(name) ? null : name;
+	}
+
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
 		extensions?.TryGetValue(key, out var value) == true
