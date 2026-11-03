@@ -39,6 +39,8 @@ public class ApiPropertySearchTests
 	[Arguments("knn", "knn")]
 	[Arguments("_search knn", "knn")]
 	[Arguments("GET /_search knn", "knn")]
+	[Arguments("knn /_search", "knn")]
+	[Arguments("knn GET /_search", "knn")]
 	[Arguments("track_total", "track_total")]
 	[Arguments("trav", "trav")]
 	public void BuildApiPropertyQuery_FieldTerm_MatchesOnlyItsOwnNameWithBoundedScores(string input, string name)
@@ -102,6 +104,8 @@ public class ApiPropertySearchTests
 	[Arguments("_search knn")]
 	[Arguments("GET /_search knn")]
 	[Arguments("search knn")]
+	[Arguments("knn /_search")]
+	[Arguments("knn GET /_search")]
 	public void ApplyApiPropertyQuery_OperationAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
 	{
 		using var json = JsonDocument.Parse(
@@ -119,6 +123,8 @@ public class ApiPropertySearchTests
 	[Arguments("how to search", null)]
 	[Arguments("trav", "docs")]
 	[Arguments("", "api")]
+	[Arguments("/_search", "api")]
+	[Arguments("GET /_search", "api")]
 	public void BuildApiPropertyQuery_ExcludedQuery_ReturnsNull(string input, string? filter) =>
 		SearchQueryBuilder.BuildApiPropertyQuery(input, filter).Should().BeNull();
 

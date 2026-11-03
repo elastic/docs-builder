@@ -18,6 +18,10 @@ namespace Elastic.Documentation.Search;
 public static class SearchQueryBuilder
 {
 	public const string ApiPropertyHits = "api_properties";
+	private static readonly HashSet<string> HttpMethods = new(
+		["get", "post", "put", "patch", "delete", "head", "options"],
+		StringComparer.OrdinalIgnoreCase
+	);
 	private static readonly string[] ApiPropertySourceIncludes = [$"{QueryFieldNames.ApiProperties}.*"];
 
 	/// <summary>
@@ -65,8 +69,12 @@ public static class SearchQueryBuilder
 		if (typeFilter != "api" && input.Any(char.IsWhiteSpace) && !input.Contains('.') && !input.Contains('_'))
 			return null;
 
-		var separator = input.AsSpan().LastIndexOfAny(" \t\r\n");
-		return separator < 0 ? ("", input) : (input[..separator].TrimEnd(), input[(separator + 1)..]);
+		// The field is the last word that cannot be part of an endpoint; the endpoint is everything else, in order.
+		var words = input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+		var field = Array.FindLastIndex(words, w => !w.StartsWith('/') && !HttpMethods.Contains(w));
+		if (field < 0)
+			return null;
+		return (string.Join(' ', words.Where((_, i) => i != field)), words[field]);
 	}
 
 	private static Query BuildNestedPropertyQuery(string property) =>
