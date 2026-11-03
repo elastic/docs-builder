@@ -54,19 +54,16 @@ public static class SearchQueryBuilder
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter) is [var first, ..]
+		ParseApiPropertyQuery(searchQuery, typeFilter).Readings is [var first, ..]
 			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, allowPrefix: typeFilter == "api")
 			: null;
 
 	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
 	{
-		var readings = ParseApiPropertyQuery(searchQuery, typeFilter);
-		// With one reading the endpoint only lifts the operation. With two, the index decides which reading holds,
-		// so each requires its endpoint: a bare word that names no endpoint, such as `_knn`, matches nothing.
-		var branches = readings
-			.Select(
-				(r, i) => BuildReadingQuery(r, InnerHitsName(i), endpointRequired: readings.Count > 1, allowPrefix: typeFilter == "api")
-			)
+		var parsed = ParseApiPropertyQuery(searchQuery, typeFilter);
+		var branches = parsed
+			.Readings
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, allowPrefix: typeFilter == "api"))
 			.OfType<Query>()
 			.ToList();
 		if (branches.Count == 0)
@@ -119,29 +116,40 @@ public static class SearchQueryBuilder
 	/// last word that is neither; on its own, `get` or `options` may name a field. Two plain words are ambiguous, so
 	/// both orders are returned, the last word as the field first.
 	/// </summary>
-	private static IReadOnlyList<(string Operation, string Property)> ParseApiPropertyQuery(string searchQuery, string? typeFilter)
+	private static ApiPropertyReadings ParseApiPropertyQuery(string searchQuery, string? typeFilter)
 	{
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
-			return [];
-		var readings = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+			return ApiPropertyReadings.None;
+		var parsed = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
-		// API operation that happens to have a field of that name above the pages about it.
-		return typeFilter == "api" ? readings : readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray();
+		// API operation that happens to have a field of that name above the pages about it. Dropping a reading
+		// leaves the others as demanding as the query made them.
+		return typeFilter == "api"
+			? parsed
+			: parsed with { Readings = parsed.Readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray() };
 	}
 
-	private static IReadOnlyList<(string Operation, string Property)> ParseReadings(string[] words)
+	private static ApiPropertyReadings ParseReadings(string[] words)
 	{
 		var endpointWords = words.Select(
 			(w, i) => w.StartsWith('/') || (HttpMethods.Contains(w) && i + 1 < words.Length && words[i + 1].StartsWith('/'))
 		).ToArray();
+		// With one reading the endpoint only lifts the operation. With two, the index decides which reading holds,
+		// so each requires its endpoint: a bare word that names no endpoint, such as `_knn`, matches nothing.
 		if (!endpointWords.Any(e => e) && words.Length == 2)
-			return [(words[0], words[1]), (words[1], words[0])];
+			return new ApiPropertyReadings([(words[0], words[1]), (words[1], words[0])], EndpointRequired: true);
 
 		var field = Array.LastIndexOf(endpointWords, false);
 		if (field < 0)
-			return [];
-		return [(string.Join(' ', words.Where((_, i) => i != field)), words[field])];
+			return ApiPropertyReadings.None;
+		return new ApiPropertyReadings([(string.Join(' ', words.Where((_, i) => i != field)), words[field])], EndpointRequired: false);
+	}
+
+	/// <summary>The readings of a query, and whether each must match its endpoint rather than only be lifted by it.</summary>
+	private sealed record ApiPropertyReadings(IReadOnlyList<(string Operation, string Property)> Readings, bool EndpointRequired)
+	{
+		public static readonly ApiPropertyReadings None = new([], EndpointRequired: false);
 	}
 
 	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, bool allowPrefix) =>

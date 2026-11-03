@@ -157,6 +157,29 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	public void ApplyApiPropertyQuery_TwoPlainWordsDocsWide_KeepsTheEndpointRequiredForTheSurvivingReading()
+	{
+		using var json = JsonDocument.Parse(
+			Client.RequestResponseSerializer.SerializeToString(
+				SearchQueryBuilder.ApplyApiPropertyQuery(
+					new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(),
+					"bulk track_total_hits",
+					null
+				)
+			)
+		);
+		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
+		var must = reading.GetProperty("must");
+		must.GetArrayLength().Should().Be(2);
+		must[0].GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"track_total_hits\"");
+		must[1].GetRawText().Should().Contain("_bulk");
+		reading
+			.TryGetProperty("should", out _)
+			.Should()
+			.BeFalse("the plain word names no field docs-wide, and the reading left must still hold its endpoint");
+	}
+
+	[Test]
 	[Arguments("_search knn")]
 	[Arguments("search knn")]
 	[Arguments("knn search")]
