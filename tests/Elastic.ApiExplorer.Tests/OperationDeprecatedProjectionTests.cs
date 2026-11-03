@@ -40,7 +40,13 @@ public class OperationDeprecatedProjectionTests(ApiExplorerFixture fixture)
 	[Test]
 	public void Create_DeprecatedOperation_ProjectsDeprecatedOntoTheLeaf()
 	{
-		var model = NavigationRenderModel.Create(fixture.Navigation, [fixture.Navigation], false, false, false);
+		var model = NavigationRenderModel.Create(
+			fixture.Navigation,
+			[fixture.Navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false
+		);
 		var leaves = Flatten(model.Tree).ToArray();
 
 		var deprecated = leaves.Single(n => n.Url == Operation("docs-get-source").Url);
@@ -91,6 +97,12 @@ public class OperationDeprecatedProjectionTests(ApiExplorerFixture fixture)
 	{
 		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(json);
 		var navigation = generator.CreateNavigation("lifecycle", document);
-		return NavigationRenderModel.Create(navigation, [navigation], false, false, false).ContentHash;
+		return NavigationRenderModel.Create(
+			navigation,
+			[navigation],
+			isUsingNavigationDropdown: false,
+			isPrimaryNavEnabled: false,
+			isGlobalAssemblyBuild: false
+		).ContentHash;
 	}
 }
