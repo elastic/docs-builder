@@ -26,7 +26,7 @@ public static class ApiLinkValidator
 	public static IReadOnlyList<ApiLinkReference> FindBroken(IEnumerable<ApiLinkReference> links, IReadOnlySet<string> generatedUrls) =>
 		[
 			.. links
-				.Where(l => ApiLinkMatcher.TryGetApiPath(l.Url, out var path) && !generatedUrls.Contains(path))
+				.Where(l => ApiLinkMatcher.TryGetApiPath(l.Url, out var path) && !generatedUrls.Contains(ApiLegacyRedirects.Resolve(path)))
 				.OrderBy(l => l.Url, StringComparer.Ordinal)
 				.ThenBy(l => l.File, StringComparer.Ordinal)
 				.ThenBy(l => l.Line)

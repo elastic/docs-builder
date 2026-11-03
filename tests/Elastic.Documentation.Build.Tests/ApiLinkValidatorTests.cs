@@ -16,7 +16,9 @@ public class ApiLinkValidatorTests
 	{
 		"/docs/api/doc/kibana",
 		"/docs/api/doc/kibana/v8/operation/operation-upgrade",
-		"/docs/api/doc/kibana/operation/operation-alias"
+		"/docs/api/doc/kibana/operation/operation-alias",
+		"/docs/api/doc/kibana-serverless/operation/operation-live",
+		"/docs/api/doc/kibana/kibana-api-overview"
 	};
 
 	private static ApiLinkReference Link(string url, string file = "a.md", int line = 1) => new(url, file, line, 1, url.Length);
@@ -37,6 +39,33 @@ public class ApiLinkValidatorTests
 		);
 		broken.Should().ContainSingle().Which.Url.Should().EndWith("/kibana/operation/operation-upgrade");
 	}
+
+	[Test]
+	public void FindBroken_OldBumpShRootWithLivePage_IsNotReported() =>
+		ApiLinkValidator
+			.FindBroken(
+				[
+					Link("https://www.elastic.co/docs/api/doc/serverless/operation/operation-live"),
+					Link("https://www.elastic.co/docs/api/doc/kibana/topic/topic-kibana-spaces")
+				],
+				Generated
+			)
+			.Should()
+			.BeEmpty();
+
+	[Test]
+	public void FindBroken_OldBumpShRootWithMissingPage_IsStillReported() =>
+		ApiLinkValidator
+			.FindBroken([Link("https://www.elastic.co/docs/api/doc/serverless/operation/operation-removed")], Generated)
+			.Should()
+			.ContainSingle();
+
+	[Test]
+	public void FindBroken_GoneBumpShRoot_IsReported() =>
+		ApiLinkValidator
+			.FindBroken([Link("https://www.elastic.co/docs/api/doc/observability-serverless/operation/operation-x")], Generated)
+			.Should()
+			.ContainSingle();
 
 	[Test]
 	public void FindBroken_AliasUrl_Resolves() =>
