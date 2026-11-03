@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.IO.Abstractions.TestingHelpers;
+using System.Text.RegularExpressions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
@@ -193,8 +194,16 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 
 		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc>");
 		html.Should().MatchRegex("""href="#query-params" data-toc-link>\s*Query\s*<span class="api-example-chip-count">\d+</span>""");
-		html.Should().Contain("href=\"#request-body\" data-toc-link");
-		html.Should().Contain("href=\"#responses\" data-toc-link");
+		html.Should().MatchRegex("""href="#request-body" data-toc-link>\s*Body\s*<span class="api-example-chip-count">\d+</span>""");
+		html.Should().MatchRegex("""href="#responses" data-toc-link>\s*Response\s*<span class="api-example-chip-count">\d+</span>""");
+
+		var bar = Regex.Match(html, """<nav class="api-section-links".*?</nav>""", RegexOptions.Singleline).Value;
+		var links = Regex.Matches(bar, """<a href=.*?</a>""", RegexOptions.Singleline);
+		links.Should().NotBeEmpty();
+		links.Should().OnlyContain(
+			l => l.Value.Contains("api-example-chip-count"),
+			"every quick link shows how many things its section lists"
+		);
 		html
 			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()

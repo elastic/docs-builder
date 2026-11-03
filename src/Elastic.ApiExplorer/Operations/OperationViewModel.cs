@@ -38,7 +38,7 @@ public record AuthorizationSectionModel(
 			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
 }
 
-/// <summary>One quick link of the bar above an operation's sections; <paramref name="Count"/> is shown when the section lists several things.</summary>
+/// <summary>One quick link of the bar above an operation's sections; <paramref name="Count"/> is what the section lists: privileges, parameters, body fields or variants, responses.</summary>
 public record SectionLink(string Label, string Anchor, int? Count = null);
 
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
@@ -62,13 +62,20 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		get
 		{
 			var links = new List<SectionLink>();
+			// A row can hold a label and no privilege names, so the rows count when they outnumber the names.
 			if (Page.RequiredPrivileges.Count > 0)
-				links.Add(new SectionLink("Authorization", "required-authorization"));
+				links.Add(
+					new SectionLink(
+						"Authorization",
+						"required-authorization",
+						Math.Max(Authorization.PrivilegeNames.Count, Page.RequiredPrivileges.Count)
+					)
+				);
 			links.AddRange(
 				Page.ParameterSections.Select(static s => new SectionLink(s.Location.ToString(), s.Header.Anchor, s.Parameters.Items.Count))
 			);
 			if (Operation.Operation.RequestBody is not null)
-				links.Add(new SectionLink("Body", "request-body"));
+				links.Add(new SectionLink("Body", "request-body", Page.RequestPropertyNames.Count));
 			if (Page.Responses.Count > 0)
 				links.Add(new SectionLink("Response", "responses", Page.Responses.Count));
 			return links;
