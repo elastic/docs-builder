@@ -84,17 +84,18 @@ public static class SearchQueryBuilder
 	)
 	{
 		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, allowPrefix);
-		if (reading.Operation.Length == 0)
-			return properties;
-
-		var endpoint = BuildEndpointHalfQuery(reading.Operation);
+		var endpoint = reading.Operation.Length == 0 ? null : BuildEndpointHalfQuery(reading.Operation);
+		if (endpoint is null && endpointRequired)
+			return null;
+		// Named after its inner hits so the result processor can tell which reading a hit matched: inner hits are
+		// computed from the nested query alone, even for a reading whose endpoint did not hold, and a hit the lexical
+		// branch alone matched carries no name. The name sits on the whole reading, as Elasticsearch reports a named
+		// clause that matched even when its parent did not.
 		if (endpoint is null)
-			return endpointRequired ? null : properties;
-		// Named after its inner hits, so the result processor can tell which reading a hit matched: inner hits
-		// are computed from the nested query alone, even for a reading whose endpoint did not hold.
+			return new BoolQuery { Must = [properties], QueryName = innerHitsName };
 		return endpointRequired
 			? new BoolQuery { Must = [properties, endpoint], QueryName = innerHitsName }
-			: new BoolQuery { Must = [properties], Should = [endpoint] };
+			: new BoolQuery { Must = [properties], Should = [endpoint], QueryName = innerHitsName };
 	}
 
 	/// <summary>

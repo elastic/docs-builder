@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Documentation.Search.Contract;
@@ -67,12 +68,13 @@ public static class SearchResultProcessor
 		if (hit.InnerHits is null)
 			return [];
 
-		// A reading's inner hits are computed from its nested query alone, so a reading the document did not
-		// match still carries them; only a named reading this hit matched counts.
+		// A reading's inner hits are computed from its nested query alone, so a reading the document did not match
+		// still carries them, and Elasticsearch omits matched_queries when no named query matched at all; only a
+		// reading this hit matched counts.
 		var matched = MatchedQueryNames(hit);
 		return hit
 			.InnerHits
-			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key) && (matched is null || matched.Contains(group.Key)))
+			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key) && matched.Contains(group.Key))
 			.SelectMany(group => group.Value.Hits.Hits)
 			.OrderByDescending(h => h.Score ?? 0)
 			.Select(
@@ -84,12 +86,13 @@ public static class SearchResultProcessor
 			.ToArray();
 	}
 
-	/// <summary>The named queries this hit matched, or null when the query named none.</summary>
-	private static IReadOnlySet<string>? MatchedQueryNames<TDocument>(Hit<TDocument> hit) =>
+	/// <summary>The named queries this hit matched; empty when none did, as Elasticsearch then omits the field.</summary>
+	private static IReadOnlySet<string> MatchedQueryNames<TDocument>(Hit<TDocument> hit) =>
 		hit.MatchedQueries?.Match<IReadOnlySet<string>>(
 			names => (names ?? []).ToHashSet(StringComparer.Ordinal),
 			scored => (scored?.Keys ?? []).ToHashSet(StringComparer.Ordinal)
-		);
+		)
+			?? FrozenSet<string>.Empty;
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,

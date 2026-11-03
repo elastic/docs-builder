@@ -135,6 +135,28 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	[Arguments("track_total")]
+	[Arguments("/_search knn")]
+	public void ApplyApiPropertyQuery_SingleReading_IsNamedAfterItsInnerHits(string input)
+	{
+		using var json = JsonDocument.Parse(
+			Client.RequestResponseSerializer.SerializeToString(
+				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
+			)
+		);
+		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
+		reading.GetProperty("_name").GetString().Should().Be("api_properties");
+		reading
+			.GetProperty("must")
+			.GetProperty("nested")
+			.GetProperty("inner_hits")
+			.GetProperty("name")
+			.GetString()
+			.Should()
+			.Be("api_properties");
+	}
+
+	[Test]
 	[Arguments("_search knn")]
 	[Arguments("search knn")]
 	[Arguments("knn search")]
@@ -214,6 +236,16 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	public void ProcessHit_HitThatMatchedNoReading_KeepsNoProperties()
+	{
+		var json = SearchResponseJson(InnerHit("req-index", 5, "index"), matchedQueries: "");
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "bulk index", new Dictionary<string, string[]>());
+
+		result.Properties.Should().BeEmpty();
+	}
+
+	[Test]
 	[Arguments("how to search", null)]
 	[Arguments("trav", "docs")]
 	[Arguments("trav", null)]
@@ -274,7 +306,11 @@ public class ApiPropertySearchTests
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
 	}
 
-	private static string SearchResponseJson(string innerHits, string moreInnerHitGroups = "", string matchedQueries = "") =>
+	private static string SearchResponseJson(
+		string innerHits,
+		string moreInnerHitGroups = "",
+		string matchedQueries = "\"matched_queries\":[\"api_properties\"],"
+	) =>
 		"""
 		{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
 		{"_index":"test","_id":"search","_score":1,__MATCHED__"_source":{"title":"Search","search_title":"Search","path":"/search"},
