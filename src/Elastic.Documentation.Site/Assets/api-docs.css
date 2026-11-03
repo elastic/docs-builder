@@ -2944,6 +2944,14 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
+		/* Stays in view while the sections scroll, however long the page is. When the examples are taller than the
+		   window the rail scrolls as a whole, so the code blocks keep their line caps. */
+		position: sticky;
+		top: var(--offset-top, 0px);
+		align-self: start;
+		max-height: calc(100vh - var(--offset-top, 0px));
+		overflow: hidden auto;
+		box-sizing: border-box;
 	}
 
 	.api-page-rail > .api-page-actions {
@@ -2956,7 +2964,7 @@ button.example-response-tab:focus-visible {
 		margin-bottom: 0;
 	}
 
-	/* The examples are normal page flow: no sticky, no scrolling box. Long examples make the page long. */
+	/* The code blocks are normal page flow and cap at a fixed number of lines; the rail around them is sticky (above). */
 	#api-examples-panel .api-examples-panel-nav {
 		display: flex;
 		flex-direction: column;
