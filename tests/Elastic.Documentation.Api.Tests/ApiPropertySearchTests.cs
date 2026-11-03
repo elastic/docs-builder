@@ -101,12 +101,10 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
-	[Arguments("_search knn")]
 	[Arguments("GET /_search knn")]
-	[Arguments("search knn")]
 	[Arguments("knn /_search")]
 	[Arguments("knn GET /_search")]
-	public void ApplyApiPropertyQuery_OperationAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
+	public void ApplyApiPropertyQuery_MarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
 	{
 		using var json = JsonDocument.Parse(
 			Client.RequestResponseSerializer.SerializeToString(
@@ -117,6 +115,63 @@ public class ApiPropertySearchTests
 		fieldBranch.GetProperty("must").GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"knn\"");
 		var endpoint = fieldBranch.GetProperty("should").GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
 		endpoint.GetProperty("filter").GetProperty("terms").GetProperty("api.endpoints")[0].GetString().Should().Be("_search");
+	}
+
+	[Test]
+	[Arguments("_search knn")]
+	[Arguments("search knn")]
+	[Arguments("knn search")]
+	[Arguments("knn _search")]
+	public void ApplyApiPropertyQuery_TwoPlainWords_TriesBothReadingsWithTheEndpointRequired(string input)
+	{
+		using var json = JsonDocument.Parse(
+			Client.RequestResponseSerializer.SerializeToString(
+				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
+			)
+		);
+		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
+		readings.GetArrayLength().Should().Be(2);
+		var knn = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"knn\"")).GetProperty("bool");
+		var must = knn.GetProperty("must");
+		must.GetArrayLength().Should().Be(2);
+		must[0].GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"knn\"");
+		must[1]
+			.GetProperty("dis_max")
+			.GetProperty("queries")[0]
+			.GetProperty("constant_score")
+			.GetProperty("filter")
+			.GetProperty("terms")
+			.GetProperty("api.endpoints")[0]
+			.GetString()
+			.Should()
+			.Be("_search");
+		knn.TryGetProperty("should", out _).Should().BeFalse();
+		var names = System
+			.Text
+			.RegularExpressions
+			.Regex
+			.Matches(readings.GetRawText(), "\"name\":\"([^\"]+)\"")
+			.Select(m => m.Groups[1].Value)
+			.ToArray();
+		names
+			.Should()
+			.HaveCount(2)
+			.And
+			.OnlyHaveUniqueItems()
+			.And
+			.AllSatisfy(n => SearchQueryBuilder.IsApiPropertyHits(n).Should().BeTrue());
+	}
+
+	[Test]
+	public void ProcessHit_InnerHitsFromBothReadings_AreMerged()
+	{
+		var second =
+			$$$""","api_properties_1":{"hits":{"total":{"value":1,"relation":"eq"},"max_score":4,"hits":[{{{InnerHit("req-b", 4, "b")}}}]}}""";
+		var json = SearchResponseJson(InnerHit("req-a", 5, "a"), second);
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "a", new Dictionary<string, string[]>());
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-a", "req-b");
 	}
 
 	[Test]
@@ -176,15 +231,15 @@ public class ApiPropertySearchTests
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
 	}
 
-	private static string SearchResponseJson(string innerHits) =>
+	private static string SearchResponseJson(string innerHits, string moreInnerHitGroups = "") =>
 		"""
 		{"took":1,"timed_out":false,"_shards":{"total":1,"successful":1,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"hits":[
 		{"_index":"test","_id":"search","_score":1,"_source":{"title":"Search","search_title":"Search","path":"/search"},
-		"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}}}]}}
+		"inner_hits":{"api_properties":{"hits":{"total":{"value":5,"relation":"eq"},"max_score":5,"hits":[__INNER_HITS__]}}__MORE_GROUPS__}}]}}
 		""".Replace(
 			"__INNER_HITS__",
 			innerHits
-		);
+		).Replace("__MORE_GROUPS__", moreInnerHitGroups);
 
 	private static string InnerHit(string anchor, double score, string path) =>
 		$$$"""

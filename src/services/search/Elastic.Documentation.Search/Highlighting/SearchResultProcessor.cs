@@ -61,14 +61,16 @@ public static class SearchResultProcessor
 		};
 	}
 
+	/// <summary>Every property inner hit, from each reading of the query; see <see cref="SearchQueryBuilder.ApiPropertyHits"/>.</summary>
 	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit)
 	{
-		if (hit.InnerHits is null || !hit.InnerHits.TryGetValue(SearchQueryBuilder.ApiPropertyHits, out var matches))
+		if (hit.InnerHits is null)
 			return [];
 
-		return matches
-			.Hits
-			.Hits
+		return hit
+			.InnerHits
+			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key))
+			.SelectMany(group => group.Value.Hits.Hits)
 			.OrderByDescending(h => h.Score ?? 0)
 			.Select(
 				h => h.Source is JsonElement source ? source.Deserialize(Contract.SourceGenerationContext.Default.ApiPropertyEntry) : null

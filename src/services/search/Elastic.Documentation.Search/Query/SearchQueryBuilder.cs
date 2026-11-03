@@ -18,6 +18,13 @@ namespace Elastic.Documentation.Search;
 public static class SearchQueryBuilder
 {
 	public const string ApiPropertyHits = "api_properties";
+
+	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
+	public static bool IsApiPropertyHits(string innerHitsName) =>
+		innerHitsName == ApiPropertyHits || innerHitsName.StartsWith(ApiPropertyHits + "_", StringComparison.Ordinal);
+
+	private static string InnerHitsName(int reading) => reading == 0 ? ApiPropertyHits : $"{ApiPropertyHits}_{reading}";
+
 	private static readonly HashSet<string> HttpMethods = new(
 		["get", "post", "put", "patch", "delete", "head", "options"],
 		StringComparer.OrdinalIgnoreCase
@@ -45,39 +52,65 @@ public static class SearchQueryBuilder
 		]
 	};
 
+	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter) is { } parts ? BuildNestedPropertyQuery(parts.Property) : null;
+		ParseApiPropertyQuery(searchQuery, typeFilter) is [var first, ..] ? BuildNestedPropertyQuery(first.Property, ApiPropertyHits) : null;
 
 	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
 	{
-		if (ParseApiPropertyQuery(searchQuery, typeFilter) is not var (operation, property))
+		var readings = ParseApiPropertyQuery(searchQuery, typeFilter);
+		// With one reading the endpoint only lifts the operation. With two, the index decides which reading holds,
+		// so each requires its endpoint: a bare word that names no endpoint, such as `_knn`, matches nothing.
+		var branches = readings
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), endpointRequired: readings.Count > 1))
+			.OfType<Query>()
+			.ToList();
+		if (branches.Count == 0)
 			return query;
 
-		var properties = BuildNestedPropertyQuery(property);
-		if (operation.Length > 0 && (BuildBareWordEndpointQuery(operation) ?? BuildApiEndpointQuery(operation)) is { } endpoint)
-			properties = new BoolQuery { Must = [properties], Should = [endpoint] };
-
+		var properties = branches.Count == 1 ? branches[0] : new BoolQuery { Should = branches, MinimumShouldMatch = 1 };
 		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
 	}
 
-	/// <summary>The operation and field halves of a query that may match API fields, or null when the query never can.</summary>
-	private static (string Operation, string Property)? ParseApiPropertyQuery(string searchQuery, string? typeFilter)
+	private static Query? BuildReadingQuery((string Operation, string Property) reading, string innerHitsName, bool endpointRequired)
+	{
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName);
+		if (reading.Operation.Length == 0)
+			return properties;
+
+		var endpoint = BuildBareWordEndpointQuery(reading.Operation) ?? BuildApiEndpointQuery(reading.Operation);
+		if (endpoint is null)
+			return endpointRequired ? null : properties;
+		return endpointRequired
+			? new BoolQuery { Must = [properties, endpoint] }
+			: new BoolQuery { Must = [properties], Should = [endpoint] };
+	}
+
+	/// <summary>
+	/// The ways a query may split into an endpoint half and a field half; empty when it never names a field.
+	/// A word that starts with a slash or is an HTTP method can only be endpoint, so the field is the last word
+	/// that is neither. Two plain words are ambiguous, so both orders are returned, the last word as the field first.
+	/// </summary>
+	private static IReadOnlyList<(string Operation, string Property)> ParseApiPropertyQuery(string searchQuery, string? typeFilter)
 	{
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
-			return null;
+			return [];
 		if (typeFilter != "api" && input.Any(char.IsWhiteSpace) && !input.Contains('.') && !input.Contains('_'))
-			return null;
+			return [];
 
-		// The field is the last word that cannot be part of an endpoint; the endpoint is everything else, in order.
 		var words = input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+		var marked = words.Any(w => w.StartsWith('/') || HttpMethods.Contains(w));
+		if (!marked && words.Length == 2)
+			return [(words[0], words[1]), (words[1], words[0])];
+
 		var field = Array.FindLastIndex(words, w => !w.StartsWith('/') && !HttpMethods.Contains(w));
 		if (field < 0)
-			return null;
-		return (string.Join(' ', words.Where((_, i) => i != field)), words[field]);
+			return [];
+		return [(string.Join(' ', words.Where((_, i) => i != field)), words[field])];
 	}
 
-	private static Query BuildNestedPropertyQuery(string property) =>
+	private static Query BuildNestedPropertyQuery(string property, string innerHitsName) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
@@ -86,7 +119,7 @@ public static class SearchQueryBuilder
 			Query = BuildPropertyMatchQuery(property),
 			InnerHits = new InnerHits
 			{
-				Name = ApiPropertyHits,
+				Name = innerHitsName,
 				Size = 5,
 				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
 			}
