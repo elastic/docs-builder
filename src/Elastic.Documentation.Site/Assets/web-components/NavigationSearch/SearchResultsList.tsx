@@ -312,6 +312,12 @@ const SearchResultRow = ({
                         }
                     }
                 }
+
+                ${
+                    result.deprecated
+                        ? `.route-line .api-method { background-color: var(--color-grey-20); border-color: var(--color-grey-30); color: var(--color-grey-100); }`
+                        : ''
+                }
             `}
         >
             <div
@@ -439,6 +445,12 @@ const Title = ({
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
+
+                ${
+                    deprecated
+                        ? `& > span:first-child { text-decoration: line-through; opacity: 0.7; }`
+                        : ''
+                }
             `}
         >
             <SanitizedHtmlContent htmlContent={text} />
@@ -448,10 +460,23 @@ const Title = ({
                     css={css`
                         display: inline-block;
                         margin-left: ${euiTheme.size.s};
-                        vertical-align: middle;
+                        vertical-align: baseline;
                         font-weight: ${euiTheme.font.weight.regular};
                         .applies {
                             margin-right: 0;
+                        }
+                        .applicable-info {
+                            display: inline-flex;
+                            align-items: center;
+                            height: calc(
+                                ${euiTheme.size.base} + ${euiTheme.size.xxs}
+                            );
+                            padding: 0 ${euiTheme.size.s};
+                            line-height: 1;
+                        }
+                        .applicable-name {
+                            font-size: 10px;
+                            line-height: 1;
                         }
                     `}
                 >
