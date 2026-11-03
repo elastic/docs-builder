@@ -9,7 +9,13 @@ namespace Elastic.Documentation.Site.Components.Navigation.NavSide;
 
 public static class NavSideExamples
 {
-	private static NavigationRenderNode Leaf(string title, string url, string? badge = null, string? method = null) =>
+	private static NavigationRenderNode Leaf(
+		string title,
+		string url,
+		string? badge = null,
+		string? method = null,
+		bool deprecated = false
+	) =>
 		new()
 		{
 			Kind = NavigationRenderNodeKind.Leaf,
@@ -17,7 +23,8 @@ public static class NavSideExamples
 			NavigationTitle = title,
 			Url = url,
 			Badge = badge,
-			HttpMethod = method
+			HttpMethod = method,
+			Deprecated = deprecated
 		};
 
 	private static NavigationRenderNode Group(string id, string title, string url, params NavigationRenderNode[] children) =>
@@ -52,6 +59,7 @@ public static class NavSideExamples
 				"#",
 				Leaf("Search documents", "#", method: "post"),
 				Leaf("Get document", "#", method: "get"),
+				Leaf("Get document source", "#", method: "get", deprecated: true),
 				Leaf("Delete document", "#", method: "delete")
 			),
 			Leaf("Query DSL", "#", badge: "ns"),
