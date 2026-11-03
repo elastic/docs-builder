@@ -24,7 +24,7 @@ public class ApiPropertySearchTests
 	[Arguments("travel_agency", "api")]
 	[Arguments("trav", "api")]
 	[Arguments("flight.travel", "api")]
-	[Arguments("trav", null)]
+	[Arguments("track_total", null)]
 	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter)
 	{
 		using var json = JsonDocument.Parse(
@@ -75,6 +75,20 @@ public class ApiPropertySearchTests
 		var scores = matches.EnumerateArray().Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle()).ToArray();
 		scores.Should().OnlyContain(score => score > 0 && score <= 1);
 		scores[0].Should().BeGreaterThan(scores[1], "an exact field name ranks ahead of a prefix");
+	}
+
+	[Test]
+	[Arguments(null, 1)]
+	[Arguments("all", 1)]
+	[Arguments("api", 2)]
+	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, int nameClauses)
+	{
+		using var json = JsonDocument.Parse(
+			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter))
+		);
+		var clauses = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
+		clauses.GetArrayLength().Should().Be(nameClauses);
+		clauses[0].GetRawText().Should().Contain("\"term\"");
 	}
 
 	[Test]
@@ -179,6 +193,8 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments("how to search", null)]
 	[Arguments("trav", "docs")]
+	[Arguments("trav", null)]
+	[Arguments("index", "all")]
 	[Arguments("", "api")]
 	[Arguments("/_search", "api")]
 	[Arguments("GET /_search", "api")]

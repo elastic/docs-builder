@@ -54,7 +54,9 @@ public static class SearchQueryBuilder
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter) is [var first, ..] ? BuildNestedPropertyQuery(first.Property, ApiPropertyHits) : null;
+		ParseApiPropertyQuery(searchQuery, typeFilter) is [var first, ..]
+			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, allowPrefix: typeFilter == "api")
+			: null;
 
 	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
 	{
@@ -62,7 +64,9 @@ public static class SearchQueryBuilder
 		// With one reading the endpoint only lifts the operation. With two, the index decides which reading holds,
 		// so each requires its endpoint: a bare word that names no endpoint, such as `_knn`, matches nothing.
 		var branches = readings
-			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), endpointRequired: readings.Count > 1))
+			.Select(
+				(r, i) => BuildReadingQuery(r, InnerHitsName(i), endpointRequired: readings.Count > 1, allowPrefix: typeFilter == "api")
+			)
 			.OfType<Query>()
 			.ToList();
 		if (branches.Count == 0)
@@ -72,9 +76,14 @@ public static class SearchQueryBuilder
 		return new BoolQuery { Should = [query, properties], MinimumShouldMatch = 1, Filter = [DocumentFilter] };
 	}
 
-	private static Query? BuildReadingQuery((string Operation, string Property) reading, string innerHitsName, bool endpointRequired)
+	private static Query? BuildReadingQuery(
+		(string Operation, string Property) reading,
+		string innerHitsName,
+		bool endpointRequired,
+		bool allowPrefix
+	)
 	{
-		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName);
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, allowPrefix);
 		if (reading.Operation.Length == 0)
 			return properties;
 
@@ -97,7 +106,9 @@ public static class SearchQueryBuilder
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
 			return [];
-		if (typeFilter != "api" && input.Any(char.IsWhiteSpace) && !input.Contains('.') && !input.Contains('_'))
+		// The docs-wide search only tries words that look like identifiers; a plain word would lift every API
+		// operation that happens to have a field of that name above the pages about it.
+		if (typeFilter != "api" && !input.Contains('.') && !input.Contains('_'))
 			return [];
 
 		var words = input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
@@ -113,13 +124,13 @@ public static class SearchQueryBuilder
 		return [(string.Join(' ', words.Where((_, i) => i != field)), words[field])];
 	}
 
-	private static Query BuildNestedPropertyQuery(string property, string innerHitsName) =>
+	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, bool allowPrefix) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
-			Query = BuildPropertyMatchQuery(property),
+			Query = BuildPropertyMatchQuery(property, allowPrefix),
 			InnerHits = new InnerHits
 			{
 				Name = innerHitsName,
@@ -128,9 +139,9 @@ public static class SearchQueryBuilder
 			}
 		};
 
-	private static Query BuildPropertyMatchQuery(string input)
+	private static Query BuildPropertyMatchQuery(string input, bool allowPrefix)
 	{
-		var name = BuildPropertyNameQuery(input);
+		var name = BuildPropertyNameQuery(input, allowPrefix);
 		var separator = input.LastIndexOf('.');
 		if (separator < 0 || separator == input.Length - 1)
 			return name;
@@ -142,7 +153,7 @@ public static class SearchQueryBuilder
 				name,
 				new BoolQuery
 				{
-					Must = [BuildPropertyNameQuery(input[(separator + 1)..])],
+					Must = [BuildPropertyNameQuery(input[(separator + 1)..], allowPrefix)],
 					Filter =
 					[
 						new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
@@ -152,25 +163,25 @@ public static class SearchQueryBuilder
 		};
 	}
 
-	private static Query BuildPropertyNameQuery(string name) =>
-		new DisMaxQuery
+	/// <summary>
+	/// Bound field scores below operation matches, regardless of term rarity in nested documents. Only an
+	/// API-filtered lookup matches by prefix: in the docs-wide search a prefix such as `s` would lift hundreds of operations.
+	/// </summary>
+	private static Query BuildPropertyNameQuery(string name, bool allowPrefix)
+	{
+		var exact = new ConstantScoreQuery
 		{
-			// Bound field scores below operation matches, regardless of term rarity in nested documents.
-			Queries =
-			[
-				new ConstantScoreQuery
-				{
-					Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
-					Boost = 1
-				},
-				new ConstantScoreQuery
-				{
-					// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
-					Filter = new PrefixQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
-					Boost = 0.6f
-				}
-			]
+			Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
+			Boost = 1
 		};
+		// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
+		var prefix = new ConstantScoreQuery
+		{
+			Filter = new PrefixQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
+			Boost = 0.6f
+		};
+		return new DisMaxQuery { Queries = allowPrefix ? [exact, prefix] : [exact] };
+	}
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)
 	{
