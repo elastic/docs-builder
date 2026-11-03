@@ -73,11 +73,7 @@ public class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 		Navigation = generator.CreateNavigation("fixture", Document);
 	}
 
-	public ValueTask DisposeAsync()
-	{
-		GC.SuppressFinalize(this);
-		return ValueTask.CompletedTask;
-	}
+	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
 	/// <summary>Builds the render context the generator would, with the page under test as the current navigation item.</summary>
 	public ApiRenderContext RenderContextFor(INavigationItem current) =>
