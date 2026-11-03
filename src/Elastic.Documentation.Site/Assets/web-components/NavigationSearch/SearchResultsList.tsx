@@ -444,15 +444,22 @@ const Title = ({
             <SanitizedHtmlContent htmlContent={text} />
             {deprecated && (
                 <span
-                    className="deprecated-badge"
+                    className="api-title-badges"
                     css={css`
                         display: inline-block;
                         margin-left: ${euiTheme.size.s};
                         vertical-align: middle;
-                        line-height: 1;
+                        font-weight: ${euiTheme.font.weight.regular};
+                        .applies {
+                            margin-right: 0;
+                        }
                     `}
                 >
-                    Deprecated
+                    <span className="applies applies-inline">
+                        <span className="applicable-info api-badge--danger">
+                            <span className="applicable-name">Deprecated</span>
+                        </span>
+                    </span>
                 </span>
             )}
         </div>

@@ -288,7 +288,7 @@ describe('deprecated operations', () => {
             groups: groupSearchResults([{ ...operation, deprecated: true }]),
         })
         const badges = container.querySelectorAll(
-            '.title-text .deprecated-badge'
+            '.title-text .api-title-badges .applicable-info.api-badge--danger'
         )
         expect(badges).toHaveLength(1)
         expect(badges[0]).toHaveTextContent('Deprecated')
@@ -296,6 +296,6 @@ describe('deprecated operations', () => {
 
     it('shows no badge for an operation that is not deprecated', () => {
         const { container } = renderList()
-        expect(container.querySelector('.deprecated-badge')).toBeNull()
+        expect(container.querySelector('.api-badge--danger')).toBeNull()
     })
 })
