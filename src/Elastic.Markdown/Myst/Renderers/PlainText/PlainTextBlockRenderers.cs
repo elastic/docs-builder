@@ -393,20 +393,7 @@ public class PlainTextDirectiveRenderer : MarkdownObjectRenderer<PlainTextRender
 		{
 			try
 			{
-				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser
-					.ParseSnippetAsync(
-						block.Build,
-						block.Context,
-						snippet,
-						parentPath,
-						block.Context.YamlFrontMatter,
-						Cancel.None,
-						block.Line
-					)
-					.GetAwaiter()
-					.GetResult();
-				_ = renderer.Render(document);
+				_ = renderer.Render(block.ParseSnippet());
 			}
 			catch (Exception ex) when (ex is not OutOfMemoryException and not ThreadAbortException and not ThreadInterruptedException and not StackOverflowException)
 			{
