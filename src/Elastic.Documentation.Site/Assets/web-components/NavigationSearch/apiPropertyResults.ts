@@ -32,6 +32,24 @@ const HTTP_METHODS = new Set([
 
 const pathKey = (path: string) => path.toLowerCase().replace(/^\/+/, '')
 
+const canBeField = (word: string) =>
+    word.length > 0 &&
+    !word.startsWith('/') &&
+    !HTTP_METHODS.has(word.toLowerCase())
+
+/** The parts of a query that can name a field, split on dots, in either word order; what a property row highlights. */
+export const fieldSearchTerms = (searchTerm: string) =>
+    Array.from(
+        new Set(
+            searchTerm
+                .trim()
+                .split(/\s+/)
+                .filter(canBeField)
+                .flatMap((word) => word.split('.'))
+                .filter(Boolean)
+        )
+    )
+
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
  * path is a query word, else the first route in page order whose path contains one. Routes arrive

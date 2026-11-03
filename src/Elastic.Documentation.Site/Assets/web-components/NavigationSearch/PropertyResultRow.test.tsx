@@ -35,6 +35,9 @@ it.each([
         ['elasticsearch', 'remote_cluster'],
     ],
     ['_search knn.field', 'knn.field', ['knn', 'field']],
+    ['knn search', 'retriever.knn', ['knn']],
+    ['knn /_search', 'retriever.knn', ['knn']],
+    ['knn GET /_search', 'knn', ['knn']],
 ])('highlights the property match for %s', (searchTerm, path, matches) => {
     renderRow(searchTerm, path)
     const row = screen.getByRole('link')

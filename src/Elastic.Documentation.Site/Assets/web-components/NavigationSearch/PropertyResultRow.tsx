@@ -1,6 +1,10 @@
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
-import { GO_TO_LABELS, type ApiPropertyResult } from './apiPropertyResults'
+import {
+    GO_TO_LABELS,
+    fieldSearchTerms,
+    type ApiPropertyResult,
+} from './apiPropertyResults'
 import {
     EuiHighlight,
     useEuiTheme,
@@ -33,8 +37,7 @@ export const PropertyResultRow = ({
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
-    const [lastWord = ''] = searchTerm.trim().split(/\s+/).slice(-1)
-    const propertySearch = lastWord.split('.').filter(Boolean)
+    const propertySearch = fieldSearchTerms(searchTerm)
     const highlight = (text: string) => (
         <EuiHighlight
             search={propertySearch}

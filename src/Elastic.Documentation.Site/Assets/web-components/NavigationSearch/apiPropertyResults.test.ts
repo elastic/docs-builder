@@ -1,4 +1,5 @@
 import {
+    fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
     primaryRoute,
@@ -95,4 +96,15 @@ it.each([
     const matched = primaryRoute(routes, searchTerm)
     expect(matched.tokens).toEqual(tokens)
     expect(matched.route?.path).toBe(path)
+})
+
+it.each([
+    ['knn search', ['knn', 'search']],
+    ['search knn', ['search', 'knn']],
+    ['knn /_search', ['knn']],
+    ['GET /_search knn.field', ['knn', 'field']],
+    ['_search knn', ['_search', 'knn']],
+    ['/_search', []],
+])('takes the field terms of %s', (searchTerm, terms) => {
+    expect(fieldSearchTerms(searchTerm)).toEqual(terms)
 })
