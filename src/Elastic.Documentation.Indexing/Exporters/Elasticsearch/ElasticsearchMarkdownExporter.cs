@@ -238,12 +238,10 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		if (!exists.ApiCallDetails.HasSuccessfulStatusCode)
 			throw new InvalidOperationException($"Could not check semantic index '{target}': {exists}");
 
+		// The whole api object: Elasticsearch accepts fields that already exist unchanged and adds the new ones.
 		var mapping = JsonNode.Parse(_semanticTypeContext.GetMappingsJson())!;
-		var properties = mapping["properties"]!["api"]!["properties"]!["properties"]!.DeepClone();
-		var update = new JsonObject
-		{
-			["properties"] = new JsonObject { ["api"] = new JsonObject { ["properties"] = new JsonObject { ["properties"] = properties } } }
-		};
+		var api = mapping["properties"]!["api"]!.DeepClone();
+		var update = new JsonObject { ["properties"] = new JsonObject { ["api"] = api } };
 		var response = await _operations.WithRetryAsync(
 			() => _transport.PutAsync<StringResponse>($"{target}/_mapping", PostData.String(update.ToJsonString()), ctx),
 			$"PUT {target}/_mapping",

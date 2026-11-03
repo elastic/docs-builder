@@ -15,7 +15,7 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
-import { ApiPropertyResult } from './apiPropertyResults'
+import { ApiPropertyResult, ApiRoute } from './apiPropertyResults'
 import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
     useIsNavigationSearchAwaitingNewInput,
@@ -44,6 +44,7 @@ const SearchResultItem = z.object({
     score: z.number(),
     parents: z.array(SearchResultItemParent),
     properties: z.array(ApiPropertyResult).optional(),
+    routes: z.array(ApiRoute).optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>

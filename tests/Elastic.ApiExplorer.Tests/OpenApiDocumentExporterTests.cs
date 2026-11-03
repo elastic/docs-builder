@@ -271,6 +271,30 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	public void Operation_MethodList_IndexesEveryRouteWithItsMethods()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources", raw, "esql-get-data-source");
+
+		doc.Api!
+			.Routes
+			.Select(r => $"{string.Join(",", r.Methods)} {r.Path}")
+			.Should()
+			.Equal("PUT /_query/data_source/{name}", "GET /_query/data_source");
+	}
+
+	[Test]
 	public void Operation_OnlyMethodList_IndexesTheSummary()
 	{
 		const string raw =

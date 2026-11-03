@@ -121,7 +121,7 @@ const renderList = ({
     typeFilter?: TypeFilter
 } = {}) => {
     const onMouseMove = vi.fn()
-    renderWithProviders(
+    const { container } = renderWithProviders(
         <SearchResultsList
             results={groups}
             isLoading={false}
@@ -131,12 +131,48 @@ const renderList = ({
             typeFilter={typeFilter}
         />
     )
-    return { onMouseMove }
+    return { onMouseMove, container }
 }
 
 describe('property rows', () => {
     beforeEach(() => {
         navigationSearchStore.getState().actions.setSearchTerm('track_total')
+    })
+
+    it('shows the primary route a query named instead of the description', () => {
+        const withRoutes: SearchResultItem = {
+            ...operation,
+            description: 'Returns search hits',
+            routes: [
+                { path: '/{index}/_search', methods: ['POST', 'GET'] },
+                { path: '/_search', methods: ['POST', 'GET'] },
+            ],
+        }
+        navigationSearchStore.getState().actions.setSearchTerm('_search')
+        const { container } = renderList({
+            groups: groupSearchResults([withRoutes]),
+        })
+        const lines = container.querySelectorAll('.route-line')
+        expect(lines).toHaveLength(1)
+        expect(lines[0]).toHaveTextContent('POST')
+        expect(lines[0]).not.toHaveTextContent('GET')
+        expect(lines[0]).toHaveTextContent('/{index}/_search')
+        expect(lines[0].querySelector('mark')).toHaveTextContent('_search')
+        expect(screen.queryByText('Returns search hits')).toBeNull()
+    })
+
+    it('keeps the description when the query names no route', () => {
+        const withRoutes: SearchResultItem = {
+            ...operation,
+            description: 'Returns search hits',
+            routes: [{ path: '/_search', methods: ['POST', 'GET'] }],
+        }
+        navigationSearchStore.getState().actions.setSearchTerm('knn')
+        const { container } = renderList({
+            groups: groupSearchResults([withRoutes]),
+        })
+        expect(container.querySelector('.route-line')).toBeNull()
+        expect(screen.getByText('Returns search hits')).toBeInTheDocument()
     })
 
     it('names the Enter action after each row destination', () => {

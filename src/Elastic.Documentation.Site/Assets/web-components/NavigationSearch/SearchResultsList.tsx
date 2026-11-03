@@ -2,9 +2,11 @@ import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
+import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import {
     GO_TO_LABELS,
+    primaryRoute,
     type ApiPropertyResult,
     type ResultGroup,
 } from './apiPropertyResults'
@@ -183,6 +185,7 @@ export const SearchResultsList = ({
                         onMouseMove={() => handleItemMouseMove(index)}
                         onClick={() => handleResultClick(result, index)}
                         typeFilter={typeFilter}
+                        searchTerm={searchTerm}
                     />
                     {properties.map(
                         ({ property, index: propertyIndex, showLocation }) => (
@@ -227,6 +230,7 @@ interface SearchResultRowProps {
     onMouseMove: () => void
     onClick: () => void
     typeFilter: TypeFilter
+    searchTerm: string
 }
 
 const SearchResultRow = ({
@@ -238,10 +242,12 @@ const SearchResultRow = ({
     onMouseMove,
     onClick,
     typeFilter,
+    searchTerm,
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(result.url)
+    const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
     const breadcrumbItems = useMemo(
         () =>
             navigationSearchBreadcrumbs(
@@ -321,8 +327,12 @@ const SearchResultRow = ({
             >
                 <Breadcrumb items={breadcrumbItems} />
                 <Title text={result.title} />
-                {result.description && (
-                    <Description text={result.description} />
+                {route ? (
+                    <RouteLine route={route} tokens={tokens} />
+                ) : (
+                    result.description && (
+                        <Description text={result.description} />
+                    )
                 )}
             </div>
             {!isMobile && (

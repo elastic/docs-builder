@@ -23,7 +23,19 @@ public class NavigationSearchServiceTests
 		{
 			Title = "Search",
 			SearchTitle = "Search",
-			Path = "/docs/api/doc/elasticsearch/operation/operation-search"
+			Path = "/docs/api/doc/elasticsearch/operation/operation-search",
+			Api = new ApiOperationMetadata
+			{
+				Endpoints = ["_search", "*/_search"],
+				Method = "POST",
+				Path = "/{index}/_search",
+				OperationId = "search",
+				Routes =
+				[
+					new ApiRouteEntry { Path = "/{index}/_search", Methods = ["POST", "GET"] },
+					new ApiRouteEntry { Path = "/_search", Methods = ["POST", "GET"] }
+				]
+			}
 		};
 		var property = new ApiPropertyEntry
 		{
@@ -71,5 +83,10 @@ public class NavigationSearchServiceTests
 		linked.Url.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search#req-knn");
 		linked.Anchor.Should().Be("req-knn");
 		linked.Location.Should().Be("request");
+		result
+			.Routes
+			.Select(r => (r.Path, string.Join(",", r.Methods)))
+			.Should()
+			.Equal(("/{index}/_search", "POST,GET"), ("/_search", "POST,GET"));
 	}
 }

@@ -130,10 +130,11 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 						VersionsConfiguration = versionsConfiguration
 					}
 				);
+				var endpoint = OperationEndpoint.Build(apiOperation, operation.Value.Description, []);
 				var trees = OperationPageModel.BuildPropertyTrees(
 					apiOperation,
 					new SchemaAnalyzer(openApiDocument),
-					new ParameterRowSource(builder, null, OperationEndpoint.Build(apiOperation, operation.Value.Description, []))
+					new ParameterRowSource(builder, null, endpoint)
 				);
 
 				// Extract tags as headings
@@ -162,6 +163,16 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Api = new ApiOperationMetadata
 					{
 						Properties = trees.IndexEntries(plainDescriptions),
+						Routes = endpoint
+							.Rows
+							.Select(
+								row => new ApiRouteEntry
+								{
+									Path = row.Route,
+									Methods = [row.Method.ToUpperInvariant(), .. row.AlsoMethods.Select(m => m.ToUpperInvariant())]
+								}
+							)
+							.ToArray(),
 						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
 						Method = method,
 						Path = path.Key,

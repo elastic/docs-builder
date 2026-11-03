@@ -17,6 +17,11 @@ public record ApiOperationMetadata
 	[JsonPropertyName("properties")]
 	public ApiPropertyEntry[] Properties { get; init; } = [];
 
+	/// <summary>Every route the operation page lists, with its methods, in page order.</summary>
+	[Object]
+	[JsonPropertyName("routes")]
+	public ApiRouteEntry[] Routes { get; init; } = [];
+
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
 	/// parameters, each parameter stored as <c>*</c>, e.g. <c>*/_search</c> and <c>_search</c>.

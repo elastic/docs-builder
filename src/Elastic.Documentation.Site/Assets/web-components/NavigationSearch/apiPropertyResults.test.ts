@@ -1,4 +1,8 @@
-import { groupSearchResults, navigableRowCount } from './apiPropertyResults'
+import {
+    groupSearchResults,
+    navigableRowCount,
+    primaryRoute,
+} from './apiPropertyResults'
 import type { SearchResultItem } from './useNavigationSearchQuery'
 
 const property = (path: string, location: 'query' | 'request') => ({
@@ -69,4 +73,24 @@ it('lists no properties under a docs page even when the payload carries some', (
     ])
     expect(group.properties).toEqual([])
     expect(navigableRowCount(groupSearchResults([page]))).toBe(1)
+})
+
+const routes = [
+    { path: '/{index}/_search', methods: ['POST', 'GET'] },
+    { path: '/_search', methods: ['POST', 'GET'] },
+    { path: '/_search/scroll', methods: ['POST', 'GET'] },
+]
+
+it.each([
+    ['_search', ['_search'], '/{index}/_search'],
+    ['/_search', ['_search'], '/{index}/_search'],
+    ['GET /_search knn', ['_search', 'knn'], '/{index}/_search'],
+    ['scroll', ['scroll'], '/_search/scroll'],
+    ['knn', ['knn'], undefined],
+    ['get', [], undefined],
+    ['a', [], undefined],
+])('picks the primary route for %s', (searchTerm, tokens, path) => {
+    const matched = primaryRoute(routes, searchTerm)
+    expect(matched.tokens).toEqual(tokens)
+    expect(matched.route?.path).toBe(path)
 })

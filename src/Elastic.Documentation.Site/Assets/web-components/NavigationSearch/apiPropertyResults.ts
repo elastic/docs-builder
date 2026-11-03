@@ -13,6 +13,41 @@ export const ApiPropertyResult = z.object({
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>
 
+export const ApiRoute = z.object({
+    path: z.string(),
+    methods: z.array(z.string()),
+})
+
+export type ApiRoute = z.infer<typeof ApiRoute>
+
+const HTTP_METHODS = new Set([
+    'get',
+    'post',
+    'put',
+    'patch',
+    'delete',
+    'head',
+    'options',
+])
+
+/**
+ * The query words that can name a path, and the first route in page order whose path contains one.
+ * Routes arrive with the page's primary route first, so that one wins whenever it matches.
+ */
+export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
+    const tokens = searchTerm
+        .toLowerCase()
+        .split(/\s+/)
+        .map((word) => word.replace(/^\/+/, ''))
+        .filter((word) => word.length > 1 && !HTTP_METHODS.has(word))
+    return {
+        tokens,
+        route: routes.find((route) =>
+            tokens.some((token) => route.path.toLowerCase().includes(token))
+        ),
+    }
+}
+
 export const GO_TO_LABELS = {
     page: 'Go to page',
     operation: 'Go to operation',

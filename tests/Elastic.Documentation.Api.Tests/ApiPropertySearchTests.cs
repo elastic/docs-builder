@@ -136,6 +136,17 @@ public class ApiPropertySearchTests
 		var fields = field.GetProperty("properties");
 		fields.GetProperty("name").GetProperty("type").GetString().Should().Be("keyword");
 		fields.GetProperty("anchor").GetProperty("type").GetString().Should().Be("keyword");
+
+		var routes = json
+			.RootElement
+			.GetProperty("properties")
+			.GetProperty("api")
+			.GetProperty("properties")
+			.GetProperty("routes")
+			.GetProperty("properties");
+		routes.GetProperty("path").GetProperty("type").GetString().Should().Be("keyword");
+		routes.GetProperty("path").GetProperty("index").GetBoolean().Should().BeFalse();
+		routes.GetProperty("methods").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	[Test]

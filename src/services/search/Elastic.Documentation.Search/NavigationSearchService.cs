@@ -52,6 +52,7 @@ public partial class NavigationSearchService(
 						Url = item.Document.Path,
 						Title = item.Title,
 						Description = item.Description,
+						Routes = item.Document.Api?.Routes ?? [],
 						Properties = item
 							.Properties
 							.Select(
