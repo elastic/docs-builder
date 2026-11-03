@@ -45,4 +45,14 @@ public record ApiOperationMetadata
 	[Keyword]
 	[JsonPropertyName("operation_id")]
 	public required string OperationId { get; init; }
+
+	/// <summary>Display name of the operation's first tag, e.g. <c>Cross-cluster replication</c>; null when untagged.</summary>
+	[Keyword]
+	[JsonPropertyName("group")]
+	public string? Group { get; init; }
+
+	/// <summary>Whether the spec marks the operation deprecated.</summary>
+	[Boolean]
+	[JsonPropertyName("deprecated")]
+	public bool Deprecated { get; init; }
 }

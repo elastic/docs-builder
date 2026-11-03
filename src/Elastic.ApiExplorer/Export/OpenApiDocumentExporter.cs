@@ -14,6 +14,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
@@ -67,6 +68,7 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 		var productUrl = ApiUrlBuilder.ProductRoot("/docs", product);
 		// All API products currently version against Stack
 		var currentStack = versionsConfiguration.GetVersioningSystem(VersioningSystemId.Stack).Current;
+		var tagMetadata = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
 
 		var plainDescriptions = new Dictionary<string, string>();
 		foreach (var path in openApiDocument.Paths)
@@ -175,7 +177,9 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 						Endpoints = ApiEndpointPath.IndexKeys([path.Key, .. AlternatePaths(operation.Value.Description)]),
 						Method = method,
 						Path = path.Key,
-						OperationId = operationId
+						OperationId = operationId,
+						Group = GroupName(headings.FirstOrDefault(), tagMetadata),
+						Deprecated = operation.Value.Deprecated
 					},
 					Product = inference?.Product?.Id,
 					RelatedProducts = inference?.RelatedProducts.Count > 0
@@ -194,6 +198,14 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 	/// </summary>
 	internal static string ProductApiLabel(string product) =>
 		$"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(product.Replace('-', ' '))} API";
+
+	/// <summary>The tag's display name as the API navigation shows it.</summary>
+	private static string? GroupName(string? tag, Dictionary<string, OpenApiTagMetadata> tagMetadata)
+	{
+		if (tag is null)
+			return null;
+		return tagMetadata.TryGetValue(tag, out var meta) ? meta.DisplayName : tag.CapitalizeFirstLetter();
+	}
 
 	/// <summary>
 	/// Search tokens users type for an operation: the product label, the raw operation id

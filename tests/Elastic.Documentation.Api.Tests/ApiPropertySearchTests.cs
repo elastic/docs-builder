@@ -284,6 +284,20 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
+	public void Mapping_ApiGroupAndDeprecated_AreKeywordAndBoolean(bool semantic)
+	{
+		var context = semantic
+			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
+			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
+		using var json = JsonDocument.Parse(context.GetMappingsJson());
+		var api = json.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties");
+		api.GetProperty("group").GetProperty("type").GetString().Should().Be("keyword");
+		api.GetProperty("deprecated").GetProperty("type").GetString().Should().Be("boolean");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
 	public void Mapping_ApiProperties_IsNestedWithKeywordNames(bool semantic)
 	{
 		var context = semantic
