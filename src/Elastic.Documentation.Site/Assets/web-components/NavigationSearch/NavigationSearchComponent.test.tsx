@@ -59,7 +59,7 @@ describe('NavigationSearchWrapper type attribute', () => {
     it('navigates into a matching property and records its anchor on Enter', async () => {
         const url =
             '/docs/api/doc/elasticsearch/operation/operation-search#req-track_total_hits'
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 ...emptySearch,
@@ -88,15 +88,13 @@ describe('NavigationSearchWrapper type attribute', () => {
             }),
         })
         render(<NavigationSearchWrapper type="api" />)
-        const input = await screen.findByPlaceholderText(
-            'Type ❲/❳ to explore API'
-        )
+        const input = await screen.findByPlaceholderText('Explore APIs')
         await userEvent.type(input, 'track_total')
         const child = await screen.findByRole('link', {
             name: /track_total_hits boolean request Count hits accurately/,
         })
         expect(child).toHaveAttribute('href', url)
-        const clicked = jest.fn((event: Event) => event.preventDefault())
+        const clicked = vi.fn((event: Event) => event.preventDefault())
         child.addEventListener('click', clicked)
         await userEvent.click(input)
         expect(input).toHaveFocus()

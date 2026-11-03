@@ -2,8 +2,6 @@ import { PropertyResultRow } from './PropertyResultRow'
 import { EuiProvider } from '@elastic/eui'
 import { render, screen } from '@testing-library/react'
 
-jest.mock('htmx.org', () => ({ process: jest.fn() }))
-
 it.each([
     ['search knn', 'retriever.knn', ['knn']],
     ['_search KNN', 'retriever.knn', ['knn']],
@@ -36,9 +34,9 @@ it.each([
                 index={1}
                 isSelected={false}
                 isKeyboardNavigating={false}
-                onMouseEnter={jest.fn()}
-                onMouseMove={jest.fn()}
-                onClick={jest.fn()}
+                onMouseEnter={vi.fn()}
+                onMouseMove={vi.fn()}
+                onClick={vi.fn()}
             />
         </EuiProvider>
     )
