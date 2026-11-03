@@ -1,2 +1,2 @@
 # Verified snapshots must have stable line endings across OSes
-.snapshots/** text eol=lf
+**/.snapshots/** text eol=lf
