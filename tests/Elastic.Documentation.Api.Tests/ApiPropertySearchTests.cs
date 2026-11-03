@@ -151,16 +151,7 @@ public class ApiPropertySearchTests
 		var must = knn.GetProperty("must");
 		must.GetArrayLength().Should().Be(2);
 		must[0].GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"knn\"");
-		must[1]
-			.GetProperty("dis_max")
-			.GetProperty("queries")[0]
-			.GetProperty("constant_score")
-			.GetProperty("filter")
-			.GetProperty("terms")
-			.GetProperty("api.endpoints")[0]
-			.GetString()
-			.Should()
-			.Be("_search");
+		must[1].GetRawText().Should().Contain("\"api.endpoints\":[\"_search\"");
 		knn.TryGetProperty("should", out _).Should().BeFalse();
 		var names = System
 			.Text
@@ -176,6 +167,24 @@ public class ApiPropertySearchTests
 			.OnlyHaveUniqueItems()
 			.And
 			.AllSatisfy(n => SearchQueryBuilder.IsApiPropertyHits(n).Should().BeTrue());
+	}
+
+	[Test]
+	public void ApplyApiPropertyQuery_EndpointHalf_MatchesTheLiteralPathAndItsUnderscoreAlias()
+	{
+		using var json = JsonDocument.Parse(
+			Client.RequestResponseSerializer.SerializeToString(
+				SearchQueryBuilder.ApplyApiPropertyQuery(
+					new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(),
+					"deployments status",
+					"api"
+				)
+			)
+		);
+		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
+		var status = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"status\"")).GetProperty("bool");
+		var endpoint = status.GetProperty("must")[1].GetRawText();
+		endpoint.Should().Contain("\"deployments\"").And.Contain("\"_deployments\"");
 	}
 
 	[Test]

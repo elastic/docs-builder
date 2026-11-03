@@ -87,12 +87,27 @@ public static class SearchQueryBuilder
 		if (reading.Operation.Length == 0)
 			return properties;
 
-		var endpoint = BuildBareWordEndpointQuery(reading.Operation) ?? BuildApiEndpointQuery(reading.Operation);
+		var endpoint = BuildEndpointHalfQuery(reading.Operation);
 		if (endpoint is null)
 			return endpointRequired ? null : properties;
 		return endpointRequired
 			? new BoolQuery { Must = [properties, endpoint] }
 			: new BoolQuery { Must = [properties], Should = [endpoint] };
+	}
+
+	/// <summary>
+	/// The endpoint half as typed and, for a bare word, as its underscore alias too: `deployments` is a route of
+	/// its own while `search` means `_search`, and a required endpoint must accept either.
+	/// </summary>
+	private static Query? BuildEndpointHalfQuery(string operation)
+	{
+		var candidates = new[] { BuildApiEndpointQuery(operation), BuildBareWordEndpointQuery(operation) }.OfType<Query>().ToList();
+		return candidates.Count switch
+		{
+			0 => null,
+			1 => candidates[0],
+			_ => new DisMaxQuery { Queries = candidates }
+		};
 	}
 
 	/// <summary>
