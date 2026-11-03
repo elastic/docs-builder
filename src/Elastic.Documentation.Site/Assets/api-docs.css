@@ -994,6 +994,25 @@
 	border-color: var(--color-grey-100);
 }
 
+#pages-nav a.nav-link--deprecated > span:first-child {
+	text-decoration: line-through;
+	opacity: 0.7;
+}
+
+#pages-nav a.nav-link--deprecated .nav-v2-api-method {
+	background-color: var(--color-grey-20);
+	border-color: var(--color-grey-30);
+	color: var(--color-grey-100);
+}
+
+#pages-nav a.nav-link--deprecated:hover .nav-v2-api-method {
+	border-color: var(--color-grey-60);
+}
+
+#pages-nav a.nav-link--deprecated.current .nav-v2-api-method {
+	border-color: var(--color-grey-100);
+}
+
 .api-url {
 	margin-left: calc(var(--spacing) * 2);
 	min-width: 0;

@@ -238,6 +238,39 @@ public partial class ApiPagesNavRenderingTests
 		link.Should().NotContain("aria-label");
 		link.Should().NotContain("icon-api-arrow");
 		link.Should().NotContain("icon-api-x");
+		link.Should().NotContain("deprecated");
+	}
+
+	[Test]
+	public async Task Render_DeprecatedOperationRow_MarksTheLinkAndNamesItForScreenReaders()
+	{
+		NavigationRenderNode[] nodes =
+		[
+			new()
+			{
+				Kind = NavigationRenderNodeKind.Leaf,
+				IsTopLevel = false,
+				NavigationTitle = "Get a document source",
+				Url = "/api/doc/elasticsearch/operation/operation-get-source",
+				HttpMethod = "get",
+				Deprecated = true
+			}
+		];
+		var ct = TestContext.Current!.Execution.CancellationToken;
+
+		foreach (var html in new[]
+		{
+			await _TocTreeNav.Create(nodes).RenderAsync(cancellationToken: ct),
+			await _TocTreeNavLegacy.Create(nodes).RenderAsync(cancellationToken: ct)
+		})
+		{
+			var link = OperationLink(html);
+			link.Should().MatchRegex("class=\"sidebar-link nav-link( nav-v2-link)? nav-link--deprecated\"");
+			var hidden = link.IndexOf("<span class=\"sr-only\">Deprecated</span>", StringComparison.Ordinal);
+			hidden.Should().BeGreaterThan(link.IndexOf("Get a document source", StringComparison.Ordinal));
+			hidden.Should().BeLessThan(link.IndexOf(">GET<", StringComparison.Ordinal));
+			link.Should().NotContain("aria-label");
+		}
 	}
 
 	[Test]
