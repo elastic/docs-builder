@@ -15,12 +15,9 @@ using Elastic.ApiExplorer.Supplemental;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
-using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -75,7 +72,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -147,7 +144,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -182,7 +179,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (_, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (_, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		var tags = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
 
@@ -249,7 +246,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -309,7 +306,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -339,35 +336,6 @@ public class TagMetadataTests
 			Markdown.Add(markdown);
 			return headings;
 		}
-	}
-
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
-		string openApiJson,
-		IMarkdownStringRenderer? markdownRenderer = null
-	)
-	{
-		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
-
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, markdownRenderer ?? NoopMarkdownStringRenderer.Instance);
-
-		// Parse the OpenAPI spec directly from JSON using a stream
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
-		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
-		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
-
-		var parseErrors = result.Diagnostic?.Errors;
-		if (parseErrors is not null && parseErrors.Any())
-		{
-			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", parseErrors.Select(e => e.Message))}");
-		}
-
-		return (generator, result.Document!);
 	}
 
 	private static TagNavigationItem? FindTagNavigationItem(LandingNavigationItem navigation, string tagName)
@@ -453,7 +421,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -509,7 +477,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -574,7 +542,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("test", openApiDocument);
@@ -665,7 +633,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		// Act
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
@@ -708,7 +676,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var expectedOverviewUrl = navigation.Index.Url;
@@ -757,7 +725,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
@@ -808,7 +776,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var titles = navigation.NavigationItems.OfType<ClassificationNavigationItem>().Select(c => c.NavigationTitle).ToList();
@@ -859,7 +827,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var classifications = navigation.NavigationItems.OfType<ClassificationNavigationItem>().ToList();
@@ -900,7 +868,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("test", openApiDocument);
 
 		var items = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
@@ -945,7 +913,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("es", openApiDocument);
 
 		var alpha = FindTagNavigationItem(navigation, "alpha");
@@ -976,7 +944,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var operation = navigation
@@ -1015,7 +983,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", openApiDocument);
 
 		var t = FindTagNavigationItem(navigation, "connector");
@@ -1045,7 +1013,7 @@ public class TagMetadataTests
 		}
 		""";
 
-		var (generator, openApiDocument) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, openApiDocument) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 
 		var act = () => generator.CreateNavigation("test", openApiDocument);
 		act.Should().Throw<InvalidOperationException>().WithMessage("*tag URL segment conflict*");
@@ -1082,7 +1050,7 @@ public class TagMetadataTests
 			new TocItem("Panel types", "panel-types", 2),
 			new TocItem("What's supported", "whats-supported", 2)
 		]);
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson, renderer);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson, renderer);
 		var navigation = generator.CreateNavigation("kibana", document);
 		var tag = FindTagNavigationItem(navigation, "dashboards");
 		tag.Should().NotBeNull();
@@ -1104,6 +1072,44 @@ public class TagMetadataTests
 	}
 
 	[Test]
+	public async Task GroupIntro_NestedHeadings_StayOutOfTheSidebar()
+	{
+		var openApiJson = /*lang=json,strict*/
+			"""
+			{
+			  "openapi": "3.0.3",
+			  "info": { "title": "Kibana", "version": "1.0" },
+			  "paths": {
+			    "/dashboards": {
+			      "get": { "operationId": "get-dashboards", "tags": ["dashboards"], "responses": { "200": { "description": "ok" } } }
+			    }
+			  },
+			  "tags": [ { "name": "dashboards", "x-displayName": "Dashboards" } ]
+			}
+			""";
+
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
+		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
+		tag.Should().NotBeNull();
+
+		var renderer = new HeadingsRenderer([
+			new TocItem("When to use this API", "when-to-use-this-api", 2),
+			new TocItem("Get started", "get-started", 2),
+			new TocItem("Try it now", "try-it-now", 3),
+			new TocItem("Panel types", "panel-types", 2),
+			new TocItem("Embedding", "embedding", 3)
+		]);
+		tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(renderer, "## x", tag.NavigationRoot.Url, []));
+
+		tag
+			.NavigationItems
+			.OfType<IntroHeadingNavigationItem>()
+			.Select(heading => heading.NavigationTitle)
+			.Should()
+			.Equal("When to use this API", "Get started", "Panel types");
+	}
+
+	[Test]
 	public async Task GroupIntro_HeadingSharingAPostSectionAnchor_IsLeftOutOfTheSidebar()
 	{
 		var openApiJson = /*lang=json,strict*/
@@ -1120,7 +1126,7 @@ public class TagMetadataTests
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var tag = FindTagNavigationItem(generator.CreateNavigation("kibana", document), "dashboards");
 		tag.Should().NotBeNull();
 
@@ -1164,7 +1170,7 @@ public class TagMetadataTests
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("kibana", document);
 		var tag = FindTagNavigationItem(navigation, "spaces");
 		tag.Should().NotBeNull();
@@ -1197,7 +1203,7 @@ public class TagMetadataTests
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("kibana", document);
 
 		var html = await RenderIndexAsync(navigation.Index, navigation);
@@ -1215,12 +1221,7 @@ public class TagMetadataTests
 	private static async Task<string> RenderIndexAsync(ILeafNavigationItem<IApiModel> index, INavigationItem current)
 	{
 		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext(collector);
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument(),

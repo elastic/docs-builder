@@ -1,45 +1,17 @@
-import { cooldownStore } from '../shared/cooldown.store'
+import { renderWithQueryClient } from '../../test-utils/render'
+import { resetCooldownStore } from '../../test-utils/stores'
 import { ApiError } from '../shared/errorHandling'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessage as ChatMessageType } from './chat.store'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-vi.mock('idb-keyval', () => ({
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue(undefined),
-    del: vi.fn().mockResolvedValue(undefined),
-    createStore: vi.fn().mockReturnValue({}),
-}))
+vi.mock('idb-keyval', async () =>
+    (await import('../../test-utils/mocks')).idbKeyval()
+)
 
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-        },
-    })
-
-// Wrapper component for tests that need React Query
-const renderWithQueryClient = (ui: React.ReactElement) => {
-    const testQueryClient = createTestQueryClient()
-    return render(
-        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
-    )
-}
-
-// Reset cooldown store between tests
-const resetStores = () => {
-    cooldownStore.setState({
-        cooldowns: {
-            search: { cooldown: null, awaitingNewInput: false },
-            askAi: { cooldown: null, awaitingNewInput: false },
-        },
-    })
-}
+const resetStores = resetCooldownStore
 
 describe('ChatMessage Component', () => {
     beforeEach(() => {

@@ -32,7 +32,7 @@ public partial class DefaultSearchService<TDocument>(
 	private const string PreTag = "<mark>";
 	private const string PostTag = "</mark>";
 
-	private static readonly string[] AutocompleteSourceIncludes =
+	internal static readonly string[] AutocompleteSourceIncludes =
 	[
 		"content_type",
 		"title",
@@ -40,7 +40,13 @@ public partial class DefaultSearchService<TDocument>(
 		"path",
 		"description",
 		"parents",
-		"headings"
+		"headings",
+		// every required member of ApiOperationMetadata, or the hit fails to deserialize; properties arrive as inner hits
+		"api.endpoints",
+		"api.method",
+		"api.path",
+		"api.operation_id",
+		"api.routes"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
@@ -115,6 +121,7 @@ public partial class DefaultSearchService<TDocument>(
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
 		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
+		query = SearchQueryBuilder.ApplyApiPropertyQuery(query, request.Query, request.TypeFilter);
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>

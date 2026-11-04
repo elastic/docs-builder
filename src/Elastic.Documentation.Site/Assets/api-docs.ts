@@ -8,6 +8,7 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
@@ -115,15 +116,8 @@ function setDisclosureExpanded(
     if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
 }
 
-/** Responses behave as an accordion and keep the examples rail on the same status code. */
+/** Opening a response keeps the examples rail on the same status code. */
 function onResponseOpened(panel: HTMLElement): void {
-    panel
-        .closest('[data-api-responses]')
-        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
-        .forEach((other) => {
-            if (other !== panel)
-                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
-        })
     const status = panel.dataset.status
     if (!status) return
     document
@@ -233,7 +227,7 @@ const FLASH_CLASS = 'api-link-target-flash'
 const FLASH_FALLBACK_MS = 3200
 const FLASH_SETTLE_MS = 200
 const FLASH_GIVE_UP_MS = 10000
-let initialHashFlashDone = false
+let initializedHashTarget: HTMLElement | null = null
 
 const flashCleanups = new WeakMap<HTMLElement, () => void>()
 
@@ -297,6 +291,7 @@ function flashTarget(target: HTMLElement): void {
 function onHashChange(): void {
     revealHashTarget()
     const target = hashTarget()
+    initializedHashTarget = target
     if (target) flashTarget(target)
 }
 
@@ -318,6 +313,7 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
+    initToc()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
@@ -711,10 +707,8 @@ export function initApiDocs(): void {
     if (operationSection) initOperationView()
     // Schema pages too: a link to a field inside a variant that is not picked must show that variant.
     revealHashTarget()
-    // initApiDocs also runs for later htmx swaps, which must not replay a flash for a stale hash
-    if (!initialHashFlashDone) {
-        initialHashFlashDone = true
-        const target = hashTarget()
-        if (target) flashTarget(target)
-    }
+    // A replacement page gets a new target element, even when its fragment is unchanged.
+    const target = hashTarget()
+    if (target && target !== initializedHashTarget) flashTarget(target)
+    initializedHashTarget = target
 }

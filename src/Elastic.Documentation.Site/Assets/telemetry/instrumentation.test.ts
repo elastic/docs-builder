@@ -1,10 +1,6 @@
 import { initializeOtel } from './instrumentation'
 
 describe('initializeOtel', () => {
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
-
     it('skips initialization for Elastic Synthetics traffic', () => {
         vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
             'Mozilla/5.0 Chrome/120.0.0.0 Elastic/Synthetics'

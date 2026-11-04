@@ -8,10 +8,6 @@ function clickOn(html: string): Event {
 }
 
 describe('iubendaActionFor', () => {
-    afterEach(() => {
-        document.body.innerHTML = ''
-    })
-
     it('maps the preferences link, including icon clicks', () => {
         const event = clickOn(
             '<a class="iubenda-cs-preferences-link" href="#"><svg></svg>Your Privacy Choices</a>'

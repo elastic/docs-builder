@@ -27,10 +27,6 @@ const dataRows = () =>
 const visibleRows = () => dataRows().filter((r) => !r.hidden)
 
 describe('filterable-table', () => {
-    beforeEach(() => {
-        document.body.innerHTML = ''
-    })
-
     it('is registered as a custom element', () => {
         expect(customElements.get('filterable-table')).toBe(
             FilterableTableElement
@@ -198,27 +194,17 @@ describe('filterable-table', () => {
         ).toBe('Showing 3 of 3')
     })
 
-    it('leaves a table with no body rows alone', () => {
-        document.body.innerHTML = `
-          <filterable-table>
-            <table><thead><tr><th>A</th><th>B</th></tr></thead></table>
-          </filterable-table>`
-        customElements.upgrade(document.body)
-        expect(document.querySelector('.filterable-table-controls')).toBeNull()
-        expect(
-            document.querySelector<HTMLElement>('filterable-table')!.dataset
-                .enhanced
-        ).toBeUndefined()
-    })
-
-    it('leaves a table with an empty body alone', () => {
-        document.body.innerHTML = `
-          <filterable-table>
-            <table>
-              <thead><tr><th>A</th><th>B</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </filterable-table>`
+    it.each([
+        [
+            'no body rows',
+            '<table><thead><tr><th>A</th><th>B</th></tr></thead></table>',
+        ],
+        [
+            'an empty body',
+            '<table><thead><tr><th>A</th><th>B</th></tr></thead><tbody></tbody></table>',
+        ],
+    ])('leaves a table with %s alone', (_name, tableHtml) => {
+        document.body.innerHTML = `<filterable-table>${tableHtml}</filterable-table>`
         customElements.upgrade(document.body)
         expect(document.querySelector('.filterable-table-controls')).toBeNull()
         expect(
@@ -237,33 +223,17 @@ describe('filterable-table', () => {
         ).toHaveLength(1)
     })
 
-    it('omits a dropdown when a column has one distinct value', () => {
-        document.body.innerHTML = `
-          <filterable-table>
-            <table>
-              <thead><tr><th>Name</th><th>Type</th></tr></thead>
-              <tbody>
-                <tr><td>a</td><td>Receiver</td></tr>
-                <tr><td>b</td><td>Receiver</td></tr>
-                <tr><td>c</td><td>Receiver</td></tr>
-              </tbody>
-            </table>
-          </filterable-table>`
-        customElements.upgrade(document.body)
-        expect(
-            document.querySelectorAll('.filterable-table-facet')
-        ).toHaveLength(0)
-    })
-
-    it('omits a dropdown when a column has one distinct value per row', () => {
+    it.each([
+        ['has one distinct value', ['Receiver', 'Receiver', 'Receiver']],
         // Two rows, two distinct types: a key column, not a category.
+        ['has one distinct value per row', ['Receiver', 'Exporter']],
+    ])('omits a dropdown when a column %s', (_name, types) => {
         document.body.innerHTML = `
           <filterable-table>
             <table>
               <thead><tr><th>Name</th><th>Type</th></tr></thead>
               <tbody>
-                <tr><td>a</td><td>Receiver</td></tr>
-                <tr><td>b</td><td>Exporter</td></tr>
+                ${types.map((t, i) => `<tr><td>${i}</td><td>${t}</td></tr>`).join('')}
               </tbody>
             </table>
           </filterable-table>`

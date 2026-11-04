@@ -10,8 +10,6 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
@@ -898,11 +896,7 @@ public class ExampleScenarioTests
 				pathItem,
 				"Create a budget"
 			);
-			var build = new BuildContext(
-				new DiagnosticsCollector([]),
-				DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-				TestHelpers.CreateConfigurationContext(new FileSystem())
-			);
+			var build = TestHelpers.CreateBuildContext();
 			var context = new ApiRenderContext(
 				build,
 				document,
