@@ -1,0 +1,133 @@
+# One entry point for the toolchain: `mise install` provisions the SDKs, `mise tasks` lists what you can run.
+# Versions are not pinned here: mise reads global.json (.NET SDK) and .nvmrc (Node), which CI and the
+# Dockerfiles also read, so each version has a single source.
+
+[settings]
+idiomatic_version_file_enable_tools = ["dotnet", "node"]
+
+[env]
+DOTNET_NOLOGO = "1"
+DOTNET_CLI_TELEMETRY_OPTOUT = "1"
+
+# `mise install` only provisions the SDKs. The local tools in dotnet-tools.json (husky, curb, minver, ...)
+# are restored here, and the git hooks wired, so a fresh clone or worktree is ready after one command.
+[hooks]
+postinstall = "dotnet tool restore && dotnet husky install"
+
+# ---- setup ----
+
+[tasks.setup]
+description = "Restore the local dotnet tools, wire the git hooks, install the frontend dependencies"
+depends = ["setup:tools", "site:install"]
+
+[tasks."setup:tools"]
+description = "Restore dotnet-tools.json and install the husky git hooks"
+run = ["dotnet tool restore", "dotnet husky install"]
+
+# ---- build, test, format ----
+# These go through the F# build project, the same thing build.sh runs, so the logic lives in one place.
+
+[tasks.build]
+description = "Build the solution"
+run = "dotnet build"
+
+[tasks.test]
+description = "Unit tests (fast). Extra args pass through, e.g. -- --test-parallelism=4"
+run = "dotnet run --project build -c release -- unit-test"
+
+[tasks.integrate]
+description = "Integration tests (slow, clones real repositories)"
+run = "dotnet run --project build -c release -- integrate"
+
+[tasks.lint]
+description = "C# format check (curb, read-only)"
+run = "dotnet run --project build -c release -- lint"
+
+[tasks.fmt]
+description = "Auto-fix C# formatting"
+run = "dotnet run --project build -c release -- format"
+
+[tasks.clean]
+description = "Remove build output and .artifacts/"
+run = "dotnet run --project build -c release -- clean"
+
+[tasks.version]
+description = "Print the computed version"
+run = "dotnet run --project build -c release -- version"
+
+[tasks.release]
+description = "Build, test, and package everything short of publishing"
+run = "dotnet run --project build -c release -- release"
+
+[tasks.publish]
+description = "Publish the artifacts"
+run = "dotnet run --project build -c release -- publish"
+
+[tasks.schema]
+description = "Regenerate docs/cli-schema.json after changing docs-builder commands"
+run = "dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json"
+
+# ---- run ----
+
+[tasks.serve]
+description = "Serve docs/ with live reload"
+run = "dotnet run --project src/tooling/docs-builder -- serve"
+
+[tasks.watch]
+description = "dotnet watch: rebuild code, templates and web assets on the fly"
+run = "dotnet run --project build -c release -- watch"
+
+[tasks."watch:all"]
+description = "dotnet watch on the Aspire AppHost: the fully assembled site"
+run = "dotnet run --project build -c release -- watch-all"
+
+# ---- frontend (src/Elastic.Documentation.Site) ----
+
+[tasks."site:install"]
+description = "npm ci for the frontend"
+dir = "src/Elastic.Documentation.Site"
+sources = ["package-lock.json"]
+outputs = ["node_modules/.package-lock.json"]
+run = "npm ci"
+
+[tasks."site:build"]
+description = "Production frontend build"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run build"
+
+[tasks."site:watch"]
+description = "Frontend dev build with live reload"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run watch"
+
+[tasks."site:test"]
+description = "Frontend tests (Vitest)"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run test"
+
+[tasks."site:lint"]
+description = "Frontend lint (ESLint)"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run lint"
+
+[tasks."site:fmt"]
+description = "Frontend auto-format (Prettier)"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run fmt:write"
+
+[tasks."site:check"]
+description = "Frontend TypeScript type check"
+depends = ["site:install"]
+dir = "src/Elastic.Documentation.Site"
+run = "npm run compile:check"
+
+# ---- Docker ----
+
+[tasks.isolated]
+description = "Docker route (./dev.sh) for working without local installs, not the primary dev interface. No args prints its help"
+run = "./dev.sh"

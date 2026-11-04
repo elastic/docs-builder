@@ -52,7 +52,7 @@ If you want to manually install the tool you can download the latest release fro
 
 ### Building locally
 
-Install [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), then run:
+Install [mise](https://mise.jdx.dev/getting-started.html) and run `mise install` (or install the [.NET SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) version in `global.json` yourself), then run:
 
 ```bash
 ./build.sh publishbinaries
