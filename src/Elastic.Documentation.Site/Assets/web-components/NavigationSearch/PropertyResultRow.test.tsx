@@ -175,8 +175,13 @@ it('renders every child as a token in page order', () => {
     renderParent(standardChildren)
     const label = fieldsGroup().firstElementChild
     expect(label).toHaveClass('property-children-label')
-    expect(label).toHaveTextContent('Child properties')
+    expect(label).toHaveTextContent('Contains')
     expect(tokens()).not.toContain(label)
+    const list = fieldsGroup().querySelector('.property-children-list')
+    expect(list).not.toBeNull()
+    expect(
+        Array.from(list!.querySelectorAll<HTMLElement>('.property-child'))
+    ).toHaveLength(8)
     expect(tokens().map((token) => token.tagName)).toEqual(
         Array(8).fill('SPAN')
     )

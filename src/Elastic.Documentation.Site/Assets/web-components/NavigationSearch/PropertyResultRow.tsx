@@ -181,14 +181,26 @@ export const PropertyResultRow = ({
                     color: ${euiTheme.colors.textSubdued};
                 }
                 .property-children {
+                    display: grid;
+                    grid-template-columns: ${
+                        isMobile ? 'minmax(0, 1fr)' : 'auto minmax(0, 1fr)'
+                    };
+                    column-gap: ${euiTheme.size.s};
+                    ${isMobile ? `row-gap: ${euiTheme.size.xxs};` : ''}
+                    align-items: start;
+                    margin-top: ${euiTheme.size.xxs};
+                }
+                .property-children-list {
                     display: flex;
                     flex-wrap: wrap;
                     gap: ${euiTheme.size.xs} ${euiTheme.size.s};
-                    margin-top: ${euiTheme.size.xxs};
+                    min-width: 0;
                 }
                 .property-children-label {
-                    flex: none;
-                    margin-inline-end: ${euiTheme.size.xxs};
+                    white-space: nowrap;
+                    line-height: calc(
+                        ${euiTheme.size.base} + ${euiTheme.size.xs}
+                    );
                     color: ${euiTheme.colors.textSubdued};
                     font-family: ${euiTheme.font.family};
                     font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
@@ -285,31 +297,35 @@ export const PropertyResultRow = ({
                         aria-label={`Child properties of ${property.path}`}
                     >
                         <span className="property-children-label">
-                            Child properties
+                            Contains
                         </span>
-                        {property.children
-                            .slice(0, MAX_VISIBLE_CHILDREN)
-                            .map((suffix) => (
+                        <span className="property-children-list">
+                            {property.children
+                                .slice(0, MAX_VISIBLE_CHILDREN)
+                                .map((suffix) => (
+                                    <span
+                                        key={suffix}
+                                        className="property-child"
+                                        data-tippy-content={
+                                            property.path + suffix
+                                        }
+                                        data-tippy-theme="mono"
+                                        data-tippy-delay={TOOLTIP_DELAY}
+                                    >
+                                        {childLabel(suffix)}
+                                    </span>
+                                ))}
+                            {hiddenChildren > 0 && (
                                 <span
-                                    key={suffix}
-                                    className="property-child"
-                                    data-tippy-content={property.path + suffix}
+                                    className="property-children-more"
+                                    data-tippy-content={childLabels.join(', ')}
                                     data-tippy-theme="mono"
                                     data-tippy-delay={TOOLTIP_DELAY}
                                 >
-                                    {childLabel(suffix)}
+                                    +{hiddenChildren} more
                                 </span>
-                            ))}
-                        {hiddenChildren > 0 && (
-                            <span
-                                className="property-children-more"
-                                data-tippy-content={childLabels.join(', ')}
-                                data-tippy-theme="mono"
-                                data-tippy-delay={TOOLTIP_DELAY}
-                            >
-                                +{hiddenChildren} more
-                            </span>
-                        )}
+                            )}
+                        </span>
                     </span>
                 )}
             </span>
