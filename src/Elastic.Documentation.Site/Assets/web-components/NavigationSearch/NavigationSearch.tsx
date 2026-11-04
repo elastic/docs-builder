@@ -146,6 +146,8 @@ export const NavigationSearch = ({
             closePopover={() => setIsPopoverOpen(false)}
             ownFocus={false}
             anchorPosition="downLeft"
+            // The panel stays mounted while hidden; an anchor jump scrolls the page under it.
+            repositionOnScroll
             disableFocusTrap={true}
             panelMinWidth={isMobile ? undefined : 640}
             panelPaddingSize="none"
