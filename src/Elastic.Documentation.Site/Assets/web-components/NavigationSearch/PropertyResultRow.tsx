@@ -2,7 +2,7 @@ import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
-    childLabel,
+    LOCATION_LABELS,
     fieldSearchTerms,
     type ApiPropertyResult,
 } from './apiPropertyResults'
@@ -32,12 +32,9 @@ const FieldIcon = () => (
 /** The page's tooltips show after 80ms; a mouse crossing result rows would open one on every row. */
 const TOOLTIP_DELAY = '[500, 0]'
 
-const MAX_VISIBLE_CHILDREN = 12
-
 export const PropertyResultRow = ({
     property,
     searchTerm,
-    showLocation,
     index,
     isSelected,
     isKeyboardNavigating,
@@ -47,7 +44,6 @@ export const PropertyResultRow = ({
 }: {
     property: ApiPropertyResult
     searchTerm: string
-    showLocation: boolean
     index: number
     isSelected: boolean
     isKeyboardNavigating: boolean
@@ -60,12 +56,6 @@ export const PropertyResultRow = ({
     const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
     const propertySearch = fieldSearchTerms(searchTerm)
-    const childLabels = property.children.map(childLabel)
-    const childrenText =
-        childLabels.length > 0
-            ? `Child properties: ${childLabels.join(', ')}`
-            : ''
-    const hiddenChildren = property.children.length - MAX_VISIBLE_CHILDREN
     const highlight = (text: string) => (
         <EuiHighlight
             search={propertySearch}
@@ -79,7 +69,7 @@ export const PropertyResultRow = ({
         <a
             ref={ref}
             href={href}
-            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${childrenText && ` ${childrenText}`}`}
+            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
@@ -180,42 +170,6 @@ export const PropertyResultRow = ({
                     flex: 1;
                     color: ${euiTheme.colors.textSubdued};
                 }
-                .property-children {
-                    display: grid;
-                    grid-template-columns: ${
-                        isMobile ? 'minmax(0, 1fr)' : 'auto minmax(0, 1fr)'
-                    };
-                    column-gap: ${euiTheme.size.s};
-                    ${isMobile ? `row-gap: ${euiTheme.size.xxs};` : ''}
-                    align-items: start;
-                    margin-top: ${euiTheme.size.xxs};
-                }
-                .property-children-list {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: ${euiTheme.size.xs} ${euiTheme.size.s};
-                    min-width: 0;
-                }
-                .property-children-label {
-                    white-space: nowrap;
-                    line-height: calc(
-                        ${euiTheme.size.base} + ${euiTheme.size.xs}
-                    );
-                    color: ${euiTheme.colors.textSubdued};
-                    font-family: ${euiTheme.font.family};
-                    font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
-                }
-                .property-child {
-                    padding: 0 ${euiTheme.size.xs};
-                    border-radius: ${euiTheme.border.radius.small};
-                    background: ${euiTheme.colors.backgroundBaseSubdued};
-                    color: ${euiTheme.colors.textSubdued};
-                    font-family: ${euiTheme.font.familyCode};
-                    font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
-                }
-                .property-children-more {
-                    color: ${euiTheme.colors.textSubdued};
-                }
                 .jump-to-indicator {
                     margin-left: ${euiTheme.size.s};
                 }
@@ -265,12 +219,8 @@ export const PropertyResultRow = ({
                             </strong>
                         </bdi>
                     </code>
-                    <span
-                        className={
-                            showLocation ? 'property-location' : 'sr-only'
-                        }
-                    >
-                        {property.location}
+                    <span className="property-location">
+                        {LOCATION_LABELS[property.location]}
                     </span>
                 </span>
                 <span className="property-detail-line">
@@ -290,44 +240,6 @@ export const PropertyResultRow = ({
                         {property.description}
                     </span>
                 </span>
-                {property.children.length > 0 && (
-                    <span
-                        className="property-children"
-                        role="group"
-                        aria-label={`Child properties of ${property.path}`}
-                    >
-                        <span className="property-children-label">
-                            Contains
-                        </span>
-                        <span className="property-children-list">
-                            {property.children
-                                .slice(0, MAX_VISIBLE_CHILDREN)
-                                .map((suffix) => (
-                                    <span
-                                        key={suffix}
-                                        className="property-child"
-                                        data-tippy-content={
-                                            property.path + suffix
-                                        }
-                                        data-tippy-theme="mono"
-                                        data-tippy-delay={TOOLTIP_DELAY}
-                                    >
-                                        {childLabel(suffix)}
-                                    </span>
-                                ))}
-                            {hiddenChildren > 0 && (
-                                <span
-                                    className="property-children-more"
-                                    data-tippy-content={childLabels.join(', ')}
-                                    data-tippy-theme="mono"
-                                    data-tippy-delay={TOOLTIP_DELAY}
-                                >
-                                    +{hiddenChildren} more
-                                </span>
-                            )}
-                        </span>
-                    </span>
-                )}
             </span>
             {!isMobile && <JumpToIndicator label={GO_TO_LABELS.property} />}
         </a>

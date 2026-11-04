@@ -112,7 +112,11 @@ describe('emptyStateCopy', () => {
     })
 })
 
-const property = (path: string, location: 'query' | 'request') => ({
+const property = (
+    path: string,
+    location: 'query' | 'request',
+    { parent = '' } = {}
+) => ({
     name: path.split('.').pop() ?? path,
     path,
     type: 'boolean',
@@ -120,7 +124,7 @@ const property = (path: string, location: 'query' | 'request') => ({
     description: 'Count hits',
     anchor: `${location}-${path}`,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
-    children: [],
+    parent,
 })
 
 const operation: SearchResultItem = {
@@ -252,25 +256,14 @@ describe('property rows', () => {
         expect(screen.getAllByText('Go to page')).toHaveLength(1)
     })
 
-    it('shows the location only when the same path appears in two locations', () => {
-        renderList()
-        const query = screen.getByRole('link', {
-            name: 'track_total_hits boolean query Count hits',
-        })
-        const request = screen.getByRole('link', {
-            name: 'track_total_hits boolean request Count hits',
-        })
-        const size = screen.getByRole('link', {
-            name: 'size boolean request Count hits',
-        })
-        expect(query.querySelector('.property-location')).toHaveTextContent(
-            'query'
-        )
-        expect(request.querySelector('.property-location')).toHaveTextContent(
-            'request'
-        )
-        expect(size.querySelector('.property-location')).toBeNull()
-        expect(size.querySelector('.sr-only')).toHaveTextContent('request')
+    it('shows the location on every property row', () => {
+        const { container } = renderList()
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-search-result-index]'),
+                (row) => row.querySelector('.property-location')?.textContent
+            )
+        ).toEqual([undefined, 'query', 'request body', 'request body'])
     })
 
     it('selects the property row under the mouse', async () => {

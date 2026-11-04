@@ -187,30 +187,23 @@ export const SearchResultsList = ({
                         typeFilter={typeFilter}
                         searchTerm={searchTerm}
                     />
-                    {properties.map(
-                        ({ property, index: propertyIndex, showLocation }) => (
-                            <PropertyResultRow
-                                key={property.url}
-                                index={propertyIndex}
-                                property={property}
-                                searchTerm={searchTerm}
-                                showLocation={showLocation}
-                                isSelected={propertyIndex === selectedIndex}
-                                isKeyboardNavigating={
-                                    isKeyboardNavigating.current
-                                }
-                                onMouseEnter={() =>
-                                    handleMouseEnter(propertyIndex)
-                                }
-                                onMouseMove={() =>
-                                    handleItemMouseMove(propertyIndex)
-                                }
-                                onClick={() =>
-                                    handleResultClick(result, rank, property)
-                                }
-                            />
-                        )
-                    )}
+                    {properties.map(({ property, index: propertyIndex }) => (
+                        <PropertyResultRow
+                            key={property.url}
+                            index={propertyIndex}
+                            property={property}
+                            searchTerm={searchTerm}
+                            isSelected={propertyIndex === selectedIndex}
+                            isKeyboardNavigating={isKeyboardNavigating.current}
+                            onMouseEnter={() => handleMouseEnter(propertyIndex)}
+                            onMouseMove={() =>
+                                handleItemMouseMove(propertyIndex)
+                            }
+                            onClick={() =>
+                                handleResultClick(result, rank, property)
+                            }
+                        />
+                    ))}
                 </div>
             ))}
         </div>

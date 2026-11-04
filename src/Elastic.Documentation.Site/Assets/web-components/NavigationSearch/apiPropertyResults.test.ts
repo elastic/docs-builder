@@ -1,5 +1,5 @@
 import {
-    childLabel,
+    LOCATION_LABELS,
     fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
@@ -7,7 +7,11 @@ import {
 } from './apiPropertyResults'
 import type { SearchResultItem } from './useNavigationSearchQuery'
 
-const property = (path: string, location: 'query' | 'request') => ({
+const property = (
+    path: string,
+    location: 'query' | 'request',
+    { parent = '' } = {}
+) => ({
     name: path.split('.').pop() ?? path,
     path,
     type: 'boolean',
@@ -15,7 +19,7 @@ const property = (path: string, location: 'query' | 'request') => ({
     anchor: `${location}-${path}`,
     location,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
-    children: [],
+    parent,
 })
 
 const search: SearchResultItem = {
@@ -56,19 +60,14 @@ it('numbers rows in keyboard order: each operation, then its properties', () => 
     expect(navigableRowCount(groups)).toBe(5)
 })
 
-it('shows a location only when the same path appears in two locations', () => {
-    const [group] = groupSearchResults([search])
-    expect(
-        group.properties.map((row) => [
-            row.property.path,
-            row.property.location,
-            row.showLocation,
-        ])
-    ).toEqual([
-        ['track_total_hits', 'query', true],
-        ['track_total_hits', 'request', true],
-        ['size', 'request', false],
-    ])
+it.each([
+    ['path', 'path'],
+    ['query', 'query'],
+    ['header', 'header'],
+    ['request', 'request body'],
+    ['response', 'response body'],
+] as const)('labels the %s location as %s', (location, label) => {
+    expect(LOCATION_LABELS[location]).toBe(label)
 })
 
 it('lists no properties under a docs page even when the payload carries some', () => {
@@ -124,12 +123,4 @@ it.each([
     ['get knn', ['get', 'knn']],
 ])('takes the field terms of %s', (searchTerm, terms) => {
     expect(fieldSearchTerms(searchTerm)).toEqual(terms)
-})
-
-it.each([
-    ['.query', 'query'],
-    ['[].query', '[].query'],
-    ['.<string>.terms', '<string>.terms'],
-])('labels the child suffix %s as %s', (suffix, label) => {
-    expect(childLabel(suffix)).toBe(label)
 })

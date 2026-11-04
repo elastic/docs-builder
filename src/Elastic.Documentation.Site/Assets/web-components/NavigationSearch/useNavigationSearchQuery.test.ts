@@ -38,7 +38,7 @@ describe('SearchResponse', () => {
         expect(parsed.results.map((item) => item.type)).toEqual(['docs', 'api'])
     })
 
-    it('parses children and defaults a missing list to []', () => {
+    it('parses parent, defaulting a missing one to ""', () => {
         const property = {
             name: 'standard',
             path: 'retriever.standard',
@@ -58,7 +58,10 @@ describe('SearchResponse', () => {
                     score: 1,
                     parents: [],
                     properties: [
-                        { ...property, children: ['.query', '[].sort'] },
+                        {
+                            ...property,
+                            parent: 'retriever',
+                        },
                         property,
                     ],
                 },
@@ -69,9 +72,9 @@ describe('SearchResponse', () => {
             pageSize: 20,
         })
 
-        expect(parsed.results[0].properties?.map((p) => p.children)).toEqual([
-            ['.query', '[].sort'],
-            [],
+        expect(parsed.results[0].properties?.map((p) => p.parent)).toEqual([
+            'retriever',
+            '',
         ])
     })
 })

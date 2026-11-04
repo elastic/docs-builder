@@ -9,13 +9,19 @@ export const ApiPropertyResult = z.object({
     anchor: z.string(),
     location: z.enum(['path', 'query', 'header', 'request', 'response']),
     url: z.string(),
-    /** What extends `path` to each direct child's path: `.query`, `[].query`, `.<string>.terms`. */
-    children: z.array(z.string()).default([]),
+    /** The path of the row this one is listed under; empty for a top-level field or a parameter. */
+    parent: z.string().default(''),
 })
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>
 
-export const childLabel = (suffix: string) => suffix.replace(/^\./, '')
+export const LOCATION_LABELS: Record<ApiPropertyResult['location'], string> = {
+    path: 'path',
+    query: 'query',
+    header: 'header',
+    request: 'request body',
+    response: 'response body',
+}
 
 export const ApiRoute = z.object({
     path: z.string(),
@@ -99,8 +105,6 @@ export interface PropertyRow {
     property: ApiPropertyResult
     /** Position among every navigable row; the keyboard selection index. */
     index: number
-    /** Set when the same path appears in two locations, so the row says which one it is. */
-    showLocation: boolean
 }
 
 export interface ResultGroup {
@@ -128,11 +132,6 @@ export const groupSearchResults = (
         group.properties = properties.map((property) => ({
             property,
             index: index++,
-            showLocation: properties.some(
-                (other) =>
-                    other.path === property.path &&
-                    other.location !== property.location
-            ),
         }))
         return group
     })

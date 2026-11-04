@@ -1,12 +1,13 @@
 import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
+import type { ApiPropertyResult } from './apiPropertyResults'
 import { screen } from '@testing-library/react'
 
 const renderRow = (
     searchTerm: string,
     path: string,
-    showLocation = false,
-    isSelected = false
+    isSelected = false,
+    location: ApiPropertyResult['location'] = 'request'
 ) =>
     renderWithProviders(
         <PropertyResultRow
@@ -14,14 +15,13 @@ const renderRow = (
                 name: path.split('.').pop() ?? path,
                 path,
                 type: 'object',
-                location: 'request',
+                location,
                 description: 'Property description',
                 anchor: 'req-property',
                 url: '/docs/api/search#req-property',
-                children: [],
+                parent: '',
             }}
             searchTerm={searchTerm}
-            showLocation={showLocation}
             index={1}
             isSelected={isSelected}
             isKeyboardNavigating={false}
@@ -34,13 +34,13 @@ const renderRow = (
 it('underlines the path when the row is selected', () => {
     const path = (row: HTMLElement) =>
         row.querySelector('.property-path') as HTMLElement
-    const { unmount } = renderRow('knn', 'retriever.knn', false, true)
+    const { unmount } = renderRow('knn', 'retriever.knn', true)
     expect(screen.getByRole('link')).toHaveAttribute('data-selected', 'true')
     expect(
         getComputedStyle(path(screen.getByRole('link'))).textDecoration
     ).toContain('underline')
     unmount()
-    renderRow('knn', 'retriever.knn', false, false)
+    renderRow('knn', 'retriever.knn', false)
     expect(
         getComputedStyle(path(screen.getByRole('link'))).textDecoration
     ).not.toContain('underline')
@@ -111,130 +111,32 @@ it('keeps the leaf of a long path visible', () => {
     expect(path?.querySelector('bdi mark')?.textContent).toBe('replicas')
 })
 
-it('shows the location chip only when the same path appears twice', () => {
-    const { unmount } = renderRow('knn', 'retriever.knn', true)
-    const location = (row: HTMLElement) =>
-        row.querySelector('.property-path-line > span')
-    const chip = location(screen.getByRole('link'))
-    expect(chip).toHaveClass('property-location')
-    expect(chip).toHaveTextContent('request')
-    unmount()
+it.each([
+    ['path', 'path'],
+    ['query', 'query'],
+    ['header', 'header'],
+    ['request', 'request body'],
+    ['response', 'response body'],
+] as const)('shows where the property lives: %s', (location, label) => {
+    renderRow('knn', 'retriever.knn', false, location)
+    const chip = screen
+        .getByRole('link')
+        .querySelector('.property-path-line > .property-location')
+    expect(chip).toHaveTextContent(label)
+    expect(chip?.previousElementSibling).toHaveClass('property-path')
+})
+
+it('says nothing about child properties in its accessible name', () => {
     renderRow('knn', 'retriever.knn')
-    expect(location(screen.getByRole('link'))).toHaveClass('sr-only')
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+        'retriever.knn object request Property description'
+    )
+    expect(screen.queryByText('Contains')).toBeNull()
 })
 
 it('offers "Go to property" as the Enter action', () => {
     renderRow('knn', 'retriever.knn')
     expect(screen.getByText('Go to property')).toBeInTheDocument()
-})
-
-const renderParent = (children: string[]) =>
-    renderWithProviders(
-        <PropertyResultRow
-            property={{
-                name: 'standard',
-                path: 'retriever.standard',
-                type: 'object',
-                location: 'request',
-                description: 'Standard retriever',
-                anchor: 'req-retriever-standard',
-                url: '/docs/api/search#req-retriever-standard',
-                children,
-            }}
-            searchTerm="retriever.standard"
-            showLocation={false}
-            index={1}
-            isSelected={false}
-            isKeyboardNavigating={false}
-            onMouseEnter={vi.fn()}
-            onMouseMove={vi.fn()}
-            onClick={vi.fn()}
-        />
-    )
-
-const standardChildren = [
-    '.filter',
-    '.min_score',
-    '._name',
-    '.query',
-    '.search_after',
-    '.terminate_after',
-    '.sort',
-    '.collapse',
-]
-
-const fieldsGroup = () =>
-    screen.getByRole('group', {
-        name: 'Child properties of retriever.standard',
-    })
-
-const tokens = () =>
-    Array.from(fieldsGroup().querySelectorAll<HTMLElement>('.property-child'))
-
-it('renders every child as a token in page order', () => {
-    renderParent(standardChildren)
-    const label = fieldsGroup().firstElementChild
-    expect(label).toHaveClass('property-children-label')
-    expect(label).toHaveTextContent('Contains')
-    expect(tokens()).not.toContain(label)
-    const list = fieldsGroup().querySelector('.property-children-list')
-    expect(list).not.toBeNull()
-    expect(
-        Array.from(list!.querySelectorAll<HTMLElement>('.property-child'))
-    ).toHaveLength(8)
-    expect(tokens().map((token) => token.tagName)).toEqual(
-        Array(8).fill('SPAN')
-    )
-    expect(tokens().map((token) => token.textContent)).toEqual([
-        'filter',
-        'min_score',
-        '_name',
-        'query',
-        'search_after',
-        'terminate_after',
-        'sort',
-        'collapse',
-    ])
-    expect(
-        tokens().map((token) => token.getAttribute('data-tippy-content'))
-    ).toEqual(standardChildren.map((suffix) => `retriever.standard${suffix}`))
-    for (const token of tokens()) {
-        expect(token).toHaveAttribute('data-tippy-theme', 'mono')
-        expect(token).toHaveAttribute('data-tippy-delay', '[500, 0]')
-    }
-    expect(screen.getByRole('link')).toHaveAttribute(
-        'aria-label',
-        expect.stringContaining(
-            'Child properties: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
-        )
-    )
-})
-
-it('caps the tokens at twelve and names the rest', () => {
-    const children = Array.from({ length: 20 }, (_, i) => `.field_${i}`)
-    renderParent(children)
-    expect(tokens()).toHaveLength(12)
-    const more = screen.getByText('+8 more')
-    expect(more.tagName).toBe('SPAN')
-    expect(more).toHaveAttribute(
-        'data-tippy-content',
-        children.map((suffix) => suffix.slice(1)).join(', ')
-    )
-    expect(more).toHaveAttribute('data-tippy-theme', 'mono')
-})
-
-it('keeps the tokens inside the row link', () => {
-    renderParent(standardChildren)
-    expect(screen.getByRole('link')).toContainElement(fieldsGroup())
-    expect(screen.queryByRole('button')).toBeNull()
-})
-
-it('renders no children line for a leaf', () => {
-    renderParent([])
-    expect(screen.queryByRole('group')).toBeNull()
-    expect(
-        screen.getByRole('link').querySelector('.property-children')
-    ).toBeNull()
 })
 
 it('renders the field icon in the gutter', () => {

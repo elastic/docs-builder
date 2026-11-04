@@ -82,6 +82,7 @@ describe('NavigationSearchWrapper type attribute', () => {
                                 description: 'Count hits accurately',
                                 anchor: 'req-track_total_hits',
                                 url,
+                                parent: '',
                             },
                         ],
                     },
