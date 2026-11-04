@@ -21,6 +21,13 @@ public static class QueryFieldNames
 	public static string NavigationTableOfContents { get; } = $"{Doc.Fields.Navigation}.table_of_contents";
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
+	public static string ApiWordsCompletion { get; } = $"{Doc.Fields.Api}.words.completion";
+	public static string ApiWordsCompletion2Gram { get; } = $"{Doc.Fields.Api}.words.completion._2gram";
+	public static string ApiWordsCompletion3Gram { get; } = $"{Doc.Fields.Api}.words.completion._3gram";
+	public static string ApiGroup { get; } = $"{Doc.Fields.Api}.group";
+	public static string ApiIdWords { get; } = $"{Doc.Fields.Api}.id_words";
+	public static string ApiMethod { get; } = $"{Doc.Fields.Api}.method";
+	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
 	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
 	public static string ApiPropertiesPathMatch { get; } = $"{ApiProperties}.path.match";

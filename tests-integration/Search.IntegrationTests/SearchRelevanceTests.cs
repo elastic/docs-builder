@@ -5,6 +5,7 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
@@ -251,6 +252,32 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("ml flush job", "operation-ml-flush-job");
 		yield return ("_ml _flush", "operation-ml-flush-job");
 		yield return ("flush", "operation-indices-flush");
+		yield return ("search retriever", "operation-search");
+		yield return ("es|ql drop_null_columns", "operation-esql-query");
+		yield return ("search knn", "operation-search");
+		yield return ("knn search", "operation-search");
+		yield return ("cluster health", "operation-cluster-health");
+		yield return ("cat health", "operation-cat-health");
+		yield return ("indices refresh", "operation-indices-refresh");
+		yield return ("cluster state", "operation-cluster-state");
+		yield return ("get cluster settings", "operation-cluster-get-settings");
+		yield return ("update cluster settings", "operation-cluster-put-settings");
+		yield return ("cluster get flat_settings", "operation-cluster-get-settings");
+		yield return ("esql query drop_null_columns", "operation-esql-query");
+		yield return ("run a search", "operation-search");
+		yield return ("GET /_search knn", "operation-search");
+		yield return ("POST /_count", "operation-count");
+		yield return ("snapshot restore", "operation-snapshot-restore");
+		yield return ("search template", "operation-search-template");
+	}
+
+	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
+	{
+		yield return ("cluster flat_settings", "operation-cluster-get-settings", "flat_settings", "query");
+		yield return ("flat_settings cluster", "operation-cluster-get-settings", "flat_settings", "query");
+		yield return ("es|ql drop_null_columns", "operation-esql-query", "drop_null_columns", "query");
+		yield return ("search retriever", "operation-search", "retriever", "request");
+		yield return ("GET /_search knn", "operation-search", "knn", "request");
 	}
 
 	[Test]
@@ -275,6 +302,71 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 	}
 
 	[Test]
+	[MethodDataSource(nameof(ApiSearchFieldTestCases))]
+	public async Task ApiSearchListsTheFieldUnderTheOperation(string query, string expectedOperation, string field, string location)
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = query, PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		results.Should().NotBeEmpty($"API search for '{query}' should return results");
+		results.Should().OnlyContain(r => r.Type == "api");
+		results[0].Properties.Should().Contain(p => p.Name == field, $"the first result for '{query}' lists the field it names");
+		// The Serverless twin of an operation ties with the stack one, so every copy of the operation must list the field.
+		var operations = results.Where(r => r.Url.EndsWith($"/operation/{expectedOperation}", StringComparison.Ordinal)).ToList();
+		operations.Should().NotBeEmpty($"'{query}' should find {expectedOperation}");
+		operations.Should().AllSatisfy(r => r.Properties.Should().Contain(p => p.Name == field && p.Location == location));
+	}
+
+	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
+	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
+
+	/// <summary>
+	/// Not an assertion: prints the top three operations of every judged API query, with each word's winning role, for
+	/// whoever tunes <see cref="ApiLookupWeights"/> next.
+	/// </summary>
+	[Test]
+	[Explicit]
+	public async Task ApiSearchRelevanceReport()
+	{
+		var (gateway, clientAccessor) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		Skip.Unless(await gateway.CanConnect(ct), "Elasticsearch is not connected");
+
+		var judged = ApiSearchQueryTestCases().Concat(ApiSearchFieldTestCases().Select(c => (c.Item1, c.Item2))).Distinct();
+		foreach (var (query, expectedOperation) in judged)
+		{
+			var tokens = ApiLookupQueryBuilder.Tokenize(query);
+			var response = await clientAccessor.Client.SearchAsync<DocumentationDocument>(
+				s => s
+					.Indices(clientAccessor.SearchIndex)
+					.Size(3)
+					.Query(ApiLookupQueryBuilder.Build(query))
+					.PostFilter(new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" })
+					.Source(sf => sf.Filter(f => f.Includes(ReportSourceIncludes)))
+					.IncludeNamedQueriesScore(true),
+				ct
+			);
+			TestContext.Current?.Output.WriteLine($"\n{query}  (expected {expectedOperation})");
+			foreach (var hit in response.Hits)
+			{
+				var scored = hit.MatchedQueries?.Match(_ => null, scores => scores) ?? new Dictionary<string, double>();
+				var roles = ApiLookupRoles.Resolve(scored).Select(r => $"{tokens[r.Index].Text}={r.Role.ToString().ToLowerInvariant()}");
+				var score = (hit.Score ?? 0).ToString("F2", CultureInfo.InvariantCulture);
+				TestContext.Current?.Output.WriteLine($"  {score,7}  {hit.Source?.Path}  [{string.Join(", ", roles)}]");
+			}
+		}
+	}
+
+	[Test]
 	public async Task ApiSearchWithThreeWordsMatchesOperationsThatContainTwoOfThem()
 	{
 		var (gateway, _) = CreateFindPageGateway();
@@ -290,18 +382,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var titles = searchResult.Results.Select(r => r.Title.Replace("<mark>", "").Replace("</mark>", "")).ToList();
 		TestContext.Current?.Output.WriteLine(string.Join("\n", titles));
 
-		// No operation contains the third word, so the strict query matches nothing. Only the 75% clause returns hits.
-		searchResult.TotalResults.Should().BeGreaterThan(0);
-		// The operations that match both real words lead.
-		titles
-			.Take(3)
-			.Should()
-			.OnlyContain(
-				t => t.Contains("create", StringComparison.OrdinalIgnoreCase) && t.Contains(
-					"deployment",
-					StringComparison.OrdinalIgnoreCase
-				)
-			);
+		// The unknown third word is ignored under the 2<75% rule, so an operation needs only the two real words.
+		// A path word can match a query word the title lacks (kstem stems the path word "deployments" to "deployment").
+		titles.Should().NotBeEmpty();
+		titles[0].Should().ContainEquivalentOf("create").And.ContainEquivalentOf("deployment");
+		titles.Take(3).Should().OnlyContain(t => t.Contains("create", StringComparison.OrdinalIgnoreCase));
 	}
 
 	[Test]

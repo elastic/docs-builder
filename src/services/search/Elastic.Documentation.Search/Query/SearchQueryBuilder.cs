@@ -29,10 +29,13 @@ public static class SearchQueryBuilder
 	private const int ApiInnerHitsSize = 20;
 
 	// A child row must score below every name match, exact or prefix, and the lift only breaks ties between operations.
-	private const float NameMatchBoost = 1;
-	private const float PrefixNameMatchBoost = 0.6f;
-	private const float ListsFieldsUnderTypedPathBoost = 0.5f;
-	private const float ChildOptionBoost = 0.4f;
+	private const float NameMatchBoost = ApiLookupWeights.FieldName;
+	private const float PrefixNameMatchBoost = ApiLookupWeights.FieldNamePrefix;
+	private const float ListsFieldsUnderTypedPathBoost = ApiLookupWeights.ListsChildren;
+	private const float ChildOptionBoost = ApiLookupWeights.ChildOption;
+
+	/// <summary>The docs-wide search weighs an endpoint match a little lower than the API lookup does.</summary>
+	private const float EndpointBoost = 5.0f;
 
 	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
 	public static bool IsApiPropertyHits(string innerHitsName) =>
@@ -120,7 +123,7 @@ public static class SearchQueryBuilder
 	/// Exact name matches all score alike, so Elasticsearch breaks their ties arbitrarily; a reader typing a path wants
 	/// the operation that lists what comes next.
 	/// </summary>
-	private static Query BuildListsFieldsUnderTypedPathBoost(string property) =>
+	internal static Query BuildListsFieldsUnderTypedPathBoost(string property) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
@@ -206,16 +209,22 @@ public static class SearchQueryBuilder
 	}
 
 	/// <summary>Only an API-filtered lookup matches by prefix, and only one ending in a dot lists the typed path's children.</summary>
-	private sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
+	internal sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
 
 	private static PropertyLookup Lookup(ApiPropertyReadings parsed, string? typeFilter) =>
 		IsApiLookup(typeFilter)
 			? new(AllowPrefix: true, ExpandChildren: parsed.ExpandsChildren)
 			: new(AllowPrefix: false, ExpandChildren: false);
 
-	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, PropertyLookup lookup) =>
+	internal static Query BuildNestedPropertyQuery(
+		string property,
+		string innerHitsName,
+		PropertyLookup lookup,
+		string? queryName = null
+	) =>
 		new NestedQuery
 		{
+			QueryName = queryName,
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
@@ -335,10 +344,10 @@ public static class SearchQueryBuilder
 	/// Exact match on <c>api.endpoints</c> so typing an endpoint path (<c>_search</c>, <c>GET /_search</c>,
 	/// <c>my-index/_search</c>) ranks that operation above every other API whose search title merely starts
 	/// with the same token. A typed value matches the <c>*</c> of a parameter in any position. One <c>terms</c>
-	/// clause per number of literal segments kept, weighted <c>5 * (1 + literals) / (1 + total)</c>, and
+	/// clause per number of literal segments kept, weighted <c>weight * (1 + literals) / (1 + total)</c>, and
 	/// <c>dis_max</c> keeps the best.
 	/// </summary>
-	public static Query? BuildApiEndpointQuery(string searchQuery)
+	public static Query? BuildApiEndpointQuery(string searchQuery, float weight = EndpointBoost)
 	{
 		var groups = ApiEndpointPath.QueryCandidates(ApiEndpointPath.NormalizeQuery(searchQuery));
 		if (groups.Count == 0)
@@ -355,7 +364,7 @@ public static class SearchQueryBuilder
 							QueryFieldNames.ApiEndpoints,
 							new TermsQueryField(g.Terms.Select(t => (FieldValue)t).ToArray())
 						),
-						Boost = 5.0f * (1 + g.LiteralSegments) / (1 + total)
+						Boost = weight * (1 + g.LiteralSegments) / (1 + total)
 					}
 			).ToList()
 		};
@@ -366,13 +375,17 @@ public static class SearchQueryBuilder
 	/// <c>search</c> is scored as the endpoint <c>_search</c> too. Only meant for API-filtered lookups: in the
 	/// unfiltered docs search it would put <c>/_aliases</c> above the "Aliases" docs page.
 	/// </summary>
-	public static Query? BuildBareWordEndpointQuery(string searchQuery)
+	public static Query? BuildBareWordEndpointQuery(string searchQuery, float weight = EndpointBoost) =>
+		!searchQuery.Trim().StartsWith('_') && EndpointName(searchQuery) is { } name ? BuildApiEndpointQuery(name, weight) : null;
+
+	/// <summary>The endpoint name a single word stands for: <c>search</c> and <c>_search</c> both name <c>_search</c>.</summary>
+	public static string? EndpointName(string searchQuery)
 	{
-		var word = searchQuery.Trim();
-		if (word.Length == 0 || word.StartsWith('_') || word.Any(c => c is '/' or ' ' or '{'))
+		var word = searchQuery.Trim().ToLowerInvariant();
+		if (word.Length == 0 || word.Any(c => c is '/' or ' ' or '{'))
 			return null;
 
-		return BuildApiEndpointQuery("_" + word);
+		return word.StartsWith('_') ? word : "_" + word;
 	}
 
 	/// <summary>
