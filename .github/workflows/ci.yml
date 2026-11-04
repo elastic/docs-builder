@@ -138,14 +138,21 @@ jobs:
     # `frontend` is skipped for metadata-only PRs. The matrix still has to expand so the required
     # `build (<os>)` checks report, so gate the steps instead of the job.
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
-    runs-on: ${{ matrix.os }}
+    # The job name is fixed to `build (<os>)` because branch protection requires those exact check names.
+    # `os` is that label; `runner` is where the job runs, so a runner pin never renames the required check.
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os:
-         - ubuntu-latest
-         - macos-latest
-         - windows-latest
+        include:
+          # Native AOT links against the host glibc; keep ubuntu in sync with the noble-chiseled base image (build/Targets.fs).
+          - os: ubuntu-latest
+            runner: ubuntu-24.04
+          - os: macos-latest
+            runner: macos-latest
+          - os: windows-latest
+            runner: windows-latest
     steps:
       - uses: actions/checkout@v7
         if: ${{ needs.changes.outputs.code == 'true' }}
