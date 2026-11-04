@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation.Assembler;
 using Elastic.Documentation.Navigation.Isolated;
 using Elastic.Documentation.Navigation.Isolated.Leaf;
@@ -12,9 +13,9 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Assembler;
 
-public class SiteDocumentationSetsTests(ITestOutputHelper output)
+public class SiteDocumentationSetsTests()
 {
-	[Fact]
+	[Test]
 	public void CreatesDocumentationSetNavigationsFromCheckoutFolders()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
@@ -24,30 +25,30 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var repositories = checkoutDir.GetDirectories();
 
 		repositories.Should().HaveCount(5);
-		repositories.Select(r => r.Name).Should().Contain(
-		[
-			"observability",
-			"serverless-search",
-			"serverless-security",
-			"platform",
-			"elasticsearch-reference"
-		]);
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		repositories
+			.Select(r => r.Name)
+			.Should()
+			.Contain(["observability", "serverless-search", "serverless-security", "platform", "elasticsearch-reference"]);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Create DocumentationSetNavigation for each repository
 		var documentationSets = new List<DocumentationSetNavigation<IDocumentationFile>>();
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output, collector);
+			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, collector);
 
 			// Read the docset file
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			var docset = DocumentationSetFile.LoadAndResolve(
+				context.Collector,
+				fileSystem.FileInfo.New(docsetPath),
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+			);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
@@ -63,11 +64,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		collector.Warnings.Should().Be(0, "there should be no warnings when loading observability documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationIntegratesWithDocumentationSets()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: /serverless/observability
@@ -83,20 +85,42 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		// Create DocumentationSetNavigation instances
 		var documentationSets = new List<IDocumentationSetNavigation>();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		documentationSets.Add(new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance));
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		documentationSets.Add(
+			new DocumentationSetNavigation<IDocumentationFile>(
+				observabilityDocset,
+				observabilityContext,
+				GenericDocumentationFileFactory.Instance
+			)
+		);
 
-		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
-		var searchDocset = DocumentationSetFile.LoadAndResolve(searchContext.Collector, fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		documentationSets.Add(new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance));
+		var searchContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
+		var searchDocset = DocumentationSetFile.LoadAndResolve(
+			searchContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		documentationSets.Add(
+			new DocumentationSetNavigation<IDocumentationFile>(searchDocset, searchContext, GenericDocumentationFileFactory.Instance)
+		);
 
-		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
-		var securityDocset = DocumentationSetFile.LoadAndResolve(securityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		documentationSets.Add(new DocumentationSetNavigation<IDocumentationFile>(securityDocset, securityContext, GenericDocumentationFileFactory.Instance));
+		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security");
+		var securityDocset = DocumentationSetFile.LoadAndResolve(
+			securityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		documentationSets.Add(
+			new DocumentationSetNavigation<IDocumentationFile>(securityDocset, securityContext, GenericDocumentationFileFactory.Instance)
+		);
 
 		// Create site navigation context (using any repository's filesystem)
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -114,11 +138,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		security.Url.Should().Be("/serverless/security");
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationWithNestedTocs()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform
@@ -133,9 +158,17 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Create DocumentationSetNavigation for platform
-		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(
+			platformDocset,
+			platformContext,
+			GenericDocumentationFileFactory.Instance
+		);
 		platformNav.Url.Should().Be("/");
 		platformNav.Index.Url.Should().Be("/");
 		platformNav.NavigationItems.ElementAt(0).Url.Should().Be("/deployment-guide");
@@ -143,7 +176,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		var documentationSets = new List<IDocumentationSetNavigation> { platformNav };
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -161,11 +194,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		cloud.Url.Should().Be("/platform/cloud");
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationWithAllRepositories()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: /serverless/observability
@@ -195,20 +229,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output);
+			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName);
 
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			var docset = DocumentationSetFile.LoadAndResolve(
+				context.Collector,
+				fileSystem.FileInfo.New(docsetPath),
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+			);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 			documentationSets.Add(navigation);
 		}
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(
-			fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
@@ -234,15 +271,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		elasticsearch.Url.Should().Be("/elasticsearch/reference");
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationSetNavigationHasCorrectStructure()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Test observability repository structure
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance);
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var observabilityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			observabilityDocset,
+			observabilityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		observabilityNav.NavigationTitle.Should().Be(observabilityNav.NavigationTitle);
 		observabilityNav.NavigationItems.Should().HaveCount(2); // index.md, getting-started folder, monitoring folder
@@ -263,15 +308,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		monitoringFolder.NavigationItems.Should().HaveCount(3); // logs.md, metrics.md, traces.md
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationSetWithNestedTocs()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Test platform repository with nested TOCs
-		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance);
+		var platformContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var platformNav = new DocumentationSetNavigation<IDocumentationFile>(
+			platformDocset,
+			platformContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		platformNav.NavigationTitle.Should().Be("Platform");
 		platformNav.NavigationItems.Should().HaveCount(2); // deployment-guide TOC, cloud-guide TOC
@@ -293,15 +346,23 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		cloudToc.NavigationItems.Should().HaveCount(2); // aws folder, azure folder
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationSetWithUnderscoreDocset()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
 		// Test serverless-security repository with _docset.yml
-		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
-		var securityDocset = DocumentationSetFile.LoadAndResolve(securityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var securityNav = new DocumentationSetNavigation<IDocumentationFile>(securityDocset, securityContext, GenericDocumentationFileFactory.Instance);
+		var securityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security");
+		var securityDocset = DocumentationSetFile.LoadAndResolve(
+			securityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var securityNav = new DocumentationSetNavigation<IDocumentationFile>(
+			securityDocset,
+			securityContext,
+			GenericDocumentationFileFactory.Instance
+		);
 
 		securityNav.NavigationTitle.Should().Be("Serverless Security");
 		securityNav.NavigationItems.Should().HaveCount(2); // authentication folder, authorization folder
@@ -317,11 +378,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		authorizationFolder.NavigationItems.Should().HaveCount(1); // rbac.md
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationAppliesPathPrefixToAllUrls()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: observability://
 		                      path_prefix: /serverless/observability
@@ -330,11 +392,22 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance) };
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var documentationSets = new List<IDocumentationSetNavigation>
+		{
+			new DocumentationSetNavigation<IDocumentationFile>(
+				observabilityDocset,
+				observabilityContext,
+				GenericDocumentationFileFactory.Instance
+			)
+		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// Verify root URL has path prefix
@@ -349,11 +422,12 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationWithNestedTocsAppliesCorrectPathPrefixes()
 	{
 		// language=yaml
-		var siteNavYaml = """
+		var siteNavYaml =
+			"""
 		                  toc:
 		                    - toc: platform://
 		                      path_prefix: /platform
@@ -367,11 +441,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
-		var platformDocset = DocumentationSetFile.LoadAndResolve(platformContext.Collector, fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance) };
+		var platformContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
+		var platformDocset = DocumentationSetFile.LoadAndResolve(
+			platformContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var documentationSets = new List<IDocumentationSetNavigation>
+		{
+			new DocumentationSetNavigation<IDocumentationFile>(platformDocset, platformContext, GenericDocumentationFileFactory.Instance)
+		};
 
-		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform", output);
+		var siteContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/platform");
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		var platform = siteNavigation.NavigationItems.First() as INodeNavigationItem<INavigationModel, INavigationItem>;
@@ -386,7 +467,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		cloud.Url.Should().StartWith("/platform/cloud");
 	}
 
-	[Fact]
+	[Test]
 	public void SiteNavigationRequiresPathPrefix()
 	{
 		// language=yaml - missing path_prefix
@@ -398,11 +479,22 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 
-		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
-		var observabilityDocset = DocumentationSetFile.LoadAndResolve(observabilityContext.Collector, fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
-		var documentationSets = new List<IDocumentationSetNavigation> { new DocumentationSetNavigation<IDocumentationFile>(observabilityDocset, observabilityContext, GenericDocumentationFileFactory.Instance) };
+		var observabilityContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
+		var observabilityDocset = DocumentationSetFile.LoadAndResolve(
+			observabilityContext.Collector,
+			fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml"),
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
+		var documentationSets = new List<IDocumentationSetNavigation>
+		{
+			new DocumentationSetNavigation<IDocumentationFile>(
+				observabilityDocset,
+				observabilityContext,
+				GenericDocumentationFileFactory.Instance
+			)
+		};
 
-		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var siteContext = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 		var siteNavigation = new SiteNavigation(siteNavFile, siteContext, documentationSets, sitePrefix: null);
 
 		// navigation will still be build
@@ -415,14 +507,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		toc.Url.Should().Be("/bad-mapping-observability");
 	}
 
-	[Fact]
+	[Test]
 	public void ObservabilityDocumentationSetNavigationHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -435,14 +531,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading observability documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void ServerlessSearchDocumentationSetNavigationHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-search");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/serverless-search/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -455,14 +555,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading serverless-search documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void ServerlessSecurityDocumentationSetNavigationHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/serverless-security");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/serverless-security/docs/_docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -475,14 +579,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading serverless-security documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void PlatformDocumentationSetNavigationHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -495,14 +603,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading platform documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void ElasticsearchReferenceDocumentationSetNavigationHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/elasticsearch-reference", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/elasticsearch-reference");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/elasticsearch-reference/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -515,7 +627,7 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading elasticsearch-reference documentation set");
 	}
 
-	[Fact]
+	[Test]
 	public void AllDocumentationSetsHaveNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
@@ -526,14 +638,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 
 		foreach (var repo in repositories)
 		{
-			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName, output);
+			var context = SiteNavigationTestFixture.CreateContext(fileSystem, repo.FullName);
 
 			// Read the docset file
 			var docsetPath = fileSystem.File.Exists($"{repo.FullName}/docs/docset.yml")
 				? $"{repo.FullName}/docs/docset.yml"
 				: $"{repo.FullName}/docs/_docset.yml";
 
-			var docset = DocumentationSetFile.LoadAndResolve(context.Collector, fileSystem.FileInfo.New(docsetPath), FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+			var docset = DocumentationSetFile.LoadAndResolve(
+				context.Collector,
+				fileSystem.FileInfo.New(docsetPath),
+				new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+			);
 
 			var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -547,14 +663,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationSetNavigationWithNestedTocsHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/platform");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/platform/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 
@@ -573,14 +693,18 @@ public class SiteDocumentationSetsTests(ITestOutputHelper output)
 		context.Collector.Warnings.Should().Be(0, "there should be no warnings when loading platform documentation set with nested TOCs");
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationSetNavigationWithFoldersHasNoDiagnostics()
 	{
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
-		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability", output);
+		var context = SiteNavigationTestFixture.CreateContext(fileSystem, "/checkouts/current/observability");
 
 		var docsetPath = fileSystem.FileInfo.New("/checkouts/current/observability/docs/docset.yml");
-		var docset = DocumentationSetFile.LoadAndResolve(context.Collector, docsetPath, FileSystemFactory.ScopeSourceDirectory(fileSystem, "/checkouts"));
+		var docset = DocumentationSetFile.LoadAndResolve(
+			context.Collector,
+			docsetPath,
+			new CheckoutsFileSystem(fileSystem.DirectoryInfo.New("/checkouts"), inner: fileSystem)
+		);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docset, context, GenericDocumentationFileFactory.Instance);
 

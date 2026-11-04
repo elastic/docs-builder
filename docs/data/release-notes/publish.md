@@ -47,17 +47,43 @@ The first option is simplest since it requires only a one-time change to your ex
 ### Publish bundles directly [changelog-directive]
 
 You can use the [`{changelog}` directive](/syntax/changelog.md) to derive docs from your release bundles.
-For example, update your existing release note page to include a directive like this:
+Pass the product name as the directive argument to source bundles from the public CDN:
+
+```md
+:::{changelog} my-product
+:release-dates:
+:highlights:
+:::
+```
+
+:::{important}
+Before adding this directive, register the product in the active docset configuration file (`docset.yml` or `_docset.yml`, depending on the repository):
+
+```yaml
+release_notes:
+  - product: my-product
+```
+
+The build fails with an error if the product is not listed there.
+:::
+
+:::{note}
+The CDN registry for a product is created by the first published bundle. If no release has gone through the bundle pipeline yet, declaring the product under `release_notes` can fail strict builds with a 404 during build-time prefetch, even when no `{changelog}` directive exists yet. Wait until the first release has run successfully before adding both the `release_notes` declaration and the render page.
+:::
+
+The directive also supports a local path argument for isolated builds and legacy setups:
 
 ```md
 :::{changelog} /path/to/bundles
 :type: all <1>
 :subsections: <2>
+:highlights: <3>
 :::
 ```
 
 1. If you have separate release note pages for each type, you can edit this option to show the appropriate subset on each page.
 2. You can choose to group the changelogs by their `areas`. Otherwise, they are grouped only by `type`.
+3. Add `:highlights:` when you want a dedicated Highlights section for entries with `highlight: true` (those entries still appear under their type sections).
 
 There are also options that affect whether to use dropdowns, include descriptions, hide links, and more.
 For full documentation and examples, refer to the [{changelog} directive syntax reference](/syntax/changelog.md).

@@ -205,18 +205,22 @@ const ModalSearchResultRow = ({
                 text-decoration: none;
                 cursor: pointer;
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
-                background: ${isSelected
-                    ? euiTheme.colors.backgroundBaseSubdued
-                    : 'transparent'};
+                background: ${
+                    isSelected
+                        ? euiTheme.colors.backgroundBaseSubdued
+                        : 'transparent'
+                };
 
                 &:last-child {
                     border-bottom: none;
                 }
 
                 &:hover:not([data-keyboard-navigating='true']) {
-                    background: ${isSelected
-                        ? euiTheme.colors.backgroundBaseSubdued
-                        : euiTheme.colors.backgroundBaseHighlighted};
+                    background: ${
+                        isSelected
+                            ? euiTheme.colors.backgroundBaseSubdued
+                            : euiTheme.colors.backgroundBaseHighlighted
+                    };
 
                     .title-text {
                         color: ${euiTheme.colors.link};
@@ -347,7 +351,7 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -372,7 +376,7 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}

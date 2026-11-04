@@ -22,8 +22,23 @@ public enum Exporter
 
 public static class ExportOptions
 {
-	public static HashSet<Exporter> Default { get; } = [Exporter.Html, Exporter.LLMText, Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects, Exporter.Pagefind];
-	public static HashSet<Exporter> MetadataOnly { get; } = [Exporter.Configuration, Exporter.DocumentationState, Exporter.LinkMetadata, Exporter.Redirects];
+	public static HashSet<Exporter> Default { get; } =
+	[
+		Exporter.Html,
+		Exporter.LLMText,
+		Exporter.Configuration,
+		Exporter.DocumentationState,
+		Exporter.LinkMetadata,
+		Exporter.Redirects,
+		Exporter.Pagefind
+	];
+	public static HashSet<Exporter> MetadataOnly { get; } =
+	[
+		Exporter.Configuration,
+		Exporter.DocumentationState,
+		Exporter.LinkMetadata,
+		Exporter.Redirects
+	];
 
 	/// <summary>
 	/// Used by the serve background validation build. HTML-only so that parsing runs

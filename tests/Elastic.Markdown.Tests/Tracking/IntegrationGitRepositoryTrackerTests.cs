@@ -14,22 +14,14 @@ namespace Elastic.Markdown.Tests.Tracking;
 /// ADDED_FILES / MODIFIED_FILES / DELETED_FILES / RENAMED_FILES environment
 /// variables that the docs-build workflow exposes on CI.
 /// </summary>
-[Collection(TrackingTestCollection.Name)]
-public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
+[NotInParallel("Tracking")]
+public sealed class IntegrationGitRepositoryTrackerTests
 {
-	private static readonly string[] EnvVarNames =
-	[
-		"ADDED_FILES",
-		"MODIFIED_FILES",
-		"DELETED_FILES",
-		"RENAMED_FILES"
-	];
+	private static readonly string[] EnvVarNames = ["ADDED_FILES", "MODIFIED_FILES", "DELETED_FILES", "RENAMED_FILES"];
 
-	public IntegrationGitRepositoryTrackerTests() => ClearEnv();
-
-	public void Dispose() => ClearEnv();
-
-	private static void ClearEnv()
+	[Before(Test)]
+	[After(Test)]
+	public void ClearEnv()
 	{
 		foreach (var name in EnvVarNames)
 			Environment.SetEnvironmentVariable(name, null);
@@ -39,13 +31,11 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 	{
 		var fs = new MockFileSystem();
 		var gitRoot = fs.DirectoryInfo.New("/repo");
-		var docset = docsetRelative is null or "" or "."
-			? gitRoot
-			: fs.DirectoryInfo.New(fs.Path.Join(gitRoot.FullName, docsetRelative));
+		var docset = docsetRelative is null or "" or "." ? gitRoot : fs.DirectoryInfo.New(fs.Path.Join(gitRoot.FullName, docsetRelative));
 		return (gitRoot, docset);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsetUnderSubfolder_FiltersPathsByPrefix()
 	{
 		Environment.SetEnvironmentVariable("DELETED_FILES", "docs/foo.md docs-extra/bar.md other/baz.md");
@@ -55,11 +45,10 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 
 		var changes = tracker.GetChangedFiles();
 
-		changes.Should().ContainSingle()
-			.Which.Should().BeEquivalentTo(new GitChange("docs/foo.md", GitChangeType.Deleted));
+		changes.Should().ContainSingle().Which.Should().BeEquivalentTo(new GitChange("docs/foo.md", GitChangeType.Deleted));
 	}
 
-	[Fact]
+	[Test]
 	public void DocsetAtRepoRoot_DotLookupPath_ReturnsAllChanges()
 	{
 		// Regression test for https://github.com/elastic/docs-content/pull/6479:
@@ -74,14 +63,13 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 
 		var changes = tracker.GetChangedFiles();
 
-		changes.Should().BeEquivalentTo(
-		[
+		changes.Should().BeEquivalentTo([
 			new GitChange("troubleshoot/deployments/serverless.md", GitChangeType.Deleted),
 			new GitChange("troubleshoot/toc.yml", GitChangeType.Modified)
 		]);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsetAtRepoRoot_EmptyLookupPath_ReturnsAllChanges()
 	{
 		Environment.SetEnvironmentVariable("ADDED_FILES", "a.md b.md");
@@ -91,14 +79,10 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 
 		var changes = tracker.GetChangedFiles();
 
-		changes.Should().BeEquivalentTo(
-		[
-			new GitChange("a.md", GitChangeType.Added),
-			new GitChange("b.md", GitChangeType.Added)
-		]);
+		changes.Should().BeEquivalentTo([new GitChange("a.md", GitChangeType.Added), new GitChange("b.md", GitChangeType.Added)]);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsetUnderSubfolder_DoesNotMatchSiblingPrefix()
 	{
 		Environment.SetEnvironmentVariable("MODIFIED_FILES", "docs/foo.md docs-extra/bar.md");
@@ -108,11 +92,10 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 
 		var changes = tracker.GetChangedFiles();
 
-		changes.Should().ContainSingle()
-			.Which.Should().BeEquivalentTo(new GitChange("docs/foo.md", GitChangeType.Modified));
+		changes.Should().ContainSingle().Which.Should().BeEquivalentTo(new GitChange("docs/foo.md", GitChangeType.Modified));
 	}
 
-	[Fact]
+	[Test]
 	public void RenamedFiles_ExposeOldAndNewPaths()
 	{
 		Environment.SetEnvironmentVariable("RENAMED_FILES", "docs/old.md:docs/new.md");
@@ -122,7 +105,11 @@ public sealed class IntegrationGitRepositoryTrackerTests : IDisposable
 
 		var changes = tracker.GetChangedFiles();
 
-		changes.Should().ContainSingle()
-			.Which.Should().BeEquivalentTo(new RenamedGitChange("docs/old.md", "docs/new.md", GitChangeType.Renamed));
+		changes
+			.Should()
+			.ContainSingle()
+			.Which
+			.Should()
+			.BeEquivalentTo(new RenamedGitChange("docs/old.md", "docs/new.md", GitChangeType.Renamed));
 	}
 }

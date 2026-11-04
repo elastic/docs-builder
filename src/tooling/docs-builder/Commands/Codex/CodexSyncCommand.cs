@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.ComponentModel.DataAnnotations;
+using System.IO.Abstractions;
 using Actions.Core.Services;
 using Elastic.Codex;
 using Elastic.Documentation;
@@ -10,6 +11,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Deploying;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
@@ -18,11 +20,7 @@ using Nullean.Argh.Documentation;
 namespace Documentation.Builder.Commands.Codex;
 
 /// <summary>Sync built codex output to S3 using a two-step plan/apply workflow.</summary>
-internal sealed class CodexSyncCommand(
-	IDiagnosticsCollector collector,
-	ILoggerFactory logFactory,
-	ICoreService githubActionsService
-)
+internal sealed class CodexSyncCommand(IDiagnosticsCollector collector, ILoggerFactory logFactory, ICoreService githubActionsService)
 {
 	/// <summary>Compute a diff of what would change when deploying to S3 and write it to a plan file.</summary>
 	/// <remarks>
@@ -48,13 +46,24 @@ internal sealed class CodexSyncCommand(
 		[ExpandUserProfile, RejectSymbolicLinks] FileInfo? @out = null,
 		float? deleteThreshold = null,
 		string[]? exclude = null,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var (context, service) = LoadContext(config);
 		var excludePatterns = exclude ?? [];
-		serviceInvoker.AddCommand(service, (context, s3BucketName, @out, deleteThreshold, excludePatterns),
-			static async (s, collector, state, ctx) => await s.Plan(collector, state.context, state.s3BucketName, state.@out?.FullName ?? "", state.deleteThreshold, state.excludePatterns, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, @out, deleteThreshold, excludePatterns),
+			static async (s, collector, state, ctx) => await s.Plan(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.@out?.FullName ?? "",
+				state.deleteThreshold,
+				state.excludePatterns,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
@@ -73,22 +82,32 @@ internal sealed class CodexSyncCommand(
 		[Argument, Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "yml,yaml")] FileInfo config,
 		string s3BucketName,
 		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json,plan")] FileInfo planFile,
-		CancellationToken ct = default)
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
 		var (context, service) = LoadContext(config);
-		serviceInvoker.AddCommand(service, (context, s3BucketName, planFile),
-			static async (s, collector, state, ctx) => await s.Apply(collector, state.context, state.s3BucketName, state.planFile.FullName, ctx)
+		serviceInvoker.AddCommand(
+			service,
+			(context, s3BucketName, planFile),
+			static async (s, collector, state, ctx) => await s.Apply(
+				collector,
+				state.context,
+				state.s3BucketName,
+				state.planFile.FullName,
+				ctx
+			)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
 	}
 
 	private (CodexContext context, IncrementalDeployService service) LoadContext(FileInfo config)
 	{
-		var fs = FileSystemFactory.RealRead;
-		var configFile = fs.FileInfo.New(config.FullName);
-		var codexConfig = CodexConfiguration.Load(configFile);
-		return (new CodexContext(codexConfig, configFile, collector, fs, FileSystemFactory.RealWrite, null, null),
-			new IncrementalDeployService(logFactory, githubActionsService));
+		var fs = new CodexFileSystem(config.FullName);
+		var codexConfig = CodexConfiguration.Load(fs.ConfigurationFile);
+		return (new CodexContext(codexConfig, fs.ConfigurationFile, collector, fs), new IncrementalDeployService(
+			logFactory,
+			githubActionsService
+		));
 	}
 }

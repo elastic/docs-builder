@@ -27,10 +27,7 @@ internal static class ElasticsearchClientJsonResolver
 
 	private static IJsonTypeInfoResolver Create() =>
 		SearchDocumentPolymorphism.Compose(
-			consumerContexts:
-			[
-				QuerySerializationContext.Default,
-			],
+			consumerContexts: [QuerySerializationContext.Default,],
 			SearchDocumentPolymorphism.WithFallback()
 		);
 }

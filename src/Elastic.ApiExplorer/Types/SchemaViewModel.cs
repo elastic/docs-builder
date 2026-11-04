@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Types;
@@ -16,114 +17,43 @@ public class SchemaViewModel(ApiRenderContext context) : ApiViewModel(context)
 	/// <summary>Precomputed structural content of the page; built before the slice renders.</summary>
 	public required SchemaPageModel Page { get; init; }
 
-	protected override IReadOnlyList<ApiTocItem> GetTocItems()
+	protected override string? LayoutPageTitle => Schema.DisplayName;
+
+	protected override string? LayoutPageDescription => Schema.Schema.Description;
+
+	protected override IReadOnlyList<TocItem> GetTocItems()
 	{
 		var openApiSchema = Schema.Schema;
-		var tocItems = new List<ApiTocItem>();
+		var tocItems = new List<TocItem>();
 
 		// Description
 		if (!string.IsNullOrEmpty(openApiSchema.Description))
-			tocItems.Add(new ApiTocItem("Description", "description"));
+			tocItems.Add(new TocItem("Description", "description", 2));
 
 		// Enum values
-		if (openApiSchema.Enum is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Enum Values", "enum-values"));
+		if (Page.EnumValues.Count > 0)
+			tocItems.Add(new TocItem("Enum values", "enum-values", 2));
 
 		// Union types (oneOf or anyOf)
-		if (openApiSchema.OneOf is { Count: > 0 } || openApiSchema.AnyOf is { Count: > 0 })
-			tocItems.Add(new ApiTocItem("Union Types", "union-types"));
+		if (Page.UnionVariants is not null)
+			tocItems.Add(new TocItem("Union types", "union-types", 2));
 
 		// Properties
-		if (HasSchemaProperties(openApiSchema))
+		if (Page.Properties is { Items.Count: > 0 } properties)
 		{
-			tocItems.Add(new ApiTocItem("Properties", "properties"));
-			// Add top-level properties nested under Properties
-			var props = GetSchemaPropertyNames(openApiSchema);
-			foreach (var propName in props)
-				tocItems.Add(new ApiTocItem(propName, propName, 3));
+			tocItems.Add(new TocItem("Properties", "properties", 2));
+			foreach (var property in properties.Items)
+				tocItems.Add(new TocItem(property.Name, property.Name, 3));
 		}
 
 		// Additional properties
 		if (openApiSchema.AdditionalProperties is not null)
-			tocItems.Add(new ApiTocItem("Additional Properties", "additional-properties"));
+			tocItems.Add(new TocItem("Additional properties", "additional-properties", 2));
 
 		// Example
-		if (openApiSchema.Example is not null)
-			tocItems.Add(new ApiTocItem("Example", "example"));
+		if (openApiSchema.Examples is { Count: > 0 })
+			tocItems.Add(new TocItem("Example", "example", 2));
 
 		return tocItems;
-	}
-
-	/// <summary>
-	/// Gets the property names from a schema, resolving references and AllOf as needed.
-	/// </summary>
-	private IEnumerable<string> GetSchemaPropertyNames(IOpenApiSchema? schema)
-	{
-		if (schema is null)
-			return [];
-
-		// Handle schema references
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			if (schemaRef.Properties is { Count: > 0 })
-				return schemaRef.Properties.Keys;
-
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) &&
-				Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-			{
-				return GetSchemaPropertyNames(resolvedSchema);
-			}
-		}
-
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return schema.Properties.Keys;
-
-		// For allOf, collect property names from all schemas
-		if (schema.AllOf is { Count: > 0 })
-		{
-			var allProps = new List<string>();
-			foreach (var subSchema in schema.AllOf)
-				allProps.AddRange(GetSchemaPropertyNames(subSchema));
-			return allProps.Distinct();
-		}
-
-		return [];
-	}
-
-	/// <summary>
-	/// Checks if a schema has properties, resolving references and AllOf as needed.
-	/// </summary>
-	private bool HasSchemaProperties(IOpenApiSchema? schema)
-	{
-		if (schema is null)
-			return false;
-
-		// Handle schema references - resolve to get actual properties
-		if (schema is OpenApiSchemaReference schemaRef)
-		{
-			// Try direct property access first (proxied)
-			if (schemaRef.Properties is { Count: > 0 })
-				return true;
-
-			// Try resolving via Reference.Id
-			var refId = schemaRef.Reference?.Id;
-			if (!string.IsNullOrEmpty(refId) &&
-				Document.Components?.Schemas?.TryGetValue(refId, out var resolvedSchema) == true)
-			{
-				return HasSchemaProperties(resolvedSchema);
-			}
-		}
-
-		// Direct properties
-		if (schema.Properties is { Count: > 0 })
-			return true;
-
-		// For allOf, check if any sub-schema has properties
-		if (schema.AllOf is { Count: > 0 })
-			return schema.AllOf.Any(HasSchemaProperties);
-
-		return false;
 	}
 }

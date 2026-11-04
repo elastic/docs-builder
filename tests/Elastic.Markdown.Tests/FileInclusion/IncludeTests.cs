@@ -10,13 +10,11 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
-
-public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -25,25 +23,22 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void IncludesInclusionHtml() =>
-		Html.ShouldBeHtml("<p><em>Hello world</em></p>");
+	[Test]
+	public void IncludesInclusionHtml() => Html.ShouldBeHtml("<p><em>Hello world</em></p>");
 }
 
-
-public class IncludeSubstitutionTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeSubstitutionTests() : DirectiveTest<IncludeBlock>("""
 ---
 sub:
   foo: "bar"
 ---
 :::{include} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -52,72 +47,61 @@ sub:
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
-	public void InclusionInheritsYamlContext() =>
-		Html.Should()
-			.Contain("Hello bar")
-			.And.Be("<p><em>Hello bar</em></p>")
-		;
+	[Test]
+	public void InclusionInheritsYamlContext() => Html.Should().Contain("Hello bar").And.Be("<p><em>Hello bar</em></p>");
 }
 
-
-public class IncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeNotFoundTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/notfound.md
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("notfound.md` does not exist"));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("notfound.md` does not exist"));
 	}
 }
 
-public class IncludeRequiresArgument(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeRequiresArgument() : DirectiveTest<IncludeBlock>("""
 :::{include}
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should()
-			.OnlyContain(d => d.Message.Contains("include requires an argument."));
+		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("include requires an argument."));
 	}
 }
 
-public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeNeedsToLiveInSpecialFolder() : DirectiveTest<IncludeBlock>("""
 ```{include} test.md
 ```
-"""
-)
+""")
 {
-
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
@@ -125,74 +109,69 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 		fileSystem.AddFile(@"docs/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should()
-			.Contain(d => d.Severity == Severity.Error &&
-				d.Message.Contains("only supports including snippets from `_snippet` folders."));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("only supports including snippets from `_snippet` folders."));
 	}
 }
 
-
-public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class IncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{include} ../../../outside.txt
 :::
-"""
-)
+""")
 {
-	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
-		fileSystem.AddFile(@"outside.txt", "some content");
+	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should()
+		Collector
+			.Diagnostics
+			.Should()
 			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("must resolve within the documentation source directory"));
 	}
 }
 
-
-public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output,
-"""
+[InheritsTests]
+public class CanNotIncludeItself() : DirectiveTest<IncludeBlock>("""
 ```{include} _snippets/test.md
 ```
-"""
-)
+""")
 {
-
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
 		// language=markdown
-		var inclusion =
-"""
+		var inclusion = """
 :::{include} test.md
 :::
 """;
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
 		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should()
-			.Contain(d => d.Message.Contains("cyclical include detected"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("cyclical include detected"));
 	}
 }

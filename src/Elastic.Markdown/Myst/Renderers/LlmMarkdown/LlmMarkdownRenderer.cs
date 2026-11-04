@@ -99,6 +99,4 @@ public class LlmMarkdownRenderer : TextRendererBase
 		ObjectRenderers.Add(new LlmTableRenderer());
 		ObjectRenderers.Add(new LlmListRenderer());
 	}
-
-
 }

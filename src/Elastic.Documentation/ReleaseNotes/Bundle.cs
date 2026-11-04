@@ -28,6 +28,12 @@ public record Bundle
 	public DateOnly? ReleaseDate { get; init; }
 
 	/// <summary>
+	/// Optional git ref of the published endpoint this bundle was cut for.
+	/// Set by commit-range bundling (<c>--end-git-ref</c>); not rendered to end-users.
+	/// </summary>
+	public string? GitRef { get; init; }
+
+	/// <summary>
 	/// Feature IDs that should be hidden when rendering this bundle.
 	/// Entries with matching feature-id values will be commented out in the output.
 	/// </summary>

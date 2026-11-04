@@ -18,20 +18,20 @@ public class InMemoryDistributedCacheTests
 {
 	private readonly InMemoryDistributedCache _cache = new();
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenKeyDoesNotExistReturnsNull()
 	{
 		// Arrange
 		var key = CacheKey.Create("test", "nonexistent-key");
 
 		// Act
-		var result = await _cache.GetAsync(key, TestContext.Current.CancellationToken);
+		var result = await _cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task SetAndGetWhenKeyIsSetReturnsValue()
 	{
 		// Arrange
@@ -39,38 +39,38 @@ public class InMemoryDistributedCacheTests
 		const string value = "test-value";
 
 		// Act
-		await _cache.SetAsync(key, value, TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
-		var result = await _cache.GetAsync(key, TestContext.Current.CancellationToken);
+		await _cache.SetAsync(key, value, TimeSpan.FromMinutes(1), CancellationToken.None);
+		var result = await _cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().Be(value);
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenEntryExpiredReturnsNull()
 	{
 		// Arrange
 		var key = CacheKey.Create("test", "expiring-key");
 
 		// Act
-		await _cache.SetAsync(key, "value", TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
-		await Task.Delay(50, TestContext.Current.CancellationToken);
-		var result = await _cache.GetAsync(key, TestContext.Current.CancellationToken);
+		await _cache.SetAsync(key, "value", TimeSpan.FromMilliseconds(10), CancellationToken.None);
+		await Task.Delay(50, CancellationToken.None);
+		var result = await _cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().BeNull("expired entries should be removed");
 	}
 
-	[Fact]
+	[Test]
 	public async Task SetAsyncOverwritesExistingValue()
 	{
 		// Arrange
 		var key = CacheKey.Create("test", "key");
 
 		// Act
-		await _cache.SetAsync(key, "first", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
-		await _cache.SetAsync(key, "second", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
-		var result = await _cache.GetAsync(key, TestContext.Current.CancellationToken);
+		await _cache.SetAsync(key, "first", TimeSpan.FromMinutes(1), CancellationToken.None);
+		await _cache.SetAsync(key, "second", TimeSpan.FromMinutes(1), CancellationToken.None);
+		var result = await _cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().Be("second");
@@ -79,85 +79,89 @@ public class InMemoryDistributedCacheTests
 
 public class MultiLayerCacheTests
 {
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenL1HitDoesNotCallL2Again()
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
 
 		// Pre-populate L1 by setting a value
-		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), CancellationToken.None);
 
 		// Act - Second get should hit L1
-		var result1 = await cache.GetAsync(uniqueKey, TestContext.Current.CancellationToken);
-		var result2 = await cache.GetAsync(uniqueKey, TestContext.Current.CancellationToken);
+		var result1 = await cache.GetAsync(uniqueKey, CancellationToken.None);
+		var result2 = await cache.GetAsync(uniqueKey, CancellationToken.None);
 
 		// Assert
 		result1.Should().Be("value");
 		result2.Should().Be("value");
 		// L2 should only be called once (during SetAsync), not on subsequent Gets
-		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenL1MissCallsL2AndPopulatesL1()
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
-		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._))
-			.Returns("l2-value");
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
+		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._)).Returns("l2-value");
 
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
 
 		// Act - First call misses L1, hits L2
-		var result1 = await cache.GetAsync(uniqueKey, TestContext.Current.CancellationToken);
+		var result1 = await cache.GetAsync(uniqueKey, CancellationToken.None);
 		// Second call should hit L1 (populated from previous call)
-		var result2 = await cache.GetAsync(uniqueKey, TestContext.Current.CancellationToken);
+		var result2 = await cache.GetAsync(uniqueKey, CancellationToken.None);
 
 		// Assert
 		result1.Should().Be("l2-value");
 		result2.Should().Be("l2-value");
-		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => fakeL2.GetAsync(uniqueKey, A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task SetAsyncWritesToBothL1AndL2()
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
-		var uniqueKey = CacheKey.Create("test", $"test-key-{Guid.NewGuid()}"); // Use unique key to avoid L1 cache pollution from other tests
+		var uniqueKey = CacheKey.Create(
+			"test",
+			$"test-key-{Guid.NewGuid()}"
+		); // Use unique key to avoid L1 cache pollution from other tests
 
 		// Act
-		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), TestContext.Current.CancellationToken);
+		await cache.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), CancellationToken.None);
 
 		// Get from cache (should hit L1)
-		var result = await cache.GetAsync(uniqueKey, TestContext.Current.CancellationToken);
+		var result = await cache.GetAsync(uniqueKey, CancellationToken.None);
 
 		// Assert
 		result.Should().Be("value", "L1 should have the value");
-		A.CallTo(() => fakeL2.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), A<Cancel>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => fakeL2.SetAsync(uniqueKey, "value", TimeSpan.FromMinutes(1), A<Cancel>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenBothCachesMissReturnsNull()
 	{
 		// Arrange
 		var fakeL2 = A.Fake<IDistributedCache>();
-		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._))
-			.Returns((string?)null);
+		A.CallTo(() => fakeL2.GetAsync(A<CacheKey>._, A<Cancel>._)).Returns((string?)null);
 
 		var cache = new MultiLayerCache(fakeL2, NullLogger<MultiLayerCache>.Instance);
 		var key = CacheKey.Create("test", "missing-key");
 
 		// Act
-		var result = await cache.GetAsync(key, TestContext.Current.CancellationToken);
+		var result = await cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().BeNull();
@@ -166,7 +170,7 @@ public class MultiLayerCacheTests
 
 public class DynamoDbDistributedCacheTests
 {
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenItemExistsReturnsValue()
 	{
 		// Arrange
@@ -180,24 +184,26 @@ public class DynamoDbDistributedCacheTests
 			{
 				["CacheKey"] = new AttributeValue { S = key.Value },
 				["Value"] = new AttributeValue { S = "test-value" },
-				["TTL"] = new AttributeValue { N = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture) }
+				["TTL"] = new AttributeValue
+				{
+					N = DateTimeOffset.UtcNow.AddMinutes(30).ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture)
+				}
 			},
 			IsItemSet = true
 		};
 
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Returns(response);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Returns(response);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "test-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
 		// Act
-		var result = await cache.GetAsync(key, TestContext.Current.CancellationToken);
+		var result = await cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().Be("test-value");
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenItemDoesNotExistReturnsNull()
 	{
 		// Arrange
@@ -205,19 +211,18 @@ public class DynamoDbDistributedCacheTests
 		var key = CacheKey.Create("test", "missing-key");
 		var response = new GetItemResponse { IsItemSet = false };
 
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Returns(response);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Returns(response);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "test-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
 		// Act
-		var result = await cache.GetAsync(key, TestContext.Current.CancellationToken);
+		var result = await cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task SetAsyncCallsDynamoDbPutItem()
 	{
 		// Arrange
@@ -226,33 +231,32 @@ public class DynamoDbDistributedCacheTests
 		var key = CacheKey.Create("test", "key");
 
 		// Act
-		await cache.SetAsync(key, "value", TimeSpan.FromMinutes(30), TestContext.Current.CancellationToken);
+		await cache.SetAsync(key, "value", TimeSpan.FromMinutes(30), CancellationToken.None);
 
 		// Assert
-		A.CallTo(() => fakeDynamoDb.PutItemAsync(
-			A<PutItemRequest>.That.Matches(r =>
-				r.TableName == "test-table" &&
-				r.Item["CacheKey"].S == key.Value &&
-				r.Item["Value"].S == "value"
-			),
-			A<Cancel>._
-		)).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => fakeDynamoDb.PutItemAsync(
+				A<PutItemRequest>.That.Matches(
+					r => r.TableName == "test-table" && r.Item["CacheKey"].S == key.Value && r.Item["Value"].S == "value"
+				),
+				A<Cancel>._
+			)
+		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetAsyncWhenTableNotFoundReturnsNullGracefully()
 	{
 		// Arrange
 		var fakeDynamoDb = A.Fake<IAmazonDynamoDB>();
 		var key = CacheKey.Create("test", "key");
 		var exception = new ResourceNotFoundException("Table not found");
-		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._))
-			.Throws(exception);
+		A.CallTo(() => fakeDynamoDb.GetItemAsync(A<GetItemRequest>._, A<Cancel>._)).Throws(exception);
 
 		var cache = new DynamoDbDistributedCache(fakeDynamoDb, "missing-table", NullLogger<DynamoDbDistributedCache>.Instance);
 
 		// Act
-		var result = await cache.GetAsync(key, TestContext.Current.CancellationToken);
+		var result = await cache.GetAsync(key, CancellationToken.None);
 
 		// Assert
 		result.Should().BeNull("should handle missing table gracefully");
@@ -261,7 +265,7 @@ public class DynamoDbDistributedCacheTests
 
 public class GcpIdTokenProviderCachingIntegrationTests
 {
-	[Fact]
+	[Test]
 	public async Task GenerateIdTokenAsyncUsesCachedTokenWhenValid()
 	{
 		// Arrange
@@ -270,8 +274,7 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		var fakeHandler = A.Fake<HttpMessageHandler>();
 		using var httpClient = new HttpClient(fakeHandler);
 		var fakeHttpClientFactory = A.Fake<IHttpClientFactory>();
-		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._))
-			.Returns(httpClient);
+		A.CallTo(() => fakeHttpClientFactory.CreateClient(A<string>._)).Returns(httpClient);
 
 		var cache = new InMemoryDistributedCache();
 
@@ -281,22 +284,23 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		// Pre-populate cache with valid token (TTL of 45 minutes - matches cache expiry logic)
 		const string cachedToken = "fake-cached-token";
 		var cacheKey = CacheKey.Create("idtoken", targetAudience);
-		await cache.SetAsync(cacheKey, cachedToken, TimeSpan.FromMinutes(45), TestContext.Current.CancellationToken);
+		await cache.SetAsync(cacheKey, cachedToken, TimeSpan.FromMinutes(45), CancellationToken.None);
 
 		// Act
-		var result = await provider.GenerateIdTokenAsync("{}", targetAudience, TestContext.Current.CancellationToken);
+		var result = await provider.GenerateIdTokenAsync("{}", targetAudience, CancellationToken.None);
 
 		// Assert
 		result.Should().Be("fake-cached-token", "should return cached token without calling Google OAuth");
 		// Verify that ExchangeJwtForIdToken was not called (PostAsync -> SendAsync)
 		// Using method name matching since SendAsync is protected
-		A.CallTo(fakeHandler)
+		A
+			.CallTo(fakeHandler)
 			.WithReturnType<Task<HttpResponseMessage>>()
 			.Where(call => call.Method.Name == "SendAsync")
 			.MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task GenerateIdTokenAsyncIgnoresExpiredCachedToken()
 	{
 		// Arrange
@@ -307,13 +311,13 @@ public class GcpIdTokenProviderCachingIntegrationTests
 		// InMemoryDistributedCache will remove it when expired
 		const string expiredToken = "expired-token";
 		var cacheKey = CacheKey.Create("idtoken", targetAudience);
-		await cache.SetAsync(cacheKey, expiredToken, TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
+		await cache.SetAsync(cacheKey, expiredToken, TimeSpan.FromMilliseconds(10), CancellationToken.None);
 
 		// Wait for expiration
-		await Task.Delay(50, TestContext.Current.CancellationToken);
+		await Task.Delay(50, CancellationToken.None);
 
 		// Act - Try to get the expired token
-		var cachedValue = await cache.GetAsync(cacheKey, TestContext.Current.CancellationToken);
+		var cachedValue = await cache.GetAsync(cacheKey, CancellationToken.None);
 
 		// Assert - Expired cache entry should return null
 		// GcpIdTokenProvider checks `if (cachedToken != null)` - when cache returns null,

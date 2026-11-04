@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using Elastic.Markdown.Helpers;
+using Elastic.Documentation.Extensions;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -58,8 +58,6 @@ public class InlineAnchorParser : InlineParser
 
 		return true;
 	}
-
-
 }
 
 public class InlineAnchor : LeafInline
@@ -69,6 +67,5 @@ public class InlineAnchor : LeafInline
 
 public class InlineAnchorRenderer : HtmlObjectRenderer<InlineAnchor>
 {
-	protected override void Write(HtmlRenderer renderer, InlineAnchor obj) =>
-		renderer.Write("<a id=\"").Write(obj.Anchor).Write("\"></a>");
+	protected override void Write(HtmlRenderer renderer, InlineAnchor obj) => renderer.Write("<a id=\"").Write(obj.Anchor).Write("\"></a>");
 }

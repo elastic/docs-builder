@@ -7,8 +7,10 @@ using System.IO.Abstractions;
 
 namespace Elastic.Documentation.Diagnostics;
 
-public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> outputs, TimeProvider? timeProvider = null)
-	: IDiagnosticsCollector
+public class DiagnosticsCollector(
+	IReadOnlyCollection<IDiagnosticsOutput> outputs,
+	TimeProvider? timeProvider = null
+) : IDiagnosticsCollector
 {
 	public DiagnosticsChannel Channel { get; } = new();
 
@@ -32,7 +34,8 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	// while loop exits, so WaitForDrain knows items dequeued but not yet output-written.
 	private volatile bool _draining;
 
-	public HashSet<string> OffendingFiles { get; } = [];
+	// Written by the background Drain() thread while the build thread snapshots it.
+	public ConcurrentDictionary<string, bool> OffendingFiles { get; } = [];
 
 	public ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; } = [];
 
@@ -58,25 +61,28 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	{
 		if (_started is not null)
 			return _started;
-		_started = Task.Run(async () =>
-		{
-			_ = await Channel.WaitToWrite(cancellationToken);
-			_readerStarted = true;
-			while (!Channel.CancellationToken.IsCancellationRequested)
+		_started = Task.Run(
+			async () =>
 			{
-				try
+				_ = await Channel.WaitToWrite(cancellationToken);
+				_readerStarted = true;
+				while (!Channel.CancellationToken.IsCancellationRequested)
 				{
-					while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
-						Drain();
+					try
+					{
+						while (await Channel.Reader.WaitToReadAsync(Channel.CancellationToken))
+							Drain();
+					}
+					catch
+					{
+						//ignore
+					}
 				}
-				catch
-				{
-					//ignore
-				}
-			}
 
-			Drain();
-		}, cancellationToken);
+				Drain();
+			},
+			cancellationToken
+		);
 		return _started;
 	}
 
@@ -88,7 +94,7 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 			if (item.Severity == Severity.Hint && NoHints)
 				continue;
 			HandleItem(item);
-			_ = OffendingFiles.Add(item.File);
+			OffendingFiles[item.File] = true;
 			foreach (var output in outputs)
 				output.Write(item);
 		}
@@ -110,12 +116,14 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	public virtual async Task StopAsync(Cancel cancellationToken)
 	{
 		Channel.TryComplete();
-		// StartAsync was never called. Items may sit in the channel but
-		// nobody is coming to drain them — awaiting Channel.Reader.Completion
-		// here would deadlock. Returning is the correct behaviour for
-		// fire-and-forget collectors (the channel dies with the instance).
+		// StartAsync was never called. No background reader is running, but items
+		// may already be in the channel — drain them synchronously so they reach
+		// HandleItem and the outputs before the collector is discarded.
 		if (_started is null)
+		{
+			Drain();
 			return;
+		}
 
 		try
 		{
@@ -142,20 +150,16 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 	}
 
 	public void Emit(Severity severity, string file, string message) =>
-		Write(new Diagnostic
-		{
-			Severity = severity,
-			File = file,
-			Message = message
-		});
+		Write(new Diagnostic { Severity = severity, File = file, Message = message });
 
-	public void EmitError(string file, string message, string specificErrorMessage) => Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
+	public void EmitError(string file, string message, string specificErrorMessage) =>
+		Emit(Severity.Error, file, $"{message}{Environment.NewLine}{specificErrorMessage}");
 
 	public void EmitError(string file, string message, Exception? e = null)
 	{
 		message = message
-				+ (e != null ? Environment.NewLine + e : string.Empty)
-				+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
+			+ (e != null ? Environment.NewLine + e : string.Empty)
+			+ (e?.InnerException != null ? Environment.NewLine + e.InnerException : string.Empty);
 		Emit(Severity.Error, file, message);
 	}
 
@@ -176,6 +180,5 @@ public class DiagnosticsCollector(IReadOnlyCollection<IDiagnosticsOutput> output
 		GC.SuppressFinalize(this);
 	}
 
-	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) =>
-		_ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
+	public void CollectUsedSubstitutionKey(ReadOnlySpan<char> key) => _ = InUseSubstitutionKeys.TryAdd(key.ToString(), true);
 }

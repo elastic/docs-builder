@@ -1,0 +1,268 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
+using Elastic.ApiExplorer.Structural;
+using Elastic.ApiExplorer.Supplemental;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Navigation;
+using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Topics;
+
+/// <summary>
+/// Builds the Topics heading of one API product, below the landing page and before the generated OpenAPI groups: the docset's
+/// <c>children:</c> pages first, in declared order, then the spec's <c>x-topics</c> that no child covers.
+/// </summary>
+public class ApiTopicsNavigationBuilder(ILogger logger, BuildContext context)
+{
+	/// <summary>The docset's <c>children:</c> files for one version: unsuffixed files, and <c>.vN.md</c> files of that major.</summary>
+	public static IReadOnlyList<IFileInfo> ChildFiles(ResolvedApiConfiguration? apiConfig, int? versionMajor) =>
+		apiConfig is null
+			? []
+			: [
+				.. apiConfig.Children.Where(
+					file => !ApiSupplementalName.TryParseVersionSuffix(file.Name, out _, out var fileMajor) || fileMajor == versionMajor
+				)
+			];
+
+	/// <summary>
+	/// The Topics heading, and whether it lists the generated Authentication page. When a <c>children:</c> page stands for the
+	/// Authentication topic it lists that page instead, and the generated page stays hidden so old links keep working.
+	/// </summary>
+	public (TopicsNavigationItem Topics, bool ListsAuthentication) Create(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		IReadOnlyList<IFileInfo> children,
+		LandingNavigationItem rootNavigation
+	)
+	{
+		var topics = OpenApiExtensionReader.ParseXTopics(openApiDocument);
+		var hasSchemes = StructuralViewModel.HasSchemes(openApiDocument);
+		var coveredTopics = CoveredTopics(apiUrlSuffix, topics, children, hasSchemes: hasSchemes);
+		var remainingTopics = topics.Where(topic => !coveredTopics.ContainsKey(topic)).ToArray();
+		var authenticationChild = children.FirstOrDefault(child => IsAuthenticationChild(child, coveredTopics));
+		var topicsNavigation = new TopicsNavigationItem(rootNavigation);
+		var childItems = CreateChildNavigationItems(
+			apiUrlSuffix,
+			children,
+			ReplacedTopicNames(apiUrlSuffix, coveredTopics, hasSchemes: hasSchemes),
+			topicsNavigation
+		);
+		var topicItems = CreateTopicNavigationItems(apiUrlSuffix, remainingTopics, topicsNavigation);
+		var hasAuthenticationTopic = remainingTopics.Any(static topic => topic.IsAuthentication);
+		var listsAuthentication = authenticationChild is null && (hasAuthenticationTopic || hasSchemes);
+		if (authenticationChild is null && hasSchemes && !hasAuthenticationTopic)
+		{
+			var generated = StructuralNavigationItem.ForGeneratedAuthentication(context.UrlPathPrefix, apiUrlSuffix, rootNavigation);
+			generated.Parent = topicsNavigation;
+			topicItems.Add(generated);
+		}
+
+		foreach (var item in childItems)
+			item.PinnedTitle = PinnedTitleOf(item.FileInfo, coveredTopics);
+		MarkAuthenticationChild(childItems, authenticationChild);
+		rootNavigation.AuthenticationUrl = AuthenticationPageUrl(apiUrlSuffix, childItems, listsAuthentication: listsAuthentication);
+		topicsNavigation.NavigationItems = PinnedFirst([.. childItems, .. TopicsNavigationItem.Order(topicItems)]);
+		return (topicsNavigation, listsAuthentication);
+	}
+
+	/// <summary>
+	/// Authentication, then Rate limiting, lead the Topics heading whether they come from a <c>children:</c> page or the spec. The rest
+	/// keep their order: the <c>children:</c> pages as declared, then the spec's topics by title.
+	/// </summary>
+	private static List<INavigationItem> PinnedFirst(IReadOnlyList<INavigationItem> items) => [.. items.OrderBy(PinnedRank)];
+
+	private static int PinnedRank(INavigationItem item) =>
+		TopicsNavigationItem.PinnedRank(item is SimpleMarkdownNavigationItem { PinnedTitle: { } title } ? title : item.NavigationTitle);
+
+	/// <summary>The pinned title a child page stands for: its first heading, or the title of the spec topic it covers.</summary>
+	private string? PinnedTitleOf(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics)
+	{
+		var heading = MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child).Heading;
+		var covered = coveredTopics.Where(pair => pair.Value == child).Select(static pair => pair.Key.Title);
+		return TopicsNavigationItem.PinnedTitles.FirstOrDefault(
+			pinned => string.Equals(pinned, heading, StringComparison.OrdinalIgnoreCase) || covered.Any(
+				title => string.Equals(pinned, title, StringComparison.OrdinalIgnoreCase)
+			)
+		);
+	}
+
+	/// <summary>A child stands for the Authentication topic when it covers the spec's topic, or its first heading is Authentication.</summary>
+	private bool IsAuthenticationChild(IFileInfo child, IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics) =>
+		coveredTopics.Any(pair => pair.Key.IsAuthentication && pair.Value == child)
+			|| string.Equals(
+				MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child).Heading,
+				ApiUrlBuilder.AuthenticationSegment,
+				StringComparison.OrdinalIgnoreCase
+			);
+
+	private static void MarkAuthenticationChild(List<SimpleMarkdownNavigationItem> items, IFileInfo? authenticationChild)
+	{
+		foreach (var item in items.Where(item => item.FileInfo == authenticationChild))
+			item.ShowsAuthentication = true;
+	}
+
+	/// <summary>Where the <c>auth</c> badge on endpoints points: the child page that stands for Authentication, else the generated page.</summary>
+	private string? AuthenticationPageUrl(string apiUrlSuffix, List<SimpleMarkdownNavigationItem> childItems, bool listsAuthentication) =>
+		childItems.FirstOrDefault(static item => item.ShowsAuthentication)?.Url
+			?? (listsAuthentication ? ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix) : null);
+
+	private List<INavigationItem> CreateTopicNavigationItems(
+		string apiUrlSuffix,
+		IReadOnlyList<ApiTopicPage> topics,
+		TopicsNavigationItem topicsNavigation
+	)
+	{
+		var items = new List<INavigationItem>(topics.Count);
+		var urls = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var topic in topics)
+		{
+			var url = topic.IsAuthentication
+				? ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix)
+				: ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, topic.Title);
+			if (!urls.Add(url))
+			{
+				logger.LogWarning(
+					"API '{ApiKey}' skips x-topics entry '{Title}', because an earlier entry already builds the page {Url}. Give each topic a distinct title.",
+					apiUrlSuffix,
+					topic.Title,
+					url
+				);
+				continue;
+			}
+
+			if (topic.IsAuthentication)
+			{
+				var authentication = StructuralNavigationItem.ForAuthenticationTopic(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					topicsNavigation.Landing,
+					topic
+				);
+				authentication.Parent = topicsNavigation;
+				items.Add(authentication);
+				continue;
+			}
+
+			items.Add(new TopicNavigationItem(url, topic, topicsNavigation.Landing, topicsNavigation));
+		}
+
+		return items;
+	}
+
+	private List<SimpleMarkdownNavigationItem> CreateChildNavigationItems(
+		string apiUrlSuffix,
+		IReadOnlyList<IFileInfo> children,
+		IReadOnlyDictionary<IFileInfo, IReadOnlyList<string>> replacedTopicNames,
+		TopicsNavigationItem topicsNavigation
+	)
+	{
+		var markdownSlugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		var items = new List<SimpleMarkdownNavigationItem>(children.Count);
+		foreach (var child in children)
+		{
+			var item = CreateChildNavigationItem(apiUrlSuffix, child, topicsNavigation, markdownSlugs);
+			item.ReplacedTopicUrls = replacedTopicNames.TryGetValue(child, out var names) ? names : [];
+			items.Add(item);
+		}
+
+		return items;
+	}
+
+	private SimpleMarkdownNavigationItem CreateChildNavigationItem(
+		string apiUrlSuffix,
+		IFileInfo markdownFile,
+		TopicsNavigationItem topicsNavigation,
+		HashSet<string> markdownSlugs
+	)
+	{
+		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(markdownFile);
+		if (!markdownSlugs.Add(slug))
+		{
+			throw new InvalidOperationException(
+				$"Duplicate markdown slug '{slug}' found in API product '{apiUrlSuffix}'. " + $"File: {markdownFile.FullName}"
+			);
+		}
+
+		SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, apiUrlSuffix, markdownFile.FullName);
+
+		var url = ApiUrlBuilder.ChildUrl(context.UrlPathPrefix, apiUrlSuffix, slug);
+		var title = MarkdownNavigationTitleReader.GetNavigationTitle(context.ReadFileSystem, markdownFile);
+		return new SimpleMarkdownNavigationItem(url, title, markdownFile, topicsNavigation.Landing) { Parent = topicsNavigation };
+	}
+
+	/// <summary>The URLs each child takes over from the topics it replaces, for the version switcher.</summary>
+	private Dictionary<IFileInfo, IReadOnlyList<string>> ReplacedTopicNames(
+		string apiUrlSuffix,
+		IReadOnlyDictionary<ApiTopicPage, IFileInfo> coveredTopics,
+		bool hasSchemes
+	) =>
+		coveredTopics.GroupBy(static pair => pair.Value).ToDictionary(
+			group => group.Key,
+			group => (IReadOnlyList<string>)[.. group.SelectMany(pair => ReplacedNames(apiUrlSuffix, pair.Key, hasSchemes: hasSchemes))]
+		);
+
+	/// <summary>
+	/// The topic page, and for an Authentication topic the <c>/authentication</c> page another version builds from it. That page
+	/// name stays with the generated Authentication page when this version's spec declares security schemes.
+	/// </summary>
+	private IEnumerable<string> ReplacedNames(string apiUrlSuffix, ApiTopicPage topic, bool hasSchemes)
+	{
+		yield return ApiUrlBuilder.TopicUrl(context.UrlPathPrefix, apiUrlSuffix, topic.Title);
+		if (topic.IsAuthentication && !hasSchemes)
+			yield return ApiUrlBuilder.AuthenticationUrl(context.UrlPathPrefix, apiUrlSuffix);
+	}
+
+	/// <summary>
+	/// The spec topics that a <c>children:</c> page already covers, with the child that covers each. The topic is not built;
+	/// elastic/docs-infra redirects its bump.sh URL to the child.
+	/// </summary>
+	private Dictionary<ApiTopicPage, IFileInfo> CoveredTopics(
+		string apiUrlSuffix,
+		IReadOnlyList<ApiTopicPage> topics,
+		IReadOnlyList<IFileInfo> children,
+		bool hasSchemes
+	)
+	{
+		var covered = new Dictionary<ApiTopicPage, IFileInfo>();
+		if (topics.Count == 0 || children.Count == 0)
+			return covered;
+
+		var childPages = children
+			.Select(child => (File: child, Page: MarkdownNavigationTitleReader.ReadHeadingAndBody(context.ReadFileSystem, child)))
+			.Where(child => child.Page.Heading is not null)
+			.ToArray();
+		foreach (var topic in topics)
+		{
+			var match = childPages.FirstOrDefault(child => topic.IsCoveredBy(child.Page.Heading, child.Page.Body)).File;
+			if (match is null)
+				continue;
+
+			logger.LogInformation(
+				"API '{ApiKey}' builds no page for x-topics entry '{Title}', because the children: page '{File}' covers it.",
+				apiUrlSuffix,
+				topic.Title,
+				match.Name
+			);
+			covered[topic] = match;
+			if (topic.IsAuthentication && !hasSchemes)
+			{
+				logger.LogWarning(
+					"API '{ApiKey}' builds no /authentication page: the children: page '{File}' replaces the Authentication topic and the spec declares no security schemes. Redirect /authentication to the child page in elastic/docs-infra.",
+					apiUrlSuffix,
+					match.Name
+				);
+			}
+		}
+
+		return covered;
+	}
+}

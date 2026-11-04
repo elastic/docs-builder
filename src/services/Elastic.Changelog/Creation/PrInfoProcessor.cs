@@ -15,6 +15,8 @@ namespace Elastic.Changelog.Creation;
 /// </summary>
 public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 {
+	private readonly DecisionLog _decisions = DecisionLog.Immediate(logger);
+
 	/// <summary>
 	/// Fetches PR information and derives changelog fields from it.
 	/// </summary>
@@ -23,45 +25,34 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		string prUrl,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prInfo = await TryFetchPrInfoAsync(prUrl, input.Owner, input.Repo, ctx);
 
 		if (prInfo == null)
 		{
-			collector.EmitWarning(string.Empty, $"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values.");
-			return new PrProcessingResult
-			{
-				FetchFailed = true,
-				ShouldSkip = false
-			};
+			collector.EmitWarning(
+				string.Empty,
+				$"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values."
+			);
+			return new PrProcessingResult { FetchFailed = true, ShouldSkip = false };
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = input.Products;
-		if (input.Products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+		// Resolve the products the entry will get (explicit, else labels, else products.default) so the blocker check
+		// sees the per-product rules of the product; only a genuinely unresolved product falls back to the global rules.
+		var effectiveProducts = ResolveProductsForBlockerCheck(input.Products, prInfo, config);
 
 		// Check for label blockers using effective products (including label-derived ones)
-		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl))
+		if (ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions))
 		{
-			return new PrProcessingResult
-			{
-				FetchFailed = false,
-				ShouldSkip = true
-			};
+			return new PrProcessingResult { FetchFailed = false, ShouldSkip = true };
 		}
 
 		// Process PR info and derive fields
 		var derivedFields = DeriveFieldsFromPr(collector, input, config, prInfo, prUrl);
 
-		return new PrProcessingResult
-		{
-			FetchFailed = false,
-			ShouldSkip = false,
-			DerivedFields = derivedFields,
-			PrInfo = prInfo
-		};
+		return new PrProcessingResult { FetchFailed = false, ShouldSkip = false, DerivedFields = derivedFields, PrInfo = prInfo };
 	}
 
 	/// <summary>
@@ -74,22 +65,22 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		string? repo,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		Cancel ctx)
+		Cancel ctx
+	)
 	{
 		var prInfo = await TryFetchPrInfoAsync(prUrl, owner, repo, ctx);
 
 		if (prInfo == null)
 		{
-			collector.EmitWarning(string.Empty, $"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Failed to fetch PR information from GitHub for PR: {prUrl}. Generating basic changelog with provided values."
+			);
 			return (false, null);
 		}
 
-		// Pre-derive products from labels for accurate blocker check when no products were explicitly provided
-		var effectiveProducts = products;
-		if (products.Count == 0 && config.LabelToProducts != null)
-			effectiveProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
-
-		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, collector, prUrl);
+		var effectiveProducts = ResolveProductsForBlockerCheck(products, prInfo, config);
+		var shouldSkip = ShouldSkipPrDueToLabelBlockers(prInfo.Labels.ToArray(), effectiveProducts, config, prUrl, _decisions);
 		return (shouldSkip, prInfo);
 	}
 
@@ -98,7 +89,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		CreateChangelogArguments input,
 		ChangelogConfiguration config,
 		GitHubPrInfo prInfo,
-		string prUrl)
+		string prUrl
+	)
 	{
 		var derived = new DerivedPrFields();
 
@@ -111,6 +103,14 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				derived.Description = releaseNote;
 				logger.LogInformation("Using extracted release note as description (length: {Length} characters)", releaseNote.Length);
 			}
+
+			var impact = ReleaseNotesExtractor.FindImpact(prInfo.Body);
+			if (impact != null && string.IsNullOrWhiteSpace(input.Impact))
+				derived.Impact = impact;
+
+			var action = ReleaseNotesExtractor.FindAction(prInfo.Body);
+			if (action != null && string.IsNullOrWhiteSpace(input.Action))
+				derived.Action = action;
 		}
 
 		// Use PR title if title was not explicitly provided
@@ -118,14 +118,17 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (string.IsNullOrWhiteSpace(prInfo.Title))
 			{
-				collector.EmitError(string.Empty, $"PR {prUrl} does not have a title. Please provide --title or ensure the PR has a title.");
+				collector.EmitError(
+					string.Empty,
+					$"PR {prUrl} does not have a title. Please provide --title or ensure the PR has a title."
+				);
 				return null;
 			}
 
 			var prTitle = prInfo.Title;
 			// Strip prefix if requested
 			if (input.StripTitlePrefix == true)
-				prTitle = ChangelogTextUtilities.StripSquareBracketPrefix(prTitle);
+				prTitle = ChangelogTextUtilities.StripTitlePrefix(prTitle);
 			derived.Title = prTitle;
 			logger.LogInformation("Using PR title: {Title}", derived.Title);
 		}
@@ -137,7 +140,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		{
 			if (config.LabelToType == null || config.LabelToType.Count == 0)
 			{
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml.");
+				collector.EmitError(
+					string.Empty,
+					$"Cannot derive type from PR {prUrl} labels: no type mapping configured in changelog.yml. Please provide --type or configure pivot.types in changelog.yml."
+				);
 				return null;
 			}
 
@@ -145,7 +151,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (mappedType == null)
 			{
 				var availableLabels = prInfo.Labels.Count > 0 ? string.Join(", ", prInfo.Labels) : "none";
-				collector.EmitError(string.Empty, $"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml.");
+				collector.EmitError(
+					string.Empty,
+					$"Cannot derive type from PR {prUrl} labels ({availableLabels}). No matching label found in type mapping. Please provide --type or add pivot.types with labels in changelog.yml."
+				);
 				return null;
 			}
 			derived.Type = mappedType;
@@ -170,8 +179,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Check highlight labels if CLI highlight not set
 		if (input.Highlight == null && config.HighlightLabels is { Count: > 0 })
 		{
-			var hasHighlightLabel = prInfo.Labels.Any(label =>
-				config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
+			var hasHighlightLabel = prInfo.Labels.Any(label => config.HighlightLabels.Contains(label, StringComparer.OrdinalIgnoreCase));
 			if (hasHighlightLabel)
 			{
 				derived.Highlight = true;
@@ -184,7 +192,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		// Map labels to products if products were not explicitly provided
 		if (input.Products.Count == 0 && config.LabelToProducts != null)
 		{
-			var mappedProducts = MapLabelsToProducts(prInfo.Labels.ToArray(), config.LabelToProducts);
+			var mappedProducts = ProductResolution.FromLabels(prInfo.Labels.ToArray(), config);
 			if (mappedProducts.Count > 0)
 			{
 				derived.Products = mappedProducts;
@@ -213,8 +221,11 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 			if (prInfo.LinkedIssues.Count > 0)
 			{
 				derived.Issues = prInfo.LinkedIssues.ToArray();
-				logger.LogInformation("Extracted {Count} linked issues from PR body: {Issues}",
-					prInfo.LinkedIssues.Count, string.Join(", ", prInfo.LinkedIssues));
+				logger.LogInformation(
+					"Extracted {Count} linked issues from PR body: {Issues}",
+					prInfo.LinkedIssues.Count,
+					string.Join(", ", prInfo.LinkedIssues)
+				);
 			}
 		}
 		else if (input.Issues is { Length: > 0 })
@@ -223,19 +234,38 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return derived;
 	}
 
+	/// <summary>
+	/// The products the entry will get, for the blocker check: the explicit products, else the label-derived ones
+	/// (with implied products), else <c>products.default</c>. Empty only when none applies.
+	/// </summary>
+	internal static IReadOnlyList<ProductArgument> ResolveProductsForBlockerCheck(
+		IReadOnlyList<ProductArgument> explicitProducts,
+		GitHubPrInfo prInfo,
+		ChangelogConfiguration config
+	)
+	{
+		if (explicitProducts.Count > 0)
+			return explicitProducts;
+
+		var labelProducts = config.LabelToProducts != null ? ProductResolution.FromLabels(prInfo.Labels.ToArray(), config) : [];
+		return labelProducts.Count > 0 ? labelProducts : ProductResolution.Defaults(config);
+	}
+
 	internal static bool ShouldSkipPrDueToLabelBlockers(
 		string[] prLabels,
 		IReadOnlyList<ProductArgument> products,
 		ChangelogConfiguration config,
-		IDiagnosticsCollector collector,
-		string prUrl)
+		string prUrl,
+		DecisionLog decisions
+	)
 	{
 		var createRules = config.Rules?.Create;
 		if (createRules == null)
 			return false;
 
-		// Check product-specific overrides first, then fall back to global
-		if (createRules.ByProduct is { Count: > 0 })
+		// Check product-specific overrides first, then fall back to global. A per-product override only replaces the
+		// global rules for the product it names, so without a product to look up the global rules decide.
+		if (createRules.ByProduct is { Count: > 0 } && products.Count > 0)
 		{
 			foreach (var product in products)
 			{
@@ -243,51 +273,46 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 				if (createRules.ByProduct.TryGetValue(normalizedProductId, out var productRules))
 				{
 					// Product-specific rules override global rules
-					if (ShouldSkipByCreateRules(prLabels, productRules, collector, prUrl, product.Product))
+					if (ShouldSkipByCreateRules(prLabels, productRules, prUrl, decisions))
 						return true;
 				}
-				else if (ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null))
+				else if (ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions))
 					return true;
 			}
 			return false;
 		}
 
-		// No product-specific rules - check global
-		return ShouldSkipByCreateRules(prLabels, createRules, collector, prUrl, null);
+		// No product-specific rules, or no products to look them up for: check global
+		return ShouldSkipByCreateRules(prLabels, createRules, prUrl, decisions);
 	}
 
-	internal static bool ShouldSkipByCreateRules(
-		string[] prLabels,
-		CreateRules rules,
-		IDiagnosticsCollector collector,
-		string prUrl,
-		string? productContext)
+	internal static bool ShouldSkipByCreateRules(string[] prLabels, CreateRules rules, string prUrl, DecisionLog decisions)
 	{
 		if (rules.Labels == null || rules.Labels.Count == 0)
 			return false;
 
 		var mode = rules.Mode;
 		var match = rules.Match;
-		var prefix = mode == FieldMode.Include ? "[+include]" : "[-exclude]";
-		var productSuffix = productContext != null ? $" for product '{productContext}'" : "";
 
 		if (mode == FieldMode.Exclude)
 		{
 			// Exclude mode: skip if any/all/conjunction labels match
 			var matchingLabel = match switch
 			{
-				MatchMode.All => prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
-					? string.Join(", ", prLabels)
-					: null,
-				MatchMode.Conjunction => rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
-					? string.Join(", ", rules.Labels)
-					: null,
+				MatchMode.All =>
+					prLabels.All(label => rules.Labels.Contains(label, StringComparer.OrdinalIgnoreCase))
+						? string.Join(", ", prLabels)
+						: null,
+				MatchMode.Conjunction =>
+					rules.Labels.All(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
+						? string.Join(", ", rules.Labels)
+						: null,
 				_ => rules.Labels.FirstOrDefault(blockerLabel => prLabels.Contains(blockerLabel, StringComparer.OrdinalIgnoreCase))
 			};
 
 			if (matchingLabel != null)
 			{
-				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl} due to blocking label '{matchingLabel}'{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), matchingLabel);
 				return true;
 			}
 		}
@@ -303,8 +328,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 			if (!hasMatch)
 			{
-				var labelsList = string.Join(", ", rules.Labels);
-				collector.EmitWarning(string.Empty, $"{prefix} Skipping changelog creation for PR {prUrl}, no labels match rules.create.include [{labelsList}]{productSuffix} (match: {match.ToString().ToLowerInvariant()}).");
+				decisions.Record("entries", "exclude", DecisionLog.PullRequestSubject(prUrl), "no include label");
 				return true;
 			}
 		}
@@ -328,10 +352,7 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		}
 		catch (Exception ex)
 		{
-			if (ex is OutOfMemoryException or
-				StackOverflowException or
-				AccessViolationException or
-				ThreadAbortException)
+			if (ex is OutOfMemoryException or StackOverflowException or AccessViolationException or ThreadAbortException)
 				throw;
 			logger.LogWarning(ex, "Error fetching PR information from GitHub. Continuing with provided values.");
 			return null;
@@ -372,6 +393,24 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return IsBlockedByRules(prLabels, createRules);
 	}
 
+	/// <summary>Human-readable reason for <see cref="AreAllProductsBlocked"/>, naming the labels that decided it.</summary>
+	internal static string DescribeBlockedReason(string[] prLabels, CreateRules? createRules)
+	{
+		var rules = createRules?.Labels is { Count: > 0 }
+			? createRules
+			: createRules?.ByProduct?.Values.FirstOrDefault(r => r.Labels is { Count: > 0 });
+		if (rules?.Labels is not { Count: > 0 })
+			return "the create rules in the changelog configuration exclude it";
+
+		if (rules.Mode == FieldMode.Include)
+			return $"none of the labels {string.Join(", ", rules.Labels)} is set";
+
+		var matching = prLabels.Where(l => rules.Labels.Contains(l, StringComparer.OrdinalIgnoreCase)).ToList();
+		return matching.Count > 0
+			? $"it has the label {string.Join(", ", matching)}"
+			: "the create rules in the changelog configuration exclude it";
+	}
+
 	/// <summary>
 	/// Checks if a single set of create rules blocks the given PR labels (no diagnostics).
 	/// In exclude mode, blocked when the configured labels ARE found on the PR.
@@ -393,9 +432,19 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 		return rules.Mode == FieldMode.Exclude ? labelsMatch : !labelsMatch;
 	}
 
-	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) => labels
-		.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null)
-		.FirstOrDefault(mappedType => mappedType != null);
+	internal static string? MapLabelsToType(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
+		labels.Select(label => labelToTypeMapping.TryGetValue(label, out var mappedType) ? mappedType : null).FirstOrDefault(
+			mappedType => mappedType != null
+		);
+
+	/// <summary>
+	/// Returns every label in <paramref name="labels"/> that has a mapping in
+	/// <paramref name="labelToTypeMapping"/>. More than one result means the PR carries conflicting
+	/// type labels; callers should surface this as an actionable error rather than silently picking
+	/// the first match.
+	/// </summary>
+	internal static IReadOnlyList<string> MatchingTypeLabels(string[] labels, IReadOnlyDictionary<string, string> labelToTypeMapping) =>
+		labels.Where(labelToTypeMapping.ContainsKey).ToList();
 
 	internal static List<string> MapLabelsToAreas(string[] labels, IReadOnlyDictionary<string, IReadOnlyList<string>> labelToAreasMapping)
 	{
@@ -450,7 +499,8 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 	internal static string? MapLabelsToFeatureId(
 		string[] labels,
 		IReadOnlyDictionary<string, string> labelToFeaturesMapping,
-		IDiagnosticsCollector collector)
+		IDiagnosticsCollector collector
+	)
 	{
 		var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		var featureIds = new List<string>();
@@ -471,8 +521,10 @@ public class PrInfoProcessor(IGitHubPrService? githubPrService, ILogger logger)
 
 		if (featureIds.Count > 1)
 		{
-			collector.EmitWarning(string.Empty,
-				$"Multiple feature-id values matched from labels ({string.Join(", ", featureIds)}). Using first match '{featureIds[0]}'. Provide --feature-id to override.");
+			collector.EmitWarning(
+				string.Empty,
+				$"Multiple feature-id values matched from labels ({string.Join(", ", featureIds)}). Using first match '{featureIds[0]}'. Provide --feature-id to override."
+			);
 		}
 
 		return featureIds[0];
@@ -498,6 +550,8 @@ public record DerivedPrFields
 	public string? Title { get; set; }
 	public string? Type { get; set; }
 	public string? Description { get; set; }
+	public string? Impact { get; set; }
+	public string? Action { get; set; }
 	public string[]? Areas { get; set; }
 	public bool? Highlight { get; set; }
 	public string[]? Issues { get; set; }

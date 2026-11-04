@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Versions;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -55,10 +56,9 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	private static List<Applicability> InferVersionSemantics(List<Applicability> applications)
 	{
 		// Get items with actual GreaterThanOrEqual versions (not AllVersionsSpec, not null, not ranges/exact)
-		var gteItems = applications
-			.Where(a => a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual }
-						&& a.Version != AllVersionsSpec.Instance)
-			.ToList();
+		var gteItems = applications.Where(
+			a => a.Version is { Kind: VersionSpecKind.GreaterThanOrEqual } && a.Version != AllVersionsSpec.Instance
+		).ToList();
 
 		// If 0 or 1 GTE items, no inference needed
 		if (gteItems.Count <= 1)
@@ -69,11 +69,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 			return applications;
 
 		// Sort GTE items by version ascending to process from lowest to highest
-		var sortedGteVersions = gteItems
-			.Select(a => a.Version!.Min)
-			.Distinct()
-			.OrderBy(v => v)
-			.ToList();
+		var sortedGteVersions = gteItems.Select(a => a.Version!.Min).Distinct().OrderBy(v => v).ToList();
 
 		if (sortedGteVersions.Count <= 1)
 			return applications;
@@ -94,8 +90,7 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 				var nextVersion = sortedGteVersions[i + 1];
 
 				// Define an Exact or Range VersionSpec according to the numeric difference between lifecycles
-				if (currentVersion.Major == nextVersion.Major
-					&& nextVersion.Minor == currentVersion.Minor + 1)
+				if (currentVersion.Major == nextVersion.Major && nextVersion.Minor == currentVersion.Minor + 1)
 					versionMapping[currentVersion] = VersionSpec.Exact(currentVersion);
 				else
 				{
@@ -133,23 +128,22 @@ public record AppliesCollection : IReadOnlyCollection<Applicability>
 	public override int GetHashCode()
 	{
 		var comparer = StructuralComparisons.StructuralEqualityComparer;
-		return
-			(EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295)
-			+ comparer.GetHashCode(_items);
+		return (EqualityComparer<Type>.Default.GetHashCode(EqualityContract) * -1521134295) + comparer.GetHashCode(_items);
 	}
-
 
 	public static explicit operator AppliesCollection(string b)
 	{
 		var diagnostics = new List<(Severity, string)>();
 		var productAvailability = TryParse(b, diagnostics, out var version) ? version : null;
 		if (diagnostics.Count > 0)
-			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics));
+			throw new ArgumentException(
+				"Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics)
+			);
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string array.");
 	}
 
-	public static AppliesCollection GenerallyAvailable { get; }
-		= new([Applicability.GenerallyAvailable]);
+	[YamlIgnore]
+	public static AppliesCollection GenerallyAvailable { get; } = new([Applicability.GenerallyAvailable]);
 
 	public override string ToString()
 	{
@@ -173,16 +167,14 @@ public record Applicability : IComparable<Applicability>, IComparable
 	public ProductLifecycle Lifecycle { get; init; }
 	public VersionSpec? Version { get; init; }
 
+	[YamlIgnore]
 	public static Applicability GenerallyAvailable { get; } = new()
 	{
 		Lifecycle = ProductLifecycle.GenerallyAvailable,
 		Version = AllVersionsSpec.Instance
 	};
 
-
-	public string GetLifeCycleName() =>
-		ProductLifecycleInfo.GetShortName(Lifecycle);
-
+	public string GetLifeCycleName() => ProductLifecycleInfo.GetShortName(Lifecycle);
 
 	/// <inheritdoc />
 	public int CompareTo(Applicability? other)
@@ -195,7 +187,7 @@ public record Applicability : IComparable<Applicability>, IComparable
 		if (xIsNonVersioned)
 			return -1; // Non-versioned items sort last
 		if (yIsNonVersioned)
-			return 1;  // Non-versioned items sort last
+			return 1; // Non-versioned items sort last
 
 		return Version!.CompareTo(other!.Version);
 	}
@@ -231,9 +223,13 @@ public record Applicability : IComparable<Applicability>, IComparable
 	public static explicit operator Applicability(string b)
 	{
 		var diagnostics = new List<(Severity, string)>();
-		var productAvailability = TryParse(b, diagnostics, out var version) ? version : TryParse(b + ".0", diagnostics, out version) ? version : null;
+		var productAvailability = TryParse(b, diagnostics, out var version)
+			? version
+			: TryParse(b + ".0", diagnostics, out version) ? version : null;
 		if (diagnostics.Count > 0)
-			throw new ArgumentException("Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics));
+			throw new ArgumentException(
+				"Explicit conversion from string to AppliesCollection failed." + string.Join(Environment.NewLine, diagnostics)
+			);
 		return productAvailability ?? throw new ArgumentException($"'{b}' is not a valid applicability string.");
 	}
 
@@ -262,7 +258,6 @@ public record Applicability : IComparable<Applicability>, IComparable
 			"ga" => ProductLifecycle.GenerallyAvailable,
 			"deprecated" => ProductLifecycle.Deprecated,
 			"removed" => ProductLifecycle.Removed,
-
 			// OBSOLETE should be removed once docs are cleaned up
 			"unavailable" => ProductLifecycle.Unavailable,
 			"dev" => ProductLifecycle.Development,
@@ -274,16 +269,13 @@ public record Applicability : IComparable<Applicability>, IComparable
 		};
 		if (lifecycle is null)
 		{
-			diagnostics.Add((Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed."));
+			diagnostics.Add(
+				(Severity.Error, $"Unknown product lifecycle: '{tokens[0]}'. Valid lifecycles are: ga, preview, tech-preview, experimental, beta, deprecated, removed.")
+			);
 			availability = null;
 			return false;
 		}
-		var deprecatedLifecycles = new[]
-		{
-			ProductLifecycle.Development,
-			ProductLifecycle.Planned,
-			ProductLifecycle.Discontinued
-		};
+		var deprecatedLifecycles = new[] { ProductLifecycle.Development, ProductLifecycle.Planned, ProductLifecycle.Discontinued };
 
 		// TODO emit as error when all docs have been updated
 		if (deprecatedLifecycles.Contains(lifecycle.Value))
@@ -302,7 +294,8 @@ public record Applicability : IComparable<Applicability>, IComparable
 		return true;
 	}
 
-	public static bool operator <(Applicability? left, Applicability? right) => left is null ? right is not null : left.CompareTo(right) < 0;
+	public static bool operator <(Applicability? left, Applicability? right) =>
+		left is null ? right is not null : left.CompareTo(right) < 0;
 
 	public static bool operator <=(Applicability? left, Applicability? right) => left is null || left.CompareTo(right) <= 0;
 
@@ -310,4 +303,3 @@ public record Applicability : IComparable<Applicability>, IComparable
 
 	public static bool operator >=(Applicability? left, Applicability? right) => left is null ? right is null : left.CompareTo(right) >= 0;
 }
-

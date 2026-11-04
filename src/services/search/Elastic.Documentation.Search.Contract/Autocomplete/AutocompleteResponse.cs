@@ -13,9 +13,7 @@ public record AutocompleteResponse<TDocument> where TDocument : SearchDocumentBa
 	public required int PageSize { get; init; }
 	public required AutocompleteAggregations Aggregations { get; init; }
 
-	public int PageCount => PageSize > 0
-		? (int)Math.Ceiling((double)TotalResults / PageSize)
-		: 0;
+	public int PageCount => PageSize > 0 ? (int)Math.Ceiling((double)TotalResults / PageSize) : 0;
 
 	/// <summary>
 	/// Time Elasticsearch spent processing the query, in milliseconds (the <c>took</c> field

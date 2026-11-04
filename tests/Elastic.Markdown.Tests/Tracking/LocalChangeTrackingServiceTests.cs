@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Refactor.Tracking;
 using Nullean.ScopedFileSystem;
 
@@ -17,35 +18,29 @@ namespace Elastic.Markdown.Tests.Tracking;
 /// the CI path (GITHUB_ACTIONS=true) so the service reads changes from environment
 /// variables rather than shelling out to git.
 /// </summary>
-[Collection(TrackingTestCollection.Name)]
-public sealed class LocalChangeTrackingServiceTests : IDisposable
+[NotInParallel("Tracking")]
+public sealed class LocalChangeTrackingServiceTests
 {
-	private static readonly string[] EnvVarNames =
-	[
-		"GITHUB_ACTIONS",
-		"ADDED_FILES",
-		"MODIFIED_FILES",
-		"DELETED_FILES",
-		"RENAMED_FILES"
-	];
+	private static readonly string[] EnvVarNames = ["GITHUB_ACTIONS", "ADDED_FILES", "MODIFIED_FILES", "DELETED_FILES", "RENAMED_FILES"];
 
-	private readonly ITestOutputHelper _output;
+	private readonly List<string> _tempDirectories = [];
 
-	public LocalChangeTrackingServiceTests(ITestOutputHelper output)
-	{
-		_output = output;
-		ClearEnv();
-	}
-
-	public void Dispose() => ClearEnv();
-
-	private static void ClearEnv()
+	[Before(Test)]
+	public void ClearEnv()
 	{
 		foreach (var name in EnvVarNames)
 			Environment.SetEnvironmentVariable(name, null);
 	}
 
-	[Fact]
+	[After(Test)]
+	public void Cleanup()
+	{
+		ClearEnv();
+		foreach (var dir in _tempDirectories.Where(Directory.Exists))
+			Directory.Delete(dir, recursive: true);
+	}
+
+	[Test]
 	public async Task DocsetAtRepoRoot_DeletedMarkdownWithoutRedirect_EmitsError()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -57,13 +52,17 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 
 		ok.Should().BeFalse();
 		collector.Errors.Should().BeGreaterThan(0);
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("troubleshoot/deployments/serverless.md") &&
-			d.Message.Contains("redirects.yml"));
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("troubleshoot/deployments/serverless.md") && d.Message.Contains(
+					"redirects.yml"
+				)
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DocsetAtRepoRoot_DeletedMarkdownWithRedirect_Succeeds()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -74,7 +73,8 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 			redirects: """
 				redirects:
 				  troubleshoot/deployments/serverless.md: troubleshoot/deployments.md
-				""");
+				"""
+		);
 
 		var ok = await service.ValidateRedirects(collector, source, fs);
 
@@ -82,7 +82,7 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task DocsetInSubfolder_DeletedMarkdownWithoutRedirect_EmitsError()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -93,12 +93,10 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		var ok = await service.ValidateRedirects(collector, source, fs);
 
 		ok.Should().BeFalse();
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("reference/old-page.md"));
+		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("reference/old-page.md"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task DocsetInSubfolder_ChangesOutsideDocset_AreIgnored()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -112,7 +110,7 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task SnippetsDeletions_AreIgnored()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -126,7 +124,7 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenamedMarkdownWithoutRedirect_EmitsError()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -137,13 +135,15 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		var ok = await service.ValidateRedirects(collector, source, fs);
 
 		ok.Should().BeFalse();
-		collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("troubleshoot/old.md") &&
-			d.Message.Contains("troubleshoot/new.md"));
+		collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("troubleshoot/old.md") && d.Message.Contains("troubleshoot/new.md")
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoRedirectsFile_SkipsValidation()
 	{
 		Environment.SetEnvironmentVariable("GITHUB_ACTIONS", "true");
@@ -157,31 +157,34 @@ public sealed class LocalChangeTrackingServiceTests : IDisposable
 		collector.Errors.Should().Be(0);
 	}
 
-	private (LocalChangeTrackingService service, TestDiagnosticsCollector collector, ScopedFileSystem fs, string source)
-		CreateService(bool docsetAtRoot, string? redirects)
+	// LocalChangeTrackingService anchors on the physical file system (DocumentationFileSystem.Resolve),
+	// so the repository fixture is written to a real temporary directory.
+	private (LocalChangeTrackingService service, TestDiagnosticsCollector collector, ScopedFileSystem fs, string source) CreateService(
+		bool docsetAtRoot,
+		string? redirects
+	)
 	{
-		var root = Paths.WorkingDirectoryRoot.FullName;
-		var repoPath = Path.Combine(root, $"diff-validate-test-{Guid.NewGuid():N}");
+		var repoPath = Path.Combine(Path.GetTempPath(), $"diff-validate-test-{Guid.NewGuid():N}");
+		_tempDirectories.Add(repoPath);
 		var docsetDir = docsetAtRoot ? repoPath : Path.Combine(repoPath, "docs");
-
-		var fileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = root });
-		fileSystem.AddDirectory(Path.Combine(repoPath, ".git"));
-		fileSystem.AddFile(Path.Combine(docsetDir, "docset.yml"), new MockFileData("project: test\ntoc:\n- file: index.md\n"));
-		fileSystem.AddFile(Path.Combine(docsetDir, "index.md"), new MockFileData("# Home"));
+		_ = Directory.CreateDirectory(Path.Combine(repoPath, ".git"));
+		_ = Directory.CreateDirectory(docsetDir);
+		File.WriteAllText(Path.Combine(docsetDir, "docset.yml"), "project: test\ntoc:\n- file: index.md\n");
+		File.WriteAllText(Path.Combine(docsetDir, "index.md"), "# Home");
 		if (redirects is not null)
 		{
 			// Empty string means "redirects.yml exists but has no entries". Use a valid YAML
 			// stub so the parser does not flag the file as unparseable.
 			var contents = string.IsNullOrWhiteSpace(redirects) ? "redirects: {}\n" : redirects;
-			fileSystem.AddFile(Path.Combine(docsetDir, "redirects.yml"), new MockFileData(contents));
+			File.WriteAllText(Path.Combine(docsetDir, "redirects.yml"), contents);
 		}
 
-		var scoped = FileSystemFactory.ScopeCurrentWorkingDirectory(fileSystem);
-		var collector = new TestDiagnosticsCollector(_output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var scoped = DocumentationFileSystem.Resolve(docsetDir);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
-		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
-		var service = new LocalChangeTrackingService(new TestLoggerFactory(_output), configurationContext);
+		var configurationContext = TestHelpers.CreateConfigurationContext(new MockFileSystem());
+		var service = new LocalChangeTrackingService(new TestLoggerFactory(), configurationContext);
 
 		return (service, collector, scoped, docsetDir);
 	}

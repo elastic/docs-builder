@@ -7,10 +7,10 @@ using Elastic.Documentation.Assembler.Links;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.ContentSources;
 
@@ -18,7 +18,7 @@ public class RepositoryPublishValidationService(
 	ILoggerFactory logFactory,
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
-	ScopedFileSystem fileSystem
+	CheckoutsFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryPublishValidationService>();
@@ -27,7 +27,7 @@ public class RepositoryPublishValidationService(
 	public async Task<bool> ValidatePublishStatus(IDiagnosticsCollector collector, Cancel ctx)
 	{
 		// environment does not matter to check the configuration, defaulting to dev
-		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		var context = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		ILinkIndexReader linkIndexReader = Aws3LinkIndexReader.CreateAnonymous();
 		var fetcher = new AssemblerCrossLinkFetcher(logFactory, context.Configuration, context.Environment, linkIndexReader);
 		var links = await fetcher.FetchLinkRegistry(ctx);
@@ -47,14 +47,18 @@ public class RepositoryPublishValidationService(
 			var next = repository.GetBranch(ContentSource.Next);
 			if (!registryMapping.TryGetValue(next, out _))
 			{
-				collector.EmitError(reportPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexReader.RegistryUrl}");
+				collector.EmitError(
+					reportPath,
+					$"'{repository.Name}' has not yet published links.json for configured 'next' content source: '{next}' see  {linkIndexReader.RegistryUrl}"
+				);
 			}
 
 			if (!registryMapping.TryGetValue(current, out _))
 			{
-				collector.EmitError(reportPath,
-					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexReader.RegistryUrl}");
+				collector.EmitError(
+					reportPath,
+					$"'{repository.Name}' has not yet published links.json for configured 'current' content source: '{current}' see  {linkIndexReader.RegistryUrl}"
+				);
 			}
 		}
 

@@ -18,8 +18,7 @@ using NetEscapades.EnumGenerators;
 namespace Elastic.Markdown.Myst.InlineParsers.Substitution;
 
 [DebuggerDisplay("{GetType().Name} Line: {Line}, Found: {Found}, Replacement: {Replacement}")]
-public class SubstitutionLeaf(string content, bool found, string replacement)
-	: CodeInline(content)
+public class SubstitutionLeaf(string content, bool found, string replacement) : CodeInline(content)
 {
 	public bool Found { get; } = found;
 	public string Replacement { get; } = replacement;
@@ -29,20 +28,34 @@ public class SubstitutionLeaf(string content, bool found, string replacement)
 [EnumExtensions]
 public enum SubstitutionMutation
 {
-	[Display(Name = "M")] MajorComponent,
-	[Display(Name = "M.x")] MajorX,
-	[Display(Name = "M.M")] MajorMinor,
-	[Display(Name = "M+1")] IncreaseMajor,
-	[Display(Name = "M.M+1")] IncreaseMinor,
-	[Display(Name = "lc")] LowerCase,
-	[Display(Name = "uc")] UpperCase,
-	[Display(Name = "tc")] TitleCase,
-	[Display(Name = "c")] Capitalize,
-	[Display(Name = "kc")] KebabCase,
-	[Display(Name = "sc")] SnakeCase,
-	[Display(Name = "cc")] CamelCase,
-	[Display(Name = "pc")] PascalCase,
-	[Display(Name = "trim")] Trim
+	[Display(Name = "M")]
+	MajorComponent,
+	[Display(Name = "M.x")]
+	MajorX,
+	[Display(Name = "M.M")]
+	MajorMinor,
+	[Display(Name = "M+1")]
+	IncreaseMajor,
+	[Display(Name = "M.M+1")]
+	IncreaseMinor,
+	[Display(Name = "lc")]
+	LowerCase,
+	[Display(Name = "uc")]
+	UpperCase,
+	[Display(Name = "tc")]
+	TitleCase,
+	[Display(Name = "c")]
+	Capitalize,
+	[Display(Name = "kc")]
+	KebabCase,
+	[Display(Name = "sc")]
+	SnakeCase,
+	[Display(Name = "cc")]
+	CamelCase,
+	[Display(Name = "pc")]
+	PascalCase,
+	[Display(Name = "trim")]
+	Trim
 }
 
 public class SubstitutionRenderer : HtmlObjectRenderer<SubstitutionLeaf>
@@ -131,9 +144,12 @@ public class SubstitutionParser : InlineParser
 
 		// URL templates like `https://tiles.../{{z}}/{{x}}/{{y}}.png` must not be parsed as substitutions
 		// unless the key is a defined docset/front-matter substitution (for example `{{x}}` used intentionally).
-		if (key.Length <= 1 && mutationStrings.Length == 0
+		if (
+			key.Length <= 1
+			&& mutationStrings.Length == 0
 			&& !context.Substitutions.ContainsKey(key)
-			&& !context.ContextSubstitutions.ContainsKey(key))
+			&& !context.ContextSubstitutions.ContainsKey(key)
+		)
 			return false;
 
 		if (context.Substitutions.TryGetValue(key, out var value))
@@ -163,12 +179,23 @@ public class SubstitutionParser : InlineParser
 
 		if (!found)
 			// We temporarily diagnose variable spaces as hints. We used to not read this at all.
-			processor.Emit(key.Contains(' ') ? Severity.Hint : Severity.Error, line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} is undefined");
+			processor.Emit(
+				key.Contains(' ') ? Severity.Hint : Severity.Error,
+				line + 1,
+				column + 3,
+				substitutionLeaf.Span.Length - 3,
+				$"Substitution key {{{key}}} is undefined"
+			);
 		else
 		{
 			List<SubstitutionMutation>? mutations = null;
 			if (mutationStrings.Length >= 10)
-				processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Substitution key {{{key}}} defines too many mutations, none will be applied");
+				processor.EmitError(
+					line + 1,
+					column + 3,
+					substitutionLeaf.Span.Length - 3,
+					$"Substitution key {{{key}}} defines too many mutations, none will be applied"
+				);
 			else if (mutationStrings.Length > 0)
 			{
 				foreach (var mutationStr in mutationStrings)
@@ -181,19 +208,22 @@ public class SubstitutionParser : InlineParser
 						mutations.Add(mutation);
 					}
 					else
-						processor.EmitError(line + 1, column + 3, substitutionLeaf.Span.Length - 3, $"Mutation '{trimmedMutation}' on {{{key}}} is undefined");
+						processor.EmitError(
+							line + 1,
+							column + 3,
+							substitutionLeaf.Span.Length - 3,
+							$"Mutation '{trimmedMutation}' on {{{key}}} is undefined"
+						);
 				}
 			}
 
 			substitutionLeaf.Mutations = mutations;
 		}
 
-
 		if (processor.TrackTrivia)
 		{
 			// startPosition and slice.Start include the opening/closing sticks.
-			substitutionLeaf.ContentWithTrivia =
-				new StringSlice(slice.Text, startPosition + openSticks, slice.Start - openSticks - 1);
+			substitutionLeaf.ContentWithTrivia = new StringSlice(slice.Text, startPosition + openSticks, slice.Start - openSticks - 1);
 		}
 
 		processor.Inline = substitutionLeaf;

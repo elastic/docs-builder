@@ -5,23 +5,20 @@
 using System.IO.Abstractions;
 using Elastic.Changelog.Rendering.Asciidoc;
 using Elastic.Changelog.Rendering.Markdown;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Rendering;
 
 /// <summary>
 /// Coordinates rendering of changelog output to different formats.
 /// </summary>
-public class ChangelogRenderer(ScopedFileSystem fileSystem, ILogger logger)
+public class ChangelogRenderer(IChangelogFileSystem fileSystem, ILogger logger)
 {
 	/// <summary>
 	/// Renders changelog output based on the specified file type.
 	/// </summary>
-	public async Task RenderAsync(
-		ChangelogFileType fileType,
-		ChangelogRenderContext context,
-		Cancel ctx)
+	public async Task RenderAsync(ChangelogFileType fileType, ChangelogRenderContext context, Cancel ctx)
 	{
 		switch (fileType)
 		{

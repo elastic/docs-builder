@@ -9,9 +9,9 @@ using Elastic.Documentation.Configuration;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class DropdownRenderTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithDropdownsTrue_RendersDropdownFormat()
 	{
 		// Arrange
@@ -36,14 +36,13 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", breakingChange));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -56,7 +55,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -65,7 +64,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
 		FileSystem.File.Exists(breakingChangesFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Verify dropdown format
 		content.Should().Contain("::::{dropdown} Breaking API change");
@@ -75,7 +74,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		content.Should().Contain("::::");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithDropdownsFalse_RendersFlattendFormat()
 	{
 		// Arrange
@@ -102,14 +101,13 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("deprecation.yaml", deprecation));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -122,7 +120,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -131,7 +129,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.2.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Verify flattened format
 		content.Should().Contain("* Deprecated old API");
@@ -147,7 +145,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		content.Should().NotContain("::::");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_DefaultDropdownsFalse_RendersFlattedFormat()
 	{
 		// Arrange
@@ -172,14 +170,13 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("known-issue.yaml", knownIssue));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -192,7 +189,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -201,7 +198,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		var knownIssuesFile = FileSystem.Path.Join(outputDir, "9.2.0", "known-issues.md");
 		FileSystem.File.Exists(knownIssuesFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(knownIssuesFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(knownIssuesFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Verify flattened format (default behavior)
 		content.Should().Contain("* Known issue with search");
@@ -216,7 +213,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		content.Should().NotContain("::::");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_HighlightsWithDropdowns_RendersCorrectFormat()
 	{
 		// Arrange
@@ -240,23 +237,18 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("highlight.yaml", highlight));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		// Test both dropdown and flattened modes
-		var testCases = new[]
-		{
-			new { Dropdowns = true, ExpectDropdown = true },
-			new { Dropdowns = false, ExpectDropdown = false }
-		};
+		var testCases = new[] { new { Dropdowns = true, ExpectDropdown = true }, new { Dropdowns = false, ExpectDropdown = false } };
 
 		foreach (var testCase in testCases)
 		{
@@ -271,7 +263,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
@@ -280,7 +272,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			var highlightsFile = FileSystem.Path.Join(subOutputDir, "9.2.0", "highlights.md");
 			FileSystem.File.Exists(highlightsFile).Should().BeTrue();
 
-			var content = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current.CancellationToken);
+			var content = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
 
 			if (testCase.ExpectDropdown)
 			{
@@ -304,7 +296,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_AsciidocFormat_IgnoresDropdownsFlag()
 	{
 		// Arrange
@@ -329,14 +321,13 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleHeader =
-			"""
+		var bundleHeader = """
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			""";
 		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("breaking-change.yaml", breakingChange));
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -357,7 +348,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			};
 
 			// Act
-			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+			var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 			// Assert
 			result.Should().BeTrue();
@@ -368,7 +359,7 @@ public class DropdownRenderTests(ITestOutputHelper output) : RenderChangelogTest
 			asciidocFiles.Should().HaveCount(1, "should create exactly one AsciiDoc file");
 
 			var asciidocFile = asciidocFiles[0];
-			var content = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current.CancellationToken);
+			var content = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
 
 			// AsciiDoc should always use bullet format regardless of dropdowns flag
 			content.Should().Contain("* Breaking API change");

@@ -12,18 +12,31 @@ namespace Elastic.Markdown.Diagnostics;
 
 public static class ProcessorDiagnosticExtensions
 {
-	private static string CreateExceptionMessage(string message, Exception? e) => message + (e != null ? Environment.NewLine + e : string.Empty);
+	private static string CreateExceptionMessage(string message, Exception? e) =>
+		message + (e != null ? Environment.NewLine + e : string.Empty);
 
 	public static void EmitError(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
 		processor.Emit(Severity.Error, message, line, column, length);
 
-	public static void EmitWarning(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
-		processor.Emit(Severity.Warning, message, line, column, length);
+	public static void EmitWarning(
+		this BlockProcessor processor,
+		string message,
+		int? line = null,
+		int? column = null,
+		int? length = null
+	) => processor.Emit(Severity.Warning, message, line, column, length);
 
 	public static void EmitHint(this BlockProcessor processor, string message, int? line = null, int? column = null, int? length = null) =>
 		processor.Emit(Severity.Hint, message, line, column, length);
 
-	public static void Emit(this BlockProcessor processor, Severity severity, string message, int? line = null, int? column = null, int? length = null)
+	public static void Emit(
+		this BlockProcessor processor,
+		Severity severity,
+		string message,
+		int? line = null,
+		int? column = null,
+		int? length = null
+	)
 	{
 		var context = processor.GetContext();
 		if (context.SkipValidation)
@@ -40,7 +53,6 @@ public static class ProcessorDiagnosticExtensions
 		};
 		context.Build.Collector.Write(d);
 	}
-
 
 	public static void EmitError(this InlineProcessor processor, int line, int column, int length, string message) =>
 		processor.Emit(Severity.Error, line, column, length, message);
@@ -100,7 +112,8 @@ public static class ProcessorDiagnosticExtensions
 		context.Build.Collector.Write(d);
 	}
 
-	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) => Emit(block, Severity.Error, message, e);
+	public static void EmitError(this IBlockExtension block, string message, Exception? e = null) =>
+		Emit(block, Severity.Error, message, e);
 
 	public static void EmitWarning(this IBlockExtension block, string message) => Emit(block, Severity.Warning, message);
 
@@ -123,8 +136,14 @@ public static class ProcessorDiagnosticExtensions
 		block.Build.Collector.Write(d);
 	}
 
-
-	public static void Emit(this InlineProcessor processor, Severity severity, Inline inline, int length, string message, Exception? e = null)
+	public static void Emit(
+		this InlineProcessor processor,
+		Severity severity,
+		Inline inline,
+		int length,
+		string message,
+		Exception? e = null
+	)
 	{
 		var line = inline.Line + 1;
 		var column = inline.Column;
@@ -173,4 +192,14 @@ public static class ProcessorDiagnosticExtensions
 
 	public static void EmitHint(this InlineProcessor processor, Inline inline, int length, string message) =>
 		Emit(processor, Severity.Hint, inline, length, message);
+}
+
+public static class YamlReportingExtensions
+{
+	/// <summary>
+	/// Reports unknown keys found in a directive's YAML at the directive's own position: the body's
+	/// offset within the file isn't tracked, and the message already carries the key's YAML path.
+	/// </summary>
+	public static YamlUnmappedMemberReporting YamlReporting(this IBlockExtension block, YamlUnknownKeyPolicy? policy = null) =>
+		new(d => block.Emit(d.Severity, d.Message), block.CurrentFile.FullName, Policy: policy);
 }

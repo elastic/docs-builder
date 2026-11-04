@@ -7,8 +7,9 @@ using Elastic.Markdown.Myst.Directives.Admonition;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class AdmonitionBaseTests(ITestOutputHelper output, string directive) : DirectiveTest<AdmonitionBlock>(output,
-$$"""
+[InheritsTests]
+public abstract class AdmonitionBaseTests(string directive) : DirectiveTest<AdmonitionBlock>(
+	$$"""
 :::{{{directive}}}
 This is an attention block
 :::
@@ -16,39 +17,44 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesAdmonitionBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be(directive);
 }
 
-public class WarningTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "warning")
+[InheritsTests]
+public class WarningTests() : AdmonitionBaseTests("warning")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Warning");
 }
 
-public class NoteTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "note")
+[InheritsTests]
+public class NoteTests() : AdmonitionBaseTests("note")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Note");
 }
 
-public class TipTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "tip")
+[InheritsTests]
+public class TipTests() : AdmonitionBaseTests("tip")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 }
 
-public class ImportantTests(ITestOutputHelper output) : AdmonitionBaseTests(output, "important")
+[InheritsTests]
+public class ImportantTests() : AdmonitionBaseTests("important")
 {
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Important");
 }
 
-public class NoteTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class NoteTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 ```{note} This is my custom note
 This is an attention block
 ```
@@ -56,16 +62,16 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("note");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Note This is my custom note");
 }
 
-
-public class AdmonitionTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class AdmonitionTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 ```{admonition} This is my custom title
 This is an attention block
 ```
@@ -73,15 +79,16 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("admonition");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom title");
 }
 
-public class DropdownTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} This is my custom dropdown
 :open:
 This is an attention block
@@ -90,28 +97,29 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 }
 
-public class DropdownPlainTextTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownPlainTextTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} Deprecate `elastic.apm` settings
 Dropdown body content.
 :::
 """
 )
 {
-	[Fact]
+	[Test]
 	public void StripsBackticksFromTitle() => Block!.Title.Should().Be("Deprecate elastic.apm settings");
 
-	[Fact]
+	[Test]
 	public void RendersPlainTextTitleInHtml()
 	{
 		Html.Should().Contain("Deprecate elastic.apm settings");
@@ -119,18 +127,19 @@ Dropdown body content.
 	}
 }
 
-public class DropdownPlainTextBoldTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownPlainTextBoldTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} Disable **Save** button
 Dropdown body content.
 :::
 """
 )
 {
-	[Fact]
+	[Test]
 	public void StripsBoldMarkersFromTitle() => Block!.Title.Should().Be("Disable Save button");
 
-	[Fact]
+	[Test]
 	public void RendersBoldTitleAsPlainTextInHtml()
 	{
 		Html.Should().Contain("Disable Save button");
@@ -138,18 +147,19 @@ Dropdown body content.
 	}
 }
 
-public class DropdownPlainTextItalicTitleTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownPlainTextItalicTitleTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} Use _italic_ emphasis
 Dropdown body content.
 :::
 """
 )
 {
-	[Fact]
+	[Test]
 	public void StripsItalicMarkersFromTitle() => Block!.Title.Should().Be("Use italic emphasis");
 
-	[Fact]
+	[Test]
 	public void RendersItalicTitleAsPlainTextInHtml()
 	{
 		Html.Should().Contain("Use italic emphasis");
@@ -157,8 +167,9 @@ Dropdown body content.
 	}
 }
 
-public class DropdownAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} This is my custom dropdown
 :applies_to: stack: ga 9.0
 This is an attention block
@@ -167,21 +178,22 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("This is my custom dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga 9.0");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 }
 
-public class DropdownPropertyParsingTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownPropertyParsingTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} Test Dropdown
 :open:
 :name: test-dropdown
@@ -191,21 +203,22 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Test Dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SetsCrossReferenceName() => Block!.CrossReferenceName.Should().Be("test-dropdown");
 }
 
-public class DropdownNestedContentTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownNestedContentTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 ::::{dropdown} Nested Content Test
 :open:
 This dropdown contains nested content with colons:
@@ -227,18 +240,16 @@ A regular paragraph.
 """
 )
 {
-	private readonly ITestOutputHelper _output = output;
-
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Nested Content Test");
 
-	[Fact]
+	[Test]
 	public void SetsDropdownOpen() => Block!.DropdownOpen.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void ContainsContentWithColons()
 	{
 		var html = Html;
@@ -250,14 +261,10 @@ A regular paragraph.
 		html.Should().Contain("function test() { return &quot;hello:world&quot;; }");
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsNestedDirective()
 	{
 		var html = Html;
-		// Output the full HTML for inspection
-		_output.WriteLine("Generated HTML:");
-		_output.WriteLine(html);
-
 		html.Should().Contain("Nested Note");
 		html.Should().Contain("This is a nested note with colons: 10:30 AM");
 		// Verify the nested note was actually parsed as a directive, not just plain text
@@ -266,7 +273,7 @@ A regular paragraph.
 		html.Should().Contain("admonition-content");
 	}
 
-	[Fact]
+	[Test]
 	public void ContainsContentAfterNestedDirective()
 	{
 		var html = Html;
@@ -274,8 +281,9 @@ A regular paragraph.
 	}
 }
 
-public class DropdownComplexPropertyTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class DropdownComplexPropertyTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{dropdown} Complex Properties Test
 :applies_to: stack: ga 9.0
 This is content with applies_to property
@@ -284,13 +292,13 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("dropdown");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Complex Properties Test");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesToWithComplexValue()
 	{
 		Block!.AppliesToDefinition.Should().Be("stack: ga 9.0");
@@ -298,8 +306,9 @@ A regular paragraph.
 	}
 }
 
-public class NoteAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class NoteAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{note}
 :applies_to: stack: ga
 This is a note with applies_to information
@@ -308,19 +317,19 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("note");
 
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Note");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToInHtml()
 	{
 		var html = Html;
@@ -330,8 +339,9 @@ A regular paragraph.
 	}
 }
 
-public class WarningAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class WarningAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{warning}
 :applies_to: stack: ga
 This is a warning with applies_to information
@@ -340,19 +350,19 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("warning");
 
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Warning");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToInHtml()
 	{
 		var html = Html;
@@ -362,8 +372,9 @@ A regular paragraph.
 	}
 }
 
-public class TipAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class TipAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{tip}
 :applies_to: stack: ga
 This is a tip with applies_to information
@@ -372,19 +383,19 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("tip");
 
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Tip");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToInHtml()
 	{
 		var html = Html;
@@ -394,8 +405,9 @@ A regular paragraph.
 	}
 }
 
-public class ImportantAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class ImportantAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{important}
 :applies_to: stack: ga
 This is an important notice with applies_to information
@@ -404,19 +416,19 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("important");
 
-	[Fact]
+	[Test]
 	public void SetsTitle() => Block!.Title.Should().Be("Important");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToInHtml()
 	{
 		var html = Html;
@@ -426,8 +438,9 @@ A regular paragraph.
 	}
 }
 
-public class AdmonitionAppliesToTests(ITestOutputHelper output) : DirectiveTest<AdmonitionBlock>(output,
-"""
+[InheritsTests]
+public class AdmonitionAppliesToTests() : DirectiveTest<AdmonitionBlock>(
+	"""
 :::{admonition} Custom Admonition
 :applies_to: stack: ga
 This is a custom admonition with applies_to information
@@ -436,19 +449,19 @@ A regular paragraph.
 """
 )
 {
-	[Fact]
+	[Test]
 	public void SetsCorrectAdmonitionType() => Block!.Admonition.Should().Be("admonition");
 
-	[Fact]
+	[Test]
 	public void SetsCustomTitle() => Block!.Title.Should().Be("Custom Admonition");
 
-	[Fact]
+	[Test]
 	public void SetsAppliesToDefinition() => Block!.AppliesToDefinition.Should().Be("stack: ga");
 
-	[Fact]
+	[Test]
 	public void ParsesAppliesTo() => Block!.AppliesTo.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAppliesToInHtml()
 	{
 		var html = Html;

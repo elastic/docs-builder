@@ -117,12 +117,7 @@ public record DetectionRule
 		if (VersionLock != null || checkoutDirectory == null)
 			return;
 
-		var versionLockPath = fileSystem.Path.Join(
-			checkoutDirectory.FullName,
-			"detection_rules",
-			"etc",
-			"version.lock.json"
-		);
+		var versionLockPath = fileSystem.Path.Join(checkoutDirectory.FullName, "detection_rules", "etc", "version.lock.json");
 
 		if (!fileSystem.File.Exists(versionLockPath))
 			return;
@@ -230,12 +225,7 @@ public record DetectionRule
 			var framework = GetString(threatTable, "framework");
 			var techniques = ReadTechniques(threatTable);
 			var tactic = ReadTactic(threatTable);
-			threatsList.Add(new DetectionRuleThreat
-			{
-				Framework = framework,
-				Techniques = techniques,
-				Tactic = tactic
-			});
+			threatsList.Add(new DetectionRuleThreat { Framework = framework, Techniques = techniques, Tactic = tactic });
 		}
 
 		return [.. threatsList];
@@ -291,15 +281,12 @@ public record DetectionRule
 		};
 	}
 
-	private static string GetString(TomlTable table, string key) =>
-		(string)table[key];
+	private static string GetString(TomlTable table, string key) => (string)table[key];
 
 	private static string[]? TryGetStringArray(TomlTable table, string key) =>
 		table.TryGetValue(key, out var node) && node is TomlArray t ? t.OfType<string>().ToArray() : null;
 
-	private static string? TryGetString(TomlTable table, string key) =>
-		table.TryGetValue(key, out var node) && node is string s ? s : null;
+	private static string? TryGetString(TomlTable table, string key) => table.TryGetValue(key, out var node) && node is string s ? s : null;
 
-	private static int? TryGetInt(TomlTable table, string key) =>
-		table.TryGetValue(key, out var node) && node is long l ? (int)l : null;
+	private static int? TryGetInt(TomlTable table, string key) => table.TryGetValue(key, out var node) && node is long l ? (int)l : null;
 }

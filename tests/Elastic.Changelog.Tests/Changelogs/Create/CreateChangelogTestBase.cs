@@ -10,22 +10,21 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public abstract class CreateChangelogTestBase(ITestOutputHelper output) : ChangelogTestBase(output)
+public abstract class CreateChangelogTestBase() : ChangelogTestBase()
 {
 	protected IGitHubPrService MockGitHubService { get; } = A.Fake<IGitHubPrService>();
 
 	protected ChangelogCreationService CreateService(IEnvironmentVariables? env = null) =>
-		new(LoggerFactory, ConfigurationContext, MockGitHubService, FileSystem, env);
+		new(LoggerFactory, ConfigurationContext, FileSystem, MockGitHubService, env);
 
 	protected async Task<string> CreateConfigDirectory(string configContent)
 	{
 		var configDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(configDir);
 		var configPath = FileSystem.Path.Join(configDir, "changelog.yml");
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 		return configPath;
 	}
 
-	protected string CreateOutputDirectory() =>
-		FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+	protected string CreateOutputDirectory() => FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 }

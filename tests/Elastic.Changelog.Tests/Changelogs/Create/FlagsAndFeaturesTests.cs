@@ -7,9 +7,9 @@ using Elastic.Changelog.Creation;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class FlagsAndFeaturesTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithHighlightFlag_CreatesValidYaml()
 	{
 		// Arrange
@@ -19,19 +19,20 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "Important feature",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Highlight = true,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -42,11 +43,11 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("highlight: true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithFeatureId_CreatesValidYaml()
 	{
 		// Arrange
@@ -56,19 +57,20 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "New feature with flag",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			FeatureId = "feature:new-search-api",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -79,11 +81,11 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
-		yamlContent.Should().Contain("feature-id: feature:new-search-api");
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
+		yamlContent.Should().Contain("feature-id: \"feature:new-search-api\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithIssues_CreatesValidYaml()
 	{
 		// Arrange
@@ -93,23 +95,20 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
-			Issues =
-			[
-				"https://github.com/elastic/elasticsearch/issues/123",
-				"https://github.com/elastic/elasticsearch/issues/456"
-			],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/123", "https://github.com/elastic/elasticsearch/issues/456"],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -120,9 +119,9 @@ public class FlagsAndFeaturesTests(ITestOutputHelper output) : CreateChangelogTe
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("issues:");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/123\"");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/456\"");
 	}
 }

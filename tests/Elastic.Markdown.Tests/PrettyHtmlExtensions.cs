@@ -6,11 +6,10 @@ using AngleSharp.Diffing;
 using AngleSharp.Html;
 using AngleSharp.Html.Parser;
 using AwesomeAssertions;
+using AwesomeAssertions.Execution;
 using DiffPlex.DiffBuilder;
 using DiffPlex.DiffBuilder.Model;
 using JetBrains.Annotations;
-using Xunit.Internal;
-using Xunit.Sdk;
 
 namespace Elastic.Markdown.Tests;
 
@@ -28,26 +27,24 @@ public static class PrettyHtmlExtensions
 		if (sanitize)
 		{
 			var links = element.QuerySelectorAll("a");
-			links
-				.ForEach(l =>
-				{
-					l.RemoveAttribute("hx-get");
-					l.RemoveAttribute("hx-select-oob");
-					l.RemoveAttribute("hx-swap");
-					l.RemoveAttribute("hx-indicator");
-					l.RemoveAttribute("hx-push-url");
-					l.RemoveAttribute("preload");
-				});
+			foreach (var l in links)
+			{
+				l.RemoveAttribute("hx-get");
+				l.RemoveAttribute("hx-select-oob");
+				l.RemoveAttribute("hx-swap");
+				l.RemoveAttribute("hx-indicator");
+				l.RemoveAttribute("hx-push-url");
+				l.RemoveAttribute("preload");
+			}
 		}
 
 		using var sw = new StringWriter();
 		var formatter = new PrettyMarkupFormatter();
-		element.Children
-			.ForEach(c =>
-			{
-				// ReSharper disable once AccessToDisposedClosure
-				c.ToHtml(sw, formatter);
-			});
+		foreach (var c in element.Children)
+		{
+			// ReSharper disable once AccessToDisposedClosure
+			c.ToHtml(sw, formatter);
+		}
 		return sw.ToString().TrimStart('\n');
 	}
 
@@ -60,16 +57,12 @@ public static class PrettyHtmlExtensions
 		expected = expected.Trim('\n').PrettyHtml(sanitize);
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 
-		var diff = DiffBuilder
-			.Compare(actual)
-			.WithTest(expected)
-			.Build()
-			.ToArray();
+		var diff = DiffBuilder.Compare(actual).WithTest(expected).Build().ToArray();
 
 		if (diff.Length == 0)
 			return;
 
-		throw new XunitException(CreateDiff(actual, expected, sanitize));
+		throw new AssertionFailedException(CreateDiff(actual, expected, sanitize));
 	}
 	public static void ShouldContainHtml(
 		[LanguageInjection("html")] this string actual,
@@ -95,9 +88,9 @@ public static class PrettyHtmlExtensions
 		actual = actual.Trim('\n').PrettyHtml(sanitize);
 		var diffLines = InlineDiffBuilder.Diff(expected, actual).Lines;
 
-		var mutatedCount =
-			diffLines
-				.Count(l => l.Type switch
+		var mutatedCount = diffLines.Count(
+			l =>
+				l.Type switch
 				{
 					ChangeType.Unchanged => false,
 					ChangeType.Deleted => true,
@@ -105,7 +98,8 @@ public static class PrettyHtmlExtensions
 					ChangeType.Imaginary => false,
 					ChangeType.Modified => true,
 					_ => false
-				});
+				}
+		);
 		if (mutatedCount == 0)
 			return string.Empty;
 
@@ -122,28 +116,27 @@ public static class PrettyHtmlExtensions
 		}
 
 		using var sw = new StringWriter();
-		diffLines
-			.ForEach(l =>
+		foreach (var l in diffLines)
+		{
+			switch (l.Type)
 			{
-				switch (l.Type)
-				{
-					case ChangeType.Unchanged:
-						sw.WriteLine(l.Text);
-						break;
-					case ChangeType.Deleted:
-						sw.WriteLine("- " + l.Text);
-						break;
-					case ChangeType.Inserted:
-						sw.WriteLine("+ " + l.Text);
-						break;
-					case ChangeType.Imaginary:
-						sw.WriteLine("? " + l.Text);
-						break;
-					case ChangeType.Modified:
-						sw.WriteLine("+ " + l.Text);
-						break;
-				}
-			});
+				case ChangeType.Unchanged:
+					sw.WriteLine(l.Text);
+					break;
+				case ChangeType.Deleted:
+					sw.WriteLine("- " + l.Text);
+					break;
+				case ChangeType.Inserted:
+					sw.WriteLine("+ " + l.Text);
+					break;
+				case ChangeType.Imaginary:
+					sw.WriteLine("? " + l.Text);
+					break;
+				case ChangeType.Modified:
+					sw.WriteLine("+ " + l.Text);
+					break;
+			}
+		}
 
 		return sw.ToString();
 	}

@@ -13,7 +13,7 @@ namespace Mcp.Remote.Tests;
 
 public class DocumentToolsTests
 {
-	[Fact]
+	[Test]
 	public async Task GetDocumentByUrl_MapsSourceUrlIntoResponse()
 	{
 		const string expectedSourceUrl = "https://github.com/elastic/docs-content/blob/main/docs/some-page.md";
@@ -26,7 +26,7 @@ public class DocumentToolsTests
 		});
 		var tools = new DocumentTools(gateway, NullLogger<DocumentTools>.Instance);
 
-		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current.CancellationToken);
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		// MCP responses use camelCase (McpJsonContext); assert the wire key, not only the CLR property.
 		json.Should().Contain("\"sourceUrl\"");
@@ -35,7 +35,7 @@ public class DocumentToolsTests
 		response.SourceUrl.Should().Be(expectedSourceUrl);
 	}
 
-	[Fact]
+	[Test]
 	public async Task GetDocumentByUrl_OmitsSourceUrlWhenNull()
 	{
 		var gateway = new StubDocumentGateway(new DocumentResult
@@ -47,7 +47,7 @@ public class DocumentToolsTests
 		});
 		var tools = new DocumentTools(gateway, NullLogger<DocumentTools>.Instance);
 
-		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current.CancellationToken);
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
 		using var doc = JsonDocument.Parse(json);
 		var hasNonNullSourceUrl = doc.RootElement.TryGetProperty("sourceUrl", out var sourceUrl)
@@ -58,10 +58,43 @@ public class DocumentToolsTests
 		response.SourceUrl.Should().BeNull();
 	}
 
+	[Test]
+	public async Task GetDocumentByUrl_BodyOmitted_ExplainsHowToRequestIt()
+	{
+		var tools = new DocumentTools(StubWithBody(), NullLogger<DocumentTools>.Instance);
+
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		response.Body.Should().BeNull();
+		response.BodyLength.Should().Be(9);
+		response.BodyNote.Should().Contain("includeBody=true");
+	}
+
+	[Test]
+	public async Task GetDocumentByUrl_IncludeBody_ReturnsBodyWithoutNote()
+	{
+		var tools = new DocumentTools(StubWithBody(), NullLogger<DocumentTools>.Instance);
+
+		var json = await tools.GetDocumentByUrl(
+			"/docs/some-page",
+			includeBody: true,
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		response.Body.Should().Be("Body text");
+		response.BodyNote.Should().BeNull();
+	}
+
+	private static StubDocumentGateway StubWithBody() =>
+		new(new DocumentResult { Url = "/docs/some-page", Title = "Some Page", Type = "doc", Body = "Body text" });
+
 	private sealed class StubDocumentGateway(DocumentResult? result) : IDocumentGateway
 	{
-		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) =>
-			Task.FromResult(result);
+		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) => Task.FromResult(result);
 
 		public Task<DocumentStructure?> GetStructureAsync(string url, CancellationToken ct = default) =>
 			Task.FromResult<DocumentStructure?>(null);

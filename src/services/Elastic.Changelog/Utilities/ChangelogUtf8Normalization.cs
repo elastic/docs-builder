@@ -30,14 +30,12 @@ public static class ChangelogUtf8Normalization
 	/// </summary>
 	/// <param name="text">The text to normalize</param>
 	/// <returns>Text with leading BOM character removed if it was present</returns>
-	public static string StripLeadingUtf8BomChar(string text) =>
-		Utf8TextNormalization.StripLeadingUtf8Bom(text)!;
+	public static string StripLeadingUtf8BomChar(string text) => Utf8TextNormalization.StripLeadingUtf8Bom(text)!;
 
 	/// <summary>
 	/// Checks if a byte span starts with the UTF-8 BOM sequence (EF BB BF).
 	/// </summary>
 	/// <param name="bytes">The byte span to check</param>
 	/// <returns>True if the span starts with UTF-8 BOM bytes</returns>
-	public static bool HasUtf8Bom(ReadOnlySpan<byte> bytes) =>
-		Utf8TextNormalization.HasUtf8Bom(bytes);
+	public static bool HasUtf8Bom(ReadOnlySpan<byte> bytes) => Utf8TextNormalization.HasUtf8Bom(bytes);
 }

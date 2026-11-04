@@ -1,0 +1,5 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Navigation.NavigationRenderNode>
+@if (Model.HttpMethod is { } httpMethod)
+{
+<span class="nav-v2-api-method nav-v2-api-method-@httpMethod">@httpMethod.ToUpperInvariant()</span>
+}

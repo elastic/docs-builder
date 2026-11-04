@@ -22,11 +22,11 @@ public record FullSearchRequest
 	public int PageNumber { get; init; } = 1;
 	public int PageSize { get; init; } = 20;
 	public string[]? TypeFilter { get; init; }
-	public string[]? SectionFilter { get; init; }       // navigation_section
-	public string[]? DeploymentFilter { get; init; }    // applies_to.type
-	public string[]? ProductFilter { get; init; }       // product.id (AND behavior)
-	public string? VersionFilter { get; init; }         // "9.0+" | "8.19" | "7.17"
-	public string SortBy { get; init; } = "relevance";  // relevance | recent | alpha
+	public string[]? SectionFilter { get; init; } // navigation_section
+	public string[]? DeploymentFilter { get; init; } // applies_to.type
+	public string[]? ProductFilter { get; init; } // product.id (AND behavior)
+	public string? VersionFilter { get; init; } // "9.0+" | "8.19" | "7.17"
+	public string SortBy { get; init; } = "relevance"; // relevance | recent | alpha
 	public bool IncludeHighlighting { get; init; } = true;
 }
 
@@ -41,9 +41,7 @@ public record FullSearchResponse
 	public required int PageSize { get; init; }
 	public FullSearchAggregations Aggregations { get; init; } = new();
 	public bool IsSemanticQuery { get; init; }
-	public int PageCount => TotalResults > 0
-		? (int)Math.Ceiling((double)TotalResults / PageSize)
-		: 0;
+	public int PageCount => TotalResults > 0 ? (int)Math.Ceiling((double)TotalResults / PageSize) : 0;
 }
 
 /// <summary>
@@ -65,7 +63,11 @@ public record FullSearchAggregations
 	public IReadOnlyDictionary<string, long> Type { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> NavigationSection { get; init; } = new Dictionary<string, long>();
 	public IReadOnlyDictionary<string, long> DeploymentType { get; init; } = new Dictionary<string, long>();
-	public IReadOnlyDictionary<string, ProductAggregationBucket> Product { get; init; } = new Dictionary<string, ProductAggregationBucket>();
+	public IReadOnlyDictionary<string, ProductAggregationBucket> Product
+	{
+		get;
+		init;
+	} = new Dictionary<string, ProductAggregationBucket>();
 }
 
 /// <summary>

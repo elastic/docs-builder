@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
+using Elastic.Documentation.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Westwind.AspNetCore.LiveReload;
@@ -13,29 +14,48 @@ namespace Documentation.Builder.Http;
 
 public static class HotReloadManager
 {
+	/// <summary>Raised when <c>dotnet watch</c> applies a code change, before the browser is refreshed.</summary>
+	public static event Action? ApplicationUpdated;
+
 	public static void ClearCache(Type[]? _) => LiveReloadMiddleware.RefreshWebSocketRequest();
 
-	public static void UpdateApplication(Type[]? _) => Task.Run(async () =>
+	public static void UpdateApplication(Type[]? _)
 	{
-		await Task.Delay(1000);
-		var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
-		Console.WriteLine("UpdateApplication");
-	});
+		ApplicationUpdated?.Invoke();
+		RefreshBrowserAfterDelay();
+	}
+
+	private static void RefreshBrowserAfterDelay() =>
+		Task.Run(async () =>
+		{
+			await Task.Delay(1000);
+			var __ = LiveReloadMiddleware.RefreshWebSocketRequest();
+			Console.WriteLine("UpdateApplication");
+		});
 }
 
 public sealed class ReloadGeneratorService(
 	ReloadableGeneratorState reloadableGenerator,
 	InMemoryBuildState inMemoryBuildState,
+	bool noHud,
 	ILogger<ReloadGeneratorService> logger
 ) : IHostedService, IDisposable
 {
 	private static readonly FrozenSet<string> AssetExtensions = new[]
 	{
-		".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp",
-		".yml", ".yaml", ".toml"
+		".png",
+		".jpg",
+		".jpeg",
+		".gif",
+		".svg",
+		".webp",
+		".yml",
+		".yaml",
+		".toml"
 	}.ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
 	private FileSystemWatcher? _watcher;
+	private FileSystemWatcher? _staticAssetsWatcher;
 	private CancellationTokenSource? _serviceCts;
 	private Task? _backgroundBuildTask;
 	private ReloadableGeneratorState ReloadableGenerator { get; } = reloadableGenerator;
@@ -43,38 +63,35 @@ public sealed class ReloadGeneratorService(
 	private ILogger Logger { get; } = logger;
 
 	private readonly Debouncer _debouncer = new(TimeSpan.FromMilliseconds(500));
+	private readonly Debouncer _staticAssetsDebouncer = new(TimeSpan.FromMilliseconds(500));
 
 	public async Task StartAsync(Cancel cancellationToken)
 	{
 		_serviceCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
 		// Await the live-reload generator so the server can serve pages immediately.
-		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
-			?? ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
+		var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
 		await ReloadableGenerator.ReloadAsync(cancellationToken);
 
-		// Start the build loop; only shutdownCt (Ctrl+C / app exit) can cancel a running build.
-		// File-edit triggers enqueue via ScheduleBuild and never interrupt the current build.
-		_backgroundBuildTask = InMemoryBuildState.RunAsync(_serviceCts.Token);
-		InMemoryBuildState.ScheduleBuild(sourcePath);
+		if (!noHud)
+		{
+			// Start the build loop; only shutdownCt (Ctrl+C / app exit) can cancel a running build.
+			// File-edit triggers enqueue via ScheduleBuild and never interrupt the current build.
+			_backgroundBuildTask = InMemoryBuildState.RunAsync(_serviceCts.Token);
+			InMemoryBuildState.ScheduleBuild(sourcePath);
+		}
 
-		// ReSharper disable once RedundantAssignment
-		var directory = ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
-#if DEBUG
-		// Fall back to source directory when there is no separate checkout directory (e.g. when serving the project's own docs from a worktree)
-		directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
-			?? ReloadableGenerator.Generator.DocumentationSet.SourceDirectory.FullName;
-#endif
+		var directory = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
 		Logger.LogInformation("Start file watch on: {Directory}", directory);
 		var watcher = new FileSystemWatcher(directory)
 		{
 			NotifyFilter = NotifyFilters.Attributes
-							| NotifyFilters.CreationTime
-							| NotifyFilters.DirectoryName
-							| NotifyFilters.FileName
-							| NotifyFilters.LastWrite
-							| NotifyFilters.Security
-							| NotifyFilters.Size
+				| NotifyFilters.CreationTime
+				| NotifyFilters.DirectoryName
+				| NotifyFilters.FileName
+				| NotifyFilters.LastWrite
+				| NotifyFilters.Security
+				| NotifyFilters.Size
 		};
 
 		watcher.Changed += OnChanged;
@@ -95,23 +112,68 @@ public sealed class ReloadGeneratorService(
 		watcher.IncludeSubdirectories = true;
 		watcher.EnableRaisingEvents = true;
 		_watcher = watcher;
+
+		HotReloadManager.ApplicationUpdated += OnApplicationUpdated;
+		_staticAssetsWatcher = WatchStaticAssets();
 	}
+
+	// Generated API pages bake in the rendering code, so a hot-reloaded change only shows after regeneration.
+	private void OnApplicationUpdated() => ReloadableGenerator.InvalidateApiReferences();
+
+	// Under dotnet watch, Vite rebuilds JS and CSS that debug builds serve from disk, so a rebuild only needs a browser refresh.
+	private FileSystemWatcher? WatchStaticAssets()
+	{
+		if (Environment.GetEnvironmentVariable("DOTNET_WATCH") is null || Paths.GetSolutionDirectory() is not { } solutionRoot)
+			return null;
+
+		var staticDirectory = Path.Join(solutionRoot.FullName, "src", "Elastic.Documentation.Site", "_static");
+		if (!Directory.Exists(staticDirectory))
+			return null;
+
+		Logger.LogInformation("Start static asset watch on: {Directory}", staticDirectory);
+		var watcher = new FileSystemWatcher(staticDirectory)
+		{
+			NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
+		};
+		watcher.Filters.Add("*.js");
+		watcher.Filters.Add("*.css");
+		watcher.Changed += OnStaticAssetChanged;
+		watcher.Created += OnStaticAssetChanged;
+		watcher.Renamed += OnStaticAssetChanged;
+		watcher.EnableRaisingEvents = true;
+		return watcher;
+	}
+
+	private void OnStaticAssetChanged(object sender, FileSystemEventArgs e) =>
+		_staticAssetsDebouncer.Schedule(
+			_ =>
+			{
+				Logger.LogInformation("Static assets changed, refreshing browser");
+				return LiveReloadMiddleware.RefreshWebSocketRequest();
+			},
+			_serviceCts?.Token ?? Cancel.None
+		);
 
 	private void Reload(bool reloadConfiguration = false)
 	{
 		var token = _serviceCts?.Token ?? Cancel.None;
-		_debouncer.Schedule(async ctx =>
-		{
-			await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
-			Logger.LogInformation("Reload complete!");
-			_ = LiveReloadMiddleware.RefreshWebSocketRequest();
+		_debouncer.Schedule(
+			async ctx =>
+			{
+				await ReloadableGenerator.ReloadAsync(ctx, reloadConfiguration);
+				Logger.LogInformation("Reload complete!");
+				_ = LiveReloadMiddleware.RefreshWebSocketRequest();
 
-			// Schedule a validation build after every reload — both content edits and structural changes.
-			// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
-			var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory?.FullName
-				?? ReloadableGenerator.Generator.Context.DocumentationSourceDirectory.FullName;
-			InMemoryBuildState.ScheduleBuild(sourcePath);
-		}, token);
+				if (!noHud)
+				{
+					// Schedule a validation build after every reload — both content edits and structural changes.
+					// The build loop coalesces rapid triggers: a new request while a build runs queues one more.
+					var sourcePath = ReloadableGenerator.Generator.Context.DocumentationCheckoutDirectory.FullName;
+					InMemoryBuildState.ScheduleBuild(sourcePath);
+				}
+			},
+			token
+		);
 	}
 
 	public async Task StopAsync(Cancel cancellationToken)
@@ -140,21 +202,25 @@ public sealed class ReloadGeneratorService(
 			}
 		}
 
+		HotReloadManager.ApplicationUpdated -= OnApplicationUpdated;
 		_watcher?.Dispose();
+		_staticAssetsWatcher?.Dispose();
 	}
 
 	// Check if a path should be ignored (output directories, hidden folders, etc.)
 	private static bool ShouldIgnorePath(string path) =>
-		path.Contains("/.artifacts/") || path.Contains("\\.artifacts\\") ||
-		path.Contains("/_site/") || path.Contains("\\_site\\") ||
-		path.Contains("/node_modules/") || path.Contains("\\node_modules\\") ||
-		path.Contains("/.git/") || path.Contains("\\.git\\");
+		path.Contains("/.artifacts/")
+			|| path.Contains("\\.artifacts\\")
+			|| path.Contains("/_site/")
+			|| path.Contains("\\_site\\")
+			|| path.Contains("/node_modules/")
+			|| path.Contains("\\node_modules\\")
+			|| path.Contains("/.git/")
+			|| path.Contains("\\.git\\");
 
-	private static bool IsConfigFile(string path) =>
-		path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
+	private static bool IsConfigFile(string path) => path.EndsWith("docset.yml") || path.EndsWith("toc.yml");
 
-	private static bool IsAssetFile(string path) =>
-		AssetExtensions.Contains(Path.GetExtension(path));
+	private static bool IsAssetFile(string path) => AssetExtensions.Contains(Path.GetExtension(path));
 
 	private void OnChanged(object sender, FileSystemEventArgs e)
 	{
@@ -220,8 +286,7 @@ public sealed class ReloadGeneratorService(
 #endif
 	}
 
-	private void OnError(object sender, ErrorEventArgs e) =>
-		PrintException(e.GetException());
+	private void OnError(object sender, ErrorEventArgs e) => PrintException(e.GetException());
 
 	private void PrintException(Exception? ex)
 	{
@@ -235,9 +300,12 @@ public sealed class ReloadGeneratorService(
 
 	public void Dispose()
 	{
+		HotReloadManager.ApplicationUpdated -= OnApplicationUpdated;
 		_serviceCts?.Dispose();
 		_watcher?.Dispose();
+		_staticAssetsWatcher?.Dispose();
 		_debouncer.Dispose();
+		_staticAssetsDebouncer.Dispose();
 	}
 
 	/// <summary>
@@ -261,15 +329,18 @@ public sealed class ReloadGeneratorService(
 				newCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 				_pendingCts = newCts;
 			}
-			_ = Task.Run(async () =>
-			{
-				try
+			_ = Task.Run(
+				async () =>
 				{
-					await Task.Delay(window, newCts.Token);
-					await action(newCts.Token);
-				}
-				catch (OperationCanceledException) { }
-			}, newCts.Token);
+					try
+					{
+						await Task.Delay(window, newCts.Token);
+						await action(newCts.Token);
+					}
+					catch (OperationCanceledException) { }
+				},
+				newCts.Token
+			);
 		}
 
 		public void Dispose()

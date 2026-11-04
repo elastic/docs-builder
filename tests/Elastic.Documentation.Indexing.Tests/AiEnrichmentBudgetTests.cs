@@ -8,7 +8,7 @@ namespace Elastic.Documentation.Indexing.Tests;
 
 public class AiEnrichmentBudgetTests
 {
-	[Fact]
+	[Test]
 	public void TryValidateMaxTime_NullValue_ReturnsTrue()
 	{
 		var result = AiEnrichmentBudget.TryValidateMaxTime(null, out var error);
@@ -17,7 +17,7 @@ public class AiEnrichmentBudgetTests
 		error.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TryValidateMaxTime_ExactlyMinimum_ReturnsTrue()
 	{
 		var result = AiEnrichmentBudget.TryValidateMaxTime(AiEnrichmentDefaults.MinWallClock, out var error);
@@ -26,7 +26,7 @@ public class AiEnrichmentBudgetTests
 		error.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void TryValidateMaxTime_BelowMinimum_ReturnsFalse()
 	{
 		var result = AiEnrichmentBudget.TryValidateMaxTime(TimeSpan.FromSeconds(30), out var error);
@@ -35,7 +35,7 @@ public class AiEnrichmentBudgetTests
 		error.Should().NotBeNullOrEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void TryValidateMaxTime_AboveMinimum_ReturnsTrue()
 	{
 		var result = AiEnrichmentBudget.TryValidateMaxTime(TimeSpan.FromHours(2), out var error);
@@ -44,10 +44,10 @@ public class AiEnrichmentBudgetTests
 		error.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData(0)]
-	[InlineData(-5)]
+	[Test]
+	[Arguments(null)]
+	[Arguments(0)]
+	[Arguments(-5)]
 	public void EffectiveMaxDocs_NonPositiveOrUnset_FallsBackToDefault(int? maxDocs)
 	{
 		var budget = new AiEnrichmentBudget(maxDocs, null);
@@ -55,7 +55,7 @@ public class AiEnrichmentBudgetTests
 		budget.EffectiveMaxDocs.Should().Be(AiEnrichmentDefaults.MaxEnrichmentsPerRun);
 	}
 
-	[Fact]
+	[Test]
 	public void EffectiveMaxDocs_PositiveValue_ReturnsThatValue()
 	{
 		var budget = new AiEnrichmentBudget(42, null);
@@ -63,7 +63,7 @@ public class AiEnrichmentBudgetTests
 		budget.EffectiveMaxDocs.Should().Be(42);
 	}
 
-	[Fact]
+	[Test]
 	public void Default_HasSharedDefaultDocCountAndNoTimeLimit()
 	{
 		AiEnrichmentBudget.Default.EffectiveMaxDocs.Should().Be(AiEnrichmentDefaults.MaxEnrichmentsPerRun);

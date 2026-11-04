@@ -8,12 +8,13 @@ using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using Nullean.ScopedFileSystem;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
-public class PublicOnlyAssemblerConfigurationTests
+public class PublicOnlyAssemblerConfigurationTests : IAsyncDisposable
 {
 	private DiagnosticsCollector Collector { get; }
 	private AssembleContext Context { get; }
@@ -26,14 +27,18 @@ public class PublicOnlyAssemblerConfigurationTests
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
 		Collector = new DiagnosticsCollector([]);
-		var configurationFileProvider = new ConfigurationFileProvider(NullLoggerFactory.Instance, FileSystem, skipPrivateRepositories: true);
+		var configurationFileProvider = new ConfigurationFileProvider(
+			NullLoggerFactory.Instance,
+			new ConfigurationFileSystem(FileSystem),
+			skipPrivateRepositories: true
+		);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem, configurationFileProvider: configurationFileProvider);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var assembleFs = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs, CheckoutDirectory.FullName, null);
 	}
 
-	[Fact]
+	[Test]
 	public void ReadsPrivateRepositories()
 	{
 		var config = Context.Configuration;
@@ -41,36 +46,37 @@ public class PublicOnlyAssemblerConfigurationTests
 		config.PrivateRepositories.Should().NotBeEmpty().And.ContainKey("cloud");
 		var cloud = config.PrivateRepositories["cloud"];
 		cloud.Should().NotBeNull();
-		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
 
+	public async ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		await Collector.DisposeAsync();
+	}
 }
 
-public class AssemblerConfigurationTests : IAsyncLifetime
+[ClassDataSource<DocumentationFixture>(Shared = SharedType.PerAssembly)]
+public class AssemblerConfigurationTests(DocumentationFixture fixture) : IAsyncInitializer, IAsyncDisposable
 {
-	private readonly DocumentationFixture _fixture;
-	private readonly ITestOutputHelper _output;
-	private DiagnosticsCollector Collector { get; }
-	private AssembleContext Context { get; }
-	private FileSystem FileSystem { get; }
-	private IDirectoryInfo CheckoutDirectory { get; set; }
-	public AssemblerConfigurationTests(DocumentationFixture fixture, ITestOutputHelper output)
+	private DiagnosticsCollector Collector { get; } = new DiagnosticsCollector([]);
+	private AssembleContext Context { get; set; } = null!;
+	private FileSystem FileSystem { get; } = new FileSystem();
+	private IDirectoryInfo CheckoutDirectory { get; set; } = null!;
+
+	public Task InitializeAsync()
 	{
-		_fixture = fixture;
-		_output = output;
-		FileSystem = new FileSystem();
 		CheckoutDirectory = FileSystem.DirectoryInfo.New(
 			FileSystem.Path.Join(Paths.GetSolutionDirectory()!.FullName, ".artifacts", "checkouts")
 		);
-		Collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
-		var scopedFs = FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem);
-		Context = new AssembleContext(config, configurationContext, "dev", Collector, scopedFs, scopedFs, CheckoutDirectory.FullName, null);
+		var assembleFs2 = CheckoutsFileSystem.FromWorkingDirectory(FileSystem);
+		Context = new AssembleContext(config, configurationContext, "dev", Collector, assembleFs2, CheckoutDirectory.FullName, null);
+		return Task.CompletedTask;
 	}
 
-	[Fact]
+	[Test]
 	public void ReadsConfigurationFiles()
 	{
 		Context.ConfigurationFileProvider.VersionFile.Name.Should().Be("versions.yml");
@@ -81,12 +87,11 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		Context.ConfigurationFileProvider.SearchFile.Name.Should().Be("search.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void ReadsContentSource()
 	{
 		var environments = Context.Configuration.Environments;
-		environments.Should().NotBeEmpty()
-			.And.ContainKey("prod");
+		environments.Should().NotBeEmpty().And.ContainKey("prod");
 
 		var prod = environments["prod"];
 		prod.ContentSource.Should().Be(ContentSource.Current);
@@ -95,48 +100,55 @@ public class AssemblerConfigurationTests : IAsyncLifetime
 		staging.ContentSource.Should().Be(ContentSource.Next);
 	}
 
-	[Fact]
+	[Test]
+	public void StagingEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("staging");
+
+	[Test]
+	public void PreviewEnvironment_EnablesAssemblerApiExplorerFlag() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
+
+	private void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
+	{
+		var environment = Context.Configuration.Environments[environmentName];
+
+		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
+	}
+
+	[Test]
+	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorerFlag()
+	{
+		var prod = Context.Configuration.Environments["prod"];
+
+		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");
+	}
+
+	[Test]
 	public void ReadsVersions()
 	{
 		var config = Context.Configuration;
-		config.SharedConfigurations.Should().NotBeEmpty()
-			.And.ContainKey("stack");
+		config.SharedConfigurations.Should().NotBeEmpty().And.ContainKey("stack");
 
 		config.SharedConfigurations["stack"].GitReferenceEdge.Should().NotBeNullOrEmpty();
 
-		//var agent = config.ReferenceRepositories["elasticsearch"];
-		//agent.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-		//	.And.Be(config.NamedGitReferences["stack"]);
-
 		// test defaults
 		var apmServer = config.ReferenceRepositories["apm-server"];
-		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("main");
-		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty()
-			.And.Be("main");
+		apmServer.GitReferenceNext.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("main");
+		apmServer.GitReferenceEdge.Should().NotBeNullOrEmpty().And.Be("main");
 
 		var beats = config.ReferenceRepositories["beats"];
-		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.NotBe("main");
+		beats.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.NotBe("main");
 
 		var curator = config.ReferenceRepositories["curator"];
-		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty()
-			.And.Be("master");
+		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
 
-	/// <inheritdoc />
-	public ValueTask DisposeAsync()
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		if (TestContext.Current.TestState?.Result is not TestResult.Failed)
-			return default;
-		foreach (var resource in _fixture.InMemoryLogger.RecordedLogs)
-			_output.WriteLine(resource.Message);
-		return default;
+		await Collector.DisposeAsync();
+		if (TestContext.Current!.Execution.Result?.State is not TestState.Failed)
+			return;
+		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
+			TestContext.Current?.Output.WriteLine(resource.Message);
 	}
-
-	/// <inheritdoc />
-	public ValueTask InitializeAsync() => default;
 }

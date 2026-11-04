@@ -15,15 +15,11 @@ internal static class ElasticsearchTransportFactory
 		{
 			Authentication = endpoint.ApiKey is { } apiKey
 				? new ApiKey(apiKey)
-				: endpoint is { Username: { } username, Password: { } password }
-					? new BasicAuthentication(username, password)
-					: null,
+				: endpoint is { Username: { } username, Password: { } password } ? new BasicAuthentication(username, password) : null,
 			EnableHttpCompression = true,
 			DebugMode = endpoint.DebugMode,
 			CertificateFingerprint = endpoint.CertificateFingerprint,
-			ServerCertificateValidationCallback = endpoint.DisableSslVerification
-				? CertificateValidations.AllowAll
-				: null
+			ServerCertificateValidationCallback = endpoint.DisableSslVerification ? CertificateValidations.AllowAll : null
 		};
 
 		return new DistributedTransport(configuration);

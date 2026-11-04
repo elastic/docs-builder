@@ -117,6 +117,7 @@ public sealed record DocumentResponse
 	public List<ProductDto>? RelatedProducts { get; init; }
 	public string? Body { get; init; }
 	public int BodyLength { get; init; }
+	public string? BodyNote { get; init; }
 }
 
 public sealed record ParentDto

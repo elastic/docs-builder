@@ -22,7 +22,9 @@ public class DeployUpdateRedirectsService(ILoggerFactory logFactory, IFileSystem
 		string? redirectsFile,
 		string kvsNamePrefix = "elastic-docs-v3",
 		string? defaultRedirectsFile = null,
-		Cancel ctx = default)
+		bool noDelete = false,
+		Cancel ctx = default
+	)
 	{
 		redirectsFile ??= defaultRedirectsFile ?? ".artifacts/assembly/redirects.json";
 		if (!fileSystem.File.Exists(redirectsFile))
@@ -42,9 +44,13 @@ public class DeployUpdateRedirectsService(ILoggerFactory logFactory, IFileSystem
 		}
 
 		var kvsName = $"{kvsNamePrefix}-{environment}-redirects-kvs";
-		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(collector, logFactory, fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory()));
+		var cloudFrontClient = new AwsCloudFrontKeyValueStoreProxy(
+			collector,
+			logFactory,
+			fileSystem.DirectoryInfo.New(fileSystem.Directory.GetCurrentDirectory())
+		);
 
-		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects);
+		cloudFrontClient.UpdateRedirects(kvsName, sourcedRedirects, noDelete);
 		return collector.Errors == 0;
 	}
 }

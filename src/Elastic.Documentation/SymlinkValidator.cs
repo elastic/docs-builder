@@ -24,7 +24,9 @@ public static class SymlinkValidator
 	public static void EnsureNotSymlink(IFileInfo file)
 	{
 		if (file.LinkTarget != null)
-			throw new SecurityException($"Control file '{file.FullName}' is a symlink, which is not allowed for security reasons. Symlinked control files could be used for path traversal attacks.");
+			throw new SecurityException(
+				$"Control file '{file.FullName}' is a symlink, which is not allowed for security reasons. Symlinked control files could be used for path traversal attacks."
+			);
 	}
 
 	/// <summary>
@@ -50,9 +52,7 @@ public static class SymlinkValidator
 		if (file.LinkTarget != null)
 			return "Path must not point to a symlink.";
 
-		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
-			? StringComparison.Ordinal
-			: StringComparison.OrdinalIgnoreCase;
+		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
 		var dir = file.Directory;
 		while (dir != null && !string.Equals(dir.FullName, docRoot.FullName, cmp))
@@ -79,9 +79,7 @@ public static class SymlinkValidator
 		if (directory.LinkTarget != null)
 			return "Path must not point to a symlinked directory.";
 
-		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem
-			? StringComparison.Ordinal
-			: StringComparison.OrdinalIgnoreCase;
+		var cmp = IDirectoryInfoExtensions.IsCaseSensitiveFileSystem ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
 		var dir = directory.Parent;
 		while (dir != null && !string.Equals(dir.FullName, docRoot.FullName, cmp))

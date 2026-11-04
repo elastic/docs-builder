@@ -17,7 +17,7 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 
 	DiagnosticsChannel Channel { get; }
 	ConcurrentBag<string> CrossLinks { get; }
-	HashSet<string> OffendingFiles { get; }
+	ConcurrentDictionary<string, bool> OffendingFiles { get; }
 	ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; }
 
 	/// True once the background reader is actively draining the channel.
@@ -76,7 +76,8 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 			{
 				throw new InvalidOperationException(
 					"WaitForDrain called on a collector that was never started; no reader is draining the channel. " +
-					"Call StartAsync first or dispose the collector to drain synchronously.");
+						"Call StartAsync first or dispose the collector to drain synchronously."
+				);
 			}
 
 			// StartAsync was called but the Task.Run delegate hasn't been picked up by the
@@ -89,7 +90,8 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 				if (TimeProvider.GetElapsedTime(waitStart) > TimeSpan.FromSeconds(2))
 					throw new InvalidOperationException(
 						"WaitForDrain timed out waiting for the background reader to start. " +
-						"StartAsync was called but the reader delegate did not start within the deadline.");
+							"StartAsync was called but the reader delegate did not start within the deadline."
+					);
 			}
 		}
 
@@ -104,6 +106,4 @@ public interface IDiagnosticsCollector : IAsyncDisposable
 				throw new Exception("Could not iterate over all diagnostic messages in a timely fashion");
 		}
 	}
-
-
 }

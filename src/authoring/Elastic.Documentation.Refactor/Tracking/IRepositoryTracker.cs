@@ -15,6 +15,7 @@ public enum GitChangeType
 }
 
 public record GitChange(string FilePath, GitChangeType ChangeType);
+
 public record RenamedGitChange(string OldFilePath, string NewFilePath, GitChangeType ChangeType) : GitChange(OldFilePath, ChangeType);
 
 public interface IRepositoryTracker

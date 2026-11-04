@@ -1,0 +1,14 @@
+@inherits RazorSlice<LandingFactsModel>
+<dl class="api-rail-facts api-rail-facts--@Model.Placement">
+	@if (Model.Page.Servers.Count > 0)
+	{
+		@await RenderPartialAsync(_BaseUrlFact.Create(Model.Page.Servers))
+	}
+	@if (Model.Page.Version is { } version)
+	{
+		<div class="api-rail-fact">
+			<dt>Version</dt>
+			<dd>@version</dd>
+		</div>
+	}
+</dl>

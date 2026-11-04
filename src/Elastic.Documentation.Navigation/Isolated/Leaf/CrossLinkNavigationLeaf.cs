@@ -27,8 +27,7 @@ public class CrossLinkNavigationLeaf(
 	bool hidden,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent,
 	INavigationHomeAccessor homeAccessor
-)
-	: ILeafNavigationItem<CrossLinkModel>
+) : ILeafNavigationItem<CrossLinkModel>
 {
 	/// <inheritdoc />
 	public CrossLinkModel Model { get; } = model;
@@ -50,5 +49,4 @@ public class CrossLinkNavigationLeaf(
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
-
 }

@@ -20,12 +20,10 @@ namespace Elastic.Markdown.Myst;
 public static class ParserContextExtensions
 {
 	public static ParserContext GetContext(this InlineProcessor processor) =>
-		processor.Context as ParserContext
-		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
+		processor.Context as ParserContext ?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 
 	public static ParserContext GetContext(this BlockProcessor processor) =>
-		processor.Context as ParserContext
-		?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
+		processor.Context as ParserContext ?? throw new InvalidOperationException($"Provided context is not a {nameof(ParserContext)}");
 }
 
 public interface IParserResolvers

@@ -19,20 +19,23 @@ namespace Elastic.Documentation.Search;
 public partial class NavigationSearchService(
 	ISearchService<DocumentationDocument> inner,
 	ElasticsearchClientAccessor clientAccessor,
-	ILogger<NavigationSearchService> logger)
-	: INavigationSearchService, IDisposable
+	ILogger<NavigationSearchService> logger
+) : INavigationSearchService, IDisposable
 {
 	public async Task<bool> CanConnect(Cancel ctx) => await clientAccessor.CanConnect(ctx);
 
 	public async Task<NavigationSearchResponse> NavigationSearchAsync(NavigationSearchRequest request, Cancel ctx = default)
 	{
-		var resp = await inner.AutocompleteAsync(new AutocompleteRequest
-		{
-			Query = request.Query,
-			PageNumber = request.PageNumber,
-			PageSize = request.PageSize,
-			TypeFilter = request.TypeFilter
-		}, ctx);
+		var resp = await inner.AutocompleteAsync(
+			new AutocompleteRequest
+			{
+				Query = request.Query,
+				PageNumber = request.PageNumber,
+				PageSize = request.PageSize,
+				TypeFilter = request.TypeFilter
+			},
+			ctx
+		);
 
 		var response = new NavigationSearchResponse
 		{
@@ -40,17 +43,24 @@ public partial class NavigationSearchService(
 			PageNumber = resp.PageNumber,
 			PageSize = resp.PageSize,
 			Aggregations = new NavigationSearchAggregations { Type = resp.Aggregations.Type },
-			Results = resp.Results.Select(item => new NavigationSearchResultItem
-			{
-				Type = item.Document.ContentType,
-				Url = item.Document.Path,
-				Title = item.Title,
-				Description = item.Description,
-				Parents = (item.Document.Parents ?? [])
-					.Select(p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path })
-					.ToArray(),
-				Score = item.Score
-			}).ToList()
+			Results = resp
+				.Results
+				.Select(
+					item => new NavigationSearchResultItem
+					{
+						Type = item.Document.ContentType,
+						Url = item.Document.Path,
+						Title = item.Title,
+						Description = item.Description,
+						Routes = item.Document.Api?.Routes ?? [],
+						Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, item.Document.Path)).ToArray(),
+						Parents = (item.Document.Parents ?? []).Select(
+							p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
+						).ToArray(),
+						Score = item.Score
+					}
+				)
+				.ToList()
 		};
 
 		LogNavigationSearchResults(
@@ -58,10 +68,23 @@ public partial class NavigationSearchService(
 			response.PageSize,
 			response.PageNumber,
 			request.Query,
-			response.Results.Select(i => i.Url).ToArray());
+			response.Results.Select(i => i.Url).ToArray()
+		);
 
 		return response;
 	}
+
+	private static NavigationSearchProperty ToNavigationSearchProperty(ApiPropertyEntry property, string documentPath) =>
+		new()
+		{
+			Name = property.Name,
+			Path = property.Path,
+			Type = property.Type,
+			Description = property.Description,
+			Anchor = property.Anchor,
+			Location = property.Location,
+			Url = $"{documentPath}#{property.Anchor}"
+		};
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Navigation search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}': {Urls}")]
 	private static partial void LogNavigationSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, string[] urls);
@@ -86,12 +109,21 @@ public partial class NavigationSearchService(
 	}
 
 	public async Task<(ExplainResult TopResult, ExplainResult ExpectedResult)> ExplainTopResultAndExpectedAsync(
-		string query, string expectedDocumentUrl, Cancel ctx = default)
+		string query,
+		string expectedDocumentUrl,
+		Cancel ctx = default
+	)
 	{
 		if (inner is DefaultSearchService<DocumentationDocument> defaultImpl)
 			return await defaultImpl.ExplainTopResultAndExpectedAsync(query, expectedDocumentUrl, ctx);
 
-		var noop = new ExplainResult { SearchTitle = "N/A", DocumentUrl = "N/A", Found = false, Explanation = "Explain unavailable on non-default ISearchService impl." };
+		var noop = new ExplainResult
+		{
+			SearchTitle = "N/A",
+			DocumentUrl = "N/A",
+			Found = false,
+			Explanation = "Explain unavailable on non-default ISearchService impl."
+		};
 		return (noop, noop);
 	}
 

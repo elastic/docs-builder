@@ -6,7 +6,7 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
+public class IconParserTests() : InlineTest(
 	"""
 	A check mark {icon}`check`. A cross {icon}`cross`. A warning {icon}`warning`.
 
@@ -17,43 +17,55 @@ public class IconParserTests(ITestOutputHelper output) : InlineTest(output,
 	"""
 )
 {
-	[Fact]
+	[Test]
 	public void Render() =>
-		Html.Should().Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
-			.And.Contain("<span aria-label=\"Icon for cross\" class=\"icon icon-cross\">")
-			.And.Contain("<span aria-label=\"Icon for warning\" class=\"icon icon-warning\">")
-			.And.NotContain("{icon}`check`")
-			.And.NotContain("{icon}`cross`")
-			.And.NotContain("{icon}`warning`")
-			.And.Contain("/this:apm_trace:is:not:an:icon")
-			.And.Contain(":invalid-icon:")
-			.And.Contain("::");
-}
-
-public class IconInListItemTest(ITestOutputHelper output) : InlineTest(output,
-	"""
-	- {icon}`check` A check mark.
-	"""
-)
-{
-	[Fact]
-	public void Render() =>
-		Html.Should()
+		Html
+			.Should()
 			.Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
-			.And.NotContain("{icon}`check`")
-			.And.NotContain("<li></li>");
+			.And
+			.Contain("<span aria-label=\"Icon for cross\" class=\"icon icon-cross\">")
+			.And
+			.Contain("<span aria-label=\"Icon for warning\" class=\"icon icon-warning\">")
+			.And
+			.NotContain("{icon}`check`")
+			.And
+			.NotContain("{icon}`cross`")
+			.And
+			.NotContain("{icon}`warning`")
+			.And
+			.Contain("/this:apm_trace:is:not:an:icon")
+			.And
+			.Contain(":invalid-icon:")
+			.And
+			.Contain("::");
 }
 
-public class IconInHeadingShouldBeRemovedFromAnchor(ITestOutputHelper output) : InlineTest(output,
-	"""
-	## Users {icon}`check`
-	"""
-)
+public class IconInListItemTest() : InlineTest("""
+	- {icon}`check` A check mark.
+	""")
 {
-	[Fact]
+	[Test]
 	public void Render() =>
-		Html.Should()
+		Html
+			.Should()
+			.Contain("<span aria-label=\"Icon for check\" class=\"icon icon-check\">")
+			.And
+			.NotContain("{icon}`check`")
+			.And
+			.NotContain("<li></li>");
+}
+
+public class IconInHeadingShouldBeRemovedFromAnchor() : InlineTest("""
+	## Users {icon}`check`
+	""")
+{
+	[Test]
+	public void Render() =>
+		Html
+			.Should()
 			.Contain("<a class=\"headerlink\" href=\"#users\">")
-			.And.Contain("Users <span aria-label=\"Icon for check\"")
-			.And.Contain("<svg ");
+			.And
+			.Contain("Users <span aria-label=\"Icon for check\"")
+			.And
+			.Contain("<svg ");
 }

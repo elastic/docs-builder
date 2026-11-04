@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
 using Markdig;
 using Markdig.Helpers;
@@ -47,7 +50,7 @@ public class SpaceNormalizerParser : InlineParser
 		'\ufeff', // Zero Width No-Break Space - <BOM>
 		'\u200B', // Zero Width Space - <ZWSP>
 		'\u2028', // Line Separator
-		'\u2029'  // Paragraph Separator
+		'\u2029' // Paragraph Separator
 	];
 
 	// Characters to replace with regular spaces (visible but problematic)
@@ -63,15 +66,16 @@ public class SpaceNormalizerParser : InlineParser
 		'\u2008', // Punctuation Space - <PUNCSP>
 		'\u2009', // Thin Space
 		'\u200A', // Hair Space
-		'\u3000'  // Ideographic Space
+		'\u3000' // Ideographic Space
 	];
 
 	// Combined list of characters that need fixing (removed or replaced)
 	private static readonly char[] CharactersToFix = CharactersToRemove.Concat(CharactersToReplace).ToArray();
 	private static readonly SearchValues<char> SpaceSearchValues = SearchValues.Create(CharactersToFix);
 
-	// Track which files have already had the hint emitted to avoid duplicates
-	private static readonly HashSet<string> FilesWithHintEmitted = [];
+	// Files that already had the hint, per build: a process-wide set suppressed the hint in every
+	// later build of the same path (serve reloads, or tests that reuse a file name).
+	private static readonly ConditionalWeakTable<IDiagnosticsCollector, ConcurrentDictionary<string, byte>> FilesWithHintEmitted = [];
 
 	public SpaceNormalizerParser() => OpeningCharacters = CharactersToFix;
 
@@ -81,19 +85,25 @@ public class SpaceNormalizerParser : InlineParser
 		if (span.IndexOfAny(SpaceSearchValues) == -1)
 			return false;
 
-		processor.Inline = IrregularSpace.Instance;
+		// Each match needs its own node: an inline is a linked-list node, so reusing one instance
+		// moves it and drops earlier occurrences, and races across documents parsed in parallel.
+		processor.Inline = new IrregularSpace();
 
 		// Emit a single hint per file on first detection
 		var context = processor.GetContext();
 		var filePath = context.MarkdownSourcePath.FullName;
 
-		lock (FilesWithHintEmitted)
+		var emitted = FilesWithHintEmitted.GetValue(
+			context.Build.Collector,
+			static _ => new ConcurrentDictionary<string, byte>(StringComparer.Ordinal)
+		);
+		if (emitted.TryAdd(filePath, 0))
 		{
-			if (!FilesWithHintEmitted.Contains(filePath))
-			{
-				_ = FilesWithHintEmitted.Add(filePath);
-				processor.EmitHint(processor.Inline, 1, "Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances.");
-			}
+			processor.EmitHint(
+				processor.Inline,
+				1,
+				"Irregular space detected. Run 'docs-builder format --write' to automatically fix all instances."
+			);
 		}
 
 		slice.SkipChar();
@@ -101,13 +111,9 @@ public class SpaceNormalizerParser : InlineParser
 	}
 }
 
-public class IrregularSpace : LeafInline
-{
-	public static readonly IrregularSpace Instance = new();
-};
+public class IrregularSpace : LeafInline;
 
 public class SpaceNormalizerRenderer : HtmlObjectRenderer<IrregularSpace>
 {
-	protected override void Write(HtmlRenderer renderer, IrregularSpace obj) =>
-		renderer.Write(' ');
+	protected override void Write(HtmlRenderer renderer, IrregularSpace obj) => renderer.Write(' ');
 }

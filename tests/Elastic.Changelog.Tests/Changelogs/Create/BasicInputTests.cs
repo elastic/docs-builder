@@ -7,9 +7,9 @@ using Elastic.Changelog.Creation;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class BasicInputTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBasicInput_CreatesValidYamlFile()
 	{
 		// Arrange
@@ -19,19 +19,20 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		{
 			Title = "Add new search feature",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Description = "This is a new search feature",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -44,16 +45,16 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Add new search feature");
 		yamlContent.Should().Contain("type: feature");
 		yamlContent.Should().Contain("product: elasticsearch");
-		yamlContent.Should().Contain("target: 9.2.0");
+		// entries no longer carry a target/version — the origin branch is the address
 		yamlContent.Should().Contain("lifecycle: ga");
 		yamlContent.Should().Contain("description: This is a new search feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithMultipleProducts_CreatesValidYaml()
 	{
 		// Arrange
@@ -65,20 +66,21 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Type = "feature",
 			Products =
 			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" },
-				new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }
+				new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" },
+				new ProductArgument { Product = "kibana", Lifecycle = "ga" }
 			],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -89,7 +91,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("products:");
 		// Should contain both products
 		var elasticsearchIndex = yamlContent.IndexOf("product: elasticsearch", StringComparison.Ordinal);
@@ -98,7 +100,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		kibanaIndex.Should().BeGreaterThan(-1);
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithBreakingChangeAndSubtype_CreatesValidYaml()
 	{
 		// Arrange
@@ -109,20 +111,21 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 			Title = "Breaking API change",
 			Type = "breaking-change",
 			Subtype = "api",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Impact = "API clients will need to update",
 			Action = "Update your API client code",
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -133,7 +136,7 @@ public class BasicInputTests(ITestOutputHelper output) : CreateChangelogTestBase
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("type: breaking-change");
 		yamlContent.Should().Contain("subtype: api");
 		yamlContent.Should().Contain("impact: API clients will need to update");

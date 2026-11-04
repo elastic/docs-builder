@@ -7,11 +7,11 @@ using Actions.Core.Services;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Assembler.ContentSources;
 
@@ -20,7 +20,7 @@ public class RepositoryBuildMatchingService(
 	AssemblyConfiguration configuration,
 	IConfigurationContext configurationContext,
 	ICoreService githubActionsService,
-	ScopedFileSystem fileSystem
+	CheckoutsFileSystem fileSystem
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<RepositoryBuildMatchingService>();
@@ -37,8 +37,13 @@ public class RepositoryBuildMatchingService(
 			catch (Exception ex) when (attempt < maxAttempts)
 			{
 				var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
-				_logger.LogWarning("S3 link registry fetch failed (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}",
-					attempt, maxAttempts, delay.TotalSeconds, ex.Message);
+				_logger.LogWarning(
+					"S3 link registry fetch failed (attempt {Attempt}/{Max}), retrying in {Delay}s: {Message}",
+					attempt,
+					maxAttempts,
+					delay.TotalSeconds,
+					ex.Message
+				);
 				await Task.Delay(delay, ctx);
 			}
 		}
@@ -70,8 +75,13 @@ public class RepositoryBuildMatchingService(
 		var linkIndexProvider = Aws3LinkIndexReader.CreateAnonymous();
 		var linkRegistry = await GetRegistryWithRetry(linkIndexProvider, ctx);
 		var alreadyPublishing = linkRegistry.Repositories.ContainsKey(repositoryName);
-		_logger.LogInformation("'{Repository}' (registry key: '{RepositoryName}') publishing to link registry: {PublishState} ", repo, repositoryName, alreadyPublishing);
-		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem, fileSystem, null, null);
+		_logger.LogInformation(
+			"'{Repository}' (registry key: '{RepositoryName}') publishing to link registry: {PublishState} ",
+			repo,
+			repositoryName,
+			alreadyPublishing
+		);
+		var assembleContext = new AssembleContext(configuration, configurationContext, "dev", collector, fileSystem);
 		var product = assembleContext.ProductsConfiguration.GetProductByRepositoryName(repo);
 		var matches = assembleContext.Configuration.Match(logFactory, repo, refName, product, alreadyPublishing);
 		if (matches is { Current: null, Next: null, Edge: null, Speculative: false })
@@ -86,9 +96,19 @@ public class RepositoryBuildMatchingService(
 		}
 
 		if (matches.Current is { } current)
-			_logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, current.ToStringFast(true));
+			_logger.LogInformation(
+				"'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source",
+				repo,
+				refName,
+				current.ToStringFast(true)
+			);
 		if (matches.Next is { } next)
-			_logger.LogInformation("'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source", repo, refName, next.ToStringFast(true));
+			_logger.LogInformation(
+				"'{Repository}' '{BranchOrTag}' is configured as '{Matches}' content-source",
+				repo,
+				refName,
+				next.ToStringFast(true)
+			);
 
 		await githubActionsService.SetOutputAsync("content-source-match", "true");
 		await githubActionsService.SetOutputAsync("content-source-next", matches.Next is not null ? "true" : "false");
