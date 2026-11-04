@@ -284,6 +284,156 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
+	[Arguments("knn", 0, "knn")]
+	[Arguments("GET /_search knn", 2, "knn")]
+	[Arguments("knn /_search", 0, "knn")]
+	[Arguments("options", 0, "options")]
+	[Arguments("track_total", 0, "track_total")]
+	public void Build_FieldWord_MatchesOnlyItsOwnNameWithBoundedScores(string query, int index, string name)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
+		var fieldQuery = OptionsByName(TokenClause(json, index))[$"field_{index}"].GetProperty("query");
+		var options = fieldQuery.GetProperty("dis_max").GetProperty("queries");
+		options.GetArrayLength().Should().Be(1);
+		var matches = options[0].GetProperty("dis_max").GetProperty("queries");
+		matches.GetArrayLength().Should().Be(2);
+		matches[0]
+			.GetProperty("constant_score")
+			.GetProperty("filter")
+			.GetProperty("term")
+			.GetProperty("api.properties.name")
+			.GetProperty("value")
+			.GetString()
+			.Should()
+			.Be(name);
+		matches[1]
+			.GetProperty("constant_score")
+			.GetProperty("filter")
+			.GetProperty("prefix")
+			.GetProperty("api.properties.name")
+			.GetProperty("value")
+			.GetString()
+			.Should()
+			.Be(name);
+		fieldQuery.GetRawText().Should().NotContain("api.properties.description").And.NotContain("api.properties.path");
+		var scores = matches.EnumerateArray().Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle()).ToArray();
+		scores.Should().OnlyContain(score => score > 0 && score <= 1);
+		scores[0].Should().BeGreaterThan(scores[1], "an exact field name ranks ahead of a prefix");
+	}
+
+	[Test]
+	public void Build_QualifiedPath_FieldOptionRequiresMatchingLeafAndPath()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("_search knn.field"));
+		var qualified = OptionsByName(TokenClause(json, 1))["field_1"]
+			.GetProperty("query")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[1]
+			.GetProperty("bool");
+		var leaf = qualified
+			.GetProperty("must")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[0]
+			.GetProperty("constant_score")
+			.GetProperty("filter");
+		leaf.GetProperty("term").GetProperty("api.properties.name").GetProperty("value").GetString().Should().Be("field");
+		var path = qualified.GetProperty("filter").GetProperty("match_bool_prefix").GetProperty("api.properties.path.match");
+		path.GetProperty("query").GetString().Should().Be("knn.field");
+		path.GetProperty("operator").GetString().Should().Be("and");
+	}
+
+	[Test]
+	[Arguments("retriever.", "retriever")]
+	[Arguments("pets[].owner.", "pets.owner")]
+	[Arguments("labels.<string>.", "labels")]
+	public void Build_TrailingDot_ChildrenOptionNamesTheParentKey(string query, string parent)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
+		var term = OptionsByName(TokenClause(json, 0))["field_0"]
+			.GetProperty("query")
+			.GetProperty("dis_max")
+			.GetProperty("queries")
+			.EnumerateArray()
+			.Select(o => o.EnumerateObject().Single().Value)
+			.Single(o => o.TryGetProperty("_name", out var name) && name.GetString() == "api_children")
+			.GetProperty("filter")
+			.GetProperty("term")
+			.GetProperty("api.properties.parent");
+		term.GetProperty("value").GetString().Should().Be(parent);
+		term.GetProperty("case_insensitive").GetBoolean().Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("retriever")]
+	[Arguments("retriever.standard")]
+	public void Build_TrailingDot_KeepsTheNameOptions(string path)
+	{
+		static string[] Options(string query)
+		{
+			using var json = Json(ApiLookupQueryBuilder.Build(query));
+			return OptionsByName(TokenClause(json, 0))["field_0"]
+				.GetProperty("query")
+				.GetProperty("dis_max")
+				.GetProperty("queries")
+				.EnumerateArray()
+				.Select(q => q.GetRawText())
+				.ToArray();
+		}
+
+		Options(path + ".")[..^1].Should().Equal(Options(path)).And.NotBeEmpty();
+	}
+
+	[Test]
+	public void Build_NoTrailingDot_FieldOptionHasNoChildrenOption()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("retriever"));
+		var field = OptionsByName(TokenClause(json, 0))["field_0"];
+
+		field.GetProperty("query").GetRawText().Should().NotContain("api_children").And.NotContain("api.properties.parent");
+	}
+
+	[Test]
+	[Arguments("retriever", "retriever")]
+	[Arguments("retriever.standard.", "retriever.standard")]
+	[Arguments("GET /_search retriever", "retriever")]
+	[Arguments("pets[].owner.", "pets.owner")]
+	[Arguments("labels.<string>.", "labels")]
+	public void Build_PlainWord_LiftsOperationsThatListChildrenOfTheTypedPath(string query, string field)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
+		var lift = json
+			.RootElement
+			.GetProperty("bool")
+			.GetProperty("should")
+			.EnumerateArray()
+			.Where(l => l.TryGetProperty("nested", out _))
+			.Select(l => l.GetProperty("nested"))
+			.Single(
+				l => l
+					.GetProperty("query")
+					.GetProperty("constant_score")
+					.GetProperty("filter")
+					.GetProperty("term")
+					.GetProperty("api.properties.parent")
+					.GetProperty("value")
+					.GetString() == field
+			);
+		lift.GetProperty("path").GetString().Should().Be("api.properties");
+		lift.GetProperty("score_mode").GetString().Should().Be("max");
+		lift.TryGetProperty("inner_hits", out _).Should().BeFalse();
+		var constantScore = lift.GetProperty("query").GetProperty("constant_score");
+		constantScore.GetProperty("boost").GetSingle().Should().Be(0.5f);
+		constantScore
+			.GetProperty("filter")
+			.GetProperty("term")
+			.GetProperty("api.properties.parent")
+			.GetProperty("case_insensitive")
+			.GetBoolean()
+			.Should()
+			.BeTrue();
+	}
+
+	[Test]
 	public void Build_PathToken_OffersOnlyTheEndpointKey()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("GET /_search knn"));
