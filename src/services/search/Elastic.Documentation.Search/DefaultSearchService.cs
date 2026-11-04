@@ -109,19 +109,12 @@ public partial class DefaultSearchService<TDocument>(
 
 	public async Task<AutocompleteResponse<TDocument>> AutocompleteAsync(AutocompleteRequest request, CancellationToken ct = default)
 	{
-		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
-			request.Query,
-			searchConfig.SynonymBiDirectional,
-			searchConfig.DiminishTerms,
-			searchConfig.RulesetName
-		);
-
 		Query? postFilter = null;
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
-		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
-		query = SearchQueryBuilder.ApplyApiPropertyQuery(query, request.Query, request.TypeFilter);
+		var apiLookup = request.TypeFilter == ApiContentType;
+		var query = apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request);
 
 		var response = await client.SearchAsync<TDocument>(
 			s =>
@@ -157,6 +150,9 @@ public partial class DefaultSearchService<TDocument>(
 
 				if (postFilter is not null)
 					_ = s.PostFilter(postFilter);
+				// The result processor reads each word's winning role from the named query scores.
+				if (apiLookup)
+					_ = s.IncludeNamedQueriesScore(true);
 			},
 			ct
 		);
@@ -164,7 +160,13 @@ public partial class DefaultSearchService<TDocument>(
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
-		var options = new HighlightOptions { ListChildren = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter) };
+		var options = new HighlightOptions
+		{
+			ApiLookup = apiLookup,
+			ListChildren = apiLookup
+				? ApiLookupQueryBuilder.ExpandsChildren(request.Query)
+				: SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter)
+		};
 		var results = response
 			.Hits
 			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional, options))
@@ -183,6 +185,17 @@ public partial class DefaultSearchService<TDocument>(
 			PageSize = request.PageSize,
 			Aggregations = new AutocompleteAggregations { Type = typeAgg }
 		};
+	}
+
+	private Query BuildDocsWideAutocompleteQuery(AutocompleteRequest request)
+	{
+		var lexicalQuery = SearchQueryBuilder.BuildLexicalQuery(
+			request.Query,
+			searchConfig.SynonymBiDirectional,
+			searchConfig.DiminishTerms,
+			searchConfig.RulesetName
+		);
+		return SearchQueryBuilder.ApplyApiPropertyQuery(lexicalQuery, request.Query, request.TypeFilter);
 	}
 
 	// NOTE: probe-mode SearchAsync branch (request.Components bitmask path) uses SearchQueryComponents,
