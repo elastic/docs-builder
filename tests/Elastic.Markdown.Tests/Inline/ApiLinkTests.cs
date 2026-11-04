@@ -57,7 +57,7 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 }
 
 [InheritsTests]
-public class ApiAngleBracketAutoLinkTests() : InlineTest<LinkInline>(
+public class ApiAngleBracketAutoLinkTests() : InlineTest(
 	"""
 See <https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing> for details.
 """
