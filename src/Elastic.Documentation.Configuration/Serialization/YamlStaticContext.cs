@@ -34,7 +34,10 @@ namespace Elastic.Documentation.Configuration.Serialization;
 [YamlSerializable(typeof(ChangelogConfigMinimalDto))]
 [YamlSerializable(typeof(ChangelogConfigurationYaml))]
 [YamlSerializable(typeof(RelatedLearningConfigDto))]
-[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,
+// PreferredObjectCreationHandling is pinned to the runtime default (Replace). Left unset, the generator emits both
+// the Populate and the Replace reader for every member, which doubles the generated code (6.9 MB, 127k lines) and
+// makes the trim analyzer take minutes. Nothing sets Populate at runtime or per member.
+[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace,
 // TableOfContents and SiteTableOfContents hold polymorphic interface-typed items
 // (ITableOfContentsItem / ISiteNavigationEntry) that the generator can't auto-generate
 // metadata for. These collection converters are always registered with real instances
