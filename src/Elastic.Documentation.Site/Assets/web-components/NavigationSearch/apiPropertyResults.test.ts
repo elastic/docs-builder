@@ -1,5 +1,6 @@
 import {
     childLabel,
+    completeFieldWord,
     fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
@@ -123,4 +124,14 @@ it.each([
     ['.<string>.terms', '<string>.terms'],
 ])('labels the child suffix %s as %s', (suffix, label) => {
     expect(childLabel(suffix)).toBe(label)
+})
+
+it.each([
+    ['retriever', 'retriever.knn', 'retriever.knn'],
+    ['_search retriever', 'retriever.knn', '_search retriever.knn'],
+    ['retriever GET /_search', 'retriever.knn', 'retriever.knn GET /_search'],
+    ['GET /_search', 'size', 'GET /_search size'],
+    ['Retriever.', 'retriever.knn', 'retriever.knn'],
+])('completes %s with %s as %s', (searchTerm, path, completed) => {
+    expect(completeFieldWord(searchTerm, path)).toBe(completed)
 })

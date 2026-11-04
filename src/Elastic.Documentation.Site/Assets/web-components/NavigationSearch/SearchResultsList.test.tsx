@@ -156,6 +156,7 @@ const renderList = ({
     typeFilter?: TypeFilter
 } = {}) => {
     const onMouseMove = vi.fn()
+    const onComplete = vi.fn()
     const { container } = renderWithProviders(
         <SearchResultsList
             results={groups}
@@ -163,10 +164,11 @@ const renderList = ({
             isKeyboardNavigating={{ current: isKeyboardNavigating }}
             onMouseMove={onMouseMove}
             onResultClick={vi.fn()}
+            onComplete={onComplete}
             typeFilter={typeFilter}
         />
     )
-    return { onMouseMove, container }
+    return { onMouseMove, onComplete, container }
 }
 
 describe('property rows', () => {
@@ -265,7 +267,28 @@ describe('property rows', () => {
         })
         await userEvent.hover(row)
         expect(navigationSearchStore.getState().selectedIndex).toBe(3)
-        expect(row).toHaveAttribute('data-selected', 'true')
+        expect(row.closest('.property-row')).toHaveAttribute(
+            'data-selected',
+            'true'
+        )
+    })
+
+    it('completes the query with the path of a clicked child chip', async () => {
+        const withChildren: SearchResultItem = {
+            ...operation,
+            properties: [
+                {
+                    ...property('size', 'request'),
+                    path: 'retriever',
+                    children: ['.standard', '.knn'],
+                },
+            ],
+        }
+        const { onComplete } = renderList({
+            groups: groupSearchResults([withChildren]),
+        })
+        await userEvent.click(screen.getByRole('button', { name: 'knn' }))
+        expect(onComplete).toHaveBeenCalledWith('retriever.knn')
     })
 
     it('hands a mouse move back to the parent while the keyboard is driving', async () => {

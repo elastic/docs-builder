@@ -65,6 +65,21 @@ export const fieldSearchTerms = (searchTerm: string) => {
     )
 }
 
+/** The query with its last field word replaced by `path`, or with `path` appended when no word names a field. */
+export const completeFieldWord = (searchTerm: string, path: string) => {
+    const all = words(searchTerm)
+    const fieldIndexes = all
+        .map((word, i) =>
+            !word.startsWith('/') && !isMethodBeforePath(all, i) ? i : -1
+        )
+        .filter((i) => i >= 0)
+    const last = fieldIndexes[fieldIndexes.length - 1]
+    if (last === undefined) {
+        return [...all, path].join(' ')
+    }
+    return all.map((word, i) => (i === last ? path : word)).join(' ')
+}
+
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
  * path is a query word, else the first route in page order whose path contains one. Routes arrive

@@ -1,6 +1,7 @@
 import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 const renderRow = (
     searchTerm: string,
@@ -28,6 +29,7 @@ const renderRow = (
             onMouseEnter={vi.fn()}
             onMouseMove={vi.fn()}
             onClick={vi.fn()}
+            onComplete={vi.fn()}
         />
     )
 
@@ -35,6 +37,10 @@ it('underlines the path when the row is selected', () => {
     const path = (row: HTMLElement) =>
         row.querySelector('.property-path') as HTMLElement
     const { unmount } = renderRow('knn', 'retriever.knn', false, true)
+    expect(screen.getByRole('link').closest('.property-row')).toHaveAttribute(
+        'data-selected',
+        'true'
+    )
     expect(
         getComputedStyle(path(screen.getByRole('link'))).textDecoration
     ).toContain('underline')
@@ -127,7 +133,9 @@ it('offers "Go to property" as the Enter action', () => {
     expect(screen.getByText('Go to property')).toBeInTheDocument()
 })
 
-const renderParent = (children: string[]) =>
+const renderParent = (children: string[]) => {
+    const onClick = vi.fn()
+    const onComplete = vi.fn()
     renderWithProviders(
         <PropertyResultRow
             property={{
@@ -147,33 +155,53 @@ const renderParent = (children: string[]) =>
             isKeyboardNavigating={false}
             onMouseEnter={vi.fn()}
             onMouseMove={vi.fn()}
-            onClick={vi.fn()}
+            onClick={onClick}
+            onComplete={onComplete}
         />
     )
+    return { onClick, onComplete }
+}
 
-it("lists the field's children under its path", () => {
-    renderParent([
-        '.filter',
-        '.min_score',
-        '._name',
-        '.query',
-        '.search_after',
-        '.terminate_after',
-        '.sort',
-        '.collapse',
+const standardChildren = [
+    '.filter',
+    '.min_score',
+    '._name',
+    '.query',
+    '.search_after',
+    '.terminate_after',
+    '.sort',
+    '.collapse',
+]
+
+const chips = () =>
+    within(
+        screen.getByRole('group', { name: 'Fields of retriever.standard' })
+    ).queryAllByRole('button')
+
+it('renders every child as a chip in page order', () => {
+    renderParent(standardChildren)
+    expect(chips().map((chip) => chip.textContent)).toEqual([
+        'filter',
+        'min_score',
+        '_name',
+        'query',
+        'search_after',
+        'terminate_after',
+        'sort',
+        'collapse',
     ])
-    const row = screen.getByRole('link')
-    expect(row.querySelector('.property-children')?.textContent).toBe(
-        'filter min_score _name query search_after terminate_after sort collapse'
+    expect(chips().map((chip) => chip.dataset.childPath)).toEqual(
+        standardChildren.map((suffix) => `retriever.standard${suffix}`)
     )
-    const children = row.querySelector('.property-children')
-    expect(children).toHaveAttribute(
-        'data-tippy-content',
-        'filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
-    )
-    expect(children).toHaveAttribute('data-tippy-theme', 'mono')
-    expect(children).toHaveAttribute('data-tippy-delay', '[500, 0]')
-    expect(row).toHaveAttribute(
+    for (const chip of chips()) {
+        expect(chip).toHaveAttribute(
+            'data-tippy-content',
+            chip.dataset.childPath
+        )
+        expect(chip).toHaveAttribute('data-tippy-theme', 'mono')
+        expect(chip).toHaveAttribute('data-tippy-delay', '[500, 0]')
+    }
+    expect(screen.getByRole('link')).toHaveAttribute(
         'aria-label',
         expect.stringContaining(
             'Fields: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
@@ -181,11 +209,35 @@ it("lists the field's children under its path", () => {
     )
 })
 
+it('caps the chips at twelve and names the rest', () => {
+    const children = Array.from({ length: 20 }, (_, i) => `.field_${i}`)
+    renderParent(children)
+    expect(chips()).toHaveLength(12)
+    const more = screen.getByText('+8 more')
+    expect(more.tagName).toBe('SPAN')
+    expect(more).toHaveAttribute(
+        'data-tippy-content',
+        children.map((suffix) => suffix.slice(1)).join(', ')
+    )
+    expect(more).toHaveAttribute('data-tippy-theme', 'mono')
+})
+
+it('clicking a chip completes the path without following the row link', async () => {
+    const { onClick, onComplete } = renderParent(standardChildren)
+    await userEvent.click(screen.getByRole('button', { name: 'query' }))
+    expect(onComplete).toHaveBeenCalledWith('retriever.standard.query')
+    expect(onClick).not.toHaveBeenCalled()
+})
+
+it('keeps the chips outside the row link', () => {
+    renderParent(standardChildren)
+    expect(screen.getByRole('link').querySelector('button')).toBeNull()
+})
+
 it('renders no children line for a leaf', () => {
     renderParent([])
-    expect(
-        screen.getByRole('link').querySelector('.property-children')
-    ).toBeNull()
+    expect(screen.queryByRole('group')).toBeNull()
+    expect(document.querySelector('.property-children')).toBeNull()
 })
 
 it('renders the field icon in the gutter', () => {

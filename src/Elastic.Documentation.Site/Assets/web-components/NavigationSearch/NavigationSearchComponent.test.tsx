@@ -106,7 +106,10 @@ describe('NavigationSearchWrapper type attribute', () => {
         await userEvent.keyboard('{ArrowDown}')
         expect(navigationSearchStore.getState().selectedIndex).toBe(1)
         await waitFor(() =>
-            expect(child).toHaveAttribute('data-selected', 'true')
+            expect(child.closest('.property-row')).toHaveAttribute(
+                'data-selected',
+                'true'
+            )
         )
         expect(screen.getByText('Go to page')).toBeInTheDocument()
         await userEvent.keyboard('{Enter}')
@@ -117,6 +120,53 @@ describe('NavigationSearchWrapper type attribute', () => {
                 [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-track_total_hits',
                 'navigation_search.result.position': 0,
             })
+        )
+    })
+
+    it('clicking a child chip fills the input with the child path and searches again', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: '/docs/api/doc/elasticsearch/operation/operation-search',
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'retriever',
+                                path: 'retriever',
+                                type: 'object',
+                                location: 'request',
+                                description: 'A retriever',
+                                anchor: 'req-retriever',
+                                url: '/docs/api/doc/elasticsearch/operation/operation-search#req-retriever',
+                                children: ['.standard', '.knn'],
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'retriever')
+        await userEvent.click(
+            await screen.findByRole('button', { name: 'knn' })
+        )
+        expect(input).toHaveValue('retriever.knn')
+        await waitFor(() => expect(input).toHaveFocus())
+        await waitFor(() =>
+            expect(
+                searchRequestUrls().some((url) =>
+                    url.includes('q=retriever.knn')
+                )
+            ).toBe(true)
         )
     })
 

@@ -32,6 +32,8 @@ const FieldIcon = () => (
 /** The page's tooltips show after 80ms; a mouse crossing result rows would open one on every row. */
 const TOOLTIP_DELAY = '[500, 0]'
 
+const MAX_VISIBLE_CHILDREN = 12
+
 export const PropertyResultRow = ({
     property,
     searchTerm,
@@ -42,6 +44,7 @@ export const PropertyResultRow = ({
     onMouseEnter,
     onMouseMove,
     onClick,
+    onComplete,
 }: {
     property: ApiPropertyResult
     searchTerm: string
@@ -52,6 +55,7 @@ export const PropertyResultRow = ({
     onMouseEnter: () => void
     onMouseMove: () => void
     onClick: () => void
+    onComplete: (path: string) => void
 }) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
@@ -61,6 +65,7 @@ export const PropertyResultRow = ({
     const childLabels = property.children.map(childLabel)
     const fields =
         childLabels.length > 0 ? `Fields: ${childLabels.join(', ')}` : ''
+    const hiddenChildren = property.children.length - MAX_VISIBLE_CHILDREN
     const highlight = (text: string) => (
         <EuiHighlight
             search={propertySearch}
@@ -70,23 +75,28 @@ export const PropertyResultRow = ({
             {text}
         </EuiHighlight>
     )
+    const selectedPath = css`
+        .property-path,
+        .property-path strong {
+            color: ${euiTheme.colors.link};
+        }
+
+        .property-path {
+            text-decoration: underline;
+        }
+
+        .jump-to-indicator {
+            visibility: visible;
+        }
+    `
     return (
-        <a
-            ref={ref}
-            href={href}
-            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${fields && ` ${fields}`}`}
-            onClick={onClick}
+        <div
+            className="property-row"
             onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
-            data-search-result-index={index}
             data-selected={isSelected ? 'true' : 'false'}
             data-keyboard-navigating={isKeyboardNavigating ? 'true' : 'false'}
             css={css`
-                display: flex;
-                align-items: center;
-                gap: ${euiTheme.size.s};
-                box-sizing: border-box;
-                min-height: ${euiTheme.size.xl};
                 padding: ${euiTheme.size.s} ${euiTheme.size.base};
                 /* the Enter badge lines up with the operation row's, which insets it by size.l */
                 padding-right: ${euiTheme.size.l};
@@ -97,7 +107,6 @@ export const PropertyResultRow = ({
                 color: ${euiTheme.colors.textParagraph};
                 font-size: ${euiTheme.size.m};
                 line-height: calc(${euiTheme.size.base} + ${euiTheme.size.xs});
-                text-decoration: none;
                 background: ${isSelected ? euiTheme.colors.backgroundBaseSubdued : 'transparent'};
                 mark {
                     background-color: var(--search-highlight-tint);
@@ -105,6 +114,17 @@ export const PropertyResultRow = ({
                     font-weight: ${euiTheme.font.weight.bold};
                     font-size: inherit;
                     padding: 0;
+                }
+                .property-link {
+                    display: flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.s};
+                    color: inherit;
+                    text-decoration: none;
+                    &:focus-visible {
+                        outline: 2px solid ${euiTheme.colors.primary};
+                        outline-offset: 2px;
+                    }
                 }
                 .property-icon {
                     display: grid;
@@ -132,8 +152,7 @@ export const PropertyResultRow = ({
                 }
                 .property-path,
                 .property-type,
-                .property-description,
-                .property-children {
+                .property-description {
                     min-width: 0;
                     overflow: hidden;
                     white-space: nowrap;
@@ -177,97 +196,143 @@ export const PropertyResultRow = ({
                     color: ${euiTheme.colors.textSubdued};
                 }
                 .property-children {
-                    /* a monospace space is 1ch wide, so each gap comes out at size.m while the line still ellipsizes as text */
-                    word-spacing: calc(${euiTheme.size.m} - 1ch);
-                    color: ${euiTheme.colors.textSubdued};
+                    display: flex;
+                    flex-wrap: wrap;
+                    align-items: center;
+                    gap: ${euiTheme.size.xs} ${euiTheme.size.s};
+                    margin-top: ${euiTheme.size.xs};
+                    padding-left: calc(${euiTheme.size.l} + ${euiTheme.size.s});
+                }
+                .property-child {
+                    padding: 0 ${euiTheme.size.s};
+                    border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                    border-radius: ${euiTheme.border.radius.small};
+                    background: ${euiTheme.colors.backgroundBasePlain};
+                    color: ${euiTheme.colors.textParagraph};
                     font-family: ${euiTheme.font.familyCode};
+                    font-size: inherit;
+                    line-height: 18px;
+                    cursor: pointer;
+                    &:hover {
+                        background: ${euiTheme.colors.backgroundBaseHighlighted};
+                    }
+                    &:focus-visible {
+                        outline: 2px solid ${euiTheme.colors.primary};
+                        outline-offset: 1px;
+                    }
+                }
+                .property-children-more {
+                    color: ${euiTheme.colors.textSubdued};
                 }
                 .jump-to-indicator {
                     margin-left: ${euiTheme.size.s};
                 }
                 &:hover:not([data-keyboard-navigating='true']) {
                     background: ${euiTheme.colors.backgroundBaseHighlighted};
-
-                    .property-path,
-                    .property-path strong {
-                        color: ${euiTheme.colors.link};
-                    }
-
-                    .property-path {
-                        text-decoration: underline;
-                    }
+                    ${selectedPath}
                 }
                 &[data-selected='true'] {
-                    .property-path,
-                    .property-path strong {
-                        color: ${euiTheme.colors.link};
-                    }
-
-                    .property-path {
-                        text-decoration: underline;
-                    }
-                }
-                &:focus-visible {
-                    outline: 2px solid ${euiTheme.colors.primary};
-                    outline-offset: -2px;
+                    ${selectedPath}
                 }
             `}
         >
-            <span className="property-icon" aria-hidden="true">
-                <FieldIcon />
-            </span>
-            <span className="property-body">
-                <span className="property-path-line">
-                    <code
-                        className="property-path"
-                        data-tippy-content={property.path}
-                        data-tippy-delay={TOOLTIP_DELAY}
-                        data-tippy-theme="mono"
-                    >
-                        <bdi>
-                            {highlight(property.path.slice(0, leafOffset))}
-                            <strong>
-                                {highlight(property.path.slice(leafOffset))}
-                            </strong>
-                        </bdi>
-                    </code>
-                    <span
-                        className={
-                            showLocation ? 'property-location' : 'sr-only'
-                        }
-                    >
-                        {property.location}
+            <a
+                ref={ref}
+                href={href}
+                className="property-link"
+                aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${fields && ` ${fields}`}`}
+                onClick={onClick}
+                data-search-result-index={index}
+            >
+                <span className="property-icon" aria-hidden="true">
+                    <FieldIcon />
+                </span>
+                <span className="property-body">
+                    <span className="property-path-line">
+                        <code
+                            className="property-path"
+                            data-tippy-content={property.path}
+                            data-tippy-delay={TOOLTIP_DELAY}
+                            data-tippy-theme="mono"
+                        >
+                            <bdi>
+                                {highlight(property.path.slice(0, leafOffset))}
+                                <strong>
+                                    {highlight(property.path.slice(leafOffset))}
+                                </strong>
+                            </bdi>
+                        </code>
+                        <span
+                            className={
+                                showLocation ? 'property-location' : 'sr-only'
+                            }
+                        >
+                            {property.location}
+                        </span>
+                    </span>
+                    <span className="property-detail-line">
+                        <code
+                            className="property-type"
+                            data-tippy-content={property.type}
+                            data-tippy-delay={TOOLTIP_DELAY}
+                            data-tippy-theme="mono"
+                        >
+                            {property.type}
+                        </code>
+                        <span
+                            className="property-description"
+                            data-tippy-content={
+                                property.description || undefined
+                            }
+                            data-tippy-delay={TOOLTIP_DELAY}
+                        >
+                            {property.description}
+                        </span>
                     </span>
                 </span>
-                <span className="property-detail-line">
-                    <code
-                        className="property-type"
-                        data-tippy-content={property.type}
-                        data-tippy-delay={TOOLTIP_DELAY}
-                        data-tippy-theme="mono"
-                    >
-                        {property.type}
-                    </code>
-                    <span
-                        className="property-description"
-                        data-tippy-content={property.description || undefined}
-                        data-tippy-delay={TOOLTIP_DELAY}
-                    >
-                        {property.description}
-                    </span>
-                </span>
-                {childLabels.length > 0 && (
-                    <span
-                        className="property-children"
-                        data-tippy-content={childLabels.join(', ')}
-                        data-tippy-delay={TOOLTIP_DELAY}
-                        data-tippy-theme="mono"
-                    >
-                        {childLabels.join(' ')}
-                    </span>
-                )}
-            </span>
-            {!isMobile && <JumpToIndicator label={GO_TO_LABELS.property} />}
-        </a>
+                {!isMobile && <JumpToIndicator label={GO_TO_LABELS.property} />}
+            </a>
+            {property.children.length > 0 && (
+                <div
+                    className="property-children"
+                    role="group"
+                    aria-label={`Fields of ${property.path}`}
+                >
+                    {property.children
+                        .slice(0, MAX_VISIBLE_CHILDREN)
+                        .map((suffix) => {
+                            const fullPath = property.path + suffix
+                            return (
+                                <button
+                                    key={suffix}
+                                    type="button"
+                                    className="property-child"
+                                    data-child-path={fullPath}
+                                    data-tippy-content={fullPath}
+                                    data-tippy-theme="mono"
+                                    data-tippy-delay={TOOLTIP_DELAY}
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        onComplete(fullPath)
+                                    }}
+                                >
+                                    {childLabel(suffix)}
+                                </button>
+                            )
+                        })}
+                    {hiddenChildren > 0 && (
+                        <span
+                            className="property-children-more"
+                            data-tippy-content={childLabels.join(', ')}
+                            data-tippy-theme="mono"
+                            data-tippy-delay={TOOLTIP_DELAY}
+                        >
+                            +{hiddenChildren} more
+                        </span>
+                    )}
+                </div>
+            )}
+        </div>
     )
 }

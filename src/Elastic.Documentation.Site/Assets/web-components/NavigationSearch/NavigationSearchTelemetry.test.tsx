@@ -193,6 +193,7 @@ describe('Navigation Search Result Click Tracking', () => {
         isKeyboardNavigating: { current: false },
         onMouseMove: vi.fn(),
         onResultClick: vi.fn(),
+        onComplete: vi.fn(),
     })
 
     beforeEach(() => {
