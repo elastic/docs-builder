@@ -25,6 +25,9 @@ public static class ApiLookupQueryBuilder
 	// Up to two words every word must be explained; from three on, most of them.
 	private const string TokensMinimumShouldMatch = "2<75%";
 
+	// Each word adds a dis_max with nested inner hits to a per-keystroke request; same bound as ApiEndpointPath's path segments.
+	private const int MaxTokens = 8;
+
 	private static readonly FrozenSet<string> HttpMethods = new[] { "GET", "POST", "PUT", "DELETE", "HEAD", "PATCH" }.ToFrozenSet(
 		StringComparer.OrdinalIgnoreCase
 	);
@@ -67,6 +70,7 @@ public static class ApiLookupQueryBuilder
 			.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
 			.Select(ToToken)
 			.OfType<ApiLookupToken>()
+			.Take(MaxTokens)
 			.ToArray();
 
 	/// <summary>The inner hits of the field option of the word at <paramref name="index"/>.</summary>

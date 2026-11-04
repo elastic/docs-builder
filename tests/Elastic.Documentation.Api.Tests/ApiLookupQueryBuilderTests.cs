@@ -77,6 +77,10 @@ public class ApiLookupQueryBuilderTests
 			);
 
 	[Test]
+	public void Tokenize_TwelveWords_KeepsTheFirstEight() =>
+		ApiLookupQueryBuilder.Tokenize("a b c d e f g h i j k l").Select(t => t.Text).Should().Equal("a", "b", "c", "d", "e", "f", "g", "h");
+
+	[Test]
 	[Arguments("")]
 	[Arguments("   ")]
 	[Arguments("...")]
