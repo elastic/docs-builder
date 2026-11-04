@@ -126,12 +126,12 @@ public static class SearchQueryBuilder
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
-			Query = new ConstantScoreQuery
-			{
-				Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesParent, Value = property, CaseInsensitive = true },
-				Boost = ListsFieldsUnderTypedPathBoost
-			}
+			Query = new ConstantScoreQuery { Filter = BuildParentTermQuery(property), Boost = ListsFieldsUnderTypedPathBoost }
 		};
+
+	/// <summary>The index stores a row's parent as its <see cref="ApiPropertyPath.ParentKey"/>, so a typed <c>pets[].owner</c> names <c>pets.owner</c>.</summary>
+	private static TermQuery BuildParentTermQuery(string typedPath) =>
+		new() { Field = QueryFieldNames.ApiPropertiesParent, Value = ApiPropertyPath.ParentKey(typedPath), CaseInsensitive = true };
 
 	/// <summary>
 	/// The endpoint half as typed and, for a bare word, as its underscore alias too: `deployments` is a route of
@@ -251,12 +251,7 @@ public static class SearchQueryBuilder
 				]
 			};
 		var children = lookup.ExpandChildren
-			? (Query)new ConstantScoreQuery
-			{
-				Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesParent, Value = input, CaseInsensitive = true },
-				Boost = ChildOptionBoost,
-				QueryName = ApiChildrenHits
-			}
+			? (Query)new ConstantScoreQuery { Filter = BuildParentTermQuery(input), Boost = ChildOptionBoost, QueryName = ApiChildrenHits }
 			: null;
 		Query?[] options = [BuildPropertyNameOptions(input, lookup), path, children];
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };

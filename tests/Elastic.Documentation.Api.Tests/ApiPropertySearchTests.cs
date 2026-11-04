@@ -213,6 +213,8 @@ public class ApiPropertySearchTests
 	[Arguments("retriever", "retriever")]
 	[Arguments("retriever.standard.", "retriever.standard")]
 	[Arguments("GET /_search retriever", "retriever")]
+	[Arguments("pets[].owner.", "pets.owner")]
+	[Arguments("labels.<string>.", "labels")]
 	public void ApplyApiPropertyQuery_ApiLookup_LiftsOperationsThatListChildrenOfTheTypedPath(string input, string field)
 	{
 		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, "api"));
@@ -417,6 +419,8 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments("retriever.", "retriever")]
 	[Arguments("retriever.standard.", "retriever.standard")]
+	[Arguments("pets[].owner.", "pets.owner")]
+	[Arguments("labels.<string>.", "labels")]
 	public void BuildApiPropertyQuery_TrailingDot_AddsTheChildrenOptionAndWidensInnerHits(string input, string parent)
 	{
 		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"));
