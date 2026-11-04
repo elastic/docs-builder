@@ -20,7 +20,7 @@ public record AuthenticationSectionModel(
 	bool AlwaysTabs = false
 );
 
-/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+/// <summary>Required privileges and credentials for the Required privileges and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
@@ -57,7 +57,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		);
 
 	/// <summary>
-	/// The sections under the quick links bar, in page order. Required authorization is not one of them: it comes before the bar.
+	/// The sections under the quick links bar, in page order. Required privileges is not one of them: it comes before the bar.
 	/// </summary>
 	public IReadOnlyList<SectionLink> SectionLinks
 	{
@@ -101,7 +101,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		var tocItems = new List<TocItem> { new("Paths", "paths", 2) };
 
 		if (Page.RequiredPrivileges.Count > 0)
-			tocItems.Add(new TocItem("Required authorization", "required-authorization", 2));
+			tocItems.Add(new TocItem("Required privileges", "required-privileges", 2));
 
 		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new TocItem("Authentication", "authentication", 2));

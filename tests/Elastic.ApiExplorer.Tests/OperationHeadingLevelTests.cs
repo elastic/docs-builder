@@ -28,7 +28,7 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 			.Equal("h1", "h2", "h2", "h2", "h2", "h2", "h2", "h3");
 		html.Should().Contain("<h1>Run a search</h1>");
 		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"required-authorization\" data-section=\"required-authorization\" aria-label=\"Required authorization\">"
+			"<h2 class=\"section-header api-param-section-header\" id=\"required-privileges\" data-section=\"required-privileges\" aria-label=\"Required privileges\">"
 		);
 		html.Should().Contain(
 			"<h2 class=\"section-header api-param-section-header\" id=\"authentication\" data-section=\"authentication\" aria-label=\"Authentication\">"

@@ -197,11 +197,11 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("href=\"#responses\" data-toc-link>Responses</a>", "a link is its label alone, with no count");
 		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
 		bar = bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
-		bar.Should().NotContain("required-authorization", "Required authorization is not one of the links");
+		bar.Should().NotContain("required-privileges", "Required privileges is not one of the links");
 		html
-			.IndexOf("id=\"required-authorization\"", StringComparison.Ordinal)
+			.IndexOf("id=\"required-privileges\"", StringComparison.Ordinal)
 			.Should()
-			.BeLessThan(html.IndexOf("api-section-links", StringComparison.Ordinal), "Required authorization comes before the bar");
+			.BeLessThan(html.IndexOf("api-section-links", StringComparison.Ordinal), "Required privileges comes before the bar");
 		html
 			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()

@@ -48,7 +48,7 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml,
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
 			"paths",
-			"required-authorization",
+			"required-privileges",
 			"authentication",
 			"description",
 			"path-params",
