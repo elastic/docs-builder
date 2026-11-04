@@ -53,7 +53,7 @@
 			</li>
 		}
 	</ul>
-	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, operation.Deprecated)))
+	@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(pageModel.Availability, operation.Deprecated, Model.BuildContext.Configuration.Features.NavigationPreviewEnabled, pageModel.AuthBadge?.Text, Model.AuthBadgeHref)))
 </header>
 <section id="elastic-api-v3">
 	@if (!string.IsNullOrWhiteSpace(pageModel.DescriptionMarkdown) || pageModel.ExternalDocs is not null)
@@ -78,6 +78,11 @@
 		</a>
 	}
 	@(await RenderPartialAsync<_AuthorizationSection, AuthorizationSectionModel>(Model.Authorization))
+	@* The design-system stylesheet has no styles for the bar yet, so the flagged page leaves it out. *@
+	@if (!Model.BuildContext.Configuration.Features.NavigationPreviewEnabled && Model.SectionLinks is { Count: > 1 } sectionLinks)
+	{
+		@(await RenderPartialAsync<_SectionLinks, IReadOnlyList<SectionLink>>(sectionLinks))
+	}
 	@foreach (var section in pageModel.ParameterSections)
 	{
 		@(await RenderPartialAsync<_ParameterListSection, ParameterListSection>(section))

@@ -16,8 +16,8 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class ChangelogFileSystemRootsTests
 {
 	private static readonly string Repository = Paths.WorkingDirectoryRoot.FullName;
-	private static readonly string Outside = Path.Join(Path.GetDirectoryName(Repository)!, "bundles-elsewhere");
-	private static readonly string Unrelated = Path.Join(Path.GetDirectoryName(Repository)!, "unrelated-folder");
+	private static readonly string Outside = Path.Join(Path.GetDirectoryName(Repository), "bundles-elsewhere");
+	private static readonly string Unrelated = Path.Join(Path.GetDirectoryName(Repository), "unrelated-folder");
 
 	private static (MockFileSystem Mock, ChangelogFileSystem Scoped) Create(params string[] extraRoots)
 	{

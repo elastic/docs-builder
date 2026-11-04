@@ -811,20 +811,7 @@ public class LlmDirectiveRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, 
 		{
 			try
 			{
-				var parentPath = block.Context.MarkdownParentPath ?? block.Context.MarkdownSourcePath;
-				var document = MarkdownParser
-					.ParseSnippetAsync(
-						block.Build,
-						block.Context,
-						snippet,
-						parentPath,
-						block.Context.YamlFrontMatter,
-						Cancel.None,
-						block.Line
-					)
-					.GetAwaiter()
-					.GetResult();
-				_ = renderer.Render(document);
+				_ = renderer.Render(block.ParseSnippet());
 			}
 			catch (Exception ex)
 			{

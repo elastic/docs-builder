@@ -1,36 +1,16 @@
-import { cooldownStore } from '../shared/cooldown.store'
+import { renderWithQueryClient } from '../../test-utils/render'
+import { resetCooldownStore } from '../../test-utils/stores'
 import { Chat } from './Chat'
 import { chatStore } from './chat.store'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 import type { MockedFunction } from 'vitest'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-vi.mock('idb-keyval', () => ({
-    get: vi.fn().mockResolvedValue(null),
-    set: vi.fn().mockResolvedValue(undefined),
-    del: vi.fn().mockResolvedValue(undefined),
-    createStore: vi.fn().mockReturnValue({}),
-}))
-
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-        },
-    })
-
-// Wrapper component for tests that need React Query
-const renderWithQueryClient = (ui: React.ReactElement) => {
-    const testQueryClient = createTestQueryClient()
-    return render(
-        <QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>
-    )
-}
+vi.mock('idb-keyval', async () =>
+    (await import('../../test-utils/mocks')).idbKeyval()
+)
 
 // Mock only external HTTP calls - fetchEventSource makes the actual API request
 vi.mock('@microsoft/fetch-event-source', () => ({
@@ -47,17 +27,11 @@ const resetStores = () => {
         aiProvider: 'LlmGateway',
         scrollPosition: 0,
     })
-    cooldownStore.setState({
-        cooldowns: {
-            search: { cooldown: null, awaitingNewInput: false },
-            askAi: { cooldown: null, awaitingNewInput: false },
-        },
-    })
+    resetCooldownStore()
 }
 
 describe('Chat Component', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
         resetStores()
 
         // Mock scrollTo to prevent flaky test failures in CI

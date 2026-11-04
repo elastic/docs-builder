@@ -148,9 +148,15 @@
 	gap: 16px;
 }
 
-/* Operation / group page title — Figma APIs 10079:2802 */
+/* Topic and Authentication pages put their title in the same header, with the content below it. */
+.api-page-intro + #elastic-docs-v3 {
+	margin-top: 16px;
+}
+
+/* Operation / group page title — Figma APIs 10079:2802. A children: page keeps its H1 in its own Markdown, so its first heading takes the same style. */
 .api-page-intro h1,
-#elastic-api-v3 h1 {
+#elastic-api-v3 h1,
+.api-markdown-page > .heading-wrapper:first-child h1 {
 	margin: 0;
 	padding-top: 0;
 	color: var(--color-ink-navy, #111c2c);
@@ -1901,13 +1907,33 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-.api-title-badges .deprecated-badge {
-	@apply mr-2 inline;
-}
-
 /* x-state availability, rendered with the same applies_to badge as Markdown pages */
 .api-title-badges .applies {
 	@apply mr-2;
+}
+
+/* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+/* The availability badge sits on the bottom of its line (applies-to-popover); without the same here the badge sits on the baseline and the wrapper is taller. */
+.api-title-badges .applies-inline > .applicable-info {
+	vertical-align: bottom;
+}
+
+.api-title-badges .applicable-info.api-badge--danger {
+	@apply text-red-90 border-red-50;
+}
+
+.api-title-badges a.applicable-info {
+	@apply cursor-pointer underline;
+	text-underline-offset: 2px;
+}
+
+.api-title-badges a.applicable-info:hover {
+	@apply border-blue-elastic text-blue-elastic;
+}
+
+.api-title-badges a.applicable-info:focus-visible {
+	outline: 2px solid var(--color-blue-elastic);
+	outline-offset: 2px;
 }
 
 /* Deprecated badge - red warning style */
@@ -2918,6 +2944,19 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
+		/* Stays in view while the sections scroll, however long the page is. The rail itself does not clip, so the
+		   Copy page menu can open past its edge; the examples below it shrink to the window and scroll. */
+		position: sticky;
+		top: var(--offset-top, 0px);
+		align-self: start;
+		max-height: calc(100vh - var(--offset-top, 0px));
+		box-sizing: border-box;
+	}
+
+	.api-page-rail > :not(.api-page-actions) {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: hidden auto;
 	}
 
 	.api-page-rail > .api-page-actions {
@@ -2930,7 +2969,7 @@ button.example-response-tab:focus-visible {
 		margin-bottom: 0;
 	}
 
-	/* The examples are normal page flow: no sticky, no scrolling box. Long examples make the page long. */
+	/* The code blocks are normal page flow and cap at a fixed number of lines; the rail around them is sticky (above). */
 	#api-examples-panel .api-examples-panel-nav {
 		display: flex;
 		flex-direction: column;
@@ -3347,14 +3386,27 @@ navigation-search[variant='hero'] {
 	column-gap: 14px;
 }
 
-/* The description's section headings sit under the 36px title, so they step down from it instead of matching it. */
-.api-landing .docs-measure h2 {
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it. */
+.api-landing .docs-measure h2,
+.api-group .api-tag-description h2 {
 	margin-top: 32px;
 	font-size: var(--text-2xl);
 }
 
-.api-landing .docs-measure h3 {
+.api-landing .docs-measure h3,
+.api-group .api-tag-description h3 {
 	font-size: var(--text-xl);
+}
+
+/* A group title is 24px below 40rem, so its intro headings step down one more size. */
+@container api-group (max-width: 39.99rem) {
+	.api-group .api-tag-description h2 {
+		font-size: var(--text-xl);
+	}
+
+	.api-group .api-tag-description h3 {
+		font-size: var(--text-lg);
+	}
 }
 
 /* The index starts after the intro with the same 32px that separates its groups. */
@@ -3901,6 +3953,18 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
+/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
+   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
+   above the response. The 12-line cap stays as the minimum. */
+@media (min-width: 1024px) {
+	#api-examples-panel .example-block-body {
+		max-height: max(
+			var(--api-response-cap),
+			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		);
+	}
+}
+
 /* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
    not as tall as the tallest card in the row. */
 #api-examples-panel .api-code-carousel {
@@ -4132,11 +4196,7 @@ html:has(.api-page-shell) {
 /* Marks what a link points at: one soft pulse. A property row pulses on its name; the padding with a
    matching negative margin gives the tint room around the text without moving anything. */
 .api-link-target-flash {
-	--api-link-flash-tint: color-mix(
-		in srgb,
-		var(--color-yellow-40, #facb3d) 40%,
-		transparent
-	);
+	--api-link-flash-tint: var(--search-highlight-tint);
 	animation: api-link-target-flash 2.4s ease-in-out;
 }
 
@@ -4174,4 +4234,45 @@ html:has(.api-page-shell) {
 			background-color: transparent;
 		}
 	}
+}
+
+/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
+.api-section-links {
+	position: sticky;
+	top: var(--offset-top, 0px);
+	z-index: 5;
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 24px;
+	margin: 24px 0 0;
+	overflow-x: auto;
+	background: #fff;
+	border-bottom: 1px solid #e3e8f2;
+}
+
+.api-section-links a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 48px;
+	border-bottom: 2px solid transparent;
+	color: #516381;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.api-section-links a:hover {
+	color: #1d2a3e;
+}
+
+.api-section-links a[aria-current] {
+	border-bottom-color: #0b64dd;
+	color: #111c2c;
+}
+
+/* A section reached from the bar stops below the bar instead of under it. */
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
 }

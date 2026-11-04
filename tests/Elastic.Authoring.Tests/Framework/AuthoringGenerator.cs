@@ -69,7 +69,9 @@ public static class AuthoringGenerator
 		var context = new BuildContext(collector, docFs, configurationContext)
 		{
 			UrlPathPrefix = options.UrlPathPrefix,
-			CanonicalBaseUrl = new Uri("https://www.elastic.co/")
+			CanonicalBaseUrl = new Uri("https://www.elastic.co/"),
+			// Authoring tests assert on rendered pages, never on the _static bundle; copying it per scenario costs megabytes of MockFileSystem writes.
+			SkipStaticAssetExtraction = true
 		};
 
 		context.Configuration.Features.NavigationPreviewEnabled = options.NavigationPreview;

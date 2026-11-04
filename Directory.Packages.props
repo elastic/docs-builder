@@ -21,7 +21,7 @@
   </Choose>
   <ItemGroup>
     <GlobalPackageReference Include="MinVer" Version="7.0.0" PrivateAssets="All" />
-    <GlobalPackageReference Include="curb" Version="0.7.1" PrivateAssets="All" />
+    <GlobalPackageReference Include="curb" Version="0.9.0" PrivateAssets="All" />
   </ItemGroup>
   <!-- AWS -->
   <ItemGroup>
@@ -52,15 +52,15 @@
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.51.0" />
-    <PackageVersion Include="Elastic.Mapping" Version="0.51.0" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.55.0" />
+    <PackageVersion Include="Elastic.Mapping" Version="0.55.0" />
     <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="0.17.3" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
-    <PackageVersion Include="Microsoft.OpenApi" Version="3.10.2" />
-    <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.30" />
+    <PackageVersion Include="Microsoft.OpenApi" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.31" />
     <PackageVersion Include="Tomlyn" Version="2.3.2" />
-    <PackageVersion Include="TUnit" Version="1.65.0" />
+    <PackageVersion Include="TUnit" Version="1.78.0" />
     <PackageVersion Include="CsCheck" Version="4.0.0" />
     <PackageVersion Include="WireMock.Net" Version="1.6.11" />
   </ItemGroup>
@@ -128,11 +128,13 @@
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
     <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
+    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.2.0" />
+    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.2.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
-    <PackageVersion Include="AwesomeAssertions" Version="9.4.0" />
-    <PackageVersion Include="Microsoft.Testing.Platform" Version="2.4.1" />
-    <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.4.1" />
+    <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+    <PackageVersion Include="Microsoft.Testing.Platform" Version="2.5.2" />
+    <PackageVersion Include="Microsoft.Testing.Platform.MSBuild" Version="2.5.2" />
     <PackageVersion Include="JetBrains.Annotations" Version="2025.2.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />

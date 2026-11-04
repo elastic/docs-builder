@@ -454,7 +454,6 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 			_ = await PruneOldIndicesAsync(transport, $"ws-catalog.semantic-{state.Env}-*", keepCount: 3, logger, ct);
 		}
 		else // Reindex mode — incremental
-
 		{
 			// Global cutoff: max(last_updated) across all docs currently in semantic.
 			// Changed/new source docs have newer last_updated from their sync → caught by inference step.
@@ -536,7 +535,6 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 	private static string ResolveTemplateName(string writeAlias) =>
 		(writeAlias.EndsWith("-latest", StringComparison.Ordinal)
 			? writeAlias[..^7] // strip "-latest"
-
 			: writeAlias)
 			+ "-template";
 
@@ -719,7 +717,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		CancellationToken ct
 	)
 	{
-		var body = /*lang=json,strict*/  "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
+		var body = /*lang=json,strict*/ "{\"size\":0,\"aggs\":{\"max_lu\":{\"max\":{\"field\":\"last_updated\"}}}}";
 		var resp = await transport.RequestAsync<JsonResponse>(
 			Transport.HttpMethod.POST,
 			$"{semanticIndex}/_search",
@@ -1099,7 +1097,7 @@ internal sealed class IndicesCommands(SourcingConfiguration config, ILoggerFacto
 		}
 
 		var destIndex = await ResolveAliasIndexAsync(transport, alias, ct) ?? alias;
-		var sourceCount = await CountAsync(transport, alias, /*match_all*/  null, ct);
+		var sourceCount = await CountAsync(transport, alias, /*match_all*/ null, ct);
 
 		AnsiConsole.MarkupLine("[aqua bold]Indices sync-remote[/]");
 		AnsiConsole.MarkupLine($"[dim]From (source):[/]   {Markup.Escape(fromEndpoint.Uri.ToString())}");

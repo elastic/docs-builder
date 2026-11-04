@@ -93,7 +93,5 @@ public enum SearchQueryComponents : uint
 	Aggregations = AggType | AggSection | AggProduct, // 114688
 
 	/// <summary>Every clause on — equivalent to the production query (subject to per-clause gating).</summary>
-	All = (1u << 19)
-		- 1 // 524287
-
+	All = (1u << 19) - 1 // 524287
 }

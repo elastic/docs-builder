@@ -406,8 +406,12 @@ function onFolderCheckboxChange(input: HTMLInputElement) {
 }
 
 export function collapseAllFolders(nav: HTMLElement) {
+    // A group marked data-nav-default-open stays expanded on every page.
     const uncheck = (el: Element) => {
-        if (el instanceof HTMLInputElement) {
+        if (
+            el instanceof HTMLInputElement &&
+            !el.hasAttribute('data-nav-default-open')
+        ) {
             el.checked = false
         }
     }

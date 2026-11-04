@@ -746,6 +746,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 				}
 
+				if (!string.IsNullOrWhiteSpace(profileYaml.Output))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output is deprecated. Bundle output names are derived by convention as {{repo}}-{{product}}-{{version}}.yaml. Remove this field."
+					);
+
 				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))
 					collector.EmitWarning(
 						configPath,
@@ -1074,8 +1080,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Match = globalMatch,
 			Create = createRules,
 			Bundle = bundleRules,
-			Publish =
-				null // rules.publish is retired; filtering happens at bundle time via rules.bundle
+			Publish = null // rules.publish is retired; filtering happens at bundle time via rules.bundle
 		};
 	}
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.IO.Abstractions;
 using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
@@ -271,6 +272,58 @@ public class OpenApiDocumentExporterTests
 	}
 
 	[Test]
+	public async Task ConvertToDocuments_UnionsThatDifferOnlyByDescription_IndexBothListings()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+		{
+		  "openapi":"3.0.3", "info":{"title":"Fields","version":"1"},
+		  "paths":{"/thing":{"post":{"operationId":"thing","responses":{"200":{"description":"OK"}},
+		    "requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{
+		      "choice":{"oneOf":[
+		        {"type":"object","description":"Code it","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]},
+		      "pick":{"oneOf":[
+		        {"type":"object","description":"Code it, but differently","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it, but differently","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]}
+		    }}}}}}}}
+		}
+		"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "fields").Single();
+
+		// Large enough to be shared, alike in every way but the variant descriptions: the page keeps both listings, so the index must too.
+		doc.Api!.Properties.Select(p => p.Path).Should().Contain(["choice.c1", "choice.n6", "pick.c1", "pick.n6"]);
+	}
+
+	[Test]
+	public void Operation_MethodList_IndexesEveryRouteWithItsMethods()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources", raw, "esql-get-data-source");
+
+		doc.Api!
+			.Routes
+			.Select(r => $"{string.Join(",", r.Methods)} {r.Path}")
+			.Should()
+			.Equal("PUT /_query/data_source/{name}", "GET /_query/data_source");
+	}
+
+	[Test]
 	public void Operation_OnlyMethodList_IndexesTheSummary()
 	{
 		const string raw =
@@ -379,5 +432,111 @@ public class OpenApiDocumentExporterTests
 		};
 
 		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTagNamesAsHeadings()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+
+		var docs = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+
+		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
+		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
+		follow.Headings.Should().Equal("ccr");
+		follow
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument
+			{
+				Title = "Cross-cluster replication",
+				Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr"
+			});
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_TagNotDeclaredGlobally_IndexesTagNameAsHeading()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},
+			 "paths":{"/{index}/_ccr/follow":{"put":{"operationId":"ccr-follow","tags":["ccr"],"responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+
+		doc.Headings.Should().Equal("ccr");
+		doc
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
+	}
+
+	private static async Task<List<DocumentationDocument>> ElasticsearchFixtureDocuments()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+	}
+
+	private static async Task<string[]> SearchRequestChildNames(string parent)
+	{
+		var search = (await ElasticsearchFixtureDocuments()).Single(d => d.Api!.OperationId == "search");
+		return search.Api!.Properties.Where(p => p.Location == "request" && p.Parent == parent).Select(p => p.Name).Distinct().ToArray();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren() =>
+		(await SearchRequestChildNames("retriever.standard")).Should().Equal(
+			"filter",
+			"min_score",
+			"_name",
+			"query",
+			"search_after",
+			"terminate_after",
+			"sort",
+			"collapse"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind() =>
+		(await SearchRequestChildNames("retriever")).Should().Equal(
+			"standard",
+			"knn",
+			"rrf",
+			"text_similarity_reranker",
+			"rule",
+			"rescorer",
+			"linear",
+			"pinned",
+			"diversify"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren() =>
+		(await SearchRequestChildNames("retriever.standard.query")).Should().BeEmpty();
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTheParentOfEveryRow()
+	{
+		var docs = await ElasticsearchFixtureDocuments();
+		var search = docs.Single(d => d.Api!.OperationId == "search").Api!.Properties;
+		var request = search.Where(p => p.Location == "request").ToArray();
+
+		request.Single(p => p.Path == "retriever.standard.min_score").Parent.Should().Be("retriever.standard");
+		request.Single(p => p.Path == "retriever").Parent.Should().Be("");
+		search.Single(p => p.Location == "query" && p.Path == "allow_no_indices").Parent.Should().Be("");
+		foreach (var doc in docs)
+		{
+			var properties = doc.Api!.Properties;
+			var rows = properties.Select(p => (p.Location, ApiPropertyPath.ParentKey(p.Path))).ToHashSet();
+			foreach (var property in properties.Where(p => p.Parent != ""))
+				rows.Should().Contain(
+					(property.Location, property.Parent),
+					$"{doc.Api.OperationId} {property.Path} lists under an indexed row"
+				);
+		}
 	}
 }

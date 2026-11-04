@@ -82,6 +82,12 @@
 	--color-yellow-20: #fde9b5;
 	--color-yellow-30: #fcd883;
 	--color-yellow-40: #facb3d;
+	/* search matches and the flash of a linked property share one tint */
+	--search-highlight-tint: color-mix(
+		in srgb,
+		var(--color-yellow-40) 40%,
+		transparent
+	);
 	--color-yellow-50: #f5bc00;
 	--color-yellow-60: #eaae01;
 	--color-yellow-70: #ca9601;

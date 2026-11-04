@@ -206,9 +206,8 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		html.Should().Contain("api-menu-group-label\">Elastic Stack</div>").And.Contain("role=\"group\"");
 		// A group without a title gets no label, and the separator sits between the groups.
 		html.Should().NotContain("id=\"api-hub-group-1\"");
-		var order = new[] { "id=\"api-version-switcher\"", "Kibana APIs", "Alpha API", "All APIs" }.Select(
-			t => html.IndexOf(t, StringComparison.Ordinal)
-		).ToArray();
+		string[] markers = ["id=\"api-version-switcher\"", "Kibana APIs", "Alpha API", "All APIs"];
+		var order = markers.Select(t => html.IndexOf(t, StringComparison.Ordinal)).ToArray();
 		order.Should().OnlyContain(p => p >= 0).And.BeInAscendingOrder();
 		CountOccurrences(html, "api-menu-sep").Should().Be(3);
 		// The spec download lives in the page actions, not here.
@@ -267,7 +266,7 @@ public class SecondaryNavRenderingTests() : DocumentationSetNavigationTestBase()
 		html.Should().Contain("id=\"api-version-switcher\"").And.NotContain("All APIs").And.NotContain("api-menu-sep");
 	}
 
-	static int CountOccurrences(string text, string value) => text.Split(value).Length - 1;
+	private static int CountOccurrences(string text, string value) => text.Split(value).Length - 1;
 
 	[Test]
 	public async Task DocsBarsCarryNoApiChrome()
