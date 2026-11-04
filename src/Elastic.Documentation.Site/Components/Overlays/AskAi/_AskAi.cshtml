@@ -1,0 +1,34 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Overlays.AskAi.AskAiModel>
+<button class="ask-ai__open@(Model.Floating ? "" : " ask-ai__open--inline") btn btn--primary" type="button" data-ask-ai-open="@Model.Id" hidden>@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "sparkles", Size = IconSize.Small }))<span>@Model.Title</span></button>
+<dialog class="flyout ask-ai" id="@Model.Id" aria-labelledby="@(Model.Id)-title" data-ask-ai data-flyout-resizable>
+	<div class="flyout__handle" role="separator" aria-orientation="vertical" aria-label="Resize panel" tabindex="0" data-flyout-handle hidden></div>
+	<header class="flyout__header">
+		<h2 class="flyout__title" id="@(Model.Id)-title">@Model.Title</h2>
+		<div class="ask-ai__header-actions">
+			<button class="ask-ai__new" type="button" data-ask-ai-new>New chat</button>
+			<form method="dialog"><button class="flyout__close" type="submit" aria-label="Close">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "cross", Size = IconSize.Small }))</button></form>
+		</div>
+	</header>
+	<div class="ask-ai__body">
+		<div class="ask-ai__intro" data-ask-ai-intro>
+			<p class="ask-ai__description" data-ask-ai-description></p>
+			<ul class="ask-ai__suggestions" data-ask-ai-suggestions></ul>
+		</div>
+		<ol class="ask-ai__messages" data-ask-ai-messages aria-live="polite" aria-label="Conversation"></ol>
+	</div>
+	<form class="ask-ai__form" data-ask-ai-form>
+		<label class="ask-ai__label" for="@(Model.Id)-input">Message</label>
+		<div class="ask-ai__field">
+			<textarea class="input ask-ai__input" id="@(Model.Id)-input" name="message" rows="1" placeholder="@Model.Placeholder" data-ask-ai-input required></textarea>
+			<button class="ask-ai__send" type="submit" data-ask-ai-send aria-label="Send">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))</button>
+			<button class="btn btn--secondary btn--sm" type="button" data-ask-ai-stop hidden>Stop</button>
+		</div>
+		<p class="ask-ai__legal">AI answers can be wrong. Check them against the documentation.</p>
+	</form>
+	<template data-ask-ai-message>
+		<li class="ask-ai__message">
+			<p class="ask-ai__author"></p>
+			<div class="ask-ai__text prose"></div>
+		</li>
+	</template>
+</dialog>

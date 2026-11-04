@@ -1,0 +1,6 @@
+@inherits RazorSlice<HtmlString>
+@* A request or response example's description: muted text clamped to three lines, with a toggle when it is cut off. *@
+<div class="api-example-caption" data-example-description>
+	<div class="api-example-caption-text">@Model</div>
+	<button type="button" class="api-example-caption-toggle" data-description-toggle aria-expanded="false" hidden>Show more</button>
+</div>

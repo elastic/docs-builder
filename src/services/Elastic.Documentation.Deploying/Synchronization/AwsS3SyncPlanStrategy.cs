@@ -29,6 +29,8 @@ public class AwsS3SyncPlanStrategy(
 
 	private static bool IsExcluded(string destinationPath, Glob[] globs) => globs.Length > 0 && globs.Any(g => g.IsMatch(destinationPath));
 
+	private string LocalPath(string key) => Path.Join(context.OutputDirectory.FullName, key.Replace('/', Path.DirectorySeparatorChar));
+
 	/// <summary>
 	/// Normalize an exclude pattern so it behaves like <c>aws s3 sync --exclude</c>, where
 	/// <c>*</c> matches path separators (e.g. <c>_preview/*</c> matches
@@ -46,7 +48,6 @@ public class AwsS3SyncPlanStrategy(
 		var listTask = ListObjects(ctx);
 		var localObjects = context.OutputDirectory.GetFiles("*", SearchOption.AllDirectories).Where(f => !IsSymlink(f.FullName)).ToArray();
 		var (readToCompletion, remoteObjects) = await listTask;
-		var deleteRequests = new ConcurrentBag<DeleteRequest>();
 		var addRequests = new ConcurrentBag<AddRequest>();
 		var updateRequests = new ConcurrentBag<UpdateRequest>();
 		var skipRequests = new ConcurrentBag<SkipRequest>();
@@ -82,17 +83,17 @@ public class AwsS3SyncPlanStrategy(
 			}
 		});
 
-		// Find deletions (files in S3 but not locally), honouring excludes
-		foreach (var remoteObject in remoteObjects)
-		{
-			if (IsExcluded(remoteObject.Key, excludeGlobs))
-				continue;
-			var localPath = Path.Join(context.OutputDirectory.FullName, remoteObject.Key.Replace('/', Path.DirectorySeparatorChar));
-			if (context.ReadFileSystem.File.Exists(localPath))
-				continue;
-			var deleteRequest = new DeleteRequest { DestinationPath = remoteObject.Key };
-			deleteRequests.Add(deleteRequest);
-		}
+		// Find deletions (files in S3 but not locally), honouring excludes.
+		// Recent builds' hashed assets stay so pages that still reference them keep working.
+		var staleObjects = remoteObjects
+			.Values
+			.Where(o => !IsExcluded(o.Key, excludeGlobs) && !context.ReadFileSystem.File.Exists(LocalPath(o.Key)))
+			.ToList();
+		var retainedPaths = StaticAssetRetention.Retain(staleObjects);
+		var deleteRequests = staleObjects
+			.Where(o => !retainedPaths.Contains(o.Key))
+			.Select(o => new DeleteRequest { DestinationPath = o.Key })
+			.ToList();
 
 		return new SyncPlan
 		{
@@ -101,10 +102,11 @@ public class AwsS3SyncPlanStrategy(
 			ExcludePatterns = excludePatterns,
 			TotalRemoteFiles = remoteObjects.Count,
 			TotalSourceFiles = localObjects.Length,
-			DeleteRequests = deleteRequests.ToList(),
+			DeleteRequests = deleteRequests,
 			AddRequests = addRequests.ToList(),
 			UpdateRequests = updateRequests.ToList(),
 			SkipRequests = skipRequests.ToList(),
+			RetainedPaths = retainedPaths.Order(StringComparer.Ordinal).ToList(),
 			TotalSyncRequests = deleteRequests.Count + addRequests.Count + updateRequests.Count + skipRequests.Count
 		};
 	}

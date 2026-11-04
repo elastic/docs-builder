@@ -12,7 +12,7 @@ public class EmbeddedStaticAssetTests
 {
 	private static readonly string[] ResourceNames = typeof(EmbeddedOrPhysicalFileProvider).Assembly.GetManifestResourceNames();
 
-	[Fact]
+	[Test]
 	public void EmbedGeneratedAssets_includes_source_maps_unconditionally()
 	{
 		var mapEmbeds = File
@@ -27,21 +27,17 @@ public class EmbeddedStaticAssetTests
 		mapEmbeds.Should().NotContain(static line => line.Contains("Condition", StringComparison.Ordinal));
 	}
 
-	[Fact]
-	public void NpmRunBuild_deletes_hashed_source_maps_before_parcel()
+	[Test]
+	public void NpmRunBuild_deletes_stale_vite_outputs_inside_the_skippable_target()
 	{
 		var csproj = File.ReadAllText(SiteCsprojPath());
-		csproj.Should().Contain("""Include="_static/*.????????*.js.map" """);
-		csproj.Should().Contain("""Include="_static/*.????????*.css.map" """);
+		csproj.Should().Contain("""Include="_static/main-*" """);
 		csproj.Should().NotContain("CleanOldHashedAssets");
 	}
 
-	[Fact]
-	public void Site_assembly_embeds_js_and_css_source_maps()
-	{
+	[Test]
+	public void Site_assembly_embeds_js_source_maps() =>
 		ResourceNames.Should().Contain(static n => n.EndsWith(".js.map", StringComparison.Ordinal));
-		ResourceNames.Should().Contain(static n => n.EndsWith(".css.map", StringComparison.Ordinal));
-	}
 
 	private static string SiteCsprojPath() =>
 		Path.Combine(Paths.WorkingDirectoryRoot.FullName, "src", "Elastic.Documentation.Site", "Elastic.Documentation.Site.csproj");

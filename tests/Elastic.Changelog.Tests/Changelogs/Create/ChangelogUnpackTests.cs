@@ -11,7 +11,7 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class ChangelogUnpackTests() : CreateChangelogTestBase()
 {
 	private const string ConfigYaml =
 		"""
@@ -28,7 +28,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		  - ga
 		""";
 
-	[Fact]
+	[Test]
 	public async Task Unpack_PrEntry_WritesAddNamedFileAndStripsPrivateSentinel()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -62,7 +62,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var written = FileSystem.Path.Join(outputDir, "7606.yaml");
 		FileSystem.File.Exists(written).Should().BeTrue();
-		var yaml = await FileSystem.File.ReadAllTextAsync(written, TestContext.Current.CancellationToken);
+		var yaml = await FileSystem.File.ReadAllTextAsync(written, TestContext.Current!.Execution.CancellationToken);
 		yaml.Should().Contain("title: Add ECS user.domain to serverless audit logs");
 		yaml.Should().Contain("type: enhancement");
 		yaml.Should().Contain("https://github.com/elastic/elasticsearch-serverless/pull/7606");
@@ -78,7 +78,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		ComputeSha1(yaml).Should().NotBe("88dfd443adb87e70e71e7d8cb8417e4de1b91268");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_VersionedEntryWithoutPrs_WritesNoteFile()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -114,13 +114,13 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 
 		var files = FileSystem.Directory.GetFiles(outputDir, "note-*.yml");
 		files.Should().ContainSingle();
-		var yaml = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yaml = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		var parsed = ReleaseNotesSerialization.DeserializeEntry(yaml);
 		parsed.Type.Should().Be(ChangelogEntryType.KnownIssue);
 		parsed.Products.Should().ContainSingle().Which.Versions.Should().Contain("9.3.0");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_MultiPrEntry_WritesSingleFileNotOnePerPr()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -153,7 +153,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Which.Should().EndWith("100-200.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_ParentMergesAmendAdditionAndExclusion()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -189,7 +189,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 			  prs:
 			  - https://github.com/elastic/elasticsearch/pull/222
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(dir, "release.amend-1.yaml"),
@@ -214,7 +214,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 			  prs:
 			  - https://github.com/elastic/elasticsearch/pull/333
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var result = await Unpack(parent, configPath, outputDir);
@@ -225,7 +225,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		names.Should().Equal("111.yaml", "333.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_AmendSidecar_WritesAdditionsOnly()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -256,7 +256,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 			  prs:
 			  - https://github.com/elastic/elasticsearch/pull/333
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var result = await Unpack(amend, configPath, outputDir);
@@ -266,7 +266,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Select(FileSystem.Path.GetFileName).Should().Equal("333.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_ExcludeOnlyAmend_WritesNothing()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -287,7 +287,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 			    name: 222.yaml
 			    checksum: drop
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var result = await Unpack(amend, configPath, outputDir);
@@ -297,7 +297,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		FileSystem.Directory.Exists(outputDir).Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task Unpack_ScrubbedEntryWithoutPrsOrVersions_Fails()
 	{
 		var configPath = await CreateConfigDirectory(ConfigYaml);
@@ -334,7 +334,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		return await service.UnpackBundle(
 			Collector,
 			new UnpackBundleArguments { BundleFile = bundlePath, Config = configPath, Output = outputDir, Concise = false },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 	}
 
@@ -343,7 +343,7 @@ public class ChangelogUnpackTests(ITestOutputHelper output) : CreateChangelogTes
 		var dir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir);
 		var path = FileSystem.Path.Join(dir, "bundle.yaml");
-		await FileSystem.File.WriteAllTextAsync(path, yaml, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(path, yaml, TestContext.Current!.Execution.CancellationToken);
 		return path;
 	}
 }

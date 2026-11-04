@@ -6,18 +6,18 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Markdown.Tests;
 
-public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutput
+public class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 		else
-			output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper output) : DiagnosticsCollector([new TestDiagnosticsOutput(output)])
+public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnosticsOutput()])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 

@@ -5,7 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Versions;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 

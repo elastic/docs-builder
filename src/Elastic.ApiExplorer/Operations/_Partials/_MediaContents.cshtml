@@ -1,0 +1,24 @@
+@using Elastic.ApiExplorer.Operations
+@inherits RazorSlice<Elastic.ApiExplorer.Operations.MediaContentsModel>
+@{
+	var contents = Model.Contents;
+}
+@* One content type shows its body as is. Two or more show one at a time: the select above the panels (_ContentTypeSelect)
+   picks the panel, the first being the one with a schema, and the others keep hidden="until-found" so find-in-page
+   reaches them (api-union-chips.ts). *@
+@if (contents.Count == 1)
+{
+	@(await RenderPartialAsync<_MediaContentBody, MediaContentBodyModel>(new MediaContentBodyModel(contents[0], Model.TypeLabel)))
+}
+else if (contents.Count > 1)
+{
+	<div class="content-type-panels" id="@Model.IdPrefix" role="group" aria-label="@Model.Label content types">
+		@(await RenderPartialAsync<_ContentTypeSelect, MediaContentsModel>(Model))
+		@for (var i = 0; i < contents.Count; i++)
+		{
+			<div class="content-type-panel" id="@Model.PanelId(i)" hidden="@(i > 0 ? "until-found" : null)">
+				@(await RenderPartialAsync<_MediaContentBody, MediaContentBodyModel>(new MediaContentBodyModel(contents[i], Model.TypeLabel)))
+			</div>
+		}
+	</div>
+}

@@ -8,7 +8,6 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.FileSystems;
-using Xunit;
 
 namespace Elastic.Markdown.Tests;
 
@@ -25,9 +24,9 @@ namespace Elastic.Markdown.Tests;
 /// <c>FindGitRoot</c> can see <c>.git</c> within the default <c>maxParents</c> range.
 /// </para>
 /// </summary>
-public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper output)
+public class BuildContextDocumentationCheckoutDirectoryTests()
 {
-	[Fact]
+	[Test]
 	public void SourceAsRepositoryRoot_SetsDocumentationCheckoutDirectory()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -36,8 +35,8 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(repoPath, "docs", "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(repoPath),
@@ -49,7 +48,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
 	}
 
-	[Fact]
+	[Test]
 	public void SourceAsDocsSubtree_ResolvesCheckoutFromParent()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -59,8 +58,8 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var docFs = DocumentationFileSystem.Resolve(
 			fs.DirectoryInfo.New(docsPath),
@@ -74,7 +73,7 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		context.DocumentationCheckoutDirectory.FullName.Should().Be(repoPath);
 	}
 
-	[Fact]
+	[Test]
 	public void PathAndDocsSubfolder_ResolveIdenticalCheckout()
 	{
 		var root = Paths.WorkingDirectoryRoot.FullName;
@@ -84,8 +83,8 @@ public class BuildContextDocumentationCheckoutDirectoryTests(ITestOutputHelper o
 		fs.AddDirectory(Path.Combine(repoPath, ".git"));
 		fs.AddFile(Path.Combine(docsPath, "docset.yml"), new MockFileData("toc: []\n"));
 
-		var collector = new TestDiagnosticsCollector(output);
-		_ = collector.StartAsync(TestContext.Current.CancellationToken);
+		var collector = new TestDiagnosticsCollector();
+		_ = collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs);
 		var opts = new DocumentationScopeOptions { Inner = fs, Output = Path.Combine(root, "codex-equiv-test-out") };
 

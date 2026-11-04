@@ -27,6 +27,13 @@ public sealed record FetchedReleaseNotes
 	/// </summary>
 	public FrozenSet<string> NotFoundInferredProducts { get; init; } = [];
 
+	/// <summary>
+	/// Products registered in products.yml (via <c>release_notes</c> in docset.yml) that returned HTTP
+	/// 404 during prefetch — no bundles have been published yet. A 404 is a warning, not an error:
+	/// products.yml membership is the authoritative gate; 404 only means no release has been cut yet.
+	/// </summary>
+	public FrozenSet<string> NotFoundDeclaredProducts { get; init; } = [];
+
 	public static FetchedReleaseNotes Empty { get; } = new()
 	{
 		BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,

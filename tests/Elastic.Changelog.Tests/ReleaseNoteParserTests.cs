@@ -4,7 +4,6 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.GitHub;
-using Xunit;
 
 namespace Elastic.Changelog.Tests;
 
@@ -12,7 +11,7 @@ public class ReleaseNoteParserTests
 {
 	// docs-builder's own release-drafter output: level-2 emoji headers and "-" bullets
 	// (change-template: "- $TITLE by @$AUTHOR in #$NUMBER").
-	[Fact]
+	[Test]
 	public void Parse_DocsBuilderReleaseDrafterFormat_ExtractsPrsAndType()
 	{
 		const string body =
@@ -34,7 +33,7 @@ public class ReleaseNoteParserTests
 		result.FullChangelogUrl.Should().Be("https://github.com/elastic/docs-builder/compare/1.18.0...1.18.1");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_DocsBuilderReleaseDrafterFormat_InfersTypePerSection()
 	{
 		const string body =
@@ -57,7 +56,7 @@ public class ReleaseNoteParserTests
 	}
 
 	// Regression: the previous, stricter shape (### headers, "*" bullets) still parses.
-	[Fact]
+	[Test]
 	public void Parse_LegacyReleaseDrafterFormat_StillWorks()
 	{
 		const string body =
@@ -79,7 +78,7 @@ public class ReleaseNoteParserTests
 		result.PrReferences[1].InferredType.Should().Be("bug-fix");
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_GitHubDefaultFormat_AcceptsBothBullets()
 	{
 		const string body =
@@ -99,9 +98,9 @@ public class ReleaseNoteParserTests
 		result.PrReferences.Should().OnlyContain(p => p.InferredType == null);
 	}
 
-	[Theory]
-	[InlineData("## 🐛 Bug Fixes")]
-	[InlineData("### 🐛 Bug Fixes")]
+	[Test]
+	[Arguments("## 🐛 Bug Fixes")]
+	[Arguments("### 🐛 Bug Fixes")]
 	public void DetectFormat_EmojiHeadersAtAnyLevel_IsReleaseDrafter(string header) =>
 		ReleaseNoteParser.DetectFormat($"{header}\n\n- Fix it by @alice in #1").Should().Be(ReleaseNoteFormat.ReleaseDrafter);
 }

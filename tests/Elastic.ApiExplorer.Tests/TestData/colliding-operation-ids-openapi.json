@@ -1,0 +1,22 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Colliding ids", "version": "1.0.0" },
+  "paths": {
+    "/api/first": {
+      "get": {
+        "operationId": "get-script",
+        "tags": ["connectors"],
+        "description": "Returns the first script.",
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/api/second": {
+      "get": {
+        "operationId": "get_script",
+        "tags": ["connectors"],
+        "description": "Returns the second script.",
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  }
+}

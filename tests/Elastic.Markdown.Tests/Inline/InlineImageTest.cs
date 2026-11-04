@@ -6,50 +6,46 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class InlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
-	"""
+[InheritsTests]
+public class InlineImageTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png)
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
 }
 
-public class RelativeInlineImageTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
-	"""
+[InheritsTests]
+public class RelativeInlineImageTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](_static/img/observability.png)
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml("""<p><img src="/docs/_static/img/observability.png" alt="Elasticsearch" title="Elasticsearch" /></p>""");
 }
 
 // Test image sizing with space before =
-public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
+[InheritsTests]
+public class InlineImageWithSizingSpaceBeforeTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png " =50%")
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
@@ -58,17 +54,17 @@ public class InlineImageWithSizingSpaceBeforeTest(ITestOutputHelper output) : In
 }
 
 // Test image sizing without space before =
-public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
+[InheritsTests]
+public class InlineImageWithSizingNoSpaceBeforeTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png "=50%")
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
@@ -77,17 +73,15 @@ public class InlineImageWithSizingNoSpaceBeforeTest(ITestOutputHelper output) : 
 }
 
 // Test image sizing with pixels
-public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
-	"""
+[InheritsTests]
+public class InlineImageWithPixelSizingTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png "=250x330")
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
@@ -96,17 +90,17 @@ public class InlineImageWithPixelSizingTest(ITestOutputHelper output) : InlineTe
 }
 
 // Test image sizing with title and sizing — explicit title in markdown is ignored; alt text is always used as title
-public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
+[InheritsTests]
+public class InlineImageWithTitleAndSizingTest() : InlineTest<LinkInline>(
 	"""
 ![Elasticsearch](/_static/img/observability.png "My Title =50%")
 """
 )
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(
@@ -115,17 +109,15 @@ public class InlineImageWithTitleAndSizingTest(ITestOutputHelper output) : Inlin
 }
 
 // Test image sizing with width only
-public class InlineImageWithWidthOnlyTest(ITestOutputHelper output) : InlineTest<LinkInline>(
-	output,
-	"""
+[InheritsTests]
+public class InlineImageWithWidthOnlyTest() : InlineTest<LinkInline>("""
 ![Elasticsearch](/_static/img/observability.png "=250")
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void GeneratesAttributesInHtml() =>
 		// language=html
 		Html.ShouldContainHtml(

@@ -14,8 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
-    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
   </ItemGroup>
 

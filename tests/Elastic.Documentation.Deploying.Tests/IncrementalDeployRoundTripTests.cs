@@ -39,7 +39,9 @@ public class IncrementalDeployRoundTripTests
 	private const string SkipETag = "aaaa0000skip0000etag0000aaaa0000";
 	private const string AnyOtherETag = "bbbb1111other1111etag1111bbbb1111";
 
-	[Fact]
+	// Apply emits spans on a process-wide ActivitySource that DocsSyncTests.TestApply asserts on.
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
 	public async Task AssemblerRoundTrip()
 	{
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
@@ -53,7 +55,8 @@ public class IncrementalDeployRoundTripTests
 		await RunRoundTrip(fs, s3, xfer, gh, svc, context, outputDir);
 	}
 
-	[Fact]
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
 	public async Task CodexRoundTrip()
 	{
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");
@@ -205,7 +208,8 @@ public class IncrementalDeployExcludeTests
 	private const string SkipETag = "aaaa0000skip0000etag0000aaaa0000";
 	private const string AnyOtherETag = "bbbb1111other1111etag1111bbbb1111";
 
-	[Fact]
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
 	public async Task ExcludedRemoteObjectsAreNotDeleted()
 	{
 		var outputDir = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "codex", "docs");

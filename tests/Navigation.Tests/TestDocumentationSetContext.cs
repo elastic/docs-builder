@@ -18,18 +18,18 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
-public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutput
+public class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 		else
-			output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper output) : DiagnosticsCollector([new TestDiagnosticsOutput(output)])
+public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnosticsOutput()])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 
@@ -77,7 +77,6 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		IDirectoryInfo sourceDirectory,
 		IDirectoryInfo outputDirectory,
 		IFileInfo configPath,
-		ITestOutputHelper output,
 		string? repository = null,
 		TestDiagnosticsCollector? collector = null
 	)
@@ -90,7 +89,7 @@ public class TestDocumentationSetContext : IDocumentationSetContext
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
-		Collector = collector ?? new TestDiagnosticsCollector(output);
+		Collector = collector ?? new TestDiagnosticsCollector();
 		Git = repository is null
 			? GitCheckoutInformation.Unavailable
 			: new GitCheckoutInformation { Branch = "main", Remote = $"elastic/{repository}", Ref = "main", RepositoryName = repository };

@@ -18,24 +18,22 @@ namespace Mcp.Remote.IntegrationTests;
 /// <summary>
 /// Base class for MCP Lambda integration tests providing shared configuration and factory methods.
 /// </summary>
-public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
+public abstract class McpToolsIntegrationTestsBase
 {
-	protected ITestOutputHelper Output { get; } = output;
-
 	protected void LogDiagnostics(ElasticsearchClientAccessor? clientAccessor)
 	{
 		if (clientAccessor is null)
 			return;
 
-		Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
-		Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
-		Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+		TestContext.Current?.Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		TestContext.Current?.Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		TestContext.Current?.Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
 	}
 
 	protected async Task LogIndexCount(ElasticsearchClientAccessor clientAccessor, CancellationToken ctx)
 	{
 		var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), ctx);
-		Output.WriteLine(
+		TestContext.Current?.Output.WriteLine(
 			countResponse.IsValidResponse
 				? $"Index document count: {countResponse.Count}"
 				: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}"

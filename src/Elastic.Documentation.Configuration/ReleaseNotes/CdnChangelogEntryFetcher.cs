@@ -33,6 +33,8 @@ public readonly record struct CdnChangelogEntry(string FileName, string Content)
 /// </remarks>
 public sealed class CdnChangelogEntryFetcher : IDisposable
 {
+	private const int MaxParallelEntryFetches = 32;
+
 	private const int SupportedSchemaVersion = 1;
 
 	/// <summary>Total GET attempts per entry (1 initial + retries). ~3.5s budget at the default backoff.</summary>
@@ -95,6 +97,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// Downloads the changelog entries for the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/>
 	/// pool from the CDN at <paramref name="baseUri"/>. Returns an empty list after emitting an error when
 	/// the registry cannot be read or when a registry-listed entry cannot be fetched within the retry budget.
+	/// A registry that answers 404 goes to <paramref name="emitRegistryNotFound"/> instead of <paramref name="emitError"/> when it is given.
 	/// Entries are returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
@@ -104,7 +107,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string branch,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx
+		Cancel ctx,
+		Action<string>? emitRegistryNotFound = null
 	)
 	{
 		var poolLabel = $"{org}/{repo}/{branch}";
@@ -128,6 +132,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		{
 			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
 		}
+		catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound && emitRegistryNotFound is not null)
+		{
+			emitRegistryNotFound(
+				$"No changelog entry registry for '{poolLabel}' exists at {registryUri}: the repository publishes no entry pool."
+			);
+			return [];
+		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			emitError($"Could not fetch changelog entry registry for '{poolLabel}' from {registryUri}: {ex.Message}");
@@ -148,31 +159,49 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var entries = new List<CdnChangelogEntry>(registry.Bundles.Count);
+		var fileNames = new List<string>(registry.Bundles.Count);
 		foreach (var entry in registry.Bundles)
 		{
-			ctx.ThrowIfCancellationRequested();
+			if (ChangelogKeys.IsSafeFileName(entry.File))
+				fileNames.Add(entry.File);
+			else
+				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{entry.File}'; skipping.");
+		}
 
-			var fileName = entry.File;
-			if (!ChangelogKeys.IsSafeFileName(fileName))
+		// A pool holds hundreds of entries and each is one round trip, so they are fetched in parallel. The results
+		// keep the registry order, and the first entry in that order that cannot be fetched is the one reported.
+		var results = new (bool Fetched, string Content, string? LastError)[fileNames.Count];
+		using var gate = new SemaphoreSlim(MaxParallelEntryFetches);
+		await Task.WhenAll(fileNames.Select(async (fileName, index) =>
+		{
+			await gate.WaitAsync(ctx).ConfigureAwait(false);
+			try
 			{
-				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{fileName}'; skipping.");
-				continue;
+				var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+				results[index] = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
 			}
+			finally
+			{
+				_ = gate.Release();
+			}
+		})).ConfigureAwait(false);
 
-			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
-			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
+		var entries = new List<CdnChangelogEntry>(fileNames.Count);
+		for (var i = 0; i < fileNames.Count; i++)
+		{
+			var (fetched, content, lastError) = results[i];
 			if (fetched)
 			{
-				entries.Add(new CdnChangelogEntry(fileName, content));
+				entries.Add(new CdnChangelogEntry(fileNames[i], content));
 				continue;
 			}
 
 			// The registry lists this entry, so it exists in the private bucket and should have been
 			// scrubbed to the public one within milliseconds. Still missing after the retry budget means
 			// a genuine propagation/scrub failure — fail rather than ship a bundle missing this entry.
+			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileNames[i]]);
 			emitError(
-				$"Changelog entry '{fileName}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+				$"Changelog entry '{fileNames[i]}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
 					"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline."
 			);
 			return [];
@@ -487,23 +516,18 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	}
 
 	/// <summary>
-	/// <summary>
-	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> at
-	/// <paramref name="version"/> from the CDN. Reads the <c>notes-{version}.json</c> index to enumerate
-	/// the pool-relative note paths; a missing index means no notes (not an error). A listed note that
-	/// cannot be fetched is a hard error — the index is an authoritative promise that the note exists.
+	/// Fetches all <c>note-*.yml</c> entries for <paramref name="org"/>/<paramref name="repo"/> and
+	/// <paramref name="product"/> at <paramref name="version"/> from the CDN. Reads
+	/// <c>notes-{product}-{version}.json</c> first; on HTTP 404 only, falls back to the legacy
+	/// <c>notes-{version}.json</c>. A missing index (both 404) means no notes (not an error).
+	/// An empty product-scoped index does not fall back. A listed note that cannot be fetched
+	/// is a hard error — the index is an authoritative promise that the note exists.
 	/// </summary>
-	/// <param name="baseUri">CDN base URI.</param>
-	/// <param name="org">Repository org (e.g. <c>elastic</c>).</param>
-	/// <param name="repo">Repository name (e.g. <c>kibana</c>).</param>
-	/// <param name="version">Release version string (e.g. <c>9.0.0</c>).</param>
-	/// <param name="emitError">Called once per hard error; caller decides how to surface it.</param>
-	/// <param name="ctx">Cancellation token.</param>
-	/// <returns>The fetched note entries, keyed by pool-relative path (<c>main/note-foo.yml</c>).</returns>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchNotesAsync(
 		Uri baseUri,
 		string org,
 		string repo,
+		string product,
 		string version,
 		Action<string> emitError,
 		Cancel ctx
@@ -515,31 +539,87 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var indexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
-		NotesIndex? index;
+		if (!ChangelogKeys.IsValidProduct(product))
+		{
+			emitError($"Invalid product '{product}' for notes fetch: must be a non-empty ASCII product segment.");
+			return [];
+		}
+
+		var productIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{product}-{version}.json"]);
+		var (productMissing, productIndex) = await TryLoadNotesIndexAsync(
+			productIndexUri,
+			org,
+			repo,
+			version,
+			emitError,
+			ctx
+		).ConfigureAwait(false);
+		if (productIndex is not null)
+			return await FetchListedNotesAsync(baseUri, org, repo, version, productIndex, emitError, ctx).ConfigureAwait(false);
+		if (!productMissing)
+			return [];
+
+		var legacyIndexUri = CombineSegments(baseUri, ["changelog", org, repo, $"notes-{version}.json"]);
+		var (legacyMissing, legacyIndex) = await TryLoadNotesIndexAsync(legacyIndexUri, org, repo, version, emitError, ctx).ConfigureAwait(
+			false
+		);
+		if (legacyIndex is not null)
+			return await FetchListedNotesAsync(baseUri, org, repo, version, legacyIndex, emitError, ctx).ConfigureAwait(false);
+		if (legacyMissing)
+		{
+			_logger.LogDebug(
+				"Notes index for {Org}/{Repo}/{Product}@{Version} not found at {ProductUri} or {LegacyUri}; no notes to bundle",
+				org,
+				repo,
+				product,
+				version,
+				productIndexUri,
+				legacyIndexUri
+			);
+		}
+		return [];
+	}
+
+	/// <summary>
+	/// Loads a notes index. Returns <c>missing: true</c> only on HTTP 404. A present but empty
+	/// or unparseable body is <c>missing: false</c> with a null index so callers do not fall back.
+	/// </summary>
+	private async Task<(bool Missing, NotesIndex? Index)> TryLoadNotesIndexAsync(
+		Uri indexUri,
+		string org,
+		string repo,
+		string version,
+		Action<string> emitError,
+		Cancel ctx
+	)
+	{
 		try
 		{
 			var (notFound, content) = await FetchTextOrNotFoundAsync(indexUri, 1, ctx).ConfigureAwait(false);
 			if (notFound)
-			{
-				_logger.LogDebug(
-					"Notes index for {Org}/{Repo}@{Version} not found at {Uri}; no notes to bundle",
-					org,
-					repo,
-					version,
-					indexUri
-				);
-				return [];
-			}
-			index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
+				return (true, null);
+
+			var index = JsonSerializer.Deserialize(content, NotesIndexJsonContext.Default.NotesIndex);
+			return (false, index);
 		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			emitError($"Could not fetch notes index for {org}/{repo}@{version} from {indexUri}: {ex.Message}");
-			return [];
+			return (false, null);
 		}
+	}
 
-		if (index is null || index.Notes.Count == 0)
+	private async Task<IReadOnlyList<CdnChangelogEntry>> FetchListedNotesAsync(
+		Uri baseUri,
+		string org,
+		string repo,
+		string version,
+		NotesIndex index,
+		Action<string> emitError,
+		Cancel ctx
+	)
+	{
+		if (index.Notes is not { Count: > 0 })
 			return [];
 
 		var repoLabel = $"{org}/{repo}";
@@ -548,7 +628,6 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		{
 			ctx.ThrowIfCancellationRequested();
 
-			// Pool-relative path is "{branch}/note-{name}.yml"; split on first '/' only.
 			var poolRelativePath = noteEntry.Path;
 			var slash = poolRelativePath.IndexOf('/', StringComparison.Ordinal);
 			if (slash <= 0 || slash == poolRelativePath.Length - 1)
@@ -578,7 +657,6 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 				continue;
 			}
 
-			// The notes index asserts this note exists — a miss is a real pipeline error.
 			emitError(
 				$"Note '{poolRelativePath}' for {repoLabel}@{version} is listed in the notes index but could not be fetched from {noteUri}: {lastError}. " +
 					"Ensure the note was uploaded and scrubbed; if it persists check the changelog scrubber pipeline."

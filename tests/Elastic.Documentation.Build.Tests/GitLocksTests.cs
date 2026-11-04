@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Build.Tests;
 
 public class GitLocksTests
 {
-	[Fact]
+	[Test]
 	public void ClearStale_RemovesAllLockFilesUnderGitDir()
 	{
 		var fs = new MockFileSystem();
@@ -27,7 +27,7 @@ public class GitLocksTests
 		fs.File.Exists("/repo/.git/index.lock").Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void ClearStale_DoesNotDeleteNonLockFiles()
 	{
 		var fs = new MockFileSystem();
@@ -41,7 +41,7 @@ public class GitLocksTests
 		fs.File.Exists("/repo/.git/config").Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ClearStale_WhenNoGitDir_DoesNothing()
 	{
 		var fs = new MockFileSystem();

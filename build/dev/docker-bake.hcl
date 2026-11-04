@@ -41,6 +41,15 @@ target "mcp" {
   cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-mcp,mode=max"] : []
 }
 
+target "api" {
+  context    = "."
+  dockerfile = "src/api/Elastic.Documentation.Api/Dockerfile"
+  tags       = ["${IMAGE_REPOSITORY}:api"]
+
+  cache-from = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-api"] : []
+  cache-to   = CACHE_REPOSITORY != "" ? ["type=registry,ref=${CACHE_REPOSITORY}-api,mode=max"] : []
+}
+
 group "all" {
-  targets = ["tooling", "runtime", "mcp"]
+  targets = ["tooling", "runtime", "mcp", "api"]
 }
