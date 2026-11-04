@@ -4,10 +4,11 @@
 
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Microsoft.Extensions.FileProviders;
 
 namespace Elastic.Documentation.Site.FileProviders;
 
-public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider fileProvider)
+public class StaticFileContentHashProvider(IFileProvider fileProvider)
 {
 	private const string ManifestFile = ".vite/manifest.json";
 	private static readonly Dictionary<string, string> NoEntries = [];
