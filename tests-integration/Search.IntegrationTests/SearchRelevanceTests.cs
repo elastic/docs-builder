@@ -266,6 +266,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("esql query drop_null_columns", "operation-esql-query");
 		yield return ("run a search", "operation-search");
 		yield return ("GET /_search knn", "operation-search");
+		yield return ("POST /_count", "operation-count");
 		yield return ("snapshot restore", "operation-snapshot-restore");
 		yield return ("search template", "operation-search-template");
 	}

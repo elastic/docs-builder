@@ -13,7 +13,8 @@ namespace Elastic.Documentation.Search;
 /// <summary>
 /// The query behind the API navigation search. Each word of the query must be explained by one role on an operation:
 /// its endpoint, a word of its operation id, its group, a word of its title, its HTTP method, a field name, or a word of
-/// its description. The best role counts per word and word order does not matter. Every role option is named
+/// its description. An HTTP method typed right before a path joins that path's word and only lifts operations with that
+/// method. The best role counts per word and word order does not matter. Every role option is named
 /// <c>&lt;role&gt;_&lt;index&gt;</c> so the result processor can tell, from the named query scores, which role won each word.
 /// </summary>
 public static class ApiLookupQueryBuilder
@@ -65,13 +66,24 @@ public static class ApiLookupQueryBuilder
 	/// <summary>A word typed with a trailing dot, as in <c>retriever.</c>, asks for the children of the field it names.</summary>
 	public static bool ExpandsChildren(string query) => Tokenize(query).Any(t => t.ExpandChildren);
 
-	public static IReadOnlyList<ApiLookupToken> Tokenize(string query) =>
-		query
-			.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-			.Select(ToToken)
-			.OfType<ApiLookupToken>()
-			.Take(MaxTokens)
-			.ToArray();
+	public static IReadOnlyList<ApiLookupToken> Tokenize(string query)
+	{
+		var words = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+		var tokens = new List<ApiLookupToken>();
+		for (var i = 0; i < words.Length && tokens.Count < MaxTokens; i++)
+		{
+			if (i + 1 < words.Length && HttpMethods.Contains(words[i]) && words[i + 1].StartsWith('/'))
+			{
+				tokens.Add(
+					new ApiLookupToken(ApiLookupTokenKind.Path, $"{words[i]} {words[i + 1]}", ExpandChildren: false, Method: words[i])
+				);
+				i++;
+			}
+			else if (ToToken(words[i]) is { } token)
+				tokens.Add(token);
+		}
+		return tokens;
+	}
 
 	/// <summary>The inner hits of the field option of the word at <paramref name="index"/>.</summary>
 	public static string FieldHitsName(int index) => FieldHitsPrefix + index.ToString(CultureInfo.InvariantCulture);
@@ -181,12 +193,17 @@ public static class ApiLookupQueryBuilder
 				t => SearchQueryBuilder.BuildListsFieldsUnderTypedPathBoost(t.Text)
 			)
 		);
+		// The spec gives one canonical verb, so a typed method before a path lifts its operation rather than requiring it.
+		lifts.AddRange(tokens.Select(t => t.Method).OfType<string>().Select(MethodLift));
 		lifts.AddRange(SearchQueryBuilder.ScoringQueries);
 		// An operation id of fewer words is more specific, so `esql query` prefers `esql-query` over `esql-async-query-stop`.
 		lifts.Add(new RankFeatureQuery { Field = QueryFieldNames.ApiIdWords, Boost = ApiLookupWeights.Specificity });
 		lifts.Add(new TermQuery { Field = QueryFieldNames.ApiDeprecated, Value = false, Boost = ApiLookupWeights.NotDeprecated });
 		return lifts;
 	}
+
+	private static Query MethodLift(string method) =>
+		new TermQuery { Field = QueryFieldNames.ApiMethod, Value = method.ToUpperInvariant(), Boost = ApiLookupWeights.Method };
 
 	private static Query OperationWordQuery(string text) => BoolPrefix(text, OperationWordFields);
 

@@ -10,9 +10,12 @@ public enum ApiLookupTokenKind
 	/// <summary>A word that may name anything about an operation.</summary>
 	Plain,
 
-	/// <summary>A word starting with a slash, which can only name an endpoint.</summary>
+	/// <summary>A word starting with a slash, with the HTTP method typed before it, which can only name an endpoint.</summary>
 	Path
 }
 
-/// <summary>One word of an API lookup; a plain word typed with trailing dots asks for the children of the field it names.</summary>
-public sealed record ApiLookupToken(ApiLookupTokenKind Kind, string Text, bool ExpandChildren);
+/// <summary>
+/// One word of an API lookup; a plain word typed with trailing dots asks for the children of the field it names. A path
+/// carries the <paramref name="Method"/> typed before it.
+/// </summary>
+public sealed record ApiLookupToken(ApiLookupTokenKind Kind, string Text, bool ExpandChildren, string? Method = null);

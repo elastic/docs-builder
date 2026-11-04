@@ -48,15 +48,33 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	public void Tokenize_MethodPathAndWord_ReturnsPlainPathPlain()
+	public void Tokenize_MethodPathAndWord_FoldsTheMethodIntoThePath()
 	{
 		var tokens = ApiLookupQueryBuilder.Tokenize("GET /_search knn");
 
 		tokens.Should().Equal(
-			new ApiLookupToken(ApiLookupTokenKind.Plain, "GET", ExpandChildren: false),
-			new ApiLookupToken(ApiLookupTokenKind.Path, "/_search", ExpandChildren: false),
+			new ApiLookupToken(ApiLookupTokenKind.Path, "GET /_search", ExpandChildren: false, Method: "GET"),
 			new ApiLookupToken(ApiLookupTokenKind.Plain, "knn", ExpandChildren: false)
 		);
+	}
+
+	[Test]
+	public void Build_MethodBeforePath_KeysTheEndpointAndLiftsTheMethod()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("post /_count"));
+
+		Clauses(TokensBool(json).GetProperty("should")).Should().ContainSingle();
+		var key = TokenClause(json, 0).GetProperty("dis_max");
+		key.GetProperty("_name").GetString().Should().Be("key_0");
+		key.GetRawText().Should().Contain("\"_count\"");
+		var methodLift = Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Where(q => q.TryGetProperty("term", out var term) && term.TryGetProperty("api.method", out _))
+			.Select(q => q.GetProperty("term").GetProperty("api.method"))
+			.Should()
+			.ContainSingle()
+			.Subject;
+		methodLift.GetProperty("value").GetString().Should().Be("POST");
+		methodLift.GetProperty("boost").GetSingle().Should().Be(0.5f);
 	}
 
 	[Test]
@@ -269,9 +287,9 @@ public class ApiLookupQueryBuilderTests
 	public void Build_PathToken_OffersOnlyTheEndpointKey()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("GET /_search knn"));
-		var path = TokenClause(json, 1).GetProperty("dis_max");
+		var path = TokenClause(json, 0).GetProperty("dis_max");
 
-		path.GetProperty("_name").GetString().Should().Be("key_1");
+		path.GetProperty("_name").GetString().Should().Be("key_0");
 		path.GetRawText().Should().Contain("\"_search\"").And.NotContain("api.properties").And.NotContain("search_title");
 	}
 
