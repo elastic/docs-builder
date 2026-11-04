@@ -121,7 +121,7 @@ public static class SearchQueryBuilder
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
 			return ApiPropertyReadings.None;
-		var parsed = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+		var parsed = WithoutTrailingDots(ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)));
 		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
 		// API operation that happens to have a field of that name above the pages about it. Dropping a reading
 		// leaves the others as demanding as the query made them.
@@ -144,6 +144,17 @@ public static class SearchQueryBuilder
 		if (field < 0)
 			return ApiPropertyReadings.None;
 		return new ApiPropertyReadings([(string.Join(' ', words.Where((_, i) => i != field)), words[field])], EndpointRequired: false);
+	}
+
+	/// <summary>A trailing dot is a child field not yet typed, so <c>retriever.standard.</c> still names <c>retriever.standard</c>.</summary>
+	private static ApiPropertyReadings WithoutTrailingDots(ApiPropertyReadings parsed)
+	{
+		var readings = parsed
+			.Readings
+			.Select(r => r with { Property = r.Property.TrimEnd('.') })
+			.Where(r => r.Property.Length > 0)
+			.ToArray();
+		return readings.Length == 0 ? ApiPropertyReadings.None : parsed with { Readings = readings };
 	}
 
 	/// <summary>The readings of a query, and whether each must match its endpoint rather than only be lifted by it.</summary>
@@ -171,7 +182,7 @@ public static class SearchQueryBuilder
 	{
 		var name = BuildPropertyNameQuery(input, allowPrefix);
 		var separator = input.LastIndexOf('.');
-		if (separator < 0 || separator == input.Length - 1)
+		if (separator < 0)
 			return name;
 
 		return new DisMaxQuery

@@ -323,6 +323,64 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public void Mapping_ApiPropertiesChildren_IsUnindexedKeyword(bool semantic)
+	{
+		var context = semantic
+			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
+			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
+		using var json = JsonDocument.Parse(context.GetMappingsJson());
+		var children = json
+			.RootElement
+			.GetProperty("properties")
+			.GetProperty("api")
+			.GetProperty("properties")
+			.GetProperty("properties")
+			.GetProperty("properties")
+			.GetProperty("children");
+		children.GetProperty("type").GetString().Should().Be("keyword");
+		children.GetProperty("index").GetBoolean().Should().BeFalse();
+	}
+
+	[Test]
+	public void BuildApiPropertyQuery_TrailingDot_MatchesLikeThePathWithoutIt() =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard.", "api"))
+			.Should()
+			.Be(Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard", "api")));
+
+	[Test]
+	public void BuildApiPropertyQuery_OnlyADot_ReturnsNull() => SearchQueryBuilder.BuildApiPropertyQuery(".", "api").Should().BeNull();
+
+	[Test]
+	public void ProcessHit_NestedPropertySourceWithChildren_KeepsChildren()
+	{
+		var json = SearchResponseJson(
+			InnerHit("req-retriever-standard", 5, "retriever.standard", ",\"children\":[\".query\",\".filter\"]")
+		);
+
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(json).Hits.Single(),
+			"retriever.standard",
+			new Dictionary<string, string[]>()
+		);
+
+		result.Properties.Single().Children.Should().Equal(".query", ".filter");
+	}
+
+	[Test]
+	public void ProcessHit_NestedPropertySourceWithoutChildren_ChildrenIsNull()
+	{
+		var json = SearchResponseJson(InnerHit("req-track_total_hits", 5, "track_total_hits"));
+
+		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "track_total", new Dictionary<string, string[]>());
+
+		result.Properties.Single().Children.Should().BeNull();
+	}
+
+	[Test]
 	public void ProcessHit_ManyInnerHits_KeepsTheThreeBestDistinctAnchorsInScoreOrder()
 	{
 		var innerHits = string.Join(
@@ -357,10 +415,10 @@ public class ApiPropertySearchTests
 			.Replace("__MORE_GROUPS__", moreInnerHitGroups)
 			.Replace("__MATCHED__", matchedQueries);
 
-	private static string InnerHit(string anchor, double score, string path) =>
+	private static string InnerHit(string anchor, double score, string path, string childrenJson = "") =>
 		$$$"""
 		{"_index":"test","_id":"search","_score":{{{score.ToString(System.Globalization.CultureInfo.InvariantCulture)}}},"_nested":{"field":"api.properties","offset":0},
-		"_source":{"name":"{{{path.Split('.')[^1]}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"request","description":"Count hits"}}
+		"_source":{"name":"{{{path.Split('.')[^1]}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"request","description":"Count hits"{{{childrenJson}}}}}
 		""";
 
 	private static Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)

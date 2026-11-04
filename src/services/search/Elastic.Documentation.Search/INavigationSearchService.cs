@@ -63,6 +63,9 @@ public record NavigationSearchResultItem
 
 public record NavigationSearchProperty
 {
+	/// <summary>A cap on <see cref="Children"/> so one wide schema cannot bloat every response that matches it.</summary>
+	public const int MaxChildren = 100;
+
 	public required string Name { get; init; }
 	public required string Path { get; init; }
 	public required string Type { get; init; }
@@ -70,4 +73,7 @@ public record NavigationSearchProperty
 	public required string Anchor { get; init; }
 	public required string Location { get; init; }
 	public required string Url { get; init; }
+
+	/// <summary>What extends <see cref="Path"/> to each direct child's path, in page order; empty when the field has none.</summary>
+	public string[] Children { get; init; } = [];
 }

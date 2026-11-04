@@ -53,21 +53,7 @@ public partial class NavigationSearchService(
 						Title = item.Title,
 						Description = item.Description,
 						Routes = item.Document.Api?.Routes ?? [],
-						Properties = item
-							.Properties
-							.Select(
-								property => new NavigationSearchProperty
-								{
-									Name = property.Name,
-									Path = property.Path,
-									Type = property.Type,
-									Description = property.Description,
-									Anchor = property.Anchor,
-									Location = property.Location,
-									Url = $"{item.Document.Path}#{property.Anchor}"
-								}
-							)
-							.ToArray(),
+						Properties = item.Properties.Select(property => ToNavigationSearchProperty(property, item.Document.Path)).ToArray(),
 						Parents = (item.Document.Parents ?? []).Select(
 							p => new NavigationSearchResultItemParent { Title = p.Title, Url = p.Path }
 						).ToArray(),
@@ -87,6 +73,19 @@ public partial class NavigationSearchService(
 
 		return response;
 	}
+
+	private static NavigationSearchProperty ToNavigationSearchProperty(ApiPropertyEntry property, string documentPath) =>
+		new()
+		{
+			Name = property.Name,
+			Path = property.Path,
+			Type = property.Type,
+			Description = property.Description,
+			Anchor = property.Anchor,
+			Location = property.Location,
+			Url = $"{documentPath}#{property.Anchor}",
+			Children = property.Children is { } children ? children[..Math.Min(children.Length, NavigationSearchProperty.MaxChildren)] : []
+		};
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Navigation search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}': {Urls}")]
 	private static partial void LogNavigationSearchResults(ILogger logger, int pageSize, int pageNumber, string searchQuery, string[] urls);
