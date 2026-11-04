@@ -2944,6 +2944,19 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
+		/* Stays in view while the sections scroll, however long the page is. The rail itself does not clip, so the
+		   Copy page menu can open past its edge; the examples below it shrink to the window and scroll. */
+		position: sticky;
+		top: var(--offset-top, 0px);
+		align-self: start;
+		max-height: calc(100vh - var(--offset-top, 0px));
+		box-sizing: border-box;
+	}
+
+	.api-page-rail > :not(.api-page-actions) {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: hidden auto;
 	}
 
 	.api-page-rail > .api-page-actions {
@@ -2956,7 +2969,7 @@ button.example-response-tab:focus-visible {
 		margin-bottom: 0;
 	}
 
-	/* The examples are normal page flow: no sticky, no scrolling box. Long examples make the page long. */
+	/* The code blocks are normal page flow and cap at a fixed number of lines; the rail around them is sticky (above). */
 	#api-examples-panel .api-examples-panel-nav {
 		display: flex;
 		flex-direction: column;
@@ -3940,6 +3953,18 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
+/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
+   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
+   above the response. The 12-line cap stays as the minimum. */
+@media (min-width: 1024px) {
+	#api-examples-panel .example-block-body {
+		max-height: max(
+			var(--api-response-cap),
+			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		);
+	}
+}
+
 /* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
    not as tall as the tallest card in the row. */
 #api-examples-panel .api-code-carousel {
@@ -4209,4 +4234,45 @@ html:has(.api-page-shell) {
 			background-color: transparent;
 		}
 	}
+}
+
+/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
+.api-section-links {
+	position: sticky;
+	top: var(--offset-top, 0px);
+	z-index: 5;
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 24px;
+	margin: 24px 0 0;
+	overflow-x: auto;
+	background: #fff;
+	border-bottom: 1px solid #e3e8f2;
+}
+
+.api-section-links a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 48px;
+	border-bottom: 2px solid transparent;
+	color: #516381;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.api-section-links a:hover {
+	color: #1d2a3e;
+}
+
+.api-section-links a[aria-current] {
+	border-bottom-color: #0b64dd;
+	color: #111c2c;
+}
+
+/* A section reached from the bar stops below the bar instead of under it. */
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
 }

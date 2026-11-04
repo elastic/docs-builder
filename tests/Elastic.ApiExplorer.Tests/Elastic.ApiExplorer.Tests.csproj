@@ -12,6 +12,8 @@
   <ItemGroup>
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+    <PackageReference Include="Nullean.Snapshots.Html" />
+    <PackageReference Include="Nullean.Snapshots.TUnit" />
   </ItemGroup>
 
   <ItemGroup>

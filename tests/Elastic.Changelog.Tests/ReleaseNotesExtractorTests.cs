@@ -524,6 +524,42 @@ public class ReleaseNotesExtractorTests
 	}
 
 	[Test]
+	public void FindAction_TemplateSectionsOneLevelDeeper_EndTheSection()
+	{
+		// kibana#299837: the Kibana PR template puts `### Checklist` and `### Identify risks` after the author's
+		// `## Action`. A deeper heading is the next section, not part of the action.
+		// language=markdown
+		var prBody =
+			"""
+			## Impact
+			Only API clients that send invalid `agents` input are affected.
+
+			## Action
+			No action is needed for valid requests. If a bulk request now returns a `400`:
+
+			- Unknown field in the KQL query: use only agent fields.
+
+			### Checklist
+
+			- [ ] Any text added follows EUI's writing guidelines
+
+			### Identify risks
+
+			- [ ] Bulk requests with invalid input now fail with a 400.
+
+			Generated with [Claude Code](https://claude.com/claude-code)
+			""";
+
+		ReleaseNotesExtractor.FindImpact(prBody).Should().Be("Only API clients that send invalid `agents` input are affected.");
+		ReleaseNotesExtractor
+			.FindAction(prBody)
+			.Should()
+			.Be(
+				"No action is needed for valid requests. If a bulk request now returns a `400`:\n\n- Unknown field in the KQL query: use only agent fields."
+			);
+	}
+
+	[Test]
 	public void FindAction_YamlExampleInsideFence_StaysInTheSection()
 	{
 		// language=markdown
