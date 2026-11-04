@@ -2,6 +2,9 @@ import {
     getPathFromUrl,
     isExternalDocsUrl,
 } from '../web-components/shared/htmx/utils'
+import { UAParser } from 'ua-parser-js'
+
+const { getOS } = new UAParser()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type HtmxEvent = any
@@ -48,6 +51,17 @@ export function bindHtmxHooks({ forcesFullPageLoad }: HtmxHookOptions = {}) {
             // manage their own requests.
             if (!event.detail.boosted) return
             const path: string = event.detail.requestConfig.path
+            if (event.detail.requestConfig.triggeringEvent) {
+                const { ctrlKey, metaKey, shiftKey }: PointerEvent =
+                    event.detail.requestConfig.triggeringEvent
+                const { name: os } = getOS()
+                const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
+                if (shiftKey || modifierKey) {
+                    event.preventDefault()
+                    window.open(path, '_blank', 'noopener,noreferrer')
+                    return
+                }
+            }
             // hx-boost intercepts every same-origin link, but only internal docs URLs should
             // navigate through htmx (for assembler that means /docs/*; isolated and codex own
             // their whole origin). Anything else — marketing pages on the same domain, the

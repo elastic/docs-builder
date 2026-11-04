@@ -103,7 +103,7 @@ describe('bindHtmxHooks', () => {
         expect(event.defaultPrevented).toBe(false)
     })
 
-    it('leaves a shift-click to htmx', () => {
+    it('opens the link in a new tab on shift-click', () => {
         const open = vi.fn()
         vi.stubGlobal('open', open)
 
@@ -116,8 +116,12 @@ describe('bindHtmxHooks', () => {
             },
         })
 
-        expect(event.defaultPrevented).toBe(false)
-        expect(open).not.toHaveBeenCalled()
+        expect(event.defaultPrevented).toBe(true)
+        expect(open).toHaveBeenCalledWith(
+            '/docs/b',
+            '_blank',
+            'noopener,noreferrer'
+        )
     })
 
     it('opens a 404 response as a normal page load', () => {
