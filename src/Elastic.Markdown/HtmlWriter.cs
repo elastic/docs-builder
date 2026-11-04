@@ -17,6 +17,7 @@ using Elastic.Markdown.Extensions.DetectionRules;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst;
+using Elastic.Markdown.Myst.Renderers;
 using Elastic.Markdown.Page;
 using Markdig.Syntax;
 using RazorSlices;
@@ -71,6 +72,14 @@ public class HtmlWriter(
 		source ??= DocumentationSet.Context.ConfigurationPath;
 		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
 		return MarkdownFile.CreateHtml(parsed, stripFirstHeadingLevel1: true, MarkdownParser.ApiDescriptionPipeline);
+	}
+
+	/// <inheritdoc />
+	public IReadOnlyList<TocItem> ReadApiDescriptionHeadings(string markdown, IFileInfo? source)
+	{
+		source ??= DocumentationSet.Context.ConfigurationPath;
+		var parsed = DocumentationSet.MarkdownParser.ParseApiDescriptionString(markdown, source);
+		return RenderedHeadings.Read(parsed, stripFirstHeadingLevel1: true);
 	}
 
 	private string RenderCore(string markdown, IFileInfo? source, bool stripFirstHeadingLevel1)

@@ -1,14 +1,14 @@
 import { initPageJumpers } from './page-jumper'
 
-jest.mock('../config', () => ({
+vi.mock('../config', () => ({
     config: {
         buildType: 'assembler',
         apiBasePath: '/docs/_api',
         rootPath: '/docs',
     },
 }))
-jest.mock('../web-components/ModalSearch/pagefind', () => ({
-    searchPagefind: jest.fn(),
+vi.mock('../web-components/ModalSearch/pagefind', () => ({
+    searchPagefind: vi.fn(),
 }))
 
 const markup = `
@@ -30,9 +30,9 @@ const flush = async () => {
 
 describe('page jumper', () => {
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML = markup
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 results: [
@@ -47,7 +47,7 @@ describe('page jumper', () => {
         }) as unknown as typeof fetch
         initPageJumpers()
     })
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     const type = (value: string) => {
         const input = document.querySelector<HTMLInputElement>(
@@ -60,7 +60,7 @@ describe('page jumper', () => {
 
     it('lists matching pages under the field as you type', async () => {
         type('alp')
-        jest.advanceTimersByTime(300)
+        vi.advanceTimersByTime(300)
         await flush()
 
         const panel = document.querySelector<HTMLElement>(
@@ -75,7 +75,7 @@ describe('page jumper', () => {
 
     it('closes the panel when the field is cleared or Escape is pressed', async () => {
         const input = type('alp')
-        jest.advanceTimersByTime(300)
+        vi.advanceTimersByTime(300)
         await flush()
 
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))

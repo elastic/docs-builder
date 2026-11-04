@@ -54,7 +54,7 @@ serve() {
 # build never triggers itself.
 changed() {
   [ -n "$(find src config docs \
-    \( -name node_modules -o -name bin -o -name obj -o -name _static -o -name .parcel-cache \) -prune -o \
+    \( -name node_modules -o -name bin -o -name obj -o -name _static \) -prune -o \
     -type f -newer "$marker" \
     \( -name '*.cs' -o -name '*.cshtml' -o -name '*.ts' -o -name '*.tsx' -o -name '*.css' \
        -o -name '*.yml' -o -name '*.md' -o -name '*.csproj' -o -name '*.props' \) \

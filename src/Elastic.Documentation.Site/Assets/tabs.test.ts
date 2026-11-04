@@ -112,3 +112,45 @@ describe('tabs find-in-page', () => {
         expect(panel('p2').hasAttribute('hidden')).toBe(false)
     })
 })
+
+function syncedSet(name: string): string {
+    return `
+        <div class="tabs">
+            <input class="tabs-input" id="${name}-java" name="${name}" type="radio" checked>
+            <label class="tabs-label" for="${name}-java" data-sync-group="languages" data-sync-id="java">Java</label>
+            <div class="tabs-content">java</div>
+            <input class="tabs-input" id="${name}-golang" name="${name}" type="radio">
+            <label class="tabs-label" for="${name}-golang" data-sync-group="languages" data-sync-id="golang">Go</label>
+            <div class="tabs-content">go</div>
+        </div>`
+}
+
+const label = (id: string) =>
+    document.querySelector(`label[for="${id}"]`) as HTMLLabelElement
+
+describe('synced tabs across swaps', () => {
+    beforeEach(() => {
+        window.sessionStorage.clear()
+        document.body.innerHTML = syncedSet('a') + syncedSet('b')
+    })
+
+    it('selects the same language in every set', () => {
+        initTabs()
+        label('a-golang').click()
+
+        expect(input('b-golang').checked).toBe(true)
+        expect(input('b-java').checked).toBe(false)
+    })
+
+    it('leaves the labels of a swapped-out page alone', () => {
+        initTabs()
+        const old = input('b-golang')
+        document.body.innerHTML = syncedSet('a') + syncedSet('b')
+
+        initTabs()
+        label('a-golang').click()
+
+        expect(input('b-golang').checked).toBe(true)
+        expect(old.checked).toBe(false)
+    })
+})

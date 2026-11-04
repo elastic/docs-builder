@@ -24,7 +24,7 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// Every name of every page this version renders, relative to <paramref name="Url"/> (<c>""</c> is the landing page).
 /// Each name maps to all names of that page, canonical first, because a collapsed operation also answers to its former paths.
 /// </param>
-public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected)
+public sealed record ApiVersionSwitcherItem(string Label, string Url, bool Selected, string? ShortLabel = null)
 {
 	public IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames
 	{

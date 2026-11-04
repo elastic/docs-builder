@@ -14,7 +14,7 @@ using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
-public class PublicOnlyAssemblerConfigurationTests
+public class PublicOnlyAssemblerConfigurationTests : IAsyncDisposable
 {
 	private DiagnosticsCollector Collector { get; }
 	private AssembleContext Context { get; }
@@ -47,6 +47,12 @@ public class PublicOnlyAssemblerConfigurationTests
 		var cloud = config.PrivateRepositories["cloud"];
 		cloud.Should().NotBeNull();
 		cloud.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		await Collector.DisposeAsync();
 	}
 }
 
@@ -136,13 +142,13 @@ public class AssemblerConfigurationTests(DocumentationFixture fixture) : IAsyncI
 		curator.GitReferenceCurrent.Should().NotBeNullOrEmpty().And.Be("master");
 	}
 
-	public ValueTask DisposeAsync()
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
+		await Collector.DisposeAsync();
 		if (TestContext.Current!.Execution.Result?.State is not TestState.Failed)
-			return default;
+			return;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs)
 			TestContext.Current?.Output.WriteLine(resource.Message);
-		return default;
 	}
 }

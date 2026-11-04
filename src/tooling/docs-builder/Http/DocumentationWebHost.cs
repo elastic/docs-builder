@@ -185,7 +185,7 @@ public class DocumentationWebHost
 				FileProvider = new EmbeddedOrPhysicalFileProvider(Context),
 				RequestPath = "/_static",
 				// Generated pages keep the asset hash from when they were rendered, so make the
-				// browser revalidate instead of reusing a cached bundle after a Parcel rebuild.
+				// browser revalidate instead of reusing a cached bundle after a Vite rebuild.
 				OnPrepareResponse = static ctx => ctx.Context.Response.Headers.CacheControl = "no-cache"
 			});
 

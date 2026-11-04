@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
+using System.Text.Json;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using Elastic.Documentation.Search.Contract;
 
@@ -55,9 +57,74 @@ public static class SearchResultProcessor
 			Document = doc,
 			Title = title,
 			Description = description,
-			Score = (float)(hit.Score ?? 0.0)
+			Score = (float)(hit.Score ?? 0.0),
+			Properties = MatchedProperties(hit, options.ListChildren)
 		};
 	}
+
+	private const int MaxMatchedProperties = 3;
+
+	/// <summary>
+	/// The properties matching the typed field by name, best first, with the typed path's direct children in page order right after
+	/// the row they are listed under; see <see cref="SearchQueryBuilder.ApiPropertyHits"/> and <see cref="SearchQueryBuilder.ApiChildrenHits"/>.
+	/// </summary>
+	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit, bool listChildren)
+	{
+		if (hit.InnerHits is null)
+			return [];
+
+		// A reading's inner hits are computed from its nested query alone, so a reading the document did not match
+		// still carries them, and Elasticsearch omits matched_queries when no named query matched at all; only a
+		// reading this hit matched counts.
+		var matched = MatchedQueryNames(hit);
+		var innerHits = hit
+			.InnerHits
+			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key) && matched.Contains(group.Key))
+			.SelectMany(group => group.Value.Hits.Hits)
+			.ToLookup(IsChildOnly);
+
+		var named = innerHits[false]
+			.OrderByDescending(h => h.Score ?? 0)
+			.Select(Entry)
+			.OfType<ApiPropertyEntry>()
+			.DistinctBy(p => p.Anchor)
+			.ToArray();
+		var namedAnchors = named.Select(p => p.Anchor).ToHashSet(StringComparer.Ordinal);
+		var children = !listChildren
+			? []
+			: innerHits[true]
+				.OrderBy(h => h.Nested?.Offset ?? 0)
+				.Select(Entry)
+				.OfType<ApiPropertyEntry>()
+				.Where(p => !namedAnchors.Contains(p.Anchor))
+				.DistinctBy(p => p.Anchor)
+				.ToArray();
+
+		// A query parameter and a body field may share a path, so a row lists only the children of its own location.
+		var childrenByParent = children.ToLookup(c => (c.Parent, c.Location));
+		var parents = named.Where(p => childrenByParent.Contains(ParentGroup(p))).DistinctBy(ParentGroup).ToArray();
+		var listedGroups = parents.Select(ParentGroup).ToHashSet();
+		var others = named.Except(parents).Take(Math.Max(0, MaxMatchedProperties - parents.Length));
+		var orphans = children.Where(c => !listedGroups.Contains((c.Parent, c.Location)));
+		return [.. parents.SelectMany(p => childrenByParent[ParentGroup(p)].Prepend(p)), .. others, .. orphans];
+	}
+
+	private static (string Parent, string Location) ParentGroup(ApiPropertyEntry row) =>
+		(ApiPropertyPath.ParentKey(row.Path), row.Location);
+
+	private static bool IsChildOnly<TDocument>(Hit<TDocument> innerHit) =>
+		MatchedQueryNames(innerHit) is { Count: 1 } names && names.Contains(SearchQueryBuilder.ApiChildrenHits);
+
+	private static ApiPropertyEntry? Entry<TDocument>(Hit<TDocument> innerHit) =>
+		innerHit.Source is JsonElement source ? source.Deserialize(Contract.SourceGenerationContext.Default.ApiPropertyEntry) : null;
+
+	/// <summary>The named queries this hit matched; empty when none did, as Elasticsearch then omits the field.</summary>
+	private static IReadOnlySet<string> MatchedQueryNames<TDocument>(Hit<TDocument> hit) =>
+		hit.MatchedQueries?.Match<IReadOnlySet<string>>(
+			names => (names ?? []).ToHashSet(StringComparer.Ordinal),
+			scored => (scored?.Keys ?? []).ToHashSet(StringComparer.Ordinal)
+		)
+			?? FrozenSet<string>.Empty;
 
 	public static IReadOnlyDictionary<string, long> ExtractTermsAggregation<TDocument>(
 		Clients.Elasticsearch.SearchResponse<TDocument> response,

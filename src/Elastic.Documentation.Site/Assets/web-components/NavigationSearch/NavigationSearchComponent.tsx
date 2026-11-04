@@ -12,7 +12,7 @@ import { StrictMode } from 'react'
 interface NavigationSearchProps {
     placeholder?: string
     type?: string
-    /** `sidebar`: the host owns spacing and the divider, so render the bare input. */
+    /** `sidebar` and `hero`: the host owns spacing and the divider, so render the bare input. `hero` is the large landing-page box. */
     variant?: string
 }
 
@@ -51,8 +51,7 @@ const NavigationSearchInner = ({
     const { euiTheme } = useEuiTheme()
     const typeFilter = parseTypeFilter(type)
     const resolvedPlaceholder =
-        placeholder ??
-        (typeFilter === 'api' ? 'Type ❲/❳ to explore API' : undefined)
+        placeholder ?? (typeFilter === 'api' ? 'Explore APIs' : undefined)
 
     if (config.airGapped) {
         return null
@@ -60,13 +59,19 @@ const NavigationSearchInner = ({
 
     const search = (
         <NavigationSearch
-            size={variant === 'sidebar' ? 's' : undefined}
+            size={
+                variant === 'sidebar'
+                    ? 's'
+                    : variant === 'hero'
+                      ? 'l'
+                      : undefined
+            }
             placeholder={resolvedPlaceholder}
             typeFilter={typeFilter}
         />
     )
 
-    if (variant === 'sidebar') {
+    if (variant === 'sidebar' || variant === 'hero') {
         return search
     }
 

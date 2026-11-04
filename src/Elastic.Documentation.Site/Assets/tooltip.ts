@@ -1,6 +1,16 @@
-import { delegate, type Instance } from 'tippy.js'
+import { delegate, type DelegateInstance, type Instance } from 'tippy.js'
 
-let bound = false
+/** For lists the mouse crosses: the page's 80ms delay would open a tooltip on every row. */
+export const SLOW_TOOLTIP_DELAY = '[500, 0]'
+
+let delegateInstance: DelegateInstance | null = null
+
+// tippy's delegate keeps every tooltip it creates, and with it the hovered element, until the delegate itself is
+// destroyed; destroying it on each swap is what releases the previous page.
+document.addEventListener('htmx:afterSwap', () => {
+    delegateInstance?.destroy()
+    delegateInstance = null
+})
 
 /**
  * Tooltips for the API pages: any element with data-tippy-content gets a tippy tooltip that shows at once,
@@ -9,9 +19,8 @@ let bound = false
  * Inside the code preview dialog the tooltip mounts in the dialog, or the top layer would cover it.
  */
 export function initTooltips(): void {
-    if (bound) return
-    bound = true
-    delegate(document.body, {
+    if (delegateInstance) return
+    delegateInstance = delegate(document.body, {
         // Templates may emit the attribute empty; an empty title shows nothing natively, so neither does this.
         target: '[data-tippy-content]:not([data-tippy-content=""])',
         delay: [80, 0],

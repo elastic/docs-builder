@@ -1,10 +1,12 @@
+import { useAskAiErrorCalloutState } from '../AskAi/useAskAiCooldown'
+import { useNavigationSearchErrorCalloutState } from '../NavigationSearch/useNavigationSearchCooldown'
 import { ErrorCallout } from './ErrorCallout'
-import { ApiError } from './errorHandling'
+import { ApiError, getErrorMessage, isRateLimitError } from './errorHandling'
 import { render, screen } from '@testing-library/react'
 import * as React from 'react'
 
 // Mock EuiCallOut and EuiSpacer
-jest.mock('@elastic/eui', () => ({
+vi.mock('@elastic/eui', () => ({
     EuiCallOut: ({
         title,
         children,
@@ -34,15 +36,15 @@ jest.mock('@elastic/eui', () => ({
 }))
 
 // Mock rate limit handlers
-const mockUseSearchRateLimitHandler = jest.fn()
-const mockUseAskAiRateLimitHandler = jest.fn()
+const mockUseSearchRateLimitHandler = vi.fn()
+const mockUseAskAiRateLimitHandler = vi.fn()
 
-jest.mock('../NavigationSearch/useNavigationSearchRateLimitHandler', () => ({
+vi.mock('../NavigationSearch/useNavigationSearchRateLimitHandler', () => ({
     useNavigationSearchRateLimitHandler: (error: ApiError | Error | null) =>
         mockUseSearchRateLimitHandler(error),
 }))
 
-jest.mock('../AskAi/useAskAiRateLimitHandler', () => ({
+vi.mock('../AskAi/useAskAiRateLimitHandler', () => ({
     useAskAiRateLimitHandler: (error: ApiError | Error | null) =>
         mockUseAskAiRateLimitHandler(error),
 }))
@@ -60,42 +62,39 @@ const mockAskAiState = {
     awaitingNewInput: false,
 }
 
-jest.mock('../NavigationSearch/useNavigationSearchCooldown', () => ({
-    useNavigationSearchErrorCalloutState: jest.fn(() => mockSearchState),
+vi.mock('../NavigationSearch/useNavigationSearchCooldown', () => ({
+    useNavigationSearchErrorCalloutState: vi.fn(() => mockSearchState),
 }))
 
-jest.mock('../AskAi/useAskAiCooldown', () => ({
-    useAskAiErrorCalloutState: jest.fn(() => mockAskAiState),
+vi.mock('../AskAi/useAskAiCooldown', () => ({
+    useAskAiErrorCalloutState: vi.fn(() => mockAskAiState),
 }))
 
-const mockUseSearchErrorCalloutState = jest.mocked(
-    jest.requireMock('../NavigationSearch/useNavigationSearchCooldown')
-        .useNavigationSearchErrorCalloutState
+const mockUseSearchErrorCalloutState = vi.mocked(
+    useNavigationSearchErrorCalloutState
 )
-const mockUseAskAiErrorCalloutState = jest.mocked(
-    jest.requireMock('../AskAi/useAskAiCooldown').useAskAiErrorCalloutState
-)
+const mockUseAskAiErrorCalloutState = vi.mocked(useAskAiErrorCalloutState)
 
 // Mock errorHandling utilities
-jest.mock('./errorHandling', () => {
-    const actual = jest.requireActual('./errorHandling')
+vi.mock('./errorHandling', async () => {
+    const actual = await vi.importActual('./errorHandling')
     return {
         ...actual,
-        getErrorMessage: jest.fn((error: ApiError | Error | null) => {
+        getErrorMessage: vi.fn((error: ApiError | Error | null) => {
             if (!error) return 'Unknown error'
             if ('statusCode' in error) {
                 return `Error ${error.statusCode}: ${error.message}`
             }
             return error.message
         }),
-        isApiError: jest.fn((error: ApiError | Error | null) => {
+        isApiError: vi.fn((error: ApiError | Error | null) => {
             return (
                 error instanceof Error &&
                 'statusCode' in error &&
                 error.name === 'ApiError'
             )
         }),
-        isRateLimitError: jest.fn((error: ApiError | Error | null) => {
+        isRateLimitError: vi.fn((error: ApiError | Error | null) => {
             return (
                 error instanceof Error &&
                 'statusCode' in error &&
@@ -106,16 +105,11 @@ jest.mock('./errorHandling', () => {
 })
 
 // Import after mocking to get the mocked versions
-const mockGetErrorMessage = jest.mocked(
-    jest.requireMock('./errorHandling').getErrorMessage
-)
-const mockIsRateLimitError = jest.mocked(
-    jest.requireMock('./errorHandling').isRateLimitError
-)
+const mockGetErrorMessage = vi.mocked(getErrorMessage)
+const mockIsRateLimitError = vi.mocked(isRateLimitError)
 
 describe('ErrorCallout', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
         mockSearchState.countdown = null
         mockSearchState.hasActiveCooldown = false
         mockSearchState.awaitingNewInput = false
@@ -145,25 +139,29 @@ describe('ErrorCallout', () => {
     })
 
     describe('Rate limit handler calls', () => {
-        it('should call useSearchRateLimitHandler when domain is search', () => {
-            const error = new Error('Test error') as ApiError
-            error.statusCode = 500
+        it.each([
+            [
+                'search',
+                mockUseSearchRateLimitHandler,
+                mockUseAskAiRateLimitHandler,
+            ],
+            [
+                'askAi',
+                mockUseAskAiRateLimitHandler,
+                mockUseSearchRateLimitHandler,
+            ],
+        ] as const)(
+            'should call the %s rate limit handler with the error only for its own domain',
+            (domain, active, inactive) => {
+                const error = new Error('Test error') as ApiError
+                error.statusCode = 500
 
-            render(<ErrorCallout error={error} domain="search" />)
+                render(<ErrorCallout error={error} domain={domain} />)
 
-            expect(mockUseSearchRateLimitHandler).toHaveBeenCalledWith(error)
-            expect(mockUseAskAiRateLimitHandler).toHaveBeenCalledWith(null)
-        })
-
-        it('should call useAskAiRateLimitHandler when domain is askAi', () => {
-            const error = new Error('Test error') as ApiError
-            error.statusCode = 500
-
-            render(<ErrorCallout error={error} domain="askAi" />)
-
-            expect(mockUseAskAiRateLimitHandler).toHaveBeenCalledWith(error)
-            expect(mockUseSearchRateLimitHandler).toHaveBeenCalledWith(null)
-        })
+                expect(active).toHaveBeenCalledWith(error)
+                expect(inactive).toHaveBeenCalledWith(null)
+            }
+        )
 
         it('should pass null to rate limit handler when error is null', () => {
             render(<ErrorCallout error={null} domain="search" />)
@@ -247,29 +245,22 @@ describe('ErrorCallout', () => {
     })
 
     describe('429 rate limit errors', () => {
-        it('should hide 429 error when cooldown is not active', () => {
+        it.each([
+            [
+                'cooldown is not active',
+                { hasActiveCooldown: false, awaitingNewInput: false },
+            ],
+            [
+                'cooldown finished and pending acknowledgment',
+                { hasActiveCooldown: true, awaitingNewInput: true },
+            ],
+        ])('should hide 429 error when %s', (_name, state) => {
             const error = new Error('Rate limit') as ApiError
             error.statusCode = 429
             error.name = 'ApiError'
             error.retryAfter = 10
             mockIsRateLimitError.mockReturnValue(true)
-            mockSearchState.hasActiveCooldown = false
-
-            const { container } = render(
-                <ErrorCallout error={error} domain="search" />
-            )
-
-            expect(container.firstChild).toBeNull()
-        })
-
-        it('should hide 429 error when cooldown finished and pending acknowledgment', () => {
-            const error = new Error('Rate limit') as ApiError
-            error.statusCode = 429
-            error.name = 'ApiError'
-            error.retryAfter = 10
-            mockIsRateLimitError.mockReturnValue(true)
-            mockSearchState.hasActiveCooldown = true
-            mockSearchState.awaitingNewInput = true
+            Object.assign(mockSearchState, state)
 
             const { container } = render(
                 <ErrorCallout error={error} domain="search" />

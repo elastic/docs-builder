@@ -18,34 +18,43 @@ public class OperationDeprecatedBadgeRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_DeprecatedOperation_ShowsBadgeOnTitleNotOnMethod()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		html.Should().Contain("Get the source of a document by id");
 		html.Should().Contain("class=\"api-title-badges\"");
 
-		var titleBadges = Slice(html, "class=\"api-title-badges\"", "id=\"paths\"");
-		titleBadges.Should().Contain("deprecated-badge");
+		// The badges sit under the path listing, still inside the intro header.
+		html
+			.IndexOf("class=\"api-title-badges\"", StringComparison.Ordinal)
+			.Should()
+			.BeGreaterThan(html.IndexOf("id=\"paths\"", StringComparison.Ordinal));
+		Slice(html, "class=\"api-title-badges\"", "</header>").Should().Contain("api-badge--danger");
 
 		var listing = Slice(html, "id=\"paths\"", "</ul>");
 		listing.Should().Contain("api-url-list-item");
-		listing.Should().NotContain("deprecated-badge");
+		listing.Should().NotContain("api-badge--danger");
 		listing.Should().NotContain("deprecated-path");
 	}
 
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
+	[Test]
+	public async Task Render_OperationWithItsOwnSecurity_ShowsAnAuthBadgeLinkingToItsSection()
 	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var html = await fixture.RenderAsync(nav);
 
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
+		Slice(html, "class=\"api-title-badges\"", "</header>")
+			.Should()
+			.Contain("<a class=\"applicable-info\" href=\"#authentication\"><span class=\"applicable-name\">Auth</span></a>");
+		html.Should().Contain("data-section=\"authentication\"");
+	}
 
-		return fs.File.ReadAllText("/out.html");
+	[Test]
+	public async Task Render_OperationWithoutSecurity_ShowsNoAuthBadgeOrSection()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
+		var html = await fixture.RenderAsync(nav);
+
+		html.Should().NotContain(">Auth<").And.NotContain("data-section=\"authentication\"");
 	}
 
 	private static string Slice(string html, string startMarker, string endMarker)

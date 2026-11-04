@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -39,7 +40,7 @@ public sealed record PropertyTreeScope
 	public ISet<string>? RequiredProperties { get; init; }
 
 	/// <summary>The scope of an array's items: the path gains <c>[]</c>.</summary>
-	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : $"{JsonPath}[]" };
+	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : JsonPath + ApiPropertyPath.ItemsMarker };
 }
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
@@ -66,6 +67,9 @@ public partial class ApiPropertyTreeBuilder(
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
+		// The schema the row's fields and variants come from: Schema, or the union an allOf wrapper points to. The
+		// discriminator still comes from Schema, whose flattened allOf carries both the wrapper's and the union's.
+		IOpenApiSchema Shape,
 		TypeInfo TypeInfo,
 		string AnchorId,
 		bool IsRequired,
@@ -169,6 +173,7 @@ public partial class ApiPropertyTreeBuilder(
 		return new PropertyRow(
 			name,
 			schema,
+			_analyzer.UnwrapUnionRef(schema),
 			typeInfo,
 			string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}",
 			IsRequired: false,
@@ -283,7 +288,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
-		var expansion = ComputeExpansion(propSchema, typeInfo, scope, isRecursive);
+		var expansion = ComputeExpansion(row.Shape, typeInfo, scope, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
@@ -326,7 +331,8 @@ public partial class ApiPropertyTreeBuilder(
 			OptionalRoute = row.OptionalRoute,
 			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
-			Requires = DescribeRequiredAlternatives(propSchema),
+			// The wrapper's own required sets win; otherwise those of the union it points to.
+			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
@@ -345,8 +351,8 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			: null;
 
-	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
-	private static bool ComputeDefaultExpanded() => false;
+	// Object rows start expanded and stay foldable. The request body root is the property list, so its fields are always visible.
+	private static bool ComputeDefaultExpanded() => true;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{

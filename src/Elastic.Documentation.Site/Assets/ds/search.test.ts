@@ -4,16 +4,17 @@ import {
     initSearch,
     bindSearchShortcut,
 } from './search'
+import type { Mock } from 'vitest'
 
-jest.mock('../config', () => ({
+vi.mock('../config', () => ({
     config: {
         buildType: 'assembler',
         apiBasePath: '/docs/_api',
         rootPath: '/docs',
     },
 }))
-jest.mock('../web-components/ModalSearch/pagefind', () => ({
-    searchPagefind: jest.fn(),
+vi.mock('../web-components/ModalSearch/pagefind', () => ({
+    searchPagefind: vi.fn(),
 }))
 
 const markup = `
@@ -79,10 +80,10 @@ describe('appendExcerpt', () => {
 })
 
 describe('search dialog', () => {
-    let fetchMock: jest.Mock
+    let fetchMock: Mock
 
     beforeEach(() => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         document.body.innerHTML = markup
         const dialog = document.querySelector('dialog') as HTMLDialogElement
         dialog.showModal = function () {
@@ -92,7 +93,7 @@ describe('search dialog', () => {
             this.removeAttribute('open')
             this.dispatchEvent(new Event('close'))
         }
-        fetchMock = jest.fn(async () => ({
+        fetchMock = vi.fn(async () => ({
             ok: true,
             json: async () => results,
         }))
@@ -101,7 +102,7 @@ describe('search dialog', () => {
         bindSearchShortcut()
     })
 
-    afterEach(() => jest.useRealTimers())
+    afterEach(() => vi.useRealTimers())
 
     const type = async (value: string) => {
         const input = document.querySelector<HTMLInputElement>(
@@ -109,7 +110,7 @@ describe('search dialog', () => {
         )!
         input.value = value
         input.dispatchEvent(new Event('input'))
-        await jest.advanceTimersByTimeAsync(350)
+        await vi.advanceTimersByTimeAsync(350)
     }
 
     it('reveals the trigger and opens the dialog from it', () => {

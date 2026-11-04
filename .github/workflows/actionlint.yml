@@ -1,0 +1,31 @@
+name: Lint GitHub Actions workflows with actionlint
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/**'
+  pull_request:
+    paths:
+      - '.github/**'
+
+permissions: {}
+
+jobs:
+  actionlint:
+    name: Run actionlint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # kjanat/actionlint is a maintained fork of rhysd/actionlint, which has had no release since 1.7.12.
+      - name: Run actionlint
+        uses: kjanat/actionlint@08bb2c4f0d039744455b87aef1c647fb8b66d37b # v1.17.0
+        with:
+          config-file: .github/actionlint.yaml

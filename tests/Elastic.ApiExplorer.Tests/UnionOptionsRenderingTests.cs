@@ -118,9 +118,10 @@ public class UnionOptionsRenderingTests
 	[Test]
 	public async Task Render_SharedNameSuffix_IsTrimmedFromChipsAndMenuEntries()
 	{
+		string[] names = ["bedrock_config", "email_config", "jira_config"];
 		var variants = new ApiUnionVariants
 		{
-			Variants = new[] { "bedrock_config", "email_config", "jira_config" }.Select(
+			Variants = names.Select(
 				(name, i) => Variant(i, foldable: false) with { DisplayName = name, IsArrayVariant = false, DiscriminatorLabel = null }
 			).ToArray(),
 			ContainerId = "opts"

@@ -4,7 +4,7 @@
 This command is intended for CI automation. It is used internally by the changelog GitHub Actions and is not typically invoked directly by users.
 :::
 
-Validate that a pull request's labels contain a recognised changelog type label, and optionally a product label. Unlike `changelog evaluate-pr`, this command performs no GitHub API access, no title resolution, no bot-loop detection, and no manual-edit detection — it only resolves labels against the configured `pivot.types`, `pivot.products`, and `rules.create` settings. This makes it safe to run on `pull_request` events from forks without write permissions.
+Validate that a pull request's labels contain a recognised changelog type label, and a product or area label when the configuration requires one (refer to [Required pivots](/data/release-notes/configure-ref.md#pivot-required)). Unlike `changelog evaluate-pr`, this command performs no GitHub API access, no title resolution, no bot-loop detection, and no manual-edit detection — it only resolves labels against the configured `pivot.types`, `pivot.products`, `pivot.areas`, `pivot.required`, and `rules.create` settings. This makes it safe to run on `pull_request` events from forks without write permissions.
 
 Exits non-zero when `status` is `no-label`. All other statuses (`ok`, `skipped`) exit zero.
 
@@ -21,6 +21,7 @@ Pass `--comment-on-success` to also record whether the PR will be part of the re
 | `products` | Comma-separated product specs resolved from PR labels (when resolved) |
 | `label-table` | Markdown table of configured label-to-type mappings (when `no-label`) |
 | `product-label-table` | Markdown table of configured label-to-product mappings (when `no-label` due to missing product) |
+| `area-label-table` | Markdown table of configured label-to-area mappings (when `no-label` because `pivot.required` lists `areas` and the PR has no area label) |
 | `skip-labels` | Comma-separated list of configured skip labels (from `rules.create` exclude rules) |
 
 ## Decision metadata

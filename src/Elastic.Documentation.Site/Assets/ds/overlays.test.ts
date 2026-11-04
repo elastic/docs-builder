@@ -24,8 +24,8 @@ describe('flyout', () => {
         document.body.innerHTML =
             '<button data-flyout-open="f" hidden>Open</button><dialog id="f"><p>x</p></dialog>'
         const dialog = document.getElementById('f') as HTMLDialogElement
-        dialog.showModal = jest.fn()
-        dialog.close = jest.fn()
+        dialog.showModal = vi.fn()
+        dialog.close = vi.fn()
         initFlyouts()
     })
 
@@ -101,10 +101,10 @@ describe('flyout resize', () => {
         const blocked = () => {
             throw new DOMException('blocked', 'SecurityError')
         }
-        const get = jest
+        const get = vi
             .spyOn(Storage.prototype, 'getItem')
             .mockImplementation(blocked)
-        const set = jest
+        const set = vi
             .spyOn(Storage.prototype, 'setItem')
             .mockImplementation(blocked)
         try {

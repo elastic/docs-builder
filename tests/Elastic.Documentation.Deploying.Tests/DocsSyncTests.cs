@@ -66,7 +66,6 @@ public class DocsSyncTests
 					Key = "docs/skip.md",
 					ETag = "\"69048c0964c9577a399b138b706a467a\""
 				}, // This is the result of CalculateS3ETag
-
 				new S3Object { Key = "docs/update.md", ETag = "\"existing-etag\"" }
 			]
 		});
@@ -282,7 +281,6 @@ public class DocsSyncTests
 
 	[Test]
 	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
-
 	public async Task TestApply()
 	{
 		// Arrange

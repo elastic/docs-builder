@@ -29,7 +29,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		var row = RowFor("search").Row;
 
 		row.Availability.Should().NotBeNull();
-		row.Availability!.ShowTooltip.Should().BeFalse("the row is a link, so the badge must not capture the tap");
+		row.Availability.ShowTooltip.Should().BeFalse("the row is a link, so the badge must not capture the tap");
 	}
 
 	[Test]
@@ -42,22 +42,20 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 		html.Should().Contain("class=\"api-title-badges\"");
 		html.Should().Contain("<applies-to-popover");
 		html.Should().Contain("show-popover=\"false\"");
-		html.Should().Contain("deprecated-badge");
+		html.Should().Contain("api-badge--danger");
 	}
 
 	[Test]
 	public async Task Render_BetaFlaggedOperation_ShowsBetaBadge()
 	{
 		var beta = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.Extensions?.ContainsKey("x-beta") == true);
-		var row = ApiOverviewBuilder.BuildTagChildren((INavigationItem)beta.Parent!, fixture.Context.VersionsConfiguration).Single(
-			r => r.Url == beta.Url
-		);
+		var row = ApiOverviewBuilder.BuildTagChildren(beta.Parent!, fixture.Context.VersionsConfiguration).Single(r => r.Url == beta.Url);
 
 		var html = await RenderAsync(row);
 
 		html.Should().Contain("<applies-to-popover");
 		html.Should().Contain("lifecycle-name=\"Beta\"");
-		html.Should().NotContain("deprecated-badge");
+		html.Should().NotContain("api-badge--danger");
 	}
 
 	[Test]
@@ -75,7 +73,7 @@ public class OverviewRowLifecycleTests(ApiExplorerFixture fixture)
 
 	private (ApiOverviewRow Row, IReadOnlyList<ApiOverviewRow> Siblings) RowFor(OperationNavigationItem operation)
 	{
-		var rows = ApiOverviewBuilder.BuildTagChildren((INavigationItem)operation.Parent!, fixture.Context.VersionsConfiguration);
+		var rows = ApiOverviewBuilder.BuildTagChildren(operation.Parent!, fixture.Context.VersionsConfiguration);
 		return (rows.Single(r => r.Url == operation.Url), [.. rows.Where(r => r.Url != operation.Url)]);
 	}
 

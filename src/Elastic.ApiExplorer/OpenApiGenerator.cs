@@ -72,7 +72,13 @@ public class OpenApiGenerator(
 		OpenApiDocument openApiDocument,
 		ResolvedApiConfiguration? apiConfig = null,
 		int? versionMajor = null
-	) => new ApiNavigationBuilder(_logger, context).CreateNavigation(apiUrlSuffix, openApiDocument, apiConfig, versionMajor);
+	) =>
+		new ApiNavigationBuilder(_logger, context, markdownStringRenderer).CreateNavigation(
+			apiUrlSuffix,
+			openApiDocument,
+			apiConfig,
+			versionMajor
+		);
 
 	public async Task Generate(Cancel ctx = default)
 	{
@@ -155,6 +161,27 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
+	/// The <c>main</c> document of every configured API, keyed by the same API key the explorer publishes
+	/// under <c>/api/doc/{key}/</c>. An API with no <c>main</c> document has no page at that path, so it is left out.
+	/// </summary>
+	public async Task<IReadOnlyList<(string ApiKey, string ProductId, OpenApiDocument Document)>> ResolveCanonicalDocuments(
+		Cancel ctx = default
+	)
+	{
+		var configs = ApiConfigsToRender();
+		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
+		return [
+			.. configs
+				.Zip(
+					resolved,
+					(c, r) => (c.Key, c.Value.Product.Id, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document)
+				)
+				.Where(x => x.Document is not null)
+				.Select(x => (ApiKey: x.Key, ProductId: x.Id, x.Document!))
+		];
+	}
+
+	/// <summary>
 	/// Writes the combined API catalog page once from entries collected across one or more owners.
 	/// </summary>
 	public Task GenerateCatalog(IReadOnlyList<ApiCatalogEntry> entries, Cancel ctx = default) =>
@@ -173,7 +200,7 @@ public class OpenApiGenerator(
 
 		var versionedDocuments = resolved.Documents;
 		var monikers = versionedDocuments.Select(v => v.Version.Moniker).ToArray();
-		var highestMajor = monikers.Max(TryParseMajor);
+		var highestMajor = monikers.Max(ApiVersions.TryParseMajor);
 
 		// Each version's tree is built before any page renders, so every picker can link to the same
 		// page in the other versions. The trees were already alive together while versions rendered in parallel.
@@ -272,19 +299,28 @@ public class OpenApiGenerator(
 		}
 	}
 
-	private ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
+	private static VersionedOpenApiDocument? CanonicalDocument(ResolvedProductDocuments resolved) =>
+		resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? (resolved.Documents.Count > 0 ? resolved.Documents[0] : null);
+
+	internal ApiCatalogEntry? CatalogEntry(string prefix, ResolvedApiConfiguration apiConfig, ResolvedProductDocuments resolved)
 	{
 		if (resolved.Documents.Count == 0)
 			return null;
 
-		var canonical = resolved.Documents.FirstOrDefault(v => v.Version.Moniker == "main") ?? resolved.Documents[0];
+		var canonical = CanonicalDocument(resolved)!;
 		var title = canonical.Document.Info?.Title ?? apiConfig.Product.DisplayName ?? prefix;
 		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, prefix);
 		return new ApiCatalogEntry(prefix, title, url, apiConfig.Product.Id, canonical.Document.Info?.Description)
 		{
-			CatalogCategories = apiConfig.CatalogCategories
+			CatalogCategories = apiConfig.CatalogCategories,
+			LatestUrl = LatestVersionUrl(prefix, resolved)
 		};
 	}
+
+	private string? LatestVersionUrl(string prefix, ResolvedProductDocuments resolved) =>
+		ApiVersions.LatestMajor(resolved.Documents.Select(static v => v.Version.Moniker)) is { } latest
+			? ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, ApiUrlBuilder.ProductSuffix(prefix, latest))
+			: null;
 
 	/// <summary>
 	/// Resolves every OpenAPI document to render for one API key, including canonical <c>main</c>
@@ -357,9 +393,7 @@ public class OpenApiGenerator(
 	/// unversioned URL matches the current-major overlay (the one page CLI authors expect).
 	/// </summary>
 	internal static int? SupplementalMajor(string moniker, int? highestNumericMoniker) =>
-		TryParseMajor(moniker) ?? (moniker == "main" ? highestNumericMoniker : null);
-
-	private static int? TryParseMajor(string moniker) => int.TryParse(moniker, out var major) ? major : null;
+		ApiVersions.TryParseMajor(moniker) ?? (moniker == "main" ? highestNumericMoniker : null);
 
 	private async Task<OpenApiDocument?> ResolveDocumentForVersion(
 		string apiKey,
@@ -444,7 +478,7 @@ public class OpenApiGenerator(
 			);
 		}
 
-		ApplySupplementalIntroHeadings(navigation, tags);
+		ApplySupplementalIntroHeadings(navigation, navigation.Url, tags);
 
 		var renderContext = new ApiRenderContext(context, generation.Document, _contentHashProvider)
 		{
@@ -516,21 +550,25 @@ public class OpenApiGenerator(
 		return result;
 	}
 
-	private static void ApplySupplementalIntroHeadings(INavigationItem item, IReadOnlyDictionary<string, ApiSupplementalDoc> tags)
+	private void ApplySupplementalIntroHeadings(
+		INavigationItem item,
+		string apiBaseUrl,
+		IReadOnlyDictionary<string, ApiSupplementalDoc> tags
+	)
 	{
 		if (item is not INodeNavigationItem<INavigationModel, INavigationItem> node)
 			return;
 
 		var children = node.NavigationItems.ToArray();
-		if (
-			item is TagNavigationItem tag
-			&& tags.TryGetValue(tag.Index.Model.Name, out var doc)
-			&& !string.IsNullOrWhiteSpace(doc.Description)
-		)
-			tag.ApplyIntroHeadings(doc.Description);
+		// Same description and post sections as TagLandingViewModel, so the sidebar links only to anchors the page keeps.
+		if (item is TagNavigationItem tag && tags.TryGetValue(tag.Index.Model.Name, out var doc))
+		{
+			var description = doc.DescriptionOr(tag.Index.Model.Description);
+			tag.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(markdownStringRenderer, description, apiBaseUrl, doc.PostSections));
+		}
 
 		foreach (var child in children)
-			ApplySupplementalIntroHeadings(child, tags);
+			ApplySupplementalIntroHeadings(child, apiBaseUrl, tags);
 	}
 
 	private async Task RenderNavigationItems(
@@ -578,7 +616,7 @@ public class OpenApiGenerator(
 
 	/// <summary>
 	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
-	/// canonical path and its former per-operation paths. Each name maps to all names of that page, canonical first.
+	/// canonical path and its former per-operation paths, and a <c>children:</c> page also answers to the topic URLs it replaces. Each name maps to all names of that page, canonical first.
 	/// </summary>
 	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
@@ -598,7 +636,12 @@ public class OpenApiGenerator(
 
 	private static string[] RelativeNames(INavigationItem item, string root)
 	{
-		var urls = item is OperationNavigationItem collapsed ? collapsed.AliasUrls.Prepend(item.Url) : [item.Url];
+		var urls = item switch
+		{
+			OperationNavigationItem collapsed => collapsed.AliasUrls.Prepend(item.Url),
+			SimpleMarkdownNavigationItem child => child.ReplacedTopicUrls.Prepend(item.Url),
+			_ => [item.Url]
+		};
 		return [
 			.. urls
 				.Select(static url => url.TrimEnd('/'))
@@ -615,7 +658,8 @@ public class OpenApiGenerator(
 
 		if (item is INodeNavigationItem<IApiModel, INavigationItem> node)
 		{
-			if (item is not ClassificationNavigationItem)
+			// Sidebar headings group pages but have no page of their own.
+			if (item is not ISidebarHeadingNavigationItem)
 				pages.Add((node, node.Index.Model));
 			foreach (var child in node.NavigationItems)
 				CollectPages(child, pages);

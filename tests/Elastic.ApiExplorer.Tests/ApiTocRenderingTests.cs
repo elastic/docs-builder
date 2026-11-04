@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials.Layout;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.Documentation;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -25,13 +26,13 @@ public class ApiTocRenderingTests
 	[Test]
 	public async Task Render_WithTocItems_IncludesHeadings()
 	{
-		var html = await Render([new ApiTocItem("Paths", "paths")]);
+		var html = await Render([new TocItem("Paths", "paths", 2)]);
 
 		html.Should().Contain("On this page");
 		html.Should().Contain("href=\"#paths\"");
 		html.Should().Contain("Paths");
 	}
 
-	private static async Task<string> Render(IReadOnlyList<ApiTocItem> tocItems) =>
+	private static async Task<string> Render(IReadOnlyList<TocItem> tocItems) =>
 		await _ApiToc.Create(tocItems).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 }

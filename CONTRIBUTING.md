@@ -2,20 +2,39 @@
 
 ## Prerequisites
 
-### Native (recommended for active development)
+### Native with mise (recommended for active development)
 
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
-- [Node.js 22.13.1 (LTS)](https://nodejs.org/en/blog/release/v22.13.1)
-
-The Aspire toolchain is bundled as a local dotnet tool — no workload install required.
+Install [mise](https://mise.jdx.dev/getting-started.html) and, from the repository root:
 
 ```bash
-dotnet tool restore
+mise trust        # once per clone: mise.toml runs shell (tasks, the postinstall hook), so mise asks you to trust it
+mise install      # .NET SDK and Node at the versions in global.json and .nvmrc, the dotnet tools, the git hooks
+mise run setup    # also installs the frontend dependencies (npm ci)
+mise tasks        # list everything you can run
 ```
 
-### Docker (zero-install alternative)
+Trust the root git folder (the main checkout) **once**: every git worktree of that clone is trusted too, so a new worktree needs no `mise trust`. A separate clone is a separate trust decision.
 
-If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite:
+mise reads the SDK version from `global.json` and the Node version from `.nvmrc`, so those files stay the single source of each version. `mise install` also restores the local dotnet tools in `dotnet-tools.json` (husky, curb, minver, Aspire — no workload install required) and installs the git hooks.
+
+The everyday tasks:
+
+| Task | Does |
+|---|---|
+| `mise run serve` | Serve `docs/` with live reload |
+| `mise run build` | Build the solution |
+| `mise run test` | Unit tests (extra args pass through: `mise run test -- --test-parallelism=4`) |
+| `mise run integrate` | Integration tests (slow, clones repositories) |
+| `mise run lint` / `mise run fmt` | Check / fix C# formatting |
+| `mise run watch` / `mise run watch:all` | The watch loops described [below](#continuously-build-during-development) |
+| `mise run site:build`, `site:test`, `site:lint`, `site:fmt`, `site:check` | The frontend scripts in `src/Elastic.Documentation.Site` |
+| `mise run schema` | Regenerate `docs/cli-schema.json` |
+
+`./build.sh` and `./dev.sh` still work. The mise tasks call the same build project and scripts.
+
+### Docker, without local installs (`./dev.sh`)
+
+If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite. It is not the primary development interface: use it when you don't want to install anything. Run `./dev.sh <command>` directly: `mise run` would install the native .NET and Node toolchain first, which this route avoids.
 
 ```bash
 ./dev.sh build            # build images (once, or after Dockerfile changes)
@@ -84,17 +103,17 @@ Two watch loops are available depending on what you're working on:
 ### Single-docset watch (authoring, templates, frontend)
 
 ```shell
-./build.sh watch
+mise run watch
 ```
 
 Monitors code, Razor template files, and frontend assets for a **single documentation set**.
 Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
-the server automatically. Web assets are rebuilt by `parcel watch` in the background.
+the server automatically. Web assets are rebuilt by `vite build --watch` in the background.
 
 ### Full assembled-site watch (assembler, navigation, multi-repo)
 
 ```shell
-./build.sh watchall
+mise run watch:all
 ```
 
 Runs `dotnet watch` on the Aspire AppHost. When you edit any `.cs` file the AppHost restarts,
@@ -107,7 +126,7 @@ No live reload; the site comes back on port 4000 after each restart.
 When you add or change CLI options in `src/tooling/docs-builder/Commands/`, regenerate the checked-in schema so CI and the published CLI reference stay in sync:
 
 ```bash
-dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+mise run schema
 ```
 
 Commit the updated `docs/cli-schema.json` with your code changes. CI compares the schema (ignoring the `version` field) and fails if it has drifted.
@@ -144,21 +163,18 @@ This repository uses [Husky.Net](https://alirezanet.github.io/Husky.Net/) to aut
 
 ### Installation
 
-Husky.Net is included as a dotnet tool. After cloning the repository, restore the tools:
+Husky.Net is included as a dotnet tool. `mise install` restores the tools and installs the git hooks, so after cloning the repository (or creating a worktree) run the following. `mise trust` is only needed once per clone, in the root git folder, and covers its worktrees:
 
 ```bash
-dotnet tool restore
-```
-
-Then install the git hooks:
-
-```bash
-dotnet husky install
+mise trust    # first run in a clone only
+mise install
 ```
 
 That's it! The hooks will now run automatically on every commit.
 
-The pre-commit hook runs `dotnet tool restore` before curb, so a new worktree does not need a manual restore before the first commit. You still need `dotnet husky install` in that worktree so `.husky/_/husky.sh` exists.
+The hooks run through `mise exec` when mise is installed, so they get the pinned SDK and Node even where mise isn't activated, such as GUI git clients. Without mise they fall back to the `dotnet` and `npx` on your `PATH`.
+
+The pre-commit hook runs `dotnet tool restore` before curb. A new worktree still needs `mise install` once (or `dotnet tool restore && dotnet husky install` without mise) so `.husky/_/husky.sh` exists.
 
 ### Usage
 
@@ -176,7 +192,7 @@ git add -u
 git commit -m "your message"
 ```
 
-If the **dotnet-lint** hook fails, run `dotnet curb format .` to fix the formatting and commit the fixes.
+If the **dotnet-lint** hook fails, run `mise run fmt` to fix the formatting and commit the fixes.
 
 ### Manual Execution
 

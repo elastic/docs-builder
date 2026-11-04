@@ -65,6 +65,7 @@ public class ChangelogLabelValidationService(
 		var ambiguousTypeLabels = resolution.AmbiguousTypeLabels;
 		var resolvedProducts = resolution.Products;
 		var productLabelTable = resolution.ProductLabelTable;
+		var areaLabelTable = resolution.AreaLabelTable;
 
 		if (ambiguousTypeLabels != null)
 		{
@@ -95,22 +96,38 @@ public class ChangelogLabelValidationService(
 				labelTable: labelTable,
 				labelKeys: labelKeys,
 				productLabelTable: productLabelTable,
-				skipLabels: skipLabels
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
 			);
 			return false;
 		}
 
-		if (productLabelTable != null && ProductResolution.RequiresProductLabel(config))
+		if (resolution.MissingProduct || resolution.MissingArea)
 		{
-			_logger.LogInformation("Multiple products configured but no matching product label on PR");
-			var productLabels = config.LabelToProducts is { Count: > 0 }
-				? string.Join(", ", config.LabelToProducts.Keys)
-				: "(none configured)";
-			collector.EmitError(
-				string.Empty,
-				$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
+			if (resolution.MissingProduct)
+			{
+				_logger.LogInformation("No matching product label on PR");
+				var productLabels = config.LabelToProducts is { Count: > 0 }
+					? string.Join(", ", config.LabelToProducts.Keys)
+					: "(none configured)";
+				collector.EmitError(
+					string.Empty,
+					$"No matching product label found on this PR. Add one of the following labels: {productLabels}."
+				);
+			}
+
+			if (resolution.MissingArea)
+			{
+				_logger.LogInformation("No matching area label on PR");
+				collector.EmitError(string.Empty, AreaResolution.MissingAreaLabelMessage("this PR", config));
+			}
+
+			await Finish(
+				"no-label",
+				productLabelTable: resolution.MissingProduct ? productLabelTable : null,
+				skipLabels: skipLabels,
+				areaLabelTable: areaLabelTable
 			);
-			await Finish("no-label", productLabelTable: productLabelTable, skipLabels: skipLabels);
 			return false;
 		}
 
@@ -140,10 +157,11 @@ public class ChangelogLabelValidationService(
 			string? productLabelTable = null,
 			string? skipLabels = null,
 			string? ambiguousTypeLabels = null,
+			string? areaLabelTable = null,
 			ReleaseNoteOutcome? outcome = null
 		)
 		{
-			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels, ambiguousTypeLabels);
+			_ = await SetOutputs(status, type, products, labelTable, productLabelTable, skipLabels, ambiguousTypeLabels, areaLabelTable);
 
 			if (env?.IsRunningOnCI == true && input.PrNumber > 0)
 			{
@@ -160,6 +178,7 @@ public class ChangelogLabelValidationService(
 					HeadRepo = input.HeadRepo,
 					LabelTable = labelKeys ?? labelTable,
 					ProductLabelTable = productLabelTable,
+					AreaLabelTable = areaLabelTable,
 					SkipLabels = skipLabels,
 					ConfigFile = input.ConfigFile,
 					AmbiguousTypeLabels = ambiguousTypeLabels,
@@ -179,7 +198,8 @@ public class ChangelogLabelValidationService(
 		string? labelTable = null,
 		string? productLabelTable = null,
 		string? skipLabels = null,
-		string? ambiguousTypeLabels = null
+		string? ambiguousTypeLabels = null,
+		string? areaLabelTable = null
 	)
 	{
 		await coreService.SetOutputAsync("status", status);
@@ -196,6 +216,11 @@ public class ChangelogLabelValidationService(
 			await coreService.SetOutputAsync(
 				"product-label-table",
 				OutputSanitizer.SanitizeForOutput(productLabelTable, OutputSanitizer.LabelTableMaxLength)
+			);
+		if (areaLabelTable != null)
+			await coreService.SetOutputAsync(
+				"area-label-table",
+				OutputSanitizer.SanitizeForOutput(areaLabelTable, OutputSanitizer.LabelTableMaxLength)
 			);
 		if (skipLabels != null)
 			await coreService.SetOutputAsync("skip-labels", OutputSanitizer.SanitizeForOutput(skipLabels, OutputSanitizer.LabelsMaxLength));

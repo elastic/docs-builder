@@ -27,6 +27,7 @@ public record GithubDecisionMetadata
 	public string? HeadRepo { get; init; }
 	public string? LabelTable { get; init; }
 	public string? ProductLabelTable { get; init; }
+	public string? AreaLabelTable { get; init; }
 	public string? SkipLabels { get; init; }
 	/// <summary>Comma-separated list of type labels that all matched when only one is allowed.</summary>
 	public string? AmbiguousTypeLabels { get; init; }

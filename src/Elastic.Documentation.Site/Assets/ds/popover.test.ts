@@ -26,6 +26,11 @@ describe('initPopovers', () => {
             })(HTMLElement.prototype.matches)
     })
 
+    afterEach(async () => {
+        // jsdom fires toggle on a later task; let it land while the stubs are still installed.
+        await new Promise((resolve) => setTimeout(resolve))
+    })
+
     it('makes the panel a manual popover', () => {
         initPopovers()
 

@@ -315,6 +315,12 @@ public partial class DocumentationGenerator
 			return;
 		}
 
+		if (Context.SkipStaticAssetExtraction)
+		{
+			_logger.LogDebug("Skipping static asset extraction (SkipStaticAssetExtraction)");
+			return;
+		}
+
 		_logger.LogInformation($"Copying static files to output directory");
 		var assembly = typeof(EmbeddedOrPhysicalFileProvider).Assembly;
 		const string prefix = "Elastic.Documentation.Site._static.";
@@ -543,7 +549,7 @@ public partial class DocumentationGenerator
 			DocumentationSet.LastWrite,
 			stateFile.FullName
 		);
-		var badFiles = Context.Collector.OffendingFiles.ToArray();
+		var badFiles = Context.Collector.OffendingFiles.Keys.ToArray();
 		var state = new GenerationState
 		{
 			LastSeenChanges = DocumentationSet.LastWrite,

@@ -58,6 +58,40 @@ public class DocumentToolsTests
 		response.SourceUrl.Should().BeNull();
 	}
 
+	[Test]
+	public async Task GetDocumentByUrl_BodyOmitted_ExplainsHowToRequestIt()
+	{
+		var tools = new DocumentTools(StubWithBody(), NullLogger<DocumentTools>.Instance);
+
+		var json = await tools.GetDocumentByUrl("/docs/some-page", cancellationToken: TestContext.Current!.Execution.CancellationToken);
+
+		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		response.Body.Should().BeNull();
+		response.BodyLength.Should().Be(9);
+		response.BodyNote.Should().Contain("includeBody=true");
+	}
+
+	[Test]
+	public async Task GetDocumentByUrl_IncludeBody_ReturnsBodyWithoutNote()
+	{
+		var tools = new DocumentTools(StubWithBody(), NullLogger<DocumentTools>.Instance);
+
+		var json = await tools.GetDocumentByUrl(
+			"/docs/some-page",
+			includeBody: true,
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		var response = JsonSerializer.Deserialize(json, McpJsonContext.Default.DocumentResponse);
+		response.Should().NotBeNull();
+		response.Body.Should().Be("Body text");
+		response.BodyNote.Should().BeNull();
+	}
+
+	private static StubDocumentGateway StubWithBody() =>
+		new(new DocumentResult { Url = "/docs/some-page", Title = "Some Page", Type = "doc", Body = "Body text" });
+
 	private sealed class StubDocumentGateway(DocumentResult? result) : IDocumentGateway
 	{
 		public Task<DocumentResult?> GetByUrlAsync(string url, CancellationToken ct = default) => Task.FromResult(result);

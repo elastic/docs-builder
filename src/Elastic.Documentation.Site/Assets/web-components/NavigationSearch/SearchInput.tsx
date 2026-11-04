@@ -1,13 +1,14 @@
 import { EuiLoadingSpinner, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
+import { useState } from 'react'
 
-const CustomSearchIcon = () => {
+const CustomSearchIcon = ({ iconSize }: { iconSize: number }) => {
     const { euiTheme } = useEuiTheme()
 
     return (
         <svg
-            width="16"
-            height="16"
+            width={iconSize}
+            height={iconSize}
             viewBox="0 0 16 16"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -36,6 +37,7 @@ export interface SearchInputProps {
     disabled: boolean
     isLoading: boolean
     keyShortcuts?: string
+    shortcutHint?: string
     ariaLabel?: string
     title?: string
 }
@@ -52,10 +54,14 @@ export const SearchInput = ({
     disabled,
     isLoading,
     keyShortcuts,
+    shortcutHint,
     ariaLabel,
     title,
 }: SearchInputProps) => {
     const { euiTheme } = useEuiTheme()
+    const [focused, setFocused] = useState(false)
+    const showHint = !!shortcutHint && !focused && !value
+    const isLarge = size === 'l'
 
     return (
         <div
@@ -68,7 +74,7 @@ export const SearchInput = ({
             <span
                 css={css`
                     position: absolute;
-                    left: ${euiTheme.base * 0.75}px;
+                    left: ${isLarge ? euiTheme.base * 0.875 : euiTheme.base * 0.75}px;
                     display: flex;
                     align-items: center;
                     pointer-events: none;
@@ -77,7 +83,7 @@ export const SearchInput = ({
                 {isLoading ? (
                     <EuiLoadingSpinner size="m" />
                 ) : (
-                    <CustomSearchIcon />
+                    <CustomSearchIcon iconSize={isLarge ? 18 : 16} />
                 )}
             </span>
 
@@ -90,27 +96,31 @@ export const SearchInput = ({
                 aria-keyshortcuts={keyShortcuts}
                 value={value}
                 onChange={onChange}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                onFocus={() => {
+                    setFocused(true)
+                    onFocus()
+                }}
+                onBlur={(e) => {
+                    setFocused(false)
+                    onBlur(e)
+                }}
                 onKeyDown={onKeyDown}
                 disabled={disabled}
                 css={css`
                     width: 100%;
-                    padding: calc(
-                            ${
-                                    size === 's'
-                                        ? euiTheme.size.xs
-                                        : euiTheme.size.s
-                                } +
-                                2px
-                        )
-                        ${size === 's' ? euiTheme.size.s : euiTheme.size.m};
-                    padding-left: 34px;
+                    padding: ${
+                        isLarge
+                            ? `${euiTheme.size.m} ${euiTheme.size.base}`
+                            : `calc(${size === 's' ? euiTheme.size.xs : euiTheme.size.s} + 2px) ${size === 's' ? euiTheme.size.s : euiTheme.size.m}`
+                    };
+                    padding-left: ${isLarge ? 42 : 34}px;
+                    ${showHint ? `padding-right: ${isLarge ? 48 : 36}px;` : ''}
                     border: 1px solid #cad3e2;
-                    border-radius: 8px;
+                    border-radius: ${isLarge ? 10 : 8}px;
                     background: #fff;
-                    font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    font-size: ${(isLarge ? euiTheme.font.scale.m : euiTheme.font.scale.s) * euiTheme.base}px;
                     line-height: ${euiTheme.base * 1.25}px;
+                    ${isLarge ? 'box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 8px rgba(16, 24, 40, 0.05);' : ''}
                     color: ${euiTheme.colors.textParagraph};
                     outline: none;
 
@@ -124,6 +134,33 @@ export const SearchInput = ({
                     }
                 `}
             />
+
+            {showHint && (
+                <kbd
+                    aria-hidden="true"
+                    css={css`
+                        position: absolute;
+                        right: ${isLarge ? euiTheme.size.base : euiTheme.size.s};
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        min-width: 18px;
+                        padding: 0 ${euiTheme.size.xs};
+                        border: 1px solid ${euiTheme.border.color};
+                        border-bottom-width: 2px;
+                        border-radius: ${euiTheme.border.radius.small};
+                        background: #fff;
+                        color: ${euiTheme.colors.textSubdued};
+                        font-family: inherit;
+                        font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
+                        font-weight: ${euiTheme.font.weight.semiBold};
+                        line-height: ${euiTheme.base * 1.1}px;
+                        pointer-events: none;
+                    `}
+                >
+                    {shortcutHint}
+                </kbd>
+            )}
         </div>
     )
 }

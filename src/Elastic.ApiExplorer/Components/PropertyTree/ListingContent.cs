@@ -42,7 +42,7 @@ internal static class ListingContent
 					.Append('|')
 					.Append(variant.DiscriminatorLabel)
 					.Append('|')
-					.Append(variant.DescriptionHtml.Value)
+					.Append(variant.DescriptionMarkdown)
 					.Append('|')
 					.Append(variant.ShowProperties);
 				Append(text, variant.Properties, shapes);
@@ -81,7 +81,7 @@ internal static class ListingContent
 				.Append('|')
 				.Append(property.ExternalDocs?.Url)
 				.Append('|')
-				.Append(property.DescriptionHtml.Value)
+				.Append(property.DescriptionMarkdown)
 				.Append('|')
 				.AppendJoin(',', property.EnumValues)
 				.Append('|')

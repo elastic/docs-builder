@@ -68,7 +68,7 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 				"elastic",
 				"test-repo",
 				42,
-				A<string>.That.Contains("docs/changelog/42.yaml"),
+				A<string>.That.Contains("https://github.com/elastic/test-repo/blob/feature%2Ftest/docs/changelog/42.yaml"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();
@@ -736,5 +736,33 @@ public class ChangelogGithubCommentServiceTests() : ChangelogTestBase()
 		var stored = await writer.ReadAsync(MetadataPath, CancellationToken.None);
 		stored!.Outcome.Should().BeNull();
 		stored.CommentOnSuccess.Should().BeFalse();
+	}
+
+	[Test]
+	public async Task PostComment_NoLabelFromFileGate_RendersLabelsNeededBodyWithAreaTable()
+	{
+		await WriteMetadata(BaseMetadata(status: "no-label") with
+		{
+			Gate = ValidationGate.File,
+			AreaLabelTable = "| `:Search` | Search |"
+		});
+		var commentSvc = A.Fake<IGitHubCommentService>();
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(A<string>._, A<string>._, A<int>._, A<string>._, A<CancellationToken>._)
+		).Returns((string?)"IC_test_node_id");
+		A.CallTo(() => commentSvc.MinimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+		A.CallTo(() => commentSvc.UnminimizeCommentAsync(A<string>._, A<CancellationToken>._)).Returns(true);
+
+		await CreateService(commentSvc).PostComment(DefaultArgs(), CancellationToken.None);
+
+		A.CallTo(
+			() => commentSvc.UpsertStickyCommentAsync(
+				A<string>._,
+				A<string>._,
+				A<int>._,
+				A<string>.That.Contains("Area label needed"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
 	}
 }

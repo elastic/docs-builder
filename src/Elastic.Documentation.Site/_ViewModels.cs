@@ -40,17 +40,17 @@ public record CodexBreadcrumb(string Title, string? Url);
 /// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
 public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
 
-/// <summary>One API product in the context bar's product menu.</summary>
-public sealed record ApiContextProduct(string Label, string Url, bool Selected, string? IconSvg);
+/// <summary>One API product in the identity menu.</summary>
+public sealed record ApiIdentityProduct(string Label, string Url, bool Selected, string? IconSvg);
 
 /// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
-public sealed record ApiContextProductGroup(string? Title, IReadOnlyList<ApiContextProduct> Products);
+public sealed record ApiIdentityProductGroup(string? Title, IReadOnlyList<ApiIdentityProduct> Products);
 
-/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads.</summary>
-public sealed record ApiContextBar(
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads. Rendered as the sidebar selector.</summary>
+public sealed record ApiIdentity(
 	string Title,
 	string? IconSvg,
-	IReadOnlyList<ApiContextProductGroup> ProductGroups,
+	IReadOnlyList<ApiIdentityProductGroup> ProductGroups,
 	string? HubUrl,
 	IReadOnlyList<NavigationSelectOption> Versions,
 	ApiSpecDownload Spec
@@ -132,7 +132,7 @@ public record GlobalLayoutViewModel
 	/// Which API the reader is looking at: product, versions and spec downloads. Null on Docs
 	/// pages and on the API catalog.
 	/// </summary>
-	public ApiContextBar? ApiContext { get; init; }
+	public ApiIdentity? ApiContext { get; init; }
 
 	/// <summary>API catalog URL used by the API header's home link.</summary>
 	public string? ApiCatalogUrl { get; init; }

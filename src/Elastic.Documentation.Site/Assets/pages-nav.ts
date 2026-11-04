@@ -406,8 +406,12 @@ function onFolderCheckboxChange(input: HTMLInputElement) {
 }
 
 export function collapseAllFolders(nav: HTMLElement) {
+    // A group marked data-nav-default-open stays expanded on every page.
     const uncheck = (el: Element) => {
-        if (el instanceof HTMLInputElement) {
+        if (
+            el instanceof HTMLInputElement &&
+            !el.hasAttribute('data-nav-default-open')
+        ) {
             el.checked = false
         }
     }
@@ -500,6 +504,12 @@ function getNavScrollContainer(nav: HTMLElement) {
     return nav.querySelector<HTMLElement>('.pages-nav-v2__scroll') ?? nav
 }
 
+// The smaller golden-ratio share (0.382) puts the active row a little above centre.
+const NAV_FOCUS_RATIO = 1 - 1 / ((1 + Math.sqrt(5)) / 2)
+
+// A fresh page or a replaced tree places the row even when it is already visible.
+let placeCurrentEvenIfVisible = true
+
 function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
     const currentNavItem = currentInNav(nav)
 
@@ -522,19 +532,25 @@ function scrollCurrentNaviItemIntoViewImpl(nav: HTMLElement) {
 
     const effectiveNavTop = navRect.top + stickyHeight
 
+    const force = placeCurrentEvenIfVisible
+    placeCurrentEvenIfVisible = false
+
     // Check if the item is already fully visible in the nav container's viewport
     // Account for sticky element that may be covering the top portion
     if (
+        !force &&
         currentNavItemRect.top >= effectiveNavTop &&
         currentNavItemRect.bottom <= navRect.bottom
     ) {
         return
     }
 
-    // Calculate target position: center of nav container (accounting for sticky area)
+    // Calculate target position: golden-ratio point of the visible nav area (accounting for sticky area)
     const visibleNavHeight = navRect.height - stickyHeight
     const targetPosition =
-        stickyHeight + visibleNavHeight / 2 - currentNavItemRect.height / 2
+        stickyHeight +
+        visibleNavHeight * NAV_FOCUS_RATIO -
+        currentNavItemRect.height / 2
 
     // Calculate how much we need to scroll to position the item at the target
     const currentPositionInNav = currentNavItemRect.top - navRect.top
@@ -582,9 +598,15 @@ function normalizeNavPathname(pathname: string) {
     return p === '' ? '/' : p
 }
 
+// A link to a heading on its page (an API group intro heading) is not a page of its own:
+// it never becomes current, and clicking it leaves the jump to the browser.
+function isInPageLink(anchor: HTMLAnchorElement) {
+    return anchor.getAttribute('href')?.includes('#') ?? false
+}
+
 function anchorMatchesPath(anchor: HTMLAnchorElement, pathnameRaw: string) {
     const href = anchor.getAttribute('href')
-    if (!href) {
+    if (!href || isInPageLink(anchor)) {
         return false
     }
     try {
@@ -828,6 +850,7 @@ export function syncPagesNavFromResponse(
         return false
     }
     canRecenterNav = true
+    placeCurrentEvenIfVisible = true
     pinnedNavScrollTop = null
     pendingFolderReset = true
     navJustReplaced = true
@@ -1046,7 +1069,10 @@ function onApiNavKey(event: KeyboardEvent) {
     if (!(link instanceof HTMLAnchorElement)) {
         return
     }
-    if (anchorMatchesPath(link, window.location.pathname)) {
+    if (
+        isInPageLink(link) ||
+        anchorMatchesPath(link, window.location.pathname)
+    ) {
         return
     }
     const grid = document.getElementById('api-content-grid')
@@ -1127,7 +1153,7 @@ function ensureFolderRowClick() {
             const a = e.target.closest(
                 '#pages-nav a.sidebar-link'
             ) as HTMLAnchorElement | null
-            if (!a) {
+            if (!a || isInPageLink(a)) {
                 return
             }
 

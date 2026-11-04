@@ -203,7 +203,7 @@ internal static class AssemblerBuildStampService
 	private static IReadOnlyDictionary<string, string> CollectAssemblyMvids()
 	{
 		// Explicit typeof anchors — order-independent and AOT-safe.
-		// Elastic.Documentation.Site MVID changes whenever Parcel output changes,
+		// Elastic.Documentation.Site MVID changes whenever Vite output changes,
 		// since EmbedGeneratedAssets bakes the bundled assets in as EmbeddedResources.
 		var anchors = new (string Name, Type Anchor)[]
 		{

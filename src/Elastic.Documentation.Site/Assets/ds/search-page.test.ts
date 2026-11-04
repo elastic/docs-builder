@@ -5,16 +5,17 @@ import {
     toApiSearch,
     toSearch,
 } from './search-page'
+import type { Mock } from 'vitest'
 
-jest.mock('../config', () => ({
+vi.mock('../config', () => ({
     config: {
         buildType: 'assembler',
         apiBasePath: '/docs/_api',
         rootPath: '/docs',
     },
 }))
-jest.mock('../web-components/ModalSearch/pagefind', () => ({
-    searchPagefind: jest.fn(),
+vi.mock('../web-components/ModalSearch/pagefind', () => ({
+    searchPagefind: vi.fn(),
 }))
 
 describe('search page state', () => {
@@ -102,7 +103,7 @@ describe('search page', () => {
     beforeEach(() => {
         document.body.innerHTML = markup
         window.history.replaceState(null, '', '/?q=shards')
-        global.fetch = jest.fn().mockResolvedValue({
+        global.fetch = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => ({
                 results: [
@@ -167,7 +168,7 @@ describe('search page', () => {
         await new Promise((r) => setTimeout(r, 0))
 
         expect(location.search).toBe('?q=shards&v=8')
-        expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain(
+        expect((global.fetch as Mock).mock.calls[0][0]).toContain(
             'version=8.19'
         )
     })
@@ -194,7 +195,7 @@ describe('search page', () => {
     })
 
     it('shows a message when the search fails', async () => {
-        ;(global.fetch as jest.Mock).mockResolvedValue({
+        ;(global.fetch as Mock).mockResolvedValue({
             ok: false,
             status: 500,
         })

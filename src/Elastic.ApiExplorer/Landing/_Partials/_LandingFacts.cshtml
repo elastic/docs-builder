@@ -11,17 +11,4 @@
 			<dd>@version</dd>
 		</div>
 	}
-	@if (Model.Page.ShowSpecDownload)
-	{
-		<div class="api-rail-fact">
-			<dt>Download spec</dt>
-			<dd>
-				@foreach (var (format, url) in new[] { ("JSON", Model.Page.JsonUrl), ("YAML", Model.Page.YamlUrl) })
-				{
-					<a class="api-chip-link" href="@url" download aria-label="Download spec as @format">
-						<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8m0 0L5 7m3 3 3-3M3 13h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>@format</a>
-				}
-			</dd>
-		</div>
-	}
 </dl>
