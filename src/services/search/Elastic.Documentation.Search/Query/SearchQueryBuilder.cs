@@ -18,6 +18,21 @@ namespace Elastic.Documentation.Search;
 public static class SearchQueryBuilder
 {
 	public const string ApiPropertyHits = "api_properties";
+	public const string ApiNameHits = "api_name";
+	public const string ApiChildrenHits = "api_children";
+
+	/// <summary>Elasticsearch's default <c>index.max_inner_result_window</c>, so an expanded lookup lists every child it can.</summary>
+	private const int ExpandedInnerHitsSize = 100;
+
+	/// <summary>The docs-wide lookup keeps three rows and lists no children; the API lookup keeps more to choose from.</summary>
+	private const int DocsWideInnerHitsSize = 5;
+	private const int ApiInnerHitsSize = 20;
+
+	// A child row must score below every name match, exact or prefix, and the lift only breaks ties between operations.
+	private const float NameMatchBoost = 1;
+	private const float PrefixNameMatchBoost = 0.6f;
+	private const float ListsFieldsUnderTypedPathBoost = 0.5f;
+	private const float ChildOptionBoost = 0.4f;
 
 	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
 	public static bool IsApiPropertyHits(string innerHitsName) =>
@@ -54,16 +69,22 @@ public static class SearchQueryBuilder
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter).Readings is [var first, ..]
-			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, allowPrefix: typeFilter == "api")
+		ParseApiPropertyQuery(searchQuery, typeFilter) is { Readings: [var first, ..] } parsed
+			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, Lookup(parsed, typeFilter))
 			: null;
+
+	/// <summary>A trailing dot on an API-filtered field, as in <c>retriever.</c>, asks for its children.</summary>
+	public static bool ExpandsChildren(string searchQuery, string? typeFilter) =>
+		Lookup(ParseApiPropertyQuery(searchQuery, typeFilter), typeFilter).ExpandChildren;
+
+	private static bool IsApiLookup(string? typeFilter) => typeFilter == "api";
 
 	public static Query ApplyApiPropertyQuery(Query query, string searchQuery, string? typeFilter)
 	{
 		var parsed = ParseApiPropertyQuery(searchQuery, typeFilter);
 		var branches = parsed
 			.Readings
-			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, allowPrefix: typeFilter == "api"))
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, Lookup(parsed, typeFilter)))
 			.OfType<Query>()
 			.ToList();
 		if (branches.Count == 0)
@@ -77,10 +98,10 @@ public static class SearchQueryBuilder
 		(string Operation, string Property) reading,
 		string innerHitsName,
 		bool endpointRequired,
-		bool allowPrefix
+		PropertyLookup lookup
 	)
 	{
-		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, allowPrefix);
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, lookup);
 		var endpoint = reading.Operation.Length == 0 ? null : BuildEndpointHalfQuery(reading.Operation);
 		if (endpoint is null && endpointRequired)
 			return null;
@@ -88,12 +109,29 @@ public static class SearchQueryBuilder
 		// computed from the nested query alone, even for a reading whose endpoint did not hold, and a hit the lexical
 		// branch alone matched carries no name. The name sits on the whole reading, as Elasticsearch reports a named
 		// clause that matched even when its parent did not.
-		if (endpoint is null)
-			return new BoolQuery { Must = [properties], QueryName = innerHitsName };
-		return endpointRequired
-			? new BoolQuery { Must = [properties, endpoint], QueryName = innerHitsName }
-			: new BoolQuery { Must = [properties], Should = [endpoint], QueryName = innerHitsName };
+		List<Query> must = endpoint is not null && endpointRequired ? [properties, endpoint] : [properties];
+		List<Query> should = endpoint is not null && !endpointRequired ? [endpoint] : [];
+		if (lookup.AllowPrefix)
+			should.Add(BuildListsFieldsUnderTypedPathBoost(reading.Property));
+		return new BoolQuery { Must = must, Should = should.Count == 0 ? null : should, QueryName = innerHitsName };
 	}
+
+	/// <summary>
+	/// Exact name matches all score alike, so Elasticsearch breaks their ties arbitrarily; a reader typing a path wants
+	/// the operation that lists what comes next.
+	/// </summary>
+	private static Query BuildListsFieldsUnderTypedPathBoost(string property) =>
+		new NestedQuery
+		{
+			Path = QueryFieldNames.ApiProperties,
+			IgnoreUnmapped = true,
+			ScoreMode = ChildScoreMode.Max,
+			Query = new ConstantScoreQuery { Filter = BuildParentTermQuery(property), Boost = ListsFieldsUnderTypedPathBoost }
+		};
+
+	/// <summary>The index stores a row's parent as its <see cref="ApiPropertyPath.ParentKey"/>, so a typed <c>pets[].owner</c> names <c>pets.owner</c>.</summary>
+	private static TermQuery BuildParentTermQuery(string typedPath) =>
+		new() { Field = QueryFieldNames.ApiPropertiesParent, Value = ApiPropertyPath.ParentKey(typedPath), CaseInsensitive = true };
 
 	/// <summary>
 	/// The endpoint half as typed and, for a bare word, as its underscore alias too: `deployments` is a route of
@@ -121,11 +159,11 @@ public static class SearchQueryBuilder
 		var input = searchQuery.Trim();
 		if (input.Length == 0 || typeFilter is not (null or "" or "all" or "api"))
 			return ApiPropertyReadings.None;
-		var parsed = ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+		var parsed = WithoutTrailingDots(ParseReadings(input.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)));
 		// The docs-wide search only tries a field word that looks like an identifier; a plain word would lift every
 		// API operation that happens to have a field of that name above the pages about it. Dropping a reading
 		// leaves the others as demanding as the query made them.
-		return typeFilter == "api"
+		return IsApiLookup(typeFilter)
 			? parsed
 			: parsed with { Readings = parsed.Readings.Where(r => r.Property.Contains('.') || r.Property.Contains('_')).ToArray() };
 	}
@@ -146,69 +184,103 @@ public static class SearchQueryBuilder
 		return new ApiPropertyReadings([(string.Join(' ', words.Where((_, i) => i != field)), words[field])], EndpointRequired: false);
 	}
 
+	/// <summary>A trailing dot is a child field not yet typed, so <c>retriever.standard.</c> still names <c>retriever.standard</c>.</summary>
+	private static ApiPropertyReadings WithoutTrailingDots(ApiPropertyReadings parsed)
+	{
+		var readings = parsed
+			.Readings
+			.Select(r => r with { Property = r.Property.TrimEnd('.') })
+			.Where(r => r.Property.Length > 0)
+			.ToArray();
+		return readings.Length == 0
+			? ApiPropertyReadings.None
+			: parsed with { Readings = readings, ExpandsChildren = parsed.Readings.Any(r => r.Property.EndsWith('.')) };
+	}
+
 	/// <summary>The readings of a query, and whether each must match its endpoint rather than only be lifted by it.</summary>
 	private sealed record ApiPropertyReadings(IReadOnlyList<(string Operation, string Property)> Readings, bool EndpointRequired)
 	{
 		public static readonly ApiPropertyReadings None = new([], EndpointRequired: false);
+
+		public bool ExpandsChildren { get; init; }
 	}
 
-	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, bool allowPrefix) =>
+	/// <summary>Only an API-filtered lookup matches by prefix, and only one ending in a dot lists the typed path's children.</summary>
+	private sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
+
+	private static PropertyLookup Lookup(ApiPropertyReadings parsed, string? typeFilter) =>
+		IsApiLookup(typeFilter)
+			? new(AllowPrefix: true, ExpandChildren: parsed.ExpandsChildren)
+			: new(AllowPrefix: false, ExpandChildren: false);
+
+	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, PropertyLookup lookup) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
-			Query = BuildPropertyMatchQuery(property, allowPrefix),
+			Query = BuildPropertyMatchQuery(property, lookup),
 			InnerHits = new InnerHits
 			{
 				Name = innerHitsName,
-				Size = 5,
+				Size = lookup switch
+				{
+					{ ExpandChildren: true } => ExpandedInnerHitsSize,
+					{ AllowPrefix: true } => ApiInnerHitsSize,
+					_ => DocsWideInnerHitsSize
+				},
 				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
 			}
 		};
 
-	private static Query BuildPropertyMatchQuery(string input, bool allowPrefix)
+	/// <summary>
+	/// An expanded lookup also lists the direct children of the typed path. They score below every name match,
+	/// and a document never matches through them alone: a row naming the input as its parent implies that row exists.
+	/// </summary>
+	private static Query BuildPropertyMatchQuery(string input, PropertyLookup lookup)
 	{
-		var name = BuildPropertyNameQuery(input, allowPrefix);
 		var separator = input.LastIndexOf('.');
-		if (separator < 0 || separator == input.Length - 1)
-			return name;
-
-		return new DisMaxQuery
-		{
-			Queries =
-			[
-				name,
-				new BoolQuery
-				{
-					Must = [BuildPropertyNameQuery(input[(separator + 1)..], allowPrefix)],
-					Filter =
-					[
-						new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
-					]
-				}
-			]
-		};
+		var path = separator < 0
+			? null
+			: (Query)new BoolQuery
+			{
+				Must = [BuildPropertyNameOptions(input[(separator + 1)..], lookup)],
+				Filter =
+				[
+					new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
+				]
+			};
+		var children = lookup.ExpandChildren
+			? (Query)new ConstantScoreQuery { Filter = BuildParentTermQuery(input), Boost = ChildOptionBoost, QueryName = ApiChildrenHits }
+			: null;
+		Query?[] options = [BuildPropertyNameOptions(input, lookup), path, children];
+		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
 
 	/// <summary>
 	/// Bound field scores below operation matches, regardless of term rarity in nested documents. Only an
 	/// API-filtered lookup matches by prefix: in the docs-wide search a prefix such as `s` would lift hundreds of operations.
+	/// It alone lists children, so it alone names its name matches apart from them.
 	/// </summary>
-	private static Query BuildPropertyNameQuery(string name, bool allowPrefix)
+	private static Query BuildPropertyNameOptions(string name, PropertyLookup lookup)
 	{
 		var exact = new ConstantScoreQuery
 		{
 			Filter = new TermQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
-			Boost = 1
+			Boost = NameMatchBoost,
+			QueryName = lookup.AllowPrefix ? ApiNameHits : null
 		};
+		if (!lookup.AllowPrefix)
+			return exact;
+
 		// A keyword prefix preserves underscores and field names longer than the edge-ngram limit.
 		var prefix = new ConstantScoreQuery
 		{
 			Filter = new PrefixQuery { Field = QueryFieldNames.ApiPropertiesName, Value = name, CaseInsensitive = true },
-			Boost = 0.6f
+			Boost = PrefixNameMatchBoost,
+			QueryName = ApiNameHits
 		};
-		return new DisMaxQuery { Queries = allowPrefix ? [exact, prefix] : [exact] };
+		return new DisMaxQuery { Queries = [exact, prefix] };
 	}
 
 	public static Query? BuildDiminishQuery(IReadOnlyCollection<string> diminishTerms)

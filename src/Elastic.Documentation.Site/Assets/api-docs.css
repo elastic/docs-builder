@@ -3953,6 +3953,18 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
+/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
+   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
+   above the response. The 12-line cap stays as the minimum. */
+@media (min-width: 1024px) {
+	#api-examples-panel .example-block-body {
+		max-height: max(
+			var(--api-response-cap),
+			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		);
+	}
+}
+
 /* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
    not as tall as the tallest card in the row. */
 #api-examples-panel .api-code-carousel {

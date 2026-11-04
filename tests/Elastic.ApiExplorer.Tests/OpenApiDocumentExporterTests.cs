@@ -473,4 +473,70 @@ public class OpenApiDocumentExporterTests
 			.Should()
 			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
 	}
+
+	private static async Task<List<DocumentationDocument>> ElasticsearchFixtureDocuments()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+	}
+
+	private static async Task<string[]> SearchRequestChildNames(string parent)
+	{
+		var search = (await ElasticsearchFixtureDocuments()).Single(d => d.Api!.OperationId == "search");
+		return search.Api!.Properties.Where(p => p.Location == "request" && p.Parent == parent).Select(p => p.Name).Distinct().ToArray();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren() =>
+		(await SearchRequestChildNames("retriever.standard")).Should().Equal(
+			"filter",
+			"min_score",
+			"_name",
+			"query",
+			"search_after",
+			"terminate_after",
+			"sort",
+			"collapse"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind() =>
+		(await SearchRequestChildNames("retriever")).Should().Equal(
+			"standard",
+			"knn",
+			"rrf",
+			"text_similarity_reranker",
+			"rule",
+			"rescorer",
+			"linear",
+			"pinned",
+			"diversify"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren() =>
+		(await SearchRequestChildNames("retriever.standard.query")).Should().BeEmpty();
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTheParentOfEveryRow()
+	{
+		var docs = await ElasticsearchFixtureDocuments();
+		var search = docs.Single(d => d.Api!.OperationId == "search").Api!.Properties;
+		var request = search.Where(p => p.Location == "request").ToArray();
+
+		request.Single(p => p.Path == "retriever.standard.min_score").Parent.Should().Be("retriever.standard");
+		request.Single(p => p.Path == "retriever").Parent.Should().Be("");
+		search.Single(p => p.Location == "query" && p.Path == "allow_no_indices").Parent.Should().Be("");
+		foreach (var doc in docs)
+		{
+			var properties = doc.Api!.Properties;
+			var rows = properties.Select(p => (p.Location, ApiPropertyPath.ParentKey(p.Path))).ToHashSet();
+			foreach (var property in properties.Where(p => p.Parent != ""))
+				rows.Should().Contain(
+					(property.Location, property.Parent),
+					$"{doc.Api.OperationId} {property.Path} lists under an indexed row"
+				);
+		}
+	}
 }

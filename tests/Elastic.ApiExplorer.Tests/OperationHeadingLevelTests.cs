@@ -2,13 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO;
-using System.IO.Abstractions.TestingHelpers;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
-using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
-using Elastic.Documentation.Site.FileProviders;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -19,47 +16,33 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 	public async Task Render_SearchOperation_UsesOneH1ThenH2SectionsAndH3Nested()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		HeadingOpenTags()
 			.Matches(html)
 			.Select(match => match.Groups[1].Value)
 			.Should()
 			.Equal("h1", "h2", "h2", "h2", "h2", "h2", "h2", "h3");
-		html.Should().Contain("<h1>Run a search</h1>");
-		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"required-privileges\" data-section=\"required-privileges\" aria-label=\"Required privileges\">"
-		);
-		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"authentication\" data-section=\"authentication\" aria-label=\"Authentication\">"
-		);
-		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"path-params\" data-section=\"path-params\" aria-label=\"Path parameters\">"
-		);
-		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"query-params\" data-section=\"query-params\" aria-label=\"Query parameters\">"
-		);
-		html.Should().Contain(
-			"<h2 class=\"section-header api-param-section-header\" id=\"request-body\" data-section=\"request-body\" aria-label=\"Request body\">"
-		);
-		html.Should().Contain("<h2 class=\"section-header responses-header\" id=\"responses\" data-section=\"responses\">");
-		html.Should().Contain("<h3>Response headers</h3>");
 	}
 
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
+	[Test]
+	public async Task Render_SearchOperation_PathParameters() => await SnapshotSectionBodyAsync("path-params-list");
+
+	[Test]
+	public async Task Render_SearchOperation_QueryParameters() => await SnapshotSectionBodyAsync("query-params-list");
+
+	[Test]
+	public async Task Render_SearchOperation_RequestBody() => await SnapshotSectionBodyAsync("request-body-list");
+
+	// One snapshot per section body, so a markup change shows up in the section it touches and not in a whole page.
+	// The page chrome around them embeds the frontend bundle name and the CI git branch, commit and ref. The applicability
+	// popovers carry a data payload (product text, availability) that changes without any change to this markup, so it is left out.
+	private async Task SnapshotSectionBodyAsync(string bodyId)
 	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var html = await fixture.RenderAsync(nav);
 
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select($"#{bodyId}").RemoveAttributes("popover-data"));
 	}
 
 	[GeneratedRegex("<(h[1-6])\\b")]
