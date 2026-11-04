@@ -5,6 +5,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -179,10 +180,10 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : Dire
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
-		_ = Block!.PrivateRepositories.Add("elasticsearch");
+		var block = document.Descendants<ChangelogBlock>().First();
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
