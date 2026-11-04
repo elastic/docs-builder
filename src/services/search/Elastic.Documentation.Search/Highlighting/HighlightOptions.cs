@@ -18,5 +18,8 @@ public record HighlightOptions
 	/// <summary>Tokens matching this regex are skipped (used to drop question stop-words on full search).</summary>
 	public Regex? ExcludePattern { get; init; }
 
+	/// <summary>How many direct children of the typed field an API hit lists after the row they are listed under.</summary>
+	public int MaxChildProperties { get; init; } = SearchResultProcessor.MaxChildProperties;
+
 	public static HighlightOptions Default => new();
 }

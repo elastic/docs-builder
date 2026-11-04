@@ -29,7 +29,9 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 		"choice":{"oneOf":[
 		  {"type":"object","properties":{"code":{"type":"string"}}},
 		  {"type":"object","properties":{"number":{"type":"integer"}}}
-		]}
+		]},
+		"rescore":{"type":"array","items":{"type":"object","properties":{"query":{"type":"string"}}}},
+		"pets":{"type":"array","items":{"type":"object","properties":{"owner":{"type":"object","properties":{"name":{"type":"string"}}}}}}
 		""";
 
 	private static async Task<(OperationPropertyTrees Trees, ApiPropertyEntry[] Entries)> IndexRequestBody(string properties)
@@ -73,18 +75,22 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Export_NestedDictionaryAndUnion_IndexesChildSuffixes()
+	public async Task Export_NestedDictionaryAndUnion_IndexesEachRowsParent()
 	{
 		var (_, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
 
-		entries.Single(p => p.Path == "flight").Children.Should().Equal(".travel_agency");
-		entries.Single(p => p.Path == "labels").Children.Should().Equal(".<string>.value");
-		entries.Single(p => p.Path == "choice").Children.Should().Equal(".code", ".number");
-		entries.Single(p => p.Path == "flight.travel_agency").Children.Should().BeNull();
+		entries.Single(p => p.Path == "flight").Parent.Should().Be("");
+		entries.Single(p => p.Path == "flight.travel_agency").Parent.Should().Be("flight");
+		entries.Single(p => p.Path == "labels.<string>.value").Parent.Should().Be("labels");
+		entries.Single(p => p.Path == "choice.code").Parent.Should().Be("choice");
+		entries.Single(p => p.Path == "choice.number").Parent.Should().Be("choice");
+		entries.Single(p => p.Path == "rescore[].query").Parent.Should().Be("rescore");
+		entries.Single(p => p.Path == "pets[].owner").Parent.Should().Be("pets");
+		entries.Single(p => p.Path == "pets[].owner.name").Parent.Should().Be("pets.owner");
 	}
 
 	[Test]
-	public async Task Export_UnionVariantsSharingAField_DedupesChildByPath()
+	public async Task Export_UnionVariantsSharingAField_IndexesEachVariantsRow()
 	{
 		var (_, entries) = await IndexRequestBody(
 			"""
@@ -95,20 +101,7 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 			"""
 		);
 
-		entries.Single(p => p.Path == "pick").Children.Should().Equal(".x", ".a", ".b");
 		entries.Count(p => p.Path == "pick.x").Should().Be(2);
-	}
-
-	[Test]
-	public async Task Export_ArrayOfObjects_ChildSuffixStartsWithItemMarker()
-	{
-		var (_, entries) = await IndexRequestBody(
-			"""
-			"rescore":{"type":"array","items":{"type":"object","properties":{"query":{"type":"string"}}}}
-			"""
-		);
-
-		entries.Single(p => p.Path == "rescore").Children.Should().Equal("[].query");
 	}
 
 	[Test]

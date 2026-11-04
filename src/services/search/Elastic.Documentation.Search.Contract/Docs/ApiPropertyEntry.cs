@@ -33,9 +33,8 @@ public record ApiPropertyEntry
 	[JsonPropertyName("description")]
 	public required string Description { get; init; }
 
-	/// <summary>What extends <see cref="Path"/> to each direct child's path, in page order: <c>.query</c>, <c>[].query</c>, <c>.&lt;string&gt;.terms</c>. Null when the row lists no children.</summary>
-	[Keyword(Index = false)]
-	[JsonPropertyName("children")]
-	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-	public string[]? Children { get; init; }
+	/// <summary><see cref="ApiPropertyPath.ParentKey"/> of the path of the row this one is listed under, so a typed path matches it; empty for a top-level field or a parameter.</summary>
+	[Keyword]
+	[JsonPropertyName("parent")]
+	public string Parent { get; init; } = "";
 }

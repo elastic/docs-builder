@@ -481,58 +481,62 @@ public class OpenApiDocumentExporterTests
 		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
 	}
 
-	private static async Task<ApiPropertyEntry> SearchRequestProperty(string path)
+	private static async Task<string[]> SearchRequestChildNames(string parent)
 	{
 		var search = (await ElasticsearchFixtureDocuments()).Single(d => d.Api!.OperationId == "search");
-		return search.Api!.Properties.Single(p => p.Location == "request" && p.Path == path);
+		return search.Api!.Properties.Where(p => p.Location == "request" && p.Parent == parent).Select(p => p.Name).Distinct().ToArray();
 	}
 
 	[Test]
-	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren()
-	{
-		var standard = await SearchRequestProperty("retriever.standard");
-
-		standard
-			.Children
-			.Should()
-			.Equal(".filter", ".min_score", "._name", ".query", ".search_after", ".terminate_after", ".sort", ".collapse");
-	}
-
-	[Test]
-	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind()
-	{
-		var retriever = await SearchRequestProperty("retriever");
-
-		retriever
-			.Children
-			.Should()
-			.Equal(".standard", ".knn", ".rrf", ".text_similarity_reranker", ".rule", ".rescorer", ".linear", ".pinned", ".diversify");
-	}
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren() =>
+		(await SearchRequestChildNames("retriever.standard")).Should().Equal(
+			"filter",
+			"min_score",
+			"_name",
+			"query",
+			"search_after",
+			"terminate_after",
+			"sort",
+			"collapse"
+		);
 
 	[Test]
-	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren()
-	{
-		var query = await SearchRequestProperty("retriever.standard.query");
-
-		query.Children.Should().BeNull();
-	}
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind() =>
+		(await SearchRequestChildNames("retriever")).Should().Equal(
+			"standard",
+			"knn",
+			"rrf",
+			"text_similarity_reranker",
+			"rule",
+			"rescorer",
+			"linear",
+			"pinned",
+			"diversify"
+		);
 
 	[Test]
-	public async Task ConvertToDocuments_ElasticsearchFixture_EveryChildSuffixExtendsToAnIndexedPath()
+	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren() =>
+		(await SearchRequestChildNames("retriever.standard.query")).Should().BeEmpty();
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTheParentOfEveryRow()
 	{
 		var docs = await ElasticsearchFixtureDocuments();
+		var search = docs.Single(d => d.Api!.OperationId == "search").Api!.Properties;
+		var request = search.Where(p => p.Location == "request").ToArray();
 
-		foreach (var properties in docs.Select(d => d.Api!.Properties))
+		request.Single(p => p.Path == "retriever.standard.min_score").Parent.Should().Be("retriever.standard");
+		request.Single(p => p.Path == "retriever").Parent.Should().Be("");
+		search.Single(p => p.Location == "query" && p.Path == "allow_no_indices").Parent.Should().Be("");
+		foreach (var doc in docs)
 		{
-			var indexed = properties.Select(p => (p.Path, p.Location)).ToHashSet();
-			foreach (var entry in properties)
-			{
-				foreach (var suffix in entry.Children ?? [])
-				{
-					suffix.Should().Match(s => s.StartsWith('.') || s.StartsWith('['), $"{entry.Path} child {suffix}");
-					indexed.Should().Contain((entry.Path + suffix, entry.Location), $"{entry.Path} lists {suffix}");
-				}
-			}
+			var properties = doc.Api!.Properties;
+			var rows = properties.Select(p => (p.Location, ApiPropertyPath.ParentKey(p.Path))).ToHashSet();
+			foreach (var property in properties.Where(p => p.Parent != ""))
+				rows.Should().Contain(
+					(property.Location, property.Parent),
+					$"{doc.Api.OperationId} {property.Path} lists under an indexed row"
+				);
 		}
 	}
 }

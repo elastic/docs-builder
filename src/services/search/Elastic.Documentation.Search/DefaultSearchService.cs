@@ -164,9 +164,15 @@ public partial class DefaultSearchService<TDocument>(
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
+		var options = new HighlightOptions
+		{
+			MaxChildProperties = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter)
+				? SearchResultProcessor.MaxChildPropertiesExpanded
+				: SearchResultProcessor.MaxChildProperties
+		};
 		var results = response
 			.Hits
-			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional))
+			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional, options))
 			.ToList();
 
 		var typeAgg = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response, "type");

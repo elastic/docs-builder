@@ -16,7 +16,7 @@ namespace Elastic.Documentation.Api.Tests;
 
 public class NavigationSearchServiceTests
 {
-	private static ApiPropertyEntry Property(string[]? children = null) =>
+	private static ApiPropertyEntry Property() =>
 		new()
 		{
 			Name = "knn",
@@ -24,8 +24,7 @@ public class NavigationSearchServiceTests
 			Type = "object",
 			Location = "request",
 			Anchor = "req-knn",
-			Description = "Approximate kNN",
-			Children = children
+			Description = "Approximate kNN"
 		};
 
 	private static async Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property)
@@ -100,38 +99,20 @@ public class NavigationSearchServiceTests
 	}
 
 	[Test]
-	public async Task NavigationSearchAsync_PropertyWithChildren_PassesSuffixesThrough()
+	public async Task NavigationSearchAsync_Property_CarriesItsParent()
 	{
-		var response = await SearchWith(Property([".query"]));
+		var response = await SearchWith(Property() with { Path = "retriever.knn", Parent = "retriever" });
 
-		response.Results.Single().Properties.Single().Children.Should().Equal(".query");
+		response.Results.Single().Properties.Single().Parent.Should().Be("retriever");
 	}
 
 	[Test]
-	public async Task NavigationSearchAsync_PropertyWithoutChildren_SendsEmptyArray()
+	public async Task NavigationSearchResponse_WithParent_SerializesThroughApiJsonContext()
 	{
-		var response = await SearchWith(Property());
-
-		response.Results.Single().Properties.Single().Children.Should().NotBeNull().And.BeEmpty();
-	}
-
-	[Test]
-	public async Task NavigationSearchAsync_PropertyWithManyChildren_CapsAtMaxChildren()
-	{
-		var response = await SearchWith(Property(Enumerable.Range(0, 150).Select(i => $".f{i}").ToArray()));
-
-		var children = response.Results.Single().Properties.Single().Children;
-		children.Length.Should().Be(100);
-		children[^1].Should().Be(".f99");
-	}
-
-	[Test]
-	public async Task NavigationSearchResponse_WithChildren_SerializesThroughApiJsonContext()
-	{
-		var response = await SearchWith(Property([".query"]));
+		var response = await SearchWith(Property() with { Path = "retriever.knn", Parent = "retriever" });
 
 		var json = JsonSerializer.Serialize(response, ApiJsonContext.Default.NavigationSearchResponse);
 
-		json.Should().Contain("\"children\":[\".query\"]");
+		json.Should().Contain("\"parent\":\"retriever\"").And.NotContain("\"children\"");
 	}
 }

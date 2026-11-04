@@ -58,12 +58,19 @@ public static class SearchResultProcessor
 			Title = title,
 			Description = description,
 			Score = (float)(hit.Score ?? 0.0),
-			Properties = MatchedProperties(hit)
+			Properties = MatchedProperties(hit, options.MaxChildProperties)
 		};
 	}
 
-	/// <summary>Every property inner hit, from each reading of the query; see <see cref="SearchQueryBuilder.ApiPropertyHits"/>.</summary>
-	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit)
+	private const int MaxMatchedProperties = 3;
+	public const int MaxChildProperties = 5;
+	public const int MaxChildPropertiesExpanded = 20;
+
+	/// <summary>
+	/// The properties matching the typed field by name, best first, with the typed path's direct children in page order right after
+	/// the row they are listed under; see <see cref="SearchQueryBuilder.ApiPropertyHits"/> and <see cref="SearchQueryBuilder.ApiChildrenHits"/>.
+	/// </summary>
+	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit, int maxChildProperties)
 	{
 		if (hit.InnerHits is null)
 			return [];
@@ -72,19 +79,41 @@ public static class SearchResultProcessor
 		// still carries them, and Elasticsearch omits matched_queries when no named query matched at all; only a
 		// reading this hit matched counts.
 		var matched = MatchedQueryNames(hit);
-		return hit
+		var innerHits = hit
 			.InnerHits
 			.Where(group => SearchQueryBuilder.IsApiPropertyHits(group.Key) && matched.Contains(group.Key))
 			.SelectMany(group => group.Value.Hits.Hits)
+			.ToLookup(IsChildOnly);
+
+		var named = innerHits[false]
 			.OrderByDescending(h => h.Score ?? 0)
-			.Select(
-				h => h.Source is JsonElement source ? source.Deserialize(Contract.SourceGenerationContext.Default.ApiPropertyEntry) : null
-			)
+			.Select(Entry)
 			.OfType<ApiPropertyEntry>()
 			.DistinctBy(p => p.Anchor)
-			.Take(3)
 			.ToArray();
+		var namedAnchors = named.Select(p => p.Anchor).ToHashSet(StringComparer.Ordinal);
+		var children = innerHits[true]
+			.OrderBy(h => h.Nested?.Offset ?? 0)
+			.Select(Entry)
+			.OfType<ApiPropertyEntry>()
+			.Where(p => !namedAnchors.Contains(p.Anchor))
+			.DistinctBy(p => p.Anchor)
+			.Take(maxChildProperties)
+			.ToArray();
+
+		var parent = children.Length == 0
+			? null
+			: Array.Find(named, p => string.Equals(ApiPropertyPath.ParentKey(p.Path), children[0].Parent, StringComparison.Ordinal));
+		if (parent is null)
+			return [.. named.Take(MaxMatchedProperties), .. children];
+		return [parent, .. children, .. named.Where(p => p != parent).Take(MaxMatchedProperties - 1)];
 	}
+
+	private static bool IsChildOnly<TDocument>(Hit<TDocument> innerHit) =>
+		MatchedQueryNames(innerHit) is { Count: 1 } names && names.Contains(SearchQueryBuilder.ApiChildrenHits);
+
+	private static ApiPropertyEntry? Entry<TDocument>(Hit<TDocument> innerHit) =>
+		innerHit.Source is JsonElement source ? source.Deserialize(Contract.SourceGenerationContext.Default.ApiPropertyEntry) : null;
 
 	/// <summary>The named queries this hit matched; empty when none did, as Elasticsearch then omits the field.</summary>
 	private static IReadOnlySet<string> MatchedQueryNames<TDocument>(Hit<TDocument> hit) =>

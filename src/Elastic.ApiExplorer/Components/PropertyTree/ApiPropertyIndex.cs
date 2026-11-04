@@ -7,42 +7,32 @@ using Elastic.Documentation.Search.Contract;
 
 namespace Elastic.ApiExplorer.Components.PropertyTree;
 
+internal readonly record struct IndexedRow(ApiProperty Property, string Parent);
+
 internal static class ApiPropertyIndex
 {
 	/// <param name="plainDescriptions">Plain text per description markdown, shared across a spec: shared schemas repeat the same text on every operation.</param>
 	public static IEnumerable<ApiPropertyEntry> Entries(
-		IEnumerable<ApiProperty> properties,
+		IEnumerable<IndexedRow> rows,
 		string location,
 		Dictionary<string, string> plainDescriptions
 	) =>
-		properties.Select(property =>
+		rows.Select(row =>
 		{
-			var path = PathOf(property);
+			var (property, parent) = row;
 			return new ApiPropertyEntry
 			{
 				Name = property.Name,
-				Path = path,
+				Path = PathOf(property),
 				Type = property.Type.Text,
 				Location = location,
 				Anchor = property.AnchorId,
 				Description = PlainText(property.DescriptionMarkdown ?? "", plainDescriptions),
-				Children = ChildSuffixes(property, path)
+				Parent = parent
 			};
 		});
 
 	private static string PathOf(ApiProperty property) => string.IsNullOrEmpty(property.JsonPath) ? property.Name : property.JsonPath;
-
-	/// <summary>What extends <paramref name="path"/> to each direct child's path, first in page order wins so union variants sharing a field collapse to one.</summary>
-	internal static string[]? ChildSuffixes(ApiProperty property, string path)
-	{
-		var suffixes = DirectChildren(property)
-			.Select(PathOf)
-			.Where(childPath => childPath.Length > path.Length && childPath.StartsWith(path, StringComparison.Ordinal))
-			.Select(childPath => childPath[path.Length..])
-			.Distinct(StringComparer.Ordinal)
-			.ToArray();
-		return suffixes.Length == 0 ? null : suffixes;
-	}
 
 	/// <summary>The rows nested directly under a property: its fields, its map values' fields, then each listed variant's fields.</summary>
 	internal static IEnumerable<ApiProperty> DirectChildren(ApiProperty property) =>
@@ -60,11 +50,17 @@ internal static class ApiPropertyIndex
 		return text;
 	}
 
-	/// <summary>Every property in page order: each property, then its nested, dictionary and variant children.</summary>
-	public static IEnumerable<ApiProperty> Flatten(ApiPropertyList? properties) => Flatten(properties?.Items ?? []);
+	/// <summary>Every property in page order with the path of the row it is listed under: each property, then its nested, dictionary and variant children.</summary>
+	public static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties, string parent = "") =>
+		Flatten(properties?.Items ?? [], parent);
 
-	public static IEnumerable<ApiProperty> Flatten(ApiUnionVariants? variants) => Flatten(VariantChildren(variants));
+	public static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants, string parent = "") =>
+		Flatten(VariantChildren(variants), parent);
 
-	private static IEnumerable<ApiProperty> Flatten(IEnumerable<ApiProperty> properties) =>
-		properties.SelectMany(property => Flatten(DirectChildren(property)).Prepend(property));
+	private static IEnumerable<IndexedRow> Flatten(IEnumerable<ApiProperty> properties, string parent) =>
+		properties.SelectMany(
+			property => Flatten(DirectChildren(property), ApiPropertyPath.ParentKey(PathOf(property))).Prepend(
+				new IndexedRow(property, parent)
+			)
+		);
 }
