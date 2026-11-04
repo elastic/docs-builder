@@ -3025,41 +3025,6 @@ button.example-response-tab:focus-visible {
 	}
 }
 
-/* Wrap lines (api-code-wrap.ts): examples rail only. The gutter is hidden because wrapped lines
-   would no longer line up with their numbers. */
-html[data-api-code-wrap] #api-examples-panel {
-	.highlight .code-lines {
-		> pre,
-		> pre code {
-			width: auto;
-			min-width: 0;
-			flex: 1 1 auto;
-		}
-
-		.code-line-gutter {
-			display: none;
-		}
-	}
-
-	/* Also beats the unwrapped gutter layout's white-space: pre on .code-lines > pre code. */
-	:is(pre, .code-lines > pre) code {
-		white-space: pre-wrap;
-		overflow-wrap: anywhere;
-		overflow-x: visible;
-	}
-}
-
-/* Same specificity as the shared header-button rule in code-block.css, which would otherwise win. */
-[data-code-card] [data-code-actions] .api-code-wrap-btn[aria-pressed='true'] {
-	background-color: var(--code-hover);
-	color: var(--api-code-accent);
-}
-
-:is(.api-code-wrap-btn, .api-code-preview-btn):focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
-}
-
 .api-code-sample-title {
 	display: flex;
 	min-width: 0;
@@ -4096,7 +4061,12 @@ html:has(.api-page-shell) {
 	display: none;
 }
 
-[data-code-actions]:has(:is(.api-code-preview-btn, .api-code-wrap-btn)) {
+.api-code-preview-btn:focus-visible {
+	outline: 2px solid var(--color-blue-elastic, #0b64dd);
+	outline-offset: 2px;
+}
+
+[data-code-actions]:has(.api-code-preview-btn) {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;

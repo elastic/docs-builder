@@ -1,6 +1,5 @@
 import { initAgentSkillCopy } from './agent-skill'
 import { initApiChromeSync } from './api-chrome-sync'
-import { initApiCodeWrap } from './api-code-wrap'
 import { initApiDocs } from './api-docs'
 import { initApiMenus } from './api-menu'
 import { changesPageChrome } from './api-navigation'
@@ -78,8 +77,6 @@ document.addEventListener('htmx:load', function () {
         ['initListing', initListing],
         ['initTable', initTable],
         ['initApiDocs', initApiDocs],
-        // Legacy layout only: the design-system layout does not load the wrapping styles.
-        ['initApiCodeWrap', initApiCodeWrap],
         ['applyEditParam', applyEditParam],
         ['initCtaImpressions', initCtaImpressions],
     ])

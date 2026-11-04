@@ -269,7 +269,7 @@
    Copy button mounted in a card header (copybutton.ts) instead of over the code. */
 [data-code-card]
 	[data-code-actions]
-	:is(button.copybtn, .api-code-preview-btn, .api-code-wrap-btn) {
+	:is(button.copybtn, .api-code-preview-btn) {
 	position: static;
 	cursor: pointer;
 	top: auto;

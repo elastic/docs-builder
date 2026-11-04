@@ -27,19 +27,13 @@ export function initTooltips(): void {
         onCreate: (instance) => {
             if (
                 instance.reference.matches(
-                    '.copybtn, .api-code-preview-btn, .api-code-wrap-btn, .property-anchor-icon'
+                    '.copybtn, .api-code-preview-btn, .property-anchor-icon'
                 )
             )
                 instance.setProps({ hideOnClick: false })
         },
         appendTo: (reference) => reference.closest('dialog') ?? document.body,
     })
-}
-
-/** Sets a tooltip's text, updating an already created tippy too (it caches its first content). */
-export function setTooltip(el: HTMLElement, text: string): void {
-    el.dataset.tippyContent = text
-    ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(text)
 }
 
 const flashes = new WeakMap<HTMLElement, { original: string; timer: number }>()
@@ -49,9 +43,13 @@ export function flashTooltip(el: HTMLElement, text: string, ms = 1500): void {
     const pending = flashes.get(el)
     if (pending) window.clearTimeout(pending.timer)
     const original = pending?.original ?? el.dataset.tippyContent ?? ''
-    setTooltip(el, text)
+    const set = (value: string) => {
+        el.dataset.tippyContent = value
+        ;(el as HTMLElement & { _tippy?: Instance })._tippy?.setContent(value)
+    }
+    set(text)
     const timer = window.setTimeout(() => {
-        setTooltip(el, original)
+        set(original)
         flashes.delete(el)
     }, ms)
     flashes.set(el, { original, timer })
