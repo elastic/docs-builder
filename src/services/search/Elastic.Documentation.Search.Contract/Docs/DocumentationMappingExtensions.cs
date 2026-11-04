@@ -30,5 +30,24 @@ public static class DocumentationMappingExtensions
 			.AddProperty("applies_to.sub_type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.lifecycle", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.version", f => f.Version())
-			.AddProperty("api.properties.path", f => f.Keyword().MultiField("match", mf => mf.Text()));
+			.AddProperty("api.properties.path", f => f.Keyword().MultiField("match", mf => mf.Text()))
+			.AddProperty(
+				"api.words",
+				f => f
+					.Text()
+					.Analyzer(SharedMappingConfig.SynonymsFixedAnalyzer)
+					.SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
+					.MultiField(
+						"completion",
+						mf => mf
+							.SearchAsYouType()
+							.Analyzer(SharedMappingConfig.SynonymsFixedAnalyzer)
+							.SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
+					)
+			)
+			.AddProperty(
+				"api.group",
+				f => f.Text().Analyzer(SharedMappingConfig.SynonymsFixedAnalyzer).SearchAnalyzer(SharedMappingConfig.SynonymsAnalyzer)
+			)
+			.AddProperty("api.id_words", f => f.RankFeature().PositiveScoreImpact(false));
 }
