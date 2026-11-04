@@ -303,6 +303,29 @@ describe('Navigation Search Result Click Tracking', () => {
         )
     })
 
+    it('logs exactly one close for a result click', async () => {
+        renderWithProviders(<NavigationSearch />)
+        const input = screen.getByPlaceholderText(/jump to page/i)
+        await userEvent.click(input)
+        await userEvent.type(input, 'elasticsearch')
+        const row = screen.getByRole('link', { name: /Elasticsearch Guide/ })
+        row.addEventListener('click', (event) => event.preventDefault())
+        vi.clearAllMocks()
+
+        await userEvent.click(row)
+
+        const closes = vi
+            .mocked(logging.logInfo)
+            .mock.calls.filter(([name]) => name === 'navigation_search_closed')
+        expect(closes).toHaveLength(1)
+        expect(closes[0][1]).toEqual(
+            expect.objectContaining({
+                'navigation_search.close_reason': 'navigate',
+            })
+        )
+        expect(input).not.toHaveFocus()
+    })
+
     it('does not show Alpha or Give feedback in the dropdown', () => {
         renderWithProviders(<NavigationSearch />)
         expect(screen.queryByText('ALPHA')).not.toBeInTheDocument()

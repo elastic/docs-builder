@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
@@ -15,8 +16,18 @@ namespace Elastic.Documentation.Api.Tests;
 
 public class NavigationSearchServiceTests
 {
-	[Test]
-	public async Task NavigationSearchAsync_PropertyHit_LinksToTheAnchorOnTheOperationPage()
+	private static ApiPropertyEntry Property() =>
+		new()
+		{
+			Name = "knn",
+			Path = "knn",
+			Type = "object",
+			Location = "request",
+			Anchor = "req-knn",
+			Description = "Approximate kNN"
+		};
+
+	private static async Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property)
 	{
 		var inner = A.Fake<ISearchService<DocumentationDocument>>();
 		var document = new DocumentationDocument
@@ -36,15 +47,6 @@ public class NavigationSearchServiceTests
 					new ApiRouteEntry { Path = "/_search", Methods = ["POST", "GET"] }
 				]
 			}
-		};
-		var property = new ApiPropertyEntry
-		{
-			Name = "knn",
-			Path = "knn",
-			Type = "object",
-			Location = "request",
-			Anchor = "req-knn",
-			Description = "Approximate kNN"
 		};
 		_ = A.CallTo(
 			() => inner.AutocompleteAsync(A<AutocompleteRequest>._, A<CancellationToken>._)
@@ -75,7 +77,13 @@ public class NavigationSearchServiceTests
 		);
 		using var service = new NavigationSearchService(inner, accessor, NullLogger<NavigationSearchService>.Instance);
 
-		var response = await service.NavigationSearchAsync(new NavigationSearchRequest { Query = "knn", TypeFilter = "api" });
+		return await service.NavigationSearchAsync(new NavigationSearchRequest { Query = "knn", TypeFilter = "api" });
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_PropertyHit_LinksToTheAnchorOnTheOperationPage()
+	{
+		var response = await SearchWith(Property());
 
 		var result = response.Results.Single();
 		result.Url.Should().Be("/docs/api/doc/elasticsearch/operation/operation-search");
@@ -88,5 +96,15 @@ public class NavigationSearchServiceTests
 			.Select(r => (r.Path, string.Join(",", r.Methods)))
 			.Should()
 			.Equal(("/{index}/_search", "POST,GET"), ("/_search", "POST,GET"));
+	}
+
+	[Test]
+	public async Task NavigationSearchResponse_WithProperty_SerializesThroughApiJsonContext()
+	{
+		var response = await SearchWith(Property() with { Path = "retriever.knn" });
+
+		var json = JsonSerializer.Serialize(response, ApiJsonContext.Default.NavigationSearchResponse);
+
+		json.Should().Contain("\"path\":\"retriever.knn\"").And.NotContain("\"parent\"");
 	}
 }

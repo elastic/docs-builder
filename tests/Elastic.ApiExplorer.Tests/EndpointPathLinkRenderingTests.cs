@@ -31,7 +31,7 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_PathPlaceholders_LinkToDocumentedPathParameters()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get-source");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		var listing = Slice(html, "id=\"paths\"", "</ul>");
 		var targets = PlaceholderLink().Matches(listing).Select(static m => m.Groups[1].Value).ToArray();
@@ -43,22 +43,6 @@ public partial class EndpointPathLinkRenderingTests(ApiExplorerFixture fixture)
 
 	[GeneratedRegex("""<a class="api-url-param" href="#([^"]+)">\{[^}]+\}</a>""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
 	private static partial Regex PlaceholderLink();
-
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
-	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
-	}
 
 	private static string Slice(string html, string startMarker, string endMarker)
 	{

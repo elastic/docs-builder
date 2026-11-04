@@ -19,7 +19,7 @@ internal record OperationPropertyTrees(
 {
 	public ApiPropertyEntry[] IndexEntries(Dictionary<string, string> plainDescriptions)
 	{
-		IEnumerable<ApiPropertyEntry> Entries(IEnumerable<ApiProperty> rows, string location) =>
+		IEnumerable<ApiPropertyEntry> Entries(IEnumerable<IndexedRow> rows, string location) =>
 			ApiPropertyIndex.Entries(rows, location, plainDescriptions);
 
 		return [
@@ -31,7 +31,7 @@ internal record OperationPropertyTrees(
 		];
 	}
 
-	private static IEnumerable<ApiProperty> Rows(ApiMediaContent content) =>
+	private static IEnumerable<IndexedRow> Rows(ApiMediaContent content) =>
 		ApiPropertyIndex.Flatten(content.Properties).Concat(ApiPropertyIndex.Flatten(content.UnionVariants));
 }
 

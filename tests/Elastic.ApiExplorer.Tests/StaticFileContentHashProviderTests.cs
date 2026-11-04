@@ -9,6 +9,8 @@ using Elastic.Documentation;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using FakeItEasy;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Primitives;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -96,6 +98,68 @@ public class StaticFileContentHashProviderTests
 		var entries = StaticFileContentHashProvider.ParseManifest(stream);
 
 		entries.Should().Equal(new Dictionary<string, string> { ["main.js"] = "main-BNF4ozUv.js" });
+	}
+
+	[Test]
+	public async Task GetUrl_ConcurrentCallsOnUnchangedManifest_ReadsManifestOnce()
+	{
+		const string json = """{ "Assets/main.ts": { "file": "main-abc.js", "name": "main", "isEntry": true } }""";
+		var counting = new CountingManifestProvider(Encoding.UTF8.GetBytes(json));
+		var provider = new StaticFileContentHashProvider(counting);
+		using var gate = new ManualResetEventSlim();
+
+		var calls = Enumerable
+			.Range(0, 16)
+			.Select(_ => Task.Run(() =>
+			{
+				gate.Wait();
+				return provider.GetUrl("main.js", string.Empty);
+			}))
+			.ToArray();
+		gate.Set();
+		var urls = await Task.WhenAll(calls);
+
+		urls.Should().AllBe("/_static/main-abc.js");
+		counting.ManifestReads.Should().Be(1);
+	}
+
+	private sealed class CountingManifestProvider(byte[] manifest) : IFileProvider
+	{
+		private readonly DateTimeOffset _modified = DateTimeOffset.UtcNow;
+		private int _reads;
+
+		public int ManifestReads => _reads;
+
+		public Microsoft.Extensions.FileProviders.IFileInfo GetFileInfo(string subpath) =>
+			subpath.TrimStart('/') == ".vite/manifest.json"
+				? new ManifestFile(manifest, _modified, () => Interlocked.Increment(ref _reads))
+				: new NotFoundFileInfo(subpath);
+
+		public IDirectoryContents GetDirectoryContents(string subpath) => NotFoundDirectoryContents.Singleton;
+
+		public IChangeToken Watch(string filter) => NullChangeToken.Singleton;
+
+		private sealed class ManifestFile(
+			byte[] content,
+			DateTimeOffset modified,
+			Action onRead
+		) : Microsoft.Extensions.FileProviders.IFileInfo
+		{
+			public bool Exists => true;
+			public long Length => content.Length;
+			public string? PhysicalPath => null;
+			public string Name => "manifest.json";
+			public DateTimeOffset LastModified => modified;
+			public bool IsDirectory => false;
+
+			public Stream CreateReadStream()
+			{
+				onRead();
+				// Widen the window so unlocked concurrent callers would all parse.
+				Thread.Sleep(50);
+				return new MemoryStream(content);
+			}
+		}
 	}
 
 	private sealed class TempDocs : IDisposable

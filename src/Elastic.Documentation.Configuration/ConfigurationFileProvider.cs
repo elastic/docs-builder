@@ -17,11 +17,16 @@ using SharpYaml;
 
 namespace Elastic.Documentation.Configuration;
 
-public partial class ConfigurationFileProvider
+public partial class ConfigurationFileProvider : IDisposable
 {
 	private readonly IAppDataFileSystem _fileSystem;
 	private readonly string _assemblyName;
 	private readonly ILogger<ConfigurationFileProvider> _logger;
+	private const string InUseMarkerFileName = ".in-use";
+	private static readonly TimeSpan MinOrphanAge = TimeSpan.FromMinutes(5);
+	private static readonly TimeSpan UnmarkedOrphanAge = TimeSpan.FromHours(1);
+	private static int StaleSweptOnce;
+	private readonly FileStream? _inUseMarker;
 
 	public static YamlSerializerOptions DeserializerOptions { get; } = YamlStaticContext.Default.CreateOptions(
 		o => (o with
@@ -106,9 +111,15 @@ public partial class ConfigurationFileProvider
 		SkipPrivateRepositories = skipPrivateRepositories;
 		// Use a unique subdirectory per instance to avoid file-locking collisions when
 		// multiple processes or parallel tests share the same ApplicationData path.
-		var configRuntimeDir = Path.Join(Paths.ApplicationData.FullName, "config-runtime", Guid.NewGuid().ToString("N"));
+		var configRuntimeParent = Path.Join(Paths.ApplicationData.FullName, "config-runtime");
+		var configRuntimeDir = Path.Join(configRuntimeParent, Guid.NewGuid().ToString("N"));
 		TemporaryDirectory = fileSystem.DirectoryInfo.New(configRuntimeDir);
 		TemporaryDirectory.Create();
+		_inUseMarker = HoldInUseMarker(configRuntimeDir);
+
+		// Best-effort sweep of directories left by prior (crashed) processes, once per process.
+		if (Interlocked.CompareExchange(ref StaleSweptOnce, 1, 0) == 0)
+			SweepStaleConfigRuntimeDirs(configRuntimeParent, DateTime.UtcNow);
 
 		// TODO: This doesn't work as expected if a github actions consumer repo has a `config` directory.
 		// ConfigurationSource = configurationSource ?? (
@@ -295,6 +306,73 @@ public partial class ConfigurationFileProvider
 		}
 		NavigationFile = _fileSystem.FileInfo.New(tempFile);
 		return NavigationFile;
+	}
+
+	public void Dispose()
+	{
+		// Release the marker first: Windows cannot delete a directory that holds an open file.
+		_inUseMarker?.Dispose();
+		try
+		{
+			TemporaryDirectory.Delete(recursive: true);
+		}
+		catch { /* best-effort: the directory may already be gone */ }
+		GC.SuppressFinalize(this);
+	}
+
+	// Held open for the life of the provider, so another process can tell this directory is in use.
+	private static FileStream? HoldInUseMarker(string directory)
+	{
+		try
+		{
+			return new FileStream(Path.Join(directory, InUseMarkerFileName), FileMode.Create, FileAccess.Write, FileShare.None);
+		}
+		catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+		{
+			// Not a real, writable directory (for example a mock file system): the age check alone applies.
+			return null;
+		}
+	}
+
+	internal static void SweepStaleConfigRuntimeDirs(string parentDir, DateTime nowUtc)
+	{
+		try
+		{
+			foreach (var dir in Directory.EnumerateDirectories(parentDir))
+			{
+				try
+				{
+					if (IsOrphaned(dir, nowUtc))
+						Directory.Delete(dir, recursive: true);
+				}
+				catch { /* best-effort per directory */ }
+			}
+		}
+		catch { /* best-effort: parent may not exist yet */ }
+	}
+
+	private static bool IsOrphaned(string directory, DateTime nowUtc)
+	{
+		var age = nowUtc - Directory.GetCreationTimeUtc(directory);
+		// A new directory may belong to a process that has not taken its marker yet.
+		if (age < MinOrphanAge)
+			return false;
+
+		var marker = Path.Join(directory, InUseMarkerFileName);
+		// No marker means a version that predates it. Only an hour-old directory is safe to take.
+		if (!File.Exists(marker))
+			return age >= UnmarkedOrphanAge;
+
+		try
+		{
+			// A live provider holds the marker exclusively, so being able to open it means its process is gone.
+			using var _ = new FileStream(marker, FileMode.Open, FileAccess.Write, FileShare.None);
+			return true;
+		}
+		catch (IOException)
+		{
+			return false;
+		}
 	}
 
 	private IFileInfo CreateTemporaryConfigurationFile(string fileName, string? fallback = null)
