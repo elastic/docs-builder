@@ -19,6 +19,7 @@ namespace Elastic.Documentation.Api.Tests;
 public class ApiPropertySearchTests
 {
 	private static readonly ElasticsearchClient Client = new(new ElasticsearchClientSettings(new InMemoryRequestInvoker()));
+	private static readonly HighlightOptions Expanded = new() { MaxChildProperties = SearchQueryBuilder.ExpandedInnerHitsSize };
 
 	[Test]
 	[Arguments("travel_agency", "api")]
@@ -63,7 +64,7 @@ public class ApiPropertySearchTests
 			.Should()
 			.Be(name);
 		query.GetRawText().Should().NotContain("api.properties.description").And.NotContain("api.properties.path");
-		matches.GetArrayLength().Should().Be(3);
+		matches.GetArrayLength().Should().Be(2);
 		matches[1]
 			.GetProperty("constant_score")
 			.GetProperty("filter")
@@ -81,7 +82,7 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments(null, 1)]
 	[Arguments("all", 1)]
-	[Arguments("api", 3)]
+	[Arguments("api", 2)]
 	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, int nameClauses)
 	{
 		using var json = JsonDocument.Parse(
@@ -393,12 +394,39 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
-	public void BuildApiPropertyQuery_TrailingDot_MatchesLikeThePathWithoutIt() =>
-		Client
-			.RequestResponseSerializer
-			.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard.", "api"))
-			.Should()
-			.Be(Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard", "api")));
+	[Arguments("retriever")]
+	[Arguments("retriever.standard")]
+	public void BuildApiPropertyQuery_TrailingDot_KeepsTheNameOptions(string path)
+	{
+		static string[] NameOptions(string input)
+		{
+			using var json = JsonDocument.Parse(
+				Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"))
+			);
+			return json
+				.RootElement
+				.GetProperty("nested")
+				.GetProperty("query")
+				.GetProperty("dis_max")
+				.GetProperty("queries")
+				.EnumerateArray()
+				.Select(q => q.GetRawText())
+				.Where(q => !q.Contains("api_children"))
+				.ToArray();
+		}
+
+		NameOptions(path + ".").Should().Equal(NameOptions(path)).And.NotBeEmpty();
+	}
+
+	[Test]
+	public void BuildApiPropertyQuery_NoTrailingDot_HasNoChildrenOption()
+	{
+		var serialized = Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever", "api"));
+		using var json = JsonDocument.Parse(serialized);
+
+		serialized.Should().NotContain("api_children").And.NotContain("api.properties.parent");
+		json.RootElement.GetProperty("nested").GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(20);
+	}
 
 	[Test]
 	public void BuildApiPropertyQuery_OnlyADot_ReturnsNull() => SearchQueryBuilder.BuildApiPropertyQuery(".", "api").Should().BeNull();
@@ -425,9 +453,9 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
-	[Arguments("retriever", "retriever")]
+	[Arguments("retriever.", "retriever")]
 	[Arguments("retriever.standard.", "retriever.standard")]
-	public void BuildApiPropertyQuery_ApiLookup_AddsAnUnscoredChildrenOption(string input, string parent)
+	public void BuildApiPropertyQuery_TrailingDot_AddsTheChildrenOptionAndWidensInnerHits(string input, string parent)
 	{
 		using var json = JsonDocument.Parse(
 			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"))
@@ -450,7 +478,7 @@ public class ApiPropertySearchTests
 		term.GetProperty("case_insensitive").GetBoolean().Should().BeTrue();
 		children.GetProperty("boost").GetSingle().Should().Be(0.4f);
 		children.GetProperty("_name").GetString().Should().Be("api_children");
-		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(20);
+		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(100);
 	}
 
 	[Test]
@@ -477,7 +505,8 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"a",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("a", "a.c3", "a.c5", "a.c7");
@@ -498,7 +527,8 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"a",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("a", "a.c1", "a.c2", "b", "a.x.a");
@@ -520,7 +550,8 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"a",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("a", "a.c1", "a.c2", "w", "x");
@@ -539,7 +570,8 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"retriever",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("[].retriever", "[].retriever.standard", "[].retriever.rule.retriever");
@@ -559,21 +591,22 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"z",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "z.c1", "z.c2");
 	}
 
 	[Test]
-	public void ProcessHit_MoreThanFiveChildren_KeepsFive()
+	public void ProcessHit_WithoutExpansion_ListsNoChildren()
 	{
 		var innerHits = string.Join(
 			",",
-			Enumerable
-				.Range(1, 7)
-				.Select(i => Matched(InnerHit($"req-c{i}", 0.4, $"a.c{i}", parent: "a"), "api_children", offset: i))
-				.Prepend(Matched(InnerHit("req-a", 1, "a"), "api_name", offset: 0))
+			Matched(InnerHit("req-a", 2, "a"), "api_name", offset: 0),
+			Matched(InnerHit("req-b", 1, "b"), "api_name", offset: 4),
+			Matched(InnerHit("req-a-c1", 0.4, "a.c1", parent: "a"), "api_children", offset: 1),
+			Matched(InnerHit("req-a-c2", 0.4, "a.c2", parent: "a"), "api_children", offset: 2)
 		);
 
 		var result = SearchResultProcessor.ProcessHit(
@@ -582,11 +615,11 @@ public class ApiPropertySearchTests
 			new Dictionary<string, string[]>()
 		);
 
-		result.Properties.Select(p => p.Path).Should().Equal("a", "a.c1", "a.c2", "a.c3", "a.c4", "a.c5");
+		result.Properties.Select(p => p.Path).Should().Equal("a", "b");
 	}
 
 	[Test]
-	public void ProcessHit_ExpandedChildren_KeepsTwenty()
+	public void ProcessHit_ExpandedChildren_KeepsAllUpToTheWindow()
 	{
 		var innerHits = string.Join(
 			",",
@@ -595,19 +628,15 @@ public class ApiPropertySearchTests
 				.Select(i => Matched(InnerHit($"req-c{i}", 0.4, $"a.c{i}", parent: "a"), "api_children", offset: i))
 				.Prepend(Matched(InnerHit("req-a", 1, "a"), "api_name", offset: 0))
 		);
-		var hit = ParseResponse(SearchResponseJson(innerHits)).Hits.Single();
-		var synonyms = new Dictionary<string, string[]>();
 
-		var expanded = SearchResultProcessor.ProcessHit(
-			hit,
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"a.",
-			synonyms,
-			new HighlightOptions { MaxChildProperties = SearchResultProcessor.MaxChildPropertiesExpanded }
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
-		var collapsed = SearchResultProcessor.ProcessHit(hit, "a", synonyms, new HighlightOptions());
 
-		expanded.Properties.Select(p => p.Path).Should().Equal(Enumerable.Range(0, 20).Select(i => $"a.c{i}").Prepend("a"));
-		collapsed.Properties.Select(p => p.Path).Should().Equal("a", "a.c0", "a.c1", "a.c2", "a.c3", "a.c4");
+		result.Properties.Select(p => p.Path).Should().Equal(Enumerable.Range(0, 25).Select(i => $"a.c{i}").Prepend("a"));
 	}
 
 	[Test]
@@ -638,7 +667,8 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(
 			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
 			"aggs",
-			new Dictionary<string, string[]>()
+			new Dictionary<string, string[]>(),
+			Expanded
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("aggs", "aggs.<string>.terms", "aggs.<string>.aggs");

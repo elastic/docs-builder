@@ -63,8 +63,6 @@ public static class SearchResultProcessor
 	}
 
 	private const int MaxMatchedProperties = 3;
-	public const int MaxChildProperties = 5;
-	public const int MaxChildPropertiesExpanded = 20;
 
 	/// <summary>
 	/// The properties matching the typed field by name, best first, with the typed path's direct children in page order right after

@@ -167,8 +167,8 @@ public partial class DefaultSearchService<TDocument>(
 		var options = new HighlightOptions
 		{
 			MaxChildProperties = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter)
-				? SearchResultProcessor.MaxChildPropertiesExpanded
-				: SearchResultProcessor.MaxChildProperties
+				? SearchQueryBuilder.ExpandedInnerHitsSize
+				: 0
 		};
 		var results = response
 			.Hits

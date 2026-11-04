@@ -21,6 +21,9 @@ public static class SearchQueryBuilder
 	public const string ApiNameHits = "api_name";
 	public const string ApiChildrenHits = "api_children";
 
+	/// <summary>Elasticsearch's default <c>index.max_inner_result_window</c>, so an expanded lookup lists every child it can.</summary>
+	public const int ExpandedInnerHitsSize = 100;
+
 	/// <summary>Elasticsearch needs one inner-hits name per nested query, so each reading of a query gets its own.</summary>
 	public static bool IsApiPropertyHits(string innerHitsName) =>
 		innerHitsName == ApiPropertyHits || innerHitsName.StartsWith(ApiPropertyHits + "_", StringComparison.Ordinal);
@@ -56,11 +59,11 @@ public static class SearchQueryBuilder
 
 	/// <summary>The nested field query for the query's first reading, see <see cref="ParseApiPropertyQuery"/>.</summary>
 	public static Query? BuildApiPropertyQuery(string searchQuery, string? typeFilter) =>
-		ParseApiPropertyQuery(searchQuery, typeFilter).Readings is [var first, ..]
-			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, allowPrefix: typeFilter == "api")
+		ParseApiPropertyQuery(searchQuery, typeFilter) is { Readings: [var first, ..] } parsed
+			? BuildNestedPropertyQuery(first.Property, ApiPropertyHits, Lookup(parsed, typeFilter))
 			: null;
 
-	/// <summary>A trailing dot on an API-filtered field, as in <c>retriever.</c>, asks for more of its children.</summary>
+	/// <summary>A trailing dot on an API-filtered field, as in <c>retriever.</c>, asks for its children.</summary>
 	public static bool ExpandsChildren(string searchQuery, string? typeFilter) =>
 		typeFilter == "api" && ParseApiPropertyQuery(searchQuery, typeFilter).ExpandsChildren;
 
@@ -69,7 +72,7 @@ public static class SearchQueryBuilder
 		var parsed = ParseApiPropertyQuery(searchQuery, typeFilter);
 		var branches = parsed
 			.Readings
-			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, allowPrefix: typeFilter == "api"))
+			.Select((r, i) => BuildReadingQuery(r, InnerHitsName(i), parsed.EndpointRequired, Lookup(parsed, typeFilter)))
 			.OfType<Query>()
 			.ToList();
 		if (branches.Count == 0)
@@ -83,10 +86,10 @@ public static class SearchQueryBuilder
 		(string Operation, string Property) reading,
 		string innerHitsName,
 		bool endpointRequired,
-		bool allowPrefix
+		PropertyLookup lookup
 	)
 	{
-		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, allowPrefix);
+		var properties = BuildNestedPropertyQuery(reading.Property, innerHitsName, lookup);
 		var endpoint = reading.Operation.Length == 0 ? null : BuildEndpointHalfQuery(reading.Operation);
 		if (endpoint is null && endpointRequired)
 			return null;
@@ -96,7 +99,7 @@ public static class SearchQueryBuilder
 		// clause that matched even when its parent did not.
 		List<Query> must = endpoint is not null && endpointRequired ? [properties, endpoint] : [properties];
 		List<Query> should = endpoint is not null && !endpointRequired ? [endpoint] : [];
-		if (allowPrefix)
+		if (lookup.AllowPrefix)
 			should.Add(BuildChildrenLiftQuery(reading.Property));
 		return new BoolQuery { Must = must, Should = should.Count == 0 ? null : should, QueryName = innerHitsName };
 	}
@@ -190,32 +193,38 @@ public static class SearchQueryBuilder
 		public bool ExpandsChildren { get; init; }
 	}
 
-	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, bool allowPrefix) =>
+	/// <summary>Only an API-filtered lookup matches by prefix, and only one ending in a dot lists the typed path's children.</summary>
+	private sealed record PropertyLookup(bool AllowPrefix, bool ExpandChildren);
+
+	private static PropertyLookup Lookup(ApiPropertyReadings parsed, string? typeFilter) =>
+		new(AllowPrefix: typeFilter == "api", ExpandChildren: typeFilter == "api" && parsed.ExpandsChildren);
+
+	private static Query BuildNestedPropertyQuery(string property, string innerHitsName, PropertyLookup lookup) =>
 		new NestedQuery
 		{
 			Path = QueryFieldNames.ApiProperties,
 			IgnoreUnmapped = true,
 			ScoreMode = ChildScoreMode.Max,
-			Query = BuildPropertyMatchQuery(property, allowPrefix),
+			Query = BuildPropertyMatchQuery(property, lookup),
 			InnerHits = new InnerHits
 			{
 				Name = innerHitsName,
-				Size = 20,
+				Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : 20,
 				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
 			}
 		};
 
 	/// <summary>
-	/// An API-filtered lookup also lists the direct children of the typed path. They score below every name match,
+	/// An expanded lookup also lists the direct children of the typed path. They score below every name match,
 	/// and a document never matches through them alone: a row naming the input as its parent implies that row exists.
 	/// </summary>
-	private static Query BuildPropertyMatchQuery(string input, bool allowPrefix)
+	private static Query BuildPropertyMatchQuery(string input, PropertyLookup lookup)
 	{
 		var separator = input.LastIndexOf('.');
 		var options = separator < 0
-			? BuildPropertyNameOptions(input, allowPrefix)
-			: BuildPropertyPathOptions(input, separator, allowPrefix);
-		if (allowPrefix)
+			? BuildPropertyNameOptions(input, lookup.AllowPrefix)
+			: BuildPropertyPathOptions(input, separator, lookup.AllowPrefix);
+		if (lookup.ExpandChildren)
 		{
 			options.Add(new ConstantScoreQuery
 			{
