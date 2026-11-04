@@ -31,7 +31,7 @@ public class ScrubberAllowlistIdentityTests
 		}
 		""";
 
-	[Fact]
+	[Test]
 	public void TryParse_ValidDocument_ReturnsIdentity()
 	{
 		var result = ScrubberAllowlistIdentity.TryParse(ValidJson(), out var identity, out var problems);
@@ -44,7 +44,7 @@ public class ScrubberAllowlistIdentityTests
 		identity.BuiltAt.Should().Be(DateTimeOffset.Parse("2026-08-01T12:00:00Z", CultureInfo.InvariantCulture));
 	}
 
-	[Fact]
+	[Test]
 	public void TryParse_UnsupportedSchemaVersion_Fails()
 	{
 		var result = ScrubberAllowlistIdentity.TryParse(ValidJson(schemaVersion: 2), out var identity, out var problems);
@@ -54,7 +54,7 @@ public class ScrubberAllowlistIdentityTests
 		problems.Should().ContainSingle(p => p.Contains("schema version 2"));
 	}
 
-	[Fact]
+	[Test]
 	public void TryParse_WrongArtifactKind_Fails()
 	{
 		var result = ScrubberAllowlistIdentity.TryParse(ValidJson(artifact: "something-else"), out _, out var problems);
@@ -63,11 +63,11 @@ public class ScrubberAllowlistIdentityTests
 		problems.Should().ContainSingle(p => p.Contains("something-else"));
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
-	[InlineData("sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
-	[InlineData("sha256:abc")]
+	[Test]
+	[Arguments("")]
+	[Arguments("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+	[Arguments("sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")]
+	[Arguments("sha256:abc")]
 	public void TryParse_MalformedSha256_Fails(string sha)
 	{
 		var result = ScrubberAllowlistIdentity.TryParse(ValidJson(sha: sha), out _, out var problems);
@@ -76,10 +76,10 @@ public class ScrubberAllowlistIdentityTests
 		problems.Should().Contain(p => p.Contains("sha256:"));
 	}
 
-	[Theory]
-	[InlineData("")]
-	[InlineData("abc123")]
-	[InlineData("0123456789ABCDEF0123456789ABCDEF01234567")]
+	[Test]
+	[Arguments("")]
+	[Arguments("abc123")]
+	[Arguments("0123456789ABCDEF0123456789ABCDEF01234567")]
 	public void TryParse_MalformedCommit_Fails(string commit)
 	{
 		var result = ScrubberAllowlistIdentity.TryParse(ValidJson(commit: commit), out _, out var problems);
@@ -88,7 +88,7 @@ public class ScrubberAllowlistIdentityTests
 		problems.Should().Contain(p => p.Contains("40-character"));
 	}
 
-	[Fact]
+	[Test]
 	public void TryParse_InvalidJson_FailsWithoutThrowing()
 	{
 		var result = ScrubberAllowlistIdentity.TryParse("not json at all {", out var identity, out var problems);
@@ -98,7 +98,7 @@ public class ScrubberAllowlistIdentityTests
 		problems.Should().ContainSingle(p => p.Contains("not valid JSON"));
 	}
 
-	[Fact]
+	[Test]
 	public void ComputeSha256_KnownContent_MatchesSha256Sum()
 	{
 		// printf 'hello\n' | sha256sum

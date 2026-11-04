@@ -25,10 +25,14 @@ products:
   # List of available product IDs (empty = all from products.yml)
   # Accepts string or list: "elasticsearch, kibana" or [elasticsearch, kibana]
   available: []
-  # Default products when --products not specified
+  # Default products when --products not specified and no label maps to a product
   # default:
   #   - product: elasticsearch
   #     lifecycle: ga
+  # Products that a label-derived product implies, keyed by product ID.
+  # An entry that gets 'observability' from a label also gets 'kibana' and 'cloud-serverless'.
+  # implies:
+  #   observability: [kibana, cloud-serverless]
 
 # Extraction configuration
 # Controls automatic extraction of information from PR descriptions
@@ -59,6 +63,14 @@ lifecycles:
 # NOTE: subtype and area are optional and either may be omitted.
 # Labels are specified in a "label -> value" format
 pivot:
+  # Pivots that every PR must set a label for, beyond the type (which is always required):
+  # "areas" and/or "products". The PR check fails and the PR comment asks for the missing labels.
+  # A listed pivot needs labels in pivot.areas or pivot.products. For "products", a label is required
+  # even when products.default is set or pivot.products maps a single product.
+  # Without "products" here, a product label is only required when pivot.products maps two or more
+  # distinct products and products.default is not set.
+  # required: [areas, products]
+
   # Type definitions with optional labels
   # At a minimum, feature, bug-fix, and breaking-change must be configured.
   # Keys are type names, values can be:
@@ -134,7 +146,7 @@ pivot:
   #   - Product + target:          "kibana 9.2.0"
   #   - Full spec:                 "cloud-serverless 2025-06 ga"
   # When a PR has labels matching any product entry, all matching products are added.
-  # Precedence: --products CLI option > pivot.products label mapping > products.default > repo inference.
+  # Precedence: --products CLI option > pivot.products label mapping (plus products.implies) > products.default > repo inference.
   #
   # products:
   #   'elasticsearch':

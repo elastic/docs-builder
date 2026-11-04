@@ -73,7 +73,7 @@ describe('initSecondaryNav', () => {
 
     it('adds is-open on the next frame so the panel can transition in', () => {
         const queued: FrameRequestCallback[] = []
-        const raf = jest
+        const raf = vi
             .spyOn(window, 'requestAnimationFrame')
             .mockImplementation((cb: FrameRequestCallback) => {
                 queued.push(cb)
@@ -108,7 +108,7 @@ describe('initSecondaryNav', () => {
     })
 
     it('keeps is-closing on the panel until the EUI exit motion finishes', () => {
-        jest.useFakeTimers()
+        vi.useFakeTimers()
         const { products, outside } = renderNav()
         products.open = true
 
@@ -117,12 +117,12 @@ describe('initSecondaryNav', () => {
         expect(products.open).toBe(false)
         expect(products.classList.contains('is-closing')).toBe(true)
 
-        jest.advanceTimersByTime(349)
+        vi.advanceTimersByTime(349)
         expect(products.classList.contains('is-closing')).toBe(true)
 
-        jest.advanceTimersByTime(1)
+        vi.advanceTimersByTime(1)
         expect(products.classList.contains('is-closing')).toBe(false)
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 })
 

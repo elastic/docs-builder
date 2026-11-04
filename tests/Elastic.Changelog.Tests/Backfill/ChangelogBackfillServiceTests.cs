@@ -14,8 +14,7 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Tests.Backfill;
 
-[SuppressMessage("Usage", "CA1001:Types that own disposable fields should be disposable")]
-public class ChangelogBackfillServiceTests
+public class ChangelogBackfillServiceTests : IAsyncDisposable
 {
 	private static readonly string[] InScopeVersions = ["1.10.0", "1.9.0", "1.7.0", "1.4.1"];
 
@@ -24,14 +23,21 @@ public class ChangelogBackfillServiceTests
 	private readonly TestDiagnosticsCollector _collector;
 	private readonly StubHandler _httpHandler;
 
-	public ChangelogBackfillServiceTests(ITestOutputHelper output)
+	public ChangelogBackfillServiceTests()
 	{
 		_mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		_fileSystem = CheckoutsFileSystem.FromWorkingDirectory(_mockFileSystem).Write;
-		_collector = new TestDiagnosticsCollector(output);
+		_collector = new TestDiagnosticsCollector();
 		_httpHandler = new StubHandler(
 			_ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(ReleaseNotesFixture.Markdown) }
 		);
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		await _collector.DisposeAsync();
+		_httpHandler.Dispose();
+		GC.SuppressFinalize(this);
 	}
 
 	private ChangelogBackfillService CreateService() => new(NullLoggerFactory.Instance, _fileSystem, _httpHandler);
@@ -47,11 +53,11 @@ public class ChangelogBackfillServiceTests
 			RawBaseUrl = "https://raw.githubusercontent.com"
 		};
 
-	[Fact]
+	[Test]
 	public async Task FetchesRepoSourceFromRawGithubusercontent()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -65,11 +71,11 @@ public class ChangelogBackfillServiceTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Backfill_EdotJava_WritesBundleYamlFilesForInScopeVersions()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		var result = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -81,11 +87,11 @@ public class ChangelogBackfillServiceTests
 			_mockFileSystem.FileExists(Path.Join(bundleDir, $"{version}.yaml")).Should().BeTrue($"bundle for {version} should be written");
 	}
 
-	[Fact]
+	[Test]
 	public async Task DryRun_WritesNoFiles_ButPopulatesResults()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		var result = await service.Backfill(_collector, Args(dryRun: true, products: ["edot-java"]), ct);
 
@@ -97,12 +103,12 @@ public class ChangelogBackfillServiceTests
 		_mockFileSystem.AllFiles.Should().BeEmpty("dry-run must not write anything");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Fetch404_ReturnsUnavailableAndDoesNotFail()
 	{
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = new ChangelogBackfillService(NullLoggerFactory.Instance, _fileSystem, handler);
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		var result = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -112,11 +118,11 @@ public class ChangelogBackfillServiceTests
 		service.LastResults.Should().ContainSingle().Which.Outcome.Should().Be("unavailable");
 	}
 
-	[Fact]
+	[Test]
 	public async Task UnknownProduct_FailsWithoutAnyNetworkAccess()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		var result = await service.Backfill(_collector, Args(products: ["not-configured"]), ct);
 
@@ -125,11 +131,11 @@ public class ChangelogBackfillServiceTests
 		_httpHandler.RequestedUrls.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task VersionsBeyondCutoff_AreExcludedFromOutput()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -138,11 +144,11 @@ public class ChangelogBackfillServiceTests
 		_mockFileSystem.FileExists(Path.Join(bundleDir, "2.0.0.yaml")).Should().BeFalse("2.0.0 is beyond the cutoff");
 	}
 
-	[Fact]
+	[Test]
 	public async Task VersionsFilter_RestrictsToSelection()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"], versions: ["1.9.0"]), ct);
 
@@ -151,11 +157,11 @@ public class ChangelogBackfillServiceTests
 		_mockFileSystem.FileExists(Path.Join(bundleDir, "1.7.0.yaml")).Should().BeFalse("not in --versions filter");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Bundle_Yaml_RoundTripsThroughDeserializer()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -176,11 +182,11 @@ public class ChangelogBackfillServiceTests
 		bundle.Entries[0].Type.Should().Be(Documentation.ReleaseNotes.ChangelogEntryType.BreakingChange);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrEntry_WrittenAsPrNumberDotYaml()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -190,11 +196,11 @@ public class ChangelogBackfillServiceTests
 		_mockFileSystem.FileExists(Path.Join(changelogDir, "960.yaml")).Should().BeTrue("PR 960 entry should be written");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrEntry_YamlContainsTargetVersion()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -207,11 +213,11 @@ public class ChangelogBackfillServiceTests
 		entry.Prs.Should().ContainSingle(p => p.Contains("/pull/958"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoPrEntry_WrittenAsNoteDotYaml()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -229,11 +235,11 @@ public class ChangelogBackfillServiceTests
 		noteFiles.Should().NotBeEmpty("at least one PR-less entry should produce a note-*.yaml file");
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoPrEntry_NotesRegistryWritten()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -249,11 +255,11 @@ public class ChangelogBackfillServiceTests
 		registry.Notes.Should().AllSatisfy(n => n.Should().StartWith("note-").And.EndWith(".yaml"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task NoPrEntries_CountedInResult()
 	{
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 
@@ -261,13 +267,13 @@ public class ChangelogBackfillServiceTests
 		result.NoPrEntries.Should().BeGreaterThan(0, "fixture has at least one PR-less entry");
 	}
 
-	[Fact]
+	[Test]
 	public async Task DuplicatePr_AcrossVersions_WrittenOnceAndCounted()
 	{
 		// Fixture has PR 850 in 1.7.0 (known-issue). If we could inject it again we'd test dedup.
 		// Verify that the same PR number isn't double-written even in the current fixture.
 		var service = CreateService();
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 
 		_ = await service.Backfill(_collector, Args(products: ["edot-java"]), ct);
 

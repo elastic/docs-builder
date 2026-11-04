@@ -2,33 +2,77 @@ import { config } from '../../config'
 import '../../eui-icons-cache'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearch } from './NavigationSearch'
+import { type TypeFilter } from './useNavigationSearchQuery'
 import { EuiHorizontalRule, EuiProvider, useEuiTheme } from '@elastic/eui'
 import { css } from '@emotion/react'
 import r2wc from '@r2wc/react-to-web-component'
-import { QueryClientProvider, useQuery } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 
 interface NavigationSearchProps {
     placeholder?: string
+    type?: string
+    /** `sidebar` and `hero`: the host owns spacing and the divider, so render the bare input. `hero` is the large landing-page box. */
+    variant?: string
 }
 
-const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
-    const { euiTheme } = useEuiTheme()
-    const { data: isApiAvailable } = useQuery({
-        queryKey: ['api-health'],
-        queryFn: async () => {
-            const response = await fetch(`${config.apiBasePath}/v1/`, {
-                method: 'POST',
-            })
-            return response.ok
-        },
-        staleTime: 60 * 60 * 1000, // 60 minutes
-        retry: false,
-        enabled: config.buildType !== 'codex' && !config.airGapped,
-    })
+const parseTypeFilter = (value: string | undefined): TypeFilter =>
+    value === 'docs' || value === 'api' ? value : 'all'
 
-    if (config.airGapped || (!isApiAvailable && config.buildType !== 'codex')) {
+export const NavigationSearchWrapper = ({
+    placeholder,
+    type,
+    variant,
+}: NavigationSearchProps) => {
+    return (
+        <StrictMode>
+            <EuiProvider
+                colorMode="light"
+                globalStyles={false}
+                utilityClasses={false}
+            >
+                <QueryClientProvider client={sharedQueryClient}>
+                    <NavigationSearchInner
+                        placeholder={placeholder}
+                        type={type}
+                        variant={variant}
+                    />
+                </QueryClientProvider>
+            </EuiProvider>
+        </StrictMode>
+    )
+}
+
+const NavigationSearchInner = ({
+    placeholder,
+    type,
+    variant,
+}: NavigationSearchProps) => {
+    const { euiTheme } = useEuiTheme()
+    const typeFilter = parseTypeFilter(type)
+    const resolvedPlaceholder =
+        placeholder ?? (typeFilter === 'api' ? 'Explore APIs' : undefined)
+
+    if (config.airGapped) {
         return null
+    }
+
+    const search = (
+        <NavigationSearch
+            size={
+                variant === 'sidebar'
+                    ? 's'
+                    : variant === 'hero'
+                      ? 'l'
+                      : undefined
+            }
+            placeholder={resolvedPlaceholder}
+            typeFilter={typeFilter}
+        />
+    )
+
+    if (variant === 'sidebar' || variant === 'hero') {
+        return search
     }
 
     return (
@@ -39,7 +83,7 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
                 padding-right: ${euiTheme.size.base};
             `}
         >
-            <NavigationSearch placeholder={placeholder} />
+            {search}
             <EuiHorizontalRule
                 margin="none"
                 css={css`
@@ -50,27 +94,13 @@ const NavigationSearchInner = ({ placeholder }: NavigationSearchProps) => {
     )
 }
 
-const NavigationSearchWrapper = ({ placeholder }: NavigationSearchProps) => {
-    return (
-        <StrictMode>
-            <EuiProvider
-                colorMode="light"
-                globalStyles={false}
-                utilityClasses={false}
-            >
-                <QueryClientProvider client={sharedQueryClient}>
-                    <NavigationSearchInner placeholder={placeholder} />
-                </QueryClientProvider>
-            </EuiProvider>
-        </StrictMode>
-    )
-}
-
 customElements.define(
     'navigation-search',
     r2wc(NavigationSearchWrapper, {
         props: {
             placeholder: 'string',
+            type: 'string',
+            variant: 'string',
         },
     })
 )

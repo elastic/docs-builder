@@ -34,8 +34,8 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(gitDir, "HEAD"), "ref: refs/heads/main\n");
 	}
 
-	[Fact]
-	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent()
+	[Test]
+	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
 	{
 		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
 			return;
@@ -106,18 +106,19 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			new Dictionary<string, AssemblerDocumentationSet> { [checkout.Repository.Name] = documentationSet }.ToFrozenDictionary()
 		);
 
-		await documentationSet.DocumentationSet.ResolveDirectoryTree(TestContext.Current.CancellationToken);
+		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var stopwatch = Stopwatch.StartNew();
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken
+			siteTopNav: null,
+			cancellationToken
 		);
 		stopwatch.Stop();
 
-		TestContext.Current.TestOutputHelper?.WriteLine($"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
+		TestContext.Current?.Output.WriteLine($"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");
 
 		collector.Errors.Should().Be(0);
 
@@ -130,6 +131,11 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.Exists(elasticsearchLanding)
 			.Should()
 			.BeTrue("staging assembler builds should emit the unversioned elasticsearch API landing page");
+		fileSystem
+			.File
+			.ReadAllText(elasticsearchLanding)
+			.Should()
+			.Contain("<meta name=\"robots\" content=\"noindex, nofollow\">", "API pages honor the environment's allow_indexing: false");
 
 		var versionedLanding = fileSystem
 			.Directory

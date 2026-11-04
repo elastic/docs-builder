@@ -33,6 +33,8 @@ public readonly record struct CdnChangelogEntry(string FileName, string Content)
 /// </remarks>
 public sealed class CdnChangelogEntryFetcher : IDisposable
 {
+	private const int MaxParallelEntryFetches = 32;
+
 	private const int SupportedSchemaVersion = 1;
 
 	/// <summary>Total GET attempts per entry (1 initial + retries). ~3.5s budget at the default backoff.</summary>
@@ -95,6 +97,7 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 	/// Downloads the changelog entries for the authoring <paramref name="org"/>/<paramref name="repo"/>/<paramref name="branch"/>
 	/// pool from the CDN at <paramref name="baseUri"/>. Returns an empty list after emitting an error when
 	/// the registry cannot be read or when a registry-listed entry cannot be fetched within the retry budget.
+	/// A registry that answers 404 goes to <paramref name="emitRegistryNotFound"/> instead of <paramref name="emitError"/> when it is given.
 	/// Entries are returned in registry order; the caller owns filtering and de-duplication.
 	/// </summary>
 	public async Task<IReadOnlyList<CdnChangelogEntry>> FetchAsync(
@@ -104,7 +107,8 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		string branch,
 		Action<string> emitError,
 		Action<string> emitWarning,
-		Cancel ctx
+		Cancel ctx,
+		Action<string>? emitRegistryNotFound = null
 	)
 	{
 		var poolLabel = $"{org}/{repo}/{branch}";
@@ -128,6 +132,13 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 		{
 			registry = await FetchRegistryAsync(registryUri, ctx).ConfigureAwait(false);
 		}
+		catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound && emitRegistryNotFound is not null)
+		{
+			emitRegistryNotFound(
+				$"No changelog entry registry for '{poolLabel}' exists at {registryUri}: the repository publishes no entry pool."
+			);
+			return [];
+		}
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			emitError($"Could not fetch changelog entry registry for '{poolLabel}' from {registryUri}: {ex.Message}");
@@ -148,31 +159,49 @@ public sealed class CdnChangelogEntryFetcher : IDisposable
 			return [];
 		}
 
-		var entries = new List<CdnChangelogEntry>(registry.Bundles.Count);
+		var fileNames = new List<string>(registry.Bundles.Count);
 		foreach (var entry in registry.Bundles)
 		{
-			ctx.ThrowIfCancellationRequested();
+			if (ChangelogKeys.IsSafeFileName(entry.File))
+				fileNames.Add(entry.File);
+			else
+				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{entry.File}'; skipping.");
+		}
 
-			var fileName = entry.File;
-			if (!ChangelogKeys.IsSafeFileName(fileName))
+		// A pool holds hundreds of entries and each is one round trip, so they are fetched in parallel. The results
+		// keep the registry order, and the first entry in that order that cannot be fetched is the one reported.
+		var results = new (bool Fetched, string Content, string? LastError)[fileNames.Count];
+		using var gate = new SemaphoreSlim(MaxParallelEntryFetches);
+		await Task.WhenAll(fileNames.Select(async (fileName, index) =>
+		{
+			await gate.WaitAsync(ctx).ConfigureAwait(false);
+			try
 			{
-				emitWarning($"Changelog entry registry for '{poolLabel}' lists an invalid file name '{fileName}'; skipping.");
-				continue;
+				var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
+				results[index] = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
 			}
+			finally
+			{
+				_ = gate.Release();
+			}
+		})).ConfigureAwait(false);
 
-			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileName]);
-			var (fetched, content, lastError) = await TryFetchEntryAsync(entryUri, fileName, poolLabel, ctx).ConfigureAwait(false);
+		var entries = new List<CdnChangelogEntry>(fileNames.Count);
+		for (var i = 0; i < fileNames.Count; i++)
+		{
+			var (fetched, content, lastError) = results[i];
 			if (fetched)
 			{
-				entries.Add(new CdnChangelogEntry(fileName, content));
+				entries.Add(new CdnChangelogEntry(fileNames[i], content));
 				continue;
 			}
 
 			// The registry lists this entry, so it exists in the private bucket and should have been
 			// scrubbed to the public one within milliseconds. Still missing after the retry budget means
 			// a genuine propagation/scrub failure — fail rather than ship a bundle missing this entry.
+			var entryUri = CombineSegments(baseUri, [.. poolSegments, fileNames[i]]);
 			emitError(
-				$"Changelog entry '{fileName}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
+				$"Changelog entry '{fileNames[i]}' for '{poolLabel}' is listed in the registry but could not be fetched from {entryUri} after {_maxAttempts} attempt(s): {lastError}. " +
 					"The scrubbed copy may not have propagated to the CDN yet; retry shortly, and if it persists check the changelog scrubber pipeline."
 			);
 			return [];

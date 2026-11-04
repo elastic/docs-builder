@@ -24,7 +24,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+      - uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -63,14 +63,14 @@ jobs:
           persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Restore npm dependencies
         working-directory: src/Elastic.Documentation.Site
         run: npm ci
 
       - name: Check shai-hulud supply-chain hashes
-        uses: ./.github/actions/check-shai-hulud
+        uses: $/.github/actions/check-shai-hulud
         with:
           path: src/Elastic.Documentation.Site
 
@@ -136,7 +136,7 @@ jobs:
       contents: read
     needs: 
       - release-drafter
-    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    uses: $/.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -145,7 +145,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
+    uses: $/.github/workflows/build-changelog-scrubber-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -154,7 +154,7 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-openapi-index-lambda.yml
+    uses: $/.github/workflows/build-openapi-index-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -214,7 +214,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -260,7 +260,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -303,16 +303,9 @@ jobs:
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
-      - name: 'Windows only, set TEMP to the same drive'
-        if: ${{ matrix.os == 'windows-latest' }}
-        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
-        run: |
-          mkdir "D:\\Temp"
-          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
-
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
         run: ./build.sh publishzip
@@ -375,7 +368,7 @@ jobs:
         run: |
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-released \
-            -F client_payload[tag_name]="$TAG_NAME"
+            -F "client_payload[tag_name]=$TAG_NAME"
 
   # Build and publish the release-notes bundle for this tag.
   #

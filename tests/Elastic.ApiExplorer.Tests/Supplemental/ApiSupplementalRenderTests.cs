@@ -17,15 +17,17 @@ using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
-public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 {
 	private const string SpecOperationDescription = "Returns hits that match the query defined in the request.";
 	private const string SpecTagDescription = "Operations that run *queries* against fixture data.";
 	private const string SpecIndexDescription = "A comma-separated list of index names to search.";
+	private const string SpecApiKeyDescription = "Send the encoded key with the ApiKey prefix.";
 	private const string SpecQueryQDescription = "A query in the Lucene query string syntax.";
 	private const string SpecFieldsDescription = "A field or list of fields to return, exercising the X | X[] simple-union path.";
 
-	[Fact]
+	[Test]
 	public async Task Operation_NoHeadings_ReplacesDescription()
 	{
 		var nav = SearchOperation();
@@ -37,7 +39,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain(SpecOperationDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_DescriptionHeading_ReplacesDescriptionAndKeepsGeneratedSections()
 	{
 		var nav = SearchOperation();
@@ -60,12 +62,21 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
-		html.Should().Contain("Query Parameters");
+		html.Should().Contain("Query parameters");
 		html.Should().Contain("id=\"responses\"");
 		html.Should().Contain(SpecQueryQDescription);
 	}
 
-	[Fact]
+	[Test]
+	public async Task Operation_PathCopyButtons_CopyMethodAndPath()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex("api-url-copy[^>]*data-copy=\"(GET|POST|PUT|DELETE|HEAD) /");
+	}
+
+	[Test]
 	public async Task Operation_QueryParameters_RenderCollapsedWithNameSummary()
 	{
 		var nav = SearchOperation();
@@ -75,50 +86,92 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("api-param-section collapsed");
 		html.Should().Contain("id=\"query-params-list\"");
 		html.Should().Contain("api-param-summary");
-		html.Should().Contain("data-param-item");
+		html.Should().Contain("api-param-summary-item");
 	}
 
-	[Fact]
-	public async Task Operation_Authorization_RendersCollapsedWhenMultipleSchemes()
+	[Test]
+	public async Task Operation_Authentication_RendersTabsWithCredentials()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
+
+		html.Should().Contain("id=\"authentication\"");
+		html.Should().Contain("api-tabs api-authentication-tabs");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-0\">Api key</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-1\">Basic</label>");
+		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-2\">Bearer</label>");
+		html.Should().Contain("Authorization: Basic &lt;credentials&gt;");
+		html.Should().NotContain("api-auth-button");
+		html.Should().NotContain("api-security-badges");
+		html.Should().NotContain("/authentication#");
+		html.Should().Contain("href=\"#authentication\"");
+		markdown.Should().Contain("## Authentication");
+		markdown.Should().Contain("- Basic: `Authorization: Basic <credentials>`");
+		markdown.Should().Contain(SpecApiKeyDescription);
+		markdown.Should().NotContain("/authentication#");
+	}
+
+	[Test]
+	public async Task Operation_PathParameters_SingleItem_RendersCollapsedHeading()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"authorization\"");
-		html.Should().Contain("id=\"authorization-list\"");
-		html.Should().Contain("aria-controls=\"authorization-list\"");
-		html.Should().Contain("api-param-section-title\">Authorization</span>");
-		html.Should().Contain("auth-scheme-item");
-		html.Should().Contain("Api key");
-		html.Should().Contain("Basic");
-		html.Should().Contain("Bearer");
-		html.Should().NotContain("security-requirements");
+		html.Should().Contain("id=\"path-params\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
+		html.Should().NotContain(">Parameters</a>");
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
 	}
 
-	[Fact]
-	public async Task Operation_Prerequisites_RendersCollapsedWhenMultipleItems()
+	[Test]
+	public async Task Operation_PathParameters_MultipleItems_RendersCollapsedHeading()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("api-param-section collapsed");
+		html.Should().Contain("id=\"path-params-list\"");
+		html.Should().Contain("aria-controls=\"path-params-list\"");
+		html.Should().Contain("href=\"#path-params\">Path parameters</a>");
+	}
+
+	[Test]
+	public async Task Operation_PathParameters_RequiredBadgeIsSiblingOfAnchor()
 	{
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"prerequisites\"");
-		html.Should().Contain("id=\"prerequisites-list\"");
-		html.Should().Contain("aria-controls=\"prerequisites-list\"");
-		html.Should().Contain("api-param-section-title\">Prerequisites</span>");
+		html.Should().MatchRegex("""id="path-index"[\s\S]*?</a>[\s\S]*?<span class="required type-status">required</span>""");
 	}
 
-	[Fact]
-	public async Task Operation_PathParameters_SingleItem_RendersWithoutCollapse()
+	[Test]
+	public async Task Operation_AllOfEnumParameter_RendersEnumValues()
 	{
-		var nav = SearchOperation();
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("id=\"parameters\"");
-		html.Should().NotContain("id=\"parameters-list\"");
-		html.Should().NotContain("aria-controls=\"parameters-list\"");
+		html.Should().MatchRegex(
+			"""id="query-mode"[\s\S]*?class="enum-values"[\s\S]*?<code class="enum-value">fast</code>\s*<code class="enum-value">accurate</code>"""
+		);
 	}
 
-	[Fact]
+	[Test]
+	public async Task Operation_ArrayOfEnumParameter_RendersEnumValues()
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
+		var html = await RenderAsync(nav.Model, nav);
+		var markdown = await RenderCommonMarkAsync(nav.Model, nav);
+
+		html.Should().MatchRegex(
+			"""id="query-stored_states"[\s\S]*?<code class="enum-value">open</code>\s*<code class="enum-value">closed</code>"""
+		);
+		markdown.Should().Contain("Values: `open`, `closed`");
+	}
+
+	[Test]
 	public async Task Operation_NestedProperties_UseShowPropertiesDisclosure()
 	{
 		var nav = SearchOperation();
@@ -129,7 +182,20 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("toggle-label\">Hide ");
 	}
 
-	[Fact]
+	[Test]
+	public async Task Operation_SectionHeadings_TitleIsHeaderLinkOutsideToggle()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().MatchRegex(
+			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request body</a>\s*<button"""
+		);
+		html.Should().MatchRegex("""id="responses"[^>]*>\s*<a class="headerlink responses-title" href="#responses">Response""");
+		html.Should().NotMatchRegex("""<button[^>]*api-param-section-toggle[^>]*>(?:(?!</button>)[\s\S])*<a\s""");
+	}
+
+	[Test]
 	public async Task Operation_Request_RendersCollapsedWithNameSummaryAndNoJsonBadge()
 	{
 		var nav = SearchOperation();
@@ -138,12 +204,12 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("id=\"request-body\"");
 		html.Should().Contain("id=\"request-body-list\"");
 		html.Should().Contain("aria-controls=\"request-body-list\"");
-		html.Should().Contain("api-param-section-title\">Request</span>");
+		html.Should().Contain("href=\"#request-body\">Request body</a>");
 		html.Should().Contain("req-query");
 		html.Should().NotContain("content-type-badge");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_EmptySpecDescription_ShowsSupplemental()
 	{
 		var src = SearchOperation();
@@ -161,7 +227,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("id=\"description\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_NoMatchingFile_KeepsSpecDescription()
 	{
 		var nav = SearchOperation();
@@ -170,7 +236,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecOperationDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PostSections_RenderAfterGeneratedContent()
 	{
 		var nav = SearchOperation();
@@ -209,7 +275,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.BeLessThan(html.IndexOf("id=\"common-patterns\"", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_PostSections_HonorExplicitIdsAndSkipReservedAnchors()
 	{
 		var nav = SearchOperation();
@@ -255,7 +321,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("SUPP_OP_BEST_2");
 	}
 
-	[Fact]
+	[Test]
 	public void SplitHeading_ReadsExplicitId()
 	{
 		var (title, id) = ApiPostSection.SplitHeading("Errors {#errors-guide}");
@@ -263,7 +329,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		id.Should().Be("errors-guide");
 	}
 
-	[Fact]
+	[Test]
 	public void ResolveAnchor_ReservedId_GetsSuffix()
 	{
 		var used = ApiPostSection.OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
@@ -271,7 +337,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		ApiPostSection.ResolveAnchor("Responses", null, used).Should().Be("responses-3");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_ParameterOverrides_ReplaceListedPathAndQueryOnly()
 	{
 		var nav = SearchOperation();
@@ -305,7 +371,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain("UNKNOWN_PARAM_OVERRIDE");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Operation_RequestBodyOverride_ReplacesListedFieldOnly()
 	{
 		var nav = SearchOperation();
@@ -324,7 +390,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecFieldsDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_NoHeadings_ReplacesDescription()
 	{
 		var nav = SearchTag();
@@ -334,7 +400,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().NotContain(SpecTagDescription);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_DescriptionHeading_ReplacesDescriptionAndKeepsOverview()
 	{
 		var nav = SearchTag();
@@ -370,18 +436,131 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			.BeLessThan(html.IndexOf("api-overview", StringComparison.Ordinal));
 	}
 
-	[Fact]
+	[Test]
+	public async Task Tag_IntroHeadingIds_KeepOnlySidebarSlugsThatNoPostSectionOwns()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(
+			nav.Index.Model,
+			nav,
+			tags: Doc(
+				"search",
+				"""
+			## Description
+
+			### Get started
+
+			<div class="heading-wrapper" id="get-started"></div>
+			<div class="heading-wrapper" id="sneaky"></div>
+
+			### Getting started
+
+			<div class="heading-wrapper" id="getting-started"><a class="headerlink" href="#getting-started">Getting started</a></div>
+
+			## Getting started
+
+			SUPP_TAG_GETTING_STARTED
+			"""
+			)
+		);
+
+		html.Should().Contain("id=\"get-started\"");
+		html.Should().NotContain("id=\"sneaky\"", "raw HTML cannot claim an id the sidebar does not link to");
+		html.Split("id=\"getting-started\"").Length.Should().Be(2, "the post section owns its anchor");
+		html.Should().Contain("<h3 id=\"getting-started\">");
+		html.Should().NotContain("href=\"#getting-started\"", "the intro heading's own link would land on the post section");
+	}
+
+	[Test]
 	public async Task Tag_OverviewRows_LinkTheTitleNotTheMethodPath()
 	{
 		var nav = SearchTag();
 		var html = await RenderAsync(nav.Index.Model, nav);
 
-		html.Should().Contain("api-overview-title");
+		html.Should().Contain("api-group-list");
+		html.Should().Contain("class=\"api-group-row\"");
+		html.Should().Contain("class=\"api-overview-title\"");
 		html.Should().Contain("api-url-row");
+		html.Should().NotContain("<table");
 		html.Should().NotContain("api-url-list-item-landing");
 	}
 
-	[Fact]
+	[Test]
+	public async Task Tag_Rail_HoldsCopyPageOutsideTheArticle()
+	{
+		var nav = SearchTag();
+		var html = await RenderAsync(nav.Index.Model, nav);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().NotContain("api-page-columns");
+	}
+
+	[Test]
+	public async Task Operation_Rail_HoldsCopyPageThenExamples()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		var actions = html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal);
+		var examples = html.IndexOf("id=\"api-examples-panel\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		actions.Should().BeGreaterThan(rail);
+		examples.Should().BeGreaterThan(actions);
+		html.Should().NotContain("api-page-columns");
+	}
+
+	[Test]
+	public async Task Product_Rail_HoldsCopyPageOutsideTheArticle()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		rail.Should().BeGreaterThan(html.IndexOf("id=\"markdown-content\"", StringComparison.Ordinal));
+		html.IndexOf("class=\"api-page-actions\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().NotContain("api-landing-meta");
+		html.Should().NotContain("Reference topics");
+	}
+
+	[Test]
+	public async Task Product_Rail_ListsServersWithCopyButtons()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var rail = html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal);
+		// The first server is the copy under the intro; the last one is in the rail.
+		html.LastIndexOf("class=\"api-server\"", StringComparison.Ordinal).Should().BeGreaterThan(rail);
+		html.Should().Contain("<dt>Base URL").And.Contain("api-server-field");
+		html.Should().NotContain("<dt>Size</dt>");
+		html.Should().Contain("api-url-copy");
+	}
+
+	[Test]
+	public async Task Product_Facts_RenderUnderTheIntroAndInTheRail()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		var inline = html.IndexOf("api-rail-facts--inline", StringComparison.Ordinal);
+		var rail = html.IndexOf("api-rail-facts--rail", StringComparison.Ordinal);
+		inline.Should().BeGreaterThan(html.IndexOf("<h1>", StringComparison.Ordinal));
+		inline.Should().BeLessThan(html.IndexOf("class=\"api-overview\"", StringComparison.Ordinal));
+		rail.Should().BeGreaterThan(html.IndexOf("class=\"api-page-rail\"", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task Product_OverviewRows_ListEveryEndpointInTheGroupedIndex()
+	{
+		var html = await RenderAsync(fixture.Navigation.Index.Model, fixture.Navigation);
+
+		html.Should().Contain("api-index-group");
+		html.Should().Contain("api-index-item");
+		html.Should().NotContain("api-group-row");
+		html.Should().NotContain("<table");
+	}
+
+	[Test]
 	public async Task Tag_EmptySpecDescription_ShowsSupplemental()
 	{
 		var nav = SearchTag();
@@ -391,7 +570,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain("SUPP_TAG_EMPTY_SPEC");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Tag_NoMatchingFile_KeepsSpecDescription()
 	{
 		var nav = SearchTag();
@@ -400,7 +579,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		html.Should().Contain(SpecTagDescription);
 	}
 
-	[Fact]
+	[Test]
 	public void RequestBodyOverride_MatchesPropertyNameOnRequestTreeOnly()
 	{
 		var schema = fixture.Document.Components!.Schemas!["fixture.SearchRequestBody"];
@@ -439,11 +618,23 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null
 	)
 	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
+		var renderContext = RenderContext(navigation, operations, tags);
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await model.RenderAsync(stream, renderContext, TestContext.Current!.Execution.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
+	}
+
+	private async Task<string> RenderCommonMarkAsync(IApiModel model, INavigationItem navigation) =>
+		await model.RenderCommonMarkAsync(RenderContext(navigation), TestContext.Current!.Execution.CancellationToken) ?? "";
+
+	private ApiRenderContext RenderContext(
+		INavigationItem navigation,
+		IReadOnlyDictionary<string, ApiSupplementalDoc>? operations = null,
+		IReadOnlyDictionary<string, ApiSupplementalDoc>? tags = null
+	) =>
+		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
 		{
 			NavigationHtml = string.Empty,
 			CurrentNavigation = navigation,
@@ -451,11 +642,4 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture) : IClassFixt
 			OperationSupplemental = operations ?? new Dictionary<string, ApiSupplementalDoc>(),
 			TagSupplemental = tags ?? new Dictionary<string, ApiSupplementalDoc>()
 		};
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await model.RenderAsync(stream, renderContext, TestContext.Current.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
-	}
 }

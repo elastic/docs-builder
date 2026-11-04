@@ -13,7 +13,17 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/cache@v6
+    # PRs only restore: each PR saving its own ~1GB per-OS NuGet cache pushes the repo past the
+    # 10GB cache limit and evicts the main-branch caches every PR restores from.
+    - if: ${{ github.event_name != 'pull_request' }}
+      uses: actions/cache@v6
+      with:
+        path: ${{ github.workspace }}/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj', '**/*.fsproj', 'dotnet-tools.json', 'global.json') }}
+        restore-keys: ${{ runner.os }}-nuget-
+
+    - if: ${{ github.event_name == 'pull_request' }}
+      uses: actions/cache/restore@v6
       with:
         path: ${{ github.workspace }}/.nuget/packages
         key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props', '**/*.csproj', '**/*.fsproj', 'dotnet-tools.json', 'global.json') }}
@@ -48,7 +58,7 @@ runs:
         echo "full-version=${REPO_VERSION}" >> $GITHUB_OUTPUT
         echo "major-version=$(echo ${REPO_VERSION} | cut -d"." -f1)" >> $GITHUB_OUTPUT
         
-    - uses: actions/setup-node@v7.0.0
+    - uses: actions/setup-node@v7.1.0
       with:
         cache: npm
         cache-dependency-path: src/Elastic.Documentation.Site/package-lock.json

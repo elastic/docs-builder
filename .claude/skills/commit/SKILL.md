@@ -86,6 +86,6 @@ gh pr view --json number,url,isDraft,baseRefName --jq '{number,url,isDraft,baseR
 ```
 
 - **No PR** → done. Say nothing.
-- **PR exists** → compare the current body against the current diff versus the PR's base branch. A PR description always describes the current diff against the base branch. It is never a log of the commits on the branch and never records the direction the work took. If any section (`## What`, `## Verify`, `**Affects:**`, label) no longer describes that diff, the description is stale.
+- **PR exists** → compare the current body against the current diff versus the PR's base branch. A PR description always describes the current diff against the base branch. It is never a log of the commits on the branch and never records the direction the work took. If any section (`## What`, `## Verify`, `## Check on the preview`, `**Affects:**`, label) no longer describes that diff, the description is stale.
 - **Stale description** → read and follow [pr](../pr/SKILL.md)'s update path (step 7). Do not hand-edit the body inline from the commit skill. State plainly what was refreshed.
 - **Still accurate** → state that the description is still accurate. No edit needed.

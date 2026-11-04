@@ -1,12 +1,8 @@
 import { createWebComponentLoader } from './loadWebComponents'
 
 describe('web component loader', () => {
-    beforeEach(() => {
-        document.body.innerHTML = ''
-    })
-
     it('does not load a component when its host is absent', async () => {
-        const load = jest.fn().mockResolvedValue(undefined)
+        const load = vi.fn().mockResolvedValue(undefined)
         const loadWebComponents = createWebComponentLoader({
             'absent-component': load,
         })
@@ -17,7 +13,7 @@ describe('web component loader', () => {
     })
 
     it('loads a component when its host is present', async () => {
-        const load = jest.fn().mockImplementation(async () => {
+        const load = vi.fn().mockImplementation(async () => {
             customElements.define(
                 'present-component',
                 class extends HTMLElement {}
@@ -35,7 +31,7 @@ describe('web component loader', () => {
     })
 
     it('loads a component introduced before a subsequent scan', async () => {
-        const load = jest.fn().mockResolvedValue(undefined)
+        const load = vi.fn().mockResolvedValue(undefined)
         const loadWebComponents = createWebComponentLoader({
             'swapped-component': load,
         })
@@ -52,7 +48,7 @@ describe('web component loader', () => {
         const pendingLoad = new Promise<void>((resolve) => {
             resolveLoad = resolve
         })
-        const load = jest.fn(() => pendingLoad)
+        const load = vi.fn(() => pendingLoad)
         const loadWebComponents = createWebComponentLoader({
             'deduplicated-component': load,
         })
@@ -73,7 +69,7 @@ describe('web component loader', () => {
             'registered-component',
             class extends HTMLElement {}
         )
-        const load = jest.fn().mockResolvedValue(undefined)
+        const load = vi.fn().mockResolvedValue(undefined)
         const loadWebComponents = createWebComponentLoader({
             'registered-component': load,
         })
@@ -86,7 +82,7 @@ describe('web component loader', () => {
     })
 
     it('retries a component after its load fails', async () => {
-        const load = jest
+        const load = vi
             .fn()
             .mockRejectedValueOnce(new Error('load failed'))
             .mockResolvedValueOnce(undefined)

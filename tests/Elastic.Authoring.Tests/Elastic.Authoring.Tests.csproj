@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Elastic.Authoring.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SharpYaml" />
+    <PackageReference Include="AngleSharp.Diffing" />
+    <PackageReference Include="DiffPlex" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj" />
+  </ItemGroup>
+</Project>

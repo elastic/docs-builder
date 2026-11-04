@@ -8,11 +8,11 @@ namespace Elastic.Changelog.Tests;
 
 public class ProductArgumentTests
 {
-	[Theory]
-	[InlineData("cloud-hosted", null, null, "cloud-hosted")]
-	[InlineData("elasticsearch", "9.2.0", null, "elasticsearch 9.2.0")]
-	[InlineData("elasticsearch", "9.2.0", "ga", "elasticsearch 9.2.0 ga")]
-	[InlineData("cloud-serverless", "2025-06", null, "cloud-serverless 2025-06")]
+	[Test]
+	[Arguments("cloud-hosted", null, null, "cloud-hosted")]
+	[Arguments("elasticsearch", "9.2.0", null, "elasticsearch 9.2.0")]
+	[Arguments("elasticsearch", "9.2.0", "ga", "elasticsearch 9.2.0 ga")]
+	[Arguments("cloud-serverless", "2025-06", null, "cloud-serverless 2025-06")]
 	public void ToSpecString_FormatsCorrectly(string product, string? target, string? lifecycle, string expected)
 	{
 		var arg = new ProductArgument { Product = product, Target = target, Lifecycle = lifecycle };
@@ -20,7 +20,7 @@ public class ProductArgumentTests
 		arg.ToSpecString().Should().Be(expected);
 	}
 
-	[Fact]
+	[Test]
 	public void FormatProductSpecs_MultipleProducts_JoinsWithComma()
 	{
 		var products = new List<ProductArgument> { new() { Product = "cloud-hosted" }, new() { Product = "cloud-serverless" } };
@@ -28,7 +28,7 @@ public class ProductArgumentTests
 		ProductArgument.FormatProductSpecs(products).Should().Be("cloud-hosted, cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void FormatProductSpecs_WithTargetAndLifecycle_FormatsCorrectly()
 	{
 		var products = new List<ProductArgument>
@@ -40,13 +40,13 @@ public class ProductArgumentTests
 		ProductArgument.FormatProductSpecs(products).Should().Be("elasticsearch 9.2.0 ga, cloud-serverless 2025-06");
 	}
 
-	[Theory]
-	[InlineData(null)]
-	[InlineData("")]
-	[InlineData("  ")]
+	[Test]
+	[Arguments(null)]
+	[Arguments("")]
+	[Arguments("  ")]
 	public void ParseProductSpecs_NullOrEmpty_ReturnsEmpty(string? input) => ProductArgument.ParseProductSpecs(input).Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void ParseProductSpecs_SingleProduct_ParsesCorrectly()
 	{
 		var result = ProductArgument.ParseProductSpecs("cloud-hosted");
@@ -57,7 +57,7 @@ public class ProductArgumentTests
 		result[0].Lifecycle.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ParseProductSpecs_MultipleProducts_ParsesCorrectly()
 	{
 		var result = ProductArgument.ParseProductSpecs("cloud-hosted, cloud-serverless");
@@ -67,7 +67,7 @@ public class ProductArgumentTests
 		result[1].Product.Should().Be("cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void ParseProductSpecs_WithTargetAndLifecycle_ParsesAllParts()
 	{
 		var result = ProductArgument.ParseProductSpecs("elasticsearch 9.2.0 ga, cloud-serverless 2025-06");
@@ -81,7 +81,7 @@ public class ProductArgumentTests
 		result[1].Lifecycle.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void ParseProductSpecs_Roundtrip_PreservesData()
 	{
 		var original = new List<ProductArgument>

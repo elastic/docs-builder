@@ -6,6 +6,7 @@ module Targets
 
 open System.IO
 open System.IO.Compression
+open System.Text
 open Argu
 open CommandLine
 open Fake.Core
@@ -133,19 +134,59 @@ let private publishContainers _ =
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
     createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
-let private runTests (testSuite: TestSuite) _ =
-    let testFilter =
+let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
+    let directories =
         match testSuite with
-        | All -> []
-        | Unit -> ["--filter"; "FullyQualifiedName~.Tests|FullyQualifiedName~AuthoringTests"]
-        | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
+        | All -> [ "tests"; "tests-integration" ]
+        | Unit -> [ "tests" ]
+        | Integration -> [ "tests-integration" ]
 
-    exec {
-        run "dotnet" (
-            ["test"; "-c"; "release"; "--no-restore"; "--no-build"; "--logger"; "GitHubActions"]
-            @ testFilter
+    let projects =
+        directories
+        |> List.collect (fun d ->
+            Directory.EnumerateFiles(Path.Combine(Paths.Root.FullName, d), "*.csproj", SearchOption.AllDirectories)
+            |> Seq.sort
+            |> Seq.toList
         )
-    }
+
+    if List.isEmpty projects then
+        failwithf "No test projects found under %A" directories
+
+    let parallelism = parsed.TryGetResult Test_Parallelism |> Option.defaultValue System.Environment.ProcessorCount
+
+    // Test projects run concurrently; output is buffered per project so logs stay readable.
+    let runOne (project: string) =
+        async {
+            let psi = System.Diagnostics.ProcessStartInfo("dotnet", [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ])
+            psi.RedirectStandardOutput <- true
+            psi.RedirectStandardError <- true
+            let log = StringBuilder()
+            let append (e: System.Diagnostics.DataReceivedEventArgs) = if not (isNull e.Data) then lock log (fun () -> log.AppendLine e.Data |> ignore)
+            use proc = new System.Diagnostics.Process(StartInfo = psi)
+            proc.OutputDataReceived.Add append
+            proc.ErrorDataReceived.Add append
+            proc.Start() |> ignore
+            proc.BeginOutputReadLine()
+            proc.BeginErrorReadLine()
+            do! proc.WaitForExitAsync() |> Async.AwaitTask
+            lock stdout (fun () ->
+                printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) proc.ExitCode
+                printf "%s" (log.ToString())
+                printfn "::endgroup::"
+            )
+            return project, proc.ExitCode = 0
+        }
+
+    let failures =
+        projects
+        |> List.map runOne
+        |> fun runs -> Async.Parallel(runs, maxDegreeOfParallelism = parallelism)
+        |> Async.RunSynchronously
+        |> Array.filter (snd >> not)
+        |> Array.map fst
+        |> Array.toList
+    if not (List.isEmpty failures) then
+        failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
@@ -158,9 +199,8 @@ let private gzipCompressDirectory (directory: string) =
     let files =
         Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
         |> Seq.filter (fun f ->
-            match Path.GetExtension(f) with
-            | null -> false
-            | ext -> compressibleExtensions.Contains(ext.ToLowerInvariant())
+            let ext = Path.GetExtension(f)
+            not (System.String.IsNullOrEmpty ext) && compressibleExtensions.Contains(ext.ToLowerInvariant())
         )
         |> Seq.toArray
 
@@ -265,6 +305,7 @@ let Setup (parsed:ParseResults<Build>) =
         // flags
         | Single_Target
         | Test_Suite _
+        | Test_Parallelism _
         | Token _
         | Skip_Dirty_Check -> Build.Ignore
 

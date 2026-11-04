@@ -9,7 +9,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class FindGitRootTests
 {
-	[Fact]
+	[Test]
 	public void DocsAtRoot_FindsGitRoot()
 	{
 		var fs = new MockFileSystem();
@@ -24,7 +24,7 @@ public class FindGitRootTests
 		result.FullName.Should().Be(start.FullName);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsInDocsFolder_FindsGitRoot()
 	{
 		var fs = new MockFileSystem();
@@ -41,7 +41,7 @@ public class FindGitRootTests
 		result.FullName.Should().Be(expected.FullName);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsNestedTwoLevels_FindsGitRoot()
 	{
 		var fs = new MockFileSystem();
@@ -58,7 +58,7 @@ public class FindGitRootTests
 		result.FullName.Should().Be(expected.FullName);
 	}
 
-	[Fact]
+	[Test]
 	public void DocsNestedTwoLevels_WithDefaultMaxParents_ReturnsNull()
 	{
 		var fs = new MockFileSystem();
@@ -73,7 +73,7 @@ public class FindGitRootTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void BoundPreventsEscapingToParentRepo()
 	{
 		var fs = new MockFileSystem();
@@ -89,7 +89,7 @@ public class FindGitRootTests
 		result.Should().BeNull("the .git is two levels above the anchor, beyond maxParents");
 	}
 
-	[Fact]
+	[Test]
 	public void BoundPreventsEscapingToParentRepo_DeeplyNested()
 	{
 		var fs = new MockFileSystem();
@@ -105,7 +105,7 @@ public class FindGitRootTests
 		result.Should().BeNull("the .git belongs to a parent repo outside the allowed depth");
 	}
 
-	[Fact]
+	[Test]
 	public void GitRootDeepAboveAnchor_AcceptedWithLargeMaxParents()
 	{
 		var fs = new MockFileSystem();
@@ -123,7 +123,7 @@ public class FindGitRootTests
 		result.FullName.Should().Be(expected.FullName);
 	}
 
-	[Fact]
+	[Test]
 	public void NoGitDirectory_ReturnsNull()
 	{
 		var fs = new MockFileSystem();
@@ -137,7 +137,7 @@ public class FindGitRootTests
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeGitFile_FindsGitRoot()
 	{
 		var fs = new MockFileSystem();
@@ -154,7 +154,7 @@ public class FindGitRootTests
 		result.FullName.Should().Be(expected.FullName);
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeGitFile_OneLevel_FindsGitRoot()
 	{
 		var fs = new MockFileSystem();

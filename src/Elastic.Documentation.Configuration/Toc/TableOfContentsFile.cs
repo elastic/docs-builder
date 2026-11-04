@@ -3,17 +3,16 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-[YamlSerializable]
 public class TableOfContentsFile
 {
-	[YamlMember(Alias = "project")]
+	[YamlPropertyName("project")]
 	public string? Project { get; set; }
 
-	[YamlMember(Alias = "toc")]
+	[YamlPropertyName("toc")]
 	public TableOfContents TableOfContents { get; set; } = [];
 
 	/// <summary>
@@ -21,14 +20,14 @@ public class TableOfContentsFile
 	/// In isolated builds the root docset is never an island (it has no parent); in assembled builds
 	/// the node is re-parented under <c>SiteNavigation</c> and the flag takes effect.
 	/// </summary>
-	[YamlMember(Alias = "island")]
+	[YamlPropertyName("island")]
 	public bool Island { get; set; }
 
 	/// <summary>
 	/// Set of diagnostic hint types to suppress. Deserialized directly from YAML list of strings.
 	/// Valid values: "DeepLinkingVirtualFile", "FolderFileNameMismatch"
 	/// </summary>
-	[YamlMember(Alias = "suppress")]
+	[YamlPropertyName("suppress")]
 	public HashSet<HintType> SuppressDiagnostics { get; set; } = [];
 
 	/// <summary>
@@ -36,11 +35,17 @@ public class TableOfContentsFile
 	/// listed in this navigation file unless the page selects one explicitly via frontmatter.
 	/// Nested <c>toc.yml</c> files may override the value inherited from a parent navigation file.
 	/// </summary>
-	[YamlMember(Alias = "default_cta")]
+	[YamlPropertyName("default_cta")]
 	public string? DefaultCta { get; set; }
 
-	public static TableOfContentsFile Deserialize(string json) =>
-		ConfigurationFileProvider.Deserializer.Deserialize<TableOfContentsFile>(json);
+	public static TableOfContentsFile Deserialize(string json) => ConfigurationFileProvider.Deserialize<TableOfContentsFile>(json);
+
+	/// <summary>
+	/// Deserializes a <c>toc.yml</c>, reporting unknown keys to <paramref name="collector"/> instead of
+	/// silently skipping them.
+	/// </summary>
+	public static TableOfContentsFile Deserialize(string json, IDiagnosticsCollector collector, string sourceName) =>
+		ConfigurationFileProvider.Deserialize<TableOfContentsFile>(json, collector, sourceName);
 }
 
 public class TableOfContents : List<ITableOfContentsItem>

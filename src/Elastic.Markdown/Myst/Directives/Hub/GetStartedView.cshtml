@@ -12,70 +12,63 @@
 		}
 	</div>
 
-	@if (Model.Steps.Count > 0)
+	@if (Model.First is { } first)
 	{
-		<ol class="hub-get-started-steps" style="--hub-step-columns: @Model.StepColumns">
-			@foreach (var step in Model.Steps)
-			{
-				@if (step.Options.Count > 0)
-				{
-					<li class="hub-get-started-step hub-get-started-step-wide">
-						<div class="hub-get-started-step-head">
-							<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
-							@if (!string.IsNullOrWhiteSpace(step.Title))
-							{
-								<h3 class="hub-get-started-step-title">@step.Title</h3>
-							}
-						</div>
-						@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
+		var fork = first.Options.Count == 2;
+		<div class="hub-get-started-track" style="--hub-step-columns: @Model.StepColumns">
+			<ol class="hub-get-started-first">
+				<li class="hub-get-started-box@(fork ? " is-fork" : "")">
+					<div class="hub-get-started-head">
+						<span class="hub-get-started-step-num" aria-hidden="true">@first.Number</span>
+						@if (!string.IsNullOrWhiteSpace(first.Title))
 						{
-							<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
+							<h3 class="hub-get-started-step-title">@first.Title</h3>
 						}
+					</div>
+					@if (!string.IsNullOrWhiteSpace(first.DescriptionHtml))
+					{
+						<p class="hub-get-started-step-desc hub-get-started-indent">@(new HtmlString(first.DescriptionHtml))</p>
+					}
+					@if (fork)
+					{
+						<div class="hub-get-started-fork">
+							<div class="hub-get-started-option">
+								@OptionBody(first.Options[0])
+							</div>
+							<div class="hub-get-started-or" aria-hidden="true"><span>or</span></div>
+							<div class="hub-get-started-option">
+								@OptionBody(first.Options[1])
+							</div>
+						</div>
+					}
+					else if (first.Options.Count > 0)
+					{
 						<div class="hub-get-started-options">
-							@foreach (var option in step.Options)
+							@foreach (var option in first.Options)
 							{
 								<div class="hub-get-started-option">
-									@if (!string.IsNullOrWhiteSpace(option.Label))
-									{
-										<span class="hub-get-started-option-label">@option.Label</span>
-									}
-									@if (!string.IsNullOrWhiteSpace(option.DescriptionHtml))
-									{
-										<p class="hub-get-started-option-desc">@(new HtmlString(option.DescriptionHtml))</p>
-									}
-									@if (!string.IsNullOrWhiteSpace(option.Code))
-									{
-										<div class="hub-get-started-install highlight">
-											<pre><code class="language-@(option.Language ?? "text")">@option.Code</code></pre>
-										</div>
-									}
-									@if (!string.IsNullOrWhiteSpace(option.Url))
-									{
-										@if (!string.IsNullOrWhiteSpace(option.Code))
-										{
-											<a class="hub-get-started-option-link" @Model.LinkAttributes(option.Url)>
-												<span>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Learn more" : option.UrlLabel)</span>
-												<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-												</svg>
-											</a>
-										}
-										else
-										{
-											<a class="hub-get-started-option-btn" @Model.LinkAttributes(option.Url)>@(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Get started" : option.UrlLabel)</a>
-										}
-									}
+									@OptionBody(option)
 								</div>
 							}
 						</div>
-					</li>
-				}
-				else if (!string.IsNullOrWhiteSpace(step.Link))
-				{
-					<li class="hub-get-started-step hub-get-started-step-link">
-						<a class="hub-get-started-step-anchor" @Model.LinkAttributes(step.Link)>
-							<div class="hub-get-started-step-head">
-								<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
+					}
+					else if (!string.IsNullOrWhiteSpace(first.Link))
+					{
+						<div class="hub-get-started-indent">
+							@StepLink(first)
+						</div>
+					}
+				</li>
+			</ol>
+
+			@if (Model.Rest.Count > 0)
+			{
+				<ol class="hub-get-started-grid@(Model.StepColumns == 3 ? " has-three-columns" : "")" start="@Model.Rest[0].Number">
+					@foreach (var step in Model.Rest)
+					{
+						<li class="hub-get-started-step">
+							<div class="hub-get-started-head">
+								<span class="hub-get-started-step-num" aria-hidden="true">@step.Number</span>
 								@if (!string.IsNullOrWhiteSpace(step.Title))
 								{
 									<h3 class="hub-get-started-step-title">@step.Title</h3>
@@ -85,32 +78,90 @@
 							{
 								<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
 							}
-							<span class="hub-get-started-step-arrow" aria-hidden="true">
-								<span>@(string.IsNullOrWhiteSpace(step.LinkLabel) ? "Open" : step.LinkLabel)</span>
-								<svg class="hub-arrow" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3"/>
-								</svg>
-							</span>
-						</a>
-					</li>
-				}
-				else
-				{
-					<li class="hub-get-started-step">
-						<div class="hub-get-started-step-head">
-							<span class="hub-get-started-step-num" aria-hidden="true">@step.Number.ToString("D2")</span>
-							@if (!string.IsNullOrWhiteSpace(step.Title))
-							{
-								<h3 class="hub-get-started-step-title">@step.Title</h3>
-							}
-						</div>
-						@if (!string.IsNullOrWhiteSpace(step.DescriptionHtml))
-						{
-							<p class="hub-get-started-step-desc">@(new HtmlString(step.DescriptionHtml))</p>
-						}
-					</li>
-				}
+							<div class="hub-get-started-step-foot">
+								@if (step.Options.Count > 0)
+								{
+									<div class="hub-get-started-options">
+										@foreach (var option in step.Options)
+										{
+											<div class="hub-get-started-option">
+												@OptionBody(option)
+											</div>
+										}
+									</div>
+								}
+								else if (!string.IsNullOrWhiteSpace(step.Link))
+								{
+									@StepLink(step)
+								}
+							</div>
+						</li>
+					}
+				</ol>
 			}
-		</ol>
+		</div>
 	}
 </section>
+
+@functions {
+	private const string ArrowSvg =
+		"<svg class=\"hub-arrow\" viewBox=\"0 0 24 24\" fill=\"none\" stroke-width=\"1.5\" stroke=\"currentColor\" aria-hidden=\"true\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M17.25 8.25 21 12m0 0-3.75 3.75M21 12H3\"/></svg>";
+
+	/// <summary>
+	/// A link label that ends in the arrow. The arrow and the last word share a no-wrap span, so a label
+	/// that wraps never strands the arrow on a line of its own.
+	/// </summary>
+	private static string ArrowLabel(string label)
+	{
+		var text = label.Trim();
+		var split = text.LastIndexOf(' ');
+		var head = split < 0 ? "" : System.Net.WebUtility.HtmlEncode(text[..(split + 1)]);
+		var last = System.Net.WebUtility.HtmlEncode(split < 0 ? text : text[(split + 1)..]);
+		return $"{head}<span class=\"hub-get-started-nowrap\">{last}{ArrowSvg}</span>";
+	}
+
+	private Microsoft.AspNetCore.Html.IHtmlContent StepLink(Elastic.Markdown.Myst.Directives.Hub.GetStartedStepViewModel step)
+	{
+		var label = string.IsNullOrWhiteSpace(step.LinkLabel) ? "Open" : step.LinkLabel;
+		return new HtmlString($"<a class=\"hub-get-started-step-arrow\" {Model.LinkAttributes(step.Link)}>{ArrowLabel(label)}</a>");
+	}
+
+	private Microsoft.AspNetCore.Html.IHtmlContent OptionBody(Elastic.Markdown.Myst.Directives.Hub.GetStartedOptionViewModel option)
+	{
+		var builder = new System.Text.StringBuilder();
+		using var writer = new System.IO.StringWriter(builder);
+		if (!string.IsNullOrWhiteSpace(option.Label))
+			writer.Write($"<span class=\"hub-get-started-option-label\">{System.Net.WebUtility.HtmlEncode(option.Label)}</span>");
+		if (!string.IsNullOrWhiteSpace(option.DescriptionHtml))
+			writer.Write($"<p class=\"hub-get-started-option-desc\">{option.DescriptionHtml}</p>");
+		if (!string.IsNullOrWhiteSpace(option.Code))
+		{
+			var language = string.IsNullOrWhiteSpace(option.Language) ? "text" : option.Language;
+			writer.Write("<div class=\"hub-get-started-install highlight\"><pre><code class=\"language-");
+			writer.Write(System.Net.WebUtility.HtmlEncode(language));
+			writer.Write("\">");
+			writer.Write(System.Net.WebUtility.HtmlEncode(option.Code));
+			writer.Write("</code></pre></div>");
+		}
+		if (!string.IsNullOrWhiteSpace(option.Url))
+		{
+			if (!string.IsNullOrWhiteSpace(option.Code))
+			{
+				writer.Write("<a class=\"hub-get-started-option-link\" ");
+				writer.Write(Model.LinkAttributes(option.Url));
+				writer.Write(">");
+				writer.Write(ArrowLabel(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Learn more" : option.UrlLabel));
+				writer.Write("</a>");
+			}
+			else
+			{
+				writer.Write("<a class=\"hub-get-started-option-btn\" ");
+				writer.Write(Model.LinkAttributes(option.Url));
+				writer.Write(">");
+				writer.Write(System.Net.WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(option.UrlLabel) ? "Get started" : option.UrlLabel));
+				writer.Write("</a>");
+			}
+		}
+		return new HtmlString(builder.ToString());
+	}
+}
