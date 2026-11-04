@@ -6,6 +6,9 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <NoWarn>CA1822;CA1707</NoWarn>
     <IsTestProject>true</IsTestProject>
+    <!-- Tests run hundreds of allocation-heavy scenarios at once; background GC adds a GC thread per core and
+         made the Authoring suite 3-4x slower on many-core machines than on 4 cores. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
   </PropertyGroup>
 
   <PropertyGroup>
