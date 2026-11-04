@@ -394,9 +394,7 @@ public class CdnChangelogEntryFetcherTests
 				path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal)
 				&& !path.Contains("notes-elasticsearch-", StringComparison.Ordinal)
 			)
-				return Json(/*lang=json,strict*/
-					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}"""
-				);
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}""");
 			if (path.EndsWith("note-slow-rollover.yml", StringComparison.Ordinal))
 				return Yaml(SampleEntry);
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -429,9 +427,7 @@ public class CdnChangelogEntryFetcherTests
 			if (path.EndsWith("/notes-elasticsearch-9.0.0.json", StringComparison.Ordinal))
 				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[]}""");
 			if (path.EndsWith("/notes-9.0.0.json", StringComparison.Ordinal))
-				return Json(/*lang=json,strict*/
-					"""{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}"""
-				);
+				return Json(/*lang=json,strict*/ """{"schema_version":1,"notes":[{"path":"main/note-slow-rollover.yml","bundle_seq":0}]}""");
 			return Yaml(SampleEntry);
 		});
 		var (errors, _, emitError, _) = Diagnostics();
