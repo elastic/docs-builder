@@ -62,6 +62,9 @@ public record BuildContext : IDocumentationSetContext, IDocumentationConfigurati
 	public bool Force { get; init; }
 	public BuildType BuildType { get; init; } = BuildType.Isolated;
 
+	/// <summary>Skips copying the embedded <c>_static</c> bundle into the output. Tests that never read it opt in; the bundle is megabytes per build.</summary>
+	public bool SkipStaticAssetExtraction { get; init; }
+
 	/// <summary>
 	/// The content source this build publishes (assembler builds only): <see cref="Assembler.ContentSource.Current"/>
 	/// for production, <see cref="Assembler.ContentSource.Next"/> for staging. Null for isolated/local

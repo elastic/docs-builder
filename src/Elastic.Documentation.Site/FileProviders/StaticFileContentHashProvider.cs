@@ -13,7 +13,8 @@ public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider filePr
 	private static readonly Dictionary<string, string> NoEntries = [];
 
 	private readonly ConcurrentDictionary<string, string> _contentHashes = [];
-	private Manifest? _manifest;
+	private readonly Lock _manifestGate = new();
+	private volatile Manifest? _manifest;
 
 	/// <summary>
 	/// Builds the URL for a file under <c>_static</c>. Vite writes the entry bundle as <c>main-[hash].js</c> and its
@@ -77,10 +78,17 @@ public class StaticFileContentHashProvider(EmbeddedOrPhysicalFileProvider filePr
 		if (_manifest is { } cached && cached.Stamp == info.LastModified)
 			return cached.Entries;
 
-		using var stream = info.CreateReadStream();
-		var manifest = new Manifest(info.LastModified, ParseManifest(stream));
-		_manifest = manifest;
-		return manifest.Entries;
+		// Pages render in parallel; without the lock every concurrent first caller parses its own copy.
+		lock (_manifestGate)
+		{
+			if (_manifest is { } current && current.Stamp == info.LastModified)
+				return current.Entries;
+
+			using var stream = info.CreateReadStream();
+			var manifest = new Manifest(info.LastModified, ParseManifest(stream));
+			_manifest = manifest;
+			return manifest.Entries;
+		}
 	}
 
 	private sealed record Manifest(DateTimeOffset Stamp, Dictionary<string, string> Entries);
