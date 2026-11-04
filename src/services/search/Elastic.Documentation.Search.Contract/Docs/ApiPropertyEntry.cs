@@ -32,4 +32,9 @@ public record ApiPropertyEntry
 	[Text]
 	[JsonPropertyName("description")]
 	public required string Description { get; init; }
+
+	/// <summary><see cref="ApiPropertyPath.ParentKey"/> of the path of the row this one is listed under, so a typed path matches it; empty for a top-level field or a parameter.</summary>
+	[Keyword]
+	[JsonPropertyName("parent")]
+	public string Parent { get; init; } = "";
 }

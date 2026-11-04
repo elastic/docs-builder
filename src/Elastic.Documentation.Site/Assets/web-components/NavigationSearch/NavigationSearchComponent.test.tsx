@@ -3,7 +3,7 @@ import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('../../telemetry/logging', async () =>
@@ -154,6 +154,130 @@ describe('NavigationSearchWrapper type attribute', () => {
             expect(urls.length).toBeGreaterThan(0)
             expect(urls.every((url) => !url.includes('type='))).toBe(true)
         })
+    })
+})
+
+describe('NavigationSearchWrapper result navigation', () => {
+    const operationUrl =
+        '/docs/api/doc/elasticsearch/operation/operation-search'
+    const propertyUrl = `${operationUrl}#req-retriever`
+
+    beforeEach(() => {
+        sharedQueryClient.clear()
+        navigationSearchStore.getState().actions.clearSearchTerm()
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: operationUrl,
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'retriever',
+                                path: 'retriever',
+                                type: 'object',
+                                location: 'request',
+                                description: 'Retriever',
+                                anchor: 'req-retriever',
+                                url: propertyUrl,
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+    })
+
+    afterEach(() => {
+        window.history.replaceState(null, '', '/')
+    })
+
+    const openResults = async () => {
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'retriever')
+        const row = await screen.findByRole('link', {
+            name: /retriever object request Retriever/,
+        })
+        row.addEventListener('click', (event) => event.preventDefault())
+        await waitFor(() => expect(row).toBeVisible())
+        return { input, row }
+    }
+
+    it('closes and blurs when a result is clicked', async () => {
+        const { input, row } = await openResults()
+
+        await userEvent.click(row)
+
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it.each([['metaKey'], ['ctrlKey'], ['shiftKey']])(
+        'stays open and focused when a %s click opens the result elsewhere',
+        async (modifier) => {
+            const { input, row } = await openResults()
+            vi.mocked(logInfo).mockClear()
+
+            fireEvent.click(row, { [modifier]: true })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+
+            expect(input).toHaveFocus()
+            expect(row).toBeVisible()
+            expect(logInfo).toHaveBeenCalledWith(
+                'navigation_search_result_clicked',
+                expect.objectContaining({
+                    [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-retriever',
+                })
+            )
+        }
+    )
+
+    it('closes and blurs when Enter opens the selected result', async () => {
+        const { input, row } = await openResults()
+        await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+        await waitFor(() =>
+            expect(row).toHaveAttribute('data-selected', 'true')
+        )
+
+        await userEvent.keyboard('{Enter}')
+
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+    })
+
+    it('reopens when the box is focused again after a result click', async () => {
+        const { input, row } = await openResults()
+        await userEvent.click(row)
+        await waitFor(() => expect(row).not.toBeVisible())
+
+        await userEvent.click(input)
+
+        expect(input).toHaveFocus()
+        await waitFor(() => expect(row).toBeVisible())
+    })
+
+    it('a same-page result click still closes and reopens', async () => {
+        window.history.replaceState(null, '', operationUrl)
+        const { input, row } = await openResults()
+        expect(row).toHaveAttribute(
+            'href',
+            `${window.location.pathname}#req-retriever`
+        )
+
+        await userEvent.click(row)
+        expect(input).not.toHaveFocus()
+        await waitFor(() => expect(row).not.toBeVisible())
+
+        await userEvent.click(input)
+        await waitFor(() => expect(row).toBeVisible())
     })
 })
 
