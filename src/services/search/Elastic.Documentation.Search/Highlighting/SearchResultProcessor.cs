@@ -58,7 +58,7 @@ public static class SearchResultProcessor
 			Title = title,
 			Description = description,
 			Score = (float)(hit.Score ?? 0.0),
-			Properties = MatchedProperties(hit, options.MaxChildProperties)
+			Properties = MatchedProperties(hit, options.ListChildren)
 		};
 	}
 
@@ -68,7 +68,7 @@ public static class SearchResultProcessor
 	/// The properties matching the typed field by name, best first, with the typed path's direct children in page order right after
 	/// the row they are listed under; see <see cref="SearchQueryBuilder.ApiPropertyHits"/> and <see cref="SearchQueryBuilder.ApiChildrenHits"/>.
 	/// </summary>
-	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit, int maxChildProperties)
+	private static IReadOnlyList<ApiPropertyEntry> MatchedProperties<TDocument>(Hit<TDocument> hit, bool listChildren)
 	{
 		if (hit.InnerHits is null)
 			return [];
@@ -90,14 +90,15 @@ public static class SearchResultProcessor
 			.DistinctBy(p => p.Anchor)
 			.ToArray();
 		var namedAnchors = named.Select(p => p.Anchor).ToHashSet(StringComparer.Ordinal);
-		var children = innerHits[true]
-			.OrderBy(h => h.Nested?.Offset ?? 0)
-			.Select(Entry)
-			.OfType<ApiPropertyEntry>()
-			.Where(p => !namedAnchors.Contains(p.Anchor))
-			.DistinctBy(p => p.Anchor)
-			.Take(maxChildProperties)
-			.ToArray();
+		var children = !listChildren
+			? []
+			: innerHits[true]
+				.OrderBy(h => h.Nested?.Offset ?? 0)
+				.Select(Entry)
+				.OfType<ApiPropertyEntry>()
+				.Where(p => !namedAnchors.Contains(p.Anchor))
+				.DistinctBy(p => p.Anchor)
+				.ToArray();
 
 		var parent = children.Length == 0
 			? null

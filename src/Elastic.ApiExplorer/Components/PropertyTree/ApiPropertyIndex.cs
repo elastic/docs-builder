@@ -51,11 +51,9 @@ internal static class ApiPropertyIndex
 	}
 
 	/// <summary>Every property in page order with the path of the row it is listed under: each property, then its nested, dictionary and variant children.</summary>
-	public static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties, string parent = "") =>
-		Flatten(properties?.Items ?? [], parent);
+	internal static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties) => Flatten(properties?.Items ?? [], "");
 
-	public static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants, string parent = "") =>
-		Flatten(VariantChildren(variants), parent);
+	internal static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants) => Flatten(VariantChildren(variants), "");
 
 	private static IEnumerable<IndexedRow> Flatten(IEnumerable<ApiProperty> properties, string parent) =>
 		properties.SelectMany(

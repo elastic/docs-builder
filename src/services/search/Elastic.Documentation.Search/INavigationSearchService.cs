@@ -70,7 +70,4 @@ public record NavigationSearchProperty
 	public required string Anchor { get; init; }
 	public required string Location { get; init; }
 	public required string Url { get; init; }
-
-	/// <summary>The typed form of the path of the row this one is listed under; empty for a top-level field or a parameter.</summary>
-	public string Parent { get; init; } = "";
 }

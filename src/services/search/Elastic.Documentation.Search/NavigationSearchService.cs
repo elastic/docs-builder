@@ -83,8 +83,7 @@ public partial class NavigationSearchService(
 			Description = property.Description,
 			Anchor = property.Anchor,
 			Location = property.Location,
-			Url = $"{documentPath}#{property.Anchor}",
-			Parent = property.Parent
+			Url = $"{documentPath}#{property.Anchor}"
 		};
 
 	[LoggerMessage(Level = LogLevel.Information, Message = "Navigation search completed with {PageSize} (page {PageNumber}) results for query '{SearchQuery}': {Urls}")]

@@ -18,8 +18,8 @@ public record HighlightOptions
 	/// <summary>Tokens matching this regex are skipped (used to drop question stop-words on full search).</summary>
 	public Regex? ExcludePattern { get; init; }
 
-	/// <summary>How many direct children of the typed field an API hit lists after the row they are listed under; none by default.</summary>
-	public int MaxChildProperties { get; init; }
+	/// <summary>Whether the typed path's children are listed after their parent row.</summary>
+	public bool ListChildren { get; init; }
 
 	public static HighlightOptions Default => new();
 }

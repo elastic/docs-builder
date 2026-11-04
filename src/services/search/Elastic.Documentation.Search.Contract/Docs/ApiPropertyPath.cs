@@ -6,7 +6,10 @@ namespace Elastic.Documentation.Search.Contract;
 
 public static class ApiPropertyPath
 {
+	public const string ItemsMarker = "[]";
+	public const string MapKeyMarker = "<string>";
+
 	/// <summary>The path a reader types for <paramref name="path"/>: <c>[].retriever.standard</c> is <c>retriever.standard</c>, <c>labels.&lt;string&gt;.value</c> is <c>labels.value</c>.</summary>
 	public static string ParentKey(string path) =>
-		path.Replace(".<string>", "", StringComparison.Ordinal).Replace("[]", "", StringComparison.Ordinal).TrimStart('.');
+		path.Replace("." + MapKeyMarker, "", StringComparison.Ordinal).Replace(ItemsMarker, "", StringComparison.Ordinal).TrimStart('.');
 }

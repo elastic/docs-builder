@@ -99,20 +99,12 @@ public class NavigationSearchServiceTests
 	}
 
 	[Test]
-	public async Task NavigationSearchAsync_Property_CarriesItsParent()
+	public async Task NavigationSearchResponse_WithProperty_SerializesThroughApiJsonContext()
 	{
-		var response = await SearchWith(Property() with { Path = "retriever.knn", Parent = "retriever" });
-
-		response.Results.Single().Properties.Single().Parent.Should().Be("retriever");
-	}
-
-	[Test]
-	public async Task NavigationSearchResponse_WithParent_SerializesThroughApiJsonContext()
-	{
-		var response = await SearchWith(Property() with { Path = "retriever.knn", Parent = "retriever" });
+		var response = await SearchWith(Property() with { Path = "retriever.knn" });
 
 		var json = JsonSerializer.Serialize(response, ApiJsonContext.Default.NavigationSearchResponse);
 
-		json.Should().Contain("\"parent\":\"retriever\"").And.NotContain("\"children\"");
+		json.Should().Contain("\"path\":\"retriever.knn\"").And.NotContain("\"parent\"");
 	}
 }

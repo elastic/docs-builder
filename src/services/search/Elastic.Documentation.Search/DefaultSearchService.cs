@@ -164,12 +164,7 @@ public partial class DefaultSearchService<TDocument>(
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
-		var options = new HighlightOptions
-		{
-			MaxChildProperties = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter)
-				? SearchQueryBuilder.ExpandedInnerHitsSize
-				: 0
-		};
+		var options = new HighlightOptions { ListChildren = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter) };
 		var results = response
 			.Hits
 			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional, options))

@@ -5,6 +5,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
@@ -19,7 +20,9 @@ namespace Elastic.Documentation.Api.Tests;
 public class ApiPropertySearchTests
 {
 	private static readonly ElasticsearchClient Client = new(new ElasticsearchClientSettings(new InMemoryRequestInvoker()));
-	private static readonly HighlightOptions Expanded = new() { MaxChildProperties = SearchQueryBuilder.ExpandedInnerHitsSize };
+	private static readonly HighlightOptions Expanded = new() { ListChildren = true };
+
+	private static JsonDocument Json(Query? query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
 
 	[Test]
 	[Arguments("travel_agency", "api")]
@@ -29,9 +32,7 @@ public class ApiPropertySearchTests
 	[Arguments("knn_field search", null)]
 	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, filter))
-		);
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter));
 		var nested = json.RootElement.GetProperty("nested");
 		nested.GetProperty("path").GetString().Should().Be("api.properties");
 		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(20);
@@ -49,11 +50,11 @@ public class ApiPropertySearchTests
 	[Arguments("trav", "trav")]
 	public void BuildApiPropertyQuery_FieldTerm_MatchesOnlyItsOwnNameWithBoundedScores(string input, string name)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"))
-		);
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"));
 		var query = json.RootElement.GetProperty("nested").GetProperty("query");
-		var matches = query.GetProperty("dis_max").GetProperty("queries");
+		var options = query.GetProperty("dis_max").GetProperty("queries");
+		options.GetArrayLength().Should().Be(1);
+		var matches = options[0].GetProperty("dis_max").GetProperty("queries");
 		var exact = matches[0].GetProperty("constant_score");
 		exact
 			.GetProperty("filter")
@@ -80,25 +81,25 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
-	[Arguments(null, 1)]
-	[Arguments("all", 1)]
-	[Arguments("api", 2)]
-	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, int nameClauses)
+	[Arguments(null, false)]
+	[Arguments("all", false)]
+	[Arguments("api", true)]
+	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, bool prefix)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter))
-		);
-		var clauses = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
-		clauses.GetArrayLength().Should().Be(nameClauses);
-		clauses[0].GetRawText().Should().Contain("\"term\"");
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter));
+		var options = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
+		options.GetArrayLength().Should().Be(1);
+		var name = options[0].TryGetProperty("dis_max", out var names)
+			? names.GetProperty("queries").EnumerateArray().ToArray()
+			: [options[0]];
+		name.Should().HaveCount(prefix ? 2 : 1);
+		name[0].GetRawText().Should().Contain("\"term\"");
 	}
 
 	[Test]
 	public void BuildApiPropertyQuery_QualifiedPath_RequiresMatchingLeafAndPath()
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("_search knn.field", "api"))
-		);
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery("_search knn.field", "api"));
 		var qualified = json
 			.RootElement
 			.GetProperty("nested")
@@ -124,11 +125,7 @@ public class ApiPropertySearchTests
 	[Arguments("knn GET /_search")]
 	public void ApplyApiPropertyQuery_MarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, "api"));
 		var fieldBranch = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
 		fieldBranch.GetProperty("must").GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"knn\"");
 		var endpoint = fieldBranch.GetProperty("should")[0].GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
@@ -140,11 +137,7 @@ public class ApiPropertySearchTests
 	[Arguments("/_search knn")]
 	public void ApplyApiPropertyQuery_SingleReading_IsNamedAfterItsInnerHits(string input)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, "api"));
 		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
 		reading.GetProperty("_name").GetString().Should().Be("api_properties");
 		reading
@@ -160,15 +153,7 @@ public class ApiPropertySearchTests
 	[Test]
 	public void ApplyApiPropertyQuery_TwoPlainWordsDocsWide_KeepsTheEndpointRequiredForTheSurvivingReading()
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(
-					new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(),
-					"bulk track_total_hits",
-					null
-				)
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "bulk track_total_hits", null));
 		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
 		var must = reading.GetProperty("must");
 		must.GetArrayLength().Should().Be(2);
@@ -187,11 +172,7 @@ public class ApiPropertySearchTests
 	[Arguments("knn _search")]
 	public void ApplyApiPropertyQuery_TwoPlainWords_TriesBothReadingsWithTheEndpointRequired(string input)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, "api"));
 		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
 		readings.GetArrayLength().Should().Be(2);
 		var knn = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"knn\"")).GetProperty("bool");
@@ -234,11 +215,7 @@ public class ApiPropertySearchTests
 	[Arguments("GET /_search retriever", "retriever")]
 	public void ApplyApiPropertyQuery_ApiLookup_LiftsOperationsThatListChildrenOfTheTypedPath(string input, string field)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(), input, "api")
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, "api"));
 		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
 		reading.GetProperty("_name").GetString().Should().Be("api_properties");
 		reading.GetProperty("must").GetProperty("nested").GetProperty("path").GetString().Should().Be("api.properties");
@@ -259,11 +236,7 @@ public class ApiPropertySearchTests
 	public void ApplyApiPropertyQuery_DocsWide_HasNoChildrenLift()
 	{
 		var json = Client.RequestResponseSerializer.SerializeToString(
-			SearchQueryBuilder.ApplyApiPropertyQuery(
-				new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(),
-				"retriever.standard",
-				null
-			)
+			SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "retriever.standard", null)
 		);
 		json.Should().Contain("\"api.properties.name\"").And.NotContain("api.properties.parent");
 	}
@@ -271,15 +244,7 @@ public class ApiPropertySearchTests
 	[Test]
 	public void ApplyApiPropertyQuery_EndpointHalf_MatchesTheLiteralPathAndItsUnderscoreAlias()
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(
-				SearchQueryBuilder.ApplyApiPropertyQuery(
-					new Elastic.Clients.Elasticsearch.QueryDsl.MatchNoneQuery(),
-					"deployments status",
-					"api"
-				)
-			)
-		);
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "deployments status", "api"));
 		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
 		var status = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"status\"")).GetProperty("bool");
 		var endpoint = status.GetProperty("must")[1].GetRawText();
@@ -398,11 +363,9 @@ public class ApiPropertySearchTests
 	[Arguments("retriever.standard")]
 	public void BuildApiPropertyQuery_TrailingDot_KeepsTheNameOptions(string path)
 	{
-		static string[] NameOptions(string input)
+		static string[] Options(string input)
 		{
-			using var json = JsonDocument.Parse(
-				Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"))
-			);
+			using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"));
 			return json
 				.RootElement
 				.GetProperty("nested")
@@ -411,11 +374,10 @@ public class ApiPropertySearchTests
 				.GetProperty("queries")
 				.EnumerateArray()
 				.Select(q => q.GetRawText())
-				.Where(q => !q.Contains("api_children"))
 				.ToArray();
 		}
 
-		NameOptions(path + ".").Should().Equal(NameOptions(path)).And.NotBeEmpty();
+		Options(path + ".")[..^1].Should().Equal(Options(path)).And.NotBeEmpty();
 	}
 
 	[Test]
@@ -457,9 +419,7 @@ public class ApiPropertySearchTests
 	[Arguments("retriever.standard.", "retriever.standard")]
 	public void BuildApiPropertyQuery_TrailingDot_AddsTheChildrenOptionAndWidensInnerHits(string input, string parent)
 	{
-		using var json = JsonDocument.Parse(
-			Client.RequestResponseSerializer.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"))
-		);
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, "api"));
 		var nested = json.RootElement.GetProperty("nested");
 		var children = nested
 			.GetProperty("query")

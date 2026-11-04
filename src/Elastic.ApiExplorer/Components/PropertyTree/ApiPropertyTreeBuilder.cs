@@ -6,6 +6,7 @@ using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.AppliesTo;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -39,7 +40,7 @@ public sealed record PropertyTreeScope
 	public ISet<string>? RequiredProperties { get; init; }
 
 	/// <summary>The scope of an array's items: the path gains <c>[]</c>.</summary>
-	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : $"{JsonPath}[]" };
+	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : JsonPath + ApiPropertyPath.ItemsMarker };
 }
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
