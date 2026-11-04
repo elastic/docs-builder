@@ -72,8 +72,8 @@ export const fieldSearchTerms = (searchTerm: string) => {
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
  * path is a query word, else the first route in page order whose path contains one, else the
- * page's primary route. Routes arrive with the page's primary route first, so that one wins among
- * the partial matches.
+ * page's primary route, which no query word named and so highlights nothing. Routes arrive with
+ * the page's primary route first, so that one wins among the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const all = words(searchTerm)
@@ -84,13 +84,10 @@ export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const containing = routes.filter((route) =>
         tokens.some((token) => pathKey(route.path).includes(token))
     )
-    return {
-        tokens,
-        route:
-            containing.find((route) => tokens.includes(pathKey(route.path))) ??
-            containing[0] ??
-            routes[0],
-    }
+    const named =
+        containing.find((route) => tokens.includes(pathKey(route.path))) ??
+        containing[0]
+    return named ? { tokens, route: named } : { tokens: [], route: routes[0] }
 }
 
 export const GO_TO_LABELS = {

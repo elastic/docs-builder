@@ -84,11 +84,11 @@ it.each([
     ['/_search', ['_search'], '/_search'],
     ['GET /_search knn', ['_search', 'knn'], '/_search'],
     ['search', ['search'], '/{index}/_search'],
-    ['index', ['index'], '/{index}/_search'],
-    ['in', ['in'], '/{index}/_search'],
+    ['index', [], '/{index}/_search'],
+    ['in', [], '/{index}/_search'],
     ['scroll', ['scroll'], '/_search/scroll'],
-    ['knn', ['knn'], '/{index}/_search'],
-    ['get', ['get'], '/{index}/_search'],
+    ['knn', [], '/{index}/_search'],
+    ['get', [], '/{index}/_search'],
     ['GET /_search', ['_search'], '/_search'],
     ['a', [], '/{index}/_search'],
 ])('picks the route for %s', (searchTerm, tokens, path) => {
@@ -104,6 +104,22 @@ it("falls back to the page's primary route when no query word names one", () => 
         'retriever'
     )
     expect(matched.route).toBe(primary)
+    expect(matched.tokens).toEqual([])
+})
+
+it('highlights nothing on the fallback route and the query words on a named one', () => {
+    const fallback = primaryRoute(
+        [
+            { path: '/{index}/_search', methods: ['POST'] },
+            { path: '/_search', methods: ['POST'] },
+        ],
+        'index'
+    )
+    expect(fallback).toEqual({
+        route: { path: '/{index}/_search', methods: ['POST'] },
+        tokens: [],
+    })
+    expect(primaryRoute(routes, 'scroll').tokens).toEqual(['scroll'])
 })
 
 it.each([
