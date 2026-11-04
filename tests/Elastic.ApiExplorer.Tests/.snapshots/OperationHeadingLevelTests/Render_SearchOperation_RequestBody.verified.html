@@ -1,0 +1,303 @@
+<p></p>
+<p>The search definition using the fixture Query DSL.</p>
+<p></p>
+<dl class="property-list">
+	<div class="property-item depth-0    ">
+		<dt id="req-query">
+			<a class="property-anchor" href="#req-query" aria-label="Link to query">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>query</code>
+			<code class="schema-type">
+				<span class="type-wrapper object-icon" data-tippy-content="">{}</span>
+				<span class="schema-type-sep">
+				</span>
+				<a href="/api/doc/fixture/types/_types-query_dsl-querycontainer" class="type-linked" data-tippy-content="" data-hx-boost="false">Query</a>
+			</code>
+			<span class="required type-status">required</span>
+		</dt>
+		<dd>
+			<p>A container for a single query variant. Query containers can nest other query containers, which exercises recursion detection.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="req-fields">
+			<a class="property-anchor" href="#req-fields" aria-label="Link to fields">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>fields</code>
+			<code class="schema-type">
+				<span class="type-wrapper union-icon" data-tippy-content="">union</span>
+				<span class="schema-type-sep">
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-sep">
+					|
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="type-wrapper array-icon" data-tippy-content="">[]</span>
+			</code>
+		</dt>
+		<dd>
+			<p>A field or list of fields to return, exercising the X | X[] simple-union path.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="req-aggs">
+			<a class="property-anchor" href="#req-aggs" aria-label="Link to aggs">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>aggs</code>
+			<code class="schema-type">
+				<span class="type-wrapper map-keyword" data-tippy-content="">map</span>
+				<span class="schema-type-sep">
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-sep">
+					to
+				</span>
+				<span class="type-wrapper object-icon" data-tippy-content="">{}</span>
+				<span class="schema-type-sep">
+				</span>
+				<a href="/api/doc/fixture/types/_types-aggregations-aggregationcontainer" class="type-linked" data-tippy-content="" data-hx-boost="false">Aggregation</a>
+			</code>
+		</dt>
+		<dd>
+			<p>Aggregations to run, keyed by name.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="req-settings">
+			<a class="property-anchor" href="#req-settings" aria-label="Link to settings">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>settings</code>
+			<code class="schema-type">
+				<span class="type-wrapper map-keyword" data-tippy-content="">map</span>
+				<span class="schema-type-sep">
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+				<span class="schema-type-sep">
+					to
+				</span>
+				<span class="type-primitive" data-tippy-content="">string</span>
+			</code>
+		</dt>
+		<dd>
+			<p>Free-form string settings, exercising the plain dictionary path.</p>
+		</dd>
+	</div>
+	<div class="property-item depth-0  has-children  ">
+		<dt id="req-sort">
+			<a class="property-anchor" href="#req-sort" aria-label="Link to sort">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>sort</code>
+			<code class="schema-type">
+				<span class="type-wrapper union-icon" data-tippy-content="">union</span>
+				<span class="schema-type-sep">
+				</span>
+				<span class="type-wrapper" data-tippy-content="">oneOf</span>
+			</code>
+		</dt>
+		<dd>
+			<p>How to sort matching documents.</p>
+		</dd>
+		<dd class="union-options">
+			<span class="values-label">One of:</span>
+		</dd>
+		<div class="nested-properties" id="req-sort--children">
+			<div class="union-variants-container union-variant-chips" id="req-sort-union-options">
+				<div class="api-example-chips-row union-chips-row" data-chip-row="">
+					<div class="api-example-chips" role="tablist" aria-label="Variants">
+						<button type="button" role="tab" class="api-example-chip is-active" data-chip="req-sort-variant-sortfield" aria-controls="req-sort-variant-sortfield" aria-selected="true">
+							<span class="api-example-chip-title" data-chip-title="">SortField</span>
+						</button>
+						<button type="button" role="tab" class="api-example-chip" data-chip="req-sort-variant-scoresort" aria-controls="req-sort-variant-scoresort" aria-selected="false" tabindex="-1">
+							<span class="api-example-chip-title" data-chip-title="">ScoreSort</span>
+						</button>
+					</div>
+					<button type="button" class="api-example-more" data-chip-more="" aria-haspopup="menu" aria-expanded="false" aria-controls="req-sort-union-options-menu" popovertarget="req-sort-union-options-menu" hidden="">
+						<span data-chip-more-label=""></span>
+						<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+							<use href="#icon-chevron-down"></use>
+						</svg>
+					</button>
+					<div id="req-sort-union-options-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu="">
+						<div role="menu" aria-label="More variants">
+							<button type="button" role="menuitem" class="api-example-menu-item" data-chip="req-sort-variant-sortfield" hidden="">
+								<span class="api-example-menu-item-title" data-chip-item-title="">SortField</span>
+							</button>
+							<button type="button" role="menuitem" class="api-example-menu-item" data-chip="req-sort-variant-scoresort" hidden="">
+								<span class="api-example-menu-item-title" data-chip-item-title="">ScoreSort</span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<div class="union-variants">
+					<div class="union-variant-item has-children expanded" id="req-sort-variant-sortfield">
+						<div class="union-variant-description">
+							<p>Sort by a field value.</p>
+						</div>
+						<div class="expand-toggle-row union-expand-toggle">
+							<button class="expand-toggle">
+								<span class="toggle-icon">−</span>
+								<span class="toggle-label">hide properties</span>
+							</button>
+						</div>
+						<div class="nested-properties" id="req-sort-variant-sortfield--children">
+							<dl class="property-list">
+								<div class="property-item depth-2    ">
+									<dt id="req-sort-variant-sortfield-field">
+										<a class="property-anchor" href="#req-sort-variant-sortfield-field" aria-label="Link to sort.field">
+											<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+										</a>
+										<code data-tippy-content="sort.field" data-tippy-theme="mono">field</code>
+										<code class="schema-type">
+											<span class="type-primitive" data-tippy-content="">string</span>
+										</code>
+										<span class="required type-status">required</span>
+									</dt>
+									<dd>
+										<p>A field name or field path.</p>
+									</dd>
+								</div>
+								<div class="property-item depth-2 last-sibling   ">
+									<dt id="req-sort-variant-sortfield-order">
+										<a class="property-anchor" href="#req-sort-variant-sortfield-order" aria-label="Link to sort.order">
+											<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+										</a>
+										<code data-tippy-content="sort.order" data-tippy-theme="mono">order</code>
+										<code class="schema-type">
+											<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+										</code>
+									</dt>
+									<dd class="enum-values">
+										<span class="values-label">Values:</span>
+										<code class="enum-value">asc</code>
+										<code class="enum-value">desc</code>
+									</dd>
+								</div>
+							</dl>
+						</div>
+					</div>
+					<div class="union-variant-item has-children expanded" id="req-sort-variant-scoresort" hidden="until-found">
+						<div class="union-variant-description">
+							<p>Sort by relevance score.</p>
+						</div>
+						<div class="expand-toggle-row union-expand-toggle">
+							<button class="expand-toggle">
+								<span class="toggle-icon">−</span>
+								<span class="toggle-label">hide properties</span>
+							</button>
+						</div>
+						<div class="nested-properties" id="req-sort-variant-scoresort--children">
+							<dl class="property-list">
+								<div class="property-item depth-2 last-sibling   ">
+									<dt id="req-sort-variant-scoresort-order">
+										<a class="property-anchor" href="#req-sort-variant-scoresort-order" aria-label="Link to sort.order">
+											<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+										</a>
+										<code data-tippy-content="sort.order" data-tippy-theme="mono">order</code>
+										<code class="schema-type">
+											<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+										</code>
+									</dt>
+									<dd class="enum-values">
+										<span class="values-label">Values:</span>
+										<code class="enum-value">asc</code>
+										<code class="enum-value">desc</code>
+									</dd>
+								</div>
+							</dl>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="property-item depth-0    ">
+		<dt id="req-mode">
+			<a class="property-anchor" href="#req-mode" aria-label="Link to mode">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>mode</code>
+			<code class="schema-type">
+				<span class="type-wrapper enum-icon" data-tippy-content="">enum</span>
+			</code>
+		</dt>
+		<dd>
+			<p>Trade accuracy for speed.</p>
+		</dd>
+		<dd class="enum-values">
+			<span class="values-label">Values:</span>
+			<code class="enum-value">fast</code>
+			<code class="enum-value">accurate</code>
+		</dd>
+	</div>
+	<div class="property-item depth-0  has-children expanded ">
+		<dt id="req-pit">
+			<a class="property-anchor" href="#req-pit" aria-label="Link to pit">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>pit</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">object</span>
+			</code>
+		</dt>
+		<dd>
+			<p>A point in time to search, exercising inline nested object expansion.</p>
+		</dd>
+		<dd class="expand-toggle-row">
+			<button class="expand-toggle" aria-expanded="true" aria-controls="req-pit--children">
+				<span class="toggle-icon">−</span>
+				<span class="toggle-label">hide properties</span>
+			</button>
+		</dd>
+		<div class="nested-properties" id="req-pit--children">
+			<dl class="property-list">
+				<div class="property-item depth-1    ">
+					<dt id="req-pit-id">
+						<a class="property-anchor" href="#req-pit-id" aria-label="Link to pit.id">
+							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+						</a>
+						<code data-tippy-content="pit.id" data-tippy-theme="mono">id</code>
+						<code class="schema-type">
+							<span class="type-primitive" data-tippy-content="">string</span>
+						</code>
+						<span class="required type-status">required</span>
+					</dt>
+				</div>
+				<div class="property-item depth-1 last-sibling   ">
+					<dt id="req-pit-keep_alive">
+						<a class="property-anchor" href="#req-pit-keep_alive" aria-label="Link to pit.keep_alive">
+							<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+						</a>
+						<code data-tippy-content="pit.keep_alive" data-tippy-theme="mono">keep_alive</code>
+						<code class="schema-type">
+							<span class="type-primitive" data-tippy-content="">string</span>
+						</code>
+					</dt>
+				</div>
+			</dl>
+		</div>
+	</div>
+	<div class="property-item depth-0 last-sibling   deprecated">
+		<dt id="req-legacy_size">
+			<a class="property-anchor" href="#req-legacy_size" aria-label="Link to legacy_size">
+				<span class="property-anchor-icon" data-tippy-content="Copy link" aria-hidden="true"></span>
+			</a>
+			<code>legacy_size</code>
+			<code class="schema-type">
+				<span class="type-primitive" data-tippy-content="">integer</span>
+			</code>
+			<span class="deprecated-badge type-status">deprecated</span>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="Stack" badge-version="7.0+" lifecycle-class="deprecated" lifecycle-name="Deprecated" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Deprecated since 7.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</dt>
+		<dd>
+			<p>Use `size` on the query string instead.</p>
+		</dd>
+	</div>
+</dl>
