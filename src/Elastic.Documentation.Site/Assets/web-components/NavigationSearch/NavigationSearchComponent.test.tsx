@@ -1,4 +1,5 @@
 import { logInfo } from '../../telemetry/logging'
+import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
@@ -54,6 +55,69 @@ describe('NavigationSearchWrapper type attribute', () => {
                 searchRequestUrls().some((url) => url.includes('type=api'))
             ).toBe(true)
         })
+    })
+
+    it('navigates into a matching property and records its anchor on Enter', async () => {
+        const url =
+            '/docs/api/doc/elasticsearch/operation/operation-search#req-track_total_hits'
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                ...emptySearch,
+                totalResults: 1,
+                results: [
+                    {
+                        type: 'api',
+                        url: url.split('#')[0],
+                        title: 'Search',
+                        description: 'Search documents',
+                        score: 5,
+                        parents: [],
+                        properties: [
+                            {
+                                name: 'track_total_hits',
+                                path: 'track_total_hits',
+                                type: 'boolean',
+                                location: 'request',
+                                description: 'Count hits accurately',
+                                anchor: 'req-track_total_hits',
+                                url,
+                            },
+                        ],
+                    },
+                ],
+            }),
+        })
+        render(<NavigationSearchWrapper type="api" />)
+        const input = await screen.findByPlaceholderText('Explore APIs')
+        await userEvent.type(input, 'track_total')
+        const child = await screen.findByRole('link', {
+            name: /track_total_hits boolean request Count hits accurately/,
+        })
+        expect(child).toHaveAttribute('href', url)
+        const clicked = vi.fn((event: Event) => event.preventDefault())
+        child.addEventListener('click', clicked)
+        await userEvent.click(input)
+        expect(input).toHaveFocus()
+        expect(navigationSearchStore.getState().selectedIndex).toBe(0)
+        expect(screen.getByText('Go to operation')).toBeInTheDocument()
+        expect(screen.getByText('Go to property')).toBeInTheDocument()
+        expect(screen.getByText('Go to page')).toBeInTheDocument()
+        await userEvent.keyboard('{ArrowDown}')
+        expect(navigationSearchStore.getState().selectedIndex).toBe(1)
+        await waitFor(() =>
+            expect(child).toHaveAttribute('data-selected', 'true')
+        )
+        expect(screen.getByText('Go to page')).toBeInTheDocument()
+        await userEvent.keyboard('{Enter}')
+        expect(clicked).toHaveBeenCalledTimes(1)
+        expect(logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-track_total_hits',
+                'navigation_search.result.position': 0,
+            })
+        )
     })
 
     it('renders the sidebar variant without the sticky wrapper or divider', async () => {

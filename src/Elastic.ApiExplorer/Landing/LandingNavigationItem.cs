@@ -183,7 +183,9 @@ public class TagNavigationItem(
 	internal void ApplyIntroHeadings(IReadOnlyList<TocItem> introHeadings)
 	{
 		var operations = NavigationItems.Where(item => item is not IntroHeadingNavigationItem).ToArray();
-		var headings = introHeadings.Select(
+		// Only the top-level sections get a nav entry; deeper headings stay on the page as subsections of their parent.
+		var topLevel = introHeadings.Count == 0 ? 0 : introHeadings.Min(heading => heading.Level);
+		var headings = introHeadings.Where(heading => heading.Level == topLevel).Select(
 			heading => new IntroHeadingNavigationItem(this, new IntroHeading(heading.Heading, heading.Slug))
 		);
 		NavigationItems = [.. headings, .. operations];
