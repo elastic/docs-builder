@@ -25,17 +25,17 @@ public class ApiPropertySearchTests
 	private static JsonDocument Json(Query? query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
 
 	[Test]
-	[Arguments("travel_agency", "api")]
-	[Arguments("trav", "api")]
-	[Arguments("flight.travel", "api")]
-	[Arguments("track_total", null)]
-	[Arguments("knn_field search", null)]
-	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter)
+	[Arguments("travel_agency", "api", 20)]
+	[Arguments("trav", "api", 20)]
+	[Arguments("flight.travel", "api", 20)]
+	[Arguments("track_total", null, 5)]
+	[Arguments("knn_field search", null, 5)]
+	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter, int size)
 	{
 		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter));
 		var nested = json.RootElement.GetProperty("nested");
 		nested.GetProperty("path").GetString().Should().Be("api.properties");
-		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(20);
+		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(size);
 	}
 
 	[Test]

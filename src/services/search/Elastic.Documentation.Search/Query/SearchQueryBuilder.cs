@@ -24,6 +24,10 @@ public static class SearchQueryBuilder
 	/// <summary>Elasticsearch's default <c>index.max_inner_result_window</c>, so an expanded lookup lists every child it can.</summary>
 	private const int ExpandedInnerHitsSize = 100;
 
+	/// <summary>The docs-wide lookup keeps three rows and lists no children; the API lookup keeps more to choose from.</summary>
+	private const int DocsWideInnerHitsSize = 5;
+	private const int ApiInnerHitsSize = 20;
+
 	// A child row must score below every name match, exact or prefix, and the lift only breaks ties between operations.
 	private const float NameMatchBoost = 1;
 	private const float PrefixNameMatchBoost = 0.6f;
@@ -219,7 +223,12 @@ public static class SearchQueryBuilder
 			InnerHits = new InnerHits
 			{
 				Name = innerHitsName,
-				Size = lookup.ExpandChildren ? ExpandedInnerHitsSize : 20,
+				Size = lookup switch
+				{
+					{ ExpandChildren: true } => ExpandedInnerHitsSize,
+					{ AllowPrefix: true } => ApiInnerHitsSize,
+					_ => DocsWideInnerHitsSize
+				},
 				Source = new SourceConfig(new SourceFilter { Includes = ApiPropertySourceIncludes })
 			}
 		};
