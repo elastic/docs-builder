@@ -120,6 +120,7 @@ const property = (path: string, location: 'query' | 'request') => ({
     description: 'Count hits',
     anchor: `${location}-${path}`,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
+    children: [],
 })
 
 const operation: SearchResultItem = {

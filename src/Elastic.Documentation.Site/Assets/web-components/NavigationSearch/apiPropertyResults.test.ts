@@ -1,4 +1,5 @@
 import {
+    childLabel,
     fieldSearchTerms,
     groupSearchResults,
     navigableRowCount,
@@ -14,6 +15,7 @@ const property = (path: string, location: 'query' | 'request') => ({
     anchor: `${location}-${path}`,
     location,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
+    children: [],
 })
 
 const search: SearchResultItem = {
@@ -113,4 +115,12 @@ it.each([
     ['get knn', ['get', 'knn']],
 ])('takes the field terms of %s', (searchTerm, terms) => {
     expect(fieldSearchTerms(searchTerm)).toEqual(terms)
+})
+
+it.each([
+    ['.query', 'query'],
+    ['[].query', '[].query'],
+    ['.<string>.terms', '<string>.terms'],
+])('labels the child suffix %s as %s', (suffix, label) => {
+    expect(childLabel(suffix)).toBe(label)
 })

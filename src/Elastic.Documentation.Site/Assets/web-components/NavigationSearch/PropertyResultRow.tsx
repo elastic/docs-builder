@@ -2,6 +2,7 @@ import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
+    childLabel,
     fieldSearchTerms,
     type ApiPropertyResult,
 } from './apiPropertyResults'
@@ -38,6 +39,9 @@ export const PropertyResultRow = ({
     const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
     const propertySearch = fieldSearchTerms(searchTerm)
+    const childLabels = property.children.map(childLabel)
+    const fields =
+        childLabels.length > 0 ? `Fields: ${childLabels.join(', ')}` : ''
     const highlight = (text: string) => (
         <EuiHighlight
             search={propertySearch}
@@ -51,8 +55,8 @@ export const PropertyResultRow = ({
         <a
             ref={ref}
             href={href}
-            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}`}
-            title={`${property.location}: ${property.path}\n${property.type}\n${property.description}`}
+            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${fields && ` ${fields}`}`}
+            title={`${property.location}: ${property.path}\n${property.type}\n${property.description}${fields && `\n${fields}`}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
@@ -94,7 +98,28 @@ export const PropertyResultRow = ({
                     font-size: inherit;
                     padding: 0;
                 }
-                > code,
+                .property-body {
+                    display: flex;
+                    flex: 1;
+                    flex-direction: column;
+                    min-width: 0;
+                }
+                .property-line {
+                    display: flex;
+                    align-items: center;
+                    gap: ${euiTheme.size.s};
+                    min-width: 0;
+                }
+                .property-children {
+                    overflow: hidden;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    /* a monospace space is 1ch wide, so each gap comes out at size.m while the line still ellipsizes as text */
+                    word-spacing: calc(${euiTheme.size.m} - 1ch);
+                    color: ${euiTheme.colors.textSubdued};
+                    font-family: ${euiTheme.font.familyCode};
+                }
+                .property-line > code,
                 .property-description,
                 .property-path > span {
                     min-width: 0;
@@ -103,13 +128,13 @@ export const PropertyResultRow = ({
                     text-overflow: ellipsis;
                     color: ${euiTheme.colors.textSubdued};
                 }
-                > code {
+                .property-line > code {
                     flex: 0 1 auto;
                     max-width: 28%;
                     font-size: inherit;
                     line-height: inherit;
                 }
-                > .property-path {
+                .property-line > .property-path {
                     display: flex;
                     max-width: 55%;
                     color: inherit;
@@ -139,15 +164,32 @@ export const PropertyResultRow = ({
                 }
             `}
         >
-            <code className="property-path" title={property.path}>
-                {highlight(property.path.slice(0, leafOffset))}
-                <strong>{highlight(property.path.slice(leafOffset))}</strong>
-            </code>
-            <code title={property.type}>{property.type}</code>
-            <span className={showLocation ? 'property-location' : 'sr-only'}>
-                {property.location}
+            <span className="property-body">
+                <span className="property-line">
+                    <code className="property-path" title={property.path}>
+                        {highlight(property.path.slice(0, leafOffset))}
+                        <strong>
+                            {highlight(property.path.slice(leafOffset))}
+                        </strong>
+                    </code>
+                    <code title={property.type}>{property.type}</code>
+                    <span
+                        className={
+                            showLocation ? 'property-location' : 'sr-only'
+                        }
+                    >
+                        {property.location}
+                    </span>
+                    <span className="property-description">
+                        {property.description}
+                    </span>
+                </span>
+                {childLabels.length > 0 && (
+                    <span className="property-children">
+                        {childLabels.join(' ')}
+                    </span>
+                )}
             </span>
-            <span className="property-description">{property.description}</span>
             {!isMobile && <JumpToIndicator label={GO_TO_LABELS.property} />}
         </a>
     )

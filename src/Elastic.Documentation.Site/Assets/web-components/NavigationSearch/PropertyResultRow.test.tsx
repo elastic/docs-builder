@@ -13,6 +13,7 @@ const renderRow = (searchTerm: string, path: string) =>
                 description: 'Property description',
                 anchor: 'req-property',
                 url: '/docs/api/search#req-property',
+                children: [],
             }}
             searchTerm={searchTerm}
             showLocation={false}
@@ -50,4 +51,58 @@ it.each([
 it('offers "Go to property" as the Enter action', () => {
     renderRow('knn', 'retriever.knn')
     expect(screen.getByText('Go to property')).toBeInTheDocument()
+})
+
+const renderParent = (children: string[]) =>
+    renderWithProviders(
+        <PropertyResultRow
+            property={{
+                name: 'standard',
+                path: 'retriever.standard',
+                type: 'object',
+                location: 'request',
+                description: 'Standard retriever',
+                anchor: 'req-retriever-standard',
+                url: '/docs/api/search#req-retriever-standard',
+                children,
+            }}
+            searchTerm="retriever.standard"
+            showLocation={false}
+            index={1}
+            isSelected={false}
+            isKeyboardNavigating={false}
+            onMouseEnter={vi.fn()}
+            onMouseMove={vi.fn()}
+            onClick={vi.fn()}
+        />
+    )
+
+it("lists the field's children under its path", () => {
+    renderParent([
+        '.filter',
+        '.min_score',
+        '._name',
+        '.query',
+        '.search_after',
+        '.terminate_after',
+        '.sort',
+        '.collapse',
+    ])
+    const row = screen.getByRole('link')
+    expect(row.querySelector('.property-children')?.textContent).toBe(
+        'filter min_score _name query search_after terminate_after sort collapse'
+    )
+    expect(row).toHaveAttribute(
+        'title',
+        expect.stringContaining(
+            'Fields: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
+        )
+    )
+})
+
+it('renders no children line for a leaf', () => {
+    renderParent([])
+    expect(
+        screen.getByRole('link').querySelector('.property-children')
+    ).toBeNull()
 })

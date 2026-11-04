@@ -9,9 +9,13 @@ export const ApiPropertyResult = z.object({
     anchor: z.string(),
     location: z.enum(['path', 'query', 'header', 'request', 'response']),
     url: z.string(),
+    /** What extends `path` to each direct child's path: `.query`, `[].query`, `.<string>.terms`. */
+    children: z.array(z.string()).default([]),
 })
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>
+
+export const childLabel = (suffix: string) => suffix.replace(/^\./, '')
 
 export const ApiRoute = z.object({
     path: z.string(),
