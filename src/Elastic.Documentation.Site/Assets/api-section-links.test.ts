@@ -9,10 +9,10 @@ describe('section links', () => {
             <section id="elastic-api-v3">
                 <nav class="api-section-links" data-toc data-toc-sticky>
                     <a href="#query-params" data-toc-link>Query</a>
-                    <a href="#response" data-toc-link>Response</a>
+                    <a href="#responses" data-toc-link>Response</a>
                 </nav>
                 <h2 id="query-params"></h2>
-                <h2 id="response"></h2>
+                <h2 id="responses"></h2>
             </section>`
         // jsdom has no layout: a page taller than the window, scrolled to the top
         Object.defineProperty(document.documentElement, 'scrollHeight', {
@@ -20,7 +20,7 @@ describe('section links', () => {
             configurable: true,
         })
         // jsdom has no layout: the first section is in view, the second is below the fold
-        const top = { 'query-params': -100, response: 900 }
+        const top = { 'query-params': -100, responses: 900 }
         for (const [id, y] of Object.entries(top))
             document.getElementById(id)!.getBoundingClientRect = () =>
                 ({ top: y }) as DOMRect

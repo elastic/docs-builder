@@ -68,7 +68,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			if (Operation.Operation.RequestBody is not null)
 				links.Add(new SectionLink("Body", "request-body"));
 			if (Page.Responses.Count > 0)
-				links.Add(new SectionLink("Response", "response"));
+				links.Add(new SectionLink("Response", "responses"));
 			return links;
 		}
 	}
@@ -114,7 +114,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			tocItems.Add(new TocItem("Request body", "request-body", 2));
 
 		if (operation.Responses is { Count: > 0 })
-			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "response", 2));
+			tocItems.Add(new TocItem(operation.Responses.Count == 1 ? "Response" : "Responses", "responses", 2));
 
 		return tocItems;
 	}

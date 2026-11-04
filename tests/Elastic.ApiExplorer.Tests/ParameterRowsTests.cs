@@ -260,7 +260,7 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(DocsGet);
 
 		var start = html.IndexOf("id=\"query-params-list\"", StringComparison.Ordinal);
-		var end = html.IndexOf("id=\"response\"", start, StringComparison.Ordinal);
+		var end = html.IndexOf("id=\"responses\"", start, StringComparison.Ordinal);
 		var section = html[start..end];
 		section.Should().Contain("<dt id=\"query-tags\">");
 		section.Should().Contain("<dt id=\"query-tags-string\">");

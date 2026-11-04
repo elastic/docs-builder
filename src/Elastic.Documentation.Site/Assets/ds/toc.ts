@@ -88,6 +88,14 @@ export function initToc(scope: ParentNode = document) {
             window.addEventListener('hashchange', schedule, {
                 signal: listeners.signal,
             })
+            // A link click that pushes the address emits no hashchange, and a page too short to scroll emits no scroll
+            // either. The update waits a frame, so the click handlers have set the address by then.
+            toc.addEventListener('click', schedule, {
+                signal: listeners.signal,
+            })
+            window.addEventListener('popstate', schedule, {
+                signal: listeners.signal,
+            })
             update()
         })
 }

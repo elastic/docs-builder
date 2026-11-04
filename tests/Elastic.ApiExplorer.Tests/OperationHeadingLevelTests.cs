@@ -42,7 +42,7 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 		html.Should().Contain(
 			"<h2 class=\"section-header api-param-section-header\" id=\"request-body\" data-section=\"request-body\" aria-label=\"Request body\">"
 		);
-		html.Should().Contain("<h2 class=\"section-header responses-header\" id=\"response\" data-section=\"response\">");
+		html.Should().Contain("<h2 class=\"section-header responses-header\" id=\"responses\" data-section=\"responses\">");
 		html.Should().Contain("<h3>Response headers</h3>");
 	}
 

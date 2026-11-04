@@ -199,4 +199,40 @@ describe('initToc', () => {
 
         window.location.hash = ''
     })
+
+    it('follows a link click that pushes the address without a hashchange or a scroll', () => {
+        setup()
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: 100 }) as DOMRect
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 500 }) as DOMRect
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 800,
+            configurable: true,
+        })
+        initToc()
+        // at the bottom of a page that cannot scroll, the last section is current
+        expect(
+            document
+                .querySelector('[href="#two"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+
+        // what the in-page link handler does: pushState, no hashchange, no scroll
+        const one = document.querySelector<HTMLAnchorElement>('[href="#one"]')!
+        one.addEventListener('click', (e) => {
+            e.preventDefault()
+            history.pushState(null, '', '#one')
+        })
+        one.click()
+
+        expect(one.getAttribute('aria-current')).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#two"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
+
+        history.pushState(null, '', window.location.pathname)
+    })
 })
