@@ -1,10 +1,10 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
 
 // highlight.js language modules and the esql plugin default-export the LanguageFn.
-// Parcel's dynamic import() resolves to the module's exports directly (the function),
-// whereas other bundlers/test runners (Babel/Jest) wrap it as a namespace with a
+// A bundler's dynamic import() can resolve to the module's exports directly (the function),
+// whereas test runners (test runners) wrap it as a namespace with a
 // `default`. Normalize both so registerLanguage always receives the function.
 export function toLanguageFn(mod: unknown): LanguageFn {
     const m = mod as { default?: LanguageFn }
@@ -23,6 +23,8 @@ function ensureHighlightReady(): Promise<void> {
             hljs.registerLanguage(name, languageFn)
         }
         hljs.registerAliases(['sh'], { languageName: 'shell' })
+        hljs.registerAliases(['fish'], { languageName: 'bash' })
+        hljs.registerAliases(['batch'], { languageName: 'dos' })
     })
 
     return allLanguagesReady

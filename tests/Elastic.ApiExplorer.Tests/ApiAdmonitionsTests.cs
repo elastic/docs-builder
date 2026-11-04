@@ -9,7 +9,6 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 
@@ -143,11 +142,7 @@ public class ApiAdmonitionsTests
 		var renderer = new CapturingRenderer();
 		var collector = new DiagnosticsCollector([]);
 		var fs = new FileSystem();
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		);
+		var context = TestHelpers.CreateBuildContext(collector);
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument(),

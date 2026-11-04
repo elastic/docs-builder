@@ -11,7 +11,6 @@ phantoms:
   - toc: docs-content://release-notes/elasticsearch-clients
   - toc: docs-content://release-notes/apm-agents
   - toc: docs-content://
-  - toc: docs-content://products
   - toc: cloud://release-notes
   # Temporary: elastic-agent renames reference/edot-collector → reference/otel-collector (elastic/elastic-agent#16022).
   # Remove this phantom and update the nav entry below once that PR merges.
@@ -22,10 +21,12 @@ toc:
   # NARRATIVE #
   #############
   - toc: get-started
+  # Product hub pages. elastic-stack.md is the parent, with the Elasticsearch, Kibana, and Logstash hubs as children.
+  - toc: products
+  - toc: deploy-manage
   - toc: solutions
   - toc: manage-data
   - toc: explore-analyze
-  - toc: deploy-manage
   - toc: cloud-account
     navigation_title: Manage your Cloud account
   - toc: troubleshoot

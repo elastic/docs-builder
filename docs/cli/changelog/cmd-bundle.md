@@ -41,7 +41,7 @@ bundle:
 The bundle's file name is derived by convention as `{repo}-{product}-{version}.yaml` from the GitHub repository (determined by `--repo`, then the profile's `repo`, then `bundle.repo`, then the git `origin`), the profile's primary output product, and the version argument.
 For example, `docs-builder changelog bundle elasticsearch-release 9.2.0` writes `docs/releases/elasticsearch-elasticsearch-9.2.0.yaml`.
 If no repository can be resolved, the command warns and falls back to `{product}-{version}.yaml`.
-Setting an explicit `output` pattern on a profile is a hard error, and no two profiles may share a primary output product — they would collide on the same conventional target.
+Setting an explicit `output` pattern on a profile is deprecated (a warning at config load; the value is ignored). No two profiles may share a primary output product — they would collide on the same conventional target.
 
 A profile `output_directory` overrides `bundle.output_directory` (the same as option-mode `--output` when it is a directory): `docs-builder changelog bundle serverless-release 2026-08-31` writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-2026-08-31.yaml`.
 
@@ -113,7 +113,7 @@ Both refs are always required together — the start ref is never inferred from 
 2. Resolves each commit to its merged pull request via GraphQL `associatedPullRequests`. Works for squash and merge commits on protected integration branches; commits with no associated PR are reported, never silently dropped. When a commit is associated with multiple merged PRs, the command warns and picks deterministically (merge-commit match first, then lowest PR number).
 3. Sources each PR's changelog entry with a fixed precedence:
    - **A checked-in entry from the entry pool wins.** Pool entries are matched by file-name-derived PR numbers (file names survive scrubbing, so this works for private repos whose `prs` references were removed from public copies) or by the entry's `prs` references.
-   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. Products follow the [resolution order](/data/release-notes/configure-ref.md#products-resolution) of `changelog add`: label-derived products with `products.implies`, then `products.default`, then the profile's output products. Without a default, a pull request with no product label is an error when `pivot.products` maps two or more distinct products. `rules.create` label rules decide inclusion.
+   - **Otherwise the entry is synthesized from PR metadata** — the same extraction path `changelog add` uses: release-note text from the PR body becomes the description, the `## Impact` and `## Action` sections of the PR body fill `impact` and `action`, and labels map to type/areas/products/feature-id via the `pivot.*` configuration. Products follow the [resolution order](/data/release-notes/configure-ref.md#products-resolution) of `changelog add`: label-derived products with `products.implies`, then `products.default`, then the profile's output products. Without a default, a pull request with no product label is an error when `pivot.products` maps two or more distinct products. `rules.create` label rules decide inclusion.
    - **PRs whose metadata cannot be fetched are reported as missing** with a warning.
 4. Records the end ref in the bundle output as the `git_ref` metadata field.
 

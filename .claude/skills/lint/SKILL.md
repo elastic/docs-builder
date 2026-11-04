@@ -1,6 +1,6 @@
 ---
 name: lint
-description: Auto-fix all formatting issues in the docs-builder repo — runs dotnet format for C# and npm fmt:write for TypeScript/JS. Use when the user asks to fix formatting, lint the code, or when a pre-commit hook fails due to formatting.
+description: Auto-fix all formatting issues in the docs-builder repo — runs `mise run fmt` for C# and `mise run site:fmt` for TypeScript/JS. Use when the user asks to fix formatting, lint the code, or when a pre-commit hook fails due to formatting.
 ---
 
 # Lint Skill
@@ -12,7 +12,7 @@ Fixes all formatting issues across C# and TypeScript in the docs-builder repo.
 ### 1. Fix C# formatting
 
 ```bash
-dotnet format
+mise run fmt
 ```
 
 This applies the project's editorconfig and code style rules to all C# files.
@@ -20,7 +20,7 @@ This applies the project's editorconfig and code style rules to all C# files.
 ### 2. Fix TypeScript/JS formatting
 
 ```bash
-cd src/Elastic.Documentation.Site && npm run fmt:write
+mise run site:fmt
 ```
 
 This runs Prettier on all frontend source files.
@@ -36,4 +36,4 @@ After both commands complete:
 - This skill fixes files in place but does **not** commit
 - Run this before `/commit` if you see formatting errors in build output or pre-commit hook failures
 - Formatting rules are enforced by Husky.Net pre-commit hooks (prettier + eslint for TS, dotnet-lint on pre-push for C#)
-- `dotnet format` is also available as `./build.sh lint` for the full lint pipeline
+- `mise run lint` is the read-only check (curb) that CI and the hooks run

@@ -36,6 +36,8 @@ public sealed record NavigationRenderNode
 	/// <summary>Only projected for nodes, where it drives the expand/collapse checkbox and its persisted state.</summary>
 	public string? Id { get; init; }
 	public bool ShowToggle { get; init; }
+	/// <summary>True when the group starts expanded on every page; see <see cref="ISidebarExpandedNavigationItem"/>.</summary>
+	public bool Expanded { get; init; }
 	public IReadOnlyList<NavigationRenderNode> NavigationItems { get; init; } = [];
 }
 
@@ -45,7 +47,8 @@ public sealed record NavigationDropdownItem(string NavigationTitle, string Url, 
 public sealed record IslandBackLink(string Title, string Url);
 
 /// <summary>One choice in a sidebar/rail <c>nav-select</c> (version switcher, examples, …).</summary>
-public sealed record NavigationSelectOption(string Label, string Value, bool Selected);
+/// <summary><see cref="ShortLabel"/> is the label where the option stands alone, such as a trigger, when <see cref="Label"/> carries a hint for the list.</summary>
+public sealed record NavigationSelectOption(string Label, string Value, bool Selected, string? ShortLabel = null);
 
 /// <summary>Resolved data for <c>_NavSelect.cshtml</c>.</summary>
 public sealed record NavigationSelectModel(string Id, string AriaLabel, IReadOnlyList<NavigationSelectOption> Options, bool UseLinks = true)
@@ -385,6 +388,7 @@ public sealed record NavigationRenderModel
 			Url = isHeading ? "" : node.Url,
 			Id = node.Id,
 			ShowToggle = !node.NavigationItems.All(n => n.Hidden),
+			Expanded = node is ISidebarExpandedNavigationItem,
 			NavigationItems = [.. CreateNavigationItems(node, isTopLevel: false)]
 		};
 	}
@@ -465,6 +469,9 @@ public sealed record NavigationRenderModel
 		Append(hash, node.Url);
 		Append(hash, node.Id ?? string.Empty);
 		AppendInt(hash, node.ShowToggle ? 1 : 0);
+		// Hashed only when set, so trees without an expanded group keep the hash, and so the tree id, they had before.
+		if (node.Expanded)
+			AppendInt(hash, 1);
 		AppendNodes(hash, node.NavigationItems);
 	}
 

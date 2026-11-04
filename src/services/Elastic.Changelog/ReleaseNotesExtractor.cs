@@ -50,6 +50,35 @@ public static partial class ReleaseNotesExtractor
 	[GeneratedRegex(@"^[ \t]*(#{1,6})[ \t]+\S")]
 	private static partial Regex HeadingRegex();
 
+	// Blockquote markers at the start of a line: "> ", ">" or nested ">> " and "> > ". Markdown allows up to three
+	// spaces before the marker; four spaces or a tab start an indented code block, whose ">" is content.
+	[GeneratedRegex(@"^ {0,3}(?:>[ \t]?)+")]
+	private static partial Regex BlockquoteMarkerRegex();
+
+	/// <summary>
+	/// Removes the blockquote markers from the start of a line. Authors write the release note as a quotation under
+	/// its heading (<c>&gt; Adds a page...</c>); the marker is their formatting, not part of the note, and a
+	/// description that keeps it renders as a quotation or shows a literal <c>&gt;</c>.
+	/// </summary>
+	private static string StripBlockquoteMarkers(string line) => BlockquoteMarkerRegex().Replace(line, string.Empty);
+
+	/// <summary>
+	/// <see cref="StripBlockquoteMarkers"/> for every line of a text, except the lines of fenced code blocks: a
+	/// <c>&gt;</c> inside a code sample is a redirect or a prompt, not a quotation marker.
+	/// </summary>
+	private static string StripBlockquoteMarkersOutsideCode(string text)
+	{
+		var lines = text.Split('\n');
+		var inCode = MarkCodeLines(lines);
+		for (var i = 0; i < lines.Length; i++)
+		{
+			if (!inCode[i])
+				lines[i] = StripBlockquoteMarkers(lines[i]);
+		}
+
+		return string.Join('\n', lines);
+	}
+
 	/// <summary>
 	/// Strips HTML comments from markdown text.
 	/// This handles both single-line and multi-line comments.
@@ -84,7 +113,8 @@ public static partial class ReleaseNotesExtractor
 
 	/// <summary>
 	/// Finds the "Impact" section of a PR description: a heading such as <c>## Impact</c> or a label such as <c>Impact: ...</c>.
-	/// Heading sections run until the next heading of the same or a higher level; label sections end at the first blank line
+	/// Heading sections run until the next heading of any level, so the template sections that follow an author's
+	/// <c>## Action</c> (such as <c>### Checklist</c>) never become part of it; label sections end at the first blank line
 	/// after their content or at the next heading. HTML comments are stripped first.
 	/// </summary>
 	public static string? FindImpact(string? markdown) => FindSection(markdown, ImpactStartRegex());
@@ -188,13 +218,14 @@ public static partial class ReleaseNotesExtractor
 					|| IsSectionStart(ActionStartRegex().Match(line), out _, out _)
 				)
 					break;
-				var heading = HeadingRegex().Match(line);
-				if (heading.Success && (!isHeading || heading.Groups[1].Value.Length <= hashes))
+				// Any heading ends the section, whatever its level. The Kibana PR template puts `### Checklist` and
+				// `### Identify risks` after the author's sections, so a deeper heading is the next section, not a child.
+				if (HeadingRegex().IsMatch(line))
 					break;
 				// Label sections stop at the first blank line once they have content.
 				if (!isHeading && string.IsNullOrWhiteSpace(line) && content.Count > 0)
 					break;
-				content.Add(line);
+				content.Add(StripBlockquoteMarkers(line));
 			}
 
 			var text = string.Join('\n', content).Trim();
@@ -215,8 +246,10 @@ public static partial class ReleaseNotesExtractor
 		if (string.IsNullOrWhiteSpace(markdown))
 			return new ReleaseNoteExtractionResult(null, false);
 
-		// Strip HTML comments first to avoid extracting template instructions
-		var cleanedMarkdown = StripHtmlComments(markdown);
+		// Strip HTML comments first to avoid extracting template instructions. Then read the body with "\n" line
+		// endings, as FindSection does: GitHub sends "\r\n", and the terminator below matches a single "\r\n" as
+		// "\r" + "\n", which cut a multi-line note at its first line.
+		var cleanedMarkdown = StripHtmlComments(markdown).Replace("\r\n", "\n");
 
 		// Regex breakdown:
 		// - (?:\n|^)\s*#*\s* - start of line, optional whitespace and markdown headers
@@ -228,7 +261,7 @@ public static partial class ReleaseNotesExtractor
 
 		if (match.Success && match.Groups.Count > 1)
 		{
-			var releaseNote = match.Groups[1].Value.Trim();
+			var releaseNote = StripBlockquoteMarkersOutsideCode(match.Groups[1].Value).Trim();
 			var content = string.IsNullOrWhiteSpace(releaseNote) ? null : releaseNote;
 			var remainingContent = cleanedMarkdown[(match.Index + match.Length)..];
 			return new ReleaseNoteExtractionResult(content, content != null && !string.IsNullOrWhiteSpace(remainingContent));

@@ -10,9 +10,8 @@ using Elastic.Documentation.Configuration.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -23,17 +22,30 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogConfigurationLoader>();
 
-	private static readonly IDeserializer ConfigurationDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.WithTypeConverter(new YamlLenientListConverter())
-		.WithTypeConverter(new TypeEntryYamlConverter())
-		.Build();
+	private static readonly YamlSerializerOptions ConfigurationOptions = YamlStaticContext.Default.CreateOptions(
+		o => (o with { Converters = [new YamlLenientListConverter(), new TypeEntryYamlConverter()] }).WithUnmappedKeysThrowing()
+	);
 
 	/// <summary>
 	/// Deserializes changelog configuration YAML content.
 	/// </summary>
-	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml) =>
-		ConfigurationDeserializer.Deserialize<ChangelogConfigurationYaml>(yaml);
+	internal static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, string? sourceName = null) =>
+		YamlSerializer.Deserialize<ChangelogConfigurationYaml>(
+			yaml,
+			sourceName is null ? ConfigurationOptions : ConfigurationOptions with { SourceName = sourceName }
+		)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+
+	/// <summary>
+	/// Deserializes changelog configuration YAML content, reporting unknown keys to
+	/// <paramref name="collector"/> instead of silently skipping them.
+	/// </summary>
+	private static ChangelogConfigurationYaml DeserializeConfiguration(string yaml, IDiagnosticsCollector collector, string configPath)
+	{
+		var options = ConfigurationOptions.WithUnmappedReporting(new YamlUnmappedMemberReporting(collector, configPath));
+		return YamlSerializer.Deserialize<ChangelogConfigurationYaml>(yaml, options)
+			?? throw new InvalidOperationException("Failed to deserialize changelog configuration YAML.");
+	}
 
 	/// <summary>
 	/// Returns the bundle profile names declared in a <c>changelog.yml</c> YAML string,
@@ -57,7 +69,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			return null;
 
 		var yamlContent = fileSystem.File.ReadAllText(configPath);
-		var yamlConfig = DeserializeConfiguration(yamlContent);
+		var yamlConfig = DeserializeConfiguration(yamlContent, configPath);
 
 		if (yamlConfig.Rules?.Publish == null)
 			return null;
@@ -86,7 +98,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(finalConfigPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, finalConfigPath);
 
 			return ParseConfiguration(collector, yamlConfig, finalConfigPath);
 		}
@@ -131,6 +143,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		Dictionary<string, string>? labelToProducts;
 		Dictionary<string, string>? labelToFeatures;
 		PivotConfiguration? pivot = null;
+		var requiredPivots = RequiredPivot.None;
 
 		if (yamlConfig.Pivot != null)
 		{
@@ -263,6 +276,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			}
 			labelToProducts = BuildLabelToProductsMapping(yamlConfig.Pivot.Products);
 			labelToFeatures = BuildLabelToFeaturesMapping(yamlConfig.Pivot.Features);
+
+			var mappedPivots = (labelToAreas is { Count: > 0 } ? RequiredPivot.Areas : RequiredPivot.None)
+				| (labelToProducts is { Count: > 0 } ? RequiredPivot.Products : RequiredPivot.None);
+			if (ParseRequiredPivots(collector, yamlConfig.Pivot.Required, mappedPivots, configPath) is not { } parsedRequired)
+				return null;
+			requiredPivots = parsedRequired;
 		}
 		else
 		{
@@ -425,6 +444,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		return new ChangelogConfiguration
 		{
 			Pivot = pivot,
+			RequiredPivots = requiredPivots,
 			Types = availableTypes,
 			SubTypes = availableSubtypes,
 			Lifecycles = lifecycles,
@@ -441,6 +461,47 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Extract = extract,
 			Filename = filenameStrategy
 		};
+	}
+
+	// mappedPivots holds the pivots that map at least one label: an entry without labels cannot satisfy a requirement.
+	private static RequiredPivot? ParseRequiredPivots(
+		IDiagnosticsCollector collector,
+		YamlLenientList? requiredList,
+		RequiredPivot mappedPivots,
+		string configPath
+	)
+	{
+		var required = RequiredPivot.None;
+		foreach (var value in requiredList?.Values ?? [])
+		{
+			switch (value.Trim().ToLowerInvariant())
+			{
+				// The type is always required, so listing it changes nothing.
+				case "types":
+					break;
+				case "areas" when !mappedPivots.HasFlag(RequiredPivot.Areas):
+				case "products" when !mappedPivots.HasFlag(RequiredPivot.Products):
+					collector.EmitError(
+						configPath,
+						$"pivot.required lists '{value}', but pivot.{value.Trim().ToLowerInvariant()} maps no labels, so no PR could satisfy it. Add labels to pivot.{value.Trim().ToLowerInvariant()}."
+					);
+					return null;
+				case "areas":
+					required |= RequiredPivot.Areas;
+					break;
+				case "products":
+					required |= RequiredPivot.Products;
+					break;
+				default:
+					collector.EmitError(
+						configPath,
+						$"'{value}' in pivot.required is not a pivot that can be required. Valid values: types, areas, products."
+					);
+					return null;
+			}
+		}
+
+		return required;
 	}
 
 	private static PivotConfiguration ConvertPivot(PivotConfigurationYaml yamlPivot)
@@ -685,6 +746,12 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 					);
 				}
 
+				if (!string.IsNullOrWhiteSpace(profileYaml.Output))
+					collector.EmitWarning(
+						configPath,
+						$"bundle.profiles.{profileName}.output is deprecated. Bundle output names are derived by convention as {{repo}}-{{product}}-{{version}}.yaml. Remove this field."
+					);
+
 				if (!string.IsNullOrWhiteSpace(profileYaml.OutputProducts))
 					collector.EmitWarning(
 						configPath,
@@ -897,7 +964,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(configPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, configPath);
 			return ParseConfiguration(collector, yamlConfig, configPath);
 		}
 		catch (IOException ex)
@@ -910,7 +977,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(configPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(configPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -945,7 +1012,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 		try
 		{
 			var yamlContent = await fileSystem.File.ReadAllTextAsync(foundPath, ctx);
-			var yamlConfig = DeserializeConfiguration(yamlContent);
+			var yamlConfig = DeserializeConfiguration(yamlContent, collector, foundPath);
 			return ParseConfiguration(collector, yamlConfig, foundPath);
 		}
 		catch (IOException ex)
@@ -958,7 +1025,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			collector.EmitError(foundPath, $"Access denied loading changelog configuration: {ex.Message}", ex);
 			return null;
 		}
-		catch (YamlDotNet.Core.YamlException ex)
+		catch (YamlException ex)
 		{
 			collector.EmitError(foundPath, $"YAML parsing error in changelog configuration: {ex.Message}", ex);
 			return null;
@@ -1013,8 +1080,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Match = globalMatch,
 			Create = createRules,
 			Bundle = bundleRules,
-			Publish =
-				null // rules.publish is retired; filtering happens at bundle time via rules.bundle
+			Publish = null // rules.publish is retired; filtering happens at bundle time via rules.bundle
 		};
 	}
 

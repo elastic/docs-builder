@@ -87,6 +87,10 @@ On a **tag** file, those headings are not shown. Tag files use the description a
 
 Any other `##` heading is appended after the generated reference content. Headings stay in document order.
 
+### Sidebar entries for tag intros
+
+A group's intro lists its top-level sections in the sidebar, above the endpoints. Only the shallowest heading level in the intro gets an entry, which is `##` when the intro follows the rules above. A `###` heading stays on the page as a subsection of its parent `##` and has no sidebar entry. Use the heading structure to keep the sidebar short.
+
 ## Version-specific files
 
 If one major needs different text, add a `.vN.md` file next to the base file:

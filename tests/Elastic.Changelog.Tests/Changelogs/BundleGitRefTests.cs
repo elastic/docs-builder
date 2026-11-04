@@ -159,7 +159,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		).Returns(new GitHubPrInfo
 		{
 			Title = "Sharper autocomplete",
-			Body = "Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.",
+			Body =
+				"Some context.\n\n## Release Note\nAutocomplete now ranks recent indices first.\n\nInternal details.\n\n## Impact\nSaved searches that relied on alphabetical order change position.\n\n## Action\nPin the indices you need at the top.",
 			Labels = [">feature"],
 			LinkedIssues = []
 		});
@@ -186,7 +187,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// No profile output pattern → {repo}-{product}-{version}.yaml when bundle.repo is set.
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		FileSystem.Path.GetFileName(outputFiles[0]).Should().Be("widget-cloud-hosted-2026-08-13.yaml");
 
@@ -196,10 +197,12 @@ public class BundleGitRefTests() : ChangelogTestBase()
 		bundle.Should().Contain("Faster hosted search");
 		bundle.Should().Contain("Sturdier snapshots");
 
-		// The synthesized entry carries PR-body release-note text, the label-derived type, and the
-		// profile's output products.
+		// The synthesized entry carries PR-body release-note text, the Impact and Action sections,
+		// the label-derived type, and the profile's output products.
 		bundle.Should().Contain("Sharper autocomplete");
 		bundle.Should().Contain("Autocomplete now ranks recent indices first.");
+		bundle.Should().Contain("impact: Saved searches that relied on alphabetical order change position.");
+		bundle.Should().Contain("action: Pin the indices you need at the top.");
 		bundle.Should().Contain("name: 300.yaml");
 		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 
@@ -265,7 +268,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 		bundle.Should().Contain("Faster hosted search");
@@ -405,7 +408,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			.Should()
 			.Be(1, "the second target reads the pool the first one read");
 		pool.RequestedPaths.Count(r => r.EndsWith("100.yaml", StringComparison.Ordinal)).Should().Be(1);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().HaveCount(2);
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().HaveCount(2);
 	}
 
 	[Test]
@@ -505,7 +508,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		var bundle = await FileSystem.File.ReadAllTextAsync(
-			FileSystem.Directory.GetFiles(outputDir, "*.yaml").Single(),
+			FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Single(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 		bundle.Should().Contain("Faster hosted search");
@@ -535,7 +538,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().BeEmpty("dry-run must not write a bundle");
+		FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories).Should().BeEmpty("dry-run must not write a bundle");
 	}
 
 	[Test]
@@ -646,7 +649,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		outputFiles.Should().ContainSingle();
 		var bundle = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundle.Should().Contain("Unlabeled change");
@@ -724,7 +727,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			TestContext.Current!.Execution.CancellationToken
 		);
 
-		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml", SearchOption.AllDirectories);
 		if (files.Length == 0)
 			return (result, null);
 		var content = await FileSystem.File.ReadAllTextAsync(files.Single(), TestContext.Current!.Execution.CancellationToken);
@@ -766,8 +769,8 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		result.Should().BeTrue();
 		var entry = EntryProductsOf(bundle!);
-		entry.Should().Contain("- product: kibana\n    lifecycle: ga\n");
-		entry.Should().Contain("- product: cloud-serverless\n    lifecycle: ga\n");
+		entry.Should().Contain("- product: kibana\n        lifecycle: ga\n");
+		entry.Should().Contain("- product: cloud-serverless\n        lifecycle: ga\n");
 		entry.Should().NotContain("versions:");
 	}
 
@@ -849,62 +852,6 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("No matching product label found", StringComparison.Ordinal));
 		Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("Cannot determine products", StringComparison.Ordinal));
-	}
-
-	[Test]
-	public async Task InferredEntry_EntryProducts_ReplaceLabelDerivedProducts()
-	{
-		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(outputDir);
-		// A team label maps PR 300 to the product "security".
-		var configPath = await WriteProfileConfig(outputDir, "  products:\n    security: \">team-security\"");
-
-		var prService = A.Fake<IGitHubPrService>();
-		_ = A.CallTo(() => prService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<Cancel>._)).Returns(new GitHubPrInfo
-		{
-			Title = "Faster entity resolution",
-			Body = "## Release Note\nEntity resolution runs faster.",
-			Labels = [">feature", ">team-security"],
-			LinkedIssues = []
-		});
-
-		var service = Service(PoolHandler(), RangeService(300), prService);
-
-		async Task<string> Bundle(IReadOnlyList<ProductArgument>? entryProducts)
-		{
-			foreach (var file in FileSystem.Directory.GetFiles(outputDir, "*.yaml"))
-				FileSystem.File.Delete(file);
-
-			var result = await service.BundleChangelogs(
-				Collector,
-				new BundleChangelogsArguments
-				{
-					Profile = "promotion",
-					ProfileArgument = "2026-08-13",
-					Config = configPath,
-					StartGitRef = StartRef,
-					EndGitRef = EndRef,
-					EntryProducts = entryProducts
-				},
-				TestContext.Current!.Execution.CancellationToken
-			);
-			result.Should().BeTrue();
-			var outputFile = FileSystem.Directory.GetFiles(outputDir, "*.yaml").Should().ContainSingle().Subject;
-			var content = await FileSystem.File.ReadAllTextAsync(outputFile, TestContext.Current!.Execution.CancellationToken);
-			// The YAML writer uses the platform line ending.
-			return content.Replace("\r\n", "\n");
-		}
-
-		// Without entry products the label decides.
-		var labelled = await Bundle(null);
-		labelled.Should().Contain("- product: security");
-		labelled.Should().NotContain("product: widget");
-
-		// With entry products the label no longer decides.
-		var forced = await Bundle([new ProductArgument { Product = "cloud-hosted" }, new ProductArgument { Product = "widget" }]);
-		forced.Should().Contain("Faster entity resolution");
-		forced.Should().Contain("  - product: cloud-hosted\n  - product: widget\n");
-		forced.Should().NotContain("product: security");
 	}
 
 	[Test]
@@ -1011,5 +958,65 @@ public class BundleGitRefTests() : ChangelogTestBase()
 
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));
+	}
+
+	private const string RequiredAreaPivot =
+		"  required: [areas]\n  areas:\n    Search: \":Search\"\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless";
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndNoAreaLabel_FailAPullRequest()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"No matching area label found on PR https://github.com/elastic/widget/pull/300",
+					StringComparison.Ordinal
+				)
+			);
+	}
+
+	[Test]
+	public async Task InferredEntry_Areas_RequiredAndAreaLabelPresent_KeepThePullRequestInTheBundle()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature", "serverless", ":Search"],
+			RequiredAreaPivot,
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeTrue();
+		bundle.Should().Contain("Faster entity resolution");
+	}
+
+	[Test]
+	public async Task InferredEntry_Products_RequiredDespiteProductsDefault_FailAPullRequestWithoutAProductLabel()
+	{
+		var (result, bundle) = await BundleSinglePr(
+			[">feature"],
+			"  required: [products]\n  products:\n    elasticsearch: stateful\n    cloud-serverless: serverless",
+			ElasticsearchProducts,
+			"cloud-serverless"
+		);
+
+		result.Should().BeFalse();
+		bundle.Should().BeNull();
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("No matching product label found on PR", StringComparison.Ordinal)
+			);
 	}
 }

@@ -5,6 +5,8 @@
 using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Topics;
+using Elastic.Documentation.Extensions;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Model;
@@ -17,11 +19,25 @@ public sealed record OpenApiTagMetadata(string DisplayName, string Description, 
 
 /// <summary>
 /// The single home for reading Elastic's <c>x-*</c> OpenAPI extensions
-/// (<c>x-tagGroups</c>, <c>x-displayName</c>, <c>x-namespace</c>, <c>x-api-name</c>,
+/// (<c>x-tagGroups</c>, <c>x-topics</c>, <c>x-displayName</c>, <c>x-namespace</c>, <c>x-api-name</c>,
 /// <c>x-beta</c>, <c>x-codeSamples</c>) out of the raw JsonNode extension values.
 /// </summary>
 public static class OpenApiExtensionReader
 {
+	/// <summary>
+	/// The tag an operation references, read from the reference id the way navigation does, so an operation
+	/// tagged with a name the document never declares still has one. Null when blank.
+	/// </summary>
+	public static string? TagName(OpenApiTagReference tag)
+	{
+		var name = tag.Reference?.Id ?? tag.Name;
+		return string.IsNullOrWhiteSpace(name) ? null : name;
+	}
+
+	/// <summary>The metadata of a tag as navigation shows it: the declared entry, else the capitalized name alone.</summary>
+	public static OpenApiTagMetadata TagMetadataFor(string tag, IReadOnlyDictionary<string, OpenApiTagMetadata> metadata) =>
+		metadata.TryGetValue(tag, out var meta) ? meta : new OpenApiTagMetadata(tag.CapitalizeFirstLetter(), string.Empty, null);
+
 	/// <summary>Reads a string-valued extension; null when absent or not a string.</summary>
 	public static string? TryGetString(IDictionary<string, IOpenApiExtension>? extensions, string key) =>
 		extensions?.TryGetValue(key, out var value) == true
@@ -98,6 +114,34 @@ public static class OpenApiExtensionReader
 		return new XTagGroups(orderedGroupNames, tagToGroup);
 	}
 
+	/// <summary>Parses the <c>x-topics</c> document extension in spec order. Entries without a title are skipped.</summary>
+	public static IReadOnlyList<ApiTopicPage> ParseXTopics(OpenApiDocument openApiDocument)
+	{
+		if (openApiDocument.Extensions?.TryGetValue("x-topics", out var extension) != true || extension is not JsonNodeExtension jsonExt)
+			return [];
+
+		if (jsonExt.Node is not JsonArray array)
+			return [];
+
+		var topics = new List<ApiTopicPage>(array.Count);
+		foreach (var element in array)
+		{
+			if (element is not JsonObject topic)
+				continue;
+
+			var title = ReadString(topic, "title");
+			if (string.IsNullOrWhiteSpace(title))
+				continue;
+
+			topics.Add(new ApiTopicPage(title.Trim(), ReadString(topic, "content") ?? string.Empty));
+		}
+
+		return topics;
+	}
+
+	private static string? ReadString(JsonObject obj, string property) =>
+		obj.TryGetPropertyValue(property, out var node) && node is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+
 	/// <summary>
 	/// Parses global OpenAPI tag objects: description, <c>externalDocs</c>, and <c>x-displayName</c>.
 	/// </summary>
@@ -114,7 +158,7 @@ public static class OpenApiExtensionReader
 			if (string.IsNullOrEmpty(tagName))
 				continue;
 
-			var displayName = tagName;
+			var displayName = tagName.CapitalizeFirstLetter();
 			var xDisplayName = TryGetString(tag.Extensions, "x-displayName");
 			if (!string.IsNullOrWhiteSpace(xDisplayName))
 				displayName = xDisplayName;
@@ -137,10 +181,13 @@ public static class OpenApiExtensionReader
 	/// <summary>
 	/// Parses the <c>x-codeSamples</c> extension into code samples, ordered with Console first.
 	/// </summary>
-	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation)
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(OpenApiOperation operation) => ParseCodeSamples(operation.Extensions);
+
+	/// <summary>Parses the <c>x-codeSamples</c> extension of any extensible OpenAPI object, such as a request example.</summary>
+	public static IReadOnlyList<CodeSample> ParseCodeSamples(IDictionary<string, IOpenApiExtension>? extensions)
 	{
 		if (
-			operation.Extensions?.TryGetValue("x-codeSamples", out var ext) != true
+			extensions?.TryGetValue("x-codeSamples", out var ext) != true
 			|| ext is not JsonNodeExtension jsonExt
 			|| jsonExt.Node is not JsonArray samplesArray
 		)

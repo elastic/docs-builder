@@ -27,6 +27,8 @@ Exporters/                Turn a built doc set into something else: plain text, 
 Extensions/               Cross-cutting Markdown extensions (CLI reference, detection rules).
 IO/                       File system abstractions.
 Page/                     Assembled-page model consumed by the CLI/site.
+Components/               Design-system slices for Markdown output (admonition, tabs, stepper, code block, image, ...). Their CSS lives
+                          in the site bundle under Elastic.Documentation.Site/Components/Markdown/.
 Layout/                   Shared Razor layout partials.
 ```
 

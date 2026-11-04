@@ -27,7 +27,7 @@ public class ReleaseTargetResolverTests
 		var result = ReleaseTargetResolver.ResolveCurrentGa(past);
 
 		result.Should().NotBeNull();
-		result!.Version.Should().Be("9.2.4");
+		result.Version.Should().Be("9.2.4");
 		result.Source.Should().Be(ReleaseTargetSource.CurrentGa);
 	}
 

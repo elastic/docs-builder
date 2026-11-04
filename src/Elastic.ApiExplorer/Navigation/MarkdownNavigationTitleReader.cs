@@ -6,7 +6,7 @@ using System.IO.Abstractions;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Extensions;
-using YamlDotNet.RepresentationModel;
+using SharpYaml.Model;
 
 namespace Elastic.ApiExplorer.Navigation;
 
@@ -33,6 +33,36 @@ public static class MarkdownNavigationTitleReader
 		return TitleCaseFromFileName(markdownFile.Name);
 	}
 
+	/// <summary>
+	/// The first level-one heading after the front matter, and the text after it. Both are null when the file has no such
+	/// heading or cannot be read.
+	/// </summary>
+	public static (string? Heading, string? Body) ReadHeadingAndBody(IFileSystem readFileSystem, IFileInfo markdownFile)
+	{
+		try
+		{
+			var lines = readFileSystem.File.ReadAllLines(markdownFile.FullName);
+			var inFrontMatter = false;
+			for (var i = 0; i < lines.Length; i++)
+			{
+				if (lines[i].Trim() == "---" && (i == 0 || inFrontMatter))
+				{
+					inFrontMatter = !inFrontMatter;
+					continue;
+				}
+
+				if (!inFrontMatter && lines[i].StartsWith("# ", StringComparison.Ordinal))
+					return (lines[i][2..].Trim(), string.Join('\n', lines[(i + 1)..]));
+			}
+		}
+		catch
+		{
+			// An unreadable child file is reported where the page is built.
+		}
+
+		return (null, null);
+	}
+
 	private static string? ReadFrontMatterNavigationTitle(string content)
 	{
 		if (!content.StartsWith("---"))
@@ -43,14 +73,13 @@ public static class MarkdownNavigationTitleReader
 			return null;
 
 		// YamlStream is reflection-free and therefore native-AOT safe
-		var yaml = new YamlStream();
-		yaml.Load(new StringReader(content[3..end]));
-		if (yaml.Documents.Count == 0 || yaml.Documents[0].RootNode is not YamlMappingNode mapping)
+		var yaml = YamlStream.Load(new StringReader(content[3..end]));
+		if (yaml.Count == 0 || yaml[0].Contents is not YamlMapping mapping)
 			return null;
 
-		foreach (var (key, value) in mapping.Children)
+		foreach (var (key, value) in mapping)
 		{
-			if (key is YamlScalarNode { Value: "navigation_title" } && value is YamlScalarNode scalar)
+			if (key is YamlValue { Value: "navigation_title" } && value is YamlValue scalar)
 				return scalar.Value;
 		}
 
@@ -58,5 +87,6 @@ public static class MarkdownNavigationTitleReader
 	}
 
 	/// <summary>Converts kebab-case/snake_case file names to a title-cased navigation title.</summary>
-	internal static string TitleCaseFromFileName(string fileName) => Path.GetFileNameWithoutExtension(fileName).TitleCaseFromSlug();
+	internal static string TitleCaseFromFileName(string fileName) =>
+		System.IO.Path.GetFileNameWithoutExtension(fileName).TitleCaseFromSlug();
 }

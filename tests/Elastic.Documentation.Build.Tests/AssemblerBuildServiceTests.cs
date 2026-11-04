@@ -95,13 +95,9 @@ public class AssemblerBuildServiceTests : IDisposable
 
 	[Test]
 	[Arguments(true, true)] // CI + assumeBuild=true -> should throw
-
 	[Arguments(true, false)] // CI + assumeBuild=false -> should not throw
-
 	[Arguments(false, true)] // Local + assumeBuild=true -> should not throw
-
 	[Arguments(false, false)] // Local + assumeBuild=false -> should not throw
-
 	public void AssumeBuildValidation_FollowsTruthTable(bool isCI, bool assumeBuild)
 	{
 		// This test validates the truth table behavior for assumeBuild validation.
@@ -192,15 +188,10 @@ public class AssemblerBuildServiceTests : IDisposable
 
 	[Test]
 	[Arguments(true, null, false)] // CI + null → effective false (CI default)
-
 	[Arguments(false, null, true)] // Local + null → effective true (local default)
-
 	[Arguments(true, false, false)] // CI + explicit false → effective false
-
 	[Arguments(false, false, false)] // Local + explicit false → effective false
-
 	[Arguments(false, true, true)] // Local + explicit true → effective true
-
 	public void AssumeBuild_ThreeStateDefault_ResolvesCorrectly(bool isCI, bool? assumeBuild, bool expectedEffective)
 	{
 		var env = isCI ? MockEnvironmentVariables.CreateCI() : MockEnvironmentVariables.CreateLocal();

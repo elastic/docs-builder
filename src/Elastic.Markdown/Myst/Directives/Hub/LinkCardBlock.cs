@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Markdown.Diagnostics;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Hub;
 
@@ -45,7 +45,8 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		try
 		{
-			Data = YamlSerialization.Deserialize<LinkCardData>(yaml, Build.ProductsConfiguration) ?? LinkCardData.Empty;
+			Data = YamlSerialization.Deserialize<LinkCardData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
+				?? LinkCardData.Empty;
 		}
 		catch (YamlException ex)
 		{
@@ -62,36 +63,35 @@ public class LinkCardBlock(DirectiveBlockParser parser, ParserContext context) :
 	}
 }
 
-[YamlSerializable]
 public record LinkCardData
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "link")]
+	[YamlPropertyName("link")]
 	public string? Link { get; set; }
 
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 
-	[YamlMember(Alias = "icon")]
+	[YamlPropertyName("icon")]
 	public string? Icon { get; set; }
 
-	[YamlMember(Alias = "variant")]
+	[YamlPropertyName("variant")]
 	public string? Variant { get; set; }
 
-	[YamlMember(Alias = "links")]
+	[YamlPropertyName("links")]
 	public LinkCardLink[] Links { get; set; } = [];
 
+	[YamlIgnore]
 	public static LinkCardData Empty { get; } = new();
 }
 
-[YamlSerializable]
 public record LinkCardLink
 {
-	[YamlMember(Alias = "label")]
+	[YamlPropertyName("label")]
 	public string? Label { get; set; }
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string? Url { get; set; }
 }

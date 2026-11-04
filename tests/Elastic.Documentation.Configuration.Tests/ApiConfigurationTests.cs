@@ -14,8 +14,7 @@ using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 
@@ -116,7 +115,10 @@ public class ApiProductSequenceTests
 
 public class ApiConfigurationConverterTests
 {
-	private readonly IDeserializer _deserializer = new DeserializerBuilder().WithTypeConverter(new ApiConfigurationConverter()).Build();
+	private readonly YamlSerializerOptions _options = new()
+	{
+		Converters = [new ApiProductSequenceConverter(new ApiProductEntryConverter())]
+	};
 
 	[Test]
 	public void AcceptsStrictEntry_WithSpecProductAndChildren()
@@ -130,7 +132,7 @@ public class ApiConfigurationConverterTests
 			    - file: authentication.md
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.IsValid.Should().BeTrue();
 		var entry = sequence.SingleEntry!;
@@ -151,7 +153,7 @@ public class ApiConfigurationConverterTests
 			- product: kibana
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.IsValid.Should().BeTrue();
 		var entry = sequence.SingleEntry!;
@@ -167,7 +169,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Children.Should().BeEmpty();
 	}
@@ -180,7 +182,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 		var entry = sequence.SingleEntry!;
 
 		entry.Line.Should().Be(1);
@@ -188,7 +190,7 @@ public class ApiConfigurationConverterTests
 	}
 
 	[Test]
-	public void SkipsUnknownKeys()
+	public void UnknownKeys_WithNoReportingConfigured_AreSkipped()
 	{
 		const string yaml =
 			"""
@@ -197,7 +199,7 @@ public class ApiConfigurationConverterTests
 			  unknown_key: some value
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
 	}
@@ -213,7 +215,7 @@ public class ApiConfigurationConverterTests
 			  product: kibana
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.Entries.Should().HaveCount(2);
 		sequence.IsValid.Should().BeFalse();
@@ -233,7 +235,7 @@ public class ApiConfigurationConverterTests
 			      - ess
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Catalog.Should().NotBeNull();
 		sequence.SingleEntry.Catalog!.Categories.Should().Equal("self", "ece", "ess");
@@ -250,7 +252,7 @@ public class ApiConfigurationConverterTests
 			    categories: [self, serverless]
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Catalog!.Categories.Should().Equal("self", "serverless");
 	}
@@ -263,7 +265,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Catalog.Should().BeNull();
 	}
@@ -278,7 +280,7 @@ public class ApiConfigurationConverterTests
 			  repository: elastic/elasticsearch-specification
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Repository.Should().Be("elastic/elasticsearch-specification");
 	}
@@ -291,7 +293,7 @@ public class ApiConfigurationConverterTests
 			  product: elasticsearch
 			""";
 
-		var sequence = _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options)!;
 
 		sequence.SingleEntry!.Repository.Should().BeNull();
 	}
@@ -301,7 +303,7 @@ public class ApiConfigurationConverterTests
 	{
 		const string yaml = "elasticsearch-openapi.json";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options);
 
 		act.Should().Throw<YamlException>();
 	}
@@ -313,7 +315,7 @@ public class ApiConfigurationConverterTests
 			spec: elasticsearch-openapi.json
 			""";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options);
 
 		act.Should().Throw<YamlException>();
 	}
@@ -327,7 +329,7 @@ public class ApiConfigurationConverterTests
 			- file: outro.md
 			""";
 
-		var act = () => _deserializer.Deserialize<ApiProductSequence>(yaml);
+		var act = () => YamlSerializer.Deserialize<ApiProductSequence>(yaml, _options);
 
 		act.Should().Throw<YamlException>().WithMessage("*legacy intro/outro shape*");
 	}

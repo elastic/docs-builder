@@ -158,4 +158,144 @@ public class ChangelogLabelValidationServiceTests() : ChangelogTestBase()
 		metadata.PrNumber.Should().Be(42);
 		metadata.Status.Should().Be("no-label");
 	}
+
+	private static IEnvironmentVariables CiEnv()
+	{
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+		return env;
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptIn_WritesIncludedOutcomeWithType()
+	{
+		await WriteConfig(MinimalConfig);
+		var args = DefaultArgs(["type:feature"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeTrue();
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeTrue();
+		metadata.Outcome.Type.Should().Be("feature");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInAndSkipLabel_WritesExcludedOutcomeNamingTheLabel()
+	{
+		await WriteConfig(ConfigWithExcludeRule);
+		var args = DefaultArgs(["changelog:skip"], prNumber: 42) with { CommentOnSuccess = true };
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, args, CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.Status.Should().Be("skipped");
+		metadata.Outcome.Should().NotBeNull();
+		metadata.Outcome.Included.Should().BeFalse();
+		metadata.Outcome.Reason.Should().Contain("changelog:skip");
+	}
+
+	[Test]
+	public async Task ValidateLabels_OptInOff_WritesNoOutcome()
+	{
+		await WriteConfig(MinimalConfig);
+
+		await CreateService(CiEnv()).ValidateLabels(Collector, DefaultArgs(["type:feature"], prNumber: 42), CancellationToken.None);
+
+		var metadata = await ReadMetadata();
+		metadata!.CommentOnSuccess.Should().BeFalse();
+		metadata.Outcome.Should().BeNull();
+	}
+
+	private const string ConfigWithRequiredPivots =
+		"""
+		pivot:
+		  required: [areas, products]
+		  types:
+		    feature: "type:feature"
+		    bug-fix:
+		    breaking-change:
+		  areas:
+		    Search: ":Search"
+		  products:
+		    'elasticsearch': "product:es"
+		    'kibana': "product:kb"
+		products:
+		  default:
+		    - product: elasticsearch
+		""";
+
+	[Test]
+	public async Task ValidateLabels_RequiredAreaMissing_ReturnsFalseWithAreaTable()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature", "product:es"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>.That.Contains(":Search"))).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No matching area label found on this PR"));
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredProductMissingDespiteDefaults_ReturnsFalse()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature", ":Search"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>._)).MustNotHaveHappened();
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredProductAndAreaMissing_ReportsBothInOneFailure()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(Collector, DefaultArgs(["type:feature"]), CancellationToken.None);
+
+		result.Should().BeFalse();
+		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustHaveHappened();
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>._)).MustHaveHappened();
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredPivotsAllPresent_ReturnsTrue()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+
+		var result = await CreateService().ValidateLabels(
+			Collector,
+			DefaultArgs(["type:feature", ":Search", "product:kb"]),
+			CancellationToken.None
+		);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "ok");
+	}
+
+	[Test]
+	public async Task ValidateLabels_RequiredAreaMissing_OnCI_WritesAreaLabelTableToMetadata()
+	{
+		await WriteConfig(ConfigWithRequiredPivots);
+		var env = A.Fake<IEnvironmentVariables>();
+		A.CallTo(() => env.IsRunningOnCI).Returns(true);
+
+		await CreateService(env).ValidateLabels(
+			Collector,
+			DefaultArgs(["type:feature", "product:es"], prNumber: 42),
+			CancellationToken.None
+		);
+
+		var metadata = await ReadMetadata();
+		metadata.Should().NotBeNull();
+		metadata.Status.Should().Be("no-label");
+		metadata.AreaLabelTable.Should().Contain(":Search");
+	}
 }

@@ -148,9 +148,15 @@
 	gap: 16px;
 }
 
-/* Operation / group page title — Figma APIs 10079:2802 */
+/* Topic and Authentication pages put their title in the same header, with the content below it. */
+.api-page-intro + #elastic-docs-v3 {
+	margin-top: 16px;
+}
+
+/* Operation / group page title — Figma APIs 10079:2802. A children: page keeps its H1 in its own Markdown, so its first heading takes the same style. */
 .api-page-intro h1,
-#elastic-api-v3 h1 {
+#elastic-api-v3 h1,
+.api-markdown-page > .heading-wrapper:first-child h1 {
 	margin: 0;
 	padding-top: 0;
 	color: var(--color-ink-navy, #111c2c);
@@ -185,6 +191,20 @@
 	margin-bottom: calc(
 		var(--spacing) * 6
 	); /* docs h1 mt-6; API headings set margin: 0 */
+}
+
+/* Beside the sidebar the breadcrumb row is centred on the first line of the API selector's name.
+   Its own 24px top padding and the page's pt-6 would put it about 22px lower. */
+@media (width >= 1024px) {
+	.api-page-main .api-page-toolbar {
+		margin-top: calc(var(--spacing) * -2.5);
+	}
+
+	.api-page-main .api-page-toolbar #breadcrumbs {
+		box-sizing: border-box;
+		min-height: 36px;
+		padding-top: 0;
+	}
 }
 
 .api-page-actions {
@@ -238,6 +258,16 @@
 	border-left: 1px solid #cad3e2;
 	border-radius: 0 7px 7px 0;
 	list-style: none;
+}
+
+/* No Copy page beside it, so the summary is the whole control. */
+.api-page-actions-chevron--labeled {
+	width: auto;
+	gap: 8px;
+	padding: 0 12px;
+	border-left: 0;
+	border-radius: 7px;
+	white-space: nowrap;
 }
 
 .api-page-actions-chevron::-webkit-details-marker {
@@ -475,8 +505,30 @@
 	text-underline-offset: 2px;
 }
 
-.api-group-row .api-overview-title {
+.api-group-heading {
 	grid-area: title;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	column-gap: 8px;
+	row-gap: 4px;
+	min-width: 0;
+}
+
+/* On an operation page the badges sit under the path, as a row of their own. */
+.api-page-intro .api-title-badges {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.api-group-heading .api-title-badges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.api-group-row .api-overview-title {
 	color: inherit;
 	font-size: 16px;
 	font-weight: 600;
@@ -528,36 +580,6 @@
 	margin: 32px 0 8px;
 	font-size: 20px;
 	line-height: 28px;
-}
-
-/* Quiet outlined link: the spec downloads in the landing facts (rail and under the intro). */
-.api-rail-facts a.api-chip-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	padding: 4px 12px;
-	border: 1px solid var(--color-grey-20);
-	border-radius: 8px;
-	color: inherit;
-	font-size: 14px;
-	line-height: 20px;
-	text-decoration: none;
-}
-
-.api-chip-link svg {
-	width: 14px;
-	height: 14px;
-}
-
-.api-rail-facts a.api-chip-link:hover,
-.api-rail-facts a.api-chip-link:focus-visible {
-	border-color: var(--color-grey-80);
-	color: var(--color-blue-elastic, #0b64dd);
-}
-
-.api-rail-facts a.api-chip-link:focus-visible {
-	outline: 2px solid var(--color-blue-elastic, #0b64dd);
-	outline-offset: 2px;
 }
 
 .api-index-group {
@@ -989,6 +1011,13 @@
 	--code-pad: calc(var(--spacing) * 3);
 	/* Code taller than this scrolls in its card; api-examples-carousel.ts shows the expand button past it. */
 	--api-max-lines: 16;
+	--api-response-lines: 12;
+	--api-code-cap: calc(
+		var(--api-max-lines) * var(--code-size) * 1.5 + var(--code-pad) * 2
+	);
+	--api-response-cap: calc(
+		var(--api-response-lines) * var(--code-size) * 1.5 + var(--code-pad) * 2
+	);
 	/* API pages use Inter only — drop Mier B (font-sans) from headings/chrome */
 	@apply font-body;
 
@@ -1188,6 +1217,9 @@ button.response-status-toggle:focus {
 	padding: 4px 12px 8px;
 	border-radius: 8px;
 	background-color: #f5f7fb;
+
+	/* The toggle's label cuts the box line, so it must match this background. */
+	--expand-toggle-bg: #f5f7fb;
 }
 
 .response-panel-body > .property-list > :first-child > dt {
@@ -1281,6 +1313,18 @@ button.response-status-toggle:focus {
 
 .expand-toggle .toggle-icon {
 	@apply font-mono font-semibold;
+}
+
+/* The JSON path tooltip on a property name (data-tippy-theme="mono"); tippy mounts it outside the list. */
+/* Tippy sets max-width inline (350px), so the wider cap needs !important. */
+.tippy-box[data-theme~='mono'] {
+	max-width: min(90vw, 48rem) !important;
+}
+
+.tippy-box[data-theme~='mono'] .tippy-content {
+	@apply font-mono;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 /* Property list — Figma APIs 10079:2948 (Query Parameters / properties) */
@@ -1863,13 +1907,33 @@ a.type-linked:hover {
 	@apply text-grey-60 bg-grey-10 rounded px-1 py-0.5 text-xs font-normal;
 }
 
-.api-title-badges .deprecated-badge {
-	@apply mr-2 inline;
-}
-
 /* x-state availability, rendered with the same applies_to badge as Markdown pages */
 .api-title-badges .applies {
 	@apply mr-2;
+}
+
+/* Auth and Deprecated reuse the availability badge's classes, so only what differs is set here: the red tone and the link. */
+/* The availability badge sits on the bottom of its line (applies-to-popover); without the same here the badge sits on the baseline and the wrapper is taller. */
+.api-title-badges .applies-inline > .applicable-info {
+	vertical-align: bottom;
+}
+
+.api-title-badges .applicable-info.api-badge--danger {
+	@apply text-red-90 border-red-50;
+}
+
+.api-title-badges a.applicable-info {
+	@apply cursor-pointer underline;
+	text-underline-offset: 2px;
+}
+
+.api-title-badges a.applicable-info:hover {
+	@apply border-blue-elastic text-blue-elastic;
+}
+
+.api-title-badges a.applicable-info:focus-visible {
+	outline: 2px solid var(--color-blue-elastic);
+	outline-offset: 2px;
 }
 
 /* Deprecated badge - red warning style */
@@ -1997,13 +2061,6 @@ a.docs-reference-btn::after {
 .array-keyword {
 	@apply text-grey-50 font-normal;
 	font-size: 0.85em;
-}
-
-/* Dictionary/map type icon - same color as object icon */
-.dict-icon {
-	@apply text-grey-60 font-normal;
-	font-size: 1.2em;
-	font-variant: small-caps;
 }
 
 /* Enum type icon - purple to match enum values */
@@ -2291,7 +2348,7 @@ a.docs-reference-btn::after {
 		z-index: 1;
 		margin-left: -0.375rem;
 		padding: 0 0.375rem;
-		background: var(--color-white, #fff);
+		background: var(--expand-toggle-bg, var(--color-white, #fff));
 	}
 }
 
@@ -2351,7 +2408,7 @@ a.docs-reference-btn::after {
 	code:not(pre > code):not(.enum-value):not(.schema-type):not(
 		.union-type-option
 	),
-.example-description :not(pre) > code,
+.api-example-caption :not(pre) > code,
 .union-option {
 	display: inline-flex;
 	align-items: center;
@@ -2867,20 +2924,39 @@ button.example-response-tab:focus-visible {
 
 	.api-page-grid {
 		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
-		grid-template-rows: auto 1fr;
+		grid-template-rows: auto auto;
 	}
 
-	/* Aligned with the breadcrumbs: the article starts under the same 24px. */
+	/* Feedback spans both columns so it ends the page, below the article and the examples rail. */
+	.api-page-grid > page-feedback {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	/* Copy page's 32px button centres on the same line as the breadcrumb and the API selector's name. */
 	.api-page-rail {
 		grid-column: 2;
-		grid-row: 1 / span 2;
+		grid-row: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
 		gap: 16px;
 		min-width: 0;
-		padding-top: 24px;
+		padding-top: 16px;
 		padding-bottom: 48px;
+		/* Stays in view while the sections scroll, however long the page is. The rail itself does not clip, so the
+		   Copy page menu can open past its edge; the examples below it shrink to the window and scroll. */
+		position: sticky;
+		top: var(--offset-top, 0px);
+		align-self: start;
+		max-height: calc(100vh - var(--offset-top, 0px));
+		box-sizing: border-box;
+	}
+
+	.api-page-rail > :not(.api-page-actions) {
+		flex: 0 1 auto;
+		min-height: 0;
+		overflow: hidden auto;
 	}
 
 	.api-page-rail > .api-page-actions {
@@ -2893,30 +2969,8 @@ button.example-response-tab:focus-visible {
 		margin-bottom: 0;
 	}
 
-	/* Examples rail: hug content, cap at the viewport, scroll inside.
-	   Same header-collapse transition as .sidebar-nav so the rails move together. */
-	#api-examples-panel {
-		--api-rail-top: calc(var(--offset-top) + 16px);
-		position: sticky;
-		top: var(--api-rail-top);
-		box-sizing: border-box;
-		max-height: calc(100vh - var(--api-rail-top));
-		overflow: hidden;
-		display: flex;
-		flex-direction: column;
-		transition:
-			top 0.3s ease,
-			max-height 0.3s ease;
-	}
-
-	/* The rail scrolls as a whole when it hits max-height. Cards must not shrink:
-	   with min-height: 0 the request card collapsed to its header and hid the code. */
+	/* The code blocks are normal page flow and cap at a fixed number of lines; the rail around them is sticky (above). */
 	#api-examples-panel .api-examples-panel-nav {
-		flex: 0 1 auto;
-		min-height: 0;
-		max-height: none;
-		overflow-x: hidden;
-		overflow-y: auto;
 		display: flex;
 		flex-direction: column;
 	}
@@ -2955,8 +3009,6 @@ button.example-response-tab:focus-visible {
 	#api-examples-panel .api-code-sample-body,
 	#api-examples-panel .example-block-body {
 		flex: 0 0 auto;
-		max-height: max(12rem, calc((100vh - var(--offset-top)) * 0.4));
-		overflow: auto;
 	}
 }
 
@@ -3078,18 +3130,6 @@ button.example-response-tab:focus-visible {
 	min-width: 0;
 }
 
-/* Example description - smaller font like property descriptions */
-.example-description {
-	@apply text-grey-80;
-	font-size: 0.9em;
-	line-height: 1.5;
-	margin-bottom: 0.75rem;
-
-	p {
-		margin: 0;
-	}
-}
-
 /* Sticky Examples button - bottom right of content area */
 .examples-jump-btn {
 	@apply bg-blue-elastic rounded-full shadow-lg;
@@ -3195,6 +3235,43 @@ button.example-response-tab:focus-visible {
 	line-height: 1.55;
 	color: var(--color-ink-light);
 	text-wrap: balance;
+}
+
+/* The finder is the same box as the API sidebar's, so it looks up operations across every API. It sits
+   under the lede, as wide as the lede, and its results open below it. Both heroes use it, and the
+   navigation-preview one sits outside `.api-catalog`, so the rule stands alone. */
+.api-catalog-finder {
+	max-width: 36rem;
+	margin: 20px auto 0;
+	text-align: left;
+}
+
+/* The box is added by script. min-height is its height (20px line, 12px padding, 2px border), so what sits
+   below it, the sidebar tree or the catalog cards, does not jump when it loads. */
+navigation-search[variant='sidebar'] {
+	display: block;
+	min-height: 34px;
+}
+
+/* The landing box is a little larger: 20px line, 24px padding, 2px border. */
+navigation-search[variant='hero'] {
+	display: block;
+	min-height: 46px;
+}
+
+.api-catalog-finder navigation-search {
+	width: 100%;
+}
+
+/* EUI caps an input popover at 400px unless it is told to be full width. The cap left the box at the left
+   edge of the finder instead of filling it. */
+.api-catalog-finder .euiInputPopover {
+	max-width: none;
+}
+
+/* The navigation-preview hero is left-aligned, so the finder lines up with its title and lede. */
+.landing__hero-text .api-catalog-finder {
+	margin-inline: 0;
 }
 
 @media (max-width: 640px) {
@@ -3307,6 +3384,34 @@ button.example-response-tab:focus-visible {
 	display: flex;
 	align-items: center;
 	column-gap: 14px;
+}
+
+/* The description's section headings sit under the page title (36px on the landing, 24px or 30px on a group), so they step down from it instead of matching it. */
+.api-landing .docs-measure h2,
+.api-group .api-tag-description h2 {
+	margin-top: 32px;
+	font-size: var(--text-2xl);
+}
+
+.api-landing .docs-measure h3,
+.api-group .api-tag-description h3 {
+	font-size: var(--text-xl);
+}
+
+/* A group title is 24px below 40rem, so its intro headings step down one more size. */
+@container api-group (max-width: 39.99rem) {
+	.api-group .api-tag-description h2 {
+		font-size: var(--text-xl);
+	}
+
+	.api-group .api-tag-description h3 {
+		font-size: var(--text-lg);
+	}
+}
+
+/* The index starts after the intro with the same 32px that separates its groups. */
+.api-landing .api-overview {
+	margin-top: 32px;
 }
 
 .api-landing-icon,
@@ -3607,10 +3712,6 @@ html:has(.api-page-shell) {
 	margin-top: 6px;
 }
 
-.api-example-caption :not(pre) > code {
-	font-size: 12px;
-}
-
 .api-example-caption-toggle {
 	margin-top: 4px;
 	padding: 0;
@@ -3793,7 +3894,7 @@ html:has(.api-page-shell) {
 /* A sample docs-builder built says so at the end of its own code block, so the note is about this sample and no other.
    It is part of the scrolling code area (so the strip height measured from it counts the note) but not of the code:
    selection and the copy button leave it out, like the line numbers. */
-#api-examples-panel .api-code-carousel-card-body .api-code-carousel-card-note {
+#api-examples-panel .api-code-carousel-card-note {
 	/* Pinned to the bottom-right of the visible code, not to the code: it neither rides along a wide line's horizontal
 	   scroll nor disappears below a long body. Sticky keeps it in flow, so the strip height still counts it. */
 	position: sticky;
@@ -3841,9 +3942,27 @@ html:has(.api-page-shell) {
 	margin-left: auto;
 }
 
-#api-examples-panel .api-code-carousel-card-body {
-	max-height: max(12rem, calc((100vh - var(--offset-top, 0px)) * 0.4));
+#api-examples-panel .api-code-carousel-card-body,
+#api-examples-panel .api-code-sample-body {
+	max-height: var(--api-code-cap);
 	overflow: auto;
+}
+
+#api-examples-panel .example-block-body {
+	max-height: var(--api-response-cap);
+	overflow: auto;
+}
+
+/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
+   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
+   above the response. The 12-line cap stays as the minimum. */
+@media (min-width: 1024px) {
+	#api-examples-panel .example-block-body {
+		max-height: max(
+			var(--api-response-cap),
+			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		);
+	}
 }
 
 /* At every width the strip is as tall as the active card (--api-strip-height, measured by api-examples-carousel.ts),
@@ -4001,104 +4120,6 @@ html:has(.api-page-shell) {
 	width: 100ch;
 }
 
-/*
- * Rail frame: from 1024px the rail is as tall as its examples, up to the viewport, and never
- * scrolls. A short operation gets a short rail, so the rail does not stretch the row below
- * the reference column. Example chips stay put, the request pane hugs the active sample, the
- * response takes the rest, and only the code areas scroll.
- */
-@media (min-width: 1024px) {
-	#api-examples-panel {
-		max-height: calc(100vh - var(--api-rail-top) - 16px);
-	}
-
-	#api-examples-panel .api-examples-panel-nav {
-		flex: 1 1 auto;
-		overflow: hidden;
-	}
-
-	#api-examples-panel .api-examples {
-		display: flex;
-		flex: 1 1 auto;
-		flex-direction: column;
-		min-height: 0;
-	}
-
-	#api-examples-panel .api-examples-heading,
-	#api-examples-panel .api-example-chips-row,
-	#api-examples-panel .api-example-caption {
-		flex: 0 0 auto;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
-		flex: 1 1 auto;
-		min-height: 0;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel[hidden='until-found'] {
-		flex: 0 0 0;
-		min-height: 0;
-		overflow: hidden;
-	}
-
-	/* Each snippet is as tall as its own code, up to --api-max-lines, and the strip follows the active one
-	   (--api-strip-height, measured from the code in api-examples-carousel.ts). The response takes whatever is left.
-	   Longer code scrolls, and the expand button shows all of it. */
-	#api-examples-panel .api-rail-request {
-		--api-code-cap: calc(
-			var(--api-max-lines, 16) * var(--code-size) * 1.5 +
-				var(--code-pad) * 2
-		);
-		display: flex;
-		flex: 0 1 auto;
-		flex-direction: column;
-		min-height: 120px;
-	}
-
-	#api-examples-panel .api-rail-request > .api-code-card {
-		flex: 0 1 auto;
-		min-height: 0;
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .api-code-carousel-card-body {
-		flex: 1 1 auto;
-		max-height: var(--api-code-cap, none);
-		min-height: 0;
-		overflow: auto;
-	}
-
-	#api-examples-panel .api-code-sample-body {
-		flex: 1 1 auto;
-		max-height: var(--api-code-cap, none);
-		min-height: 0;
-	}
-
-	/* The response has its own size: as tall as its JSON up to --api-response-height, and it never shrinks.
-	   The request pane gives way instead, so the response does not change size when the language or the
-	   example code changes. */
-	#api-examples-panel {
-		--api-response-height: clamp(140px, 24vh, 300px);
-	}
-
-	#api-examples-panel .api-rail-response {
-		flex: 0 0 auto;
-	}
-
-	#api-examples-panel .api-examples-scenario-panel .example-block--response {
-		flex: 0 0 auto;
-		max-height: var(--api-response-height);
-		min-height: 0;
-		margin-bottom: 0;
-	}
-
-	#api-examples-panel .example-block--response .example-block-body {
-		flex: 1 1 auto;
-		max-height: none;
-		min-height: 0;
-	}
-}
-
 @media (max-width: 1023px) {
 	/* Below the sidebar breakpoint the rail is one section among the page's, so its heading is a section heading. */
 	#api-examples-panel .api-examples-heading {
@@ -4175,11 +4196,7 @@ html:has(.api-page-shell) {
 /* Marks what a link points at: one soft pulse. A property row pulses on its name; the padding with a
    matching negative margin gives the tint room around the text without moving anything. */
 .api-link-target-flash {
-	--api-link-flash-tint: color-mix(
-		in srgb,
-		var(--color-yellow-40, #facb3d) 40%,
-		transparent
-	);
+	--api-link-flash-tint: var(--search-highlight-tint);
 	animation: api-link-target-flash 2.4s ease-in-out;
 }
 
@@ -4217,4 +4234,45 @@ html:has(.api-page-shell) {
 			background-color: transparent;
 		}
 	}
+}
+
+/* Quick links to the sections of an endpoint: one bar that stays under the header while the sections scroll. */
+.api-section-links {
+	position: sticky;
+	top: var(--offset-top, 0px);
+	z-index: 5;
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 24px;
+	margin: 24px 0 0;
+	overflow-x: auto;
+	background: #fff;
+	border-bottom: 1px solid #e3e8f2;
+}
+
+.api-section-links a {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 48px;
+	border-bottom: 2px solid transparent;
+	color: #516381;
+	font-weight: 600;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.api-section-links a:hover {
+	color: #1d2a3e;
+}
+
+.api-section-links a[aria-current] {
+	border-bottom-color: #0b64dd;
+	color: #111c2c;
+}
+
+/* A section reached from the bar stops below the bar instead of under it. */
+#elastic-api-v3 .api-param-section-header,
+#elastic-api-v3 .responses-header {
+	scroll-margin-top: calc(var(--offset-top, 0px) + 64px);
 }
