@@ -406,3 +406,5 @@ FodyWeavers.xsd
 .synthetics/
 .worktrees/
 
+# Personal mise overrides
+mise.local.toml
