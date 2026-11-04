@@ -123,9 +123,9 @@ public sealed class Scenario
 	public async Task DoesNotConvertToContainingHtml(string expected) =>
 		HtmlAssertions.DoesNotConvertToContainingHtml(expected, await BuildAsync());
 
-	/// <summary>The relative paths of every page the scenario rendered, sorted. Used to guard the size of a scenario.</summary>
+	/// <summary>The relative paths (forward slashes on every OS) of every page the scenario rendered, sorted. Used to guard the size of a scenario.</summary>
 	public async Task<string[]> PagesAsync() =>
-		[.. (await BuildAsync()).MarkdownResults.Select(r => r.File.RelativePath).Order(StringComparer.Ordinal)];
+		[.. (await BuildAsync()).MarkdownResults.Select(r => r.File.RelativePath.Replace('\\', '/')).Order(StringComparer.Ordinal)];
 
 	/// <summary>The complete HTML of <c>index.md</c>, for assertions about where things appear relative to each other.</summary>
 	public async Task<string> IndexHtmlAsync() => HtmlAssertions.IndexHtml(await BuildAsync());
