@@ -4,6 +4,7 @@
 
 using Elastic.Documentation.Diagnostics;
 using Elastic.Markdown.Diagnostics;
+using Elastic.Markdown.Myst.Comments;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Parsers;
@@ -24,8 +25,11 @@ public static class AutoLinkBuilderExtensions
 
 public class AutoLinkBuilderExtension : IMarkdownExtension
 {
-	public void Setup(MarkdownPipelineBuilder pipeline) =>
-		pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser());
+	public void Setup(MarkdownPipelineBuilder pipeline)
+	{
+		_ = pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new AutoLinkInlineParser());
+		_ = pipeline.InlineParsers.InsertBefore<AutolinkInlineParser>(new AngleBracketApiLinkRecorder());
+	}
 
 	public void Setup(MarkdownPipeline pipeline, Markdig.Renderers.IMarkdownRenderer renderer)
 	{
@@ -86,7 +90,8 @@ public class AutoLinkInlineParser : InlineParser
 
 		processor.Inline = linkInline;
 
-		DiagnosticLinkInlineParser.RecordApiLink(linkInline, context, url);
+		if (processor.Block is not CommentBlock)
+			DiagnosticLinkInlineParser.RecordApiLink(context, url, line, column);
 
 		// Emit hint for elastic.co/docs URLs (after setting Inline so position is correct)
 		if (url.Contains("elastic.co/docs", StringComparison.OrdinalIgnoreCase))
@@ -226,5 +231,36 @@ public class AutoLinkInlineParser : InlineParser
 				return false;
 		}
 		return true;
+	}
+}
+
+/// <summary>
+/// Records <c>&lt;https://...&gt;</c> links that point at API reference pages. It never consumes input, so Markdig's own
+/// autolink parser still creates the link.
+/// </summary>
+public class AngleBracketApiLinkRecorder : InlineParser
+{
+	public AngleBracketApiLinkRecorder() => OpeningCharacters = ['<'];
+
+	public override bool Match(InlineProcessor processor, ref StringSlice slice)
+	{
+		if (processor.Block is CommentBlock)
+			return false;
+
+		var span = slice.AsSpan();
+		if (!span.StartsWith("<http", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		var end = span.IndexOf('>');
+		if (end < 0)
+			return false;
+
+		var url = span[1..end].ToString();
+		if (url.AsSpan().ContainsAny(' ', '<', '\n'))
+			return false;
+
+		_ = processor.GetSourcePosition(slice.Start, out var line, out var column);
+		DiagnosticLinkInlineParser.RecordApiLink(processor.GetContext(), url, line, column);
+		return false;
 	}
 }

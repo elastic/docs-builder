@@ -55,3 +55,37 @@ See https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing for d
 			.Should()
 			.Be("https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing");
 }
+
+[InheritsTests]
+public class ApiAngleBracketAutoLinkTests() : InlineTest<LinkInline>(
+	"""
+See <https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing> for details.
+"""
+)
+{
+	[Test]
+	public void RecordsAngleBracketAutolinkAsApiLink() =>
+		Collector
+			.ApiLinks
+			.Should()
+			.ContainSingle()
+			.Which
+			.Url
+			.Should()
+			.Be("https://www.elastic.co/docs/api/doc/kibana/operation/operation-missing");
+}
+
+[InheritsTests]
+public class ApiLinksInCommentsTests() : InlineTest(
+	"""
+% https://www.elastic.co/docs/api/doc/kibana/operation/old-bare
+% <https://www.elastic.co/docs/api/doc/kibana/operation/old-angle>
+% [old](https://www.elastic.co/docs/api/doc/kibana/operation/old-inline)
+
+Text.
+"""
+)
+{
+	[Test]
+	public void RecordsNothingFromComments() => Collector.ApiLinks.Should().BeEmpty();
+}

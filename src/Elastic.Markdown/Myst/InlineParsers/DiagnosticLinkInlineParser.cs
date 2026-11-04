@@ -155,14 +155,14 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 
 		if (ValidateExternalUri(link, processor, uri))
 		{
-			RecordApiLink(link, context, url);
+			RecordApiLink(context, url, link.Line, link.Column);
 			return;
 		}
 
 		ProcessInternalLink(link, processor, context);
 	}
 
-	internal static void RecordApiLink(LinkInline link, ParserContext context, string? url)
+	internal static void RecordApiLink(ParserContext context, string? url, int zeroBasedLine, int column)
 	{
 		if (context.SkipValidation || !ApiLinkMatcher.TryGetApiPath(url, out _))
 			return;
@@ -171,7 +171,7 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			.Build
 			.Collector
 			.EmitApiLink(
-				new ApiLinkReference(url!, context.MarkdownSourcePath.FullName, link.Line + 1, Math.Max(link.Column, 1), url!.Length)
+				new ApiLinkReference(url!, context.MarkdownSourcePath.FullName, zeroBasedLine + 1, Math.Max(column, 1), url!.Length)
 			);
 	}
 
