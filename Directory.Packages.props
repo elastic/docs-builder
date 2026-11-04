@@ -61,6 +61,10 @@
     <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.31" />
     <PackageVersion Include="Tomlyn" Version="2.3.2" />
     <PackageVersion Include="TUnit" Version="1.78.0" />
+    <!-- The TUnit package pulls these in. Test projects exclude their assets: nothing here uses code coverage or sends test telemetry,
+         and the coverage extension copies about 43 MB of native runtimes into every test project's output. Keep the versions in line with TUnit's dependencies. -->
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.Telemetry" Version="2.5.2" />
     <PackageVersion Include="CsCheck" Version="4.0.0" />
     <PackageVersion Include="WireMock.Net" Version="1.6.11" />
   </ItemGroup>
