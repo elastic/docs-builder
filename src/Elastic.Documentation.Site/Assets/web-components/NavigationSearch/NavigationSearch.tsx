@@ -3,7 +3,6 @@ import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
     GO_TO_LABELS,
-    completeFieldWord,
     groupSearchResults,
     navigableRowCount,
 } from './apiPropertyResults'
@@ -92,17 +91,6 @@ export const NavigationSearch = ({
         const value = e.target.value
         setSearchTerm(value)
         setIsPopoverOpen(!!value.trim())
-    }
-
-    const handleComplete = (path: string) => {
-        setSearchTerm(completeFieldWord(searchTerm, path))
-        setIsPopoverOpen(true)
-        requestAnimationFrame(() => {
-            const input = inputRef.current
-            if (!input) return
-            input.focus()
-            input.setSelectionRange(input.value.length, input.value.length)
-        })
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -218,7 +206,6 @@ export const NavigationSearch = ({
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
-                        onComplete={handleComplete}
                         typeFilter={typeFilter}
                     />
                     <SearchDropdownFooter />

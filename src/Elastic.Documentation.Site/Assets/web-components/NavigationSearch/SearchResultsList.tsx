@@ -73,7 +73,6 @@ export interface SearchResultsListProps {
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
-    onComplete: (path: string) => void
     typeFilter?: TypeFilter
 }
 
@@ -83,7 +82,6 @@ export const SearchResultsList = ({
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
-    onComplete,
     typeFilter = 'all',
 }: SearchResultsListProps) => {
     const { euiTheme } = useEuiTheme()
@@ -210,7 +208,6 @@ export const SearchResultsList = ({
                                 onClick={() =>
                                     handleResultClick(result, rank, property)
                                 }
-                                onComplete={onComplete}
                             />
                         )
                     )}
