@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Versions;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Versions;
 
@@ -13,7 +13,7 @@ public static class VersionsConfigurationExtensions
 	{
 		var versionFilePath = provider.VersionFile;
 
-		var versionsDto = ConfigurationFileProvider.Deserializer.Deserialize<VersionsConfigDto>(versionFilePath.OpenText());
+		var versionsDto = ConfigurationFileProvider.Deserialize<VersionsConfigDto>(versionFilePath.OpenText(), versionFilePath.FullName);
 
 		var versions = versionsDto.VersioningSystems.ToDictionary(
 			kvp => ToVersioningSystemId(kvp.Key),
@@ -22,7 +22,8 @@ public static class VersionsConfigurationExtensions
 				Id = ToVersioningSystemId(kvp.Key),
 				Base = ToSemVersion(kvp.Value.Base),
 				Current = ToSemVersion(kvp.Value.Current)
-			});
+			}
+		);
 		var config = new VersionsConfiguration { VersioningSystems = versions };
 
 		return config;
@@ -52,16 +53,15 @@ public static class VersionsConfigurationExtensions
 
 // Private DTOs for deserialization. These match the YAML structure directly.
 
-internal sealed record VersionsConfigDto
+public sealed record VersionsConfigDto
 {
 	public Dictionary<string, VersioningSystemDto> VersioningSystems { get; set; } = [];
 }
 
-internal sealed record VersioningSystemDto
+public sealed record VersioningSystemDto
 {
-	[YamlMember(Alias = "base")]
+	[YamlPropertyName("base")]
 	public string Base { get; set; } = string.Empty;
-	[YamlMember(Alias = "current")]
+	[YamlPropertyName("current")]
 	public string Current { get; set; } = string.Empty;
 }
-

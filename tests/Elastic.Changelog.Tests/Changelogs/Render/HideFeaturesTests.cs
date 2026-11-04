@@ -10,16 +10,13 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class HideFeaturesTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create changelog with feature-id
+		// Changelog with feature-id
 		// language=yaml
 		var changelog1 =
 			"""
@@ -34,7 +31,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			description: This feature should be hidden
 			""";
 
-		// Create changelog without feature-id (should not be hidden)
+		// Changelog without feature-id (should not be hidden)
 		// language=yaml
 		var changelog2 =
 			"""
@@ -48,59 +45,53 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			description: This feature should be visible
 			""";
 
-		var changelogFile1 = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
-		var changelogFile2 = FileSystem.Path.Join(changelogDir, "1755268140-visible.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-hidden.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			  - file:
-			      name: 1755268140-visible.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-hidden.yaml", changelog1),
+			("1755268140-visible.yaml", changelog2)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:hidden-api"]
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("Hidden feature") &&
-			d.Message.Contains("feature:hidden-api") &&
-			d.Message.Contains("will be commented out"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains("Hidden feature") && d.Message.Contains(
+					"feature:hidden-api"
+				) && d.Message.Contains("will be commented out")
+			);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Hidden entry should be commented out with % prefix
 		indexContent.Should().Contain("% * Hidden feature");
 		// Visible entry should not be commented
@@ -108,13 +99,10 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_BreakingChange_UsesBlockComments()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog =
 			"""
@@ -131,38 +119,33 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			action: Update your code
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-breaking.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-breaking.yaml
-			      checksum: {ComputeSha1(changelog)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-breaking.yaml", changelog)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:hidden-breaking"]
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -171,7 +154,7 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var breakingFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
 		FileSystem.File.Exists(breakingFile).Should().BeTrue();
 
-		var breakingContent = await FileSystem.File.ReadAllTextAsync(breakingFile, TestContext.Current.CancellationToken);
+		var breakingContent = await FileSystem.File.ReadAllTextAsync(breakingFile, TestContext.Current!.Execution.CancellationToken);
 		// Should use block comments <!-- -->
 		breakingContent.Should().Contain("<!--");
 		breakingContent.Should().Contain("-->");
@@ -183,13 +166,10 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		breakingContent.Substring(commentStart, commentEnd - commentStart).Should().Contain("Hidden breaking change");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_Deprecation_UsesBlockComments()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog =
 			"""
@@ -204,38 +184,33 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			description: This deprecation should be hidden
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-deprecation.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-deprecation.yaml
-			      checksum: {ComputeSha1(changelog)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-deprecation.yaml", changelog)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:hidden-deprecation"]
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -244,20 +219,20 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.2.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
 
-		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(
+			deprecationsFile,
+			TestContext.Current!.Execution.CancellationToken
+		);
 		// Should use block comments <!-- -->
 		deprecationsContent.Should().Contain("<!--");
 		deprecationsContent.Should().Contain("-->");
 		deprecationsContent.Should().Contain("Hidden deprecation");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CommaSeparated_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog1 =
 			"""
@@ -296,68 +271,52 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "102"
 			""";
 
-		var changelogFile1 = FileSystem.Path.Join(changelogDir, "1755268130-first.yaml");
-		var changelogFile2 = FileSystem.Path.Join(changelogDir, "1755268140-second.yaml");
-		var changelogFile3 = FileSystem.Path.Join(changelogDir, "1755268150-visible.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-first.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			  - file:
-			      name: 1755268140-second.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			  - file:
-			      name: 1755268150-visible.yaml
-			      checksum: {ComputeSha1(changelog3)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-first.yaml", changelog1),
+			("1755268140-second.yaml", changelog2),
+			("1755268150-visible.yaml", changelog3)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:first", "feature:second"]
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("% * First hidden feature");
 		indexContent.Should().Contain("% * Second hidden feature");
 		indexContent.Should().Contain("* Visible feature");
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_FromFile_CommentsOutMatchingEntries()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog =
 			"""
@@ -371,60 +330,56 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-hidden.yaml
-			      checksum: {ComputeSha1(changelog)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-hidden.yaml", changelog)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create feature IDs file
 		var featureIdsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "feature-ids.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
-		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			featureIdsFile,
+			"feature:from-file\nfeature:another",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = [featureIdsFile]
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("% * Hidden feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithHideFeatures_CaseInsensitive_MatchesFeatureIds()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog =
 			"""
@@ -438,56 +393,48 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "100"
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
-			entries:
-			  - file:
-			      name: 1755268130-hidden.yaml
-			      checksum: {ComputeSha1(changelog)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-hidden.yaml", changelog)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:uppercase"] // Different case
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Should match case-insensitively
 		indexContent.Should().Contain("% * Hidden feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithBundleHideFeatures_CommentsOutMatchingEntries()
 	{
 		// Arrange - Test that hide-features from bundle metadata are used to hide entries
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog1 =
 			"""
@@ -513,53 +460,44 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "101"
 			""";
 
-		var changelogFile1 = FileSystem.Path.Join(changelogDir, "1755268130-hidden.yaml");
-		var changelogFile2 = FileSystem.Path.Join(changelogDir, "1755268140-visible.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// Bundle with hide-features field
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			hide-features:
 			  - feature:from-bundle
-			entries:
-			  - file:
-			      name: 1755268130-hidden.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			  - file:
-			      name: 1755268140-visible.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-hidden.yaml", changelog1),
+			("1755268140-visible.yaml", changelog2)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0"
 			// No CLI --hide-features - relying on bundle metadata
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Entry from bundle hide-features should be commented out
 		indexContent.Should().Contain("% * Hidden from bundle");
 		// Visible entry should not be commented
@@ -567,13 +505,10 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 		indexContent.Should().NotContain("% * Visible feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_MergesCLIAndBundleHideFeatures()
 	{
 		// Arrange - Test that CLI and bundle hide-features are merged
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// language=yaml
 		var changelog1 =
 			"""
@@ -612,58 +547,45 @@ public class HideFeaturesTests(ITestOutputHelper output) : RenderChangelogTestBa
 			- "102"
 			""";
 
-		var changelogFile1 = FileSystem.Path.Join(changelogDir, "1755268130-cli.yaml");
-		var changelogFile2 = FileSystem.Path.Join(changelogDir, "1755268140-bundle.yaml");
-		var changelogFile3 = FileSystem.Path.Join(changelogDir, "1755268150-visible.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(changelogFile3, changelog3, TestContext.Current.CancellationToken);
-
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// Bundle with hide-features for one entry
-		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleContent = CreateResolvedBundleContent(
+			// language=yaml
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			hide-features:
 			  - feature:bundle-hidden
-			entries:
-			  - file:
-			      name: 1755268130-cli.yaml
-			      checksum: {ComputeSha1(changelog1)}
-			  - file:
-			      name: 1755268140-bundle.yaml
-			      checksum: {ComputeSha1(changelog2)}
-			  - file:
-			      name: 1755268150-visible.yaml
-			      checksum: {ComputeSha1(changelog3)}
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+			""",
+			("1755268130-cli.yaml", changelog1),
+			("1755268140-bundle.yaml", changelog2),
+			("1755268150-visible.yaml", changelog3)
+		);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0",
 			HideFeatures = ["feature:cli-hidden"] // CLI hides different feature
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		// Both CLI and bundle hidden entries should be commented
 		indexContent.Should().Contain("% * Hidden from CLI");
 		indexContent.Should().Contain("% * Hidden from bundle");

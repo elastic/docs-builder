@@ -24,7 +24,7 @@ jobs:
             echo "This workflow is only allowed to run on the main branch."
             exit 1
           fi
-      - uses: release-drafter/release-drafter@693d20e7c1ce1a81d3a41962f85914253b518449 # v7.3.1
+      - uses: release-drafter/release-drafter@978bb0b30c5ee8cdd332ced253758157150d43f0 # v7.10.0
         id: release-drafter
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -44,25 +44,39 @@ jobs:
   containers:
     needs: 
       - release-drafter
-    runs-on: ubuntu-latest
+    # Native AOT links against the host glibc; keep in sync with the noble-chiseled base image (build/Targets.fs).
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
+      # Required for `actions/attest-build-provenance`
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     outputs:
       full-version: ${{ steps.bootstrap.outputs.full-version }}
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
-        
+        uses: $/.github/actions/bootstrap
+
+      - name: Restore npm dependencies
+        working-directory: src/Elastic.Documentation.Site
+        run: npm ci
+
+      - name: Check shai-hulud supply-chain hashes
+        uses: $/.github/actions/check-shai-hulud
+        with:
+          path: src/Elastic.Documentation.Site
+
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -70,13 +84,60 @@ jobs:
 
       - name: Publish Containers
         run: ./build.sh publishcontainers
+
+      # Resolve the manifest digest of each pushed image so we can
+      # mint a signed attestation against the immutable digest. The
+      # release version tag (e.g., :v1.4.0) is the canonical reference
+      # but we attest against the digest because tags can be moved.
+      # Consumers verify with:
+      #   gh attestation verify oci://ghcr.io/elastic/docs-builder@<digest> \
+      #     -R elastic/docs-builder
+      - name: Resolve pushed image digests
+        id: digests
+        env:
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+        # language=bash
+        run: |
+          set -euo pipefail
+          for image in docs-builder docs-builder-mcp docs-builder-api; do
+            ref="ghcr.io/elastic/${image}:${TAG_NAME}"
+            digest=$(docker buildx imagetools inspect "$ref" 2>/dev/null \
+              | awk '/^Digest:/ {print $2; exit}')
+            if [ -z "$digest" ]; then
+              echo "::error::Could not resolve manifest digest for ${ref}"
+              exit 1
+            fi
+            echo "${image}=${digest}" >> "$GITHUB_OUTPUT"
+            echo "Resolved ${ref} -> ${digest}"
+          done
+
+      - name: Attest docs-builder image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder
+          subject-digest: ${{ steps.digests.outputs.docs-builder }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-mcp image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-mcp
+          subject-digest: ${{ steps.digests.outputs.docs-builder-mcp }}
+          push-to-registry: true
+
+      - name: Attest docs-builder-api image
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: ghcr.io/elastic/docs-builder-api
+          subject-digest: ${{ steps.digests.outputs.docs-builder-api }}
+          push-to-registry: true
         
   build-link-index-lambda:
     permissions: 
       contents: read
     needs: 
       - release-drafter
-    uses: ./.github/workflows/build-link-index-updater-lambda.yml
+    uses: $/.github/workflows/build-link-index-updater-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
 
@@ -85,9 +146,51 @@ jobs:
       contents: read
     needs:
       - release-drafter
-    uses: ./.github/workflows/build-changelog-scrubber-lambda.yml
+    uses: $/.github/workflows/build-changelog-scrubber-lambda.yml
     with:
       ref: ${{ needs.release-drafter.outputs.tag_name }}
+
+  build-openapi-index-lambda:
+    permissions:
+      contents: read
+    needs:
+      - release-drafter
+    uses: $/.github/workflows/build-openapi-index-lambda.yml
+    with:
+      ref: ${{ needs.release-drafter.outputs.tag_name }}
+
+  package-openapi-index-updater-lambda:
+    runs-on: ubuntu-latest
+    needs:
+      - build-openapi-index-lambda
+      - release-drafter
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
+    env:
+      ZIP_FILE: openapi-index-updater-lambda.zip
+    steps:
+      - name: Download bootstrap binary
+        uses: actions/download-artifact@v8
+        with:
+          name: openapi-index-updater-lambda-binary
+
+      - name: Create zip
+        run: |
+          zip -j "${ZIP_FILE}" ./bootstrap
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: openapi-index-updater-lambda.zip
+
+      - name: Attach distribution to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
+          REPO: ${{ github.repository }}
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
 
   deploy-link-index-updater-lambda-prod:
     environment: 
@@ -112,7 +215,7 @@ jobs:
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-link-index-updater-deployer
           aws-region: us-east-2
@@ -149,11 +252,16 @@ jobs:
         with:
           name: changelog-scrubber-lambda-binary
 
+      - name: Download allowlist identity
+        uses: actions/download-artifact@v8
+        with:
+          name: changelog-scrubber-allowlist-identity
+
       - name: Create zip
         run: |
           zip -j "${ZIP_FILE}" ./bootstrap
 
-      - uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b # v6.2.0
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::197730964718:role/elastic-docs-v3-changelog-scrubber-deployer
           aws-region: us-east-1
@@ -164,12 +272,16 @@ jobs:
             --function-name elastic-docs-v3-changelog-scrubber \
             --zip-file "fileb://${ZIP_FILE}"
 
+      # The allowlist identity is attached only after update-function-code succeeded, so the
+      # presence of this asset on a release attests that the release's allowlist was deployed.
+      # Consumers resolve the deployed identity from the newest release carrying the asset
+      # (`docs-builder changelog scrubber-allowlist`, docs-eng-team#671).
       - name: Attach Distribution to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ needs.release-drafter.outputs.tag_name }}
           REPO: ${{ github.repository }}
-        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}"
+        run: gh release upload --repo "$REPO" "$TAG_NAME" "${ZIP_FILE}" changelog-scrubber-allowlist.json
 
   release:
     needs: 
@@ -177,7 +289,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest, macos-latest-large ]
+        # Native AOT links against the host glibc; keep ubuntu in sync with the noble-chiseled base image (build/Targets.fs).
+        os: [ ubuntu-24.04, windows-latest, macos-latest, macos-latest-large ]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -188,20 +301,13 @@ jobs:
       major-version: ${{ steps.bootstrap.outputs.major-version }}
 
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.release-drafter.outputs.tag_name }}
           persist-credentials: false
-      - name: 'Windows only, set TEMP to the same drive'
-        if: ${{ matrix.os == 'windows-latest' }}
-        #  temporary waiting for https://github.com/parcel-bundler/parcel/pull/10095 to fix
-        run: |
-          mkdir "D:\\Temp"
-          echo "TEMP=D:\\Temp" >> $env:GITHUB_ENV
-
       - name: Bootstrap Action Workspace
         id: bootstrap
-        uses: ./.github/actions/bootstrap
+        uses: $/.github/actions/bootstrap
 
       - name: Publish Binaries
         run: ./build.sh publishzip
@@ -228,10 +334,10 @@ jobs:
       - release-drafter
       - deploy-link-index-updater-lambda-prod
       - deploy-changelog-scrubber-lambda-prod
+      - package-openapi-index-updater-lambda
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
     steps:
       - name: Publish release
         env:
@@ -241,6 +347,16 @@ jobs:
         run: |
           gh release edit "$TAG_NAME" --draft=false --latest --repo "$REPO"
 
+  # Notification runs after publish-release but is decoupled from the bundle jobs.
+  # A dispatch failure must not prevent a published tag from getting its release-notes bundle.
+  notify-docs-internal-workflows:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
       - name: Fetch ephemeral GitHub token
         id: fetch-ephemeral-token
         uses: elastic/ci-gh-actions/fetch-github-token@v1
@@ -254,4 +370,88 @@ jobs:
         run: |
           gh api repos/elastic/docs-internal-workflows/dispatches \
             -f event_type=docs-builder-released \
-            -F client_payload[tag_name]="$TAG_NAME"
+            -F "client_payload[tag_name]=$TAG_NAME"
+
+  # Build and publish the release-notes bundle for this tag.
+  #
+  # These two jobs live here rather than in the `release-notes.yml` caller (which gates its
+  # bundle job on `on: release`) because the release above is published with GITHUB_TOKEN,
+  # and GitHub does not start workflow runs from GITHUB_TOKEN-created events. Running them
+  # inside the release workflow keeps the bundle tied to the tag that was just cut.
+  #
+  # The split into create + publish mirrors elastic/docs-actions: the create job holds no
+  # AWS credentials and hands the bundle over as an artifact, and only the publish job
+  # assumes the OIDC upload role.
+  create-release-notes-bundle:
+    needs:
+      - release-drafter
+      - publish-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      pull-requests: read
+    outputs:
+      bundle-path: ${{ steps.create.outputs.bundle-path }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Create bundle
+        id: create
+        uses: elastic/docs-actions/changelog/bundle-create-version@v1
+        with:
+          config: docs/changelog.yml
+          version: ${{ needs.release-drafter.outputs.tag_name }}
+          repo: ${{ github.event.repository.name }}
+          owner: ${{ github.repository_owner }}
+
+  publish-release-notes-bundle:
+    needs:
+      - release-drafter
+      - create-release-notes-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-drafter.outputs.tag_name }}
+          persist-credentials: false
+
+      - name: Publish bundle to S3
+        uses: elastic/docs-actions/changelog/bundle-publish@v1
+        with:
+          config: docs/changelog.yml
+          bundle-path: ${{ needs.create-release-notes-bundle.outputs.bundle-path }}
+
+  notify-failure:
+    needs:
+      - release-drafter
+      - containers
+      - build-link-index-lambda
+      - build-changelog-scrubber-lambda
+      - build-openapi-index-lambda
+      - package-openapi-index-updater-lambda
+      - deploy-link-index-updater-lambda-prod
+      - deploy-changelog-scrubber-lambda-prod
+      - release
+      - publish-release
+      - notify-docs-internal-workflows
+      - create-release-notes-bundle
+      - publish-release-notes-bundle
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-slim
+    permissions:
+      id-token: write
+    steps:
+      - uses: elastic/docs-actions/slack/notify-status@v1
+        with:
+          channel: docs-alerts
+          status: failure
+          mention: S028C66K5EX
+          description: Release failed. Containers, binaries, Lambda deploys, or publish did not complete.

@@ -26,8 +26,7 @@ public class DeprecationsAsciidocRenderer(StringBuilder sb) : AsciidocRendererBa
 		foreach (var group in groupedEntries)
 		{
 			// Check if all entries in this group are hidden
-			var allEntriesHidden = group.All(entry =>
-				ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
+			var allEntriesHidden = group.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 			// Add nested section header when subsections are enabled and group has a name
 			if (context.Subsections && !string.IsNullOrWhiteSpace(group.Key))

@@ -19,10 +19,9 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 	private BuildContext Build => build;
 	private bool _versionLockInitialized;
 
-	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } =
-		GetAllDetectionRuleOverviewRefs(build.ConfigurationYaml.TableOfContents)
-			.Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md")
-			.ToHashSet();
+	private IReadOnlySet<string> DeprecatedOverviewFileNames { get; } = GetAllDetectionRuleOverviewRefs(
+		build.ConfigurationYaml.TableOfContents
+	).Select(r => r.DeprecatedFile ?? "deprecated-detection-rules.md").ToHashSet();
 
 	public IEnumerable<string> ExternalScopeRoots =>
 		GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents)
@@ -30,7 +29,10 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 			.Select(f => Path.GetFullPath(f, Build.DocumentationSourceDirectory.FullName))
 			.Distinct();
 
-	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(build.ReadFileSystem, build.WriteFileSystem);
+	public IDocumentationFileExporter? FileExporter { get; } = new RuleDocumentationFileExporter(
+		build.ReadFileSystem,
+		build.WriteFileSystem
+	);
 
 	public DocumentationFile? CreateDocumentationFile(IFileInfo file, MarkdownParser markdownParser)
 	{
@@ -67,7 +69,8 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		if (navigation is not VirtualFileNavigation<MarkdownFile> node)
 			return;
 
-		var ruleNavigations = node.NavigationItems
+		var ruleNavigations = node
+			.NavigationItems
 			.OfType<ILeafNavigationItem<IDocumentationFile>>()
 			.Where(n => n.Model is DetectionRuleFile)
 			.ToArray();
@@ -90,19 +93,17 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 		return documentationSet.Files.TryGetValue(filePath, out documentationFile);
 	}
 
-	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling)
+	public IReadOnlyCollection<(IFileInfo, DocumentationFile)> ScanDocumentationFiles(
+		Func<IFileInfo, IDirectoryInfo, DocumentationFile> defaultFileHandling
+	)
 	{
 		var overviewRefs = GetAllDetectionRuleOverviewRefs(Build.ConfigurationYaml.TableOfContents).ToArray();
 
 		// Pass each overviewRef as a single-element sequence so the switch case that
 		// checks DeprecatedSiblingRef is triggered, picking up both active and deprecated rules.
-		var rules = overviewRefs
-			.SelectMany(r => GetAllDetectionRuleRefs([r]))
-			.ToArray();
+		var rules = overviewRefs.SelectMany(r => GetAllDetectionRuleRefs([r])).ToArray();
 
-		var result = rules
-			.Select(r => (r.FileInfo, defaultFileHandling(r.FileInfo, r.FileInfo.Directory!)))
-			.ToList();
+		var result = rules.Select(r => (r.FileInfo, defaultFileHandling(r.FileInfo, r.FileInfo.Directory!))).ToList();
 
 		// Pre-register synthetic deprecated overview files for overviews without a physical file.
 		// When the physical file exists it is already picked up by the normal source directory scan.
@@ -134,23 +135,29 @@ public class DetectionRulesDocsBuilderExtension(BuildContext build) : IDocsBuild
 
 	// Finds all DetectionRuleOverviewRef instances at any depth in the TOC tree
 	private static IEnumerable<DetectionRuleOverviewRef> GetAllDetectionRuleOverviewRefs(IEnumerable<ITableOfContentsItem> items) =>
-		items.SelectMany(item => item switch
-		{
-			DetectionRuleOverviewRef r => [r],
-			FileRef fr => GetAllDetectionRuleOverviewRefs(fr.Children),
-			_ => []
-		});
+		items.SelectMany(
+			item =>
+				item switch
+				{
+					DetectionRuleOverviewRef r => [r],
+					FileRef fr => GetAllDetectionRuleOverviewRefs(fr.Children),
+					_ => []
+				}
+		);
 
 	// Finds all DetectionRuleRef instances at any depth within a set of TOC items.
 	// Also scans DeprecatedSiblingRef on DetectionRuleOverviewRef since deprecated rules
 	// are no longer nested in Children — they live in the sibling's Children instead.
 	private static IEnumerable<DetectionRuleRef> GetAllDetectionRuleRefs(IEnumerable<ITableOfContentsItem> items) =>
-		items.SelectMany(item => item switch
-		{
-			DetectionRuleRef dr => [dr],
-			DetectionRuleOverviewRef r when r.DeprecatedSiblingRef is { } dep =>
-				GetAllDetectionRuleRefs(r.Children).Concat(GetAllDetectionRuleRefs(dep.Children)),
-			FileRef fr => GetAllDetectionRuleRefs(fr.Children),
-			_ => []
-		});
+		items.SelectMany(
+			item =>
+				item switch
+				{
+					DetectionRuleRef dr => [dr],
+					DetectionRuleOverviewRef r when r.DeprecatedSiblingRef is { } dep =>
+						GetAllDetectionRuleRefs(r.Children).Concat(GetAllDetectionRuleRefs(dep.Children)),
+					FileRef fr => GetAllDetectionRuleRefs(fr.Children),
+					_ => []
+				}
+		);
 }

@@ -1,0 +1,86 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.IO.Abstractions;
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Navigation;
+using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Icons;
+using RazorSlices;
+
+namespace Elastic.ApiExplorer.Landing;
+
+public sealed record ApiCatalogEntry(string Key, string Title, string Url, string? ProductId = null, string? Description = null)
+{
+	public IReadOnlyList<string> CatalogCategories { get; init; } = [];
+
+	/// <summary>The highest frozen major's root, such as <c>/api/doc/kibana/v9</c>. Null when the API has no numbered version.</summary>
+	public string? LatestUrl { get; init; }
+
+	/// <summary>Where a link to this API goes: its latest numbered version, or its root.</summary>
+	public string OpenUrl => LatestUrl ?? Url;
+
+	public string? IconSvg => ProductIcons.Get(ProductId ?? Key);
+}
+
+public class ApiCatalog : IApiGroupingModel
+{
+	public const string PageTitle = "Elastic APIs";
+
+	/// <summary>The line under the title. It also tells a reader what the deployment tags on the cards refer to.</summary>
+	public const string PageLede =
+		"Reference documentation for the Elastic REST APIs, for self-managed, Elastic Cloud and Serverless deployments.";
+
+	/// <summary>Section the catalog view hands to its layout, rendered above the width-limited container.</summary>
+	public const string HeroSection = "api-catalog-hero";
+	public const string PageDescription =
+		"Reference documentation for Elastic REST APIs, including Elasticsearch, Kibana and Elastic Cloud.";
+
+	public required IReadOnlyList<ApiCatalogEntry> Entries { get; init; }
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	{
+		var viewModel = ApiCatalogViewModel.FromEntries(context, Entries);
+		await ApiCatalogView.Create(viewModel).RenderAsync(stream, cancellationToken: ctx);
+	}
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, Cancel ctx = default) =>
+		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
+
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default) =>
+		Task.FromResult<string?>(LandingCommonMark.Catalog(Entries));
+}
+
+public class ApiCatalogNavigationItem : IRootNavigationItem<ApiCatalog, INavigationItem>, INavigationItem
+{
+	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
+	public string Id { get; }
+	public ILeafNavigationItem<ApiCatalog> Index { get; }
+	public IReadOnlyCollection<INavigationItem> NavigationItems { get; set; } = [];
+	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
+	public int NavigationIndex { get; set; }
+	public string Url => Index.Url;
+	public bool Hidden => false;
+	public Uri Identifier { get; } = new("about:blank");
+	public string NavigationTitle => Index.NavigationTitle;
+
+	public ApiCatalogNavigationItem(string url, IReadOnlyList<ApiCatalogEntry> entries)
+	{
+		NavigationRoot = this;
+		Id = ShortId.Create("api-catalog");
+		var catalog = new ApiCatalog { Entries = entries };
+		Index = new ApiIndexLeafNavigation<ApiCatalog>(catalog, url, ApiCatalog.PageTitle, this);
+	}
+
+	/// <inheritdoc />
+	public bool IsUsingNavigationDropdown => false;
+
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		throw new NotSupportedException(
+			$"{nameof(IAssignableChildrenNavigation.SetNavigationItems)} is not supported on {nameof(ApiCatalogNavigationItem)}."
+		);
+}

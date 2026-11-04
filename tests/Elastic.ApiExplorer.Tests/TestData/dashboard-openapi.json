@@ -1,0 +1,259 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kibana APIs",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Dashboards"
+    }
+  ],
+  "paths": {
+    "/api/dashboards": {
+      "get": {
+        "operationId": "get-dashboards",
+        "summary": "Search dashboards",
+        "tags": [
+          "Dashboards"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "description": "The page of results to return.",
+            "schema": {
+              "type": "number",
+              "default": 1
+            }
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "description": "The number of results to return per page.",
+            "schema": {
+              "type": "number",
+              "default": 20
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "description": "Filters results by `title` and `description` using Elasticsearch [`simple_query_string`](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-simple-query-string-query) syntax. Multi-word terms require all words to match.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "required": false,
+            "description": "A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, library items matching any of the tag IDs are included.",
+            "schema": {
+              "type": "array",
+              "default": [],
+              "description": "Tag IDs associated with this dashboard."
+            }
+          },
+          {
+            "name": "excluded_tags",
+            "in": "query",
+            "required": false,
+            "description": "A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, library items matching any of the tag IDs are excluded.",
+            "schema": {
+              "type": "array",
+              "default": [],
+              "description": "Tag IDs associated with this dashboard."
+            }
+          },
+          {
+            "name": "tag_names",
+            "in": "query",
+            "required": false,
+            "description": "A tag name to include. Accepts a single tag name or multiple tag names. When multiple are specified, library items matching any of the tag names are included. If the same name is shared by multiple tags, items matching any of those tags are included.",
+            "schema": {
+              "type": "array"
+            }
+          },
+          {
+            "name": "excluded_tag_names",
+            "in": "query",
+            "required": false,
+            "description": "A tag name to exclude. Accepts a single tag name or multiple tag names. When multiple are specified, library items matching any of the tag names are excluded. If the same name is shared by multiple tags, items matching any of those tags are excluded.",
+            "schema": {
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "400": {
+            "description": "bad request"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "500": {
+            "description": "internal server error"
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-dashboards",
+        "summary": "Create a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "parameters": [
+          {
+            "name": "kbn-xsrf",
+            "in": "header",
+            "required": true,
+            "description": "A required header to protect against CSRF attacks",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "created"
+          },
+          "400": {
+            "description": "invalid request"
+          },
+          "403": {
+            "description": "forbidden"
+          }
+        }
+      }
+    },
+    "/api/dashboards/{id}": {
+      "delete": {
+        "operationId": "delete-dashboards-id",
+        "summary": "Delete a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "parameters": [
+          {
+            "name": "kbn-xsrf",
+            "in": "header",
+            "required": true,
+            "description": "A required header to protect against CSRF attacks",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The dashboard ID, as returned by the create or search endpoints.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "deleted"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not found"
+          },
+          "500": {
+            "description": "internal server error"
+          }
+        }
+      },
+      "get": {
+        "operationId": "get-dashboards-id",
+        "summary": "Get a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The dashboard ID, as returned by the create or search endpoints.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success"
+          },
+          "400": {
+            "description": "invalid response"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not found"
+          },
+          "500": {
+            "description": "internal server error"
+          }
+        }
+      },
+      "put": {
+        "operationId": "put-dashboards-id",
+        "summary": "Upsert a dashboard",
+        "tags": [
+          "Dashboards"
+        ],
+        "parameters": [
+          {
+            "name": "kbn-xsrf",
+            "in": "header",
+            "required": true,
+            "description": "A required header to protect against CSRF attacks",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The unique ID of the dashboard to be created or updated",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "updated"
+          },
+          "201": {
+            "description": "created"
+          },
+          "400": {
+            "description": "invalid request"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "409": {
+            "description": "conflict"
+          }
+        }
+      }
+    }
+  }
+}

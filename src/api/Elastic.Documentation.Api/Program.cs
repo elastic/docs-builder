@@ -17,22 +17,22 @@ try
 	var environment = Environment.GetEnvironmentVariable("ENVIRONMENT");
 	Console.WriteLine($"Docs Environment: {environment}");
 
-	var builder = WebApplication.CreateSlimBuilder(args)
+	var builder = WebApplication
+		.CreateSlimBuilder(args)
 		.AddDocumentationServiceDefaults((s, p) =>
 		{
 			_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 		})
-		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api")
-		{
-			Tracing = (_, t) => t.AddDocsApiTracing(),
-		})
+		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
 
 	// Only hardcode port 8080 when not running under Aspire/orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
-	if (string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
+	if (
+		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])
 		&& string.IsNullOrEmpty(builder.Configuration["HTTPS_PORTS"])
-		&& string.IsNullOrEmpty(builder.Configuration["URLS"]))
+		&& string.IsNullOrEmpty(builder.Configuration["URLS"])
+	)
 	{
 		_ = builder.WebHost.ConfigureKestrel(serverOptions =>
 		{

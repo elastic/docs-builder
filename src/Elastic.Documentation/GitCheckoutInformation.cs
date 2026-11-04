@@ -44,8 +44,7 @@ public record GitCheckoutInformation
 	/// to a valid GitHub <c>org/repo</c> path. Callers should skip GitHub links when null.
 	/// </summary>
 	[JsonIgnore]
-	public string? GitHubRepository =>
-		Remote is "elastic/docs-builder-unknown" ? null : ExtractGitHubOrgRepo(Remote);
+	public string? GitHubRepository => Remote is "elastic/docs-builder-unknown" ? null : ExtractGitHubOrgRepo(Remote);
 
 	/// <summary>Extracts a validated <c>org/repo</c> path from a GitHub remote URL, or returns <c>null</c>.</summary>
 	/// <remarks>

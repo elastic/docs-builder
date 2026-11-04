@@ -32,7 +32,15 @@ public class IncrementalDeployService(
 		MaxErrorRetry = 5
 	});
 
-	public async Task<bool> Plan(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string @out, float? deleteThreshold, string[] excludePatterns, Cancel ctx)
+	public async Task<bool> Plan(
+		IDiagnosticsCollector collector,
+		IDocsSyncContext context,
+		string s3BucketName,
+		string @out,
+		float? deleteThreshold,
+		string[] excludePatterns,
+		Cancel ctx
+	)
 	{
 		if (excludePatterns.Length > 0)
 			_logger.LogInformation("Excluding patterns from sync: {ExcludePatterns}", string.Join(", ", excludePatterns));
@@ -44,7 +52,10 @@ public class IncrementalDeployService(
 		if (!validationResult.Valid)
 		{
 			await githubActionsService.SetOutputAsync("plan-valid", "false");
-			collector.EmitError(@out, $"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}");
+			collector.EmitError(
+				@out,
+				$"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}"
+			);
 			return false;
 		}
 
@@ -60,13 +71,23 @@ public class IncrementalDeployService(
 		return collector.Errors == 0;
 	}
 
-	public async Task<bool> Apply(IDiagnosticsCollector collector, IDocsSyncContext context, string s3BucketName, string planFile, Cancel ctx)
+	public async Task<bool> Apply(
+		IDiagnosticsCollector collector,
+		IDocsSyncContext context,
+		string s3BucketName,
+		string planFile,
+		Cancel ctx
+	)
 	{
-		var xfer = transferUtility ?? new TransferUtility(_s3, new TransferUtilityConfig
-		{
-			ConcurrentServiceRequests = Environment.ProcessorCount * 2,
-			MinSizeBeforePartUpload = S3EtagCalculator.PartSize
-		});
+		var xfer = transferUtility
+			?? new TransferUtility(
+				_s3,
+				new TransferUtilityConfig
+				{
+					ConcurrentServiceRequests = Environment.ProcessorCount * 2,
+					MinSizeBeforePartUpload = S3EtagCalculator.PartSize
+				}
+			);
 		if (!context.ReadFileSystem.File.Exists(planFile))
 		{
 			collector.EmitError(planFile, "Plan file does not exist.");
@@ -85,7 +106,10 @@ public class IncrementalDeployService(
 		var validationResult = validator.Validate(plan);
 		if (!validationResult.Valid)
 		{
-			collector.EmitError(planFile, $"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}");
+			collector.EmitError(
+				planFile,
+				$"Plan is invalid, {validationResult}, delete ratio: {validationResult.DeleteRatio}, remote listing completed: {plan.RemoteListingCompleted}"
+			);
 			return false;
 		}
 		var applier = new AwsS3SyncApplyStrategy(logFactory, _s3, xfer, s3BucketName, context, collector);
@@ -96,6 +120,7 @@ public class IncrementalDeployService(
 	{
 		_logger.LogInformation("Remote listing completed: {RemoteListingCompleted}", plan.RemoteListingCompleted);
 		_logger.LogInformation("Total files to delete: {DeleteCount}", plan.DeleteRequests.Count);
+		_logger.LogInformation("Total stale hashed assets retained: {RetainCount}", plan.RetainedPaths.Count);
 		_logger.LogInformation("Total files to add: {AddCount}", plan.AddRequests.Count);
 		_logger.LogInformation("Total files to update: {UpdateCount}", plan.UpdateRequests.Count);
 		_logger.LogInformation("Total files to skip: {SkipCount}", plan.SkipRequests.Count);

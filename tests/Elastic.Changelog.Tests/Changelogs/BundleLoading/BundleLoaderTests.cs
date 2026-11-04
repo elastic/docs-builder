@@ -9,9 +9,8 @@ using Elastic.Documentation.ReleaseNotes;
 
 namespace Elastic.Changelog.Tests.Changelogs.BundleLoading;
 
-public class BundleLoaderTests(ITestOutputHelper output)
+public class BundleLoaderTests()
 {
-	private readonly ITestOutputHelper _output = output;
 	private readonly MockFileSystem _fileSystem = new();
 	private readonly List<string> _warnings = [];
 
@@ -20,12 +19,12 @@ public class BundleLoaderTests(ITestOutputHelper output)
 	private void EmitWarning(string message)
 	{
 		_warnings.Add(message);
-		_output.WriteLine($"Warning: {message}");
+		TestContext.Current?.Output.WriteLine($"Warning: {message}");
 	}
 
 	#region LoadBundles Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithValidBundles_ReturnsLoadedBundles()
 	{
 		// Arrange
@@ -61,7 +60,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithMultipleBundles_ReturnsAllBundles()
 	{
 		// Arrange
@@ -102,7 +101,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithInvalidYaml_EmitsWarningAndSkips()
 	{
 		// Arrange
@@ -124,7 +123,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings[0].Should().Contain("Failed to parse changelog bundle 'invalid.yaml'");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithNoProducts_UsesFilenameAsVersion()
 	{
 		// Arrange
@@ -156,17 +155,13 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region ResolveEntries Tests
 
-	[Fact]
+	[Test]
 	public void ResolveEntries_WithInlineEntries_ReturnsEntries()
 	{
 		// Arrange
-		var service = CreateService();
 		var bundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Entries =
 			[
 				new BundledEntry { Title = "Test feature", Type = ChangelogEntryType.Feature },
@@ -175,7 +170,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		// Act
-		var entries = service.ResolveEntries(bundle, "/changelog", EmitWarning);
+		var entries = BundleLoader.ResolveEntries(bundle, "9.3.0.yaml", EmitWarning);
 
 		// Assert
 		entries.Should().HaveCount(2);
@@ -184,116 +179,37 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void ResolveEntries_WithFileReferences_LoadsFromFiles()
+	[Test]
+	public void ResolveEntries_WithEntryLackingInlineContent_EmitsWarningNamingBundleAndEntry()
 	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory($"{changelogDir}/entries");
-
-		// language=yaml
-		var entryContent =
-			"""
-			title: Feature from file
-			type: feature
-			prs:
-			  - "100"
-			description: A feature loaded from a file
-			""";
-		_fileSystem.File.WriteAllText($"{changelogDir}/entries/feature.yaml", entryContent);
-
-		var service = CreateService();
-		var bundle = new Bundle
-		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
-			Entries =
-			[
-				new BundledEntry { File = new BundledFile { Name = "entries/feature.yaml", Checksum = "sha1" } }
-			]
-		};
-
-		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
-
-		// Assert
-		entries.Should().HaveCount(1);
-		entries[0].Title.Should().Be("Feature from file");
-		entries[0].Description.Should().Be("A feature loaded from a file");
-		_warnings.Should().BeEmpty();
-	}
-
-	[Fact]
-	public void ResolveEntries_WithMissingFileReference_EmitsWarning()
-	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory(changelogDir);
-
-		var service = CreateService();
-		var bundle = new Bundle
-		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
-			Entries =
-			[
-				new BundledEntry { File = new BundledFile { Name = "nonexistent.yaml", Checksum = "sha1" } }
-			]
-		};
-
-		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
-
-		// Assert
-		entries.Should().BeEmpty();
-		_warnings.Should().ContainSingle();
-		_warnings[0].Should().Contain("not found");
-	}
-
-	[Fact]
-	public void ResolveEntries_WithVersionField_NormalizesToTarget()
-	{
-		// Arrange
-		var changelogDir = "/docs/changelog";
-		_fileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Using legacy 'version:' field instead of 'target:'
-		// language=yaml
-		var entryContent =
-			"""
-			title: Legacy entry
-			type: feature
-			products:
-			  - product: elasticsearch
-			    version: 9.3.0
-			""";
-		_fileSystem.File.WriteAllText($"{changelogDir}/legacy.yaml", entryContent);
-
-		var service = CreateService();
+		// Arrange - a reference-style entry (file block only, no inline content) is invalid
 		var bundle = new Bundle
 		{
 			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
-			Entries = [new BundledEntry { File = new BundledFile { Name = "legacy.yaml", Checksum = "sha1" } }]
+			Entries =
+			[
+				new BundledEntry { Title = "Inline feature", Type = ChangelogEntryType.Feature },
+				new BundledEntry { File = new BundledFile { Name = "reference-only.yaml", Checksum = "sha1" } }
+			]
 		};
 
 		// Act
-		var entries = service.ResolveEntries(bundle, changelogDir, EmitWarning);
+		var entries = BundleLoader.ResolveEntries(bundle, "9.3.0.yaml", EmitWarning);
 
-		// Assert
-		entries.Should().HaveCount(1);
-		entries[0].Title.Should().Be("Legacy entry");
-		_warnings.Should().BeEmpty();
+		// Assert - the invalid entry is skipped, never loaded from disk
+		entries.Should().ContainSingle();
+		entries[0].Title.Should().Be("Inline feature");
+		_warnings.Should().ContainSingle();
+		_warnings[0].Should().Contain("9.3.0.yaml");
+		_warnings[0].Should().Contain("reference-only.yaml");
+		_warnings[0].Should().Contain("no inline content");
 	}
 
 	#endregion
 
 	#region FilterEntries Tests
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithNoFilters_ReturnsAllEntries()
 	{
 		// Arrange
@@ -311,7 +227,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_HidesBlockedTypes()
 	{
 		// Arrange
@@ -323,10 +239,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Bug fix", Type = ChangelogEntryType.BugFix }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Types = ["regression"]
-		};
+		var publishBlocker = new PublishBlocker { Types = ["regression"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -336,7 +249,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered.Select(e => e.Type).Should().NotContain(ChangelogEntryType.Regression);
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_HidesBlockedAreas()
 	{
 		// Arrange
@@ -348,10 +261,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Mixed feature", Type = ChangelogEntryType.Feature, Areas = ["Search", "Internal"] }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Areas = ["Internal"]
-		};
+		var publishBlocker = new PublishBlocker { Areas = ["Internal"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -361,7 +271,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		filtered[0].Title.Should().Be("Public feature");
 	}
 
-	[Fact]
+	[Test]
 	public void FilterEntries_WithPublishBlocker_CombinesTypeAndAreaBlocking()
 	{
 		// Arrange
@@ -373,11 +283,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			new() { Title = "Hidden by area", Type = ChangelogEntryType.Feature, Areas = ["Internal"] }
 		};
 
-		var publishBlocker = new PublishBlocker
-		{
-			Types = ["regression"],
-			Areas = ["Internal"]
-		};
+		var publishBlocker = new PublishBlocker { Types = ["regression"], Areas = ["Internal"] };
 
 		// Act
 		var filtered = service.FilterEntries(entries, publishBlocker);
@@ -391,15 +297,21 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region MergeBundlesByTarget Tests
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithSingleBundle_ReturnsSameBundle()
 	{
 		// Arrange
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/bundle.yaml",
-				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/bundle.yaml",
+				[new ChangelogEntry { Title = "Entry 1", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -410,17 +322,29 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Should().BeSameAs(bundles[0]);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithDifferentVersions_KeepsSeparate()
 	{
 		// Arrange
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.3.0.yaml",
-				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]),
-			new("9.2.0", "elasticsearch", "elastic", new Bundle(), "/path/to/9.2.0.yaml",
-				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/9.3.0.yaml",
+				[new ChangelogEntry { Title = "Entry 9.3.0", Type = ChangelogEntryType.Feature }]
+			),
+			new(
+				"9.2.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/9.2.0.yaml",
+				[new ChangelogEntry { Title = "Entry 9.2.0", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -430,17 +354,29 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithSameVersion_MergesEntries()
 	{
 		// Arrange
 		var service = CreateService();
 		var bundles = new List<LoadedBundle>
 		{
-			new("9.3.0", "elasticsearch", "elastic", new Bundle(), "/path/to/es.yaml",
-				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]),
-			new("9.3.0", "kibana", "elastic", new Bundle(), "/path/to/kibana.yaml",
-				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }])
+			new(
+				"9.3.0",
+				"elasticsearch",
+				"elastic",
+				new Bundle(),
+				"/path/to/es.yaml",
+				[new ChangelogEntry { Title = "ES Entry", Type = ChangelogEntryType.Feature }]
+			),
+			new(
+				"9.3.0",
+				"kibana",
+				"elastic",
+				new Bundle(),
+				"/path/to/kibana.yaml",
+				[new ChangelogEntry { Title = "Kibana Entry", Type = ChangelogEntryType.Feature }]
+			)
 		};
 
 		// Act
@@ -454,7 +390,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Entries.Select(e => e.Title).Should().Contain(["ES Entry", "Kibana Entry"]);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_PreservesSortOrder()
 	{
 		// Arrange
@@ -476,7 +412,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[2].Version.Should().Be("9.1.0");
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_WithDateVersions_SortsCorrectly()
 	{
 		// Arrange - Date-based versions for serverless releases
@@ -502,7 +438,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region Amend File Merging Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithAmendFile_MergesEntriesIntoParentBundle()
 	{
 		// Arrange
@@ -543,7 +479,43 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
+	public void LoadBundles_WithAmendNotesFile_MergesEntriesIntoParentBundle()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			entries:
+			  - title: Late note
+			    type: security
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var service = CreateService();
+		var bundles = service.LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Version.Should().Be("9.3.0");
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Original feature", "Late note");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Test]
 	public void LoadBundles_WithMultipleAmendFiles_MergesAllIntoParent()
 	{
 		// Arrange
@@ -592,7 +564,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Select(e => e.Title).Should().Contain(["Original feature", "First amendment", "Second amendment"]);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithExcludeAmendFile_RemovesEntryFromParent()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -635,7 +607,58 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries[0].Title.Should().Be("Original feature");
 	}
 
-	[Fact]
+	[Test]
+	public void LoadBundles_NumberedExcludeThenNotesReadd_KeepsEntry()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Parent intro
+			entries:
+			  - title: Shipped feature
+			    type: feature
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var numberedExclude =
+			"""
+			exclude-entries:
+			  - file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			description: Notes sidecar must not win
+			entries:
+			  - title: Late readd
+			    type: security
+			    file:
+			      name: shipped.yaml
+			      checksum: aaa
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", numberedExclude);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Late readd");
+		bundles[0].Data.Description.Should().Be("Parent intro");
+	}
+
+	[Test]
 	public void LoadBundles_AmendFileWithoutParent_RemainsStandalone()
 	{
 		// Arrange
@@ -664,7 +687,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(1);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithYmlExtension_AmendFileMergesCorrectly()
 	{
 		// Arrange
@@ -703,7 +726,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_MixedExtensions_AmendFileMergesWithMatchingParent()
 	{
 		// Arrange
@@ -742,7 +765,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Entries.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_AmendPreservesParentMetadata()
 	{
 		// Arrange
@@ -784,7 +807,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundles[0].Data.Products.Should().HaveCount(1);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_MultipleBundlesWithAmends_MergesCorrectly()
 	{
 		// Arrange
@@ -840,7 +863,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		bundle920.Entries[0].Title.Should().Be("Feature 9.2.0");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_DateBasedBundleWithAmend_MergesCorrectly()
 	{
 		// Arrange - serverless-style date-based bundles
@@ -883,7 +906,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region Repository Field Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithExplicitRepoField_UsesRepoInsteadOfProductId()
 	{
 		// Arrange
@@ -917,7 +940,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithoutRepoField_FallsBackToProductId()
 	{
 		// Arrange
@@ -950,7 +973,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithEmptyRepoField_FallsBackToProductId()
 	{
 		// Arrange
@@ -983,7 +1006,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_RepoFieldSerializesAndDeserializesCorrectly()
 	{
 		// Arrange
@@ -1025,7 +1048,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region HideFeatures Tests
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithHideFeaturesField_LoadsHideFeatures()
 	{
 		// Arrange
@@ -1061,7 +1084,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_WithoutHideFeaturesField_ReturnsEmptyHideFeatures()
 	{
 		// Arrange
@@ -1092,7 +1115,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_HideFeaturesSerializesAndDeserializesCorrectly()
 	{
 		// Arrange - Test round-trip serialization of hide-features field
@@ -1101,10 +1124,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			HideFeatures = ["feature:first", "feature:second", "feature:third"],
 			Entries =
 			[
@@ -1133,13 +1153,188 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
-	public void LoadBundles_DescriptionSerializesAndDeserializesCorrectly()
+	[Test]
+	public void LoadBundles_AmendDescription_ReplacesParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Original intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle = """
+			products: []
+			description: |
+			  Replacement intro
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description?.TrimEnd().Should().Be("Replacement intro");
+		bundles[0].Entries.Should().ContainSingle(e => e.Title == "Original feature");
+		_warnings.Should().BeEmpty();
+	}
+
+	[Test]
+	public void LoadBundles_AmendWithoutDescription_InheritsParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Keep this intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendBundle =
+			"""
+			products: []
+			entries:
+			  - title: Late addition
+			    type: enhancement
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", amendBundle);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().Be("Keep this intro");
+		bundles[0].Entries.Should().HaveCount(2);
+	}
+
+	[Test]
+	public void LoadBundles_AmendNotesDescription_DoesNotReplaceParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Parent intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		// language=yaml
+		var amendNotes =
+			"""
+			products: []
+			description: Notes sidecar must not win
+			entries:
+			  - title: Late note
+			    type: security
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-notes.yaml", amendNotes);
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().Be("Parent intro");
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Original feature", "Late note");
+	}
+
+	[Test]
+	public void LoadBundles_EmptyAmendDescription_ClearsParentIntro()
+	{
+		var bundlesFolder = "/docs/changelog/bundles";
+		_fileSystem.Directory.CreateDirectory(bundlesFolder);
+
+		// language=yaml
+		var parentBundle =
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			description: Original intro
+			entries:
+			  - title: Original feature
+			    type: feature
+			""";
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", parentBundle);
+		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.amend-1.yaml", "products: []\ndescription: \"\"\n");
+
+		var bundles = CreateService().LoadBundles(bundlesFolder, EmitWarning);
+
+		bundles.Should().HaveCount(1);
+		bundles[0].Data.Description.Should().BeNull();
+	}
+
+	[Test]
+	public void SerializeBundle_EmptyDescription_EmitsClearSentinel()
+	{
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
+		{
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
+			Description = ""
+		});
+
+		// SharpYaml's writer uses '' (single-quoted) rather than YamlDotNet's "" for empty scalars.
+		yaml.Should().Contain("description: ''");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Test]
+	public void SerializeBundle_EmptyDescriptionWithoutProducts_RoundTripsClearSentinel()
+	{
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle { Description = "" });
+
+		// SharpYaml's writer uses '' (single-quoted) rather than YamlDotNet's "" for empty scalars.
+		yaml.Should().Contain("description: ''");
+		yaml.Should().NotContain("{");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+	}
+
+	[Test]
+	public void SerializeBundle_DescriptionWithControlCharacter_StaysParseable()
+	{
+		// A block scalar writes content raw, so a control character in a multiline description used to
+		// land in the file unescaped and the bundle no longer parsed.
+		var description = "Upstream deps\n" + (char)0 + "See the blog";
+
+		var yaml = ReleaseNotesSerialization.SerializeBundle(new Bundle
+		{
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
+			Description = description
+		});
+
+		yaml.Should().NotContain("description: |");
+		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().Be(description);
+	}
+
+	[Test]
+	public void LoadBundles_DescriptionSerializesAsLiteralBlock()
 	{
 		// Arrange - Test round-trip serialization of description field
 		var bundlesFolder = "/docs/changelog/bundles";
 		_fileSystem.Directory.CreateDirectory(bundlesFolder);
 
+		// Normalize line endings: a raw string literal keeps whatever the checked-out source file uses,
+		// and SharpYaml only picks the literal block style for a string that is free of '\r'.
 		var multilineDescription = """
 			This is a test description with multiple paragraphs.
 
@@ -1149,14 +1344,13 @@ public class BundleLoaderTests(ITestOutputHelper output)
 			- And a [link](https://example.com) for testing
 
 			This ensures proper YAML serialization and deserialization.
-			""";
+			""".ReplaceLineEndings(
+			"\n"
+		);
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Description = multilineDescription,
 			Entries =
 			[
@@ -1170,6 +1364,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		};
 
 		var serializedYaml = ReleaseNotesSerialization.SerializeBundle(originalBundle);
+		serializedYaml.Should().Contain("description: |");
 		_fileSystem.File.WriteAllText($"{bundlesFolder}/9.3.0.yaml", serializedYaml);
 
 		var service = CreateService();
@@ -1188,7 +1383,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_DescriptionCanBeNull()
 	{
 		// Arrange - Test that null description is handled correctly
@@ -1197,10 +1392,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			Description = null,
 			Entries =
 			[
@@ -1227,7 +1419,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateSerializesAndDeserializesCorrectly()
 	{
 		// Arrange - Test round-trip serialization of release-date field
@@ -1236,10 +1428,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }
-			],
+			Products = [new BundledProduct { ProductId = "apm-agent-dotnet", Target = "1.34.0" }],
 			ReleaseDate = new DateOnly(2026, 4, 9),
 			Entries =
 			[
@@ -1266,7 +1455,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateCanBeNull()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1274,10 +1463,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 		var originalBundle = new Bundle
 		{
-			Products =
-			[
-				new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }
-			],
+			Products = [new BundledProduct { ProductId = "elasticsearch", Target = "9.3.0" }],
 			ReleaseDate = null,
 			Entries =
 			[
@@ -1304,7 +1490,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateFromYaml_ParsedCorrectly()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1336,7 +1522,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundles_ReleaseDateInvalidFormat_ParsedAsNull()
 	{
 		var bundlesFolder = "/docs/changelog/bundles";
@@ -1368,7 +1554,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		_warnings.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void MergeBundlesByTarget_ReleaseDatePreserved()
 	{
 		// Arrange - Two bundles with same target, one has release-date
@@ -1416,16 +1602,11 @@ public class BundleLoaderTests(ITestOutputHelper output)
 		merged[0].Data.ReleaseDate.Should().Be(new DateOnly(2026, 4, 9));
 	}
 
-	[Fact]
+	[Test]
 	public void LoadedBundle_HideFeatures_ExposedFromBundleData()
 	{
 		// Arrange - Verify that LoadedBundle.HideFeatures properly exposes Data.HideFeatures
-		var bundleData = new Bundle
-		{
-			Products = [],
-			HideFeatures = ["feature:a", "feature:b"],
-			Entries = []
-		};
+		var bundleData = new Bundle { Products = [], HideFeatures = ["feature:a", "feature:b"], Entries = [] };
 		var entries = new List<ChangelogEntry>();
 		var bundle = new LoadedBundle("9.3.0", "elasticsearch", "elastic", bundleData, "/path/to/bundle.yaml", entries);
 
@@ -1443,7 +1624,7 @@ public class BundleLoaderTests(ITestOutputHelper output)
 
 	#region EntriesByType Tests
 
-	[Fact]
+	[Test]
 	public void LoadedBundle_EntriesByType_GroupsCorrectly()
 	{
 		// Arrange

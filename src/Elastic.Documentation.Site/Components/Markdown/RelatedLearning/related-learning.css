@@ -1,0 +1,27 @@
+.heading-wrapper:has(+ .related-learning) {
+	margin-top: var(--space-6);
+	padding-top: var(--space-5);
+	border-top: var(--border-width) solid var(--color-border);
+}
+
+.related-learning {
+	margin-top: var(--space-3);
+}
+
+.related-learning__list {
+	margin: 0;
+	padding-inline-start: 1.25rem;
+	list-style: disc;
+}
+
+.related-learning__item {
+	margin-block: var(--space-1);
+}
+
+.related-learning__link {
+	color: var(--color-accent);
+}
+
+.related-learning__link:hover {
+	text-decoration: underline;
+}

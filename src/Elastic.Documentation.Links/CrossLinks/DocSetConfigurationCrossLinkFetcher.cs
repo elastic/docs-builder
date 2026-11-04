@@ -15,8 +15,8 @@ public class DocSetConfigurationCrossLinkFetcher(
 	ILoggerFactory logFactory,
 	ConfigurationFile configuration,
 	ILinkIndexReader? linkIndexProvider = null,
-	ILinkIndexReader? codexLinkIndexReader = null)
-	: CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
+	ILinkIndexReader? codexLinkIndexReader = null
+) : CrossLinkFetcher(logFactory, linkIndexProvider ?? Aws3LinkIndexReader.CreateAnonymous())
 {
 	private readonly ILogger _logger = logFactory.CreateLogger(nameof(DocSetConfigurationCrossLinkFetcher));
 	private readonly ILinkIndexReader? _codexReader = codexLinkIndexReader;
@@ -65,24 +65,31 @@ public class DocSetConfigurationCrossLinkFetcher(
 			catch (Exception ex)
 			{
 				hadFetchFailures = true;
-				_logger.LogWarning(ex, "Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.", entry.Repository);
+				_logger.LogWarning(
+					ex,
+					"Error fetching link data for repository '{Repository}'. Cross-links to this repository may not resolve correctly.",
+					entry.Repository
+				);
 				_ = registryUrlsByRepository.TryAdd(entry.Repository, reader.RegistryUrl);
 
 				if (!linkReferences.ContainsKey(entry.Repository))
 				{
-					linkReferences.Add(entry.Repository, new RepositoryLinks
-					{
-						Links = [],
-						Origin = new GitCheckoutInformation
+					linkReferences.Add(
+						entry.Repository,
+						new RepositoryLinks
 						{
-							Branch = "main",
-							RepositoryName = entry.Repository,
-							Remote = "origin",
-							Ref = "refs/heads/main"
-						},
-						UrlPathPrefix = "",
-						CrossLinks = []
-					});
+							Links = [],
+							Origin = new GitCheckoutInformation
+							{
+								Branch = "main",
+								RepositoryName = entry.Repository,
+								Remote = "origin",
+								Ref = "refs/heads/main"
+							},
+							UrlPathPrefix = "",
+							CrossLinks = []
+						}
+					);
 				}
 			}
 		}

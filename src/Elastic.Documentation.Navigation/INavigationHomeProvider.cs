@@ -19,7 +19,10 @@ public interface INavigationHomeAccessor
 }
 
 [DebuggerDisplay("{PathPrefix} => {NavigationRoot.Url}")]
-public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot) : INavigationHomeProvider
+public class NavigationHomeProvider(
+	string pathPrefix,
+	IRootNavigationItem<INavigationModel, INavigationItem> navigationRoot
+) : INavigationHomeProvider
 {
 	/// <inheritdoc />
 	public string PathPrefix { get; } = pathPrefix;
@@ -31,4 +34,3 @@ public class NavigationHomeProvider(string pathPrefix, IRootNavigationItem<INavi
 
 	public override string ToString() => $"{PathPrefix} => {NavigationRoot.Url}";
 }
-

@@ -3,17 +3,15 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
-using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
-public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class ErrorHandlingTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMissingBundleFile_ReturnsError()
 	{
 		// Arrange
@@ -26,7 +24,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -34,10 +32,11 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Bundle file does not exist"));
 	}
 
-	[Fact]
-	public async Task RenderChangelogs_WithMissingChangelogFile_ReturnsError()
+	[Test]
+	public async Task RenderChangelogs_EntryWithOnlyFileBlock_EmitsNoInlineContentError()
 	{
-		// Arrange
+		// Arrange — a file-only entry (no inline title/type) is invalid: bundles are
+		// self-contained and the file block is provenance only
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
@@ -50,40 +49,10 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			    target: 9.2.0
 			entries:
 			  - file:
-			      name: nonexistent.yaml
+			      name: 1755268130-feature.yaml
 			      checksum: abc123
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
-
-		var input = new RenderChangelogsArguments
-		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = bundleDir }],
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
-		};
-
-		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("does not exist"));
-	}
-
-	[Fact]
-	public async Task RenderChangelogs_WithInvalidBundleStructure_ReturnsError()
-	{
-		// Arrange
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(bundleDir);
-
-		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			"""
-			invalid_field: value
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new RenderChangelogsArguments
 		{
@@ -92,66 +61,96 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field") || d.Message.Contains("Failed to deserialize"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry '1755268130-feature.yaml' in bundle has no inline content: title and type are required"
+				) && d.Message.Contains("Re-create the bundle with 'changelog bundle'")
+			);
 	}
 
-	[Fact]
-	public async Task RenderChangelogs_WithInvalidChangelogFile_ReturnsError()
+	[Test]
+	public async Task RenderChangelogs_WithInvalidBundleStructure_ReturnsError()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
+		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(bundleDir);
 
-		// Create invalid changelog file (missing required fields)
+		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
-		var invalidChangelog =
-			"""
-			title: Invalid feature
-			# Missing type and products
+		var bundleContent = """
+			invalid_field: value
 			""";
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-invalid.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, invalidChangelog, TestContext.Current.CancellationToken);
+		var input = new RenderChangelogsArguments
+		{
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
+		};
 
-		// Create bundle file
+		// Act
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("No changelog entries to render") || d.Message.Contains("Failed to deserialize"));
+	}
+
+	[Test]
+	public async Task RenderChangelogs_EntryMissingProducts_EmitsError()
+	{
+		// Arrange — inline entry has title and type but no products
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
 
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
-			$"""
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			entries:
-			  - file:
-			      name: 1755268130-invalid.yaml
-			      checksum: {ComputeSha1(invalidChangelog)}
+			  - type: feature
+			    title: Feature without products
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString())
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains(
+					"Entry 'Feature without products' in bundle is missing required field: products"
+				)
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithResolvedEntry_ValidatesAndRenders()
 	{
 		// Arrange
@@ -174,7 +173,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 			    prs:
 			    - "100"
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
@@ -186,7 +185,7 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -195,69 +194,57 @@ public class ErrorHandlingTests(ITestOutputHelper output) : RenderChangelogTestB
 		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
 		FileSystem.File.Exists(indexFile).Should().BeTrue();
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current.CancellationToken);
+		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
 		indexContent.Should().Contain("Resolved feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithUnknownType_EmitsError()
 	{
-		// Arrange
-		// When an unknown type string is encountered during YAML deserialization,
-		// it should be parsed as Invalid and an error should be emitted.
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// Create changelog with an unknown type that will be marked as Invalid
-		// language=yaml
-		var changelog1 =
-			"""
-			title: Unknown type feature
-			type: some-unknown-type
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			description: This has an unknown type
-			""";
-
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-unknown.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog1, TestContext.Current.CancellationToken);
-
-		// Create bundle file
+		// Arrange — an unrecognized type string deserializes to a null type,
+		// so the entry is rejected as having no inline content
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(bundleDir);
+
 		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
 		// language=yaml
 		var bundleContent =
-			$"""
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.2.0
 			entries:
-			  - file:
-			      name: 1755268130-unknown.yaml
-			      checksum: {ComputeSha1(changelog1)}
+			  - type: some-unknown-type
+			    title: Unknown type feature
+			    products:
+			      - product: elasticsearch
+			        target: 9.2.0
+			    description: This has an unknown type
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir }],
+			Bundles = [new BundleInput { BundleFile = bundleFile }],
 			Output = outputDir,
 			Title = "9.2.0"
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Unknown type feature") &&
-			d.Message.Contains("invalid or unrecognized type"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("Unknown type feature") && d.Message.Contains(
+					"has no inline content: title and type are required"
+				)
+			);
 	}
 }

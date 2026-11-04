@@ -279,17 +279,19 @@ export const FullPageSearch = () => {
                     display: grid;
                     padding: ${hasSearched ? euiTheme.size.l : '0'};
 
-                    ${hasSearched
-                        ? `
+                    ${
+                        hasSearched
+                            ? `
                         grid-template-columns: 1fr;
                     `
-                        : `
+                            : `
                         grid-template-columns: 1fr;
 
                         @media (min-width: 768px) {
                             grid-template-columns: 1fr minmax(800px, auto) 1fr;
                         }
-                    `}
+                    `
+                    }
                 `}
             >
                 {!hasSearched || (!isAvailable && !isChecking) ? (

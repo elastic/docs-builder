@@ -41,62 +41,65 @@ public partial class AwsS3SyncApplyStrategy(
 	private static readonly Histogram<double> FilesPerDeploymentHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.deployment.files.count",
 		"files",
-		"Number of files per deployment operation (added + updated + deleted + skipped)");
+		"Number of files per deployment operation (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesTotalCounter = SyncMeter.CreateCounter<double>(
 		"docs.deployment.files.total",
 		"files",
-		"Total number of files in deployment (added + updated + deleted + skipped)");
+		"Total number of files in deployment (added + updated + deleted + skipped)"
+	);
 
 	private static readonly Counter<double> FilesAddedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.added.total",
 		"files",
-		"Total number of files added to S3");
+		"Total number of files added to S3"
+	);
 
 	private static readonly Counter<double> FilesUpdatedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.updated.total",
 		"files",
-		"Total number of files updated in S3");
+		"Total number of files updated in S3"
+	);
 
 	private static readonly Counter<double> FilesDeletedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.deleted.total",
 		"files",
-		"Total number of files deleted from S3");
+		"Total number of files deleted from S3"
+	);
 
 	private static readonly Counter<double> FilesSkippedCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.skipped.total",
 		"files",
-		"Total number of files skipped (unchanged)");
+		"Total number of files skipped (unchanged)"
+	);
 
 	private static readonly Histogram<double> FileSizeHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.file.size",
 		"By",
-		"Distribution of file sizes synced to S3");
+		"Distribution of file sizes synced to S3"
+	);
 
 	private static readonly Counter<double> FilesByExtensionCounter = SyncMeter.CreateCounter<double>(
 		"docs.sync.files.by_extension",
 		"files",
-		"File operations grouped by extension");
+		"File operations grouped by extension"
+	);
 
 	private static readonly Histogram<double> SyncDurationHistogram = SyncMeter.CreateHistogram<double>(
 		"docs.sync.duration",
 		"s",
-		"Duration of sync operations");
+		"Duration of sync operations"
+	);
 
 	private readonly ILogger<AwsS3SyncApplyStrategy> _logger = logFactory.CreateLogger<AwsS3SyncApplyStrategy>();
 
 	private void DisplayUploadProgress(object? sender, UploadProgressArgs args) => LogUploadProgress(_logger, args);
 
-	[LoggerMessage(
-		EventId = 4,
-		Level = LogLevel.Debug,
-		Message = "{Args}")]
+	[LoggerMessage(EventId = 4, Level = LogLevel.Debug, Message = "{Args}")]
 	private static partial void LogUploadProgress(ILogger logger, UploadProgressArgs args);
 
-	[LoggerMessage(
-		EventId = 3,
-		Level = LogLevel.Information,
-		Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
+	[LoggerMessage(EventId = 3, Level = LogLevel.Information, Message = "File operation: {Operation} | Path: {FilePath} | Size: {FileSize} bytes")]
 	private static partial void LogFileOperation(ILogger logger, string operation, string filePath, long fileSize);
 
 	public async Task<bool> Apply(SyncPlan plan, Cancel ctx = default)
@@ -146,7 +149,13 @@ public partial class AwsS3SyncApplyStrategy(
 
 		_logger.LogInformation(
 			"Deployment sync: {TotalFiles} files ({AddCount} added, {UpdateCount} updated, {DeleteCount} deleted, {SkipCount} skipped) in {Environment}",
-			totalFiles, addCount, updateCount, deleteCount, skipCount, context.EnvironmentName);
+			totalFiles,
+			addCount,
+			updateCount,
+			deleteCount,
+			skipCount,
+			context.EnvironmentName
+		);
 
 		await Upload(plan, ctx);
 		await Delete(plan, ctx);
@@ -177,7 +186,12 @@ public partial class AwsS3SyncApplyStrategy(
 			_logger.LogInformation("Starting to process {AddCount} new files and {UpdateCount} updated files", addCount, updateCount);
 
 			var addPaths = plan.AddRequests.Select(r => r.LocalPath).ToHashSet();
-			_logger.LogInformation("Uploading {Count} files to S3 bucket {BucketName} with concurrency {Concurrency}", uploadRequests.Count, bucketName, uploadConcurrency);
+			_logger.LogInformation(
+				"Uploading {Count} files to S3 bucket {BucketName} with concurrency {Concurrency}",
+				uploadRequests.Count,
+				bucketName,
+				uploadConcurrency
+			);
 			await Parallel.ForEachAsync(uploadRequests, new ParallelOptions
 			{
 				CancellationToken = ctx,
@@ -200,6 +214,9 @@ public partial class AwsS3SyncApplyStrategy(
 					Key = upload.DestinationPath,
 					PartSize = S3EtagCalculator.PartSize
 				};
+				// Per-file requests own their headers, so the type cannot leak onto other uploads.
+				if (SpecContentType(upload.DestinationPath) is { } specType)
+					request.ContentType = specType;
 				request.UploadProgressEvent += DisplayUploadProgress;
 				try
 				{
@@ -208,15 +225,39 @@ public partial class AwsS3SyncApplyStrategy(
 				}
 				catch (Exception ex) when (ex is not OperationCanceledException)
 				{
-					_logger.LogError(ex, "Failed to upload {LocalPath} to s3://{BucketName}/{DestinationPath}", upload.LocalPath, bucketName, upload.DestinationPath);
+					_logger.LogError(
+						ex,
+						"Failed to upload {LocalPath} to s3://{BucketName}/{DestinationPath}",
+						upload.LocalPath,
+						bucketName,
+						upload.DestinationPath
+					);
 					collector.EmitError(upload.LocalPath, $"Failed to upload to s3://{bucketName}/{upload.DestinationPath}", ex);
 				}
 			});
-			_logger.LogInformation("Finished uploading {UploadedCount}/{Count} files ({AddCount} added, {UpdateCount} updated) in {ElapsedMs}ms",
-				uploadedCount, uploadRequests.Count, addCount, updateCount, sw.ElapsedMilliseconds);
+			_logger.LogInformation(
+				"Finished uploading {UploadedCount}/{Count} files ({AddCount} added, {UpdateCount} updated) in {ElapsedMs}ms",
+				uploadedCount,
+				uploadRequests.Count,
+				addCount,
+				updateCount,
+				sw.ElapsedMilliseconds
+			);
 		}
 		_ = uploadActivity?.SetTag("docs.sync.upload.duration_ms", sw.Elapsed.TotalMilliseconds);
 	}
+
+	/// <summary>
+	/// Explicit Content-Type for generated spec files. The SDK guesses from the extension and has no
+	/// <c>.yaml</c> entry, so YAML would be stored as application/octet-stream and browsers would download it.
+	/// YAML uses text/plain because browsers render it inline, unlike application/yaml.
+	/// </summary>
+	public static string? SpecContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+	{
+		".json" => "application/json",
+		".yaml" or ".yml" => "text/plain; charset=utf-8",
+		_ => null
+	};
 
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{
@@ -232,7 +273,12 @@ public partial class AwsS3SyncApplyStrategy(
 
 		if (deleteRequests.Count > 0)
 		{
-			_logger.LogInformation("Starting to delete {Count} files from S3 bucket {BucketName} with concurrency {Concurrency}", deleteRequests.Count, bucketName, deleteConcurrency);
+			_logger.LogInformation(
+				"Starting to delete {Count} files from S3 bucket {BucketName} with concurrency {Concurrency}",
+				deleteRequests.Count,
+				bucketName,
+				deleteConcurrency
+			);
 
 			// Emit file-level metrics (low cardinality) and logs for each file
 			foreach (var delete in deleteRequests)
@@ -242,9 +288,7 @@ public partial class AwsS3SyncApplyStrategy(
 				// Record by extension (low cardinality)
 				if (!string.IsNullOrEmpty(extension))
 				{
-					FilesByExtensionCounter.Add(1,
-						new("operation", "delete"),
-						new("extension", extension));
+					FilesByExtensionCounter.Add(1, new("operation", "delete"), new("extension", extension));
 				}
 
 				// Log individual file operations for detailed analysis
@@ -261,10 +305,7 @@ public partial class AwsS3SyncApplyStrategy(
 				var deleteObjectsRequest = new DeleteObjectsRequest
 				{
 					BucketName = bucketName,
-					Objects = batch.Select(d => new KeyVersion
-					{
-						Key = d.DestinationPath
-					}).ToList()
+					Objects = batch.Select(d => new KeyVersion { Key = d.DestinationPath }).ToList()
 				};
 				try
 				{
@@ -283,8 +324,12 @@ public partial class AwsS3SyncApplyStrategy(
 					else
 					{
 						var currentCount = Interlocked.Add(ref deleteCount, batch.Length);
-						_logger.LogInformation("Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
-							batch.Length, currentCount, deleteRequests.Count);
+						_logger.LogInformation(
+							"Deleted {BatchCount} files ({CurrentCount}/{TotalCount})",
+							batch.Length,
+							currentCount,
+							deleteRequests.Count
+						);
 					}
 				}
 				catch (Exception ex) when (ex is not OperationCanceledException)
@@ -295,7 +340,12 @@ public partial class AwsS3SyncApplyStrategy(
 				}
 			});
 
-			_logger.LogInformation("Finished deleting {DeletedCount}/{Count} files in {ElapsedMs}ms", deleteCount, deleteRequests.Count, sw.ElapsedMilliseconds);
+			_logger.LogInformation(
+				"Finished deleting {DeletedCount}/{Count} files in {ElapsedMs}ms",
+				deleteCount,
+				deleteRequests.Count,
+				sw.ElapsedMilliseconds
+			);
 		}
 		_ = deleteActivity?.SetTag("docs.sync.delete.duration_ms", sw.Elapsed.TotalMilliseconds);
 	}
@@ -303,8 +353,6 @@ public partial class AwsS3SyncApplyStrategy(
 	private static int GetConcurrency(string environmentVariable, int defaultValue, int maxValue)
 	{
 		var configured = Environment.GetEnvironmentVariable(environmentVariable);
-		return int.TryParse(configured, out var parsed) && parsed > 0
-			? Math.Min(parsed, maxValue)
-			: defaultValue;
+		return int.TryParse(configured, out var parsed) && parsed > 0 ? Math.Min(parsed, maxValue) : defaultValue;
 	}
 }

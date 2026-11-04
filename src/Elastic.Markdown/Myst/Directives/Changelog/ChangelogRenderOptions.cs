@@ -16,10 +16,13 @@ internal sealed record ChangelogRenderOptions
 	public required bool Subsections { get; init; }
 	public required bool DropdownsEnabled { get; init; }
 	public required bool ReleaseDatesEnabled { get; init; }
+	public required bool HighlightsEnabled { get; init; }
 	public required ChangelogTypeFilter TypeFilter { get; init; }
 	public required ChangelogLinkVisibility LinkVisibility { get; init; }
 	public required ChangelogDescriptionVisibility DescriptionVisibility { get; init; }
 	public required HashSet<string> PrivateRepositories { get; init; }
 	public required HashSet<string> HideFeatures { get; init; }
 	public PublishBlocker? PublishBlocker { get; init; }
+	/// <summary>True when bundles are loaded from the CDN via <c>:cdn:</c> (scrubbed public copies).</summary>
+	public required bool FromCdn { get; init; }
 }

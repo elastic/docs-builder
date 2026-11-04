@@ -126,6 +126,5 @@ public sealed class MultiLayerCache(IDistributedCache l2Cache, ILogger<MultiLaye
 	/// Checks if L1 cache entry has expired.
 	/// Clean Code: Single-purpose helper with intention-revealing name.
 	/// </summary>
-	private static bool IsExpired(L1CacheEntry entry) =>
-		entry.ExpiresAt <= DateTimeOffset.UtcNow;
+	private static bool IsExpired(L1CacheEntry entry) => entry.ExpiresAt <= DateTimeOffset.UtcNow;
 }

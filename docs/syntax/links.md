@@ -263,3 +263,5 @@ This syntax exists to aid with migration. It is scheduled for removal and **shou
 ```markdown
 Some text $$$custom-anchor$$$ more text
 ```
+
+An inline anchor inside a heading adds a second anchor and leaves the heading's own anchor unchanged. `## Install steps $$$install-anchor$$$` can be linked as both `#install-steps` and `#install-anchor`.

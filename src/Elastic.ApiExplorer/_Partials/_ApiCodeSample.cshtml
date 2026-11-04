@@ -1,0 +1,23 @@
+@inherits RazorSlice<ApiCodeSampleModel>
+<div class="api-code-card api-code-sample" data-api-code-sample data-code-card>
+	<div class="api-code-sample-header">
+		<div class="api-code-sample-title">
+			@if (!string.IsNullOrEmpty(Model.HttpMethod))
+			{
+				@(await RenderPartialAsync<_HttpMethodBadge, string>(Model.HttpMethod))
+			}
+			@if (!string.IsNullOrEmpty(Model.Route))
+			{
+				<span class="api-url">@Model.Route</span>
+			}
+			@if (!string.IsNullOrEmpty(Model.Title))
+			{
+				<span class="api-code-sample-heading">@Model.Title</span>
+			}
+		</div>
+		<div class="api-code-sample-actions" data-code-actions></div>
+	</div>
+	<div class="api-code-sample-body">
+		@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel(Model.Sample.HighlightClass, Model.Sample.Source, LineNumbers: true)))
+	</div>
+</div>

@@ -5,13 +5,15 @@
 using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
 using Markdig.Syntax;
-using YamlDotNet.Core;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Settings;
 
@@ -43,8 +45,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 	public int GroupHeadingLevel => _groupHeadingLevel ??= CalculateGroupHeadingLevel();
 
 	/// <inheritdoc />
-	public override IEnumerable<string> GeneratedAnchors =>
-		_generatedAnchors ??= LoadGeneratedAnchors();
+	public override IEnumerable<string> GeneratedAnchors => _generatedAnchors ??= LoadGeneratedAnchors();
 
 	/// <summary>Right-rail and in-page TOC entries for each settings group.</summary>
 	public IEnumerable<PageTocItem> GeneratedTableOfContent
@@ -55,18 +56,15 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 				return [];
 
 			var level = GroupHeadingLevel;
-			return settings.Groups
-				.Where(g => ActiveDeploymentFilter is null ||
-					DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
-				.Select(g => new PageTocItem
-				{
-					Heading = g.Name ?? string.Empty,
-					Slug = SettingsViewModel.GroupHeadingSlug(g),
-					Level = level
-				}).Where(t => !string.IsNullOrEmpty(t.Slug));
+			return settings
+				.Groups
+				.Where(g => ActiveDeploymentFilter is null || DeploymentFilter.AnyVisible(g.Settings, ActiveDeploymentFilter, null))
+				.Select(
+					g => new PageTocItem { Heading = g.Name ?? string.Empty, Slug = SettingsViewModel.GroupHeadingSlug(g), Level = level }
+				)
+				.Where(t => !string.IsNullOrEmpty(t.Slug));
 		}
 	}
-
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
@@ -140,9 +138,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		var trimmed = raw.Trim().ToLowerInvariant();
 		if (!DeploymentFilter.ValidValues.Contains(trimmed))
 		{
-			this.EmitWarning(
-				$"Unknown deployment filter '{raw}'. Valid values are: {string.Join(", ", DeploymentFilter.ValidValues)}."
-			);
+			this.EmitWarning($"Unknown deployment filter '{raw}'. Valid values are: {string.Join(", ", DeploymentFilter.ValidValues)}.");
 			return;
 		}
 
@@ -209,6 +205,12 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		return 2;
 	}
 
+	// These keys appear in settings files in the content repositories but are not modelled, so they are
+	// tolerated as hints for now. TODO: make them errors once the repositories drop them, see
+	// https://github.com/elastic/docs-eng-team/issues/1076 (`platforms`: .../issues/1075).
+	private static YamlUnknownKeyPolicy UnsupportedSettingKeys() =>
+		YamlUnknownKeyPolicies.ToleratedAsHint("settings files", "platforms", "warning", "tip", "important");
+
 	private YamlSettings? TryLoadSettings()
 	{
 		if (_parsedSettings is not null)
@@ -222,7 +224,11 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 			var yaml = file.FileSystem.File.ReadAllText(file.FullName);
 			CollectSubstitutionUsageFromYaml(yaml, Build);
 			_parsedSettings = PrepareSettingsForRendering(
-				YamlSerialization.Deserialize<YamlSettings>(yaml, Build.ProductsConfiguration),
+				YamlSerialization.Deserialize<YamlSettings>(
+					yaml,
+					Build.ProductsConfiguration,
+					new YamlUnmappedMemberReporting(Build.Collector, file.FullName, policy: UnsupportedSettingKeys())
+				),
 				Context
 			);
 			return _parsedSettings;
@@ -248,8 +254,7 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 
 		foreach (var group in yaml.Groups)
 		{
-			var groupVisible = deploymentFilter is null ||
-				DeploymentFilter.AnyVisible(group.Settings, deploymentFilter, null);
+			var groupVisible = deploymentFilter is null || DeploymentFilter.AnyVisible(group.Settings, deploymentFilter, null);
 			if (!groupVisible)
 				continue;
 
@@ -277,5 +282,3 @@ public class SettingsBlock(DirectiveBlockParser parser, ParserContext context) :
 		}
 	}
 }
-
-

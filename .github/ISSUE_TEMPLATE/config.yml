@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: docs-eng-team discussions
+    url: https://github.com/elastic/docs-eng-team/discussions
+    about: Questions about documentation tooling, process, or authoring that are not defects or feature requests.

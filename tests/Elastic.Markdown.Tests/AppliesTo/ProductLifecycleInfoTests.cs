@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests.AppliesTo;
 
 public class ProductLifecycleInfoTests
 {
-	[Fact]
+	[Test]
 	public void Experimental_HasExpectedMetadata()
 	{
 		ProductLifecycleInfo.GetShortName(ProductLifecycle.Experimental).Should().Be("Experimental");
@@ -17,11 +17,10 @@ public class ProductLifecycleInfoTests
 		ProductLifecycleInfo.GetOrder(ProductLifecycle.Experimental).Should().Be(3);
 	}
 
-	[Fact]
-	public void Experimental_IsLessMatureThanPreview()
-	{
-		ProductLifecycleInfo.GetOrder(ProductLifecycle.Experimental)
+	[Test]
+	public void Experimental_IsLessMatureThanPreview() =>
+		ProductLifecycleInfo
+			.GetOrder(ProductLifecycle.Experimental)
 			.Should()
 			.BeGreaterThan(ProductLifecycleInfo.GetOrder(ProductLifecycle.TechnicalPreview));
-	}
 }

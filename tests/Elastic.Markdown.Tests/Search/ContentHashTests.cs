@@ -9,7 +9,7 @@ namespace Elastic.Markdown.Tests.Search;
 
 public class ContentHashTests
 {
-	[Fact]
+	[Test]
 	public void CreateNormalized_SameContentDifferentWhitespace_ProducesSameHash()
 	{
 		var hash1 = ContentHash.CreateNormalized("hello world");
@@ -24,7 +24,7 @@ public class ContentHashTests
 		hash1.Should().Be(hash5);
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNormalized_DifferentContent_ProducesDifferentHash()
 	{
 		var hash1 = ContentHash.CreateNormalized("hello world");
@@ -33,7 +33,7 @@ public class ContentHashTests
 		hash1.Should().NotBe(hash2);
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNormalized_EmptyAndWhitespaceOnly_ProduceSameHash()
 	{
 		var hash1 = ContentHash.CreateNormalized("");
@@ -44,7 +44,7 @@ public class ContentHashTests
 		hash1.Should().Be(hash3);
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNormalized_NewlinesAndTabs_NormalizedToSpace()
 	{
 		var hash1 = ContentHash.CreateNormalized("line one\nline two\nline three");

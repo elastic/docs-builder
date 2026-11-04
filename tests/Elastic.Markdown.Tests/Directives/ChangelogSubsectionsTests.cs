@@ -8,16 +8,21 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsDisabledByDefaultTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsDisabledByDefaultTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -40,12 +45,14 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		  - Indexing
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void SubsectionsPropertyDefaultsToFalse() => Block!.Subsections.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderAreaHeaders()
 	{
 		// When subsections is false, area headers should not be rendered
@@ -53,7 +60,7 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 		Html.Should().NotContain("<strong>Indexing</strong>");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersEntriesWithoutGrouping()
 	{
 		// Both entries should be rendered without area grouping
@@ -62,17 +69,22 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 	}
 }
 
+[InheritsTests]
 public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsEnabledTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsEnabledTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -95,12 +107,14 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		  - Indexing
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void SubsectionsPropertyIsTrue() => Block!.Subsections.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersAreaHeaders()
 	{
 		// When subsections is true, area headers should be rendered
@@ -108,7 +122,7 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("<strong>Indexing</strong>");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersEntriesUnderCorrectAreas()
 	{
 		// Both entries should be rendered
@@ -117,17 +131,22 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsExplicitFalseTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsExplicitFalseTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections: false
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -141,12 +160,14 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 		  - Search
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void SubsectionsPropertyIsFalse() => Block!.Subsections.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderAreaHeaders() => Html.Should().NotContain("<strong>Search</strong>");
 }
 
@@ -158,17 +179,22 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 /// Tests that when :subsections: is enabled and no publish rules with areas exist,
 /// entries with multiple areas use the first area (unchanged behavior).
 /// </summary>
+[InheritsTests]
 public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogSubsectionsNoAreaRulesTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogSubsectionsNoAreaRulesTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -183,9 +209,11 @@ public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock
 		  - Monitoring
 		  - Security
 		  pr: "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void GroupsUnderFirstArea()
 	{
 		// No publish rules with areas → use first area

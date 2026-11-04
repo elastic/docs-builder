@@ -19,8 +19,7 @@ public class EuidLogProcessor : BaseProcessor<LogRecord>
 	public override void OnEnd(LogRecord logRecord)
 	{
 		// Check if euid already exists as an attribute
-		var hasEuidAttribute = logRecord.Attributes?.Any(a =>
-			a.Key == TelemetryConstants.UserEuidAttributeName) ?? false;
+		var hasEuidAttribute = logRecord.Attributes?.Any(a => a.Key == TelemetryConstants.UserEuidAttributeName) ?? false;
 
 		if (hasEuidAttribute)
 		{

@@ -1,4 +1,6 @@
+import { config } from '../../config'
 import '../../eui-icons-cache'
+import { lockPageScroll } from '../../scroll-lock'
 import { ElasticAiAssistantButton } from '../AskAi/ElasticAiAssistantButton'
 import { InfoBanner } from '../AskAi/InfoBanner'
 import { KeyboardShortcutsFooter } from '../AskAi/KeyboardShortcutsFooter'
@@ -30,7 +32,7 @@ import {
     useEuiFontSize,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback } from 'react'
 
 const SEARCH_KEYBOARD_SHORTCUTS = [
     { keys: ['returnKey'], label: 'Select' },
@@ -209,7 +211,7 @@ const ModalSearchContent = ({
 
             {<EuiHorizontalRule margin="none" />}
 
-            {searchTerm && (
+            {config.buildType !== 'isolated' && searchTerm && (
                 <div
                     css={css`
                         padding-inline: ${euiTheme.size.base};
@@ -251,7 +253,7 @@ const ModalSearchContent = ({
                 </div>
             )}
 
-            <InfoBanner />
+            {config.buildType !== 'isolated' && <InfoBanner />}
             <KeyboardShortcutsFooter shortcuts={SEARCH_KEYBOARD_SHORTCUTS} />
         </div>
     )
@@ -311,6 +313,10 @@ const ModalSearchTrigger = ({
                 color: ${euiTheme.colors.textDisabled};
                 cursor: pointer;
 
+                @media (max-width: 768px) {
+                    padding-right: ${euiTheme.size.s};
+                }
+
                 &:hover {
                     border-color: ${euiTheme.colors.borderBasePlain};
                 }
@@ -344,6 +350,9 @@ const ModalSearchTrigger = ({
                     right: ${euiTheme.size.m};
                     color: ${euiTheme.colors.textDisabled};
                     font-size: ${euiTheme.font.scale.s * euiTheme.base}px;
+                    @media (max-width: 768px) {
+                        display: none;
+                    }
                 `}
             >
                 {isMac ? '⌘K' : 'Ctrl+K'}
@@ -389,64 +398,39 @@ export const ModalSearch = ({
             document.removeEventListener('modal-search:open', handleOpenEvent)
     }, [openModal, trackOpened])
 
-    const backdropRef = useRef<HTMLDivElement>(null)
-
     useEffect(() => {
-        if (isOpen) {
-            const scrollbarWidth =
-                window.innerWidth - document.documentElement.clientWidth
-            document.body.style.overflow = 'hidden'
-            document.body.style.paddingRight = `${scrollbarWidth}px`
-        } else {
-            document.body.style.overflow = ''
-            document.body.style.paddingRight = ''
-        }
-        return () => {
-            document.body.style.overflow = ''
-            document.body.style.paddingRight = ''
-        }
+        if (!isOpen) return
+        return lockPageScroll()
     }, [isOpen])
 
     useEffect(() => {
         if (!isOpen) return
 
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                if (backdropRef.current) {
-                    backdropRef.current.style.display = 'none'
-                }
-                document.body.style.overflow = ''
-                document.body.style.paddingRight = ''
-            }
+        // Close after the swap, not before: the clicked result link must stay
+        // mounted so htmx can still read the body's inherited hx-swap and hx-select.
+        // A dismissal while the request is pending unmounts it anyway, so cancel
+        // the request instead of letting the response swap in the wrong place.
+        let pending: Element | null = null
+        const handleBeforeSend = (event: Event) => {
+            const elt = (event as CustomEvent).detail?.elt as
+                Element | undefined
+            pending = elt?.hasAttribute('data-search-result-index') ? elt : null
         }
-
-        const handleAfterSwap = (event: CustomEvent) => {
-            const trigger = event.detail?.requestConfig?.elt as
-                | HTMLElement
-                | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                closeModal()
-            }
+        const handleAfterSwap = () => {
+            pending = null
+            closeModal()
         }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        document.addEventListener(
-            'htmx:afterSwap',
-            handleAfterSwap as EventListener
-        )
+        document.addEventListener('htmx:beforeSend', handleBeforeSend)
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
         return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-            document.removeEventListener(
-                'htmx:afterSwap',
-                handleAfterSwap as EventListener
-            )
+            document.removeEventListener('htmx:beforeSend', handleBeforeSend)
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
+            if (pending) {
+                // The link is already detached, so the event cannot bubble from it.
+                document.body.dispatchEvent(
+                    new CustomEvent('htmx:abort', { detail: { elt: pending } })
+                )
+            }
         }
     }, [isOpen, closeModal])
 
@@ -469,7 +453,6 @@ export const ModalSearch = ({
             {isOpen && (
                 <EuiPortal>
                     <div
-                        ref={backdropRef}
                         onClick={handleBackdropClick}
                         css={css`
                             position: fixed;

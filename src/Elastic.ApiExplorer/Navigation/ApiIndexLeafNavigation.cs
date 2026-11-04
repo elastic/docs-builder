@@ -10,11 +10,12 @@ using Elastic.Documentation.Navigation;
 namespace Elastic.ApiExplorer.Navigation;
 
 public class ApiIndexLeafNavigation<TModel>(
-	TModel model, string url, string navigationTitle,
+	TModel model,
+	string url,
+	string navigationTitle,
 	IRootNavigationItem<INavigationModel, INavigationItem> rootNavigation,
 	INodeNavigationItem<INavigationModel, INavigationItem>? parent = null
-) : ILeafNavigationItem<TModel>
-	where TModel : IApiModel
+) : ILeafNavigationItem<TModel> where TModel : IApiModel
 {
 	/// <inheritdoc />
 	public string Url { get; } = url;

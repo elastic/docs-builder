@@ -7,16 +7,6 @@
 	--offset-top: calc(var(--header-height) + var(--sub-header-height));
 }
 
-#htmx-indicator {
-	top: var(--header-height);
-}
-
-body:has(.codex-root-landing) {
-	#htmx-indicator {
-		top: 0;
-	}
-}
-
 /* Codex header specific styles - only apply on lg screens (matches --breakpoint-lg) */
 @media screen and (min-width: 1280px) {
 	.has-isolated-header {
@@ -47,14 +37,4 @@ body:has(.codex-root-landing) {
 
 .icon-mono path {
 	fill: currentColor !important;
-}
-
-.codex-hero {
-	navigation-search > div {
-		position: static;
-		padding: 0;
-		& > hr.euiHorizontalRule {
-			display: none;
-		}
-	}
 }

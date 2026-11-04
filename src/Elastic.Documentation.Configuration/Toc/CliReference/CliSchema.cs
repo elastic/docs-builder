@@ -81,7 +81,8 @@ public record CliParamSchema(
 	bool Hidden = false,
 	bool Variadic = false,
 	CliDeprecatedSchema? Deprecated = null,
-	List<CliValidationSchema>? Validations = null
+	List<CliValidationSchema>? Validations = null,
+	bool Negatable = false
 );
 
 public record CliDefaultSchema(
@@ -94,19 +95,9 @@ public record CliDefaultSchema(
 	bool Hidden = false
 );
 
-public record CliValidationSchema(
-	string Kind,
-	string[]? Values = null,
-	string? Min = null,
-	string? Max = null,
-	string? Pattern = null
-);
+public record CliValidationSchema(string Kind, string[]? Values = null, string? Min = null, string? Max = null, string? Pattern = null);
 
-public record CliDeprecatedSchema(
-	string? Message = null,
-	string? Since = null,
-	string? RemovedIn = null
-);
+public record CliDeprecatedSchema(string? Message = null, string? Since = null, string? RemovedIn = null);
 
 public record CliIntentSchema(
 	bool? Destructive = null,
@@ -116,25 +107,10 @@ public record CliIntentSchema(
 	bool? RequiresAuth = null
 );
 
-public record CliOutputSchema(
-	string[]? Formats = null,
-	string? FormatFlag = null
-);
+public record CliOutputSchema(string[]? Formats = null, string? FormatFlag = null);
 
-public record CliEnvironmentSchema(
-	List<CliEnvVarSchema>? Variables = null,
-	List<CliConfigFileSchema>? ConfigFiles = null
-);
+public record CliEnvironmentSchema(List<CliEnvVarSchema>? Variables = null, List<CliConfigFileSchema>? ConfigFiles = null);
 
-public record CliEnvVarSchema(
-	string Name,
-	string? Description = null,
-	bool Required = false,
-	string? DefaultValue = null
-);
+public record CliEnvVarSchema(string Name, string? Description = null, bool Required = false, string? DefaultValue = null);
 
-public record CliConfigFileSchema(
-	string Path,
-	string? Description = null,
-	bool Required = false
-);
+public record CliConfigFileSchema(string Path, string? Description = null, bool Required = false);

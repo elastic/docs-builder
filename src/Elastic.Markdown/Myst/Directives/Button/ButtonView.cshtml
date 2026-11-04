@@ -1,6 +1,11 @@
 @inherits RazorSlice<Elastic.Markdown.Myst.Directives.Button.ButtonViewModel>
 @{
-	var typeClass = Model.Type == "secondary" ? "doc-button-secondary" : "doc-button-primary";
+	var typeClass = Model.Type switch
+	{
+		"secondary" => "doc-button-secondary",
+		"neutral" => "doc-button-neutral",
+		_ => "doc-button-primary"
+	};
 }
 @if (!Model.IsInGroup)
 {

@@ -1,8 +1,5 @@
-'strict'
-
 import '../eui-icons-cache'
 import {
-    EuiButton,
     EuiContextMenu,
     EuiFlexGroup,
     EuiFlexItem,
@@ -14,7 +11,6 @@ import {
     useEuiOverflowScroll,
     useGeneratedHtmlId,
     useEuiTheme,
-    useEuiFontSize,
 } from '@elastic/eui'
 import {
     EuiContextMenuPanelDescriptor,
@@ -85,7 +81,6 @@ const VersionDropdown = ({
                           initialFocusedItemIndex: 0,
                           width: WIDTH,
                           disabled: item.disabled,
-                          size: 's',
                           items: item.children
                               ? convertItems(item.children)
                               : [],
@@ -127,7 +122,6 @@ const VersionDropdown = ({
                 </EuiFlexGroup>
             ),
             width: WIDTH,
-            size: 's',
             items: [
                 ...(items == null
                     ? [
@@ -186,24 +180,25 @@ const VersionDropdown = ({
         ...(items != null ? subpanels() : []),
     ]
 
+    const currentLabel = currentVersion
+        ? `v${currentVersion} (Current)`
+        : 'Current'
+
     const button = (
-        <EuiButton
-            iconType="chevronSingleDown"
-            iconSide="right"
+        <button
+            type="button"
+            className={`nav-select${isPopoverOpen ? ' nav-select--open' : ''}`}
             onClick={onButtonClick}
-            size="s"
-            color="text"
-            style={{ borderRadius: 9999 }}
+            aria-expanded={isPopoverOpen}
+            aria-haspopup="listbox"
         >
-            <EuiText
-                css={css`
-                    font-weight: ${euiTheme.font.weight.semiBold};
-                    font-size: ${useEuiFontSize('s').fontSize};
-                `}
-            >
-                Current version ({currentVersion})
-            </EuiText>
-        </EuiButton>
+            <span className="nav-select__body">
+                <span className="nav-select__value">{currentLabel}</span>
+                <span className="nav-select__chevron" aria-hidden="true">
+                    <EuiIcon type="chevronSingleDown" size="s" />
+                </span>
+            </span>
+        </button>
     )
 
     return (
@@ -218,7 +213,6 @@ const VersionDropdown = ({
         >
             <EuiContextMenu
                 initialPanelId={0}
-                size="s"
                 panels={panels()}
                 css={css`
                     max-height: 70vh;
@@ -239,8 +233,9 @@ const VersionDropdown = ({
                         ${useEuiOverflowScroll('y')}
                     }
                     .euiContextMenuPanel__title {
-                        background-color: ${euiTheme.colors
-                            .backgroundBasePlain} !important;
+                        background-color: ${
+                            euiTheme.colors.backgroundBasePlain
+                        } !important;
                     }
                 `}
             />

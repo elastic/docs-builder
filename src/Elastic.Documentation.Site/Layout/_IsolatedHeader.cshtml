@@ -8,6 +8,7 @@
 	                     git-commit="@(Model.GitCommitShort)"
 	                     github-ref="@(Model.GitHubRef)"
 	                     branded="@(Model.Branding != null ? "true" : "false")"
+	                     elastic-org="@(Model.IsElasticOrg ? "true" : "false")"
 	                     header-bg="@(Model.Branding?.HeaderBg)"
 	                     icon-src="@(Model.BrandingIconStaticPath)">
 	</elastic-docs-header>
