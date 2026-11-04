@@ -56,22 +56,26 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			Page.AuthBadge?.Kind == AuthBadgeKind.Optional
 		);
 
-	/// <summary>The sections the page renders, in page order, for the quick links bar.</summary>
+	/// <summary>
+	/// The sections under the quick links bar, in page order. Required authorization is not one of them: it comes before the bar.
+	/// </summary>
 	public IReadOnlyList<SectionLink> SectionLinks
 	{
 		get
 		{
-			var links = new List<SectionLink>();
-			if (Page.RequiredPrivileges.Count > 0)
-				links.Add(new SectionLink("Authorization", "required-authorization"));
-			links.AddRange(Page.ParameterSections.Select(static s => new SectionLink(s.Location.ToString(), s.Header.Anchor)));
+			var links = new List<SectionLink>(
+				Page.ParameterSections.Select(static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor))
+			);
 			if (Operation.Operation.RequestBody is not null)
 				links.Add(new SectionLink("Body", "request-body"));
 			if (Page.Responses.Count > 0)
-				links.Add(new SectionLink("Response", "responses"));
+				links.Add(new SectionLink("Responses", "responses"));
 			return links;
 		}
 	}
+
+	private static string ParameterLabel(ParameterLocation location) =>
+		location == ParameterLocation.Header ? "Headers" : location.ToString();
 
 	/// <summary>Where the <c>auth</c> badge links: the Authentication page, or the endpoint's own section.</summary>
 	public string? AuthBadgeHref => Page.AuthBadge?.Target switch
