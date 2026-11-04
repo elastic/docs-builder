@@ -5,11 +5,10 @@
 using System.ComponentModel.DataAnnotations;
 using Elastic.Documentation.Versions;
 using NetEscapades.EnumGenerators;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Versions;
 
-[YamlSerializable]
 public record VersionsConfiguration
 {
 	public required IReadOnlyDictionary<VersioningSystemId, VersioningSystem> VersioningSystems { get; init; }
@@ -147,7 +146,6 @@ public enum VersioningSystemId
 	None = -1,
 }
 
-[YamlSerializable]
 public record VersioningSystem
 {
 	/// <summary>
@@ -160,6 +158,7 @@ public record VersioningSystem
 	/// A versionless sentinel for products that have no versioning system at all
 	/// (e.g. release-notes-only products without public documentation).
 	/// </summary>
+	[YamlIgnore]
 	public static VersioningSystem None { get; } = new()
 	{
 		Id = VersioningSystemId.None,
@@ -169,10 +168,8 @@ public record VersioningSystem
 
 	public required VersioningSystemId Id { get; init; }
 
-	[YamlMember(Alias = "base")]
 	public required SemVersion Base { get; init; }
 
-	[YamlMember(Alias = "current")]
 	public required SemVersion Current { get; init; }
 
 	public bool IsVersioned() => Base.Major != AllVersions.Instance.Major;

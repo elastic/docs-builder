@@ -13,6 +13,10 @@
 	body.navigation-preview {
 		--offset-top: 56px;
 	}
+	/* API pages have no Docs sub-header, so nothing sticks above the sidebar. */
+	body:not(.navigation-preview, .air-gapped):has(.api-page-shell) {
+		--offset-top: 0px;
+	}
 }
 
 /* Reserve the space used by elastic-nav.js before its asynchronous render.

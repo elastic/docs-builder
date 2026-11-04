@@ -14,7 +14,7 @@ public class BundleLoaderFromContentTests
 
 	private static (string FileName, string Content) Bundle(string fileName, string content) => (fileName, content);
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_InlineEntries_AreLoaded()
 	{
 		var warnings = new List<string>();
@@ -47,7 +47,7 @@ public class BundleLoaderFromContentTests
 		loaded.Entries[0].Title.Should().Be("Sample enhancement");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_FileOnlyEntry_IsSkippedWithWarning()
 	{
 		var warnings = new List<string>();
@@ -75,7 +75,7 @@ public class BundleLoaderFromContentTests
 		warning.Should().Contain("orphan.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_InvalidYaml_IsSkippedWithWarning()
 	{
 		var warnings = new List<string>();
@@ -87,7 +87,7 @@ public class BundleLoaderFromContentTests
 		warnings.Should().ContainSingle().Which.Should().Contain("broken.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void LoadBundlesFromContent_AmendFile_IsMergedIntoParent()
 	{
 		var warnings = new List<string>();
@@ -120,5 +120,102 @@ public class BundleLoaderFromContentTests
 
 		bundles.Should().ContainSingle("the amend file merges into its parent");
 		bundles[0].Entries.Select(e => e.Title).Should().BeEquivalentTo("Base entry", "Amended fix");
+	}
+
+	[Test]
+	public void LoadBundlesFromContent_AmendNotesFile_IsMergedIntoParent()
+	{
+		var warnings = new List<string>();
+		// language=yaml
+		var parent = Bundle(
+			"cloud-4.2.0.yaml",
+			"""
+			products:
+			  - product: cloud-enterprise
+			    target: 4.2.0
+			entries:
+			  - type: enhancement
+			    title: Base entry
+			"""
+		);
+		// language=yaml
+		var amendNotes = Bundle(
+			"cloud-4.2.0.amend-notes.yaml",
+			"""
+			products:
+			  - product: cloud-enterprise
+			    target: 4.2.0
+			entries:
+			  - type: security
+			    title: Late note
+			"""
+		);
+
+		var bundles = _loader.LoadBundlesFromContent([parent, amendNotes], warnings.Add);
+
+		bundles.Should().ContainSingle("the amend-notes sidecar merges into its parent");
+		bundles[0].Version.Should().Be("4.2.0");
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Base entry", "Late note");
+		warnings.Should().BeEmpty();
+	}
+
+	[Test]
+	public void LoadBundlesFromContent_AmendNotesFile_AppliesAfterNumberedAmends()
+	{
+		var warnings = new List<string>();
+		// language=yaml
+		var parent = Bundle(
+			"9.3.0.yaml",
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - type: feature
+			    title: Keep
+			    file:
+			      name: keep.yaml
+			      checksum: aaa
+			  - type: bug-fix
+			    title: Removed by numbered amend
+			    file:
+			      name: gone.yaml
+			      checksum: bbb
+			"""
+		);
+		// language=yaml
+		var numbered = Bundle(
+			"9.3.0.amend-1.yaml",
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			exclude-entries:
+			  - file:
+			      name: gone.yaml
+			      checksum: bbb
+			entries:
+			  - type: enhancement
+			    title: Numbered addition
+			"""
+		);
+		// language=yaml
+		var amendNotes = Bundle(
+			"9.3.0.amend-notes.yaml",
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			entries:
+			  - type: security
+			    title: Notes addition
+			"""
+		);
+
+		var bundles = _loader.LoadBundlesFromContent([parent, numbered, amendNotes], warnings.Add);
+
+		bundles.Should().ContainSingle();
+		bundles[0].Entries.Select(e => e.Title).Should().Equal("Keep", "Numbered addition", "Notes addition");
+		warnings.Should().BeEmpty();
 	}
 }

@@ -14,10 +14,10 @@ namespace Elastic.Markdown.Tests.Directives;
 /// are rendered as flattened bulleted lists; Features stay flat bullets.
 /// With :dropdowns:, those types and Features render as Myst dropdown sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsDefaultTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsDefaultTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -59,10 +59,10 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorDoesNotParseDropdownsOption() => Block!.DropdownsEnabled.Should().BeFalse();
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorRendersFlattened()
 	{
 		// Should NOT contain dropdown HTML structure
@@ -74,7 +74,7 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Another breaking change.");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorIncludesImpactAndActionSections()
 	{
 		Html.Should().Contain("<strong>Impact:</strong> Existing API calls will fail.");
@@ -83,7 +83,7 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("<strong>Action:</strong> Remove references to the deprecated parameter.");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorIncludesDescriptions()
 	{
 		// Note: Descriptions may be hidden by default due to :description-visibility: auto behavior
@@ -96,10 +96,10 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for explicit :dropdowns: - should render separated types as Myst dropdown sections.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsEnabledTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsEnabledTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -132,10 +132,10 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ExplicitDropdownsParsesCorrectly() => Block!.DropdownsEnabled.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void ExplicitDropdownsRendersDropdownFormat()
 	{
 		// Should contain dropdown HTML structure
@@ -147,10 +147,10 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 		Html.Should().NotContain("<li><p>Breaking API change.");
 	}
 
-	[Fact]
+	[Test]
 	public void ExplicitDropdownsIncludesDescriptionInDropdown() => Html.Should().Contain("API has been changed to improve performance.");
 
-	[Fact]
+	[Test]
 	public void ExplicitDropdownsIncludesImpactAndActionInDropdown()
 	{
 		Html.Should().Contain("<strong>Impact</strong><br>Existing API calls will fail.");
@@ -161,10 +161,10 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests interaction between :dropdowns: and :description-visibility: for flattened rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithHiddenDescriptionsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsWithHiddenDescriptionsTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -196,7 +196,7 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FlattendRenderingHidesDescriptionsButKeepsImpactAction()
 	{
 		// Should render as flattened (no dropdowns by default)
@@ -215,10 +215,10 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 /// <summary>
 /// Tests interaction between :dropdowns: and :description-visibility: for dropdown rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsEnabledWithHiddenDescriptionsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsEnabledWithHiddenDescriptionsTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -251,7 +251,7 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DropdownRenderingHidesDescriptionsButKeepsImpactAction()
 	{
 		// Should render as dropdown due to explicit :dropdowns:
@@ -271,10 +271,10 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 /// <summary>
 /// Tests that :dropdowns: works with different separated types (deprecations, known issues).
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithDifferentTypesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsWithDifferentTypesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -333,7 +333,7 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void DefaultRendersMixedTypesCorrectly()
 	{
 		// Regular types should render as bulleted lists (unchanged behavior)
@@ -352,10 +352,10 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 /// <summary>
 /// Tests that :dropdowns: works with different separated types using explicit dropdown rendering.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsExplicitWithDifferentTypesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsExplicitWithDifferentTypesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -405,7 +405,7 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ExplicitDropdownsRendersMixedTypesCorrectly()
 	{
 		Html.Should().Contain("<details class=\"dropdown\">");
@@ -422,10 +422,10 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 /// <summary>
 /// Changelog-generated dropdown titles pass through the dropdown parser, which strips inline markdown markers.
 /// </summary>
+[InheritsTests]
 public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsPlainTextTitleTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsPlainTextTitleTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -458,7 +458,7 @@ public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ChangelogDropdownTitleStripsBackticksInHtml()
 	{
 		Html.Should().Contain("The ElasticAgentVersion parameter is malformed.");
@@ -466,10 +466,10 @@ public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBloc
 	}
 }
 
+[InheritsTests]
 public class ChangelogDropdownsDefaultFeaturesStayListTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsDefaultFeaturesStayListTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsDefaultFeaturesStayListTests() : base(
 			"""
 		:::{changelog}
 		:description-visibility: keep-descriptions
@@ -496,7 +496,7 @@ public class ChangelogDropdownsDefaultFeaturesStayListTests : DirectiveTest<Chan
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FeaturesStayBulletsWithoutDropdownsOption()
 	{
 		Html.Should().NotContain("<details class=\"dropdown\">");
@@ -506,10 +506,10 @@ public class ChangelogDropdownsDefaultFeaturesStayListTests : DirectiveTest<Chan
 	}
 }
 
+[InheritsTests]
 public class ChangelogDropdownsFeaturesNotEnhancementsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsFeaturesNotEnhancementsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsFeaturesNotEnhancementsTests() : base(
 			"""
 		:::{changelog}
 		:dropdowns:
@@ -545,7 +545,7 @@ public class ChangelogDropdownsFeaturesNotEnhancementsTests : DirectiveTest<Chan
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FeaturesRenderAsDropdowns()
 	{
 		Html.Should().Contain("<details class=\"dropdown\">");
@@ -554,7 +554,7 @@ public class ChangelogDropdownsFeaturesNotEnhancementsTests : DirectiveTest<Chan
 		Html.Should().NotContain("<li><p>Feature addition");
 	}
 
-	[Fact]
+	[Test]
 	public void EnhancementsStayBullets()
 	{
 		Html.Should().Contain("Faster existing query");
@@ -562,16 +562,14 @@ public class ChangelogDropdownsFeaturesNotEnhancementsTests : DirectiveTest<Chan
 	}
 }
 
+[InheritsTests]
 public class ChangelogDropdownsFeaturesAutoHidesDescriptionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsFeaturesAutoHidesDescriptionTests(ITestOutputHelper output) : base(
-			output,
-			"""
+	public ChangelogDropdownsFeaturesAutoHidesDescriptionTests() : base("""
 		:::{changelog}
 		:dropdowns:
 		:::
-		"""
-		) =>
+		""") =>
 		FileSystem.AddFile(
 			"docs/changelog/bundles/9.3.0.yaml",
 			new MockFileData(
@@ -592,7 +590,7 @@ public class ChangelogDropdownsFeaturesAutoHidesDescriptionTests : DirectiveTest
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersFeatureDropdownWithoutDescription()
 	{
 		Html.Should().Contain("<details class=\"dropdown\">");
@@ -602,10 +600,10 @@ public class ChangelogDropdownsFeaturesAutoHidesDescriptionTests : DirectiveTest
 	}
 }
 
+[InheritsTests]
 public class ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests() : base(
 			"""
 		:::{changelog}
 		:dropdowns:
@@ -645,17 +643,17 @@ public class ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests : Directi
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersDropdowns() => Html.Should().Contain("<details class=\"dropdown\">");
 
-	[Fact]
+	[Test]
 	public void OmitsAreaHeaders()
 	{
 		Html.Should().NotContain("<strong>Search</strong>");
 		Html.Should().NotContain("<strong>Indexing</strong>");
 	}
 
-	[Fact]
+	[Test]
 	public void StillRendersFeatureTitles()
 	{
 		Html.Should().Contain("Feature in Search");
@@ -663,10 +661,10 @@ public class ChangelogDropdownsWithoutSubsectionsOmitsAreaHeadersTests : Directi
 	}
 }
 
+[InheritsTests]
 public class ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests() : base(
 			"""
 		:::{changelog}
 		:dropdowns:
@@ -707,10 +705,10 @@ public class ChangelogDropdownsWithSubsectionsRendersAreaHeadersTests : Directiv
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersDropdowns() => Html.Should().Contain("<details class=\"dropdown\">");
 
-	[Fact]
+	[Test]
 	public void RendersAreaHeaders()
 	{
 		Html.Should().Contain("<strong>Search</strong>");

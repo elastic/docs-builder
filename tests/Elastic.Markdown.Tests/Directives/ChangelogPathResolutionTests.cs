@@ -10,18 +10,16 @@ namespace Elastic.Markdown.Tests.Directives;
 
 /// <summary>
 /// Tests for path resolution in the changelog directive.
-/// Verifies that Path.Combine issues are properly handled for:
-/// - Relative paths (combined with docset root)
-/// - Docset-root-relative paths (starting with '/', combined with docset root after trimming)
-/// - Absolute filesystem paths (used as-is, prevents Path.Combine from silently dropping base)
+/// All local paths must be prefixed with '/' (docset-root-relative).
+/// Non-'/' arguments are interpreted as CDN product names.
 /// </summary>
+[InheritsTests]
 public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderRelativePathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogBundlesFolderRelativePathTests() : base(
 			// language=markdown
 			"""
-		:::{changelog} custom/path/bundles
+		:::{changelog} /custom/path/bundles
 		:::
 		"""
 		) =>
@@ -45,21 +43,21 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 			)
 		);
 
-	[Fact]
-	public void ResolvesRelativePath() => Block!.Found.Should().BeTrue();
+	[Test]
+	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void PathCombinedWithDocsetRoot() =>
 		Block!.BundlesFolderPath.Should().EndWith("custom/path/bundles".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Test feature");
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderDocsetRootRelativeTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogBundlesFolderDocsetRootRelativeTests() : base(
 			// language=markdown
 			"""
 		:::{changelog} /release-notes/versions
@@ -86,24 +84,24 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ResolvesDocsetRootRelativePath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void SlashPrefixIsTrimmed() =>
 		Block!.BundlesFolderPath.Should().EndWith("release-notes/versions".Replace('/', Path.DirectorySeparatorChar));
 
-	[Fact]
+	[Test]
 	public void PathDoesNotContainDoubleSlashes() => Block!.BundlesFolderPath.Should().NotContain("//");
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Another feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigRelativePathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigRelativePathTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -157,10 +155,10 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -169,10 +167,10 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigDocsetRootRelativePathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigDocsetRootRelativePathTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -224,10 +222,10 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown
@@ -236,13 +234,13 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 	}
 }
 
+[InheritsTests]
 public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogBundlesFolderNestedRelativePathTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogBundlesFolderNestedRelativePathTests() : base(
 			// language=markdown
 			"""
-		:::{changelog} deeply/nested/path/to/bundles
+		:::{changelog} /deeply/nested/path/to/bundles
 		:::
 		"""
 		) =>
@@ -266,10 +264,10 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ResolvesDeepNestedPath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Nested feature");
 }
 
@@ -286,13 +284,13 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 /// The implementation correctly handles this by checking StartsWith('/') before IsPathRooted,
 /// ensuring our docset-root-relative convention takes precedence.
 /// </remarks>
+[InheritsTests]
 public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogPathEdgeCaseTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogPathEdgeCaseTests() : base(
 			// language=markdown
 			"""
-		:::{changelog} ./relative/bundles
+		:::{changelog} /relative/bundles
 		:::
 		"""
 		) =>
@@ -316,20 +314,20 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 			)
 		);
 
-	[Fact]
-	public void ResolvesPathWithDotSlashPrefix() => Block!.Found.Should().BeTrue();
+	[Test]
+	public void ResolvesSlashPrefixedPath() => Block!.Found.Should().BeTrue();
 
-	[Fact]
+	[Test]
 	public void RendersContent() => Html.Should().Contain("Edge case feature");
 }
 
+[InheritsTests]
 public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogConfigAndBundlesRelativePathsTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogConfigAndBundlesRelativePathsTests() : base(
 			// language=markdown
 			"""
-		:::{changelog} bundles/v1
+		:::{changelog} /bundles/v1
 		:config: config/changelog.yml
 		:::
 		"""
@@ -376,14 +374,14 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void BothPathsResolveCorrectly()
 	{
 		Block!.Found.Should().BeTrue();
 		Block!.PublishBlocker.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries_NoFiltering()
 	{
 		// Directive does not apply rules.publish; all entries are shown

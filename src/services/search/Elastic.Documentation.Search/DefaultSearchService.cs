@@ -28,10 +28,11 @@ public partial class DefaultSearchService<TDocument>(
 	IProductNameLookup? productNameLookup = null
 ) : ISearchService<TDocument> where TDocument : SearchDocumentBase
 {
+	private const string ApiContentType = "api";
 	private const string PreTag = "<mark>";
 	private const string PostTag = "</mark>";
 
-	private static readonly string[] AutocompleteSourceIncludes =
+	internal static readonly string[] AutocompleteSourceIncludes =
 	[
 		"content_type",
 		"title",
@@ -39,7 +40,13 @@ public partial class DefaultSearchService<TDocument>(
 		"path",
 		"description",
 		"parents",
-		"headings"
+		"headings",
+		// every required member of ApiOperationMetadata, or the hit fails to deserialize; properties arrive as inner hits
+		"api.endpoints",
+		"api.method",
+		"api.path",
+		"api.operation_id",
+		"api.routes"
 	];
 
 	private static readonly string[] SearchSourceIncludes =
@@ -113,6 +120,9 @@ public partial class DefaultSearchService<TDocument>(
 		if (!string.IsNullOrWhiteSpace(request.TypeFilter))
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
+		var query = request.TypeFilter == ApiContentType ? SearchQueryBuilder.ApplyApiRanking(lexicalQuery, request.Query) : lexicalQuery;
+		query = SearchQueryBuilder.ApplyApiPropertyQuery(query, request.Query, request.TypeFilter);
+
 		var response = await client.SearchAsync<TDocument>(
 			s =>
 			{
@@ -120,7 +130,7 @@ public partial class DefaultSearchService<TDocument>(
 					.Indices(indexAlias)
 					.From(Math.Max(request.PageNumber - 1, 0) * request.PageSize)
 					.Size(request.PageSize)
-					.Query(lexicalQuery)
+					.Query(query)
 					.Aggregations(agg => agg.Add("type", a => a.Terms(t => t.Field(QueryFieldNames.ContentType))))
 					.Source(sf => sf.Filter(f => f.Includes(AutocompleteSourceIncludes)))
 					.Highlight(
@@ -154,9 +164,10 @@ public partial class DefaultSearchService<TDocument>(
 		if (!response.IsValidResponse)
 			LogInvalidResponse(response.ElasticsearchServerError?.Error?.Reason ?? "Unknown");
 
+		var options = new HighlightOptions { ListChildren = SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter) };
 		var results = response
 			.Hits
-			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional))
+			.Select(hit => SearchResultProcessor.ProcessHit(hit, request.Query, searchConfig.SynonymBiDirectional, options))
 			.ToList();
 
 		var typeAgg = SearchResultProcessor.ExtractTermsAggregation<TDocument>(response, "type");

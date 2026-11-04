@@ -28,32 +28,13 @@ presented the option. Display labels may change without changing their stored va
 enum value when an option's meaning changes, and retain retired values so older
 clients and historical documents remain valid.
 
-Reason set version 3 presents these positive reasons in display order:
+Reason set version 2 presents these positive reasons in display order:
 `solvedProblem`, `easyToUnderstand`, `accurate`, `helpfulExamples`,
-`easyToFind`, and `anotherReason`. The negative reasons are
-`hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`,
-`siteProblem`, and `anotherReason`. API pages use the same stored values
+`easyToFind`, and `anotherReason`. The negative reasons are `outOfDate`,
+`hardToUnderstand`, `inaccurate`, `codeSampleErrors`, `missingInformation`, and
+`anotherReason`. API pages use the same stored values
 and `reason_set_version`. They pass `surface="api"` so labels and descriptions
 talk about the spec and examples instead of a product how-to.
-
-`siteProblem` reports a fault in the site rather than in the content. A broken
-link, a control that does nothing, or a search that returns nothing belongs
-here, while `inaccurate` and `codeSampleErrors` stay with the words on the page.
-
-`inaccurate` also covers content that describes an older version of the product.
-Version 3 retired `outOfDate` and folded it in, because a reader cannot tell a
-page that was never right from a page that stopped being right. Two negative
-sets therefore differ from version 2: it offered `outOfDate` and lacked
-`siteProblem`. A query that counts either one must scope itself to a version.
-
-`outOfDate` remains a stored value. Historical documents hold it, and a browser
-running a cached bundle still submits it, so the endpoint still accepts it.
-
-The endpoint accepts a reason only for the reaction it belongs to. A negative
-reason sent with `thumbsUp` fails validation in `IsReasonValidForReaction` and
-the request returns `400`. Adding an option means adding it to
-`PageFeedbackReason`, to that reaction's list, and to the browser's reason set.
-Retiring one means removing it from the browser's set alone.
 
 ## Provision the index
 
@@ -87,3 +68,21 @@ documents that must be retained. Mixed task versions then write to separate
 versioned indices during a rolling deployment. The assembly mapping version is
 an additional downgrade guard for templates that retain the same schema-versioned
 name; it does not replace index versioning.
+
+## AWS WAF token
+
+The web ACL can require a valid `aws-waf-token` cookie on `/docs/_api/v1/page-feedback`.
+A request without one gets an HTTP 202 challenge that a plain `fetch()` can't solve.
+When `waf_integration_url` is set on an environment in `config/assembler.yml`, the
+`<page-feedback>` component loads the AWS WAF JavaScript SDK from that URL and sends
+the `PUT` through `AwsWafIntegration.fetch`. Take the URL from the AWS WAF console's
+Application integration page. Use the CloudFront (`edge`) script URL, not the regional
+one. It belongs to the AWS account and is not tied to a web ACL, so environments in the
+same account share it.
+
+With no URL (local dev, isolated, codex, air-gapped) nothing loads and the component
+uses plain `fetch`. If the SDK is configured but fails to load or times out, the
+submit shows the normal error state instead of sending an unchallenged request.
+
+Only page feedback uses the SDK. External callers of other `/docs/_api/v1/*` paths
+can't run it and stay on IP rate limits.

@@ -13,7 +13,6 @@ using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
@@ -24,25 +23,10 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
 
-	private static BuildContext CreateContext(
-		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
-		GitCheckoutInformation? git = null
-	) =>
-		new(
-			collector,
-			DocumentationFileSystem.Resolve(
-				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-				new DocumentationScopeOptions { Git = git }
-			),
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
-		);
-
 	private static ResolvedApiConfiguration ApiConfig(Product product, IFileInfo? localSpecFile = null) =>
 		new() { ProductKey = product.Id, Product = product, SpecFileName = "elasticsearch-openapi.json", LocalSpecFile = localSpecFile };
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_VersionlessLocalSpec_RendersLocalFileWithoutNetwork()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -58,11 +42,11 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 				StringComparer.OrdinalIgnoreCase
 			)
 		};
-		var context = CreateContext(collector, versionless, products);
-		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, products);
+		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(localFile)).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 
 		var handler = new ThrowingHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler);
@@ -77,15 +61,15 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"cloud-serverless",
 			ApiConfig(product, localFile),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.CallCount.Should().Be(0, "a versionless local spec must short-circuit remote version resolution");
-		A.CallTo(() => reader.ReadAsync(localFile)).MustHaveHappenedOnceExactly();
+		A.CallTo(() => reader.ReadAsync(localFile, A<IDiagnosticsCollector?>._)).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpec_ResolvesRemoteMainThroughVersionIndex()
 	{
 		var collector = new CapturingDiagnosticsCollector();
@@ -97,7 +81,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			Remote = "https://github.com/elastic/elasticsearch.git",
 			Ref = "refs/heads/main"
 		};
-		var context = CreateContext(collector, stack, git: git);
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, git: git);
 
 		var handler = new StubHandler(
 			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
@@ -117,7 +101,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
 		var expectedDocument = SpecDocument();
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).Returns(expectedDocument);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)).Returns(expectedDocument);
 		var generator = new OpenApiGenerator(
 			NullLoggerFactory.Instance,
 			context,
@@ -131,16 +115,18 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().ContainSingle().Which.Document.Should().BeSameAs(expectedDocument);
 		handler.RequestedPaths.Should().BeEquivalentTo(["/index.json", "/elastic/elasticsearch/main/elasticsearch-openapi.json"]);
 		collector.Errors.Should().Be(errorsBeforeResolution, string.Join("; ", collector.ErrorMessages));
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json")).MustHaveHappenedOnceExactly();
+		A.CallTo(
+			() => reader.ReadAsync(A<Stream>._, "elasticsearch-openapi.json", A<IDiagnosticsCollector?>._)
+		).MustHaveHappenedOnceExactly();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ResolveDocumentsForProduct_NoLocalSpecAndIndexUnreachable_ReturnsEmptyAndEmitsError()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -152,7 +138,7 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 			Remote = "https://github.com/elastic/elasticsearch.git",
 			Ref = "refs/heads/main"
 		};
-		var context = CreateContext(collector, stack, git: git);
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, git: git);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
@@ -169,13 +155,13 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 		var documents = (await generator.ResolveDocumentsForProduct(
 			"elasticsearch",
 			ApiConfig(product),
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		)).Documents;
 
 		documents.Should().BeEmpty();
 		collector.Errors.Should().BeGreaterThan(errorsBeforeResolution);
-		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._)).MustNotHaveHappened();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<IFileInfo>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).MustNotHaveHappened();
 	}
 
 	private static OpenApiDocument SpecDocument() => new() { Info = new OpenApiInfo { Title = "Elasticsearch API", Version = "9.4" } };
@@ -193,17 +179,6 @@ public class OpenApiGeneratorCurrentSpecResolutionTests
 				"application/json"
 			)
 		};
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		public List<string> RequestedPaths { get; } = [];
-
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-		{
-			RequestedPaths.Add(request.RequestUri!.AbsolutePath);
-			return Task.FromResult(responder(request));
-		}
-	}
 
 	private sealed class ThrowingHandler : HttpMessageHandler
 	{

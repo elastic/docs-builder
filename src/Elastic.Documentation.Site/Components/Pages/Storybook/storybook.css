@@ -1,0 +1,32 @@
+.storybook-embed {
+	margin-block: var(--space-5);
+	overflow: hidden;
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.storybook-embed iframe {
+	display: block;
+}
+
+.storybook-embed storybook-story {
+	display: block;
+	padding: var(--space-5);
+}
+
+.storybook-embed-body {
+	padding: var(--space-3) var(--space-5);
+	border-top: var(--border-width) solid var(--color-border);
+	background: var(--color-surface-sunken);
+}
+
+.storybook-embed-error {
+	padding: var(--space-4);
+	color: var(--color-danger);
+	font-size: var(--text-sm);
+}
+
+.storybook-embed-error strong {
+	display: block;
+	margin-bottom: var(--space-1);
+}

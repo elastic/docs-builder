@@ -11,7 +11,7 @@ namespace Elastic.Markdown.Tests.Directives;
 /// <summary>Unit tests for <see cref="ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo"/>.</summary>
 public class ChangelogShouldHideEntryDescriptionsTests
 {
-	[Fact]
+	[Test]
 	public void HideDescriptions_AlwaysReturnsTrue()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" };
@@ -25,7 +25,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepDescriptions_AlwaysReturnsFalse()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
@@ -37,7 +37,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void KeepFeatureDescriptions_AlwaysReturnsTrue()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
@@ -49,7 +49,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void CombinedFeatureAndHighlightOverlays_AlwaysReturnsTrue()
 	{
 		var visibility = ChangelogDescriptionVisibility.KeepFeatureDescriptions | ChangelogDescriptionVisibility.KeepHighlightDescriptions;
@@ -59,7 +59,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AutoPlusFeatureOverlay_WithPublicRepo_HidesDefaultBodies()
 	{
 		var visibility = ChangelogDescriptionVisibility.Auto | ChangelogDescriptionVisibility.KeepFeatureDescriptions;
@@ -69,7 +69,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithEmptyPrivateRepos_HidesBodies()
 	{
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo("kibana", [], ChangelogDescriptionVisibility.Auto);
@@ -77,7 +77,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPublicRepoOnly_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "secret-repo" };
@@ -91,7 +91,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithPrivateRepo_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -105,7 +105,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_OnePrivateConstituent_ShowsBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "kibana" };
@@ -119,7 +119,7 @@ public class ChangelogShouldHideEntryDescriptionsTests
 		result.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void Auto_WithMergedBundle_AllPublicConstituents_HidesBodies()
 	{
 		var privateRepos = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "other-private" };
@@ -137,13 +137,11 @@ public class ChangelogShouldHideEntryDescriptionsTests
 /// <summary>
 /// Omitting :description-visibility: defaults to <see cref="ChangelogDescriptionVisibility.Auto"/>.
 /// </summary>
-public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+[InheritsTests]
+public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -164,24 +162,22 @@ public class ChangelogDescriptionVisibilityDefaultTests(ITestOutputHelper output
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void PropertyDefaultsToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
 	/// <summary>Public bundle with no assembler private repos ⇒ auto hides record bodies.</summary>
-	[Fact]
+	[Test]
 	public void HtmlOmitsBodyTextForPublicBundle() => Html.Should().NotContain("BODY_DEFAULT_AUTO_VISIBILITY");
 
-	[Fact]
+	[Test]
 	public void HtmlStillRendersTitles() => Html.Should().Contain("Feature delta");
 }
 
-public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+[InheritsTests]
+public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -202,20 +198,20 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 			)
 		);
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
 		_ = Block!.PrivateRepositories.Add("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownIncludesBodyTextWhenRepoIsPrivateForAutoMode()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
 		markdown.Should().Contain("BODY_PRIVATE_VISIBILITY_TEST");
 	}
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitle()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -223,8 +219,8 @@ public class ChangelogDescriptionVisibilityAutoShowsForPrivateRepoTests(ITestOut
 	}
 }
 
-public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: keep-descriptions
@@ -251,12 +247,12 @@ public class ChangelogDescriptionVisibilityKeepExplicitTests(ITestOutputHelper o
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void KeepsBodyOnFullyPublicRepos() => Html.Should().Contain("BODY_KEEP_VISIBILITY");
 }
 
-public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: hide-descriptions
@@ -283,10 +279,10 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void OmitBody() => Html.Should().NotContain("BODY_HIDE_VISIBILITY");
 
-	[Fact]
+	[Test]
 	public void MarkdownRendersTitlesWithoutBodies()
 	{
 		var markdown = ChangelogInlineRenderer.RenderChangelogMarkdown(Block!);
@@ -295,8 +291,8 @@ public class ChangelogDescriptionVisibilityHideExplicitTests(ITestOutputHelper o
 	}
 }
 
-public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: nonsense-value
@@ -323,18 +319,18 @@ public class ChangelogDescriptionVisibilityInvalidTests(ITestOutputHelper output
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void FallsBackToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
-	[Fact]
+	[Test]
 	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
 
-	[Fact]
+	[Test]
 	public void AutoTreatsFullyPublic_AsHideBody() => Html.Should().NotContain("BODY_INVALID_VISIBILITY");
 }
 
-public class ChangelogKeepFeatureDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogKeepFeatureDescriptionsTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: keep-feature-descriptions
@@ -367,19 +363,19 @@ public class ChangelogKeepFeatureDescriptionsTests(ITestOutputHelper output) : D
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ParsesKeepFeatureDescriptions() =>
 		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepFeatureDescriptions);
 
-	[Fact]
+	[Test]
 	public void ShowsFeatureBodies() => Html.Should().Contain("FEATURE_ONLY_BODY");
 
-	[Fact]
+	[Test]
 	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_HIDDEN_BODY");
 }
 
-public class ChangelogCombinedFeatureAndHighlightDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogCombinedFeatureAndHighlightDescriptionsTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:highlights:
@@ -420,25 +416,25 @@ public class ChangelogCombinedFeatureAndHighlightDescriptionsTests(ITestOutputHe
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ParsesBothOverlays()
 	{
 		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions).Should().BeTrue();
 		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsHighlightBodies() => Html.Should().Contain("HIGHLIGHT_SECTION_BODY");
 
-	[Fact]
+	[Test]
 	public void ShowsFeatureBodies() => Html.Should().Contain("FEATURE_SECTION_BODY");
 
-	[Fact]
+	[Test]
 	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_HIDDEN_BODY");
 }
 
-public class ChangelogAutoPlusFeatureDescriptionsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogAutoPlusFeatureDescriptionsTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: auto, keep-feature-descriptions
@@ -471,22 +467,22 @@ public class ChangelogAutoPlusFeatureDescriptionsTests(ITestOutputHelper output)
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ParsesAutoPlusFeatureOverlay()
 	{
 		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.Auto).Should().BeTrue();
 		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions).Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsFeatureBodiesOnPublicRepos() => Html.Should().Contain("FEATURE_AUTO_OVERLAY_BODY");
 
-	[Fact]
+	[Test]
 	public void HidesEnhancementBodiesOnPublicRepos() => Html.Should().NotContain("ENHANCEMENT_AUTO_BODY");
 }
 
-public class ChangelogDuplicateBaseDescriptionVisibilityTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogDuplicateBaseDescriptionVisibilityTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: keep-descriptions, hide-descriptions
@@ -513,18 +509,18 @@ public class ChangelogDuplicateBaseDescriptionVisibilityTests(ITestOutputHelper 
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void KeepsFirstBaseToken() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepDescriptions);
 
-	[Fact]
+	[Test]
 	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
 
-	[Fact]
+	[Test]
 	public void RendersBodiesUsingFirstBase() => Html.Should().Contain("BODY_FIRST_BASE_WINS");
 }
 
-public class ChangelogHideDescriptionsPlusFeatureOverlayTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
+[InheritsTests]
+public class ChangelogHideDescriptionsPlusFeatureOverlayTests() : DirectiveTest<ChangelogBlock>(
 	"""
 	:::{changelog}
 	:description-visibility: hide-descriptions, keep-feature-descriptions
@@ -557,9 +553,9 @@ public class ChangelogHideDescriptionsPlusFeatureOverlayTests(ITestOutputHelper 
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void ShowsFeatureBodiesDespiteHideBase() => Html.Should().Contain("FEATURE_OVERLAY_WINS");
 
-	[Fact]
+	[Test]
 	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_STILL_HIDDEN");
 }

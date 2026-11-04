@@ -7,20 +7,20 @@ using Elastic.Markdown.Tests.Inline;
 
 namespace Elastic.Markdown.Tests.TaskList;
 
-public class BasicTaskListTests(ITestOutputHelper output) : InlineTest(output, """
+public class BasicTaskListTests() : InlineTest("""
 - [ ] A pending task
 - [x] A completed task
 """)
 {
-	[Fact]
+	[Test]
 	public void RendersTaskListContainer() => Html.Should().Contain("class=\"contains-task-list\"");
 
-	[Fact]
+	[Test]
 	public void RendersTaskListItem() => Html.Should().Contain("class=\"task-list-item\"");
 
-	[Fact]
+	[Test]
 	public void RendersUncheckedCheckbox() => Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox">""");
 
-	[Fact]
+	[Test]
 	public void RendersCheckedCheckbox() => Html.ShouldContainHtml("""<input disabled="disabled" type="checkbox" checked="checked">""");
 }

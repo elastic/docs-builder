@@ -9,7 +9,7 @@ title:
 type: 
 
 # A required string that contains the type of change.
-# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntryType.cs
+# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntryType.cs
 products:
 
 # A required array of objects that denote the affected products.
@@ -77,5 +77,5 @@ prs:
 subtype:
 
 # An optional string that applies only to breaking changes and further subdivides that type.
-# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ChangelogEntrySubtype.cs
+# For the acceptable values, refer to https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/ReleaseNotes/ChangelogEntrySubtype.cs
 ```

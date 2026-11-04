@@ -8,13 +8,11 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class ChangelogFeatureAndEnhancementSectionsTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+[InheritsTests]
+public class ChangelogFeatureAndEnhancementSectionsTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -44,16 +42,16 @@ public class ChangelogFeatureAndEnhancementSectionsTests(ITestOutputHelper outpu
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersSeparateFeaturesHeading() => Html.Should().Contain(">Features<");
 
-	[Fact]
+	[Test]
 	public void RendersSeparateEnhancementsHeading() => Html.Should().Contain(">Enhancements<");
 
-	[Fact]
+	[Test]
 	public void OmitsCombinedHeading() => Html.Should().NotContain("Features and enhancements");
 
-	[Fact]
+	[Test]
 	public void FeaturesAppearBeforeEnhancements()
 	{
 		var featuresIdx = Html.IndexOf(">Features<", StringComparison.Ordinal);
@@ -61,7 +59,7 @@ public class ChangelogFeatureAndEnhancementSectionsTests(ITestOutputHelper outpu
 		featuresIdx.Should().BeLessThan(enhancementsIdx);
 	}
 
-	[Fact]
+	[Test]
 	public void TocIncludesBothSections()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -70,13 +68,11 @@ public class ChangelogFeatureAndEnhancementSectionsTests(ITestOutputHelper outpu
 	}
 }
 
-public class ChangelogEnhancementsOnlyOmitsFeaturesSectionTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+[InheritsTests]
+public class ChangelogEnhancementsOnlyOmitsFeaturesSectionTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -96,13 +92,13 @@ public class ChangelogEnhancementsOnlyOmitsFeaturesSectionTests(ITestOutputHelpe
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersEnhancements() => Html.Should().Contain(">Enhancements<");
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyFeaturesSection() => Html.Should().NotContain(">Features<");
 
-	[Fact]
+	[Test]
 	public void TocOmitsFeatures()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -111,13 +107,11 @@ public class ChangelogEnhancementsOnlyOmitsFeaturesSectionTests(ITestOutputHelpe
 	}
 }
 
-public class ChangelogFeaturesOnlyOmitsEnhancementsSectionTests(ITestOutputHelper output) : DirectiveTest<ChangelogBlock>(
-	output,
-	"""
+[InheritsTests]
+public class ChangelogFeaturesOnlyOmitsEnhancementsSectionTests() : DirectiveTest<ChangelogBlock>("""
 	:::{changelog}
 	:::
-	"""
-)
+	""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile(
@@ -137,9 +131,9 @@ public class ChangelogFeaturesOnlyOmitsEnhancementsSectionTests(ITestOutputHelpe
 			)
 		);
 
-	[Fact]
+	[Test]
 	public void RendersFeatures() => Html.Should().Contain(">Features<");
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyEnhancementsSection() => Html.Should().NotContain(">Enhancements<");
 }

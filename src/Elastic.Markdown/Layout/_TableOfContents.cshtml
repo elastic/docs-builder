@@ -3,10 +3,10 @@
 @using Microsoft.AspNetCore.Html
 @inherits RazorSlice<Elastic.Markdown.MarkdownLayoutViewModel>
 <aside class="sidebar md:block w-full lg:max-w-65 order-1 lg:order-2">
-	<nav id="toc-nav" class="sidebar-nav lg:h-full flex lg:block items-center justify-start md:justify-start gap-4 simple-scrollbar">
+	<nav id="toc-nav" class="sidebar-nav lg:h-full flex flex-row-reverse justify-between items-center md:flex-row md:justify-start lg:block gap-4 simple-scrollbar">
 		@if (Model.ShowVersionDropdown && !Model.Features.NavigationPreviewEnabled)
 		{
-			<div class="mb-4">
+			<div class="lg:mb-4">
 				<version-dropdown data-testid="docs-version-dropdown" all-versions-url="@Model.AllVersionsUrl" current-version='@(Model.CurrentVersion)' items='@(new HtmlString(Model.VersionDropdownSerializedModel))'>
 					<div class="h-8">@*height of dropdown button*@</div>
 				</version-dropdown>
@@ -20,7 +20,7 @@
 		@if (Model.RenderHamburgerIcon)
 		{
 			@* ReSharper disable once Html.IdNotResolved *@
-			<label role="button" class="md:hidden cursor-pointer mt-3" for="pages-nav-hamburger">
+			<label role="button" class="md:hidden cursor-pointer" for="pages-nav-hamburger">
 				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 					stroke="currentColor" class="size-6">
 					<path stroke-linecap="round" stroke-linejoin="round"
@@ -57,6 +57,17 @@
 							<path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
 						</svg>
 						Edit this page
+					</a>
+				</li>
+			}
+			@if (Model.Features.PrimaryNavEnabled && Model.BuildType != BuildType.Codex && Model.Branding is null)
+			{
+				<li class="learn-how-to-contribute hidden lg:block lg:not-first:mt-1">
+					<a href="https://www.elastic.co/docs/contribute-docs/" class="link text-sm" target="_blank">
+						<svg class="link-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill="currentColor" d="M8.8,0 C9.074,0 9.337,0.113 9.526,0.312 L12.726,3.74 C12.902,3.926 13,4.173 13,4.429 L13,13 C13,13.552 12.552,14 12,14 L2,14 C1.448,14 1,13.552 1,13 L1,1 C1,0.448 1.448,0 2,0 L8.8,0 Z M12,5 L8.5,5 C8.224,5 8,4.776 8,4.5 L8,1 L2,1 L2,13 L12,13 L12,5 Z M4.5,11 C4.22385763,11 4,10.7761424 4,10.5 C4,10.2238576 4.22385763,10 4.5,10 L9.5,10 C9.7761424,10 10,10.2238576 10,10.5 C10,10.7761424 9.7761424,11 9.5,11 L4.5,11 Z M4.5,8 C4.22385763,8 4,7.77614237 4,7.5 C4,7.22385763 4.22385763,7 4.5,7 L9.5,7 C9.7761424,7 10,7.22385763 10,7.5 C10,7.77614237 9.7761424,8 9.5,8 L4.5,8 Z M5.5,16 C5.22385763,16 5,15.7761424 5,15.5 C5,15.2238576 5.22385763,15 5.5,15 L14,15 L14,6.5 C14,6.22385763 14.2238576,6 14.5,6 C14.7761424,6 15,6.22385763 15,6.5 L15,15 C15,15.5522847 14.5522847,16 14,16 L5.5,16 Z"/>
+						</svg>
+						Learn how to contribute
 					</a>
 				</li>
 			}

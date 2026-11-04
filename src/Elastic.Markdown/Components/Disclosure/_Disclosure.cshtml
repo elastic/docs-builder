@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.Markdown.Components.Disclosure.DisclosureModel>
+<details class="@Model.CssClass"@(Model.Id is { Length: > 0 } id ? new HtmlString($" id=\"{System.Net.WebUtility.HtmlEncode(id)}\"") : HtmlString.Empty)@(Model.Open ? new HtmlString(" open") : HtmlString.Empty)>
+	<summary class="disclosure__summary">
+		<span class="disclosure__title">
+			@if (Model.AppliesTo is { } appliesTo)
+			{
+				<span class="disclosure__applies">@appliesTo</span>
+			}
+			<span>@Model.Title</span>
+		</span>
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "chevron_single_down", Size = IconSize.Small }))
+	</summary>
+	<div class="disclosure__body">@Model.Body</div>
+</details>

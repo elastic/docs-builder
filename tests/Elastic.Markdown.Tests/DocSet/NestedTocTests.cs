@@ -12,9 +12,9 @@ using Elastic.Markdown.IO;
 
 namespace Elastic.Markdown.Tests.DocSet;
 
-public class NestedTocTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class NestedTocTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void InjectsNestedTocsIntoDocumentationSet()
 	{
 		var doc = Generator.DocumentationSet.MarkdownFiles.FirstOrDefault(f => f.RelativePath == Path.Join("nested-toc", "index.md"));

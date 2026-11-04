@@ -7,10 +7,11 @@ using System.IO.Abstractions;
 using System.Text;
 using System.Text.RegularExpressions;
 using Elastic.Documentation.Configuration.Serialization;
+using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Text;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -27,30 +28,32 @@ public static partial class ReleaseNotesSerialization
 	[GeneratedRegex(@"(\s+)version:", RegexOptions.Multiline)]
 	public static partial Regex VersionToTargetRegex();
 
-	private static readonly IDeserializer YamlDeserializer = new StaticDeserializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.Build();
+	private static readonly YamlSerializerOptions DeserializerOptions = YamlStaticContext.Default.Options.WithUnmappedKeysThrowing();
 
-	private static readonly ISerializer YamlSerializer = new StaticSerializerBuilder(new YamlStaticContext())
-		.WithNamingConvention(UnderscoredNamingConvention.Instance)
-		.ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
-		.WithQuotingNecessaryStrings()
-		.DisableAliases()
-		.Build();
+	private static readonly YamlSerializerOptions SerializerOptions = YamlStaticContext.Default.CreateOptions(
+		o =>
+			o with
+			{
+				DefaultIgnoreCondition = YamlIgnoreCondition.WhenWritingDefault,
+				ScalarStylePreferences = new YamlScalarStylePreferences { MultilineStringStyle = ScalarStyle.Literal }
+			}
+	);
 
 	/// <summary>
-	/// Gets the raw YAML deserializer for changelog entry DTOs.
+	/// Gets the raw YAML deserializer options for changelog entry DTOs.
 	/// Used by bundling service for direct deserialization with error handling.
 	/// </summary>
-	public static IDeserializer GetEntryDeserializer() => YamlDeserializer;
+	public static YamlSerializerOptions GetEntryDeserializerOptions(string? sourceName = null) =>
+		sourceName is null ? DeserializerOptions : DeserializerOptions.WithUnmappedKeysThrowing(sourceName);
 
 	/// <summary>
 	/// Deserializes a changelog entry YAML content to domain type.
 	/// </summary>
-	public static ChangelogEntry DeserializeEntry(string yaml)
+	public static ChangelogEntry DeserializeEntry(string yaml, string? sourceName = null)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<ChangelogEntryDto>(yaml);
+		var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(yaml, GetEntryDeserializerOptions(sourceName))
+			?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 		return ToEntry(yamlDto);
 	}
 
@@ -69,10 +72,11 @@ public static partial class ReleaseNotesSerialization
 	/// <summary>
 	/// Deserializes bundled changelog data YAML content to domain type.
 	/// </summary>
-	public static Bundle DeserializeBundle(string yaml)
+	public static Bundle DeserializeBundle(string yaml, string? sourceName = null)
 	{
 		yaml = Utf8TextNormalization.StripLeadingUtf8Bom(yaml)!;
-		var yamlDto = YamlDeserializer.Deserialize<BundleDto>(yaml);
+		var yamlDto = YamlSerializer.Deserialize<BundleDto>(yaml, GetEntryDeserializerOptions(sourceName))
+			?? throw new InvalidOperationException("Failed to deserialize bundle YAML.");
 		return ToBundle(yamlDto);
 	}
 
@@ -82,7 +86,7 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeEntry(ChangelogEntry entry)
 	{
 		var dto = ToDto(entry);
-		var yaml = YamlSerializer.Serialize(dto);
+		var yaml = YamlSerializer.Serialize(dto, SerializerOptions);
 		return ApplyDefensiveTitleQuotingIfNeeded(yaml, entry.Title);
 	}
 
@@ -92,7 +96,7 @@ public static partial class ReleaseNotesSerialization
 	public static string SerializeBundle(Bundle bundle)
 	{
 		var dto = ToDto(bundle);
-		return YamlSerializer.Serialize(dto);
+		return YamlSerializer.Serialize(dto, SerializerOptions);
 	}
 
 	private static string ApplyDefensiveTitleQuotingIfNeeded(string yaml, string? title)
@@ -301,7 +305,10 @@ public static partial class ReleaseNotesSerialization
 			Subtype = EntrySubtypeToString(entry.Subtype),
 			Products = entry.Products?.Select(ToDto).ToList(),
 			Areas = entry.Areas?.ToList(),
-			Title = entry.Title,
+			// Empty is the "missing title" sentinel (see ChangelogFileWriter.GenerateYaml) and must
+			// round-trip to the DTO's null so DefaultIgnoreCondition.WhenWritingDefault omits it —
+			// that condition compares against default(string?), i.e. null, not "".
+			Title = string.IsNullOrEmpty(entry.Title) ? null : entry.Title,
 			Description = entry.Description,
 			Impact = entry.Impact,
 			Action = entry.Action,
@@ -393,7 +400,8 @@ public static partial class ReleaseNotesSerialization
 		var yamlWithoutComments = string.Join('\n', yamlLines.Where(line => !line.TrimStart().StartsWith('#')));
 
 		// Normalize version to target
-		return VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+		var normalized = VersionToTargetRegex().Replace(yamlWithoutComments, "$1target:");
+		return normalized;
 	}
 
 	/// <summary>

@@ -8,35 +8,32 @@ using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public class MermaidFlowchartTests(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MermaidFlowchartTests() : DirectiveTest("""
 ```mermaid
 flowchart LR
 A[Start] --> B[Process]
 B --> C[End]
 ```
-"""
-)
+""")
 {
 	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void HasMermaidLanguage() => Block!.Language.Should().Be("mermaid");
 
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void EmitsExternalSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
 
-	[Fact]
+	[Test]
 	public void SvgContainsNodeLabels()
 	{
 		var svg = ReadMermaidSvgs()[0];
@@ -46,8 +43,7 @@ B --> C[End]
 	}
 }
 
-public class MermaidSequenceTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MermaidSequenceTests() : DirectiveTest(
 	"""
 ```mermaid
 sequenceDiagram
@@ -61,16 +57,16 @@ sequenceDiagram
 {
 	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
 
-	[Fact]
+	[Test]
 	public void ParsesSequenceDiagram() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void SvgContainsParticipantLabels()
 	{
 		var svg = ReadMermaidSvgs()[0];
@@ -79,8 +75,7 @@ sequenceDiagram
 	}
 }
 
-public class MermaidStateDiagramTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MermaidStateDiagramTests() : DirectiveTest(
 	"""
 ```mermaid
 stateDiagram-v2
@@ -94,16 +89,16 @@ stateDiagram-v2
 {
 	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
 
-	[Fact]
+	[Test]
 	public void ParsesStateDiagram() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void SvgContainsStateLabels()
 	{
 		var svg = ReadMermaidSvgs()[0];
@@ -113,8 +108,7 @@ stateDiagram-v2
 	}
 }
 
-public class MermaidClassDiagramTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MermaidClassDiagramTests() : DirectiveTest(
 	"""
 ```mermaid
 classDiagram
@@ -127,16 +121,16 @@ classDiagram
 {
 	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
 
-	[Fact]
+	[Test]
 	public void ParsesClassDiagram() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void SvgContainsClassLabels()
 	{
 		var svg = ReadMermaidSvgs()[0];
@@ -146,8 +140,7 @@ classDiagram
 	}
 }
 
-public class MermaidErDiagramTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MermaidErDiagramTests() : DirectiveTest(
 	"""
 ```mermaid
 erDiagram
@@ -159,16 +152,16 @@ erDiagram
 {
 	private EnhancedCodeBlock? Block => Document.Descendants<EnhancedCodeBlock>().FirstOrDefault();
 
-	[Fact]
+	[Test]
 	public void ParsesErDiagram() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void SvgContainsEntityLabels()
 	{
 		var svg = ReadMermaidSvgs()[0];
@@ -180,8 +173,7 @@ erDiagram
 
 // classDef/style directives are stripped by strict styling (Strip mode) — diagram still renders as SVG,
 // each stripped item fires OnStripped as a hint.
-public class MermaidStyledFlowchartTests(ITestOutputHelper output) : DirectiveTest(
-	output,
+public class MermaidStyledFlowchartTests() : DirectiveTest(
 	"""
 ```mermaid
 flowchart LR
@@ -193,62 +185,56 @@ style B fill:#0A52B3,color:#fff
 """
 )
 {
-	[Fact]
+	[Test]
 	public void EmitsHints() => Collector.Diagnostics.Should().NotBeEmpty();
 
-	[Fact]
+	[Test]
 	public void EmitsSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
 
-	[Fact]
+	[Test]
 	public void DoesNotFallBackToRawSource() => Html.Should().NotContain("<pre class=\"mermaid-error\">");
 }
 
 // Allowlisted semantic classes render correctly with site palette colors baked into SVG.
-public class MermaidStrictClassTests(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MermaidStrictClassTests() : DirectiveTest("""
 ```mermaid
 flowchart LR
 A[Start]:::warning --> B[End]
 ```
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void RendersMermaidContainer() => Html.Should().Contain("<div class=\"mermaid-container\">");
 
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void SvgContainsWarningFillColor() => ReadMermaidSvgs()[0].Should().Contain("#fdf3d8");
 }
 
 // DataPalette: pie chart SVG should use our theme palette, not the Tableau CB10 default.
-public class MermaidPieDataPaletteTests(ITestOutputHelper output) : DirectiveTest(
-	output,
-	"""
+public class MermaidPieDataPaletteTests() : DirectiveTest("""
 ```mermaid
 pie
 "Blue" : 40
 "Red" : 30
 "Green" : 30
 ```
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void RendersImgElement() => Html.Should().Contain("<img");
 
-	[Fact]
+	[Test]
 	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
 
-	[Fact]
+	[Test]
 	public void UsesThemePalette() => ReadMermaidSvgs()[0].Should().Contain("#3788ff"); // blue-elastic-70
 
-	[Fact]
+	[Test]
 	public void DoesNotUseTableauDefault() => ReadMermaidSvgs()[0].Should().NotContain("#4e79a7"); // Tableau Blue
 }

@@ -9,7 +9,7 @@ namespace Elastic.LegacyDocs.Migration.Tests;
 
 public class LexerTests
 {
-	[Fact]
+	[Test]
 	public void OpenBlock_DashDash_IsNotVerbatim()
 	{
 		var tokens = AsciidocLexer.Tokenize("--\nSome content\n--");
@@ -22,7 +22,7 @@ public class LexerTests
 		text[0].Raw.Should().Be("Some content");
 	}
 
-	[Fact]
+	[Test]
 	public void VerbatimBlock_FourDashes_IsVerbatim()
 	{
 		var tokens = AsciidocLexer.Tokenize("----\n<1> callout marker\n----");
@@ -33,7 +33,7 @@ public class LexerTests
 		text[0].Raw.Should().Be("<1> callout marker");
 	}
 
-	[Fact]
+	[Test]
 	public void ClosingDelimiter_RequiresExactLength()
 	{
 		// A longer closing delimiter should NOT close the block

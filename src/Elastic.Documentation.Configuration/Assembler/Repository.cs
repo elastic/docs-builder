@@ -3,13 +3,17 @@
 // See the LICENSE file in the project root for more information
 
 using System.Runtime.Serialization;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
 public record NarrativeRepository : Repository
 {
+	// Static constant, not a YAML member — the source generator doesn't filter static properties
+	// on its own, so this must be explicitly ignored to avoid CS0176 in the generated (de)serializer.
+	[YamlIgnore]
 	public static string RepositoryName { get; } = "docs-content";
+
 	public override string Name { get; set; } = RepositoryName;
 }
 
@@ -26,32 +30,32 @@ public record Repository
 	[YamlIgnore]
 	public virtual string Name { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "repo")]
+	[YamlPropertyName("repo")]
 	public string Origin { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "checkout_strategy")]
+	[YamlPropertyName("checkout_strategy")]
 	public CheckoutStrategy CheckoutStrategy { get; set; } = CheckoutStrategy.Partial;
 
-	[YamlMember(Alias = "skip")]
+	[YamlPropertyName("skip")]
 	public bool Skip { get; set; }
 
 	/// <summary> Allows you to override the path to the repository, but only during local builds. </summary>
-	[YamlMember(Alias = "path")]
+	[YamlPropertyName("path")]
 	public string? Path { get; set; }
 
-	[YamlMember(Alias = "current")]
+	[YamlPropertyName("current")]
 	public string GitReferenceCurrent { get; set; } = "main";
 
-	[YamlMember(Alias = "next")]
+	[YamlPropertyName("next")]
 	public string GitReferenceNext { get; set; } = "main";
 
-	[YamlMember(Alias = "edge")]
+	[YamlPropertyName("edge")]
 	public string GitReferenceEdge { get; set; } = "main";
 
-	[YamlMember(Alias = "sparse_paths")]
+	[YamlPropertyName("sparse_paths")]
 	public string[] SparsePaths { get; set; } = ["docs"];
 
-	[YamlMember(Alias = "private")]
+	[YamlPropertyName("private")]
 	public bool Private { get; set; }
 
 	/// <summary>
@@ -59,7 +63,7 @@ public record Repository
 	/// Accepts duration strings such as <c>30s</c> or <c>15m</c>.
 	/// When omitted the global default applies (10 minutes in CI, unbounded locally).
 	/// </summary>
-	[YamlMember(Alias = "clone_timeout")]
+	[YamlPropertyName("clone_timeout")]
 	public TimeSpan? CloneTimeout { get; set; }
 
 	public string GetBranch(ContentSource contentSource) => contentSource switch

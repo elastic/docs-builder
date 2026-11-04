@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using Elastic.Documentation.Search.Contract;
+
 namespace Elastic.Documentation.Search;
 
 public interface INavigationSearchService
@@ -47,10 +49,25 @@ public record NavigationSearchResultItemParent
 
 public record NavigationSearchResultItem
 {
+	public NavigationSearchProperty[] Properties { get; init; } = [];
+
+	/// <summary>The operation's routes with their methods; empty for a docs page.</summary>
+	public ApiRouteEntry[] Routes { get; init; } = [];
 	public required string Type { get; init; }
 	public required string Url { get; init; }
 	public required string Title { get; init; }
 	public required string Description { get; init; }
 	public required NavigationSearchResultItemParent[] Parents { get; init; }
 	public float Score { get; init; }
+}
+
+public record NavigationSearchProperty
+{
+	public required string Name { get; init; }
+	public required string Path { get; init; }
+	public required string Type { get; init; }
+	public required string Description { get; init; }
+	public required string Anchor { get; init; }
+	public required string Location { get; init; }
+	public required string Url { get; init; }
 }

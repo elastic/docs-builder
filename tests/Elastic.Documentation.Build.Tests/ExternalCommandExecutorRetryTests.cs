@@ -17,7 +17,7 @@ public class ExternalCommandExecutorRetryTests
 {
 	private static readonly RetryPolicy FiveAttempts = new(MaxAttempts: 5, BaseDelay: TimeSpan.FromSeconds(1));
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_SucceedsOnFirstAttempt_EmitsNoErrors()
 	{
 		var executor = CreateExecutor(ExitCode(0));
@@ -30,7 +30,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.RecordedDelays.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_SucceedsAfterTransientFailures_EmitsNoErrors()
 	{
 		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(0));
@@ -43,7 +43,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.RecordedDelays.Should().Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_ExhaustsAllAttempts_EmitsExactlyOneError()
 	{
 		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(1), ExitCode(1), ExitCode(1));
@@ -59,7 +59,7 @@ public class ExternalCommandExecutorRetryTests
 			.Equal(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(8));
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_WithCustomPolicy_HonoursAttemptsAndBaseDelay()
 	{
 		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(1));
@@ -72,7 +72,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.RecordedDelays.Should().Equal(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4));
 	}
 
-	[Fact]
+	[Test]
 	public void ExecIn_WhenCommandFails_EmitsOneErrorWithoutRetrying()
 	{
 		var executor = CreateExecutor(ExitCode(1));
@@ -84,7 +84,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.RecordedDelays.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_WhenAttemptTimesOut_RetriesAndSucceeds()
 	{
 		// First attempt simulates a ProcNet per-attempt timeout; second succeeds.
@@ -99,7 +99,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.RecordedDelays.Should().HaveCount(1);
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_WhenEveryAttemptTimesOut_EmitsExactlyOneError()
 	{
 		var policy = new RetryPolicy(MaxAttempts: 3, BaseDelay: TimeSpan.FromSeconds(1));
@@ -112,7 +112,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.Diagnostics.Errors.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_OnRetry_CallsOnBeforeRetryOncePerRetryNotBeforeFirstAttempt()
 	{
 		var executor = CreateExecutor(ExitCode(1), ExitCode(1), ExitCode(0));
@@ -123,7 +123,7 @@ public class ExternalCommandExecutorRetryTests
 		executor.OnBeforeRetryCallCount.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public void ExecInWithRetry_OnFirstAttemptSuccess_OnBeforeRetryNeverCalled()
 	{
 		var executor = CreateExecutor(ExitCode(0));

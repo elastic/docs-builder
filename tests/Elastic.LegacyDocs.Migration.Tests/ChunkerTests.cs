@@ -31,7 +31,7 @@ public class ChunkerTests
 
 	// ── DocTitle becomes the index page ───────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void DocTitle_BecomesIndexPage_NoDuplicatePage()
 	{
 		// The Level-0 `= Book Title` section is the transparent wrapper; it becomes `index.md`.
@@ -51,7 +51,7 @@ public class ChunkerTests
 
 	// ── Discrete sections never become pages ──────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void DiscreteSection_IsNeverChunked()
 	{
 		// quickstart/index.asciidoc shape via include:
@@ -100,7 +100,7 @@ public class ChunkerTests
 
 	// ── Section deeper than chunkLevel stays inline, rebased as ## ───────────
 
-	[Fact]
+	[Test]
 	public void Section_DeeperThanChunkLevel_StaysOnParentPage()
 	{
 		// setup/install/targz.asciidoc shape (chunk:1 → effectiveChunkLevel 2):
@@ -151,7 +151,7 @@ public class ChunkerTests
 
 	// ── TitleAbbrev emits navigation_title frontmatter ────────────────────────
 
-	[Fact]
+	[Test]
 	public void TitleAbbrev_EmitsNavigationTitleFrontmatter()
 	{
 		// `== ...` (Level 1) is the doc title in a bare file; use a book wrapper.
@@ -182,7 +182,7 @@ public class ChunkerTests
 		page.MarkdownContent.Should().NotContain("<titleabbrev>");
 	}
 
-	[Fact]
+	[Test]
 	public void TitleAbbrev_MatchingTitle_DoesNotEmitFrontmatter()
 	{
 		var files = new Dictionary<string, string>
@@ -212,7 +212,7 @@ public class ChunkerTests
 
 	// ── Auto-id derivation ────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void IdLessSection_UsesAutoId()
 	{
 		var files = new Dictionary<string, string>
@@ -237,7 +237,7 @@ public class ChunkerTests
 		page.Slug.Should().Be("install_from_archive_on_linux_macos");
 	}
 
-	[Fact]
+	[Test]
 	public void DuplicateSlug_IsSuffixed()
 	{
 		// Two included files with the same section id would collide; the second gets _2.
@@ -277,7 +277,7 @@ public class ChunkerTests
 
 	// ── Include-file cross-level nesting ─────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CrossInclude_Level1FollowingLevel0_NestedAsChildren()
 	{
 		// Mirrors the migration guide pattern:
@@ -335,7 +335,7 @@ public class ChunkerTests
 
 	// ── Nested toc.yml indentation ────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void WriteTocYaml_NestedChildren_IndentsCorrectly()
 	{
 		var entries = new List<TocEntry>
@@ -360,7 +360,7 @@ public class ChunkerTests
 		yaml.Should().Contain("      - file: full-text.md\n");
 	}
 
-	[Fact]
+	[Test]
 	public void WriteTocYaml_IslandToc_EmitsIslandKey()
 	{
 		var entries = new List<TocEntry>

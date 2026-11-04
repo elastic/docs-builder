@@ -1,5 +1,6 @@
 import { config } from '../../config'
 import '../../eui-icons-cache'
+import { lockPageScroll } from '../../scroll-lock'
 import { ElasticAiAssistantButton } from '../AskAi/ElasticAiAssistantButton'
 import { InfoBanner } from '../AskAi/InfoBanner'
 import { KeyboardShortcutsFooter } from '../AskAi/KeyboardShortcutsFooter'
@@ -398,40 +399,38 @@ export const ModalSearch = ({
     }, [openModal, trackOpened])
 
     useEffect(() => {
-        if (isOpen) {
-            const scrollbarWidth =
-                window.innerWidth - document.documentElement.clientWidth
-            document.body.style.overflow = 'hidden'
-            document.body.style.paddingRight = `${scrollbarWidth}px`
-        } else {
-            document.body.style.overflow = ''
-            document.body.style.paddingRight = ''
-        }
-        return () => {
-            document.body.style.overflow = ''
-            document.body.style.paddingRight = ''
-        }
+        if (!isOpen) return
+        return lockPageScroll()
     }, [isOpen])
 
     useEffect(() => {
         if (!isOpen) return
 
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                closeModal()
-            }
+        // Close after the swap, not before: the clicked result link must stay
+        // mounted so htmx can still read the body's inherited hx-swap and hx-select.
+        // A dismissal while the request is pending unmounts it anyway, so cancel
+        // the request instead of letting the response swap in the wrong place.
+        let pending: Element | null = null
+        const handleBeforeSend = (event: Event) => {
+            const elt = (event as CustomEvent).detail?.elt as
+                Element | undefined
+            pending = elt?.hasAttribute('data-search-result-index') ? elt : null
         }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
+        const handleAfterSwap = () => {
+            pending = null
+            closeModal()
+        }
+        document.addEventListener('htmx:beforeSend', handleBeforeSend)
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
         return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
+            document.removeEventListener('htmx:beforeSend', handleBeforeSend)
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
+            if (pending) {
+                // The link is already detached, so the event cannot bubble from it.
+                document.body.dispatchEvent(
+                    new CustomEvent('htmx:abort', { detail: { elt: pending } })
+                )
+            }
         }
     }, [isOpen, closeModal])
 

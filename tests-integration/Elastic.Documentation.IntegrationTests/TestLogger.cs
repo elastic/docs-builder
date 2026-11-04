@@ -4,10 +4,11 @@
 
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Documentation.IntegrationTests;
 
-public class TestLogger(ITestOutputHelper? output) : ILogger
+public class TestLogger : ILogger
 {
 	private sealed class NullScope : IDisposable
 	{
@@ -24,32 +25,37 @@ public class TestLogger(ITestOutputHelper? output) : ILogger
 		TState state,
 		Exception? exception,
 		Func<TState, Exception?, string> formatter
-	) => output?.WriteLine(formatter(state, exception));
+	) => TestContext.Current?.Output.WriteLine(formatter(state, exception));
 }
 
-public class TestLoggerFactory(ITestOutputHelper? output) : ILoggerFactory
+public class TestLoggerProvider : ILoggerProvider
+{
+	public void Dispose() => GC.SuppressFinalize(this);
+
+	public ILogger CreateLogger(string categoryName) => new TestLogger();
+}
+
+public class TestLoggerFactory : ILoggerFactory
 {
 	public void Dispose() => GC.SuppressFinalize(this);
 
 	public void AddProvider(ILoggerProvider provider) { }
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger(output);
+	public ILogger CreateLogger(string categoryName) => new TestLogger();
 }
 
-public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutput
+public class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 		else
-			output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper? output) : DiagnosticsCollector(
-	output != null ? [new TestDiagnosticsOutput(output)] : []
-)
+public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnosticsOutput()])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 

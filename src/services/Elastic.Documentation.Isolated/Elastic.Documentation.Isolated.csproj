@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="GitHub.Actions.Core" />
     <PackageReference Include="Nullean.Argh.Interfaces" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(SolutionRoot)\src\Elastic.Documentation\Elastic.Documentation.csproj" />
@@ -24,6 +25,7 @@
     <ProjectReference Include="..\..\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj" />
     <ProjectReference Include="..\..\Elastic.Documentation.Links\Elastic.Documentation.Links.csproj" />
     <ProjectReference Include="..\..\Elastic.Markdown\Elastic.Markdown.csproj" />
+    <ProjectReference Include="..\..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Services\Elastic.Documentation.Services.csproj" />
   </ItemGroup>
 

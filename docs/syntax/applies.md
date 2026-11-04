@@ -24,10 +24,13 @@ When documenting a new feature or behavior, answer these two questions:
 | You need to show entirely different content for each variant, not just tag the same content | [Versioned tabs](applies-switch.md) |
 | You're adding a version-specific note, tip, or warning | [Admonition annotation](admonitions.md) |
 | You're adding a version-specific dropdown | [Dropdown annotation](dropdowns.md) |
+| You're tagging a `{settings}` YAML entry | [applies_to in settings YAML](automated_settings.md#settings-yaml) |
 
 ## Syntax reference
 
 The `applies_to` metadata supports an [exhaustive list of keys](#key-value-reference). When you write or edit documentation, only specify the keys that apply to that content.
+
+`{settings}` YAML is an exception. Each setting renders a **Supported on** line, so you list every deployment key. Refer to [applies_to in settings YAML](automated_settings.md#settings-yaml).
 
 Each key accepts values with the following syntax:
 
@@ -111,6 +114,23 @@ Several components have built-in support for `applies_to` and allow to surface v
 - [dropdowns](dropdowns.md)
 
 Refer to these component pages to learn about the required `applies_to` syntax.
+
+### API reference pages
+
+API reference pages don't use `applies_to` directly. They read the OpenAPI `x-state` extension on each operation, query parameter and schema property, convert it to a `stack` applicability, and render it with the same badge and popover described on this page.
+
+| `x-state` | Equivalent `applies_to` | Badge |
+|-----------|-------------------------|-------|
+| `Generally available; Added in 7.7.0` | `stack: ga 7.7.0` | {applies_to}`stack: ga 7.7` |
+| `Technical Preview` | `stack: preview` | {applies_to}`stack: preview` |
+| `Beta; Added in 8.12.0` | `stack: beta 8.12.0` | {applies_to}`stack: beta 8.12` |
+| `Deprecated; Deprecated in 7.0.0` | `stack: deprecated 7.0.0` | {applies_to}`stack: deprecated 7.0` |
+| `Generally available; Added in 7.7.0; Deprecated in 9.2.0` | `stack: ga 7.7.0, deprecated 9.2.0` | {applies_to}`stack: ga 7.7-9.1, deprecated 9.2+` |
+| `Generally available` | `stack: ga` | No badge |
+
+- Each part of the label between `;` separators keeps its own version, so a label that records both when an API was added and when it was deprecated produces two lifecycles.
+- A plain `Generally available` with no version gets no badge, because it tells readers nothing they can act on.
+- Operations added in a Stack version that isn't released yet show a **Planned** badge on their page, and are left out of the search index.
 
 ## Version syntax
 
@@ -394,6 +414,8 @@ applies_to:
 ## Badge rendering reference
 
 This section provides detailed rules for how badges are rendered based on lifecycle, version, and release status. Use this as a reference when you need to understand the exact rendering behavior.
+
+For `{settings}` YAML, still write the version on `stack`. Do not omit it to hide **Planned**. See [applies_to in settings YAML](automated_settings.md#settings-yaml).
 
 ### Rendering order
 

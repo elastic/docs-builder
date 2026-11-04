@@ -17,7 +17,6 @@ namespace Elastic.Markdown.Extensions.CliReference;
 internal sealed record CliEntityInfo(
 	CliSchema Schema,
 	object Entity, // CliSchema | CliNamespaceSchema | CliCommandSchema | CliShortcutSchema
-
 	IFileInfo? SupplementalDoc,
 	/// <summary>The clean synthetic file (no cmd- prefix) — used as the MarkdownFile source for correct URL generation.</summary>
 	IFileInfo? CleanSyntheticFile = null,

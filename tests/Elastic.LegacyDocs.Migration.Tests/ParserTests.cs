@@ -51,7 +51,7 @@ public class ParserTests
 
 	// ── Step 1: -- open blocks ────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void OpenBlock_DashDash_ProducesOpenBlockNode()
 	{
 		// No section title — direct doc.Children
@@ -61,7 +61,7 @@ public class ParserTests
 		block.Children.Should().HaveCountGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void OpenBlock_NoteStyle_ProducesAdmonitionNode()
 	{
 		var doc = Parse("[NOTE]\n--\nNote content here.\n--\n");
@@ -70,7 +70,7 @@ public class ParserTests
 		admonition.Type.Should().Be(AdmonitionType.Note);
 	}
 
-	[Fact]
+	[Test]
 	public void VerbatimBlock_FourDashes_ProducesCodeBlockNode()
 	{
 		var doc = Parse("[source,yaml]\n----\nfoo: bar\n----\n");
@@ -80,7 +80,7 @@ public class ParserTests
 		code.Language.Should().Be("yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void OpenBlock_And_VerbatimBlock_AreDifferentNodeTypes()
 	{
 		// -- open block should NOT produce a CodeBlockNode
@@ -96,7 +96,7 @@ public class ParserTests
 
 	// ── Step 3: Attribute resolution ─────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void SetAttribute_EagerlyExpandsValues()
 	{
 		// :branch: 8.19
@@ -108,7 +108,7 @@ public class ParserTests
 		refValue.Should().Be("https://example.com/8.19");
 	}
 
-	[Fact]
+	[Test]
 	public void SetAttribute_ProductNameKeys_AreNotStored()
 	{
 		// ProductNames keys should stay unresolved so the emitter emits {{es}} not "Elasticsearch"
@@ -122,7 +122,7 @@ public class ParserTests
 		attrRef.Name.Should().Be("es");
 	}
 
-	[Fact]
+	[Test]
 	public void AttributeResolution_SeedAttributes_AreAvailable()
 	{
 		var attrs = new Dictionary<string, string> { ["branch"] = "8.19", ["docs-root"] = "/work/docs-repo" };
@@ -136,7 +136,7 @@ public class ParserTests
 
 	// ── Step 5: Callouts ─────────────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CodeBlock_Callouts_AreCollected()
 	{
 		var content = "[source,java]\n----\nfoo(); // <1>\nbar(); // <2>\n----\n<1> First callout\n<2> Second callout\n";
@@ -148,7 +148,7 @@ public class ParserTests
 		code.Callouts[1].Should().Be("Second callout");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeBlock_CalloutsOutOfOrder_AreNormalized()
 	{
 		// Callout markers appear in document order by number
@@ -163,7 +163,7 @@ public class ParserTests
 
 	// ── Step 7: Multi-line admonitions ───────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void AdmonitionParagraph_MultiLine_CollectsAllContent()
 	{
 		var content = "NOTE: First line\nSecond line\nThird line\n\nNext paragraph\n";
@@ -191,7 +191,7 @@ public class ParserTests
 
 	// ── Lexer: trailing whitespace on delimiter ───────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Lexer_VerbatimBlock_TrailingSpaceOnClosingDelimiter_ClosesBlock()
 	{
 		var input = "[source,json]\n----\n{\"k\":\"v\"}\n---- \n\nsome text\n";
@@ -205,7 +205,7 @@ public class ParserTests
 
 	// ── Step 2: include:: dispatch in ParseBlock ──────────────────────────────
 
-	[Fact]
+	[Test]
 	public void IncludeDirective_InsideDelimitedBlock_IsResolvedWhenFileExists()
 	{
 		var files = new Dictionary<string, string> { ["/base/inner.adoc"] = "included content" };
@@ -217,7 +217,7 @@ public class ParserTests
 		admonition.Children.Should().HaveCountGreaterThan(0);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_file_starting_with_level1_section_promotes_it_to_doc_title()
 	{
 		// When a file starts with a == section (Level 1 in AST), Parse() treats it as doc.Title.
@@ -258,7 +258,7 @@ public class ParserTests
 		sectionChildren[1].Title.Should().Be("Common search options");
 	}
 
-	[Fact]
+	[Test]
 	public void ChunkLevel2_keeps_level3_within_level2_page()
 	{
 		const string source =
@@ -297,7 +297,7 @@ public class ParserTests
 		searchApiPage.MarkdownContent.Should().Contain("Common search options");
 	}
 
-	[Fact]
+	[Test]
 	public void IncludeChain_EachIncludedFile_BecomesASeparatePage()
 	{
 		// Mirrors the elastic.co search-your-data structure:

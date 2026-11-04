@@ -37,7 +37,7 @@ public sealed record McpServerProfile(
 		"docs",
 		"",
 		"Elastic documentation",
-		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs.",
+		"Use this server to {capabilities} Elastic product documentation published at elastic.co/docs. All content covers version 9 and later.",
 		[
 			"References Elastic product names such as Elasticsearch, Kibana, Fleet, APM, Logstash, Beats, Elastic Security, Elastic Observability, or Elastic Cloud."
 		],
@@ -113,7 +113,7 @@ public sealed record McpServerProfile(
 			Use the server when the user:{whenToUseBlock}
 			</triggers>
 			{toolGuidanceBlock}
-			""";
+			""".ReplaceLineEndings("\n");
 	}
 
 	private static string ReplaceToolPlaceholders(string line, string resourceNoun, string scopePrefix)

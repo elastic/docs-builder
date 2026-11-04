@@ -1,0 +1,8 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Primitives.Badge.BadgeModel>
+<span class="@Model.CssClass">
+	@if (Model.Icon is { } icon)
+	{
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Small }))
+	}
+	@Model.Text
+</span>

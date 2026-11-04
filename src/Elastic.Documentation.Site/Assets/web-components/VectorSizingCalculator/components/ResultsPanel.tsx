@@ -1,8 +1,9 @@
 import { formatBytesString } from '../calculations'
-import { formatGroupedInteger } from '../formatNumbers'
+import { formatDiskToRamSentence, formatGroupedInteger } from '../formatNumbers'
 import type { SizingResult, ValidationResult } from '../types'
+import { CalcToolTip } from './CalcToolTip'
 import { HeroSizeLine } from './HeroSizeLine'
-import { EuiHorizontalRule, EuiLink, EuiText } from '@elastic/eui'
+import { EuiHorizontalRule, EuiText } from '@elastic/eui'
 
 interface ResultsPanelProps {
     result: SizingResult | null
@@ -12,11 +13,13 @@ interface ResultsPanelProps {
     validation: ValidationResult
 }
 
-const KNN_MEMORY_DOC =
-    'https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/approximate-knn-search#_ensure_data_nodes_have_enough_memory'
+const SERVERLESS_NOTE = 'Does not apply to Elastic Cloud Serverless.'
 
 const SIZING_DISCLAIMER =
-    'This calculator is a basic approximation of per-replica and cluster disk and RAM. Real requirements depend on data shape, indexing settings, query patterns, and how you deploy Elasticsearch.'
+    'These estimates are disk and RAM per copy for self-managed Elasticsearch and Elastic Cloud Hosted. This RAM is for fast search, not the Java heap, and is not a full node size. Actual needs still depend on data shape, indexing settings, and query patterns.'
+
+const DISK_TO_RAM_TIP =
+    'This compares how much the field stores on disk with how much RAM it wants in the filesystem cache for fast search. A high number, typical of DiskBBQ, means most of the index can stay on disk. It is not a node type, not Java heap, and not a serverless capacity number.'
 
 function clusterResourcesLabel(replicas: number): string {
     if (replicas === 0) {
@@ -28,17 +31,6 @@ function clusterResourcesLabel(replicas: number): string {
     return `Cluster total (1 primary + ${formatGroupedInteger(replicas)} replicas):`
 }
 
-function formatRatio(value: number): string {
-    return `${value.toFixed(value >= 10 ? 0 : 1)}×`
-}
-
-function diskToRamRatioLabel(result: SizingResult): string {
-    if (result.diskToRamRatio <= 0) {
-        return '-'
-    }
-    return formatRatio(result.diskToRamRatio)
-}
-
 export function ResultsPanel({
     result,
     inputsValid,
@@ -47,6 +39,8 @@ export function ResultsPanel({
     validation,
 }: ResultsPanelProps) {
     const showBody = inputsValid && result !== null && !validation.warning
+    const diskToRamSentence =
+        showBody && result ? formatDiskToRamSentence(result.diskToRamRatio) : ''
 
     return (
         <div className="vectorSizingCalc__panel vectorSizingCalc__panel--right">
@@ -107,12 +101,6 @@ export function ResultsPanel({
                             >
                                 RAM per replica:
                             </EuiText>
-                            <EuiText
-                                size="s"
-                                className="vectorSizingCalc__detailLabel"
-                            >
-                                Disk : off-heap RAM:
-                            </EuiText>
                         </div>
                         <div className="vectorSizingCalc__resultsDetailValues">
                             <EuiText
@@ -145,16 +133,23 @@ export function ResultsPanel({
                                     ? formatBytesString(result.totalRam)
                                     : '0 MiB'}
                             </EuiText>
-                            <EuiText
-                                size="s"
-                                className="vectorSizingCalc__detailValue"
-                            >
-                                {showBody && result
-                                    ? diskToRamRatioLabel(result)
-                                    : '-'}
-                            </EuiText>
                         </div>
                     </div>
+
+                    {diskToRamSentence && (
+                        <EuiText
+                            size="s"
+                            className="vectorSizingCalc__diskRamSentence"
+                        >
+                            <CalcToolTip
+                                content={DISK_TO_RAM_TIP}
+                                position="left"
+                                repositionOnScroll
+                            >
+                                {diskToRamSentence}
+                            </CalcToolTip>
+                        </EuiText>
+                    )}
 
                     <EuiHorizontalRule margin="l" />
 
@@ -170,16 +165,15 @@ export function ResultsPanel({
                     <div className="vectorSizingCalc__disclaimerFooter">
                         <EuiText
                             size="xs"
+                            className="vectorSizingCalc__serverlessNote"
+                        >
+                            {SERVERLESS_NOTE}
+                        </EuiText>
+                        <EuiText
+                            size="xs"
                             className="vectorSizingCalc__disclaimer"
                         >
-                            {SIZING_DISCLAIMER}{' '}
-                            <EuiLink
-                                href={KNN_MEMORY_DOC}
-                                target="_blank"
-                                external
-                            >
-                                Learn more
-                            </EuiLink>
+                            {SIZING_DISCLAIMER}
                         </EuiText>
                     </div>
                 )}

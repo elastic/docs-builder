@@ -3,15 +3,21 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.IO.Abstractions;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
+using Elastic.Documentation.Configuration.Inference;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using FakeItEasy;
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Reader;
 using static System.StringComparison;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -21,7 +27,8 @@ public class OpenApiDocumentExporterTests
 	private static readonly HttpClient HttpClient = new();
 	private const string BaseUrl = "https://www.elastic.co";
 
-	[Fact(Skip = "This spams elastic.co, run this manually")]
+	[Test]
+	[Skip("This spams elastic.co, run this manually")]
 	public async Task ExportedDocumentUrlsShouldReturnSuccessStatusCode()
 	{
 		// Arrange
@@ -42,11 +49,11 @@ public class OpenApiDocumentExporterTests
 		};
 
 		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
-		const int limitPerSource = 300; // Get 50 from each source (Elasticsearch and Kibana)
+		const int limitPerSource = 300;
 
 		// Act - Collect all documents, tracking source
 		var documents = new List<(string Url, string Source)>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource, TestContext.Current.CancellationToken))
+		foreach (var doc in await FetchDocuments(exporter, limitPerSource, TestContext.Current!.Execution.CancellationToken))
 		{
 			if (!string.IsNullOrEmpty(doc.Path))
 			{
@@ -73,7 +80,7 @@ public class OpenApiDocumentExporterTests
 		await Parallel.ForEachAsync(sample, new ParallelOptions
 		{
 			MaxDegreeOfParallelism = 10,
-			CancellationToken = TestContext.Current.CancellationToken
+			CancellationToken = TestContext.Current!.Execution.CancellationToken
 		}, async (url, ct) =>
 		{
 			var fullUrl = $"{BaseUrl}{url}";
@@ -121,8 +128,8 @@ public class OpenApiDocumentExporterTests
 		);
 	}
 
-	[Fact]
-	public async Task DescriptionWithHtmlOperationsListShouldTransformToMarkdownAtEnd()
+	[Test]
+	public async Task DescriptionWithHtmlShouldHaveTagsStrippedForSearchIndex()
 	{
 		// Arrange
 		var versionsConfiguration = new VersionsConfiguration
@@ -143,38 +150,393 @@ public class OpenApiDocumentExporterTests
 
 		var exporter = new OpenApiDocumentExporter(versionsConfiguration);
 
-		// Act - Get some Elasticsearch documents
-		var documents = new List<DocumentationDocument>();
-		await foreach (var doc in exporter.ExportDocuments(limitPerSource: 100, TestContext.Current.CancellationToken))
-		{
-			if (doc.Description != null && doc.Description.Contains("**All methods and paths for this operation:**"))
-			{
-				documents.Add(doc);
-			}
-		}
+		var documents = await FetchDocuments(exporter, 100, TestContext.Current!.Execution.CancellationToken);
 
-		// Assert we found at least one document with the pattern
-		documents.Should().NotBeEmpty("there should be at least one document with operation list");
+		documents.Should().NotBeEmpty("the exporter should return documents");
 
 		foreach (var doc in documents)
 		{
-			// Should not contain HTML
-			doc.Description.Should().NotContain("<div>", "HTML should be converted to markdown");
-			doc.Description.Should().NotContain("<span", "HTML should be converted to markdown");
+			doc.Description.Should().NotBeNullOrWhiteSpace();
+			doc.Description.Should().NotContain("<div>", "HTML tags should be stripped for the search index");
+			doc.Description.Should().NotContain("<span", "HTML tags should be stripped for the search index");
+			doc.Description.Should().NotContain("methods and paths for this operation", "the fixed method list is not the search hit");
+			doc.Description.Should().NotContain("method and path for this operation", "the fixed method list is not the search hit");
+		}
+	}
 
-			// Should contain markdown list items
-			doc.Description.Should().Contain("- **", "should have markdown list items");
-			doc.Description.Should().Contain("`", "paths should be in code blocks");
+	[Test]
+	public void ConvertToDocuments_KeyDiffersFromProduct_InfersFromProductAndKeepsKeyInUrl()
+	{
+		var inferrer = A.Fake<IDocumentInferrerService>();
+		A.CallTo(() => inferrer.InferForOpenApi(A<string>._)).Returns(new DocumentInferenceResult());
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/api/v1/deployments"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation { OperationId = "list-deployments", Summary = "List Deployments" }
+					}
+				}
+			}
+		};
 
-			// Check that the markdown list appears at the end
-			var lines = doc.Description.Split('\n', StringSplitOptions.TrimEntries);
-			var lastNonEmptyLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).TakeLast(5).ToList();
+		var doc = new OpenApiDocumentExporter(StackVersions(), inferrer).ConvertToDocuments(spec, "cloud", "cloud-hosted").Single();
 
-			// At least one of the last few lines should be a Markdown list item
-			var hasMarkdownListAtEnd = lastNonEmptyLines.Any(l => l.StartsWith("- **", InvariantCulture));
-			hasMarkdownListAtEnd.Should().BeTrue(
-				$"markdown list should be at the end of the description. Last lines:\n{string.Join("\n", lastNonEmptyLines)}\n\nFull description:\n{doc.Description}"
-			);
+		doc.Path.Should().StartWith("/docs/api/doc/cloud/operation/");
+		A.CallTo(() => inferrer.InferForOpenApi("cloud-hosted")).MustHaveHappenedOnceExactly();
+		A.CallTo(() => inferrer.InferForOpenApi("cloud")).MustNotHaveHappened();
+	}
+
+	private static async Task<List<DocumentationDocument>> FetchDocuments(OpenApiDocumentExporter exporter, int limitPerSource, Cancel ctx)
+	{
+		var documents = new List<DocumentationDocument>();
+		foreach (var (key, url) in new[]
+		{
+			("elasticsearch", "https://d31bhlox0wglh.cloudfront.net/elasticsearch-openapi-docs.json"),
+			("kibana", "https://d31bhlox0wglh.cloudfront.net/kibana-openapi.json")
+		})
+		{
+			await using var stream = await HttpClient.GetStreamAsync(url, ctx);
+			var settings = new OpenApiReaderSettings { RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
+			var spec = (await OpenApiDocument.LoadAsync(stream, settings: settings, cancellationToken: ctx)).Document!;
+			documents.AddRange(exporter.ConvertToDocuments(spec, key).Take(limitPerSource));
+		}
+
+		return documents;
+	}
+
+	private static VersionsConfiguration StackVersions() =>
+		new()
+		{
+			VersioningSystems = new Dictionary<VersioningSystemId, VersioningSystem>
+			{
+				{
+					VersioningSystemId.Stack,
+					new VersioningSystem
+					{
+						Id = VersioningSystemId.Stack,
+						Base = new SemVersion(8, 0, 0),
+						Current = new SemVersion(9, 2, 0)
+					}
+				}
+			}
+		};
+
+	private static DocumentationDocument ExportOperation(string? summary, string? description, string operationId = "esql-put-data-source")
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_query/data_source/{name}"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Put] = new OpenApiOperation { OperationId = operationId, Summary = summary, Description = description }
+					}
+				}
+			}
+		};
+
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+	}
+
+	[Test]
+	public void Operation_DescriptionAfterMethodList_IndexesTheProseAndTheSummaryTitle()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources\n", raw, "esql-get-data-source");
+
+		doc.Title.Should().Be("Get ES|QL data sources");
+		doc.Title.Should().NotBe("Get ES|QL data sources - esql-get-data-source");
+		doc.SearchTitle.Should().Contain("esql-get-data-source");
+		doc.SearchTitle.Should().Contain("PUT /_query/data_source/{name}");
+		doc.Description.Should().Be("Returns one or more data sources.");
+		doc.Body.Should().Contain("Returns one or more data sources.");
+		doc.Body.Should().NotContain("All methods and paths for this operation");
+		doc.Body.Should().NotContain("/_query/data_source</span>");
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_UnionsThatDifferOnlyByDescription_IndexBothListings()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+		{
+		  "openapi":"3.0.3", "info":{"title":"Fields","version":"1"},
+		  "paths":{"/thing":{"post":{"operationId":"thing","responses":{"200":{"description":"OK"}},
+		    "requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{
+		      "choice":{"oneOf":[
+		        {"type":"object","description":"Code it","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]},
+		      "pick":{"oneOf":[
+		        {"type":"object","description":"Code it, but differently","properties":{"c1":{"type":"string"},"c2":{"type":"string"},"c3":{"type":"string"},"c4":{"type":"string"},"c5":{"type":"string"},"c6":{"type":"string"}}},
+		        {"type":"object","description":"Number it, but differently","properties":{"n1":{"type":"integer"},"n2":{"type":"integer"},"n3":{"type":"integer"},"n4":{"type":"integer"},"n5":{"type":"integer"},"n6":{"type":"integer"}}}
+		      ]}
+		    }}}}}}}}
+		}
+		"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "fields").Single();
+
+		// Large enough to be shared, alike in every way but the variant descriptions: the page keeps both listings, so the index must too.
+		doc.Api!.Properties.Select(p => p.Path).Should().Contain(["choice.c1", "choice.n6", "pick.c1", "pick.n6"]);
+	}
+
+	[Test]
+	public void Operation_MethodList_IndexesEveryRouteWithItsMethods()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div>
+			<span class="operation-verb get">GET</span>
+			<span class="operation-path">/_query/data_source</span>
+			</div>
+
+			Returns one or more data sources.
+			""";
+
+		var doc = ExportOperation("Get ES|QL data sources", raw, "esql-get-data-source");
+
+		doc.Api!
+			.Routes
+			.Select(r => $"{string.Join(",", r.Methods)} {r.Path}")
+			.Should()
+			.Equal("PUT /_query/data_source/{name}", "GET /_query/data_source");
+	}
+
+	[Test]
+	public void Operation_OnlyMethodList_IndexesTheSummary()
+	{
+		const string raw =
+			"""
+			**Spaces method and path for this operation:**
+
+			<div><span class="operation-verb get">get</span>&nbsp;<span class="operation-path">/s/{space_id}/api/actions/connector_types</span></div>
+			""";
+
+		var doc = ExportOperation("Get connector types", raw, "get-actions-connector-types");
+
+		doc.Title.Should().Be("Get connector types");
+		doc.Description.Should().Be("Get connector types");
+		doc.Description.Should().NotContain("method and path");
+		doc.Body.Should().NotContain("Spaces method and path");
+	}
+
+	[Test]
+	public void Operation_EmptySummary_IndexesTheDescription()
+	{
+		const string raw =
+			"""
+			**Spaces method and path for this operation:**
+
+			<div><span class="operation-verb get">get</span> <span class="operation-path">/callback</span></div>
+
+			Returns the OAuth callback script
+			""";
+
+		var doc = ExportOperation(summary: null, raw, "get-actions-connector-oauth-callback-script");
+
+		doc.Title.Should().Be("get-actions-connector-oauth-callback-script");
+		doc.Description.Should().Be("Returns the OAuth callback script");
+		doc.Description.Should().NotBeNullOrWhiteSpace();
+	}
+
+	[Test]
+	public void Operation_EmptySummaryAndOnlyMethodList_IndexesTheOperationId()
+	{
+		const string raw =
+			"""
+			**All methods and paths for this operation:**
+
+			<div><span class="operation-verb put">PUT</span> <span class="operation-path">/_query/data_source/{name}</span></div>
+			""";
+
+		var doc = ExportOperation(summary: "  ", raw, "esql-put-data-source");
+
+		doc.Title.Should().Be("esql-put-data-source");
+		doc.Description.Should().Be("esql-put-data-source");
+	}
+
+	[Test]
+	public void Operation_PlainDescription_IsIndexedUnchanged()
+	{
+		const string raw = "Creates or replaces a named data source.";
+
+		var doc = ExportOperation("Create or update an ES|QL data source", raw);
+
+		doc.Title.Should().Be("Create or update an ES|QL data source");
+		doc.Description.Should().Be(raw);
+	}
+
+	[Test]
+	[Arguments("Generally available; Added in 9.5.0", 0)]
+	[Arguments("Generally available; Added in 9.2.0", 1)]
+	[Arguments("Deprecated; Deprecated in 9.5.0", 1)]
+	[Arguments("Beta; Added in 8.12.0; Generally available; Added in 9.5.0", 1)]
+	public void ConvertToDocuments_XState_SkipsOnlyApisIntroducedAfterCurrentStack(string xState, int expectedCount) =>
+		ExportWithState(xState).Should().HaveCount(expectedCount);
+
+	[Test]
+	public void ConvertToDocuments_XState_IndexesSameApplicabilityAsBadge()
+	{
+		var applies = ExportWithState("Technical Preview; added in 9.0.0").Single().Applies;
+
+		applies.Should().NotBeNull();
+		var entry = applies.Single();
+		entry.Type.Should().Be("stack");
+		entry.Lifecycle.Should().Be("preview");
+		entry.Version.Should().StartWith("9.0");
+	}
+
+	private static List<DocumentationDocument> ExportWithState(string xState)
+	{
+		var spec = new OpenApiDocument
+		{
+			Paths = new OpenApiPaths
+			{
+				["/_thing"] = new OpenApiPathItem
+				{
+					Operations = new Dictionary<HttpMethod, OpenApiOperation>
+					{
+						[HttpMethod.Get] = new OpenApiOperation
+						{
+							OperationId = "thing",
+							Summary = "Get a thing",
+							Extensions = new Dictionary<string, IOpenApiExtension>
+							{
+								["x-state"] = new JsonNodeExtension(JsonValue.Create(xState))
+							}
+						}
+					}
+				}
+			}
+		};
+
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").ToList();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTagNamesAsHeadings()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+
+		var docs = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+
+		docs.Should().AllSatisfy(d => d.Headings.Should().NotBeEmpty($"{d.Api!.OperationId} is tagged"));
+		var follow = docs.Single(d => d.Api!.OperationId == "ccr-follow");
+		follow.Headings.Should().Equal("ccr");
+		follow
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument
+			{
+				Title = "Cross-cluster replication",
+				Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr"
+			});
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_TagNotDeclaredGlobally_IndexesTagNameAsHeading()
+	{
+		var spec = await TestSpecs.LoadSpecAsync(
+			"""
+			{"openapi":"3.0.3","info":{"title":"t","version":"1"},
+			 "paths":{"/{index}/_ccr/follow":{"put":{"operationId":"ccr-follow","tags":["ccr"],"responses":{"200":{"description":"ok"}}}}}}
+			"""
+		);
+
+		var doc = new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec, "elasticsearch").Single();
+
+		doc.Headings.Should().Equal("ccr");
+		doc
+			.Parents[^1]
+			.Should()
+			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
+	}
+
+	private static async Task<List<DocumentationDocument>> ElasticsearchFixtureDocuments()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+	}
+
+	private static async Task<string[]> SearchRequestChildNames(string parent)
+	{
+		var search = (await ElasticsearchFixtureDocuments()).Single(d => d.Api!.OperationId == "search");
+		return search.Api!.Properties.Where(p => p.Location == "request" && p.Parent == parent).Select(p => p.Name).Distinct().ToArray();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren() =>
+		(await SearchRequestChildNames("retriever.standard")).Should().Equal(
+			"filter",
+			"min_score",
+			"_name",
+			"query",
+			"search_after",
+			"terminate_after",
+			"sort",
+			"collapse"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind() =>
+		(await SearchRequestChildNames("retriever")).Should().Equal(
+			"standard",
+			"knn",
+			"rrf",
+			"text_similarity_reranker",
+			"rule",
+			"rescorer",
+			"linear",
+			"pinned",
+			"diversify"
+		);
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren() =>
+		(await SearchRequestChildNames("retriever.standard.query")).Should().BeEmpty();
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_IndexesTheParentOfEveryRow()
+	{
+		var docs = await ElasticsearchFixtureDocuments();
+		var search = docs.Single(d => d.Api!.OperationId == "search").Api!.Properties;
+		var request = search.Where(p => p.Location == "request").ToArray();
+
+		request.Single(p => p.Path == "retriever.standard.min_score").Parent.Should().Be("retriever.standard");
+		request.Single(p => p.Path == "retriever").Parent.Should().Be("");
+		search.Single(p => p.Location == "query" && p.Path == "allow_no_indices").Parent.Should().Be("");
+		foreach (var doc in docs)
+		{
+			var properties = doc.Api!.Properties;
+			var rows = properties.Select(p => (p.Location, ApiPropertyPath.ParentKey(p.Path))).ToHashSet();
+			foreach (var property in properties.Where(p => p.Parent != ""))
+				rows.Should().Contain(
+					(property.Location, property.Parent),
+					$"{doc.Api.OperationId} {property.Path} lists under an indexed row"
+				);
 		}
 	}
 }
