@@ -473,4 +473,66 @@ public class OpenApiDocumentExporterTests
 			.Should()
 			.BeEquivalentTo(new ParentDocument { Title = "Ccr", Path = "/docs/api/doc/elasticsearch/group/endpoint-ccr" });
 	}
+
+	private static async Task<List<DocumentationDocument>> ElasticsearchFixtureDocuments()
+	{
+		var specPath = Path.Join(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
+		var spec = await OpenApiReader.Instance.ReadAsync(new FileSystem().FileInfo.New(specPath));
+		return new OpenApiDocumentExporter(StackVersions()).ConvertToDocuments(spec!, "elasticsearch").ToList();
+	}
+
+	private static async Task<ApiPropertyEntry> SearchRequestProperty(string path)
+	{
+		var search = (await ElasticsearchFixtureDocuments()).Single(d => d.Api!.OperationId == "search");
+		return search.Api!.Properties.Single(p => p.Location == "request" && p.Path == path);
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverStandardListsItsDirectChildren()
+	{
+		var standard = await SearchRequestProperty("retriever.standard");
+
+		standard
+			.Children
+			.Should()
+			.Equal(".filter", ".min_score", "._name", ".query", ".search_after", ".terminate_after", ".sort", ".collapse");
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_RetrieverListsEveryRetrieverKind()
+	{
+		var retriever = await SearchRequestProperty("retriever");
+
+		retriever
+			.Children
+			.Should()
+			.Equal(".standard", ".knn", ".rrf", ".text_similarity_reranker", ".rule", ".rescorer", ".linear", ".pinned", ".diversify");
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_TypePageFieldHasNoChildren()
+	{
+		var query = await SearchRequestProperty("retriever.standard.query");
+
+		query.Children.Should().BeNull();
+	}
+
+	[Test]
+	public async Task ConvertToDocuments_ElasticsearchFixture_EveryChildSuffixExtendsToAnIndexedPath()
+	{
+		var docs = await ElasticsearchFixtureDocuments();
+
+		foreach (var properties in docs.Select(d => d.Api!.Properties))
+		{
+			var indexed = properties.Select(p => (p.Path, p.Location)).ToHashSet();
+			foreach (var entry in properties)
+			{
+				foreach (var suffix in entry.Children ?? [])
+				{
+					suffix.Should().Match(s => s.StartsWith('.') || s.StartsWith('['), $"{entry.Path} child {suffix}");
+					indexed.Should().Contain((entry.Path + suffix, entry.Location), $"{entry.Path} lists {suffix}");
+				}
+			}
+		}
+	}
 }

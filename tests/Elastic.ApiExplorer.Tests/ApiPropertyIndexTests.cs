@@ -12,6 +12,7 @@ using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Versions;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Site.FileProviders;
 using Elastic.Documentation.Versions;
 using RazorSlices;
@@ -21,24 +22,26 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 {
-	[Test]
-	public async Task Export_NestedDictionaryAndUnion_IndexesRenderedFields()
+	private const string NestedDictionaryAndUnionProperties =
+		"""
+		"flight":{"type":"object","properties":{"travel_agency":{"type":"string","description":"The **agency** <em>name</em>."}}},
+		"labels":{"type":"object","additionalProperties":{"type":"object","properties":{"value":{"type":"string"}}}},
+		"choice":{"oneOf":[
+		  {"type":"object","properties":{"code":{"type":"string"}}},
+		  {"type":"object","properties":{"number":{"type":"integer"}}}
+		]}
+		""";
+
+	private static async Task<(OperationPropertyTrees Trees, ApiPropertyEntry[] Entries)> IndexRequestBody(string properties)
 	{
 		var spec = await TestSpecs.LoadSpecAsync(
 			"""
-		{
-		  "openapi":"3.0.3", "info":{"title":"Fields","version":"1"},
-		  "paths":{"/thing":{"post":{"operationId":"thing","responses":{"200":{"description":"OK"}},
-		    "requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{
-		      "flight":{"type":"object","properties":{"travel_agency":{"type":"string","description":"The **agency** <em>name</em>."}}},
-		      "labels":{"type":"object","additionalProperties":{"type":"object","properties":{"value":{"type":"string"}}}},
-		      "choice":{"oneOf":[
-		        {"type":"object","properties":{"code":{"type":"string"}}},
-		        {"type":"object","properties":{"number":{"type":"integer"}}}
-		      ]}
-		    }}}}}}}}
-		}
-		"""
+			{
+			  "openapi":"3.0.3", "info":{"title":"Fields","version":"1"},
+			  "paths":{"/thing":{"post":{"operationId":"thing","responses":{"200":{"description":"OK"}},
+			    "requestBody":{"content":{"application/json":{"schema":{"type":"object","properties":{
+			""" +
+				properties + "}}}}}}}}}"
 		);
 		var path = spec.Paths["/thing"];
 		var operation = new ApiOperation(HttpMethod.Post, path.Operations![HttpMethod.Post], "/thing", path, "fields");
@@ -47,7 +50,13 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 			new SchemaAnalyzer(spec),
 			new ParameterRowSource(TestSpecs.BuilderFor(spec), null, OperationEndpoint.Build(operation, null, []))
 		);
-		var entries = trees.IndexEntries(new Dictionary<string, string>());
+		return (trees, trees.IndexEntries(new Dictionary<string, string>()));
+	}
+
+	[Test]
+	public async Task Export_NestedDictionaryAndUnion_IndexesRenderedFields()
+	{
+		var (trees, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
 
 		entries.Should().Contain(
 			p => p.Path == "flight.travel_agency" && p.Anchor == "req-flight-travel_agency" && p.Type == "string" && p.Description ==
@@ -61,6 +70,45 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 		);
 		foreach (var entry in entries)
 			html.Should().Contain($"id=\"{entry.Anchor}\"");
+	}
+
+	[Test]
+	public async Task Export_NestedDictionaryAndUnion_IndexesChildSuffixes()
+	{
+		var (_, entries) = await IndexRequestBody(NestedDictionaryAndUnionProperties);
+
+		entries.Single(p => p.Path == "flight").Children.Should().Equal(".travel_agency");
+		entries.Single(p => p.Path == "labels").Children.Should().Equal(".<string>.value");
+		entries.Single(p => p.Path == "choice").Children.Should().Equal(".code", ".number");
+		entries.Single(p => p.Path == "flight.travel_agency").Children.Should().BeNull();
+	}
+
+	[Test]
+	public async Task Export_UnionVariantsSharingAField_DedupesChildByPath()
+	{
+		var (_, entries) = await IndexRequestBody(
+			"""
+			"pick":{"oneOf":[
+			  {"type":"object","properties":{"x":{"type":"string"},"a":{"type":"string"}}},
+			  {"type":"object","properties":{"x":{"type":"integer"},"b":{"type":"string"}}}
+			]}
+			"""
+		);
+
+		entries.Single(p => p.Path == "pick").Children.Should().Equal(".x", ".a", ".b");
+		entries.Count(p => p.Path == "pick.x").Should().Be(2);
+	}
+
+	[Test]
+	public async Task Export_ArrayOfObjects_ChildSuffixStartsWithItemMarker()
+	{
+		var (_, entries) = await IndexRequestBody(
+			"""
+			"rescore":{"type":"array","items":{"type":"object","properties":{"query":{"type":"string"}}}}
+			"""
+		);
+
+		entries.Single(p => p.Path == "rescore").Children.Should().Equal("[].query");
 	}
 
 	[Test]
