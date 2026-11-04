@@ -367,4 +367,17 @@ public class MappingStructureTests
 		fields.TryGetProperty("match", out _).Should().BeTrue();
 		fields.GetProperty("prefix").GetProperty("analyzer").GetString().Should().Be("hierarchy_analyzer");
 	}
+	[Test]
+	public void DocumentationDocument_MappingJson_ApiEndpointsIsPlainKeyword()
+	{
+		var json = DocumentationMappingContext.DocumentationDocument.GetMappingJson();
+		using var doc = JsonDocument.Parse(json);
+		var api = doc.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties");
+
+		foreach (var name in new[] { "endpoints", "method", "path", "operation_id" })
+		{
+			api.GetProperty(name).GetProperty("type").GetString().Should().Be("keyword");
+			api.GetProperty(name).TryGetProperty("normalizer", out _).Should().BeFalse();
+		}
+	}
 }

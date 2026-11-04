@@ -151,7 +151,6 @@ public class AssemblerBuildStampTests
 			{
 				Repository = new Repository { Name = "docs-content" },
 				HeadReference = "", // empty → unresolved
-
 				Directory = fileSystem.DirectoryInfo.New("/checkouts/docs-content")
 			}
 		};

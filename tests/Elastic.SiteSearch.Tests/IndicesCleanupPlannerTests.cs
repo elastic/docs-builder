@@ -109,9 +109,7 @@ public class IndicesCleanupPlannerTests
 	{
 		var indexAliases = Idx(
 			("test-source.lexical-prod-latest", []), // alias itself, not a backing index
-
 			("test-source.lexical-prod-not-a-date", []), // malformed
-
 			("test-source.lexical-prod-2026.04.15.000000", ["test-source.lexical-prod-latest"])
 		);
 

@@ -141,9 +141,9 @@ public abstract class InlineTest : IAsyncInitializer, IAsyncDisposable
 		await Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 	}
 
-	public ValueTask DisposeAsync()
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		return ValueTask.CompletedTask;
+		await Collector.DisposeAsync();
 	}
 }

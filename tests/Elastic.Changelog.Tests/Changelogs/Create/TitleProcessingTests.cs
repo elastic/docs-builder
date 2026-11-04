@@ -318,7 +318,7 @@ public class TitleProcessingTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("issues:");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/123\"");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/456\"");
 	}
 }

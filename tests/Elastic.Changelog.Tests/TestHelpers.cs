@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Concurrent;
 using Elastic.Documentation.Diagnostics;
 using Microsoft.Extensions.Logging;
 
@@ -38,7 +39,7 @@ public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnost
 	public override Task StopAsync(Cancel cancellationToken) => Task.CompletedTask;
 }
 
-public class TestLogger : ILogger
+public class TestLogger(ConcurrentQueue<string>? messages = null) : ILogger
 {
 	private sealed class NullScope : IDisposable
 	{
@@ -55,7 +56,12 @@ public class TestLogger : ILogger
 		TState state,
 		Exception? exception,
 		Func<TState, Exception?, string> formatter
-	) => TestContext.Current?.Output.WriteLine(formatter(state, exception));
+	)
+	{
+		var message = formatter(state, exception);
+		messages?.Enqueue(message);
+		TestContext.Current?.Output.WriteLine(message);
+	}
 }
 
 public class TestLoggerProvider : ILoggerProvider
@@ -67,9 +73,14 @@ public class TestLoggerProvider : ILoggerProvider
 
 public class TestLoggerFactory : ILoggerFactory
 {
+	private readonly ConcurrentQueue<string> _messages = new();
+
+	/// <summary>Everything the loggers of this factory wrote, in order, so a test can assert on log lines.</summary>
+	public IReadOnlyCollection<string> Messages => _messages;
+
 	public void Dispose() => GC.SuppressFinalize(this);
 
 	public void AddProvider(ILoggerProvider provider) { }
 
-	public ILogger CreateLogger(string categoryName) => new TestLogger();
+	public ILogger CreateLogger(string categoryName) => new TestLogger(_messages);
 }

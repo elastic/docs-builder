@@ -5,7 +5,7 @@
 using System.Text;
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Markdown.Myst.Components;
+using Elastic.Documentation.Site.ApplicabilityBadges;
 
 namespace Elastic.Markdown.Myst.Renderers.LlmMarkdown;
 

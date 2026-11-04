@@ -1,0 +1,18 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Chrome.SiteHeader
+@* The search dialog replaces the React search bar, and the Ask AI panel replaces the React assistant. *@
+@await RenderPartialAsync(_SiteHeader.Create(new SiteHeaderModel
+{
+	Title = Model.HeaderTitle ?? Model.DocSetName,
+	HomeHref = Model.SiteLink("/"),
+	LogoSrc = Model.Static("logo-elastic-glyph-color.svg"),
+	Links =
+	[
+		new SiteHeaderLink("Groups", Model.SiteLink("/")),
+		new SiteHeaderLink("Add your docs", "/r/codex-environments/get-started"),
+		new SiteHeaderLink("Syntax", "https://elastic.github.io/docs-builder/syntax")
+	],
+	Search = true,
+	AskAi = true,
+	Dark = true
+}))
