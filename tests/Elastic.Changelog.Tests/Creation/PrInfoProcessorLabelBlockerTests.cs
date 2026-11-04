@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Changelog.Creation;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.ReleaseNotes;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Creation;
 
@@ -53,6 +54,39 @@ public class PrInfoProcessorLabelBlockerTests
 		var rules = new CreateRules { Labels = ["changelog:include"], Mode = FieldMode.Include, Match = MatchMode.Any };
 
 		PrInfoProcessor.AreAllProductsBlocked(["changelog:include", "type:feature"], rules).Should().BeFalse();
+	}
+
+	[Test]
+	public void ShouldSkipPrDueToLabelBlockers_ProductOverridesConfiguredButNoProducts_GlobalRulesDecide()
+	{
+		// A per-product override only replaces the global rules for its own product. With no product to look up,
+		// a pull request that carries the global skip label is still skipped.
+		var config = new ChangelogConfiguration
+		{
+			Rules = new RulesConfiguration
+			{
+				Create = new CreateRules
+				{
+					Labels = ["changelog:skip"],
+					Mode = FieldMode.Exclude,
+					Match = MatchMode.Any,
+					ByProduct = new Dictionary<string, CreateRules>
+					{
+						["kibana"] = new() { Labels = ["kibana:skip"], Mode = FieldMode.Exclude, Match = MatchMode.Any }
+					}
+				}
+			}
+		};
+		using var decisions = new DecisionLog(NullLogger.Instance);
+
+		PrInfoProcessor
+			.ShouldSkipPrDueToLabelBlockers(["changelog:skip"], [], config, "https://github.com/elastic/widget/pull/1", decisions)
+			.Should()
+			.BeTrue();
+		PrInfoProcessor
+			.ShouldSkipPrDueToLabelBlockers(["kibana:skip"], [], config, "https://github.com/elastic/widget/pull/1", decisions)
+			.Should()
+			.BeFalse();
 	}
 
 	[Test]

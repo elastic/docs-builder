@@ -33,7 +33,14 @@ public class IncludeTests() : DirectiveTest<SettingsBlock>(
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void HasNoErrors()
+	{
+		// `platforms` is unmodelled: reported once per file as a hint, never as an error.
+		var diagnostic = Collector.Diagnostics.Should().ContainSingle().Subject;
+		diagnostic.Severity.Should().Be(Severity.Hint);
+		diagnostic.Message.Should().Contain("'platforms' is not supported");
+		diagnostic.File.Should().EndWith("kibana-alerting-action-settings.yml");
+	}
 
 	[Test]
 	public void IncludesInclusionHtml() => Html.Should().Contain("xpack.encryptedSavedObjects.encryptionKey");
@@ -525,5 +532,49 @@ groups:
 		Html.Should().Contain("settings-supported-on");
 		Html.Should().Contain("badge-key=\"ECH\"");
 		Html.Should().Contain("badge-key=\"Self-managed\"");
+	}
+}
+
+/// <summary>
+/// Settings YAML anchors an <c>applies_to</c> block once and reuses it with an alias
+/// (<c>&amp;shared</c> / <c>*shared</c>) to avoid repeating it on every setting it covers.
+/// The generated reader must resolve the alias instead of throwing on it.
+/// </summary>
+[InheritsTests]
+public class SettingReusesAnAnchoredAppliesToBlock() : DirectiveTest<SettingsBlock>(
+	"""
+:::{settings} _settings/shared-applies-to.yml
+::::
+"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		// language=yaml
+		fileSystem.AddFile(
+			"docs/_settings/shared-applies-to.yml",
+			"""
+groups:
+  - group: Example
+    settings:
+      - setting: xpack.sample.one
+        description: First setting.
+        applies_to: &shared
+          stack: ga 7.0
+      - setting: xpack.sample.two
+        description: Second setting, reuses the same applies_to block as the one above.
+        applies_to: *shared
+"""
+		);
+	}
+
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+
+	[Test]
+	public void RendersBothSettings()
+	{
+		Html.Should().Contain("xpack.sample.one");
+		Html.Should().Contain("xpack.sample.two");
 	}
 }

@@ -3,7 +3,7 @@
 @using Elastic.Documentation.Configuration
 @using Elastic.Documentation.Site
 @using Elastic.Markdown
-@using Elastic.Markdown.Myst.Components
+@using Elastic.Documentation.Site.ApplicabilityBadges
 @using Markdig
 @using ViewModelSerializerContext = Elastic.Markdown.Page.ViewModelSerializerContext
 @inherits RazorSlice<Elastic.Markdown.Page.IndexViewModel>
@@ -13,7 +13,7 @@
 	{
 		Layout = Model.CurrentDocument.YamlFrontMatter?.Layout,
 		DocSetName = Model.DocSetName,
-		Title = $"{Model.Title} | {Model.SiteName}",
+		Title = Model.PageTitle,
 		Description = Model.Description,
 		PageTocItems = Model.PageTocItems.Where(i => i is
 			{
@@ -96,7 +96,8 @@
 			{
 				AppliesTo = Model.AppliesTo,
 				Inline = false,
-				VersionsConfig = Model.VersionsConfig
+				VersionsConfig = Model.VersionsConfig,
+				DesignSystem = Model.Features.NavigationPreviewEnabled
 			}))
 			</p>
 		}

@@ -1,15 +1,19 @@
 import esql from '@elastic/highlightjs-esql'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import asciidoc from 'highlight.js/lib/languages/asciidoc'
 import bash from 'highlight.js/lib/languages/bash'
 import c from 'highlight.js/lib/languages/c'
+import clojure from 'highlight.js/lib/languages/clojure'
 import csharp from 'highlight.js/lib/languages/csharp'
 import css from 'highlight.js/lib/languages/css'
+import diff from 'highlight.js/lib/languages/diff'
 import dockerfile from 'highlight.js/lib/languages/dockerfile'
 import dos from 'highlight.js/lib/languages/dos'
 import ebnf from 'highlight.js/lib/languages/ebnf'
+import gherkin from 'highlight.js/lib/languages/gherkin'
 import go from 'highlight.js/lib/languages/go'
 import gradle from 'highlight.js/lib/languages/gradle'
+import graphql from 'highlight.js/lib/languages/graphql'
 import groovy from 'highlight.js/lib/languages/groovy'
 import handlebars from 'highlight.js/lib/languages/handlebars'
 import http from 'highlight.js/lib/languages/http'
@@ -18,6 +22,7 @@ import java from 'highlight.js/lib/languages/java'
 import javascript from 'highlight.js/lib/languages/javascript'
 import json from 'highlight.js/lib/languages/json'
 import kotlin from 'highlight.js/lib/languages/kotlin'
+import makefile from 'highlight.js/lib/languages/makefile'
 import markdown from 'highlight.js/lib/languages/markdown'
 import nginx from 'highlight.js/lib/languages/nginx'
 import php from 'highlight.js/lib/languages/php'
@@ -46,14 +51,18 @@ export const languages: Record<string, LanguageFn> = {
     asciidoc: toLanguageFn(asciidoc),
     bash: toLanguageFn(bash),
     c: toLanguageFn(c),
+    clojure: toLanguageFn(clojure),
     csharp: toLanguageFn(csharp),
     css: toLanguageFn(css),
+    diff: toLanguageFn(diff),
     dockerfile: toLanguageFn(dockerfile),
     dos: toLanguageFn(dos),
     ebnf: toLanguageFn(ebnf),
     esql: toLanguageFn(esql),
+    gherkin: toLanguageFn(gherkin),
     go: toLanguageFn(go),
     gradle: toLanguageFn(gradle),
+    graphql: toLanguageFn(graphql),
     groovy: toLanguageFn(groovy),
     handlebars: toLanguageFn(handlebars),
     http: toLanguageFn(http),
@@ -62,6 +71,7 @@ export const languages: Record<string, LanguageFn> = {
     javascript: toLanguageFn(javascript),
     json: toLanguageFn(json),
     kotlin: toLanguageFn(kotlin),
+    makefile: toLanguageFn(makefile),
     markdown: toLanguageFn(markdown),
     nginx: toLanguageFn(nginx),
     php: toLanguageFn(php),

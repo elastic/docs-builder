@@ -12,8 +12,8 @@ public readonly record struct TabSetOption(string Title, string InputId, string?
 
 public class TabSetViewModel : DirectiveViewModel
 {
-	public required bool RenderAsDropdown { get; init; }
-	public required int TabSetIndex { get; init; }
-	public required string? GroupKey { get; init; }
-	public required IReadOnlyList<TabSetOption> Options { get; init; }
+	public bool RenderAsDropdown { get; init; }
+	public int TabSetIndex { get; init; }
+	public string? GroupKey { get; init; }
+	public IReadOnlyList<TabSetOption> Options { get; init; } = [];
 }

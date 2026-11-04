@@ -297,11 +297,37 @@ public class DiagnosticLinkInlineParser : LinkInlineParser
 			{
 				processor.EmitError(link, $"`{url}` is not a valid internal link. Did you forget to add the .md extension?");
 			}
+			else if (url.Contains("%20", StringComparison.Ordinal) && DecodedSpacesPathExists(context, includeFrom, url))
+			{
+				processor.EmitError(
+					link,
+					$"`{url}` does not exist: links are not URL-decoded, so `%20` is matched literally. " +
+						"The file name contains spaces: write the link with spaces instead, e.g. `[text](<my file.png>)`, or rename the file to remove them. " +
+						"Only markdown files and images are published, so for any other file type (such as a PDF) link to its raw GitHub URL " +
+						"(https://raw.githubusercontent.com/<org>/<repo>/<branch>/<path>)."
+				);
+			}
 			else
 			{
 				processor.EmitError(link, $"`{url}` does not exist. If it was recently removed add a redirect. resolved to `{pathOnDisk}`");
 			}
 		}
+		else if (!existsInSet)
+		{
+			// The file is on disk but is not part of the documentation set: only markdown and images are published
+			processor.EmitWarning(
+				link,
+				$"`{url}` exists in the repository but is not published with the documentation, so this link will be broken after deploy. " +
+					"Only markdown files and images (png, jpg, jpeg, gif, svg) are published. " +
+					"Link to the file using its raw GitHub URL instead (https://raw.githubusercontent.com/<org>/<repo>/<branch>/<path>)."
+			);
+		}
+	}
+
+	private static bool DecodedSpacesPathExists(ParserContext context, string includeFrom, string url)
+	{
+		var decoded = url.Replace("%20", " ", StringComparison.Ordinal);
+		return context.Build.ReadFileSystem.File.Exists(Path.GetFullPath(Path.Join(includeFrom, decoded.TrimStart('/'))));
 	}
 
 	private static void ProcessLinkText(

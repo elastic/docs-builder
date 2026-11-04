@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
@@ -27,21 +28,6 @@ namespace Elastic.ApiExplorer.Tests;
 public class OpenApiGeneratorMultiVersionTests
 {
 	private static readonly Uri BaseUri = new("https://cdn.example/");
-
-	private static BuildContext CreateContext(
-		DiagnosticsCollector collector,
-		VersionsConfiguration? versionsConfiguration = null,
-		ProductsConfiguration? productsConfiguration = null,
-		GitCheckoutInformation? git = null
-	) =>
-		new(
-			collector,
-			DocumentationFileSystem.Resolve(
-				new FileSystem().DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName),
-				new DocumentationScopeOptions { Git = git }
-			),
-			TestHelpers.CreateConfigurationContext(new FileSystem(), versionsConfiguration, productsConfiguration)
-		);
 
 	private static ResolvedApiConfiguration ApiConfig(
 		Product product,
@@ -96,13 +82,13 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var handler = MultiVersionHandler();
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(
-			SpecDocument("Elasticsearch main"),
-			SpecDocument("Elasticsearch 9"),
-			SpecDocument("Elasticsearch 8")
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -129,18 +115,78 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
+	public async Task CatalogEntry_MultiMajorIndex_OpensTheHighestNumericMajor()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+		var apiConfig = ApiConfig(product);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"elasticsearch",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("elasticsearch", apiConfig, resolved);
+
+		entry.Should().NotBeNull();
+		entry!.Url.Should().Be("/api/doc/elasticsearch");
+		entry.LatestUrl.Should().Be("/api/doc/elasticsearch/v9");
+		entry.OpenUrl.Should().Be("/api/doc/elasticsearch/v9");
+	}
+
+	[Test]
+	public async Task CatalogEntry_VersionlessProduct_KeepsTheUnversionedUrl()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var versionless = TestHelpers.CreateVersionlessConfiguration();
 		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
-		var context = CreateContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(
 			BaseUri,
 			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
 			sleep: (_, _) => Task.CompletedTask
 		);
-		var reader = CreateSequentialReader(SpecDocument("Serverless main"));
+		var generator = CreateGenerator(context, versionIndexClient, CreateVersionedReader(("main", SpecDocument("Serverless main"))));
+		var apiConfig = ApiConfig(
+			product,
+			specFileName: "elastic-cloud-serverless.yml",
+			repository: "elastic/serverless-api-specification"
+		);
+		var resolved = await generator.ResolveDocumentsForProduct(
+			"cloud-serverless",
+			apiConfig,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var entry = generator.CatalogEntry("cloud-serverless", apiConfig, resolved);
+
+		entry.Should().NotBeNull();
+		entry!.LatestUrl.Should().BeNull();
+		entry.OpenUrl.Should().Be("/api/doc/cloud-serverless");
+	}
+
+	[Test]
+	public async Task ResolveDocumentsForProduct_VersionlessProduct_RendersMainOnly()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var versionless = TestHelpers.CreateVersionlessConfiguration();
+		var product = TestHelpers.CreateProduct("cloud-serverless", versionless.GetVersioningSystem(VersioningSystemId.Serverless));
+		var context = TestHelpers.CreateScopedBuildContext(collector, versionless, ProductsFor(product), GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(
+			BaseUri,
+			MultiVersionHandler(repository: "elastic/serverless-api-specification"),
+			sleep: (_, _) => Task.CompletedTask
+		);
+		var reader = CreateVersionedReader(("main", SpecDocument("Serverless main")));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var apiConfig = ApiConfig(
 			product,
@@ -165,8 +211,8 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
-		var localFile = new FileSystem().FileInfo.New(Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json"));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var localFile = new FileSystem().FileInfo.New(Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json"));
 		var localDocument = SpecDocument("Elasticsearch local main");
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
@@ -199,7 +245,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product), GitForElasticsearch());
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product), GitForElasticsearch());
 		var handler = new StubHandler(request =>
 		{
 			var path = request.RequestUri!.AbsolutePath;
@@ -219,10 +265,10 @@ public class OpenApiGeneratorMultiVersionTests
 				);
 			if (path.Contains("/main/", StringComparison.Ordinal))
 				return new HttpResponseMessage(HttpStatusCode.NotFound);
-			return SpecResponse();
+			return SpecResponse(request);
 		});
 		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, maxAttempts: 1, sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(SpecDocument("Elasticsearch 9"), SpecDocument("Elasticsearch 8"));
+		var reader = CreateVersionedReader(("9.4", SpecDocument("Elasticsearch 9")), ("8.19", SpecDocument("Elasticsearch 8")));
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
 		var resolved = await generator.ResolveDocumentsForProduct(
@@ -241,7 +287,7 @@ public class OpenApiGeneratorMultiVersionTests
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
-		var context = CreateContext(collector, stack, ProductsFor(product));
+		var context = TestHelpers.CreateScopedBuildContext(collector, stack, ProductsFor(product));
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 		var navigation = generator.CreateNavigation("elasticsearch/v8", SpecDocument("Elasticsearch 8"));
 
@@ -265,10 +311,10 @@ public class OpenApiGeneratorMultiVersionTests
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
 		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
-		var reader = CreateSequentialReader(
-			SpecDocument("Elasticsearch main"),
-			SpecDocument("Elasticsearch 9"),
-			SpecDocument("Elasticsearch 8")
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
 		);
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 
@@ -324,12 +370,140 @@ public class OpenApiGeneratorMultiVersionTests
 			.BeTrue();
 	}
 
+	[Test]
+	public async Task Generate_VersionPickerKeepsTheSamePageWhenItExists()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var mainDocument = SpecDocument("Elasticsearch main");
+		mainDocument.Paths["/newop"] = new OpenApiPathItem
+		{
+			Operations = new Dictionary<HttpMethod, OpenApiOperation>
+			{
+				[HttpMethod.Get] = new()
+				{
+					OperationId = "newop",
+					Tags = new HashSet<OpenApiTagReference> { new("core") },
+					Responses = new OpenApiResponses { ["200"] = new OpenApiResponse { Description = "ok" } }
+				}
+			}
+		};
+		var reader = CreateVersionedReader(
+			("main", mainDocument),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var shared = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-ping", "index.html"));
+		shared.Should().Contain("href=\"/api/doc/elasticsearch/v8/operation/operation-ping\"");
+		shared.Should().Contain("href=\"/api/doc/elasticsearch/v9/operation/operation-ping\"");
+		var mainOnly = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "operation", "operation-newop", "index.html"));
+		mainOnly.Should().Contain("href=\"/api/doc/elasticsearch/v8\"");
+		mainOnly.Should().NotContain("/api/doc/elasticsearch/v8/operation/operation-newop");
+		var older = context
+			.WriteFileSystem
+			.File
+			.ReadAllText(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "operation", "operation-ping", "index.html"));
+		older.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-ping\"");
+	}
+
+	[Test]
+	public async Task Generate_VersionPickerMatchesAChildPageWithTheTopicItReplaces()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		// spaces.v9.md replaces the Kibana spaces topic in main and v9; v8 still builds the topic page.
+		var context = CreateGenerateContext(
+			collector,
+			stack,
+			ProductsFor(product),
+			outputRoot,
+			GitForElasticsearch(),
+			("spaces.v9.md", "Kibana spaces")
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", WithTopic(SpecDocument("Elasticsearch main"), "Kibana spaces")),
+			("9.4", WithTopic(SpecDocument("Elasticsearch 9"), "Kibana spaces")),
+			("8.19", WithTopic(SpecDocument("Elasticsearch 8"), "Kibana spaces"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var files = context.WriteFileSystem.File;
+		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		files.Exists(Path.Join(root, "v9", "topic", "topic-kibana-spaces", "index.html")).Should().BeFalse();
+		var topic = files.ReadAllText(Path.Join(root, "v8", "topic", "topic-kibana-spaces", "index.html"));
+		topic.Should().Contain("href=\"/api/doc/elasticsearch/v9/spaces\"");
+		var child = files.ReadAllText(Path.Join(root, "v9", "spaces", "index.html"));
+		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/topic/topic-kibana-spaces\"");
+	}
+
+	[Test]
+	public async Task Generate_VersionPickerMatchesAChildPageWithTheAuthenticationPageItReplaces()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		// The specs declare no security schemes, so v8 builds /authentication from the topic and v9 has only the child page.
+		var context = CreateGenerateContext(
+			collector,
+			stack,
+			ProductsFor(product),
+			outputRoot,
+			GitForElasticsearch(),
+			("auth.v9.md", "Authentication")
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", WithTopic(SpecDocument("Elasticsearch main"), "Authentication")),
+			("9.4", WithTopic(SpecDocument("Elasticsearch 9"), "Authentication")),
+			("8.19", WithTopic(SpecDocument("Elasticsearch 8"), "Authentication"))
+		);
+		var generator = CreateGenerator(context, versionIndexClient, reader);
+
+		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
+
+		var files = context.WriteFileSystem.File;
+		var root = Path.Join(outputRoot, "api", "doc", "elasticsearch");
+		files.Exists(Path.Join(root, "v9", "authentication", "index.html")).Should().BeFalse();
+		var authentication = files.ReadAllText(Path.Join(root, "v8", "authentication", "index.html"));
+		authentication.Should().Contain("href=\"/api/doc/elasticsearch/v9/auth\"");
+		var child = files.ReadAllText(Path.Join(root, "v9", "auth", "index.html"));
+		child.Should().Contain("href=\"/api/doc/elasticsearch/v8/authentication\"");
+	}
+
+	private static OpenApiDocument WithTopic(OpenApiDocument document, string title)
+	{
+		var topic = new JsonObject { ["title"] = title, ["content"] = "Topic text." };
+		document.Extensions = new Dictionary<string, IOpenApiExtension> { ["x-topics"] = new JsonNodeExtension(new JsonArray(topic)) };
+		return document;
+	}
+
 	private static BuildContext CreateGenerateContext(
 		DiagnosticsCollector collector,
 		VersionsConfiguration versionsConfiguration,
 		ProductsConfiguration productsConfiguration,
 		string outputRoot,
-		GitCheckoutInformation git
+		GitCheckoutInformation git,
+		(string File, string Heading)? child = null
 	)
 	{
 		var repoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-multi-version-test-{Guid.NewGuid():N}");
@@ -343,6 +517,14 @@ public class OpenApiGeneratorMultiVersionTests
 			""";
 		var fs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
 		fs.AddDirectory(Path.Join(repoRoot, ".git"));
+		if (child is { } page)
+		{
+			docsetYaml += $"\n      children:\n        - file: {page.File}\n";
+			fs.AddFile(
+				Path.Join(repoRoot, "docs", "api", "elasticsearch", page.File),
+				new MockFileData($"# {page.Heading}\n\nChild text.\n")
+			);
+		}
 		fs.AddFile(configPath, new MockFileData(docsetYaml));
 		var configurationContext = TestHelpers.CreateConfigurationContext(fs, versionsConfiguration, productsConfiguration);
 
@@ -362,13 +544,18 @@ public class OpenApiGeneratorMultiVersionTests
 		IOpenApiSpecificationReader reader
 	) => new(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance, versionIndexClient, reader);
 
-	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
+	/// <summary>Returns the document whose version segment (<c>main</c>, <c>9.4</c>, <c>8.19</c>) is in the fetched spec path.</summary>
+	private static IOpenApiSpecificationReader CreateVersionedReader(params (string Version, OpenApiDocument Document)[] documents)
 	{
-		var queue = new Queue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
-		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
-			_ => Task.FromResult<OpenApiDocument?>(queue.Dequeue())
-		);
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(call =>
+		{
+			using var body = new StreamReader(call.GetArgument<Stream>(0)!);
+			var path = body.ReadToEnd();
+			return Task.FromResult<OpenApiDocument?>(
+				documents.Single(d => path.Contains($"/{d.Version}/", StringComparison.Ordinal)).Document
+			);
+		});
 		return reader;
 	}
 
@@ -396,7 +583,7 @@ public class OpenApiGeneratorMultiVersionTests
 				);
 			}
 
-			return SpecResponse();
+			return SpecResponse(request);
 		});
 
 	private static GitCheckoutInformation GitForElasticsearch() =>
@@ -405,20 +592,15 @@ public class OpenApiGeneratorMultiVersionTests
 	private static HttpResponseMessage IndexResponse(string body) =>
 		new(HttpStatusCode.OK) { Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json") };
 
-	private static HttpResponseMessage SpecResponse() =>
+	// The body carries the request path so a versioned reader can tell versions apart.
+	private static HttpResponseMessage SpecResponse(HttpRequestMessage request) =>
 		new(HttpStatusCode.OK)
 		{
 			Content = new StringContent(
 				/*lang=json,strict*/
-				"""{"openapi":"3.1.0","info":{"title":"Spec","version":"1.0"},"paths":{}}""",
+				$$$"""{"openapi":"3.1.0","info":{"title":"{{{request.RequestUri!.AbsolutePath}}}","version":"1.0"},"paths":{}}""",
 				System.Text.Encoding.UTF8,
 				"application/json"
 			)
 		};
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

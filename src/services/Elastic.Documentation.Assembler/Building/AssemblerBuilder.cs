@@ -147,7 +147,6 @@ public class AssemblerBuilder(
 		{
 			Uri? uri;
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
-
 			{
 				_ = linkResolver.TryResolve(
 					specificErrorMessage => context.Collector.EmitError(
@@ -160,7 +159,6 @@ public class AssemblerBuilder(
 				);
 			}
 			else // Relative links
-
 			{
 				uri = linkResolver.UriResolver.Resolve(
 					new Uri($"{repository}://{path}"),
@@ -207,6 +205,7 @@ public class AssemblerBuilder(
 			set.DocumentationSet.Configuration.Features.Set(configurationFeatureFlag.Key, configurationFeatureFlag.Value);
 		}
 		set.DocumentationSet.Configuration.Features.WebsiteSearchScriptUrl = set.AssembleContext.Environment.WebsiteSearchScriptUrl;
+		set.DocumentationSet.Configuration.Features.WafIntegrationUrl = set.AssembleContext.Environment.WafIntegrationUrl;
 	}
 
 	private void LogBuildTimes(List<(string Name, int FileCount, TimeSpan Duration)> buildTimes)

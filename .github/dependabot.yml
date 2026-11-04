@@ -79,6 +79,12 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    # Node is pinned in .nvmrc (read by every Dockerfile) and @types/node.
+    # Move the major deliberately, in both places at once.
+    ignore:
+      - dependency-name: '@types/node'
+        update-types:
+          - 'version-update:semver-major'
     labels:
       - chore
   - package-ecosystem: nuget
@@ -108,3 +114,23 @@ updates:
       - chore
     cooldown:
       default-days: 14
+  # Keep the SDK pin in global.json current. The Docker builds install the
+  # SDK from that file, so one PR updates the repo and the images together.
+  - package-ecosystem: dotnet-sdk
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    labels:
+      - chore
+  # Keeps the base images in build/dev/Dockerfile current. Node is not one of
+  # them: it is installed from .nvmrc, which Dependabot cannot update.
+  - package-ecosystem: docker
+    directory: '/build/dev'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    labels:
+      - chore

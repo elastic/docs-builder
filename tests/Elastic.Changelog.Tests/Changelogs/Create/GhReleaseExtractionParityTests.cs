@@ -328,12 +328,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		var content = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		content.Should().NotContain("description:");
 		content.Should().Contain("Fix query parsing edge case");
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(
-				d => d.Severity == Severity.Hint && d.Message.Contains("No release note description was found", StringComparison.Ordinal)
-			);
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("no release note"));
 	}
 
 	[Test]
@@ -356,10 +351,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 		);
 
 		result.Success.Should().BeTrue();
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Severity == Severity.Hint && d.Message.Contains("Only the first paragraph was used", StringComparison.Ordinal));
+		Logged.Should().Contain(l => l.StartsWith("notes:") && l.Contains("first paragraph only"));
 	}
 
 	[Test]

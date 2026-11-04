@@ -199,11 +199,41 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 			var builder = new MarkdownPipelineBuilder()
 				.UseYamlFrontMatter()
 				.UseFootnotes() // Must match Pipeline to avoid inconsistent footnote handling
-
 				.UseInlineAnchors()
 				.UseHeadingsWithSlugs()
 				.UseDirectives();
 
+			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
+			field = builder.Build();
+			return field;
+		}
+	}
+
+	/// <summary>
+	/// A minimal pipeline for re-parsing markdown generated from changelog bundles.
+	/// Changelog content originates from GitHub PR/issue titles and descriptions, not from
+	/// docs-builder source files, so docs-specific parsers (substitution keys, MyST roles,
+	/// cross-reference link validation) must not run on it.
+	/// </summary>
+	[field: AllowNull, MaybeNull]
+	public static MarkdownPipeline ChangelogPipeline
+	{
+		get
+		{
+			if (field is not null)
+				return field;
+			var builder = new MarkdownPipelineBuilder()
+				.UseFootnotes()
+				.UseAutoLinks()
+				.UseHeadingsWithSlugs()
+				.UseEmphasisExtras(EmphasisExtraOptions.Default)
+				.UsePipeTables()
+				.UseTaskLists()
+				.UseDirectives()
+				.UseDefinitionLists()
+				.UseHardBreaks()
+				.UseComments()
+				.DisableHtml();
 			_ = builder.BlockParsers.TryRemove<IndentedCodeBlockParser>();
 			field = builder.Build();
 			return field;
@@ -222,7 +252,6 @@ public partial class MarkdownParser(BuildContext build, IParserResolvers resolve
 				.UseInlineAnchors()
 				.UsePreciseSourceLocation()
 				.UseFootnotes() // Must be before UseDiagnosticLinks to ensure FootnoteLinkParser is inserted correctly
-
 				.UseDiagnosticLinks()
 				.UseAutoLinks()
 				.UseHeadingsWithSlugs()

@@ -219,13 +219,13 @@ public class SiteNavigationTests(DocumentationFixture fixture) : IAsyncInitializ
 		resolvedUri.Should().Be("https://www.elastic.co/docs/extend/elasticsearch/c/file");
 	}
 
-	public ValueTask DisposeAsync()
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
+		await Collector.DisposeAsync();
 		if (TestContext.Current!.Execution.Result?.State is not TestState.Failed)
-			return default;
+			return;
 		foreach (var resource in fixture.InMemoryLogger.RecordedLogs.ToList())
 			TestContext.Current?.Output.WriteLine(resource.Message);
-		return default;
 	}
 }
