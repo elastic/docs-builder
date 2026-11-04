@@ -18,6 +18,11 @@
 # Can be overridden per invocation with --use-pr-number or --use-issue-number CLI flags.
 filename: timestamp
 
+# Entry file format (optional)
+# Set this when the repository's changelog entry files use another format, defined in
+# config/changelog-entry-formats.yml: elasticsearch or elastic-agent-changelog-tool.
+# entry_format: elasticsearch
+
 # Products configuration (optional)
 # If not specified, all products from products.yml are allowed (including those
 # that have 'public-reference' disabled).

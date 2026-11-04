@@ -13,6 +13,34 @@ namespace Elastic.Changelog.Tests.Changelogs;
 public class ChangelogConfigurationTests() : ChangelogTestBase()
 {
 	[Test]
+	[Arguments("elasticsearch", true)]
+	[Arguments("not-a-format", false)]
+	public async Task LoadChangelogConfiguration_EntryFormat_ResolvesAKnownFormat(string format, bool known)
+	{
+		var configLoader = new ChangelogConfigurationLoader(LoggerFactory, ConfigurationContext, FileSystem);
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, $"entry_format: {format}\n", TestContext.Current!.Execution.CancellationToken);
+
+		var config = await configLoader.LoadChangelogConfiguration(Collector, configPath, TestContext.Current!.Execution.CancellationToken);
+
+		if (known)
+		{
+			config.Should().NotBeNull();
+			config.EntryFormat!.Name.Should().Be(format);
+			Collector.Errors.Should().Be(0);
+		}
+		else
+		{
+			config.Should().BeNull();
+			Collector
+				.Diagnostics
+				.Should()
+				.Contain(d => d.Message.Contains("is not a known changelog entry format") && d.Message.Contains("elasticsearch"));
+		}
+	}
+
+	[Test]
 	public async Task LoadChangelogConfiguration_WithoutPivot_UsesDefaults()
 	{
 		// Arrange

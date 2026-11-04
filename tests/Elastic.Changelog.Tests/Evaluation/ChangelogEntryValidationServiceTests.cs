@@ -328,4 +328,43 @@ public class ChangelogEntryValidationServiceTests() : ChangelogTestBase()
 			.Should()
 			.Contain(d => d.Message.Contains("42") && d.Message.Contains("elastic/apm"));
 	}
+
+	[Test]
+	public async Task ValidateEntries_FormatWithTimestampedFileNames_TakesThePrFromThePullRequest()
+	{
+		// elastic-agent-changelog-tool fragments are named by timestamp and carry no PR: a fragment the PR adds belongs to it.
+		await WriteConfig(
+			"""
+			entry_format: elastic-agent-changelog-tool
+			products:
+			  default:
+			    - product: elasticsearch
+			pivot:
+			  types:
+			    feature: "type:feature"
+			    bug-fix:
+			    breaking-change:
+			bundle:
+			  directory: changelog/fragments
+			"""
+		);
+		await WriteEntryFile(
+			"changelog/fragments/1792145980-fix-the-registry.yaml",
+			"kind: bug-fix\nsummary: Fix the registry\ncomponent: filebeat\n"
+		);
+
+		var prService = A.Fake<IGitHubPrService>();
+		A.CallTo(
+			() => prService.CheckPullRequestsExistAsync("elastic", "elasticsearch", A<IReadOnlyList<int>>._, A<CancellationToken>._)
+		).Returns(new Dictionary<int, bool> { { 42, true } });
+
+		var svc = CreateService(prService);
+		var args = MakeArgs("elasticsearch") with { Files = ["changelog/fragments/1792145980-fix-the-registry.yaml"] };
+		var result = await svc.ValidateEntries(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue(
+			$"Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+	}
 }

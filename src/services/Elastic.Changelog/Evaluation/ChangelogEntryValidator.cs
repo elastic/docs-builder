@@ -41,6 +41,11 @@ public static class ChangelogEntryValidator
 	/// Valid product IDs (already normalised to lower-kebab-case) from products.yml.
 	/// Null means skip product membership check.
 	/// </param>
+	/// <param name="productsFromDefaults">
+	/// True when the repository sets <c>entry_format</c>: those entries have no <c>products</c> field and take
+	/// <c>products.default</c> from the configuration, so a missing <c>products</c> is only an error when the
+	/// configuration has no defaults.
+	/// </param>
 	/// <remarks>
 	/// When <c>products.available</c> in the repository's <c>changelog.yml</c> lists products, an entry may only use
 	/// those, and the error lists only them. The loader already checks that list against products.yml. Without the
@@ -53,7 +58,8 @@ public static class ChangelogEntryValidator
 		ChangelogConfiguration config,
 		ChangelogEntryType? labelDerivedType,
 		IReadOnlySet<string>? knownProducts,
-		int? filenamePrNumber = null
+		int? filenamePrNumber = null,
+		bool productsFromDefaults = false
 	)
 	{
 		var findings = new List<EntryFileFinding>();
@@ -101,7 +107,14 @@ public static class ChangelogEntryValidator
 
 		// ── Products ─────────────────────────────────────────────────────────────────────────────
 		if (entry.Products is null || entry.Products.Count == 0)
-			findings.Add(Error(filePath, "products is required"));
+		{
+			if (!productsFromDefaults)
+				findings.Add(Error(filePath, "products is required"));
+			else if (ProductResolution.Defaults(config).Count == 0)
+				findings.Add(
+					Error(filePath, "products is required: this entry has no products field and changelog.yml sets no products.default")
+				);
+		}
 		else
 		{
 			for (var i = 0; i < entry.Products.Count; i++)
