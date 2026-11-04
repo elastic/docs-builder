@@ -52,7 +52,7 @@ If you want to manually install the tool you can download the latest release fro
 
 ### Building locally
 
-Install [.NET 10.0](https://dotnet.microsoft.com/en-us/download/dotnet/10.0), then run:
+Install the .NET SDK version pinned in [`global.json`](global.json) (currently [.NET 11 RC](https://dotnet.microsoft.com/en-us/download/dotnet/11.0)), then run:
 
 ```bash
 ./build.sh publishbinaries

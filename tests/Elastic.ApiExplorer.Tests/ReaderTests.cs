@@ -103,6 +103,8 @@ public class ReaderTests
 	[Test]
 	[Arguments("spec.json", "{\"swagger\":\"2.0\",\"info\":{\"title\":\"T\",\"version\":\"1\"},\"host\":\"example.com\",\"basePath\":\"/v1\",\"paths\":{}}")]
 	[Arguments("spec.yaml", "swagger: '2.0'\ninfo:\n  title: T\n  version: '1'\nhost: example.com\nbasePath: /v1\npaths: {}")]
+	[Arguments("spec.json", "{\"swagger\":\"2.0\",\"info\":{\"title\":\"T\",\"version\":\"1\"},\"host\":\"example.com\",\"basePath\":\"/v1\",\"schemes\":[],\"paths\":{}}")]
+	[Arguments("spec.yaml", "swagger: '2.0'\ninfo:\n  title: T\n  version: '1'\nhost: example.com\nbasePath: /v1\nschemes: []\npaths: {}")]
 	public async Task ReadAsync_Swagger20HostWithoutSchemes_DefaultsToHttps(string fileName, string content)
 	{
 		// Microsoft.OpenApi assigns UriBuilder.Host = "//host" when schemes is missing, which .NET 11 rejects.

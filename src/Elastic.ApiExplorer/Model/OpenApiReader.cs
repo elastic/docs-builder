@@ -110,7 +110,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 				|| !root.ContainsKey("swagger")
 				|| root["host"] is not JsonValue { } host
 				|| host.GetValueKind() != JsonValueKind.String
-				|| root.ContainsKey("schemes")
+				|| root["schemes"] is JsonArray { Count: > 0 }
 			)
 				return Rewound(jsonStream);
 
