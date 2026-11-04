@@ -63,7 +63,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("SUPP_OP_DESCRIPTION");
 		html.Should().NotContain(SpecOperationDescription);
 		html.Should().Contain("Query parameters");
-		html.Should().Contain("id=\"responses\"");
+		html.Should().Contain("id=\"response\"");
 		html.Should().Contain(SpecQueryQDescription);
 	}
 
@@ -191,10 +191,10 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		var nav = SearchOperation();
 		var html = await RenderAsync(nav.Model, nav);
 
-		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc>");
+		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc data-toc-sticky>");
 		html.Should().Contain("href=\"#query-params\" data-toc-link>Query</a>", "a link is its label alone, with no count");
 		html.Should().Contain("href=\"#request-body\" data-toc-link>Body</a>", "a link is its label alone, with no count");
-		html.Should().Contain("href=\"#responses\" data-toc-link>Response</a>", "a link is its label alone, with no count");
+		html.Should().Contain("href=\"#response\" data-toc-link>Response</a>", "a link is its label alone, with no count");
 		html
 			.IndexOf("api-section-links", StringComparison.Ordinal)
 			.Should()
@@ -210,7 +210,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().MatchRegex(
 			"""id="request-body"[^>]*>\s*<a class="headerlink api-param-section-title" href="#request-body">Request body</a>\s*<button"""
 		);
-		html.Should().MatchRegex("""id="responses"[^>]*>\s*<a class="headerlink responses-title" href="#responses">Response""");
+		html.Should().MatchRegex("""id="response"[^>]*>\s*<a class="headerlink responses-title" href="#response">Response""");
 		html.Should().NotMatchRegex("""<button[^>]*api-param-section-toggle[^>]*>(?:(?!</button>)[\s\S])*<a\s""");
 	}
 
@@ -288,7 +288,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"common-patterns\"");
 		html.Should().Contain("SUPP_OP_COMMON_PATTERNS");
 		html
-			.IndexOf("id=\"responses\"", StringComparison.Ordinal)
+			.IndexOf("id=\"response\"", StringComparison.Ordinal)
 			.Should()
 			.BeLessThan(html.IndexOf("id=\"best-practices\"", StringComparison.Ordinal));
 		html
@@ -330,7 +330,7 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 			)
 		);
 
-		html.Should().Contain("id=\"responses\"");
+		html.Should().Contain("id=\"response\"");
 		html.Should().Contain("id=\"responses-2\"");
 		html.Should().Contain("SUPP_OP_RESPONSES_SECTION");
 		html.Should().Contain("id=\"errors-guide\"");

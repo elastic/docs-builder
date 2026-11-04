@@ -121,4 +121,82 @@ describe('initToc', () => {
                 .getAttribute('aria-current')
         ).toBe('location')
     })
+
+    it('marks the clicked section of a sticky outline, though the next heading is above the 25% line', () => {
+        document.body.innerHTML = `
+        <nav data-toc data-toc-sticky>
+          <a data-toc-link href="#one">One</a>
+          <a data-toc-link href="#two">Two</a>
+        </nav>
+        <h2 id="one">One</h2><h2 id="two">Two</h2>`
+        const nav = document.querySelector('[data-toc]')!
+        nav.getBoundingClientRect = () => ({ bottom: 97 }) as DOMRect
+        // the section a click just landed under the bar, and a short one that follows it inside the 25% line (200px)
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: 112 }) as DOMRect
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 190 }) as DOMRect
+        initToc()
+
+        expect(
+            document
+                .querySelector('[href="#one"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#two"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
+    })
+
+    it('marks the section the address names at the bottom of a page too short to scroll', () => {
+        setup()
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: 100 }) as DOMRect
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 500 }) as DOMRect
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 800,
+            configurable: true,
+        })
+        window.location.hash = '#one'
+        initToc()
+
+        expect(
+            document
+                .querySelector('[href="#one"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+        expect(
+            document
+                .querySelector('[href="#two"]')!
+                .hasAttribute('aria-current')
+        ).toBe(false)
+
+        window.location.hash = ''
+    })
+
+    it('follows the address when it changes without a scroll', () => {
+        setup()
+        document.getElementById('one')!.getBoundingClientRect = () =>
+            ({ top: 100 }) as DOMRect
+        document.getElementById('two')!.getBoundingClientRect = () =>
+            ({ top: 500 }) as DOMRect
+        Object.defineProperty(document.documentElement, 'scrollHeight', {
+            value: 800,
+            configurable: true,
+        })
+        initToc()
+        window.location.hash = '#one'
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+        expect(
+            document
+                .querySelector('[href="#one"]')!
+                .getAttribute('aria-current')
+        ).toBe('location')
+
+        window.location.hash = ''
+    })
 })
