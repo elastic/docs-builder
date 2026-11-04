@@ -213,7 +213,7 @@ describe('property rows', () => {
         )
     })
 
-    it('keeps the description when the query names no route', () => {
+    it('shows the primary route when the query names no route', () => {
         const withRoutes: SearchResultItem = {
             ...operation,
             description: 'Returns search hits',
@@ -223,8 +223,23 @@ describe('property rows', () => {
         const { container } = renderList({
             groups: groupSearchResults([withRoutes]),
         })
+        expect(container.querySelector('.route-line')).toHaveTextContent(
+            '/_search'
+        )
+        expect(screen.queryByText('Returns search hits')).toBeNull()
+    })
+
+    it('keeps the description for a row without routes', () => {
+        navigationSearchStore.getState().actions.setSearchTerm('knn')
+        const { container } = renderList({
+            groups: groupSearchResults([{ ...operation, routes: [] }, page]),
+            typeFilter: 'all',
+        })
         expect(container.querySelector('.route-line')).toBeNull()
-        expect(screen.getByText('Returns search hits')).toBeInTheDocument()
+        expect(screen.getByText('Run a search')).toBeInTheDocument()
+        expect(
+            screen.getByText('Learn about Elasticsearch')
+        ).toBeInTheDocument()
     })
 
     it('names the Enter action after each row destination', () => {

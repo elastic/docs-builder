@@ -90,17 +90,26 @@ it.each([
     ['/_search', ['_search'], '/_search'],
     ['GET /_search knn', ['_search', 'knn'], '/_search'],
     ['search', ['search'], '/{index}/_search'],
-    ['index', ['index'], undefined],
-    ['in', ['in'], undefined],
+    ['index', ['index'], '/{index}/_search'],
+    ['in', ['in'], '/{index}/_search'],
     ['scroll', ['scroll'], '/_search/scroll'],
-    ['knn', ['knn'], undefined],
-    ['get', ['get'], undefined],
+    ['knn', ['knn'], '/{index}/_search'],
+    ['get', ['get'], '/{index}/_search'],
     ['GET /_search', ['_search'], '/_search'],
-    ['a', [], undefined],
+    ['a', [], '/{index}/_search'],
 ])('picks the route for %s', (searchTerm, tokens, path) => {
     const matched = primaryRoute(routes, searchTerm)
     expect(matched.tokens).toEqual(tokens)
     expect(matched.route?.path).toBe(path)
+})
+
+it("falls back to the page's primary route when no query word names one", () => {
+    const primary = { path: '/_search', methods: ['POST', 'GET'] }
+    const matched = primaryRoute(
+        [primary, { path: '/{index}/_search', methods: ['POST', 'GET'] }],
+        'retriever'
+    )
+    expect(matched.route).toBe(primary)
 })
 
 it.each([

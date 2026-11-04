@@ -67,8 +67,9 @@ export const fieldSearchTerms = (searchTerm: string) => {
 
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
- * path is a query word, else the first route in page order whose path contains one. Routes arrive
- * with the page's primary route first, so that one wins among the partial matches.
+ * path is a query word, else the first route in page order whose path contains one, else the
+ * page's primary route. Routes arrive with the page's primary route first, so that one wins among
+ * the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const all = words(searchTerm)
@@ -83,7 +84,8 @@ export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
         tokens,
         route:
             containing.find((route) => tokens.includes(pathKey(route.path))) ??
-            containing[0],
+            containing[0] ??
+            routes[0],
     }
 }
 
