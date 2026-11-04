@@ -27,4 +27,6 @@ internal static partial class ApiSearchWords
 				.Select(word => word.ToLowerInvariant())
 				.Distinct(StringComparer.Ordinal)
 		];
+
+	internal static string[] OfOperationId(string operationId) => Of(operationId, string.Empty);
 }

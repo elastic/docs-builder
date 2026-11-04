@@ -182,9 +182,15 @@ public class OpenApiOperationIdSearchTitleTests
 				o => o.WithStrictOrdering()
 			);
 		flush.Api!.Deprecated.Should().BeFalse();
+		flush.Api.Words.Should().Equal("ml", "flush", "job", "anomaly", "detectors");
+		flush.Api.Group.Should().Be("Machine learning anomaly detection");
+		flush.Api.IdWords.Should().Be(3);
 		docs["ml-close-job"].Api!.Deprecated.Should().BeTrue();
 		var bulk = docs["_bulk"];
 		bulk.SearchTitle.Should().Be("Bulk index or delete documents - Elasticsearch API - _bulk - PUT /_bulk - bulk");
+		bulk.Api!.Words.Should().Equal("bulk");
+		bulk.Api.Group.Should().Be("");
+		bulk.Api.IdWords.Should().Be(1);
 		bulk
 			.Parents
 			.Should()

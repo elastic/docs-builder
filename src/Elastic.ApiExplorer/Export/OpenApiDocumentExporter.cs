@@ -167,7 +167,10 @@ public partial class OpenApiDocumentExporter(VersionsConfiguration versionsConfi
 					Method = method,
 					Path = path.Key,
 					OperationId = operationId,
-					Deprecated = operation.Value.Deprecated
+					Deprecated = operation.Value.Deprecated,
+					Words = ApiSearchWords.Of(operationId, path.Key),
+					Group = groupParent?.Title ?? "",
+					IdWords = ApiSearchWords.OfOperationId(operationId).Length
 				};
 
 				yield return new DocumentationDocument

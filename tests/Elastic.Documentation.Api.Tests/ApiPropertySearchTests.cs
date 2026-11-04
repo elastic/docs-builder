@@ -303,15 +303,42 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void Mapping_ApiDeprecated_IsBooleanWithoutGroup(bool semantic)
+	public void Mapping_ApiDeprecated_IsBoolean(bool semantic)
 	{
-		var context = semantic
-			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
-			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
-		using var json = JsonDocument.Parse(context.GetMappingsJson());
-		var api = json.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties");
-		api.TryGetProperty("group", out _).Should().BeFalse();
+		var api = ApiMapping(semantic);
 		api.GetProperty("deprecated").GetProperty("type").GetString().Should().Be("boolean");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public void Mapping_ApiWordsAndGroup_AreSynonymText(bool semantic)
+	{
+		var api = ApiMapping(semantic);
+		var words = api.GetProperty("words");
+		words.GetProperty("type").GetString().Should().Be("text");
+		words.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
+		words.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
+		var completion = words.GetProperty("fields").GetProperty("completion");
+		completion.GetProperty("type").GetString().Should().Be("search_as_you_type");
+		completion.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
+		completion.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
+		completion.TryGetProperty("index_options", out _).Should().BeFalse();
+
+		var group = api.GetProperty("group");
+		group.GetProperty("type").GetString().Should().Be("text");
+		group.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
+		group.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
+	}
+
+	[Test]
+	[Arguments(false)]
+	[Arguments(true)]
+	public void Mapping_ApiIdWords_IsRankFeatureWithNegativeImpact(bool semantic)
+	{
+		var idWords = ApiMapping(semantic).GetProperty("id_words");
+		idWords.GetProperty("type").GetString().Should().Be("rank_feature");
+		idWords.GetProperty("positive_score_impact").GetBoolean().Should().BeFalse();
 	}
 
 	[Test]
@@ -767,5 +794,14 @@ public class ApiPropertySearchTests
 		var result = SearchResultProcessor.ProcessHit(ParseResponse(json).Hits.Single(), "track_total", new Dictionary<string, string[]>());
 
 		result.Properties.Should().ContainSingle().Which.Anchor.Should().Be("req-track_total_hits");
+	}
+
+	private static JsonElement ApiMapping(bool semantic)
+	{
+		var context = semantic
+			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
+			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
+		using var json = JsonDocument.Parse(context.GetMappingsJson());
+		return json.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties").Clone();
 	}
 }
