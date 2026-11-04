@@ -156,9 +156,9 @@ const renderList = ({
     typeFilter?: TypeFilter
 } = {}) => {
     const onMouseMove = vi.fn()
-    const { container } = renderWithProviders(
+    const list = (results: ResultGroup[]) => (
         <SearchResultsList
-            results={groups}
+            results={results}
             isLoading={false}
             isKeyboardNavigating={{ current: isKeyboardNavigating }}
             onMouseMove={onMouseMove}
@@ -166,7 +166,13 @@ const renderList = ({
             typeFilter={typeFilter}
         />
     )
-    return { onMouseMove, container }
+    const { container, unmount, rerender } = renderWithProviders(list(groups))
+    return {
+        onMouseMove,
+        container,
+        unmount,
+        showResults: (results: ResultGroup[]) => rerender(list(results)),
+    }
 }
 
 describe('property rows', () => {
@@ -304,5 +310,41 @@ describe('property rows', () => {
         await userEvent.hover(row)
         expect(onMouseMove).toHaveBeenCalled()
         expect(navigationSearchStore.getState().selectedIndex).toBe(3)
+    })
+})
+
+describe('row tooltips', () => {
+    const fakeTippy = (row: Element) => {
+        const destroy = vi.fn()
+        ;(row as Element & { _tippy?: { destroy(): void } })._tippy = {
+            destroy,
+        }
+        return destroy
+    }
+
+    beforeEach(() => {
+        navigationSearchStore.getState().actions.setSearchTerm('track_total')
+    })
+
+    it('destroys the tooltips of its rows when it unmounts', () => {
+        const { container, unmount } = renderList()
+        const destroy = fakeTippy(
+            container.querySelector('.property-path[data-tippy-content]')!
+        )
+
+        unmount()
+
+        expect(destroy).toHaveBeenCalledTimes(1)
+    })
+
+    it('destroys the tooltips of rows the next results drop', () => {
+        const { container, showResults } = renderList()
+        const destroy = fakeTippy(
+            container.querySelector('.property-path[data-tippy-content]')!
+        )
+
+        showResults(groupSearchResults([page]))
+
+        expect(destroy).toHaveBeenCalledTimes(1)
     })
 })

@@ -26,6 +26,7 @@ import {
 import { css } from '@emotion/react'
 import htmx from 'htmx.org'
 import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
+import type { Instance } from 'tippy.js'
 
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
@@ -112,6 +113,18 @@ export const SearchResultsList = ({
     // React renders the rows after htmx's own pass over the page, so they need their own to inherit hx-boost.
     useEffect(() => {
         if (containerRef.current) htmx.process(containerRef.current)
+    }, [results])
+
+    // The page's tippy delegate mounts tooltips on the body and only drops them on an htmx swap, so a tooltip shown
+    // over a row would outlive it. Captured now: by cleanup time React has already detached the rows it removed.
+    useEffect(() => {
+        const tooltipped = Array.from(
+            containerRef.current?.querySelectorAll('[data-tippy-content]') ?? []
+        )
+        return () =>
+            tooltipped.forEach((el) =>
+                (el as Element & { _tippy?: Instance })._tippy?.destroy()
+            )
     }, [results])
 
     const containerStyles = css`
