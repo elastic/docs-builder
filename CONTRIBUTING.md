@@ -15,7 +15,7 @@ mise tasks        # list everything you can run
 
 Trust the root git folder (the main checkout) **once**: every git worktree of that clone is trusted too, so a new worktree needs no `mise trust`. A separate clone is a separate trust decision.
 
-mise reads the SDK version from `global.json` and the Node version from `.nvmrc`, so those files stay the single source of each version. `mise install` also restores the local dotnet tools in `dotnet-tools.json` (husky, curb, minver, Aspire — no workload install required) and installs the git hooks.
+mise reads the SDK version from `global.json` and the Node version from `.nvmrc`, so those files stay the single source of each version. `mise install` also restores the local dotnet tools in `dotnet-tools.json` (husky, curb, minver — no workload install required) and installs the git hooks.
 
 The everyday tasks:
 
@@ -26,7 +26,7 @@ The everyday tasks:
 | `mise run test` | Unit tests (extra args pass through: `mise run test -- --test-parallelism=4`) |
 | `mise run integrate` | Integration tests (slow, clones repositories) |
 | `mise run lint` / `mise run fmt` | Check / fix C# formatting |
-| `mise run watch` / `mise run watch:all` | The watch loops described [below](#continuously-build-during-development) |
+| `mise run watch` | The watch loop described [below](#continuously-build-during-development) |
 | `mise run site:build`, `site:test`, `site:lint`, `site:fmt`, `site:check` | The frontend scripts in `src/Elastic.Documentation.Site` |
 | `mise run schema` | Regenerate `docs/cli-schema.json` |
 
@@ -71,34 +71,13 @@ Run `./dev.sh help` for the full list of commands. Docker files live under `buil
 ## Validate the fully assembled documentation
 
 ```bash
-dotnet aspire run
+./dev.sh assembler          # clone, build and serve every repository under one navigation
+./dev.sh assembler-watch    # rebuild and serve on every source change
 ```
 
-Will spin up all our services and clone and build all the documentation sets.
-
-By default, private repositories are skipped, existing clones are reused, and the build is skipped when code/config/content is unchanged. To opt out of any default:
-
-```bash
-dotnet aspire run -- --no-skip-private-repositories  # include private repos (requires auth tokens)
-dotnet aspire run -- --no-assume-cloned              # force a fresh clone
-dotnet aspire run -- --no-assume-build               # force a full rebuild even if stamp matches
-```
-
-`--skip-private-repositories` (default) injects `docs-builder`'s own docs into the navigation
-so you can validate new features without production credentials.
-
-Our [Integration Tests](./tests-integration/Elastic.Documentation.IntegrationTests) use these defaults to validate the
-assembler builds.
-
-> **Tip**: Install the [Aspire skills plugin](https://github.com/microsoft/aspire-skills) for day-to-day orchestration and monitoring support in Claude Code:
-> ```
-> /plugin marketplace add microsoft/aspire-skills
-> /plugin install aspire@aspire-skills
-> ```
+The site is served at http://localhost:4000. See [Docker, without local installs](#docker-without-local-installs-devsh) for the other modes and the notes on private repositories.
 
 ## Continuously build during development
-
-Two watch loops are available depending on what you're working on:
 
 ### Single-docset watch (authoring, templates, frontend)
 
@@ -110,16 +89,7 @@ Monitors code, Razor template files, and frontend assets for a **single document
 Markdown files refresh via live reload without a recompile. Code or layout changes relaunch
 the server automatically. Web assets are rebuilt by `vite build --watch` in the background.
 
-### Full assembled-site watch (assembler, navigation, multi-repo)
-
-```shell
-mise run watch:all
-```
-
-Runs `dotnet watch` on the Aspire AppHost. When you edit any `.cs` file the AppHost restarts,
-the assembler clone step is skipped (default-on `--assume-cloned`), and the build step
-consults the MVID stamp — if code actually changed it rebuilds; otherwise it skips in seconds.
-No live reload; the site comes back on port 4000 after each restart.
+To watch the assembled site (assembler, navigation, multi-repo), use `./dev.sh assembler-watch`.
 
 ## CLI reference maintenance
 

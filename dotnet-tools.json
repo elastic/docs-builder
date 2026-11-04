@@ -43,13 +43,6 @@
         "curb"
       ],
       "rollForward": false
-    },
-    "aspire.cli": {
-      "version": "13.5.3",
-      "commands": [
-        "aspire"
-      ],
-      "rollForward": false
     }
   }
 }
