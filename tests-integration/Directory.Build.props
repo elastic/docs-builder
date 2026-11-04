@@ -13,6 +13,8 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(IsTestProject)' == 'true'">
     <PackageReference Include="TUnit" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.Testing.Extensions.Telemetry" ExcludeAssets="all" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="JetBrains.Annotations" />
     <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
