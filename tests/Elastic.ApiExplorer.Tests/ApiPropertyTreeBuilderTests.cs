@@ -255,7 +255,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Should().HaveCount(2);
+		variants.Variants.Should().HaveCount(2);
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["TermsAggregate", "MaxAggregate"]);
 	}
@@ -274,7 +274,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		);
 
 		variants.Should().NotBeNull();
-		variants!.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
+		variants.Variants.Select(v => v.DisplayName).Should().BeEquivalentTo(["PlatformErrorResponse", "SiemErrorResponse"]);
 		variants.Variants.Should().AllSatisfy(v => v.ShowProperties.Should().BeTrue());
 		variants.UseChips.Should().BeTrue("two object variants show one at a time behind chips");
 	}
@@ -289,6 +289,79 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		var mode = list!.Items.Single(p => p.Name == "mode");
 		mode.EnumValues.Should().BeEquivalentTo(["fast", "accurate"]);
 		mode.Type.Spans.Should().Contain(s => s.CssClass == SchemaHelpers.WrapperEnumCssClass && s.Text == "enum");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfUnionRef_ReadsLikeTheUnionReferencedDirectly()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.AllOfUnionBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var direct = list!.Items.Single(p => p.Name == "direct");
+		var wrapped = list.Items.Single(p => p.Name == "text");
+		wrapped.Union.Should().NotBeNull("the One of: row names the union's options");
+		wrapped.Type.Spans.Select(s => s.Text).Should().Equal(direct.Type.Spans.Select(s => s.Text));
+		wrapped.Union.Should().BeEquivalentTo(direct.Union);
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedRecursiveUnion_Terminates()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		list!.Items.Single(p => p.Name == "nested").Union.Should().NotBeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnDiscriminator_KeepsIt()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var selected = list!.Items.Single(p => p.Name == "selected");
+		selected.Union!.DiscriminatorProperty.Should().Be("kind");
+		selected.Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: a", "kind: b");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnRequiredSets_KeepsThem()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var needs = list!.Items.Single(p => p.Name == "needs");
+		needs.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires exactly one of:", ["a", "b"]));
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedUnionWithSharedFields_ListsThemLikeTheDirectRef()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var direct = list!.Items.Single(p => p.Name == "sharedDirect");
+		var wrapped = list.Items.Single(p => p.Name == "shared");
+		direct.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+		wrapped.Children.Kind.Should().Be(direct.Children.Kind);
+		wrapped.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
 	}
 
 	[Test]
@@ -537,7 +610,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
+	public async Task BuildPropertyList_ObjectsAtSameDepth_StartExpanded(bool isRequest)
 	{
 		var builder = CreateBuilder();
 		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
@@ -545,12 +618,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		list.Should().NotBeNull();
 		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		AssertCollapsedPair(list.Items, "small", "large", html);
-		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpandedPair(list.Items, "small", "large", html);
+		AssertStartsExpanded(html, list.Items.Single(p => p.Name == "only").AnchorId);
 		var group = list.Items.Single(p => p.Name == "group");
 		group.Children.Properties.Should().NotBeNull();
-		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
-		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpandedPair(group.Children.Properties!.Items, "small", "large", html);
+		AssertStartsExpanded(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
 	}
 
 	[Test]
@@ -564,21 +637,21 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 
 		var anchorId = list.Items.Single(p => p.Name == "only").AnchorId;
 		html.Should().Contain($"href=\"#{anchorId}\" aria-label=\"Link to only\"");
-		html.Should().MatchRegex("</a>\\s*<code>only</code>");
+		html.Should().MatchRegex("</a>\\s*<code[^>]*>only</code>");
 	}
 
-	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
+	private static void AssertExpandedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
 	{
 		var small = items.Single(p => p.Name == smallName);
 		var large = items.Single(p => p.Name == largeName);
 		small.Depth.Should().Be(large.Depth);
 		small.IsCollapsible.Should().BeTrue();
 		large.IsCollapsible.Should().BeTrue();
-		AssertStartsCollapsed(html, small.AnchorId);
-		AssertStartsCollapsed(html, large.AnchorId);
+		AssertStartsExpanded(html, small.AnchorId);
+		AssertStartsExpanded(html, large.AnchorId);
 	}
 
-	private static void AssertStartsCollapsed(string html, string anchorId)
+	private static void AssertStartsExpanded(string html, string anchorId)
 	{
 		var match = System
 			.Text
@@ -586,8 +659,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Regex
 			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
-		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
-		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
+		match.Groups[2].Value.Should().Be("true", $"{anchorId} starts expanded");
+		match.Groups[4].Value.Should().Be("hide", $"{anchorId} offers hide properties");
 		html.Should().Contain($"id=\"{anchorId}--children\"");
 	}
 

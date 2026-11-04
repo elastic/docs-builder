@@ -8,6 +8,7 @@ using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown.Helpers;
 using Elastic.Markdown.Myst;
@@ -20,6 +21,7 @@ using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
 using Elastic.Markdown.Myst.FrontMatter;
 using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Markdig;
 using Markdig.Extensions.Yaml;
 using Markdig.Syntax;
@@ -342,19 +344,20 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		}).ToArray();
 
 		// Collect headings from standard markdown (already have the list — no second traversal)
-		var headingTocs = headings
-			.Where(block => block is { Level: >= 2 })
-			.Select(h => (h.GetData("header") as string, h.GetData("anchor") as string, h.Level, h.Line))
-			.Where(h => h.Item1 is not null)
-			.Select(h =>
-			{
-				var header = h.Item1!.StripMarkdown();
-				return new
+		// Same slug as the id SectionedHeadingRenderer writes, so TOC links and anchor validation match the page.
+		var headingTocs = headings.Where(block => block is { Level: >= 2 } && block.GetData("header") is string).Select(
+			h =>
+				new
 				{
-					TocItem = new PageTocItem { Heading = header, Slug = (h.Item2 ?? h.Item1).Slugify(), Level = h.Level },
+					TocItem = new PageTocItem
+					{
+						Heading = RenderedHeadings.Title(h),
+						Slug = SectionedHeadingRenderer.Slug(h),
+						Level = h.Level
+					},
 					h.Line
-				};
-			});
+				}
+		);
 
 		// Collect headings from Stepper steps (filter from already-collected directives)
 		var stepperTocs = directives
@@ -376,7 +379,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 						Heading = processedTitle,
 						Slug = step.Anchor,
 						Level = step.HeadingLevel, // Use dynamic heading level
-
 						IsStepperStep = true
 					},
 					step.Line
@@ -490,30 +492,14 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 			Products,
 			Collector,
 			FilePath,
-			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterLegacyKeys())
+			new YamlUnmappedMemberReporting(Collector, FilePath, lineOffset, FrontMatterUnknownKeys())
 		);
 
-	// Built fresh per document: each policy closes over a "reported" set that must only suppress a
-	// repeated hint within one document, not across every document the process ever parses.
-	// internal: exercised directly by tests that assert the curator override without a full page parse.
-	internal static YamlUnknownKeyPolicy FrontMatterLegacyKeys()
-	{
-		// `type` and `comment` appear in the frontmatter of pages in the content repositories but are not
-		// supported keys, so they are tolerated as hints for now. TODO: make them errors once the
-		// repositories drop them, see https://github.com/elastic/docs-eng-team/issues/1076.
-		var legacyKeys = YamlUnknownKeyPolicies.ToleratedAsHint("frontmatter", "type", "comment");
-
-		// `curator/docs/reference/ex_reindex.md` has `navigation_tite` (a typo for `navigation_title`).
-		// The previous YAML parser silently dropped unknown keys, so this went unnoticed until unmapped
-		// keys became errors. TODO: remove once https://github.com/elastic/curator/pull/1798 merges.
-		var curatorNavigationTitleTypo = YamlUnknownKeyPolicies.ToleratedAsHintForSource(
-			"curator/docs/reference/ex_reindex.md",
-			"navigation_tite",
-			"'navigation_tite' is a typo for 'navigation_title'; fix pending in https://github.com/elastic/curator/pull/1798."
-		);
-
-		return member => legacyKeys(member) ?? curatorNavigationTitleTypo(member);
-	}
+	// Content repositories carry many frontmatter keys we don't model (slug, status, last_updated, ...), so
+	// an unknown key is a hint with the usual message, not an error, until those repositories are cleaned up.
+	// internal: exercised directly by tests without a full page parse.
+	internal static YamlUnknownKeyPolicy FrontMatterUnknownKeys() =>
+		member => new YamlUnknownKeyOverride(Severity.Hint, $"{YamlUnmappedMemberDiagnostics.FormatMessage(member)} It is ignored.");
 
 	// reporting is null when the same front matter is only being read for its titles, so unknown keys
 	// are reported once, by the full page parse.
@@ -550,7 +536,7 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 		// We manually render title and optionally append an applies block embedded in yaml front matter.
 		if (stripFirstHeadingLevel1)
 		{
-			var h1 = document.Descendants<HeadingBlock>().FirstOrDefault(h => h.Level == 1);
+			var h1 = RenderedHeadings.FirstLevel1(document);
 			if (h1 is not null)
 				_ = document.Remove(h1);
 		}

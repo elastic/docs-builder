@@ -15,10 +15,16 @@ public record CodeSample(string Language, string Source, string HighlightClass)
 	public bool Generated { get; init; }
 
 	/// <summary>
-	/// The example this sample belongs to when the spec encodes it in the language name, e.g. <c>cURL_tag_names</c>
-	/// is the curl sample of a "Tag names" example. Null for samples of the default example.
+	/// The example suffix of the language name, e.g. <c>cURL_tag_names</c> is the curl sample of a "Tag names" example.
+	/// Null for samples of the default example.
 	/// </summary>
 	public string? Scenario { get; init; }
+
+	/// <summary>The title of the request example that carries this sample as its own <c>x-codeSamples</c>.</summary>
+	public string? ExampleTitle { get; init; }
+
+	/// <summary>True when the sample names the example it belongs to, by suffix or by title.</summary>
+	public bool IsTied => Scenario is not null || ExampleTitle is not null;
 
 	/// <summary>
 	/// Splits a spec <c>lang</c> into the language, in its canonical casing (<c>cURL</c> is <c>curl</c>), and the

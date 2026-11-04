@@ -1,0 +1,90 @@
+.page-jumper {
+	position: relative;
+	max-width: 32rem;
+}
+
+.page-jumper__field {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	height: 2.75rem;
+	padding: 0 var(--space-4);
+	border: var(--border-width) solid var(--color-border-control);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	color: var(--color-text-muted);
+	transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.page-jumper__field:focus-within {
+	border-color: var(--color-accent);
+	box-shadow: 0 0 0 3px
+		color-mix(in oklab, var(--color-accent) 24%, transparent);
+}
+
+.page-jumper__input {
+	flex: 1;
+	min-width: 0;
+	border: 0;
+	background: none;
+	color: var(--color-heading);
+	font-size: var(--text-base);
+	outline: none;
+}
+
+.page-jumper__input::placeholder {
+	color: var(--color-text-muted);
+}
+
+.page-jumper__panel {
+	position: absolute;
+	z-index: var(--z-overlay);
+	inset: calc(100% + var(--space-1)) 0 auto;
+	max-height: 24rem;
+	overflow-y: auto;
+	border: var(--border-width) solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-slab-sm);
+}
+
+.page-jumper__panel[hidden],
+.page-jumper__loading[hidden] {
+	display: none;
+}
+
+.page-jumper__loading {
+	padding: var(--space-2) var(--space-3) 0;
+}
+
+.page-jumper__status {
+	margin: 0;
+	padding: var(--space-2) var(--space-3);
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+}
+
+.page-jumper__status:empty {
+	display: none;
+}
+
+.page-jumper__results {
+	margin: 0;
+	padding: 0 var(--space-2) var(--space-2);
+	list-style: none;
+}
+
+.page-jumper__group {
+	padding: var(--space-2) var(--space-3) var(--space-1);
+	color: var(--color-text-muted);
+	font-family: var(--font-display);
+	font-size: var(--text-xs);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+/* A specimen of a state keeps its panel in the flow, so the cell around it grows instead of the panel covering its neighbours. */
+.page-jumper--static .page-jumper__panel {
+	position: static;
+	margin-top: var(--space-1);
+}

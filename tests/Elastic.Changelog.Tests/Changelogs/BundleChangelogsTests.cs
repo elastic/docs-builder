@@ -1975,7 +1975,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Repo = "cloud", // Set repo to "cloud" - different from product ID "cloud-serverless"
-
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -2132,8 +2131,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			Repo =
-				"cloud" // explicit CLI --repo should win over bundle.repo: wrong-repo
+			Repo = "cloud" // explicit CLI --repo should win over bundle.repo: wrong-repo
 		};
 
 		// Act
@@ -2427,7 +2425,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -2497,7 +2495,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -2564,7 +2562,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -2900,7 +2898,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3084,7 +3082,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3153,7 +3151,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3218,7 +3216,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3306,7 +3304,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3372,7 +3370,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3438,7 +3436,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3501,7 +3499,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
@@ -3602,7 +3600,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
 	[Test]
@@ -3669,7 +3671,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
 		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
 	// ─── Phase 3: URL list file and combined version+report ─────────────────────────────
@@ -3996,9 +4002,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Config = configPath,
 			Profile = "serverless-release",
 			ProfileArgument = "2026-02", // version string
-
 			ProfileReport = urlFile, // URL list file (Phase 3.4)
-
 			OutputDirectory = outputDir
 		};
 
@@ -4009,7 +4013,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 
 		// Output file name should use the version (not "unknown")
@@ -4057,7 +4061,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Config = configPath,
 			Profile = "serverless-release",
 			ProfileArgument = reportFile, // wrong — this looks like a file, should be a version
-
 			ProfileReport = urlFile
 		};
 
@@ -5497,7 +5500,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = changelogDir,
 			InputProducts = [new ProductArgument { Product = "*" }], // Input method should not affect bundle filtering
-
 			Config = configPath,
 			Output = outputPath,
 			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]
@@ -6449,7 +6451,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("CLI intro for 9.2.0");

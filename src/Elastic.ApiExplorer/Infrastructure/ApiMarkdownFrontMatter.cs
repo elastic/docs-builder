@@ -7,6 +7,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.Navigation;
@@ -140,6 +141,7 @@ internal static class ApiMarkdownFrontMatter
 			ApiTag tag => FirstLine(ApiMarkdown.Prepare(TagDescription(tag, context), apiBaseUrl)),
 			ApiOperation operation => FirstLine(ApiMarkdown.Prepare(OperationDescription(operation, context), apiBaseUrl)),
 			ApiSchema schema => FirstLine(ApiMarkdown.Prepare(schema.Schema.Description, apiBaseUrl)),
+			ApiTopicPage topic => FirstLine(ApiMarkdown.Prepare(topic.Content, apiBaseUrl)),
 			SimpleMarkdownNavigationItem => ApiSeoDescription.FirstParagraph(body),
 			_ => null
 		};

@@ -16,8 +16,11 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public static class AvailabilityBadge
 {
-	public static ApplicableToViewModel? From(IDictionary<string, IOpenApiExtension>? extensions, VersionsConfiguration? versionsConfig) =>
-		Create(XStateApplicability.From(extensions), versionsConfig);
+	public static ApplicableToViewModel? From(
+		IDictionary<string, IOpenApiExtension>? extensions,
+		VersionsConfiguration? versionsConfig,
+		bool designSystem = false
+	) => Create(XStateApplicability.From(extensions), versionsConfig, designSystem: designSystem);
 
 	/// <summary>
 	/// The badge of an operation. <c>x-state</c> wins; an operation that is only flagged <c>x-beta: true</c> gets the same
@@ -26,16 +29,23 @@ public static class AvailabilityBadge
 	public static ApplicableToViewModel? FromOperation(
 		OpenApiOperation operation,
 		VersionsConfiguration? versionsConfig,
-		bool showTooltip = true
+		bool showTooltip = true,
+		bool designSystem = false
 	) =>
 		Create(
 			XStateApplicability.From(operation.Extensions) ??
 				(OpenApiExtensionReader.IsBeta(operation) ? XStateApplicability.Parse("Beta") : null),
 			versionsConfig,
-			showTooltip
+			showTooltip,
+			designSystem
 		);
 
-	public static ApplicableToViewModel? Create(ApplicableTo? applicableTo, VersionsConfiguration? versionsConfig, bool showTooltip = true)
+	public static ApplicableToViewModel? Create(
+		ApplicableTo? applicableTo,
+		VersionsConfiguration? versionsConfig,
+		bool showTooltip = true,
+		bool designSystem = false
+	)
 	{
 		if (applicableTo is null || versionsConfig is null || !XStateApplicability.IsWorthABadge(applicableTo))
 			return null;
@@ -45,7 +55,8 @@ public static class AvailabilityBadge
 			AppliesTo = applicableTo,
 			Inline = true,
 			ShowTooltip = showTooltip,
-			VersionsConfig = versionsConfig
+			VersionsConfig = versionsConfig,
+			DesignSystem = designSystem
 		};
 	}
 }

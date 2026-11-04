@@ -197,7 +197,7 @@ public sealed partial class GitHubCommitRangeService(
 		var url = $"https://api.github.com/repos/{args.Owner}/{args.Repo}/compare/{basehead}?per_page={ComparePageSize}&page={page}";
 		_logger.LogDebug("Fetching compare page {Page}: {Url}", page, url);
 
-		using var response = await _transport.GetAsync(url, ctx).ConfigureAwait(false);
+		using var response = await _transport.GetWithTransientRetryAsync(url, ctx).ConfigureAwait(false);
 		if (response.StatusCode == HttpStatusCode.NotFound)
 		{
 			collector.EmitError(

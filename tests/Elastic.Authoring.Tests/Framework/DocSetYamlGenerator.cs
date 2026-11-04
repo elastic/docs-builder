@@ -187,9 +187,7 @@ public static class DocSetYamlGenerator
 		if (stream[0].Contents is not YamlMapping rootMap)
 			return new HashSet<string>();
 
-		var redirectsMap = rootMap.FirstOrDefault(kv => kv.Key is YamlValue sk && sk.Value == "redirects").Value as YamlMapping;
-
-		if (redirectsMap is null)
+		if (rootMap.FirstOrDefault(kv => kv.Key is YamlValue sk && sk.Value == "redirects").Value is not YamlMapping redirectsMap)
 			return new HashSet<string>();
 
 		var result = new HashSet<string>(StringComparer.Ordinal);

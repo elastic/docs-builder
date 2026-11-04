@@ -237,6 +237,11 @@ public sealed record PivotConfigurationYaml
 	public Dictionary<string, YamlLenientList?>? Features { get; set; }
 
 	/// <summary>
+	/// Pivots that every PR must set a label for: <c>types</c>, <c>areas</c> or <c>products</c> (string or list).
+	/// </summary>
+	public YamlLenientList? Required { get; set; }
+
+	/// <summary>
 	/// Labels that trigger the highlight flag (string or list).
 	/// </summary>
 	public YamlLenientList? Highlight { get; set; }
@@ -383,9 +388,10 @@ public sealed record BundleProfileYaml
 	public string? Products { get; set; }
 
 	/// <summary>
-	/// Output filename pattern.
-	/// Supports {version} placeholder.
+	/// Legacy output filename pattern. Deprecated: names are derived as
+	/// <c>{repo}-{product}-{version}.yaml</c>. The value is ignored.
 	/// </summary>
+	[Obsolete("Deprecated: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml'. Remove this field.")]
 	public string? Output { get; set; }
 
 	/// <summary>

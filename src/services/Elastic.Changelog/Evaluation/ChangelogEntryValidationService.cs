@@ -379,7 +379,8 @@ public class ChangelogEntryValidationService(
 			ConfigFile = input.ConfigFile,
 			DefaultBranch = defaultBranch,
 			EntryFindings = entryFindings,
-			ResolvedProducts = resolvedProducts
+			ResolvedProducts = resolvedProducts,
+			CommentOnSuccess = input.CommentOnSuccess
 		};
 
 		await _metadataWriter.WriteAsync(metadata, ctx);

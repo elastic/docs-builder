@@ -23,7 +23,7 @@ cta: <7>
 ---
 ```
 
-Unknown frontmatter keys are build errors. The message names the key, its line, and the closest
+Unknown frontmatter keys are ignored and reported as hints, not errors. The message names the key, its line, and the closest
 valid key when there is one, for example `Unknown key 'navigaton_title'. Did you mean 'navigation_title'?`.
 
 1. [`navigation_title`](#navigation-title)

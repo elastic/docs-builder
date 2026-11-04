@@ -46,6 +46,12 @@ public static class ChangelogEntryValidator
 	/// <c>products.default</c> from the configuration, so a missing <c>products</c> is only an error when the
 	/// configuration has no defaults.
 	/// </param>
+	/// <remarks>
+	/// When <c>products.available</c> in the repository's <c>changelog.yml</c> lists products, an entry may only use
+	/// those, and the error lists only them. The loader already checks that list against products.yml. Without the
+	/// list, for example in a repository with no <c>changelog.yml</c>, any product in <paramref name="knownProducts"/>
+	/// is accepted.
+	/// </remarks>
 	public static IReadOnlyList<EntryFileFinding> Validate(
 		string filePath,
 		ChangelogEntryDto entry,
@@ -57,6 +63,9 @@ public static class ChangelogEntryValidator
 	)
 	{
 		var findings = new List<EntryFileFinding>();
+		IReadOnlySet<string>? allowedProducts = config.Products is { Count: > 0 }
+			? new HashSet<string>(config.Products.Select(p => p.Id.Replace('_', '-')), StringComparer.OrdinalIgnoreCase)
+			: null;
 
 		// ── Marker hygiene ───────────────────────────────────────────────────────────────────────
 		var isMarker = entry.Link is not null;
@@ -113,6 +122,20 @@ public static class ChangelogEntryValidator
 				var product = entry.Products[i];
 				if (string.IsNullOrWhiteSpace(product.Product))
 					findings.Add(Error(filePath, $"products[{i}].product is required"));
+				else if (allowedProducts is not null)
+				{
+					var normalized = product.Product.Replace('_', '-');
+					if (!allowedProducts.Contains(normalized))
+					{
+						var allowed = string.Join(", ", allowedProducts.OrderBy(p => p));
+						findings.Add(
+							Error(
+								filePath,
+								$"product '{product.Product}' is not in products.available in changelog.yml. Allowed products: {allowed}"
+							)
+						);
+					}
+				}
 				else if (knownProducts is not null)
 				{
 					var normalized = product.Product.Replace('_', '-');

@@ -151,9 +151,8 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		foreach (var unknownKey in unknownKeys)
 		{
 			var suggestion = YamlUnmappedMemberDiagnostics.Suggest(unknownKey, _knownKeys);
-			diagnostics.Add(
-				(Severity.Error, YamlUnmappedMemberDiagnostics.FormatMessage("applies_to", unknownKey, suggestion, _knownKeys))
-			);
+			// Hint while content repositories migrate off keys that sharpyaml now flags; ignored either way.
+			diagnostics.Add((Severity.Hint, YamlUnmappedMemberDiagnostics.FormatMessage("applies_to", unknownKey, suggestion, _knownKeys)));
 		}
 
 		if (TryGetApplicabilityOverTime(dictionary, ApplicabilityKeys.Stack, diagnostics, out var stackAvailability))
@@ -453,7 +452,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			var lifecycleNames = string.Join(", ", lifecyclesWithMultipleVersions);
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
+				$"Key '{key}': Multiple version declarations found for lifecycle(s): {lifecycleNames}. Only one version per lifecycle is allowed.")
 			);
 		}
 
@@ -466,7 +465,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
+				$"Key '{key}': Multiple items use greater-than-or-equal syntax. Only one item per key can use this syntax.")
 			);
 		}
 
@@ -483,7 +482,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 			);
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
+				$"Key '{key}': Invalid range(s) where first version is greater than last version: {string.Join(", ", rangeDescriptions)}.")
 			);
 		}
 
@@ -504,7 +503,7 @@ public class ApplicableToYamlConverter(IReadOnlyCollection<string> productKeys) 
 		{
 			diagnostics.Add(
 				(Severity.Hint, // Temporary downgrade to Hint until the currently available docs are adjusted
-				 $"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
+				$"Key '{key}': Overlapping version ranges detected. Ensure version ranges do not overlap within the same key.")
 			);
 		}
 	}

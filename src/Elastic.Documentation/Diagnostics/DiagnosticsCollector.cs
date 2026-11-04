@@ -34,7 +34,8 @@ public class DiagnosticsCollector(
 	// while loop exits, so WaitForDrain knows items dequeued but not yet output-written.
 	private volatile bool _draining;
 
-	public HashSet<string> OffendingFiles { get; } = [];
+	// Written by the background Drain() thread while the build thread snapshots it.
+	public ConcurrentDictionary<string, bool> OffendingFiles { get; } = [];
 
 	public ConcurrentDictionary<string, bool> InUseSubstitutionKeys { get; } = [];
 
@@ -93,7 +94,7 @@ public class DiagnosticsCollector(
 			if (item.Severity == Severity.Hint && NoHints)
 				continue;
 			HandleItem(item);
-			_ = OffendingFiles.Add(item.File);
+			OffendingFiles[item.File] = true;
 			foreach (var output in outputs)
 				output.Write(item);
 		}

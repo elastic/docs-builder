@@ -113,7 +113,7 @@ public class OperationEndpointTests
 	{
 		var item = Op(HttpMethod.Post, "/api/agent_builder/tools/_execute");
 		const string description =
-			"**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb post\">post</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/agent_builder/tools/_execute</span></div>\n\nRefer to Spaces for more information.";
+			"**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb post\">post</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/agent_builder/tools/_execute</span></div>\n\nRefer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.\n\nYou do not need any Kibana feature privileges to run this API.";
 
 		var endpoint = OperationEndpoint.Build(item, description, []);
 
@@ -125,8 +125,17 @@ public class OperationEndpointTests
 		endpoint.Rows.SelectMany(static r => r.Segments).Should().OnlyContain(static s => !s.Optional);
 		endpoint.OptionalPathParameters.Should().BeEmpty();
 		endpoint.ShortestRoute.Should().Be("/api/agent_builder/tools/_execute");
-		endpoint.Description.Should().Be("Refer to Spaces for more information.");
+		endpoint.Description.Should().Be("You do not need any Kibana feature privileges to run this API.");
+		endpoint.SpaceParameter.Should().Be("space_id");
 	}
+
+	[Test]
+	public void FromVariants_WithoutASpaceRoute_HasNoSpaceParameter() =>
+		OperationEndpoint
+			.FromVariants([new("get", "/s/{id}/other"), new("get", "/api/other")], "/api/other")
+			.SpaceParameter
+			.Should()
+			.BeNull();
 
 	[Test]
 	public void FromVariants_SpacePrefixOnAnUnrelatedRoute_IsNotASpaceVariant()

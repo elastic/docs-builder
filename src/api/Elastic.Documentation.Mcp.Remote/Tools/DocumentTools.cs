@@ -23,13 +23,15 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Gets a document by its URL.
 	/// </summary>
-	[McpServerTool, McpToolName("get_{scope}document_by_url"), Description("Retrieves a specific {docs} page by its URL. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("get_{scope}document_by_url"), Description("Retrieves a specific {docs} page by its URL. "
 		+ "Use when the user provides a documentation URL, references a known page, "
 		+ "or you need the full content and metadata of a specific doc. "
-		+ "Returns title, AI summaries, headings, navigation context, and optionally the full body.")]
+		+ "Returns title, AI summaries, headings, navigation context, and the full body only when includeBody is true. "
+		+ "Pass includeBody=true to read the page content; otherwise body is null.")]
 	public async Task<string> GetDocumentByUrl(
 		[Description("The URL of the document. Accepts a full URL (e.g. 'https://www.elastic.co/docs/deploy-manage/api-keys') or a path (e.g. '/docs/deploy-manage/api-keys'). Query strings, fragments, and trailing slashes are ignored.")] string url,
-		[Description("Include full body content (default: false, set true for detailed analysis)")] bool includeBody = false,
+		[Description("Include the full page body (default: false, so body is null). Set true whenever you need to read the page content.")] bool includeBody =
+			false,
 		CancellationToken cancellationToken = default
 	)
 	{
@@ -74,7 +76,10 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 				Product = result.Product != null ? new ProductDto { Id = result.Product.Id, Repository = result.Product.Repository } : null,
 				RelatedProducts = result.RelatedProducts?.Select(p => new ProductDto { Id = p.Id, Repository = p.Repository }).ToList(),
 				Body = includeBody ? result.Body : null,
-				BodyLength = result.Body?.Length ?? 0
+				BodyLength = result.Body?.Length ?? 0,
+				BodyNote = !includeBody && result.Body is { Length: > 0 }
+					? "The body is omitted by default. Call this tool again with includeBody=true to read it."
+					: null
 			};
 
 			McpToolTelemetry.MarkSuccess(activity);
@@ -103,7 +108,7 @@ public class DocumentTools(IDocumentGateway documentGateway, ILogger<DocumentToo
 	/// <summary>
 	/// Analyzes the structure of a document.
 	/// </summary>
-	[McpServerTool, McpToolName("analyze_{scope}document_structure"), Description("Analyzes the structure of a {docs} page. "
+	[McpServerTool(ReadOnly = true, Idempotent = true, Destructive = false, OpenWorld = false), McpToolName("analyze_{scope}document_structure"), Description("Analyzes the structure of a {docs} page. "
 		+ "Use when evaluating page quality, checking heading hierarchy, or assessing AI enrichment status. "
 		+ "Returns heading count, link count, parent pages, and whether AI summaries are present.")]
 	public async Task<string> AnalyzeDocumentStructure(

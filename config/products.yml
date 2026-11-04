@@ -172,6 +172,14 @@ products:
     dra_artifact: 'elastic-agent-core'
     features:
       release-notes: dra
+  elastic-agent-package:
+    display: 'Elastic Agent Package'
+    versioning: 'stack'
+    repository: 'elastic-agent'
+    dra_artifact: 'elastic-agent-package'
+    features:
+      public-reference: false
+      release-notes: dra
   elastic-defend:
     display: 'Elastic Defend'
     versioning: 'stack'
@@ -335,14 +343,15 @@ products:
     versioning: 'stack'
 
   # Products shipped via the DRA pipeline, not yet in the public docs site.
-  # Private repos (ems-server, endpoint-dev, cloud-defend, prodfiler) require
-  # a Vault-provisioned token to fetch changelog.yml; set release-notes: dra
-  # once catalog-info PR #4653 is merged and the Vault role is in place.
+  # ems-server, endpoint-dev, and prodfiler are private. The unified release
+  # notes preview reads them with the token from
+  # https://github.com/elastic/catalog-info/pull/4862. cloud-defend is not on
+  # the DRA bump list.
   cloud-defend:
     display: 'Elastic Cloud Defend'
     features:
       public-reference: false
-      release-notes: false  # private repo — needs Vault token
+      release-notes: false
   cloudbeat:
     display: 'Cloudbeat'
     features:
@@ -363,12 +372,12 @@ products:
     repository: 'ems-server'
     features:
       public-reference: false
-      release-notes: false  # private repo — needs Vault token
+      release-notes: dra
   endpoint-dev:
     display: 'Endpoint Dev'
     features:
       public-reference: false
-      release-notes: false  # private repo — needs Vault token
+      release-notes: dra
   ml-cpp:
     display: 'Machine Learning C++'
     features:
@@ -378,4 +387,4 @@ products:
     display: 'Elastic Universal Profiling'
     features:
       public-reference: false
-      release-notes: false  # private repo — needs Vault token
+      release-notes: dra

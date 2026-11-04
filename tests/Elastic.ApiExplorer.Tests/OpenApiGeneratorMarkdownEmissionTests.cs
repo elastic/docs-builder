@@ -217,7 +217,7 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 			context,
 			PassthroughMarkdownRenderer.Instance,
 			versionIndexClient,
-			CreateSequentialReader(await LoadSpec(SearchVariantsSpec))
+			CreateSequentialReader(await TestSpecs.LoadSpecAsync(SearchVariantsSpec))
 		);
 
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
@@ -247,16 +247,6 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 		  "tags": [ { "name": "search" } ]
 		}
 		""";
-
-	private static async Task<OpenApiDocument> LoadSpec(string json)
-	{
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-		var result = await OpenApiDocument.LoadAsync(
-			stream,
-			settings: new Microsoft.OpenApi.Reader.OpenApiReaderSettings { LeaveStreamOpen = false }
-		);
-		return result.Document!;
-	}
 
 	private static BuildContext CreateGenerateContext(string outputRoot)
 	{
@@ -350,10 +340,4 @@ public class OpenApiGeneratorMarkdownEmissionTests(ApiExplorerFixture fixture)
 				)
 			};
 		});
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

@@ -1,0 +1,63 @@
+.tab-set {
+	display: flex;
+	flex-wrap: wrap;
+	margin-block: var(--space-5);
+	border: var(--border-width) solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+}
+
+/* Radios stay in the DOM for keyboard and form semantics but are visually hidden. */
+.tab-set__input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.tab-set__tab {
+	order: 1;
+	margin-bottom: -1px;
+	padding: var(--space-3) var(--space-4);
+	border-bottom: 3px solid transparent;
+	color: var(--color-text-muted);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	cursor: pointer;
+	transition:
+		color var(--duration-fast) var(--ease-standard),
+		border-color var(--duration-fast) var(--ease-standard);
+}
+
+.tab-set__tab:hover {
+	color: var(--color-heading);
+}
+
+.tab-set__panel {
+	display: none;
+	order: 2;
+	width: 100%;
+	padding: var(--space-4);
+	border-top: var(--border-width) solid var(--color-border);
+}
+
+.tab-set__input:checked + .tab-set__tab {
+	border-bottom-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+.tab-set__input:checked + .tab-set__tab + .tab-set__panel {
+	display: block;
+}
+
+.tab-set__input:focus-visible + .tab-set__tab {
+	outline: 3px solid var(--color-focus-ring);
+	outline-offset: -3px;
+}
+
+.tab-set__panel > :first-child {
+	margin-top: 0;
+}
+
+.tab-set__panel > :last-child {
+	margin-bottom: 0;
+}

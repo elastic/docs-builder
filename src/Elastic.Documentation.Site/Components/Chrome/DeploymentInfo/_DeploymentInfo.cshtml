@@ -1,0 +1,40 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Chrome.DeploymentInfo.DeploymentInfoModel>
+@* A native disclosure, so it opens on click and keyboard without script; script adds opening on hover for a mouse. *@
+<details class="deployment" data-menu data-hover-menu>
+	<summary class="deployment__trigger" aria-label="Deployment info for branch @Model.Branch@(Model.Commit is { } c ? $", commit {c}" : "")">
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "branch", Size = IconSize.Small }))
+		<span class="deployment__branch">@Model.Branch</span>
+		@if (Model.Commit is { } commit)
+		{
+			@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "commit", Size = IconSize.Small }))
+			<span class="deployment__commit">@commit</span>
+		}
+	</summary>
+	<div class="deployment__panel">
+		<p class="deployment__title">Deployment info</p>
+		<p class="deployment__subtitle">@Model.Subtitle</p>
+		<ul class="deployment__rows">
+			@foreach (var row in Model.Rows)
+			{
+				<li>
+					@if (row.Href is { } href)
+					{
+						<a class="deployment__row" href="@href" target="_blank" rel="noopener noreferrer">
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = row.Icon, Size = IconSize.Small }))
+							<span class="deployment__label">@row.Label</span>
+							<span class="deployment__value">@row.Value</span>
+						</a>
+					}
+					else
+					{
+						<span class="deployment__row">
+							@await RenderPartialAsync(_Icon.Create(new IconModel { Name = row.Icon, Size = IconSize.Small }))
+							<span class="deployment__label">@row.Label</span>
+							<span class="deployment__value">@row.Value</span>
+						</span>
+					}
+				</li>
+			}
+		</ul>
+	</div>
+</details>

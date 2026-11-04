@@ -28,6 +28,8 @@ public class FeatureFlags(Dictionary<string, bool> initFeatureFlags)
 
 	public string? WebsiteSearchScriptUrl { get; set; }
 
+	public string? WafIntegrationUrl { get; set; }
+
 	public bool AirGappedEnabled { get => IsEnabled("air-gapped"); set => _featureFlags["air-gapped"] = value; }
 
 	public bool DiagnosticsPanelEnabled { get => IsEnabled("diagnostics-panel"); set => _featureFlags["diagnostics-panel"] = value; }

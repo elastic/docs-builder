@@ -23,13 +23,21 @@ public record ApiTag(
 ) : IApiGroupingModel
 {
 	public object? CreatePageModel(ApiRenderContext context) =>
-		ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation, context.BuildContext.VersionsConfiguration);
+		ApiOverviewBuilder.BuildTagChildren(
+			context.CurrentNavigation,
+			context.BuildContext.VersionsConfiguration,
+			context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+		);
 
 	/// <inheritdoc />
 	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation, context.BuildContext.VersionsConfiguration);
+			?? ApiOverviewBuilder.BuildTagChildren(
+				context.CurrentNavigation,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		var slice = TagLandingView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
@@ -41,7 +49,11 @@ public record ApiTag(
 	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, object? pageModel, Cancel ctx = default)
 	{
 		var overviewRows = pageModel as IReadOnlyList<ApiOverviewRow>
-			?? ApiOverviewBuilder.BuildTagChildren(context.CurrentNavigation, context.BuildContext.VersionsConfiguration);
+			?? ApiOverviewBuilder.BuildTagChildren(
+				context.CurrentNavigation,
+				context.BuildContext.VersionsConfiguration,
+				context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			);
 		var viewModel = new TagLandingViewModel(context) { Tag = this, OverviewRows = overviewRows };
 		return Task.FromResult<string?>(LandingCommonMark.Tag(viewModel));
 	}

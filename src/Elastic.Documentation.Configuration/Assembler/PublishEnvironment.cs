@@ -36,6 +36,9 @@ public record PublishEnvironment
 	[YamlPropertyName("website_search_url")]
 	public string? WebsiteSearchScriptUrl { get; set; }
 
+	[YamlPropertyName("waf_integration_url")]
+	public string? WafIntegrationUrl { get; set; }
+
 	/// <summary>
 	/// Returns a normalized, env-var-overridable <see cref="FeatureFlags"/> view of <see cref="FeatureFlags"/>.
 	/// Use this rather than accessing the raw dictionary so that key normalization and env-var overrides
