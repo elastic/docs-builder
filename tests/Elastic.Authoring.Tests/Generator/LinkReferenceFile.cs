@@ -6,6 +6,8 @@ namespace Elastic.Authoring.Tests.Generator;
 
 public class TwoPagesWithAnchorsEndUpInArtifact : GeneratorTest
 {
+	protected override SetupOptions Options => SetupOptions.WithRedirectFixtures;
+
 	protected override IReadOnlyCollection<TestFile> Files =>
 		[
 			Index(

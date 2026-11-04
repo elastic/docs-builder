@@ -187,6 +187,10 @@ internal static class HtmlAssertions
 
 	private static void CreateDiff(string expected, string actual)
 	{
+		// Identical pretty-printed HTML has no structural differences, so skip the AngleSharp comparison for the usual passing case.
+		if (string.Equals(expected, actual, StringComparison.Ordinal))
+			return;
+
 		var diffs = DiffBuilder.Compare(expected).WithTest(actual).Build();
 
 		var deepComparison = HtmlDiffString(diffs);
