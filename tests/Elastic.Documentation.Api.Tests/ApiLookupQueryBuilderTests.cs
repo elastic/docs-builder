@@ -110,10 +110,44 @@ public class ApiLookupQueryBuilderTests
 		var boosts = key
 			.GetProperty("queries")
 			.EnumerateArray()
+			.Where(endpoint => endpoint.TryGetProperty("dis_max", out _))
 			.SelectMany(endpoint => endpoint.GetProperty("dis_max").GetProperty("queries").EnumerateArray())
 			.Select(option => option.GetProperty("constant_score").GetProperty("boost").GetSingle());
 		boosts.Should().AllSatisfy(b => b.Should().Be(6.0f));
 		key.GetRawText().Should().Contain("\"_search\"");
+	}
+
+	[Test]
+	[Arguments("snapshot")]
+	[Arguments("_snapshot")]
+	[Arguments("Snapshot")]
+	public void Build_PlainWord_KeyOptionCoversTheRoutesUnderTheEndpointAtFiveAndAHalf(string word)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(word));
+		var queries = OptionsByName(TokenClause(json, 0))["key_0"].GetProperty("queries").EnumerateArray().ToArray();
+
+		queries.Count(q => q.TryGetProperty("dis_max", out _)).Should().Be(word.StartsWith('_') ? 1 : 2);
+		var ns = queries.Single(q => q.TryGetProperty("constant_score", out _)).GetProperty("constant_score");
+		ns.GetProperty("boost").GetSingle().Should().Be(5.5f);
+		ns
+			.GetProperty("filter")
+			.GetProperty("prefix")
+			.GetProperty("api.endpoints")
+			.GetProperty("value")
+			.GetString()
+			.Should()
+			.Be("_snapshot/");
+		ns.TryGetProperty("_name", out _).Should().BeFalse();
+	}
+
+	[Test]
+	[Arguments("/_snapshot")]
+	[Arguments("_snapshot/_status")]
+	public void Build_PathOrSlashedWord_KeyOptionHasNoNamespacePrefix(string word)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(word));
+
+		json.RootElement.GetRawText().Should().NotContain("\"prefix\":{\"api.endpoints\"");
 	}
 
 	[Test]
@@ -279,6 +313,16 @@ public class ApiLookupQueryBuilderTests
 	public void ApiLookupWeights_EndpointAndFieldBeatsWholeTitleOperationAndTitleWords() =>
 		(ApiLookupWeights.EndpointKey + ApiLookupWeights.FieldName).Should().BeGreaterThan(
 			ApiLookupWeights.WholeTitle + ApiLookupWeights.OperationWord + ApiLookupWeights.TitleWord
+		);
+
+	[Test]
+	public void ApiLookupWeights_EndpointKeyBeatsNamespaceKey() =>
+		ApiLookupWeights.EndpointKey.Should().BeGreaterThan(ApiLookupWeights.NamespaceKey);
+
+	[Test]
+	public void ApiLookupWeights_NamespaceAndOperationWordBeatEndpointAndGroupWord() =>
+		(ApiLookupWeights.NamespaceKey + ApiLookupWeights.OperationWord).Should().BeGreaterThan(
+			ApiLookupWeights.EndpointKey + ApiLookupWeights.GroupWord
 		);
 
 	[Test]

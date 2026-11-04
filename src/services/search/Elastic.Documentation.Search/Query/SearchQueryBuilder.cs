@@ -375,13 +375,17 @@ public static class SearchQueryBuilder
 	/// <c>search</c> is scored as the endpoint <c>_search</c> too. Only meant for API-filtered lookups: in the
 	/// unfiltered docs search it would put <c>/_aliases</c> above the "Aliases" docs page.
 	/// </summary>
-	public static Query? BuildBareWordEndpointQuery(string searchQuery, float weight = EndpointBoost)
+	public static Query? BuildBareWordEndpointQuery(string searchQuery, float weight = EndpointBoost) =>
+		!searchQuery.Trim().StartsWith('_') && EndpointName(searchQuery) is { } name ? BuildApiEndpointQuery(name, weight) : null;
+
+	/// <summary>The endpoint name a single word stands for: <c>search</c> and <c>_search</c> both name <c>_search</c>.</summary>
+	public static string? EndpointName(string searchQuery)
 	{
-		var word = searchQuery.Trim();
-		if (word.Length == 0 || word.StartsWith('_') || word.Any(c => c is '/' or ' ' or '{'))
+		var word = searchQuery.Trim().ToLowerInvariant();
+		if (word.Length == 0 || word.Any(c => c is '/' or ' ' or '{'))
 			return null;
 
-		return BuildApiEndpointQuery("_" + word, weight);
+		return word.StartsWith('_') ? word : "_" + word;
 	}
 
 	/// <summary>

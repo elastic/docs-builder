@@ -121,12 +121,28 @@ public static class ApiLookupQueryBuilder
 		Query?[] endpoints =
 		[
 			SearchQueryBuilder.BuildApiEndpointQuery(text, ApiLookupWeights.EndpointKey),
-			SearchQueryBuilder.BuildBareWordEndpointQuery(text, ApiLookupWeights.EndpointKey)
+			SearchQueryBuilder.BuildBareWordEndpointQuery(text, ApiLookupWeights.EndpointKey),
+			NamespaceKeyQuery(text)
 		];
 		var queries = endpoints.OfType<Query>().ToList();
 		if (queries.Count == 0)
 			return null;
 		return new DisMaxQuery { Queries = queries, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
+	}
+
+	/// <summary>
+	/// A word also names the routes under its endpoint, so <c>snapshot</c> covers <c>_snapshot/*/*/_restore</c>, just below
+	/// the endpoint itself.
+	/// </summary>
+	private static Query? NamespaceKeyQuery(string text)
+	{
+		if (SearchQueryBuilder.EndpointName(text) is not { } name)
+			return null;
+		return new ConstantScoreQuery
+		{
+			Filter = new PrefixQuery { Field = QueryFieldNames.ApiEndpoints, Value = name + "/" },
+			Boost = ApiLookupWeights.NamespaceKey
+		};
 	}
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>
