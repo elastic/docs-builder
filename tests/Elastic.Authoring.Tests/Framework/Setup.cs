@@ -52,7 +52,17 @@ public sealed record SetupOptions
 	/// </summary>
 	public bool NavigationPreview { get; init; }
 
+	/// <summary>
+	/// Adds the redirect fixtures to the documentation set: the merged <c>docs/_redirects.yml</c> and <c>docs-tests/redirects.yml</c> rules,
+	/// a stub page for every redirect target that exists under the real <c>docs/</c>, and the <c>testing/redirects</c> pages.
+	/// Off by default: it makes every scenario build about 49 pages instead of the one or two a test asserts on.
+	/// Only the cross-link redirect tests and the <c>links.json</c> test need it.
+	/// </summary>
+	public bool IncludeRedirectFixtures { get; init; }
+
 	public static SetupOptions Empty { get; } = new();
+
+	public static SetupOptions WithRedirectFixtures { get; } = new() { IncludeRedirectFixtures = true };
 }
 
 /// <summary>
@@ -112,6 +122,10 @@ public sealed class Scenario
 	/// </summary>
 	public async Task DoesNotConvertToContainingHtml(string expected) =>
 		HtmlAssertions.DoesNotConvertToContainingHtml(expected, await BuildAsync());
+
+	/// <summary>The relative paths of every page the scenario rendered, sorted. Used to guard the size of a scenario.</summary>
+	public async Task<string[]> PagesAsync() =>
+		[.. (await BuildAsync()).MarkdownResults.Select(r => r.File.RelativePath).Order(StringComparer.Ordinal)];
 
 	/// <summary>The complete HTML of <c>index.md</c>, for assertions about where things appear relative to each other.</summary>
 	public async Task<string> IndexHtmlAsync() => HtmlAssertions.IndexHtml(await BuildAsync());
@@ -221,13 +235,15 @@ public static class Setup
 	/// Wraps <paramref name="markdown"/> in a document with an H1 and places it in <c>index.md</c>.
 	/// Mirrors <c>Setup.Markdown</c>.
 	/// </summary>
-	public static Scenario Markdown([LanguageInjection("markdown")] string markdown) => Document($"# Test Document\n{markdown}\n");
+	public static Scenario Markdown([LanguageInjection("markdown")] string markdown, SetupOptions? options = null) =>
+		Document($"# Test Document\n{markdown}\n", options);
 
 	/// <summary>
 	/// Places <paramref name="markdown"/> verbatim in <c>index.md</c>.
 	/// Mirrors <c>Setup.Document</c>.
 	/// </summary>
-	public static Scenario Document([LanguageInjection("markdown")] string markdown) => Generate([TestFile.Index(markdown)]);
+	public static Scenario Document([LanguageInjection("markdown")] string markdown, SetupOptions? options = null) =>
+		Generate(options ?? SetupOptions.Empty, [TestFile.Index(markdown)]);
 
 	/// <summary>
 	/// Builds a multi-file documentation set.
@@ -288,7 +304,18 @@ public abstract class MarkdownTest : AuthoringTest
 	[LanguageInjection("markdown")]
 	protected abstract string Markdown { get; }
 
-	protected override Scenario Scenario => Setup.Markdown(Markdown);
+	protected virtual SetupOptions Options => SetupOptions.Empty;
+
+	protected override Scenario Scenario => Setup.Markdown(Markdown, Options);
+}
+
+/// <summary>
+/// <see cref="MarkdownTest"/> for tests that resolve cross links through the redirect rules,
+/// which need <see cref="SetupOptions.IncludeRedirectFixtures"/>.
+/// </summary>
+public abstract class RedirectMarkdownTest : MarkdownTest
+{
+	protected override SetupOptions Options => SetupOptions.WithRedirectFixtures;
 }
 
 /// <summary>
@@ -300,7 +327,9 @@ public abstract class DocumentTest : AuthoringTest
 	[LanguageInjection("markdown")]
 	protected abstract string Document { get; }
 
-	protected override Scenario Scenario => Setup.Document(Document);
+	protected virtual SetupOptions Options => SetupOptions.Empty;
+
+	protected override Scenario Scenario => Setup.Document(Document, Options);
 }
 
 /// <summary>
