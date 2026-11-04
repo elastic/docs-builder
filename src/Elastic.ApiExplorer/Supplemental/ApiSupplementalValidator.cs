@@ -162,8 +162,9 @@ internal static class ApiSupplementalValidator
 	private static HashSet<string> RequestBodyFieldNames(SchemaAnalyzer analyzer, OpenApiOperation operation)
 	{
 		var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-		var schema = operation.RequestBody?.Content?.FirstOrDefault().Value?.Schema;
-		CollectFieldNames(analyzer, schema, names, []);
+		// Every content type is rendered and takes the overrides, so a field of any of them is a valid key.
+		foreach (var media in operation.RequestBody?.Content?.Values ?? [])
+			CollectFieldNames(analyzer, media?.Schema, names, []);
 		return names;
 	}
 

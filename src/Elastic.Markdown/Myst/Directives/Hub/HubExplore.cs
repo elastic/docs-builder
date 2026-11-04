@@ -23,14 +23,25 @@ internal static class HubExplore
 		return null;
 	}
 
-	/// <summary>The first accordion in an Explore stack is expanded by default.</summary>
-	public static bool IsFirstCardGroup(ExploreBlock explore, CardGroupBlock card)
+	/// <summary>
+	/// Whether an accordion renders open on load. The <c>:mode:</c> option of the Explore stack decides:
+	/// <c>collapsed</c> (default) opens none, <c>first</c> opens the first, <c>expanded</c> opens all.
+	/// </summary>
+	public static bool IsOpenByDefault(ExploreBlock explore, CardGroupBlock card)
 	{
-		foreach (var child in explore)
+		switch (explore.Mode)
 		{
-			if (child is CardGroupBlock candidate)
-				return ReferenceEquals(candidate, card);
+			case ExploreMode.Expanded:
+				return true;
+			case ExploreMode.First:
+				foreach (var child in explore)
+				{
+					if (child is CardGroupBlock candidate)
+						return ReferenceEquals(candidate, card);
+				}
+				return false;
+			default:
+				return false;
 		}
-		return false;
 	}
 }

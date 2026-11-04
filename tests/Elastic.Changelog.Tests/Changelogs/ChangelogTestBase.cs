@@ -26,6 +26,9 @@ public abstract class ChangelogTestBase : IDisposable
 	protected TestDiagnosticsCollector Collector { get; }
 	protected ILoggerFactory LoggerFactory { get; }
 
+	/// <summary>What the services under test logged, including the lines of their decision logs.</summary>
+	protected IReadOnlyCollection<string> Logged => ((TestLoggerFactory)LoggerFactory).Messages;
+
 	protected ChangelogTestBase()
 	{
 		var mockFileSystem = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
@@ -135,7 +138,7 @@ public abstract class ChangelogTestBase : IDisposable
 		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
 	}
 
-	public void Dispose()
+	public virtual void Dispose()
 	{
 		Collector.DisposeAsync().AsTask().GetAwaiter().GetResult();
 		LoggerFactory.Dispose();

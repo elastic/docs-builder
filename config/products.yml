@@ -35,12 +35,16 @@ products:
   apm-server:
     display: 'APM Server'
     versioning: 'stack'
+    features:
+      release-notes: dra
   auditbeat:
     display: 'Auditbeat'
     versioning: 'stack'
   beats:
     display: 'Beats'
     versioning: 'stack'
+    features:
+      release-notes: dra
   cloud-control-ecctl:
     display: 'Elastic Cloud Control'
     versioning: 'ecctl'
@@ -70,7 +74,7 @@ products:
     versioning: 'stack'
     features:
       public-reference: false
-      release-notes: false
+      release-notes: dra
   curator:
     display: 'Elasticsearch Curator'
   docs-builder:
@@ -85,7 +89,7 @@ products:
     display: 'Release Notes Playground (Changelogs)'
     features:
       public-reference: false
-      release-notes: prestage
+      release-notes: on-release
   docs-playground-release-notes-tagged:
     display: 'Release Notes Playground (Tagged)'
     features:
@@ -165,6 +169,17 @@ products:
   elastic-agent:
     display: 'Elastic Agent'
     versioning: 'stack'
+    dra_artifact: 'elastic-agent-core'
+    features:
+      release-notes: dra
+  elastic-agent-package:
+    display: 'Elastic Agent Package'
+    versioning: 'stack'
+    repository: 'elastic-agent'
+    dra_artifact: 'elastic-agent-package'
+    features:
+      public-reference: false
+      release-notes: dra
   elastic-defend:
     display: 'Elastic Defend'
     versioning: 'stack'
@@ -198,6 +213,8 @@ products:
   elasticsearch:
     display: 'Elasticsearch'
     versioning: 'stack'
+    features:
+      release-notes: dra
   elasticsearch-client:
     display: 'Elasticsearch Client'
     versioning: 'stack'
@@ -237,6 +254,8 @@ products:
     display: 'Elasticsearch for Apache Hadoop'
     repository: 'elasticsearch-hadoop'
     versioning: 'stack'
+    features:
+      release-notes: dra
   enterprise-search:
     display: 'Elastic Enterprise Search'
     features:
@@ -254,6 +273,8 @@ products:
   fleet-server:
     display: 'Fleet Server'
     versioning: 'stack'
+    features:
+      release-notes: dra
   heartbeat:
     display: 'Heartbeat'
     versioning: 'stack'
@@ -263,9 +284,13 @@ products:
   kibana:
     display: 'Kibana'
     versioning: 'stack'
+    features:
+      release-notes: dra
   logstash:
     display: 'Logstash'
     versioning: 'stack'
+    features:
+      release-notes: dra
   machine-learning:
     display: 'Machine Learning'
     versioning: 'stack'
@@ -316,3 +341,50 @@ products:
   winlogbeat:
     display: 'Winlogbeat'
     versioning: 'stack'
+
+  # Products shipped via the DRA pipeline, not yet in the public docs site.
+  # ems-server, endpoint-dev, and prodfiler are private. The unified release
+  # notes preview reads them with the token from
+  # https://github.com/elastic/catalog-info/pull/4862. cloud-defend is not on
+  # the DRA bump list.
+  cloud-defend:
+    display: 'Elastic Cloud Defend'
+    features:
+      public-reference: false
+      release-notes: false
+  cloudbeat:
+    display: 'Cloudbeat'
+    features:
+      public-reference: false
+      release-notes: dra
+  elastic-stack-installers:
+    display: 'Elastic Stack Installers'
+    features:
+      public-reference: false
+      release-notes: dra
+  elasticsearch-sql-odbc:
+    display: 'Elasticsearch SQL ODBC Driver'
+    features:
+      public-reference: false
+      release-notes: dra
+  ems-server:
+    display: 'Elastic Maps Server'
+    repository: 'ems-server'
+    features:
+      public-reference: false
+      release-notes: dra
+  endpoint-dev:
+    display: 'Endpoint Dev'
+    features:
+      public-reference: false
+      release-notes: dra
+  ml-cpp:
+    display: 'Machine Learning C++'
+    features:
+      public-reference: false
+      release-notes: dra
+  prodfiler:
+    display: 'Elastic Universal Profiling'
+    features:
+      public-reference: false
+      release-notes: dra

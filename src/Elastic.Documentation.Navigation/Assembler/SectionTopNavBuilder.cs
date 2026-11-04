@@ -11,7 +11,8 @@ namespace Elastic.Documentation.Navigation.Assembler;
 /// <c>navigation_preview.yml</c> when the <c>navigation-preview</c> feature flag is on.
 /// Supports three <c>section:</c> shapes:
 /// <list type="bullet">
-/// <item><c>external:</c> — external-link tab, never active.</item>
+/// <item><c>external:</c> — external-link tab, never active. A path starting with <c>/</c> is a link inside the site instead,
+///   active on pages under it.</item>
 /// <item><c>dropdown:</c> — a panel of links, never active (no tree membership).</item>
 /// <item><c>children:</c> — maps to a <see cref="SectionNavigation"/> tree node; active when the
 ///   current page's NavigationRoot.Id equals the section's Id.</item>
@@ -40,7 +41,10 @@ public static class SectionTopNavBuilder
 			{
 				if (section.IsExternal)
 				{
-					items.Add(new TopNavLinkItem(section.Title, section.ExternalUrl!, IsExternal: true));
+					// A root-relative path points inside the site, so it takes the site prefix and opens in the same tab.
+					var isSitePath = section.ExternalUrl!.StartsWith('/');
+					var url = isSitePath ? navigation.Url.TrimEnd('/') + "/" + section.ExternalUrl.TrimStart('/') : section.ExternalUrl;
+					items.Add(new TopNavLinkItem(section.Title, url, IsExternal: !isSitePath));
 				}
 				else if (section.IsDropdown)
 				{

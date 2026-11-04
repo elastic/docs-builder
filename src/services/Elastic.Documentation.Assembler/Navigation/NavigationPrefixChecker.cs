@@ -43,7 +43,7 @@ public class NavigationPrefixChecker
 	{
 		var navigationFileInfo = context.ConfigurationFileProvider.NavigationFile;
 		var navigationYaml = context.ReadFileSystem.File.ReadAllText(navigationFileInfo.FullName);
-		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml);
+		var siteNavigationFile = SiteNavigationFile.Deserialize(navigationYaml, context.Collector, navigationFileInfo.FullName);
 
 		_phantoms = SiteNavigationFile.GetPhantomPrefixes(siteNavigationFile);
 

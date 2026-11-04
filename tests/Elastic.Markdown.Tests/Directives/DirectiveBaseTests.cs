@@ -151,9 +151,9 @@ public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 			.ToList();
 	}
 
-	public ValueTask DisposeAsync()
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		return ValueTask.CompletedTask;
+		await Collector.DisposeAsync();
 	}
 }

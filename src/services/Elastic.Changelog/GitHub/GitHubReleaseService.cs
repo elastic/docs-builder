@@ -614,7 +614,6 @@ public partial class GitHubReleaseService(
 				}
 				else if (aIsNum)
 					return -1; // numeric < alphanumeric
-
 				else if (bIsNum)
 					return 1;
 				else

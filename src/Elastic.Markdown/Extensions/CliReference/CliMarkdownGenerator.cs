@@ -717,13 +717,12 @@ internal static partial class CliMarkdownGenerator
 			"number" => "number",
 			"boolean" => string.Empty,
 			"enum" => "enum",
-			"array" =>
-				p.ElementType switch
-				{
-					"enum" => "enum[]",
-					"integer" => "int[]",
-					_ => "string[]"
-				},
+			"array" => p.ElementType switch
+			{
+				"enum" => "enum[]",
+				"integer" => "int[]",
+				_ => "string[]"
+			},
 			_ => FormatKindV1(type)
 		};
 	}
@@ -740,13 +739,12 @@ internal static partial class CliMarkdownGenerator
 			"Collection<string>" => "string[]",
 			"Collection<int>" or "Collection<Int32>" => "int[]",
 			"Enum" => right.Contains('.') ? right[(right.LastIndexOf('.') + 1)..] : right,
-			"Primitive" =>
-				right switch
-				{
-					"string" or "string?" => "string",
-					"int" or "int?" or "Int32" or "Int32?" => "int",
-					_ => string.Empty
-				},
+			"Primitive" => right switch
+			{
+				"string" or "string?" => "string",
+				"int" or "int?" or "Int32" or "Int32?" => "int",
+				_ => string.Empty
+			},
 			"FileInfo" => "path",
 			"DirectoryInfo" => "path",
 			_ when left.StartsWith("Collection<") => left["Collection<".Length..].TrimEnd('>') + "[]",
