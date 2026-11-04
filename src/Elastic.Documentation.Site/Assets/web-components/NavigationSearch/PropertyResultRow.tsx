@@ -8,6 +8,7 @@ import {
 } from './apiPropertyResults'
 import {
     EuiHighlight,
+    EuiIcon,
     useEuiTheme,
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
@@ -64,13 +65,11 @@ export const PropertyResultRow = ({
             data-keyboard-navigating={isKeyboardNavigating ? 'true' : 'false'}
             css={css`
                 display: flex;
-                position: relative;
                 align-items: center;
                 gap: ${euiTheme.size.s};
                 box-sizing: border-box;
                 min-height: ${euiTheme.size.xl};
                 padding: ${euiTheme.size.s} ${euiTheme.size.base};
-                padding-left: calc(${euiTheme.size.xl} + ${euiTheme.size.base});
                 /* the Enter badge lines up with the operation row's, which insets it by size.l */
                 padding-right: ${euiTheme.size.l};
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
@@ -81,21 +80,23 @@ export const PropertyResultRow = ({
                 font-size: ${euiTheme.size.m};
                 line-height: calc(${euiTheme.size.base} + ${euiTheme.size.xs});
                 text-decoration: none;
-                background: ${isSelected ? euiTheme.colors.backgroundBaseSubdued : 'transparent'};
-                &::before {
-                    content: '';
-                    position: absolute;
-                    left: ${euiTheme.size.xl};
-                    top: 0;
-                    bottom: 0;
-                    border-left: 1px solid ${euiTheme.colors.borderBaseSubdued};
-                }
+                background: ${isSelected ? euiTheme.colors.backgroundBaseHighlighted : euiTheme.colors.backgroundBaseSubdued};
                 mark {
                     background-color: var(--search-highlight-tint);
                     color: ${euiTheme.colors.textParagraph};
                     font-weight: ${euiTheme.font.weight.bold};
                     font-size: inherit;
                     padding: 0;
+                }
+                .property-icon {
+                    display: grid;
+                    flex: none;
+                    place-items: center;
+                    align-self: flex-start;
+                    width: ${euiTheme.size.l};
+                    height: ${euiTheme.size.l};
+                    margin-top: 1px;
+                    color: ${isSelected ? euiTheme.colors.primary : euiTheme.colors.textSubdued};
                 }
                 .property-body {
                     display: flex;
@@ -175,6 +176,9 @@ export const PropertyResultRow = ({
                 }
             `}
         >
+            <span className="property-icon" aria-hidden="true">
+                <EuiIcon type="tokenObject" size="s" />
+            </span>
             <span className="property-body">
                 <span className="property-path-line">
                     <code

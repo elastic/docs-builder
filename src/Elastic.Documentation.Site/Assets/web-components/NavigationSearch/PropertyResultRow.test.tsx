@@ -165,3 +165,13 @@ it('renders no children line for a leaf', () => {
         screen.getByRole('link').querySelector('.property-children')
     ).toBeNull()
 })
+
+it('renders the field icon in the gutter', () => {
+    renderRow('knn', 'retriever.knn')
+    const row = screen.getByRole('link')
+    const icon = row.querySelector('.property-icon')
+    expect(icon).toHaveAttribute('aria-hidden', 'true')
+    expect(
+        Array.from(row.children, (child) => child.className).slice(0, 2)
+    ).toEqual(['property-icon', 'property-body'])
+})

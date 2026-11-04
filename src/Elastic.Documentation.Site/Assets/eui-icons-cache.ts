@@ -43,6 +43,7 @@ import { icon as EuiIconStop } from '@elastic/eui/es/components/icon/assets/stop
 import { icon as EuiIconSun } from '@elastic/eui/es/components/icon/assets/sun'
 import { icon as EuiIconThumbDown } from '@elastic/eui/es/components/icon/assets/thumb_down'
 import { icon as EuiIconThumbUp } from '@elastic/eui/es/components/icon/assets/thumb_up'
+import { icon as EuiIconTokenObject } from '@elastic/eui/es/components/icon/assets/token_object'
 import { icon as EuiIconTrash } from '@elastic/eui/es/components/icon/assets/trash'
 import { icon as EuiIconUser } from '@elastic/eui/es/components/icon/assets/user'
 import { icon as EuiIconWarning } from '@elastic/eui/es/components/icon/assets/warning'
@@ -98,6 +99,7 @@ const iconMapping = {
     branch: EuiIconBranch,
     filter: EuiIconFilter,
     sun: EuiIconSun,
+    tokenObject: EuiIconTokenObject,
 }
 
 appendIconComponentCache(iconMapping)
