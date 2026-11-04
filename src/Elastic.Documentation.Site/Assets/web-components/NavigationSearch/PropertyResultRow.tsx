@@ -80,7 +80,7 @@ export const PropertyResultRow = ({
                 font-size: ${euiTheme.size.m};
                 line-height: calc(${euiTheme.size.base} + ${euiTheme.size.xs});
                 text-decoration: none;
-                background: ${isSelected ? euiTheme.colors.backgroundBaseHighlighted : euiTheme.colors.backgroundBaseSubdued};
+                background: ${isSelected ? euiTheme.colors.backgroundBaseSubdued : 'transparent'};
                 mark {
                     background-color: var(--search-highlight-tint);
                     color: ${euiTheme.colors.textParagraph};
@@ -177,7 +177,7 @@ export const PropertyResultRow = ({
             `}
         >
             <span className="property-icon" aria-hidden="true">
-                <EuiIcon type="tokenObject" size="s" />
+                <EuiIcon type="tokenObject" size="m" />
             </span>
             <span className="property-body">
                 <span className="property-path-line">
