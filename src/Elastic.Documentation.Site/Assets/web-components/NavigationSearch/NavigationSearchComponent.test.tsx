@@ -220,16 +220,7 @@ describe('NavigationSearchWrapper result navigation', () => {
         await waitFor(() => expect(row).not.toBeVisible())
     })
 
-    it('closes and blurs when a shift-click navigates through htmx', async () => {
-        const { input, row } = await openResults()
-
-        fireEvent.click(row, { shiftKey: true })
-
-        expect(input).not.toHaveFocus()
-        await waitFor(() => expect(row).not.toBeVisible())
-    })
-
-    it.each([['metaKey'], ['ctrlKey']])(
+    it.each([['metaKey'], ['ctrlKey'], ['shiftKey']])(
         'stays open and focused when a %s click opens the result elsewhere',
         async (modifier) => {
             const { input, row } = await openResults()
