@@ -83,6 +83,50 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	[Arguments("GET /_search track_total")]
+	[Arguments("/_search track_total")]
+	public void ApplyApiPropertyQuery_DocsWideMarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
+	{
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null));
+		var fieldBranch = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
+		fieldBranch
+			.GetProperty("must")
+			.GetProperty("nested")
+			.GetProperty("query")
+			.GetRawText()
+			.Should()
+			.Contain("\"value\":\"track_total\"");
+		var endpoint = fieldBranch.GetProperty("should").GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
+		endpoint.GetProperty("filter").GetProperty("terms").GetProperty("api.endpoints")[0].GetString().Should().Be("_search");
+	}
+
+	[Test]
+	public void ApplyApiPropertyQuery_DocsWideTwoIdentifierWords_TriesBothReadingsWithUniqueInnerHitNames()
+	{
+		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "knn_field track_total", null));
+		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
+		readings.GetArrayLength().Should().Be(2);
+		var trackTotal = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"track_total\"")).GetProperty("bool");
+		trackTotal.GetProperty("must")[1].GetRawText().Should().Contain("\"api.endpoints\":[\"_knn_field\"");
+		var readingNames = readings.EnumerateArray().Select(r => r.GetProperty("bool").GetProperty("_name").GetString()).ToArray();
+		var innerHitNames = readings
+			.EnumerateArray()
+			.Select(
+				r => r
+					.GetProperty("bool")
+					.GetProperty("must")[0]
+					.GetProperty("nested")
+					.GetProperty("inner_hits")
+					.GetProperty("name")
+					.GetString()
+			)
+			.ToArray();
+		readingNames.Should().OnlyHaveUniqueItems();
+		innerHitNames.Should().OnlyHaveUniqueItems();
+		readingNames.Concat(innerHitNames).Should().AllSatisfy(n => SearchQueryBuilder.IsApiPropertyHits(n).Should().BeTrue());
+	}
+
+	[Test]
 	public void ApplyApiPropertyQuery_DocsWide_HasNoChildrenLift()
 	{
 		var json = Client.RequestResponseSerializer.SerializeToString(
