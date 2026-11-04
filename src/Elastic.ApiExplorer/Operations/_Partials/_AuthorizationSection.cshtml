@@ -8,8 +8,8 @@
 @if (Model.Privileges.Count > 0)
 {
 	<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Required authorization", "required-authorization", Model.PrivilegeNames, Model.PrivilegeStyle)))
-		<div @ParamSectionHeader.BodyAttributes("required-authorization-list")>
+		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Required privileges", "required-privileges", Model.PrivilegeNames, Model.PrivilegeStyle)))
+		<div @ParamSectionHeader.BodyAttributes("required-privileges-list")>
 			<dl class="property-list api-privileges">
 				@foreach (var row in Model.Privileges)
 				{

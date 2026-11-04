@@ -20,7 +20,7 @@ public record AuthenticationSectionModel(
 	bool AlwaysTabs = false
 );
 
-/// <summary>Required privileges and credentials for the Required authorization and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
+/// <summary>Required privileges and credentials for the Required privileges and Authentication sections; <paramref name="RenderMarkdown"/> renders descriptions.</summary>
 public record AuthorizationSectionModel(
 	IReadOnlyList<AuthRequirement> Requirements,
 	IReadOnlyList<PrivilegeRow> Privileges,
@@ -38,6 +38,9 @@ public record AuthorizationSectionModel(
 			: Privileges.Any(static r => r.Join == "and") ? SummaryStyle.All : SummaryStyle.List;
 }
 
+/// <summary>One quick link of the bar above an operation's sections.</summary>
+public record SectionLink(string Label, string Anchor);
+
 public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context)
 {
 	public required ApiOperation Operation { get; init; }
@@ -52,6 +55,27 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 			markdown => RenderMarkdown(markdown),
 			Page.AuthBadge?.Kind == AuthBadgeKind.Optional
 		);
+
+	/// <summary>
+	/// The sections under the quick links bar, in page order. Required privileges is not one of them: it comes before the bar.
+	/// </summary>
+	public IReadOnlyList<SectionLink> SectionLinks
+	{
+		get
+		{
+			var links = new List<SectionLink>(
+				Page.ParameterSections.Select(static s => new SectionLink(ParameterLabel(s.Location), s.Header.Anchor))
+			);
+			if (Operation.Operation.RequestBody is not null)
+				links.Add(new SectionLink("Body", "request-body"));
+			if (Page.Responses.Count > 0)
+				links.Add(new SectionLink("Responses", "responses"));
+			return links;
+		}
+	}
+
+	private static string ParameterLabel(ParameterLocation location) =>
+		location == ParameterLocation.Header ? "Headers" : location.ToString();
 
 	/// <summary>Where the <c>auth</c> badge links: the Authentication page, or the endpoint's own section.</summary>
 	public string? AuthBadgeHref => Page.AuthBadge?.Target switch
@@ -77,7 +101,7 @@ public class OperationViewModel(ApiRenderContext context) : ApiViewModel(context
 		var tocItems = new List<TocItem> { new("Paths", "paths", 2) };
 
 		if (Page.RequiredPrivileges.Count > 0)
-			tocItems.Add(new TocItem("Required authorization", "required-authorization", 2));
+			tocItems.Add(new TocItem("Required privileges", "required-privileges", 2));
 
 		if (Page.AuthRequirements.Count > 0)
 			tocItems.Add(new TocItem("Authentication", "authentication", 2));
