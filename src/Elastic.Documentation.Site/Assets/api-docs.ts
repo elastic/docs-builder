@@ -8,6 +8,7 @@ import { initApiExamples, syncDescriptions } from './api-examples-carousel'
 import { fitParamSummaries } from './api-param-summary'
 import { initUnionChips, revealVariantsAround } from './api-union-chips'
 import { iconCheckEui, iconCopyEui } from './copybutton'
+import { initToc } from './ds/toc'
 import { prefersReducedMotion } from './motion'
 import { flashTooltip, initTooltips } from './tooltip'
 
@@ -115,15 +116,8 @@ function setDisclosureExpanded(
     if (expanded && d === RESPONSE_DISCLOSURE) onResponseOpened(container)
 }
 
-/** Responses behave as an accordion and keep the examples rail on the same status code. */
+/** Opening a response keeps the examples rail on the same status code. */
 function onResponseOpened(panel: HTMLElement): void {
-    panel
-        .closest('[data-api-responses]')
-        ?.querySelectorAll<HTMLElement>('.response-panel.expanded')
-        .forEach((other) => {
-            if (other !== panel)
-                setDisclosureExpanded(other, RESPONSE_DISCLOSURE, false)
-        })
     const status = panel.dataset.status
     if (!status) return
     document
@@ -319,6 +313,7 @@ function updateExamplesButtonVisibility(): void {
 }
 
 function initOperationView(): void {
+    initToc()
     // Bound once: htmx swaps the section, so the handler looks the elements up each time
     if (!examplesScrollBound) {
         examplesScrollBound = true
