@@ -26,7 +26,7 @@ try
 		.AddDocumentationOpenTelemetry(new OtelRegistration("docs-api") { Tracing = (_, t) => t.AddDocsApiTracing(), })
 		.HealthCheckBuilderExtensions();
 
-	// Only hardcode port 8080 when not running under Aspire/orchestration.
+	// Only hardcode port 8080 when not running under orchestration.
 	// Use builder.Configuration so both ASPNETCORE_* and DOTNET_* prefix variants are covered.
 	if (
 		string.IsNullOrEmpty(builder.Configuration["HTTP_PORTS"])

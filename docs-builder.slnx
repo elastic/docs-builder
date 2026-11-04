@@ -92,7 +92,6 @@
   </Folder>
   <Folder Name="/tests-integration/">
     <File Path="tests-integration/Directory.Build.props" />
-    <Project Path="tests-integration/Elastic.Documentation.IntegrationTests/Elastic.Documentation.IntegrationTests.csproj" />
     <Project Path="tests-integration/Search.IntegrationTests/Search.IntegrationTests.csproj" />
 	  <Project Path="tests-integration/Mcp.Remote.IntegrationTests/Mcp.Remote.IntegrationTests.csproj" />
 	  <Project Path="tests-integration/Elastic.ContentDateEnrichment.IntegrationTests/Elastic.ContentDateEnrichment.IntegrationTests.csproj" />
@@ -121,7 +120,6 @@
   <Project Path=".github/.github.csproj">
     <Build Project="false" />
   </Project>
-  <Project Path="aspire/aspire.csproj" />
   <Project Path="build/build.fsproj">
     <Build Solution="Release|*" Project="false" />
   </Project>
