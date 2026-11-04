@@ -11,8 +11,31 @@ using FakeItEasy;
 
 namespace Elastic.Documentation.Api.Tests;
 
+// The tests share one host and install their own feedback service on it, so they run one after another.
+[NotInParallel(nameof(PageFeedbackEndpointTests))]
 public class PageFeedbackEndpointTests
 {
+	private static readonly SwappableService<IPageFeedbackService> FeedbackService = new();
+
+	private static readonly Lazy<ApiWebApplicationFactory> SharedFactory = new(
+		() => ApiWebApplicationFactory.WithMockedServices(
+			replacements => replacements.Replace<IPageFeedbackService>(_ => FeedbackService.Current)
+		)
+	);
+
+	[After(Class)]
+	public static void DisposeSharedFactory()
+	{
+		if (SharedFactory.IsValueCreated)
+			SharedFactory.Value.Dispose();
+	}
+
+	private static HttpClient CreateClient(IPageFeedbackService feedbackService)
+	{
+		FeedbackService.Current = feedbackService;
+		return SharedFactory.Value.CreateClient();
+	}
+
 	[Test]
 	public async Task Put_ValidFeedback_RecordsFeedbackWithEuid()
 	{
@@ -22,8 +45,7 @@ public class PageFeedbackEndpointTests
 			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
 			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
 			.Returns(Task.FromResult(true));
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		var feedbackId = Guid.NewGuid();
 		using var request = CreateRequest(feedbackId, ValidPayload);
 		request.Headers.Add("Cookie", "euid=test-euid");
@@ -50,8 +72,7 @@ public class PageFeedbackEndpointTests
 			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
 			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
 			.Returns(Task.FromResult(true));
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		const string payload = /*lang=json,strict*/
 			"""
 			{
@@ -80,8 +101,7 @@ public class PageFeedbackEndpointTests
 			.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._))
 			.Invokes((PageFeedbackRecord record, CancellationToken _) => recorded = record)
 			.Returns(Task.FromResult(true));
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		const string payload = /*lang=json,strict*/
 			"""
 			{
@@ -105,8 +125,7 @@ public class PageFeedbackEndpointTests
 	public async Task Put_CommentExceedsLimit_ReturnsBadRequest()
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		var payload =
 			$$"""
 			{
@@ -169,8 +188,7 @@ public class PageFeedbackEndpointTests
 	public async Task Put_InvalidFeedback_ReturnsBadRequest(string payload)
 	{
 		var feedbackService = A.Fake<IPageFeedbackService>();
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		using var request = CreateRequest(Guid.NewGuid(), payload);
 
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
@@ -186,8 +204,7 @@ public class PageFeedbackEndpointTests
 		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).Returns(
 			Task.FromResult(false)
 		);
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 		using var request = CreateRequest(Guid.NewGuid(), ValidPayload);
 
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
@@ -201,8 +218,7 @@ public class PageFeedbackEndpointTests
 		var feedbackService = A.Fake<IPageFeedbackService>();
 		var feedbackId = Guid.NewGuid();
 		A.CallTo(() => feedbackService.DeleteFeedbackAsync(feedbackId, A<CancellationToken>._)).Returns(Task.FromResult(true));
-		using var factory = ApiWebApplicationFactory.WithMockedServices(replacements => replacements.Replace(feedbackService));
-		using var client = factory.CreateClient();
+		using var client = CreateClient(feedbackService);
 
 		using var response = await client.DeleteAsync(
 			$"/docs/_api/v1/page-feedback/{feedbackId}",
