@@ -285,7 +285,7 @@ public class ApiLookupQueryBuilderTests
 
 	[Test]
 	[Arguments("knn", 0, "knn")]
-	[Arguments("GET /_search knn", 2, "knn")]
+	[Arguments("GET /_search knn", 1, "knn")]
 	[Arguments("knn /_search", 0, "knn")]
 	[Arguments("options", 0, "options")]
 	[Arguments("track_total", 0, "track_total")]
