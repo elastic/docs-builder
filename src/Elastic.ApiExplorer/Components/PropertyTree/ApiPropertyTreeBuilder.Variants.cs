@@ -5,6 +5,7 @@
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
+using Elastic.Documentation.Search.Contract;
 using Microsoft.AspNetCore.Html;
 using Microsoft.OpenApi;
 
@@ -12,7 +13,7 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 
 public partial class ApiPropertyTreeBuilder
 {
-	private const string DictionaryKeyName = "<string>";
+	private const string DictionaryKeyName = ApiPropertyPath.MapKeyMarker;
 
 	/// <summary>Builds the variants of a union whose options are already classified, so each keeps its name and <c>$ref</c>.</summary>
 	public ApiUnionVariants? BuildUnionVariants(
