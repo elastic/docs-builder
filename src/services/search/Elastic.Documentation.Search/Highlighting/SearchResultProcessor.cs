@@ -100,13 +100,17 @@ public static class SearchResultProcessor
 				.DistinctBy(p => p.Anchor)
 				.ToArray();
 
-		var parent = children.Length == 0
-			? null
-			: Array.Find(named, p => string.Equals(ApiPropertyPath.ParentKey(p.Path), children[0].Parent, StringComparison.Ordinal));
-		if (parent is null)
-			return [.. named.Take(MaxMatchedProperties), .. children];
-		return [parent, .. children, .. named.Where(p => p != parent).Take(MaxMatchedProperties - 1)];
+		// A query parameter and a body field may share a path, so a row lists only the children of its own location.
+		var childrenByParent = children.ToLookup(c => (c.Parent, c.Location));
+		var parents = named.Where(p => childrenByParent.Contains(ParentGroup(p))).DistinctBy(ParentGroup).ToArray();
+		var listedGroups = parents.Select(ParentGroup).ToHashSet();
+		var others = named.Except(parents).Take(Math.Max(0, MaxMatchedProperties - parents.Length));
+		var orphans = children.Where(c => !listedGroups.Contains((c.Parent, c.Location)));
+		return [.. parents.SelectMany(p => childrenByParent[ParentGroup(p)].Prepend(p)), .. others, .. orphans];
 	}
+
+	private static (string Parent, string Location) ParentGroup(ApiPropertyEntry row) =>
+		(ApiPropertyPath.ParentKey(row.Path), row.Location);
 
 	private static bool IsChildOnly<TDocument>(Hit<TDocument> innerHit) =>
 		MatchedQueryNames(innerHit) is { Count: 1 } names && names.Contains(SearchQueryBuilder.ApiChildrenHits);

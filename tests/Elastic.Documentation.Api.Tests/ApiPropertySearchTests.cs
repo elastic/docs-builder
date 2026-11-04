@@ -499,6 +499,48 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	public void ProcessHit_ParameterAndBodyFieldOfTheSameName_ChildrenFollowTheBodyRow()
+	{
+		var innerHits = string.Join(
+			",",
+			InnerHit("query-size", 2, "size", location: "query"),
+			InnerHit("req-size", 1, "size"),
+			Matched(InnerHit("req-size-a", 0.4, "size.a", parent: "size"), "api_children", offset: 1),
+			Matched(InnerHit("req-size-b", 0.4, "size.b", parent: "size"), "api_children", offset: 2)
+		);
+
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
+			"size.",
+			new Dictionary<string, string[]>(),
+			Expanded
+		);
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-size", "req-size-a", "req-size-b", "query-size");
+	}
+
+	[Test]
+	public void ProcessHit_RequestAndResponseChildrenOfTheSameParentKey_EachFollowTheirOwnRow()
+	{
+		var innerHits = string.Join(
+			",",
+			InnerHit("req-hits", 1, "hits"),
+			InnerHit("res-hits", 1, "hits", location: "response"),
+			Matched(InnerHit("res-hits-total", 0.4, "hits.total", parent: "hits", location: "response"), "api_children", offset: 10),
+			Matched(InnerHit("req-hits-a", 0.4, "hits.a", parent: "hits"), "api_children", offset: 1)
+		);
+
+		var result = SearchResultProcessor.ProcessHit(
+			ParseResponse(SearchResponseJson(innerHits)).Hits.Single(),
+			"hits.",
+			new Dictionary<string, string[]>(),
+			Expanded
+		);
+
+		result.Properties.Select(p => p.Anchor).Should().Equal("req-hits", "req-hits-a", "res-hits", "res-hits-total");
+	}
+
+	[Test]
 	public void ProcessHit_ParentOutsideTheTopThree_IsStillListedFirst()
 	{
 		var innerHits = string.Join(
@@ -695,10 +737,10 @@ public class ApiPropertySearchTests
 			.Replace("__MORE_GROUPS__", moreInnerHitGroups)
 			.Replace("__MATCHED__", matchedQueries);
 
-	private static string InnerHit(string anchor, double score, string path, string parent = "") =>
+	private static string InnerHit(string anchor, double score, string path, string parent = "", string location = "request") =>
 		$$$"""
 		{"_index":"test","_id":"search","_score":{{{score.ToString(System.Globalization.CultureInfo.InvariantCulture)}}},"_nested":{"field":"api.properties","offset":0},
-		"_source":{"name":"{{{path.Split('.')[^1]}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"request","description":"Count hits","parent":"{{{parent}}}"}}
+		"_source":{"name":"{{{path.Split('.')[^1]}}}","path":"{{{path}}}","type":"boolean","anchor":"{{{anchor}}}","location":"{{{location}}}","description":"Count hits","parent":"{{{parent}}}"}}
 		""";
 
 	private static Elastic.Clients.Elasticsearch.SearchResponse<DocumentationDocument> ParseResponse(string json)
