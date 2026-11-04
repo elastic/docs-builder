@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
@@ -17,7 +18,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 /// <summary>Query and header parameters are property rows: a <c>deepObject</c> map lists its values like a body map does.</summary>
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
-public class ParameterRowsTests(ApiExplorerFixture fixture)
+public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 {
 	private OperationNavigationItem DocsGet =>
 		fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
@@ -85,6 +86,8 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"header-params-list\"");
 		html.Should().Contain("<dt id=\"header-X-Opaque-Id\">");
 		html.Should().Contain("href=\"#header-params\"");
+		html.Should().Contain("href=\"#header-params\" data-toc-link>Headers</a>", "the quick link names the section in the plural");
+		html.Should().Contain("data-toc-link>Path</a>").And.Contain("data-toc-link>Query</a>");
 	}
 
 	[Test]
@@ -146,18 +149,7 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		html.Should().Contain("<span class=\"optional type-status\">optional</span>");
 		html.Should().Contain("<p class=\"api-path-param-optional-hint\">Leave it out to use <code>/_search</code>.</p>");
-		System
-			.Text
-			.RegularExpressions
-			.Regex
-			.Matches(
-				html,
-				"required type-status",
-				System.Text.RegularExpressions.RegexOptions.None,
-				Elastic.Documentation.RegexTimeouts.MatchTimeout
-			)
-			.Should()
-			.ContainSingle("only the parameter every route needs reads required");
+		RequiredStatusRegex().Matches(html).Should().ContainSingle("only the parameter every route needs reads required");
 		var markdown = new System.Text.StringBuilder();
 		ApiPropertyMarkdown.WriteList(markdown, list, "/api/doc/fixture");
 		markdown
@@ -166,6 +158,49 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 			.Contain("- `index` (string) — optional, leave it out to use `/_search`")
 			.And
 			.Contain("- `id` (string) — required");
+	}
+
+	[Test]
+	public async Task BuildParameterList_QueryParameterRefToEnumOrEnumArray_ReadsAsUnionWithItsValues()
+	{
+		var document = await TestSpecs.LoadSpecAsync(
+			"""
+			{
+			  "openapi": "3.0.3", "info": { "title": "t", "version": "1" }, "paths": {},
+			  "components": {
+			    "parameters": {
+			      "search-expand_wildcards": {
+			        "in": "query", "name": "expand_wildcards", "description": "Which indices to match.",
+			        "schema": { "$ref": "#/components/schemas/_types.ExpandWildcards" }
+			      }
+			    },
+			    "schemas": {
+			      "_types.ExpandWildcard": { "type": "string", "enum": ["all", "open", "closed", "hidden", "none"] },
+			      "_types.ExpandWildcards": {
+			        "oneOf": [
+			          { "$ref": "#/components/schemas/_types.ExpandWildcard" },
+			          { "type": "array", "items": { "$ref": "#/components/schemas/_types.ExpandWildcard" } }
+			        ]
+			      }
+			    }
+			  }
+			}
+			"""
+		);
+		var parameter = document.Components!.Parameters!["search-expand_wildcards"];
+
+		var list = TestSpecs.BuilderFor(document).BuildParameterList(
+			[new ParameterRowInput(parameter, "Which indices to match.")],
+			new PropertyTreeScope { Prefix = "query", IsRequest = true }
+		);
+
+		var row = list.Items.Single();
+		System.Console.WriteLine(
+			"DBG type=" + row.Type.Text + " enum=" + string.Join(",", row.EnumValues ?? []) + " union=" + row.Union?.Kind +
+				" kids=" + row.Children.Kind
+		);
+		row.Type.Text.Should().Be("union enum | enum[]");
+		row.EnumValues.Should().Equal("all", "open", "closed", "hidden", "none");
 	}
 
 	[Test]
@@ -234,6 +269,62 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 		section.Should().Contain("&lt;string&gt;");
 	}
 
+	[Test]
+	public void Create_SpacesListing_AddsAnOptionalSpaceIdPathParameterFirst()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things/{id}</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+				+ "\n\nGet a thing.",
+			Parameters =
+			[
+				new OpenApiParameter
+				{
+					Name = "id",
+					In = ParameterLocation.Path,
+					Required = true,
+					Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+				}
+			]
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things/{id}", new OpenApiPathItem(), "api");
+
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		page.PathParameterNames.Should().Equal("space_id", "id");
+		var space = page.PathParameters.Items[0];
+		space.IsRequired.Should().BeFalse();
+		space.IsOptionalPath.Should().BeTrue();
+		space.OptionalRoute.Should().BeNull("only a path some routes leave out gets the hint");
+		space
+			.DescriptionMarkdown
+			.Should()
+			.Be(
+				"An identifier for the space. If `space_id` is not provided in the URL, the default space is used. Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information."
+			);
+		page.DescriptionMarkdown.Should().Be("Get a thing.");
+	}
+
+	[Test]
+	public async Task Render_SpaceIdPathParameter_ShowsTheOptionalBadgeWithoutTheHint()
+	{
+		var operation = new OpenApiOperation
+		{
+			Description = "**Spaces method and path for this operation:**\n\n<div><span class=\"operation-verb get\">get</span>&nbsp;<span class=\"operation-path\">/s/{space_id}/api/things</span></div>\n\n"
+				+ OperationEndpoint.SpacesNote
+		};
+		var apiOperation = new ApiOperation(HttpMethod.Get, operation, "/api/things", new OpenApiPathItem(), "api");
+		var page = OperationPageModel.Create(apiOperation, RenderContext(DocsGet));
+
+		var html = await _PropertyList.Create(page.PathParameters).RenderAsync(
+			cancellationToken: TestContext.Current!.Execution.CancellationToken
+		);
+
+		html.Should().Contain("<span class=\"optional");
+		html.Should().NotContain("api-path-param-optional-hint");
+	}
+
 	private ApiRenderContext RenderContext(INavigationItem current) =>
 		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
 		{
@@ -250,4 +341,10 @@ public class ParameterRowsTests(ApiExplorerFixture fixture)
 
 		return fs.File.ReadAllText("/out.html");
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("required type-status", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
+	private static partial System.Text.RegularExpressions.Regex RequiredStatusRegex();
 }

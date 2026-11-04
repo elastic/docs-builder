@@ -20,6 +20,9 @@ namespace Elastic.ApiExplorer.Components.PropertyTree;
 public sealed record PropertyTreeScope
 {
 	public required string Prefix { get; init; }
+
+	/// <summary>The JSON path of the value these properties belong to, "" at a body root; null where paths are not shown.</summary>
+	public string? JsonPath { get; init; }
 	public bool IsRequest { get; init; }
 
 	/// <summary>A response lists no <c>writeOnly</c> fields, as a request lists no <c>readOnly</c> ones.</summary>
@@ -34,6 +37,9 @@ public sealed record PropertyTreeScope
 
 	/// <summary>Overrides the schema's own required set at the top level; never inherited by children.</summary>
 	public ISet<string>? RequiredProperties { get; init; }
+
+	/// <summary>The scope of an array's items: the path gains <c>[]</c>.</summary>
+	public PropertyTreeScope IntoItems() => this with { JsonPath = JsonPath is null ? null : $"{JsonPath}[]" };
 }
 
 /// <summary>A parameter to list as a row, with the description to show.</summary>
@@ -60,6 +66,9 @@ public partial class ApiPropertyTreeBuilder(
 	private sealed record PropertyRow(
 		string Name,
 		IOpenApiSchema Schema,
+		// The schema the row's fields and variants come from: Schema, or the union an allOf wrapper points to. The
+		// discriminator still comes from Schema, whose flattened allOf carries both the wrapper's and the union's.
+		IOpenApiSchema Shape,
 		TypeInfo TypeInfo,
 		string AnchorId,
 		bool IsRequired,
@@ -71,15 +80,24 @@ public partial class ApiPropertyTreeBuilder(
 		string? ShapeKey = null,
 		RepeatedShape? Repeats = null,
 		string? OptionalRoute = null,
-		string? Example = null
+		bool IsOptionalPath = false,
+		string? Example = null,
+		string? JsonPath = null
 	);
 
-	/// <summary>Builds the property rows for a schema; null when it has no renderable properties.</summary>
-	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope)
+	private static string? AppendPath(string? parent, string segment) =>
+		parent is null ? null : parent.Length == 0 ? segment : $"{parent}.{segment}";
+
+	/// <summary>Builds the property rows for a schema, <paramref name="leadingProperty"/> first; null when it has no renderable properties.</summary>
+	public ApiPropertyList? BuildPropertyList(IOpenApiSchema? schema, PropertyTreeScope scope, string? leadingProperty = null)
 	{
 		var effective = _analyzer.Flatten(schema);
 		var properties = effective.Properties;
-		var propArray = properties.Where(p => p.Value is not null && IsListed(p.Value, scope)).ToArray();
+		// A union variant lists the property that selects it first, so the choice is the first thing its fields say.
+		var propArray = properties
+			.Where(p => p.Value is not null && IsListed(p.Value, scope))
+			.OrderBy(p => p.Key != leadingProperty)
+			.ToArray();
 		if (propArray.Length == 0)
 			return null;
 
@@ -122,6 +140,7 @@ public partial class ApiPropertyTreeBuilder(
 				IsDeprecated = parameter.Deprecated,
 				AppliesTo = XStateApplicability.From(parameter.Extensions) ?? XStateApplicability.From(schema.Extensions),
 				OptionalRoute = routeWithout,
+				IsOptionalPath = parameter.In == ParameterLocation.Path && (!parameter.Required || routeWithout is not null),
 				Example = ParameterExample.Pick(parameter, _analyzer.ResolveSchema(schema) ?? schema, _analyzer.GetEnumValues(schema))
 			};
 			items.Add(BuildProperty(row, scope));
@@ -131,16 +150,13 @@ public partial class ApiPropertyTreeBuilder(
 	}
 
 	/// <summary>
-	/// The schema a parameter's row describes. A path parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
-	/// resolved union, so its type reads <c>X | X[]</c>; query and body rows keep the wrapper's name.
+	/// The schema a parameter's row describes. A parameter that is a <c>$ref</c> to <c>X | X[]</c> describes the
+	/// resolved union, so its type reads <c>X | X[]</c> instead of the wrapper's name.
 	/// </summary>
 	private IOpenApiSchema RowSchema(IOpenApiParameter parameter)
 	{
 		if (parameter.Schema is not { } schema)
 			return new OpenApiSchema();
-		if (parameter.In != ParameterLocation.Path)
-			return schema;
-
 		var resolved = _analyzer.ResolveSchema(schema);
 		return resolved is not null
 			&& !ReferenceEquals(resolved, schema)
@@ -156,6 +172,7 @@ public partial class ApiPropertyTreeBuilder(
 		return new PropertyRow(
 			name,
 			schema,
+			_analyzer.UnwrapUnionRef(schema),
 			typeInfo,
 			string.IsNullOrEmpty(scope.Prefix) ? anchorName : $"{scope.Prefix}-{anchorName}",
 			IsRequired: false,
@@ -165,7 +182,8 @@ public partial class ApiPropertyTreeBuilder(
 			IsDeprecated: schema.Deprecated,
 			AppliesTo: XStateApplicability.From(schema.Extensions),
 			ShapeKey: shapeKey,
-			Repeats: ancestor
+			Repeats: ancestor,
+			JsonPath: AppendPath(scope.JsonPath, name)
 		);
 	}
 
@@ -269,7 +287,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiProperty BuildProperty(PropertyRow row, PropertyTreeScope scope)
 	{
 		var (propSchema, typeInfo, isRecursive) = (row.Schema, row.TypeInfo, row.IsRecursive);
-		var expansion = ComputeExpansion(propSchema, typeInfo, scope, isRecursive);
+		var expansion = ComputeExpansion(row.Shape, typeInfo, scope, isRecursive);
 		var (descriptionHtml, descriptionMarkdown) = RenderDescription(row.Name, row.Description, scope);
 		var typeLink = BuildTypeLink(typeInfo, expansion);
 		var (children, repeats) = isRecursive || row.Repeats is not null
@@ -281,6 +299,7 @@ public partial class ApiPropertyTreeBuilder(
 			Name = row.Name,
 			Schema = propSchema,
 			AnchorId = row.AnchorId,
+			JsonPath = row.JsonPath,
 			Depth = scope.Depth,
 			IsRequired = row.IsRequired,
 			IsNullable = _analyzer.IsNullable(propSchema),
@@ -294,7 +313,9 @@ public partial class ApiPropertyTreeBuilder(
 			DescriptionHtml = descriptionHtml,
 			DescriptionMarkdown = descriptionMarkdown,
 			ShowDeprecatedBadge = options.ShowDeprecated && row.IsDeprecated,
-			Availability = options.ShowVersionInfo ? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration) : null,
+			Availability = options.ShowVersionInfo
+				? AvailabilityBadge.Create(row.AppliesTo, options.VersionsConfiguration, designSystem: options.DesignSystem)
+				: null,
 			ExternalDocs = BuildExternalDocs(propSchema, typeInfo),
 			Constraints = BuildConstraints(propSchema),
 			// A union that mixes literals with objects lists the literals in its "One of:" row instead.
@@ -307,8 +328,10 @@ public partial class ApiPropertyTreeBuilder(
 			TypeLink = typeLink,
 			AlsoIncludes = BuildAlsoIncludes(typeInfo),
 			OptionalRoute = row.OptionalRoute,
+			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
-			Requires = DescribeRequiredAlternatives(propSchema),
+			// The wrapper's own required sets win; otherwise those of the union it points to.
+			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),
 			// A repeat lists nothing itself, so it gets no show/hide toggle.
 			IsCollapsible = repeats is null && expansion.IsCollapsible,
@@ -327,8 +350,8 @@ public partial class ApiPropertyTreeBuilder(
 			)
 			: null;
 
-	// Object rows start collapsed. The request body root is the property list, so its fields stay visible.
-	private static bool ComputeDefaultExpanded() => false;
+	// Object rows start expanded and stay foldable. The request body root is the property list, so its fields are always visible.
+	private static bool ComputeDefaultExpanded() => true;
 
 	private ExternalDocLink? BuildExternalDocs(IOpenApiSchema propSchema, TypeInfo typeInfo)
 	{
@@ -485,6 +508,7 @@ public partial class ApiPropertyTreeBuilder(
 	private ApiPropertyChildren BuildDictionaryChildren(PropertyRow row, PropertyTreeScope childScope, Expansion expansion)
 	{
 		var keyAnchorId = $"{row.AnchorId}-string";
+		var keyPath = AppendPath(row.JsonPath, DictionaryKeyName);
 		var dictIsCollapsible = expansion.NestedCount > 0;
 		var dictDefaultExpanded = ComputeDefaultExpanded();
 		return new ApiPropertyChildren
@@ -494,6 +518,7 @@ public partial class ApiPropertyTreeBuilder(
 			Dictionary = new DictionaryChildDisplay
 			{
 				KeyAnchorId = keyAnchorId,
+				JsonPath = keyPath,
 				Depth = childScope.Depth,
 				IsCollapsible = dictIsCollapsible,
 				DefaultExpanded = dictDefaultExpanded,
@@ -503,7 +528,7 @@ public partial class ApiPropertyTreeBuilder(
 				EnumValues = _analyzer.GetEnumValues(row.TypeInfo.DictValueSchema),
 				Properties = BuildPropertyList(
 					row.TypeInfo.DictValueSchema,
-					childScope with { Prefix = keyAnchorId, Depth = childScope.Depth + 1 }
+					childScope with { Prefix = keyAnchorId, JsonPath = keyPath, Depth = childScope.Depth + 1 }
 				)
 					?? new ApiPropertyList([])
 			}

@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
 
 namespace Elastic.ApiExplorer.Operations;
@@ -16,7 +17,7 @@ internal static class OperationCommonMark
 		var markdown = new StringBuilder();
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var operation = apiOperation.Operation;
-		var title = operation.Summary ?? apiOperation.ApiName;
+		var title = OpenApiExtensionReader.GetSummary(operation) ?? apiOperation.DisplayName;
 		ApiCommonMark.Heading(markdown, 1, title);
 		WriteBadges(markdown, operation, page);
 		WriteServers(markdown, page);
@@ -43,8 +44,8 @@ internal static class OperationCommonMark
 	{
 		if (operation.Deprecated)
 			ApiCommonMark.Paragraph(markdown, "deprecated");
-		if (page.IsBeta)
-			ApiCommonMark.Paragraph(markdown, "Beta");
+		if (page.AuthBadge is { } auth)
+			ApiCommonMark.Paragraph(markdown, $"Authentication: {auth.Summary}");
 		if (page.Availability is null)
 			return;
 
@@ -118,7 +119,7 @@ internal static class OperationCommonMark
 	{
 		if (page.RequiredPrivileges.Count > 0)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Required authorization");
+			ApiCommonMark.Heading(markdown, 2, "Required privileges");
 			foreach (var row in page.RequiredPrivileges)
 			{
 				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
@@ -134,7 +135,23 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Authentication");
-		foreach (var requirement in page.AuthRequirements)
+		WriteAuthentication(markdown, page.AuthRequirements, page.AuthBadge?.Kind == AuthBadgeKind.Optional, apiBaseUrl);
+	}
+
+	/// <summary>The alternatives under an Authentication heading, on endpoint, Authentication and child pages alike.</summary>
+	internal static void WriteAuthentication(
+		StringBuilder markdown,
+		IReadOnlyList<AuthRequirement> requirements,
+		bool optional,
+		string apiBaseUrl
+	)
+	{
+		if (requirements.Count == 0)
+			return;
+
+		if (optional)
+			ApiCommonMark.Paragraph(markdown, "Authentication is optional.");
+		foreach (var requirement in requirements)
 			WriteRequirement(markdown, requirement, apiBaseUrl);
 
 		_ = markdown.AppendLine();
@@ -176,18 +193,8 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Request body");
-		if (!string.IsNullOrEmpty(page.RequestContentType))
-			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.RequestContentType));
 		ApiCommonMark.Prepared(markdown, apiOperation.Operation.RequestBody.Description, apiBaseUrl);
-		if (page.RequestRequires is { } requestRequires)
-			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requestRequires));
-		if (page.HasRequestBody)
-		{
-			ApiPropertyMarkdown.WriteList(markdown, page.RequestProperties, apiBaseUrl);
-			ApiPropertyMarkdown.WriteVariants(markdown, page.RequestUnionVariants, apiBaseUrl);
-		}
-		else
-			ApiPropertyMarkdown.WriteType(markdown, page.RequestType);
+		WriteMediaContents(markdown, page.RequestContents, apiBaseUrl);
 		_ = markdown.AppendLine();
 	}
 
@@ -205,26 +212,33 @@ internal static class OperationCommonMark
 
 			ApiCommonMark.Prepared(markdown, response.Response.Description, apiBaseUrl);
 
-			foreach (var content in response.Contents)
-			{
-				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
-				if (content.Requires is { } requires)
-					ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
-				if (content.HasBody)
-				{
-					ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
-					ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
-				}
-				else if (content.ArrayItemProperties is not null)
-				{
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-					ApiPropertyMarkdown.WriteList(markdown, content.ArrayItemProperties, apiBaseUrl);
-				}
-				else
-					ApiPropertyMarkdown.WriteType(markdown, content.Type);
-			}
+			WriteMediaContents(markdown, response.Contents, apiBaseUrl);
 
 			WriteHeaders(markdown, response, apiBaseUrl);
+		}
+	}
+
+	private static void WriteMediaContents(StringBuilder markdown, IReadOnlyList<ApiMediaContent> contents, string apiBaseUrl)
+	{
+		foreach (var content in contents)
+		{
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(content.ContentType));
+			if (content.Requires is { } requires)
+				ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+			if (content.HasBody)
+			{
+				if (content.IsArray)
+				{
+					ApiPropertyMarkdown.WriteType(markdown, content.Type);
+					ApiCommonMark.Paragraph(markdown, ApiBodyContent.ArrayItemsLabel);
+				}
+				ApiPropertyMarkdown.WriteList(markdown, content.Properties, apiBaseUrl);
+				ApiPropertyMarkdown.WriteVariants(markdown, content.UnionVariants, apiBaseUrl);
+			}
+			else
+			{
+				ApiPropertyMarkdown.WriteType(markdown, content.Type);
+			}
 		}
 	}
 
@@ -255,7 +269,24 @@ internal static class OperationCommonMark
 			return;
 
 		ApiCommonMark.Heading(markdown, 2, "Code examples");
-		foreach (var sample in page.CodeSamples)
+		// With several examples carrying samples, each set sits under its example's title so the copy can tell them apart.
+		var perExample = page.Scenarios.Where(static s => s.CodeSamples.Any(static c => !c.Generated)).ToArray();
+		if (perExample.Length < 2)
+		{
+			WriteSamples(markdown, page.CodeSamples);
+			return;
+		}
+
+		foreach (var scenario in perExample)
+		{
+			ApiCommonMark.Heading(markdown, 3, scenario.Title);
+			WriteSamples(markdown, [.. scenario.CodeSamples.Where(static c => !c.Generated)]);
+		}
+	}
+
+	private static void WriteSamples(StringBuilder markdown, IReadOnlyList<CodeSample> samples)
+	{
+		foreach (var sample in samples)
 		{
 			ApiCommonMark.Heading(markdown, 4, sample.Language);
 			ApiCommonMark.Fence(markdown, sample.Language.ToLowerInvariant(), sample.Source);
@@ -277,6 +308,10 @@ internal static class OperationCommonMark
 		foreach (var example in examples)
 		{
 			ApiCommonMark.Heading(markdown, 4, example.Title);
+			if (example.MediaType is not null)
+				ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(example.MediaType));
+			if (example.Generated)
+				ApiCommonMark.Paragraph(markdown, ResponseBodyExample.Note);
 			ApiCommonMark.Prepared(markdown, example.DescriptionMarkdown, apiBaseUrl);
 			if (!string.IsNullOrEmpty(example.ExternalValue))
 				ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(example.ExternalValue, example.ExternalValue));

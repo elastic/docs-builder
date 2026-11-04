@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using Elastic.Documentation.Diagnostics;
-using Elastic.Markdown.Helpers;
+using Elastic.Documentation.Extensions;
 using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives.Stepper;

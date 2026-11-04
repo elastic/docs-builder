@@ -124,7 +124,7 @@ export function initTable(): void {
     }
 
     const newWrappers = document.querySelectorAll<HTMLElement>(
-        '.markdown-content .table-wrapper:not([data-table-expand])'
+        '.markdown-content .table-wrapper:not([data-table-expand]), #markdown-content .table-wrapper:not([data-table-expand])'
     )
     newWrappers.forEach((wrapper) => {
         wrapper.setAttribute('data-table-expand', '')

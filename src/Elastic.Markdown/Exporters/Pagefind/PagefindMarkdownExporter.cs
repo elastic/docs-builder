@@ -7,9 +7,8 @@ using System.Text;
 using System.Text.Json;
 using Elastic.Documentation;
 using Elastic.Documentation.Navigation;
-using Elastic.Markdown.Helpers;
 using Elastic.Markdown.IO;
-using Elastic.Markdown.Myst.InlineParsers;
+using Elastic.Markdown.Myst.Renderers;
 using Markdig.Syntax;
 using Microsoft.Extensions.Logging;
 using Pagefind.Net;
@@ -101,11 +100,7 @@ public sealed class PagefindMarkdownExporter(ILoggerFactory logFactory) : IMarkd
 				var text = heading.GetData("header") as string ?? string.Empty;
 				if (!string.IsNullOrEmpty(text))
 				{
-					var anchor = heading.GetData("anchor") as string;
-					var slugTarget = (anchor ?? text) ?? string.Empty;
-					if (slugTarget.Contains('$'))
-						slugTarget = HeadingAnchorParser.InlineAnchors().Replace(slugTarget, "");
-					var id = slugTarget.Slugify();
+					var id = SectionedHeadingRenderer.Slug(heading);
 					sections.Add(new HtmlSection($"h{heading.Level}", text, id));
 					headingCount++;
 				}

@@ -35,6 +35,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 				A<string>._,
 				A<string>._,
 				A<IReadOnlyCollection<int>>._,
+				A<IReadOnlyDictionary<int, DateTimeOffset>>._,
 				A<Cancel>._
 			)
 		).Returns((IReadOnlyDictionary<int, BackportRoots?>?)answer);
@@ -109,7 +110,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 	[Test]
 	public async Task Trace_PullRequestsWithoutAConfiguredLabel_AreNotTraced()
 	{
-		var service = Backports(new());
+		var service = Backports([]);
 
 		var trace = await TraceAsync(service, Range(Pr(10), Pr(20, "backports"), Pr(30, "backport-skip")));
 
@@ -140,6 +141,7 @@ public class BackportTracerTests() : ChangelogTestBase()
 				A<string>._,
 				A<string>._,
 				A<IReadOnlyCollection<int>>._,
+				A<IReadOnlyDictionary<int, DateTimeOffset>>._,
 				A<Cancel>._
 			)
 		).Returns((IReadOnlyDictionary<int, BackportRoots?>?)null);

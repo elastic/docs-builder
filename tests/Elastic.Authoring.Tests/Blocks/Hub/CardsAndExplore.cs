@@ -758,3 +758,18 @@ public class ExploreWithInvalidLevel : MarkdownTest
 		"""
 		);
 }
+
+// A body that is only a YAML comment is not null, so it reaches the deserializer rather than the
+// "requires a YAML body" check. SharpYaml deserializes it to null, which must still fall back to
+// LinkCardData.Empty and report the usual missing-title error, not throw.
+public class LinkCardWithACommentOnlyBody : MarkdownTest
+{
+	protected override string Markdown => """
+		:::{link-card}
+		# title: Writing content
+		:::
+		""";
+
+	[Test, DisplayName("errors on the missing title instead of throwing")]
+	public async Task ErrorsOnMissingTitle() => await Docs.HasError("requires a `title` field");
+}

@@ -6,7 +6,6 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -181,7 +180,7 @@ public class RequestBodyExampleTests
 	public async Task Build_BelowTheDepthLimit_StillGivesScalarsTheirValue()
 	{
 		// Seven required objects deep: the innermost object is cut, but the scalar beside it keeps its example.
-		var nested = /*lang=json,strict*/  """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
+		var nested = /*lang=json,strict*/ """{ "type": "object", "required": ["leaf"], "properties": { "leaf": { "type": "string" } } }""";
 		for (var i = 0; i < 6; i++)
 		{
 			nested =
@@ -402,6 +401,7 @@ public class RequestBodyExampleTests
 	[Test]
 	[Arguments("application/json", true)]
 	[Arguments("application/problem+json", true)]
+	[Arguments("application/json; charset=utf-8", true)]
 	[Arguments("application/x-ndjson", false)]
 	[Arguments("multipart/form-data", false)]
 	[Arguments(null, false)]
@@ -432,23 +432,8 @@ public class RequestBodyExampleTests
 			    "responses": { "200": { "description": "ok" } } } } },
 			  "components": { "schemas": { {{(extraSchemas.Length == 0 ? "\"Unused\": { \"type\": \"string\" }" : extraSchemas)}} } } }
 			""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"request-body-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
-			return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var media = document.Paths!["/a"].Operations![HttpMethod.Post]!.RequestBody!.Content!["application/json"];
+		return RequestBodyExample.Build(new SchemaAnalyzer(document), "application/json", media.Schema);
 	}
 }

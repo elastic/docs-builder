@@ -23,7 +23,7 @@ namespace Elastic.ApiExplorer.Tests;
 [ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
 public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 {
-	private static readonly Uri BaseUri = new("https://cdn.example/");
+	internal static readonly Uri BaseUri = new("https://cdn.example/");
 
 	[Test]
 	public async Task Generate_WritesJsonAndYamlSiblingsForProductLanding()
@@ -82,7 +82,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
-	public async Task Generate_LandingHtmlContainsDownloadSourceLinks()
+	public async Task Generate_LandingHtmlOffersTheSpecDownloadInThePageActions()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-spec-html-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -106,10 +106,12 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				TestContext.Current!.Execution.CancellationToken
 			);
 
-		html.Should().Contain("Download spec");
+		html.Should().Contain("Download OpenAPI spec (JSON)");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"");
 		html.Should().Contain("href=\"/api/doc/elasticsearch.yaml\"");
 		html.Should().Contain("download");
+		// One place for the download: the old landing fact is gone.
+		html.Should().NotContain("<dt>Download spec</dt>");
 	}
 
 	[Test]
@@ -146,7 +148,36 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		markdown.Should().NotContain("License:");
 	}
 
-	private static BuildContext CreateGenerateContext(string outputRoot)
+	[Test]
+	public async Task Generate_SpecWithInfoLicense_LandingDoesNotShowLicenseFact()
+	{
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		var fixturePath = Path.Combine(AppContext.BaseDirectory, "TestData", "api-explorer-fixture.json");
+		var document = await OpenApiReader.Instance.ReadAsync(new System.IO.Abstractions.FileSystem().FileInfo.New(fixturePath))
+			?? throw new InvalidOperationException($"Could not read fixture spec at {fixturePath}");
+		document.Info.License = new OpenApiLicense { Name = "Apache 2.0" };
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-landing-license-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MainOnlyHandler(), sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			PassthroughMarkdownRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(document)
+		);
+
+		await generator.Generate(ct);
+
+		var html = await context
+			.WriteFileSystem
+			.File
+			.ReadAllTextAsync(Path.Join(outputRoot, "api", "doc", "elasticsearch", "index.html"), ct);
+		html.Should().Contain("<dt>Version</dt>");
+		html.Should().NotContain("<dt>License").And.NotContain("Apache 2.0");
+	}
+
+	internal static BuildContext CreateGenerateContext(string outputRoot)
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
@@ -194,7 +225,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		);
 	}
 
-	private static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
+	internal static IOpenApiSpecificationReader CreateSequentialReader(params OpenApiDocument[] documents)
 	{
 		var queue = new ConcurrentQueue<OpenApiDocument>(documents);
 		var reader = A.Fake<IOpenApiSpecificationReader>();
@@ -204,7 +235,7 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 		return reader;
 	}
 
-	private static HttpMessageHandler MainOnlyHandler() =>
+	internal static HttpMessageHandler MainOnlyHandler() =>
 		new StubHandler(request =>
 		{
 			if (request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal))
@@ -275,10 +306,4 @@ public class OpenApiGeneratorSpecDownloadTests(ApiExplorerFixture fixture)
 				)
 			};
 		});
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

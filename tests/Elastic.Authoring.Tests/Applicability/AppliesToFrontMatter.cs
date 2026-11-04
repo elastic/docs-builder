@@ -183,7 +183,7 @@ public class ParsesServerlessProjects : AuthoringTest
 		});
 }
 
-public class ParsesStack : AuthoringTest
+public class ParsesStackApplicability : AuthoringTest
 {
 	protected override Scenario Scenario => FrontMatter.WithYaml("""
 			applies_to:

@@ -30,11 +30,14 @@ public static class RequestBodyExample
 		return Value(analyzer, schema, 0)?.ToJsonString(PrettyJson);
 	}
 
-	/// <summary>One JSON document: <c>application/json</c> and <c>+json</c> types, but not newline-delimited JSON.</summary>
-	internal static bool IsJson(string? mediaType) =>
-		mediaType is not null
-			&& (mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase)
-				|| mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase));
+	/// <summary>One JSON document: <c>application/json</c> and <c>+json</c> types, with or without parameters, but not newline-delimited JSON.</summary>
+	internal static bool IsJson(string? mediaType)
+	{
+		var type = mediaType?.Split(';', 2)[0].Trim();
+		return type is not null
+			&& (type.Equals("application/json", StringComparison.OrdinalIgnoreCase)
+				|| type.EndsWith("+json", StringComparison.OrdinalIgnoreCase));
+	}
 
 	private static JsonNode? Value(SchemaAnalyzer analyzer, IOpenApiSchema? schema, int depth)
 	{

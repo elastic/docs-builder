@@ -28,6 +28,14 @@ export default defineConfig([
 		},
 	},
 	{
+		// Visual regression tooling runs under Node (hosts, preparation scripts, Playwright config)
+		files: ['visual/**/*.{mjs,ts}'],
+		languageOptions: { globals: { ...globals.node } },
+		rules: {
+			'no-console': 'off',
+		},
+	},
+	{
 		// Allow console.log in synthetics config (test configuration file)
 		files: ['synthetics/**/*.ts'],
 		rules: {

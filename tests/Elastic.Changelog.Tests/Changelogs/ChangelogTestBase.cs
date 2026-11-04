@@ -138,7 +138,7 @@ public abstract class ChangelogTestBase : IDisposable
 		FileSystem.File.WriteAllText(path, string.Join("\n", lines) + "\n");
 	}
 
-	public void Dispose()
+	public virtual void Dispose()
 	{
 		Collector.DisposeAsync().AsTask().GetAwaiter().GetResult();
 		LoggerFactory.Dispose();

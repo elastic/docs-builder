@@ -30,6 +30,9 @@ public class ApplicableToViewModel
 
 	public ApplicabilityBadgePlacement BadgePlacement { get; init; } = ApplicabilityBadgePlacement.Combined;
 
+	/// <summary>Renders the badge with the design-system component instead of the legacy React element. Set when NAVIGATION_PREVIEW is on.</summary>
+	public bool DesignSystem { get; init; }
+
 	private static readonly Dictionary<Func<DeploymentApplicability, AppliesCollection?>, ApplicabilityMappings.ApplicabilityDefinition> DeploymentMappings = new()
 	{
 		[d => d.Ess] = ApplicabilityMappings.Ech,

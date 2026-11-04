@@ -16,7 +16,7 @@ namespace Elastic.ApiExplorer.Tests;
 /// A request lists no <c>readOnly</c> fields and a response no <c>writeOnly</c> ones; a type page lists both. Nested rows
 /// sit in a container whose id no field anchor can take.
 /// </summary>
-public class FieldDirectionTests
+public partial class FieldDirectionTests
 {
 	private const string Spec =
 		"""
@@ -98,10 +98,7 @@ public class FieldDirectionTests
 
 		html.Should().Contain("id=\"res-200-node-children\"", "the field keeps its anchor");
 		html.Should().Contain("id=\"res-200-node--children\"", "the row's nested rows take the double-dash id");
-		var ids = Regex
-			.Matches(html, "\\bid=\"([^\"]*)\"", RegexOptions.None, RegexTimeouts.MatchTimeout)
-			.Select(m => m.Groups[1].Value)
-			.ToArray();
+		var ids = ElementIdRegex().Matches(html).Select(m => m.Groups[1].Value).ToArray();
 		ids.Should().OnlyHaveUniqueItems();
 	}
 
@@ -110,4 +107,7 @@ public class FieldDirectionTests
 		var document = await LoadSpecAsync(Spec);
 		return BuilderFor(document).BuildPropertyList(document.Components!.Schemas![schemaName], scope)!.Items;
 	}
+
+	[GeneratedRegex("\\bid=\"([^\"]*)\"", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+	private static partial Regex ElementIdRegex();
 }

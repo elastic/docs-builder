@@ -62,7 +62,13 @@ public static class BackportTracer
 		if (backports.Count == 0)
 			return new BackportTrace(resolution, [], []);
 
-		var roots = await service.ResolveRootsAsync(collector, repository.Owner, repository.Repo, backports, ctx).ConfigureAwait(false);
+		var updatedAt = resolution
+			.PullRequests
+			.Where(pr => pr.UpdatedAt is not null)
+			.ToDictionary(pr => pr.Number, pr => pr.UpdatedAt!.Value);
+		var roots = await service.ResolveRootsAsync(collector, repository.Owner, repository.Repo, backports, updatedAt, ctx).ConfigureAwait(
+			false
+		);
 		if (roots == null)
 			return null;
 

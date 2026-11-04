@@ -2,15 +2,15 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Assembler;
 
 public record Optimizely
 {
-	[YamlMember(Alias = "enabled")]
+	[YamlPropertyName("enabled")]
 	public bool Enabled { get; set; }
 
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
 }

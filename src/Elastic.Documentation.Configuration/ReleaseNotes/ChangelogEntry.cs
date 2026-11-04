@@ -2,7 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.ReleaseNotes;
 
@@ -24,7 +24,7 @@ public record ChangelogEntryDto
 	public string? Description { get; set; }
 	public string? Impact { get; set; }
 	public string? Action { get; set; }
-	[YamlMember(Alias = "feature-id", ApplyNamingConventions = false)]
+	[YamlPropertyName("feature-id")]
 	public string? FeatureId { get; set; }
 	public bool? Highlight { get; set; }
 
@@ -40,7 +40,7 @@ public record ChangelogEntryDto
 	/// to a canonical public key. Distinguishes source pointers from ordinary link-only PR markers
 	/// so the delete path does not spuriously follow a regular marker to its canonical target.
 	/// </summary>
-	[YamlMember(Alias = "source-redirect", ApplyNamingConventions = false)]
+	[YamlPropertyName("source-redirect")]
 	public bool? SourceRedirect { get; set; }
 }
 

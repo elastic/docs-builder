@@ -7,6 +7,7 @@ using System.Text.Json;
 using Actions.Core.Services;
 using Elastic.Changelog;
 using Elastic.Changelog.Bundling;
+using Elastic.Changelog.Caching;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
@@ -20,7 +21,7 @@ using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.Argh;
 using Nullean.Argh.Documentation;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Documentation.Builder.Commands.ReleaseAutomation;
 
@@ -66,6 +67,8 @@ internal sealed class UnifiedReleaseCommands(
 	/// commit in the manifest of the target. The start is its commit in the manifest of the previous release:
 	/// the previous patch of the same minor, or the previous minor's <c>.0</c> for a <c>x.y.0</c> release.
 	/// A product whose commit is the same in both manifests has no changes and gets no bundle.
+	/// A range that resolves no changelog entries, because it has no pull requests or every pull request was excluded,
+	/// also gets no bundle. DRA products often ship a version with no user-facing changes.
 	/// The pull requests in that range come from the GitHub GraphQL API, so <c>GITHUB_TOKEN</c> must be set.
 	/// The first profile of each product's <c>changelog.yml</c> shapes the bundle and must use <c>product:</c>
 	/// or <c>output_products:</c>. A <c>products:</c> pattern cannot be combined with a commit range.
@@ -86,6 +89,11 @@ internal sealed class UnifiedReleaseCommands(
 	/// Fail when a product is not onboarded. By default a product without a <c>changelog.yml</c>, a bundle profile,
 	/// or a changelog entry pool is skipped with a warning. A product named with <c>--products</c> always fails.
 	/// </param>
+	/// <param name="cacheDir">
+	/// Directory of the cache that remembers, between runs, which pull request each commit of a range belongs to. Defaults to the
+	/// application data of docs-builder. Anything unused for 30 days is dropped.
+	/// </param>
+	/// <param name="noCache">Do not read or write the cache of commit ranges.</param>
 	/// <param name="changelogConfigs">
 	/// Optional directory of prototype <c>&lt;product-id&gt;.changelog.yml</c> files. When present,
 	/// a product's local file takes precedence over the file fetched from GitHub, allowing teams to
@@ -99,6 +107,8 @@ internal sealed class UnifiedReleaseCommands(
 		[ExpandUserProfile] DirectoryInfo? changelogConfigs = null,
 		string[]? products = null,
 		bool strict = false,
+		[ExpandUserProfile] DirectoryInfo? cacheDir = null,
+		bool noCache = false,
 		CancellationToken ctx = default
 	)
 	{
@@ -152,8 +162,9 @@ internal sealed class UnifiedReleaseCommands(
 
 		// A range holds hundreds of pull requests. Their decisions are logged in batches, not one line each.
 		using var decisions = new DecisionLog(_logger);
+		var cache = ChangelogCache.Create(cacheDir, noCache, _logger);
 		var productBundler = new UnifiedProductBundler(
-			new ChangelogBundlingService(logFactory, fileSystem, configurationContext, decisions: decisions),
+			new ChangelogBundlingService(logFactory, fileSystem, configurationContext, decisions: decisions, cache: cache),
 			http,
 			new FileSystem(),
 			_logger,
@@ -248,12 +259,24 @@ internal sealed class UnifiedReleaseCommands(
 				var requested = products?.Contains(range.ProductId, StringComparer.OrdinalIgnoreCase) ?? false;
 				var outcome = await productBundler.BundleAsync(range, productOutput, changelogConfigs?.FullName, strict || requested, ctx);
 				decisions.Flush();
+				if (cache is not null)
+					await cache.SaveAsync(ctx);
 				if (outcome == ProductBundleOutcome.Failed)
 					return 1;
 
 				if (outcome == ProductBundleOutcome.Skipped)
 				{
 					skipped.Add($"{range.ProductId}@{target.Version}");
+					continue;
+				}
+
+				if (outcome == ProductBundleOutcome.Empty)
+				{
+					_logger.LogInformation(
+						"'{Product}' @ {Version} has no changelog entries in this range. The release has no notes.",
+						range.ProductId,
+						target.Version
+					);
 					continue;
 				}
 
@@ -277,8 +300,9 @@ internal sealed class UnifiedReleaseCommands(
 	/// <remarks>
 	/// <para>
 	/// The docset is created in memory from <c>products.yml</c>. Every product with
-	/// <c>features.release-notes: dra</c> gets a release notes, known issues, breaking changes and
-	/// deprecations page. No documentation folder is needed.
+	/// <c>features.release-notes: dra</c> gets a page per version at <c>/{product}/{version}</c>,
+	/// with known issues, breaking changes, and deprecations nested under that version.
+	/// No documentation folder is needed.
 	/// </para>
 	/// <para>
 	/// The command resolves the argument like <c>release unified bundle</c>. A product without bundles is left

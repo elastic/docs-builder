@@ -10,6 +10,8 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// The environment-variable override test mutates process-wide state that every flag-reading test here depends on
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class FeatureFlagsTests
 {
 	[Test]
@@ -54,6 +56,9 @@ public class FeatureFlagsTests
 
 	[Test]
 	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
+
+	[Test]
+	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
 
 	[Test]
 	public void EdgeEnvironment_DoesNotAllowIndexing()

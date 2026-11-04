@@ -34,10 +34,11 @@ public class ResponsesBlockRenderingTests
 		html.Should().Contain("text/plain");
 		html.Should().Contain("aria-controls=\"response-200-fields\"");
 		html.Should().Contain("aria-controls=\"response-400-fields\"");
-		html.Should().Contain("aria-expanded=\"false\"");
-		html.Should().Contain("response-panel collapsed");
-		html.Should().Contain("id=\"response-200-fields\"");
-		html.Should().Contain("id=\"response-400-fields\"");
+		html.Should().Contain("aria-expanded=\"true\"");
+		html.Should().Contain("response-panel expanded");
+		html.Should().Contain("id=\"response-200-fields\">", "the body has no hidden attribute, so it shows on load");
+		html.Should().Contain("id=\"response-400-fields\">");
+		html.Should().NotContain("id=\"response-200-fields\" hidden").And.NotContain("id=\"response-400-fields\" hidden");
 		html.Should().NotContain("<select");
 		html.Should().NotContain("<option");
 		html.Should().NotContain("api-responses-select");
@@ -63,16 +64,14 @@ public class ResponsesBlockRenderingTests
 		{
 			StatusCode = "400",
 			StatusClass = "error",
-			FirstContentType = "application/json",
 			Response = new OpenApiResponse { Description = "Invalid input data response" },
 			Contents =
 			[
-				new ApiResponseContent
+				new ApiMediaContent
 				{
 					ContentType = "application/json",
 					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
 					Properties = null,
-					ArrayItemProperties = null,
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants =
@@ -103,16 +102,14 @@ public class ResponsesBlockRenderingTests
 		{
 			StatusCode = "400",
 			StatusClass = "error",
-			FirstContentType = "application/json",
 			Response = new OpenApiResponse { Description = "Invalid input data response" },
 			Contents =
 			[
-				new ApiResponseContent
+				new ApiMediaContent
 				{
 					ContentType = "application/json",
 					Type = new TypeAnnotation([new TypeSpan("union oneOf")]),
 					Properties = null,
-					ArrayItemProperties = null,
 					UnionVariants = new ApiUnionVariants
 					{
 						Variants = [Variant(displayName, "res-400-variant-x")],
@@ -174,7 +171,10 @@ public class ResponsesBlockRenderingTests
 	[Test]
 	public async Task Render_ResponseWithoutSchemaOrHeaders_RendersStaticRowWithoutEmptyBody()
 	{
-		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with { Contents = [] });
+		var html = await RenderHtml(Response("200", "success", "Indicates a successful response") with
+		{
+			Contents = [new ApiMediaContent { ContentType = "application/json", Type = null, Properties = null }]
+		});
 
 		html.Should().Contain("response-panel--static");
 		html.Should().Contain("response-status-row");
@@ -184,6 +184,40 @@ public class ResponsesBlockRenderingTests
 		html.Should().NotContain("response-toggle-icon");
 		html.Should().NotContain("response-panel-body");
 		html.Should().NotContain("response-200-fields");
+	}
+
+	[Test]
+	public async Task Render_ResponseWithTwoContentTypes_TagsTheActiveTypeAndPicksFromASelectInTheBody()
+	{
+		var response = Response("200", "success", "OK", "application/json");
+		var binary = new ApiMediaContent
+		{
+			ContentType = "application/zip",
+			Type = new TypeAnnotation([new TypeSpan("string(binary)")]),
+			Properties = null
+		};
+
+		var html = await RenderHtml(response with { Contents = [.. response.Contents, binary] });
+
+		html.Should().Contain(
+			"<span class=\"content-type-tag\" data-content-type-current=\"response-200-content\">application/json</span>"
+		);
+		html.Should().Contain("<label for=\"response-200-content-select\">Content type</label>");
+		html.Should().Contain("<option value=\"response-200-content-0\" selected=\"selected\">application/json</option>");
+		html.Should().Contain("<option value=\"response-200-content-1\">application/zip</option>");
+		html.Should().Contain("role=\"group\" aria-label=\"200 response content types\"");
+		html.Should().Contain("id=\"response-200-content-1\" hidden=\"until-found\"");
+		html.Should().Contain("string(binary)");
+	}
+
+	[Test]
+	public async Task Render_ResponseWithOneContentType_TagsItAndHasNoPicker()
+	{
+		var html = await RenderHtml(Response("200", "success", "OK"));
+
+		html.Should().Contain("<span class=\"content-type-tag\">application/json</span>");
+		html.Should().NotContain("data-content-type-current");
+		html.Should().NotContain("data-content-type-select");
 	}
 
 	private static async Task<string> RenderHtml(params ApiResponse[] responses)
@@ -197,7 +231,7 @@ public class ResponsesBlockRenderingTests
 		if (string.IsNullOrEmpty(markdown))
 			return HtmlString.Empty;
 
-		return new HtmlString(ApiMarkdown.SanitizeHtml(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
+		return new HtmlString(ApiHtmlSanitizer.Sanitize(Markdig.Markdown.ToHtml(markdown, MarkdownParser.ApiDescriptionPipeline)));
 	}
 
 	private static ApiResponse Response(
@@ -210,17 +244,10 @@ public class ResponsesBlockRenderingTests
 		{
 			StatusCode = statusCode,
 			StatusClass = statusClass,
-			FirstContentType = contentType,
 			Response = new OpenApiResponse { Description = description },
 			Contents =
 			[
-				new ApiResponseContent
-				{
-					ContentType = contentType,
-					Type = new TypeAnnotation([new TypeSpan("object")]),
-					Properties = null,
-					ArrayItemProperties = null
-				}
+				new ApiMediaContent { ContentType = contentType, Type = new TypeAnnotation([new TypeSpan("object")]), Properties = null }
 			],
 			Headers = []
 		};

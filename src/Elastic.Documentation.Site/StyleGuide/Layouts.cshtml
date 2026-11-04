@@ -1,0 +1,59 @@
+@inherits RazorSlice<StyleGuideViewModel>
+@using Elastic.Documentation.Site.StyleGuide
+@implements IUsesLayout<Elastic.Documentation.Site.StyleGuide._StyleGuideLayout, StyleGuideViewModel>
+@functions {
+	public StyleGuideViewModel LayoutModel => Model;
+}
+<section class="sg-section">
+	<h2>Two width modes</h2>
+	<p><strong>Contained</strong> is the default. The page box is as wide as the elastic.co header (<code>--layout-max</code>), centred, and the header follows the token, so the logo, the docs bar, the sidebar text and the content start on one line. The assembler has to be contained, because the header is not ours.</p>
+	<p><strong>Full width</strong> (<code>layout-full</code> on the body) lets the sidebar anchor to the left, with the content and rail centred in what is left. The header bar is always the whole window; what moves is its content, which shares <code>--layout-max</code> with the page, so the sidebar always starts under the header's left edge. It stops at <code>--layout-max-wide</code> and centres beyond it, so a 4K window is not sparse. Each window below is drawn to scale: the bar on top is the header, the dashed boxes are the sidebar, content and rail.</p>
+	<div class="grid grid--2 sg-devices">
+		@foreach (var window in LayoutDeviceModel.Windows(LayoutKind.ThreeColumns))
+		{
+			@await RenderPartialAsync(_LayoutDevice.Create(window))
+		}
+	</div>
+</section>
+<section class="sg-section">
+	<h2>Content measure, sidebar and rail</h2>
+	<p>The content is optimised for <code>--layout-measure</code>, 90 characters a line (110 in full width). The sidebar and rail fall in line from that: whatever is left of the box after the content and the gaps is shared between them, 55% to the sidebar and 45% to the rail, and each stops growing at its maximum. Beyond that the content grows rather than the sidebar and rail, or in full width the whole group is centred. Below its minimum a column stops shrinking and the content gives way; the rail drops at 1100px and the sidebar becomes a drawer at 860px.</p>
+	<table class="sg-table">
+		<thead><tr><th>Token</th><th>Value and use</th></tr></thead>
+		<tbody>
+		@foreach (var token in StyleGuideTokens.Layouts)
+		{
+			<tr>
+				<td><code>@token.Name</code></td>
+				<td>@token.Role</td>
+			</tr>
+		}
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Units</h2>
+	<p>Layout sizes are in <code>rem</code>, and the reading measure is in <code>ch</code>. Nothing is in <code>px</code> but hairlines and the breakpoints.</p>
+	<table class="sg-table">
+		<thead><tr><th>Unit</th><th>Used for</th><th>Why</th></tr></thead>
+		<tbody>
+		<tr><td><code>rem</code></td><td>Page widths, gutters, gaps, sidebar and rail widths, spacing, type</td><td>Follows the reader's font-size setting and browser zoom, so the layout scales with the text instead of cramping it. One root size means every number reads the same.</td></tr>
+		<tr><td><code>ch</code></td><td>The content measure only</td><td>The width of a "0" in the content's own font, so 90 means 90 characters whatever the font or size. Layout sizes are not in <code>ch</code>: they would shift when a font falls back.</td></tr>
+		<tr><td><code>%</code> and <code>fr</code></td><td>Sharing out what is left</td><td>The sidebar and rail are a share of the free space, clamped between rem limits.</td></tr>
+		<tr><td><code>em</code></td><td>Not used for layout</td><td>It compounds with nesting, so the same value means different things in different places.</td></tr>
+		<tr><td><code>px</code></td><td>Borders and the three breakpoints</td><td>Media queries cannot read custom properties, and a hairline should stay a hairline.</td></tr>
+		</tbody>
+	</table>
+</section>
+<section class="sg-section">
+	<h2>Breakpoints</h2>
+	<p>The rail drops at 1100px, the sidebar becomes a drawer at 860px and grids become one column at 760px. <a href="@StyleGuideCatalog.Route/breakpoints">Breakpoints</a> shows how each layout breaks, in live frames.</p>
+</section>
+<section class="sg-section">
+	<h2>Starting a new page</h2>
+	<ol>
+		<li>Pick the layout: <code>layout--single</code> without a sidebar, <code>layout--two</code> with one, <code>layout--three</code> with a sidebar and a rail. Set the full-width mode on the page (<code>FullWidth</code> on the layout model), never on a single layout, so the header follows.</li>
+		<li>Put a full-width strip (hero, banner) in a <code>band</code>, and its content in <code>band__content</code>, which takes the same box as the header's content, so it lines up with the header and the page below.</li>
+		<li>Do not set widths, gutters or breakpoints in a page's own CSS; if the layouts do not fit, that is a gap to bring back here. Each layout is drawn on <a href="@StyleGuideCatalog.Route/page-layouts">Page layouts</a>, and spacing and grids are on <a href="@StyleGuideCatalog.Route/grid">Grid and rhythm</a>.</li>
+	</ol>
+</section>

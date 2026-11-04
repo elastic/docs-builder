@@ -46,6 +46,12 @@ public sealed record SetupOptions
 	/// </summary>
 	public IReadOnlyCollection<string>? DocsetProducts { get; init; }
 
+	/// <summary>
+	/// Turns the <c>NAVIGATION_PREVIEW</c> feature flag on for this documentation set, so directives render with design-system components.
+	/// Off by default, which keeps every existing test on the legacy markup.
+	/// </summary>
+	public bool NavigationPreview { get; init; }
+
 	public static SetupOptions Empty { get; } = new();
 }
 
@@ -106,6 +112,9 @@ public sealed class Scenario
 	/// </summary>
 	public async Task DoesNotConvertToContainingHtml(string expected) =>
 		HtmlAssertions.DoesNotConvertToContainingHtml(expected, await BuildAsync());
+
+	/// <summary>The complete HTML of <c>index.md</c>, for assertions about where things appear relative to each other.</summary>
+	public async Task<string> IndexHtmlAsync() => HtmlAssertions.IndexHtml(await BuildAsync());
 
 	// ────────────────────────────────────────────────────────────────────────────────
 	// Diagnostics assertions

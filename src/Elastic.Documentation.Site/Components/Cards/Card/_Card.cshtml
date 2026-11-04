@@ -1,0 +1,19 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Cards.Card.CardModel>
+<article class="@Model.CssClass">
+	@if (Model.Eyebrow is { } eyebrow)
+	{
+		<span class="card__eyebrow">@eyebrow</span>
+	}
+	<div class="card__head">
+		@if (Model.Icon is { } icon)
+		{
+			<span class="icon-box">@await RenderPartialAsync(_Icon.Create(new IconModel { Name = icon, Size = IconSize.Large }))</span>
+		}
+		<h3 class="card__title"><a class="card__link" href="@Model.Href">@Model.Title</a></h3>
+	</div>
+	<p class="card__text">@Model.Description</p>
+	<span class="card__cta" aria-hidden="true">
+		@Model.CtaLabel
+		@await RenderPartialAsync(_Icon.Create(new IconModel { Name = "arrow_right", Size = IconSize.Small }))
+	</span>
+</article>

@@ -4,102 +4,95 @@
 
 using System.Globalization;
 using Elastic.Documentation.AppliesTo;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Settings;
 
-[YamlSerializable]
 public record YamlSettings
 {
-	[YamlMember(Alias = "product")]
+	[YamlPropertyName("product")]
 	public string? Product { get; set; }
-	[YamlMember(Alias = "collection")]
+	[YamlPropertyName("collection")]
 	public string? Collection { get; set; }
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
-	[YamlMember(Alias = "page_description")]
+	[YamlPropertyName("page_description")]
 	public string? PageDescription { get; set; }
-	[YamlMember(Alias = "note")]
+	[YamlPropertyName("note")]
 	public string? Note { get; set; }
-	[YamlMember(Alias = "groups")]
+	[YamlPropertyName("groups")]
 	public SettingsGrouping[] Groups { get; set; } = [];
 }
 
-[YamlSerializable]
 public record SettingsGrouping
 {
-	[YamlMember(Alias = "group")]
+	[YamlPropertyName("group")]
 	public string? Name { get; set; }
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
-	[YamlMember(Alias = "legacy_id")]
+	[YamlPropertyName("legacy_id")]
 	public string? LegacyId { get; set; }
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
-	[YamlMember(Alias = "note")]
+	[YamlPropertyName("note")]
 	public string? Note { get; set; }
-	[YamlMember(Alias = "example")]
+	[YamlPropertyName("example")]
 	public string? Example { get; set; }
-	[YamlMember(Alias = "settings")]
+	[YamlPropertyName("settings")]
 	public Setting[] Settings { get; set; } = [];
 }
 
-[YamlSerializable]
 public record Setting
 {
-	[YamlMember(Alias = "setting")]
+	[YamlPropertyName("setting")]
 	public string? Name { get; set; }
-	[YamlMember(Alias = "id")]
+	[YamlPropertyName("id")]
 	public string? Id { get; set; }
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
-	[YamlMember(Alias = "deprecation_details")]
+	[YamlPropertyName("deprecation_details")]
 	public string? DeprecationDetails { get; set; }
-	[YamlMember(Alias = "note")]
+	[YamlPropertyName("note")]
 	public string? Note { get; set; }
-	[YamlMember(Alias = "tip")]
+	[YamlPropertyName("tip")]
 	public string? Tip { get; set; }
-	[YamlMember(Alias = "warning")]
+	[YamlPropertyName("warning")]
 	public string? Warning { get; set; }
-	[YamlMember(Alias = "important")]
+	[YamlPropertyName("important")]
 	public string? Important { get; set; }
-	[YamlMember(Alias = "default")]
+	[YamlPropertyName("default")]
 	public object? Default { get; set; }
-	[YamlMember(Alias = "datatype")]
+	[YamlPropertyName("datatype")]
 	public string? Datatype { get; set; }
-	[YamlMember(Alias = "example")]
+	[YamlPropertyName("example")]
 	public string? Example { get; set; }
-	[YamlMember(Alias = "settings")]
+	[YamlPropertyName("settings")]
 	public Setting[] Settings { get; set; } = [];
-	[YamlMember(Alias = "applies_to")]
+	[YamlPropertyName("applies_to")]
 	public ApplicableTo? AppliesTo { get; set; }
 
 	// Legacy fields maintained for backward compatibility with existing sources.
-	[YamlMember(Alias = "applies")]
+	[YamlPropertyName("applies")]
 	public ApplicableTo? LegacyAppliesTo { get; set; }
-	[YamlMember(Alias = "type")]
+	[YamlPropertyName("type")]
 	public SettingMutability Mutability { get; set; }
-	[YamlMember(Alias = "options")]
+	[YamlPropertyName("options")]
 	public AllowedValue[]? Options { get; set; }
 
 	public ApplicableTo? ResolveAppliesTo(ApplicableTo? inheritedAppliesTo) => AppliesTo ?? LegacyAppliesTo ?? inheritedAppliesTo;
 }
 
-[YamlSerializable]
 public record AllowedValue
 {
-	[YamlMember(Alias = "option")]
+	[YamlPropertyName("option")]
 	public string? Option { get; set; }
-	[YamlMember(Alias = "description")]
+	[YamlPropertyName("description")]
 	public string? Description { get; set; }
 }
 
-[YamlSerializable]
 public enum SettingMutability
 {
-	[YamlMember(Alias = "static")]
 	Static,
-	[YamlMember(Alias = "dynamic")]
 	Dynamic
 }
 

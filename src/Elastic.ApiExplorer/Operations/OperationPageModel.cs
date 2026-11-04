@@ -17,7 +17,6 @@ namespace Elastic.ApiExplorer.Operations;
 public partial record OperationPageModel
 {
 	public required ApplicableToViewModel? Availability { get; init; }
-	public required bool IsBeta { get; init; }
 	public required ExternalDocLink? ExternalDocs { get; init; }
 	public required IList<OpenApiServer>? Servers { get; init; }
 	/// <summary>Every route and method of the operation, merged into display rows.</summary>
@@ -39,21 +38,21 @@ public partial record OperationPageModel
 			{
 				new ParameterListSection(
 					ParameterLocation.Path,
-					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames),
+					new ParamSectionHeader("Path parameters", "path-params", PathParameterNames, SummaryStyle.List),
 					"path-params-list",
 					PathParameters,
 					"Path parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Query,
-					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames),
+					new ParamSectionHeader("Query parameters", "query-params", QueryParameterNames, SummaryStyle.List),
 					"query-params-list",
 					QueryParameters,
 					"Query string parameters"
 				),
 				new ParameterListSection(
 					ParameterLocation.Header,
-					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames),
+					new ParamSectionHeader("Header parameters", "header-params", HeaderParameterNames, SummaryStyle.List),
 					"header-params-list",
 					HeaderParameters,
 					"Header parameters"
@@ -61,8 +60,16 @@ public partial record OperationPageModel
 			}.Where(static s => s.Parameters.Items.Count > 0)
 		];
 
-	/// <summary>The request body is a union, so <see cref="RequestPropertyNames"/> names its variants, not its fields.</summary>
-	public bool RequestNamesAreVariants => RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 };
+	/// <summary>
+	/// A union body's names are its variants, a JSON body's its fields as an object, an array body's its items' fields, and any
+	/// other body's a plain list.
+	/// </summary>
+	public SummaryStyle RequestSummaryStyle =>
+		RequestProperties is null && RequestUnionVariants is { Variants.Count: > 0 }
+			? SummaryStyle.Variants
+			: PrimaryRequest is { } primary && RequestBodyExample.IsJson(primary.ContentType)
+				? primary.IsArray ? SummaryStyle.ArrayOfFields : SummaryStyle.Fields
+				: SummaryStyle.List;
 
 	public IReadOnlyList<string> RequestPropertyNames =>
 		NamesOf(
@@ -73,18 +80,17 @@ public partial record OperationPageModel
 
 	public required string? DescriptionMarkdown { get; init; }
 	public required IReadOnlyList<ApiPostSection> PostSections { get; init; }
-	public required string RequestContentType { get; init; }
-	public required ApiPropertyList? RequestProperties { get; init; }
 
-	/// <summary>The variants of a request body that is itself a <c>oneOf</c>/<c>anyOf</c>; listed below <see cref="RequestProperties"/> when it has both.</summary>
-	public ApiUnionVariants? RequestUnionVariants { get; init; }
+	/// <summary>Every content type the request body declares; the first is the one the examples, samples, and field names follow.</summary>
+	public required IReadOnlyList<ApiMediaContent> RequestContents { get; init; }
 
-	/// <summary>Which of the request body's fields it needs, when its <c>oneOf</c>/<c>anyOf</c> only lists <c>required</c> sets.</summary>
-	public RequiredAlternatives? RequestRequires { get; init; }
+	/// <summary>The content type the examples, samples, and field names follow.</summary>
+	public ApiMediaContent? PrimaryRequest => RequestContents is [var first, ..] ? first : null;
 
-	/// <summary>Whether the request body lists properties, variants, or both, rather than only its type.</summary>
-	public bool HasRequestBody => RequestProperties is not null || RequestUnionVariants is { Variants.Count: > 0 };
-	public required TypeAnnotation? RequestType { get; init; }
+	public ApiPropertyList? RequestProperties => PrimaryRequest?.Properties;
+
+	public ApiUnionVariants? RequestUnionVariants => PrimaryRequest?.UnionVariants;
+
 	public required IReadOnlyList<ApiResponse> Responses { get; init; }
 	public required IReadOnlyList<CodeSample> CodeSamples { get; init; }
 	public required IReadOnlyList<ExampleDisplay> RequestExamples { get; init; }
@@ -94,7 +100,10 @@ public partial record OperationPageModel
 	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
 
 	/// <summary>The alternative ways to authenticate. Empty when the spec declares no schemes.</summary>
+	/// <summary>Only the alternatives an operation sets for itself. What every endpoint inherits is on the Authentication page.</summary>
 	public required IReadOnlyList<AuthRequirement> AuthRequirements { get; init; }
+
+	public AuthBadge? AuthBadge { get; init; }
 
 	/// <summary>Privileges the operation needs, from <c>x-req-auth</c> or lifted out of the description.</summary>
 	public required IReadOnlyList<PrivilegeRow> RequiredPrivileges { get; init; }
@@ -111,6 +120,7 @@ public partial record OperationPageModel
 			RenderMarkdown = markdown => ApiMarkdown.Render(context, markdown),
 			ApiRootUrl = context.CurrentNavigation.NavigationRoot.Url,
 			VersionsConfiguration = context.BuildContext.VersionsConfiguration,
+			DesignSystem = context.BuildContext.Configuration.Features.NavigationPreviewEnabled,
 			SchemaResolveCache = context.SchemaResolveCache
 		};
 		var builder = new ApiPropertyTreeBuilder(document, options);
@@ -122,15 +132,16 @@ public partial record OperationPageModel
 			siblings
 		);
 		var privileges = RequiredPrivilegesExtractor.Extract(operation, endpoint.Description, context.ApiExplorerLog, apiOperation.Route);
-		var requestExamples = MapExamples(
-			operation.RequestBody?.Content?.FirstOrDefault().Value?.Examples,
-			options.RenderMarkdown,
-			endpoint: endpoint
+		var requestContentEntry = PrimaryRequestContent(operation.RequestBody);
+		// Examples may sit on another content type than the schema does, as when the spec lists one only to attach them.
+		var requestContentTypes = RequestContentTypes(operation.RequestBody, requestContentEntry);
+		var requestExamples = MapRequestExamples(requestContentTypes, options.RenderMarkdown, endpoint);
+		var codeSamples = SampleMethods.Align(
+			ExampleCodeSamples.Combine(OpenApiExtensionReader.ParseCodeSamples(operation), requestContentTypes),
+			endpoint
 		);
-		var codeSamples = SampleMethods.Align(OpenApiExtensionReader.ParseCodeSamples(operation), endpoint);
 		var servers = operation.Servers is { Count: > 0 } ? operation.Servers : document.Servers;
 		var parameters = apiOperation.Parameters;
-		var requestContentEntry = operation.RequestBody?.Content?.FirstOrDefault();
 		var requestSchema = requestContentEntry?.Value?.Schema;
 		var target = GeneratedCodeSamples.SampleTargetFor(context.Product?.Id);
 		if (codeSamples.Count == 0)
@@ -150,7 +161,7 @@ public partial record OperationPageModel
 			});
 		}
 
-		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown);
+		var responseExamples = MapResponseExamples(operation.Responses, options.RenderMarkdown, analyzer);
 		var scenarios = WithClientDocs(
 			WithOperationIdentity(
 				GeneratedCodeSamples.Fill(
@@ -171,39 +182,25 @@ public partial record OperationPageModel
 			externalDocs = new ExternalDocLink(url, ApiPropertyTreeBuilder.IsElasticDocsUrl(url), operation.ExternalDocs.Description);
 		}
 
-		// Built in page order, before the body, so a field that repeats a parameter's fields links up the page to it.
-		var parameterSource = new ParameterRowSource(builder, supplemental, endpoint);
-		var pathParameters = BuildParameters(parameters, ParameterLocation.Path, parameterSource);
-		var queryParameters = BuildParameters(parameters, ParameterLocation.Query, parameterSource);
-		var headerParameters = BuildParameters(parameters, ParameterLocation.Header, parameterSource);
-		var requestScope = new PropertyTreeScope
-		{
-			Prefix = "req",
-			IsRequest = true,
-			DescriptionOverrides = supplemental?.RequestBodyOverrides
-		};
-		var request = requestSchema is not null
-			? ApiBodyContent.Build(requestSchema, requestScope, analyzer, builder)
-			: ApiBodyContent.Empty;
+		var propertyTrees = BuildPropertyTrees(apiOperation, analyzer, new ParameterRowSource(builder, supplemental, endpoint));
 
 		return new OperationPageModel
 		{
-			Availability = AvailabilityBadge.From(operation.Extensions, context.BuildContext.VersionsConfiguration),
-			IsBeta = OpenApiExtensionReader.IsBeta(operation),
+			Availability = AvailabilityBadge.FromOperation(
+				operation,
+				context.BuildContext.VersionsConfiguration,
+				designSystem: context.BuildContext.Configuration.Features.NavigationPreviewEnabled
+			),
 			ExternalDocs = externalDocs,
 			Servers = servers,
 			Endpoint = endpoint,
-			PathParameters = pathParameters,
-			QueryParameters = queryParameters,
-			HeaderParameters = headerParameters,
-			RequestContentType = requestContentEntry?.Key ?? "application/json",
-			RequestProperties = request.Properties,
-			RequestUnionVariants = request.UnionVariants,
-			RequestRequires = request.Requires,
+			PathParameters = propertyTrees.Path,
+			QueryParameters = propertyTrees.Query,
+			HeaderParameters = propertyTrees.Header,
+			RequestContents = propertyTrees.Request,
 			DescriptionMarkdown = privileges.Description,
 			PostSections = ApiPostSection.From(context, supplemental?.PostSections ?? []),
-			RequestType = requestSchema is not null ? builder.Describe(requestSchema) : null,
-			Responses = BuildResponses(operation, analyzer, builder),
+			Responses = propertyTrees.Responses,
 			CodeSamples = codeSamples,
 			RequestExamples = requestExamples,
 			ResponseExamples = responseExamples,
@@ -211,9 +208,16 @@ public partial record OperationPageModel
 			ShowResponseExamples = responseExamples.Count > 0,
 			Scenarios = scenarios,
 			RequiredPrivileges = privileges.Rows,
-			AuthRequirements = OpenApiAuthSchemeResolver.Resolve(operation, document)
+			AuthRequirements = OpenApiAuthSchemeResolver.OverridesDocument(operation, document)
+				? OpenApiAuthSchemeResolver.Resolve(operation, document)
+				: [],
+			AuthBadge = OpenApiAuthSchemeResolver.Badge(operation, document)
 		};
 	}
+
+	/// <summary>The request content entry with a schema, else the first entry, so a leading example-only entry does not hide the body.</summary>
+	internal static KeyValuePair<string, IOpenApiMediaType>? PrimaryRequestContent(IOpenApiRequestBody? requestBody) =>
+		requestBody?.Content is { Count: > 0 } content ? SchemaFirst(content).First() : null;
 
 	private static IReadOnlyList<string> NamesOf(IEnumerable<string?> names) => [.. names.OfType<string>().Where(static n => n.Length > 0)];
 }

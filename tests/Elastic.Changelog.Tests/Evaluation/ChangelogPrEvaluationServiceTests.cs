@@ -1292,4 +1292,57 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("impact", A<string>._)).MustNotHaveHappened();
 		VerifyOutputSet("entry-action", "File action.");
 	}
+
+	private const string ConfigWithRequiredAreas =
+		"""
+		pivot:
+		  required: [areas]
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement: ">enhancement"
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		  areas:
+		    Search: ":Search"
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaMissing_ReturnsNoLabelAndOutputsAreaLabelTable()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>.That.Contains(":Search"))).MustHaveHappened();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("No matching area label found"));
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaPresent_Proceeds()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature", ":Search"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
+	}
 }

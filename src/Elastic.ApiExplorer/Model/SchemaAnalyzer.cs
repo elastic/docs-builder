@@ -37,6 +37,9 @@ public class SchemaAnalyzer(
 	// Each page builds its own analyzer, so the set never crosses threads.
 	private readonly HashSet<string> _expandingAllOfRefs = [with(StringComparer.Ordinal)];
 
+	// Union $refs this instance is classifying through an allOf wrapper; a wrapper that refers back to one stays a plain named type.
+	private readonly HashSet<string> _expandingWrappedUnionRefs = [with(StringComparer.Ordinal)];
+
 	// Referenced maps this instance is classifying; a map whose values refer back to it stays a plain named type.
 	private readonly HashSet<string> _expandingMapRefs = [with(StringComparer.Ordinal)];
 
@@ -53,6 +56,17 @@ public class SchemaAnalyzer(
 	/// Whether a schema declares properties itself rather than only through an <c>allOf</c>. A union that does lists them
 	/// above its variants; one whose properties come only from an <c>allOf</c> lists just its variants, which carry them.
 	/// </summary>
+	/// <summary>
+	/// The union <c>$ref</c> that an <c>allOf</c> with that one member wraps, as OpenAPI 3.1 does to attach a description;
+	/// otherwise the schema itself. The union's fields, variants and discriminator are read from what this returns.
+	/// </summary>
+	public IOpenApiSchema UnwrapUnionRef(IOpenApiSchema schema) =>
+		schema is not OpenApiSchemaReference
+			&& schema.AllOf is [OpenApiSchemaReference reference]
+			&& schema.Properties is not { Count: > 0 }
+			&& !UnionSchemas.IsUnion(schema)
+			&& UnionSchemas.IsUnion(ResolveSchema(reference)) ? reference : schema;
+
 	public bool DeclaresProperties(IOpenApiSchema schema) => (ResolveSchema(schema) ?? schema).Properties is { Count: > 0 };
 
 	/// <summary>
@@ -355,15 +369,22 @@ public class SchemaAnalyzer(
 			StringComparer.Ordinal
 		);
 		var shared = SelectingConstant(shapes.Values.Select(static s => s.Constants).ToList());
+		var namedShapes = labelled
+			.Where(static x => !string.IsNullOrEmpty(x.Option.Ref))
+			.Select(static x => x.Shape)
+			.ToHashSet(StringComparer.Ordinal);
 		var labels = shapes.ToDictionary(
 			static s => s.Key,
-			s => ObjectLabel(
-				s.Value.Schema,
-				s.Value.Constants,
-				shared,
-				s.Value.Properties,
-				shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
-			),
+			s => ObjectLabel(s.Value.Schema, s.Value.Constants, shared)
+			// A named member without a title or selecting field goes by its schema's name, not by a field list.
+			??
+				(namedShapes.Contains(s.Key)
+					? null
+					: FieldsLabel(
+						s.Value.Schema,
+						s.Value.Properties,
+						shapes.Where(o => o.Key != s.Key).SelectMany(static o => o.Value.Properties)
+					)),
 			StringComparer.Ordinal
 		);
 		var byIndex = labelled.ToDictionary(static x => x.Index, x => labels[x.Shape]);
@@ -394,6 +415,10 @@ public class SchemaAnalyzer(
 						.Count() == constants.Count
 				);
 
+	/// <summary>The property each of the object <paramref name="members"/> fixes to a value of its own, null when none does.</summary>
+	public string? GetSelectingProperty(IEnumerable<IOpenApiSchema?> members) =>
+		SelectingConstant([.. members.OfType<IOpenApiSchema>().Select(ConstantFields)]);
+
 	/// <summary>The fields an object fixes to a single value (<c>type: eql</c>), in property order.</summary>
 	private Dictionary<string, string> ConstantFields(IOpenApiSchema member)
 	{
@@ -406,21 +431,17 @@ public class SchemaAnalyzer(
 		return constants;
 	}
 
-	private static string? ObjectLabel(
-		IOpenApiSchema member,
-		Dictionary<string, string> constants,
-		string? sharedConstant,
-		IReadOnlyList<string> own,
-		IEnumerable<string> siblingNames
-	)
+	private static string? ObjectLabel(IOpenApiSchema member, Dictionary<string, string> constants, string? sharedConstant)
 	{
 		if (!string.IsNullOrWhiteSpace(member.Title))
 			return member.Title;
 
 		var constant = sharedConstant ?? constants.Keys.FirstOrDefault();
-		if (constant is not null)
-			return $"{constant}: {constants[constant]}";
+		return constant is null ? null : $"{constant}: {constants[constant]}";
+	}
 
+	private static string? FieldsLabel(IOpenApiSchema member, IReadOnlyList<string> own, IEnumerable<string> siblingNames)
+	{
 		// The fields no sibling has tell the variant apart; required ones define it, so they come first.
 		var others = siblingNames.ToHashSet(StringComparer.Ordinal);
 		var distinct = own.Where(n => !others.Contains(n)).ToList();
@@ -654,6 +675,10 @@ public class SchemaAnalyzer(
 				IsEnum = true
 			};
 
+		// The same wrapper around a union $ref keeps the union and its options, so it reads as the $ref alone would.
+		if (allOf.Count == 1 && UnionSchemas.IsUnion(resolvedTarget) && ClassifyWrappedUnion(refSchemas[0], refId) is { } union)
+			return union;
+
 		return new TypeInfo
 		{
 			TypeName = named.TypeName,
@@ -835,6 +860,22 @@ public class SchemaAnalyzer(
 		finally
 		{
 			_ = _expandingAllOfRefs.Remove(refId);
+		}
+	}
+
+	/// <summary>A union <c>$ref</c> behind an <c>allOf</c> wrapper; null when that union is already being classified.</summary>
+	private TypeInfo? ClassifyWrappedUnion(OpenApiSchemaReference reference, string refId)
+	{
+		if (!_expandingWrappedUnionRefs.Add(refId))
+			return null;
+
+		try
+		{
+			return ClassifyReference(reference, refId);
+		}
+		finally
+		{
+			_ = _expandingWrappedUnionRefs.Remove(refId);
 		}
 	}
 

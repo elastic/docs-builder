@@ -55,9 +55,17 @@ public static class ProductResolution
 	/// its fallbacks: the repository name for <c>changelog add</c>, the profile's output products for a range bundle.
 	/// </summary>
 	public static bool RequiresProductLabel(ChangelogConfiguration config) =>
-		config.ProductsConfiguration?.Default is not { Count: > 0 }
-			&& config.LabelToProducts is { Count: > 0 } mapping
-			&& mapping.Values.Select(ProductIdOf).Distinct(StringComparer.OrdinalIgnoreCase).Count() >= 2;
+		RequiresProductLabelExplicitly(config)
+			|| (config.ProductsConfiguration?.Default is not { Count: > 0 }
+				&& config.LabelToProducts is { Count: > 0 } mapping
+				&& mapping.Values.Select(ProductIdOf).Distinct(StringComparer.OrdinalIgnoreCase).Count() >= 2);
+
+	/// <summary>
+	/// True when <c>pivot.required</c> lists <c>products</c>. A label is then required even when
+	/// <c>products.default</c> is set or <c>pivot.products</c> maps a single product.
+	/// </summary>
+	public static bool RequiresProductLabelExplicitly(ChangelogConfiguration config) =>
+		config.RequiredPivots.HasFlag(RequiredPivot.Products);
 
 	/// <summary>
 	/// The error for <paramref name="subject"/> without a product label, for example <c>PR https://github.com/elastic/kibana/pull/1</c>.

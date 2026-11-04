@@ -24,7 +24,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 		var html = await RenderAsync(nav);
 
 		Slice(html, "<h1>", "</h1>").Should().Be("<h1>Run a search");
-		var badges = Slice(html, "<div class=\"api-title-badges\">", "</applies-to-popover>");
+		var badges = Slice(html, "<span class=\"api-title-badges\">", "</applies-to-popover>");
 		badges.Should().Contain("<span class=\"applies applies-inline\">");
 		badges.Should().Contain("badge-key=\"Stack\"");
 		badges.Should().Contain("badge-version=\"7.7&#x2B;\"");

@@ -97,20 +97,27 @@ function syncStripHeight(carousel: HTMLElement) {
     if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
 }
 
-/** Offers "Show more" only when the description is cut off by its three-line clamp. */
-function syncDescription(examples: HTMLElement) {
-    const description = visiblePanel(examples)?.querySelector<HTMLElement>(
-        '[data-example-description]'
-    )
-    const text = description?.querySelector<HTMLElement>(
-        '.api-example-description-text'
-    )
-    const toggle = description?.querySelector<HTMLElement>(
-        '[data-description-toggle]'
-    )
-    if (!description || !text || !toggle) return
-    const open = description.classList.contains('is-open')
-    toggle.hidden = !open && text.scrollHeight <= text.clientHeight + 1
+/** Offers "Show more" only on captions cut off by their three-line clamp. A hidden one measures zero, so it waits until shown. */
+export function syncDescriptions(root: HTMLElement) {
+    const clipped = Array.from(
+        root.querySelectorAll<HTMLElement>('[data-example-description]')
+    ).flatMap((description) => {
+        const text = description.querySelector<HTMLElement>(
+            '.api-example-caption-text'
+        )
+        const toggle = description.querySelector<HTMLElement>(
+            '[data-description-toggle]'
+        )
+        if (!text || !toggle || text.clientHeight === 0) return []
+        const open = description.classList.contains('is-open')
+        return [
+            {
+                toggle,
+                hidden: !open && text.scrollHeight <= text.clientHeight + 1,
+            },
+        ]
+    })
+    clipped.forEach(({ toggle, hidden }) => (toggle.hidden = hidden))
 }
 
 function toggleDescription(button: HTMLElement) {
@@ -290,7 +297,7 @@ function showScenario(examples: HTMLElement, scenarioId: string): void {
         })
     const carousel = visibleCarousel(examples)
     if (carousel) syncStripHeight(carousel)
-    syncDescription(examples)
+    syncDescriptions(visiblePanel(examples) ?? examples)
     fitChips(examples)
 }
 
@@ -660,7 +667,7 @@ export function initApiExamples(root: ParentNode = document): void {
                 .querySelectorAll<HTMLElement>('[data-api-carousel]')
                 .forEach(observeStrip)
             applyPreferredLanguage(examples, link.lang)
-            if (!link.example) syncDescription(examples)
+            if (!link.example) syncDescriptions(examples)
             fitChips(examples)
             const row = examples.querySelector<HTMLElement>(exampleChips.row)
             if (row) observeChipRow(row, exampleChips)

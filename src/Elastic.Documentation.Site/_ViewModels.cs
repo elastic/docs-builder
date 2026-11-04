@@ -30,7 +30,8 @@ public record FrontendConfig(
 	bool TelemetryEnabled,
 	string RootPath,
 	string ApiBasePath,
-	bool AirGapped = false
+	bool AirGapped = false,
+	string? WafIntegrationUrl = null
 );
 
 /// <summary>Single breadcrumb item for the codex sub-header.</summary>
@@ -39,14 +40,17 @@ public record CodexBreadcrumb(string Title, string? Url);
 /// <summary>JSON and YAML downloads for the whole OpenAPI spec of the current API.</summary>
 public sealed record ApiSpecDownload(string JsonUrl, string YamlUrl);
 
-/// <summary>One API product in the context bar's product menu.</summary>
-public sealed record ApiContextProduct(string Label, string Url, bool Selected, string? IconSvg);
+/// <summary>One API product in the identity menu.</summary>
+public sealed record ApiIdentityProduct(string Label, string Url, bool Selected, string? IconSvg);
 
-/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads.</summary>
-public sealed record ApiContextBar(
+/// <summary>A labelled band of the product menu. <see cref="Title"/> is null for a group that needs no label.</summary>
+public sealed record ApiIdentityProductGroup(string? Title, IReadOnlyList<ApiIdentityProduct> Products);
+
+/// <summary>The identity of the current API: product, its logo, the other products, the versions and the spec downloads. Rendered as the sidebar selector.</summary>
+public sealed record ApiIdentity(
 	string Title,
 	string? IconSvg,
-	IReadOnlyList<ApiContextProduct> Products,
+	IReadOnlyList<ApiIdentityProductGroup> ProductGroups,
 	string? HubUrl,
 	IReadOnlyList<NavigationSelectOption> Versions,
 	ApiSpecDownload Spec
@@ -72,6 +76,9 @@ public record GlobalLayoutViewModel
 	/// <summary>Breadcrumb trail for codex sub-header (Home / Group / Docset).</summary>
 	public IReadOnlyList<CodexBreadcrumb>? CodexBreadcrumbs { get; init; }
 
+	/// <summary>The site's top navigation for pages that sit outside the site's navigation tree, such as the generated API pages.</summary>
+	public TopNavRenderModel? SiteTopNav { get; init; }
+
 	/// <summary>
 	/// The configured top navigation for assembler builds. Derived by walking the
 	/// <see cref="CurrentNavigationItem"/> parent chain to find a
@@ -82,6 +89,8 @@ public record GlobalLayoutViewModel
 	{
 		get
 		{
+			if (SiteTopNav is not null)
+				return SiteTopNav;
 			for (var item = (INavigationItem?)CurrentNavigationItem; item is not null; item = item.Parent)
 			{
 				if (item is ISiteNavigationRoot siteRoot)
@@ -123,7 +132,10 @@ public record GlobalLayoutViewModel
 	/// Which API the reader is looking at: product, versions and spec downloads. Null on Docs
 	/// pages and on the API catalog.
 	/// </summary>
-	public ApiContextBar? ApiContext { get; init; }
+	public ApiIdentity? ApiContext { get; init; }
+
+	/// <summary>API catalog URL used by the API header's home link.</summary>
+	public string? ApiCatalogUrl { get; init; }
 
 	/// <summary>
 	/// When the current page is a hidden nav item (e.g. an individual detection rule page),
@@ -157,6 +169,9 @@ public record GlobalLayoutViewModel
 
 	public bool RenderHamburgerIcon { get; init; } = true;
 
+	/// <summary>Lays the page out at the full window width, up to the wide limit, instead of the width of the elastic.co header.</summary>
+	public bool FullWidth { get; init; }
+
 	/// <summary>Whether the git remote belongs to the <c>elastic</c> GitHub organization.</summary>
 	public bool IsElasticOrg => GitRepository?.StartsWith("elastic/", StringComparison.OrdinalIgnoreCase) == true;
 
@@ -184,7 +199,15 @@ public record GlobalLayoutViewModel
 	{
 		BuildType.Assembler when Features.AirGappedEnabled =>
 			new FrontendConfig("assembler", "docs-frontend", false, StaticPathPrefix, ApiBasePath, AirGapped: true),
-		BuildType.Assembler => new FrontendConfig("assembler", "docs-frontend", true, StaticPathPrefix, ApiBasePath),
+		BuildType.Assembler =>
+			new FrontendConfig(
+				"assembler",
+				"docs-frontend",
+				true,
+				StaticPathPrefix,
+				ApiBasePath,
+				WafIntegrationUrl: Features.WafIntegrationUrl
+			),
 		BuildType.Codex => new FrontendConfig("codex", "codex-frontend", true, StaticPathPrefix, ApiBasePath),
 		_ => new FrontendConfig("isolated", "docs-frontend", false, StaticPathPrefix, ApiBasePath),
 	};

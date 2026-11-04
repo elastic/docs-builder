@@ -5,7 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
@@ -87,7 +87,6 @@ public record ProductsConfiguration : IProductNameLookup
 	}
 }
 
-[YamlSerializable]
 public record ProductLink
 {
 	public string Id { get; set; } = string.Empty;
@@ -132,6 +131,7 @@ public record ProductFeatures
 	public bool ParticipatesInReleaseNotes => ReleaseNotes != ReleaseNotesPath.None;
 
 	/// <summary>All features enabled -- the implicit default when no <c>features</c> map is present in YAML.</summary>
+	[YamlIgnore]
 	public static ProductFeatures All => new() { PublicReference = true, ReleaseNotes = ReleaseNotesPath.OnRelease };
 
 	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(
@@ -140,7 +140,6 @@ public record ProductFeatures
 	);
 }
 
-[YamlSerializable]
 public record Product
 {
 	public required string Id { get; init; }

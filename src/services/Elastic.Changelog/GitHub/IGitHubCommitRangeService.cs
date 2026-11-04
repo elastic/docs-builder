@@ -61,6 +61,12 @@ public record CommitRangePullRequest
 
 	/// <summary>Names of the labels on the pull request.</summary>
 	public IReadOnlyList<string> Labels { get; init; } = [];
+
+	/// <summary>The title, when GitHub returned it.</summary>
+	public string? Title { get; init; }
+
+	/// <summary>When the pull request last changed, as GitHub reports it. Anything derived from its text is valid until then.</summary>
+	public DateTimeOffset? UpdatedAt { get; init; }
 }
 
 /// <summary>

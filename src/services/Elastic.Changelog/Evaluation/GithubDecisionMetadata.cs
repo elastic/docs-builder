@@ -27,6 +27,7 @@ public record GithubDecisionMetadata
 	public string? HeadRepo { get; init; }
 	public string? LabelTable { get; init; }
 	public string? ProductLabelTable { get; init; }
+	public string? AreaLabelTable { get; init; }
 	public string? SkipLabels { get; init; }
 	/// <summary>Comma-separated list of type labels that all matched when only one is allowed.</summary>
 	public string? AmbiguousTypeLabels { get; init; }
@@ -56,6 +57,23 @@ public record GithubDecisionMetadata
 	public string? Impact { get; init; }
 	/// <summary>Action section captured from the PR description. See <see cref="Impact"/>.</summary>
 	public string? Action { get; init; }
+	/// <summary>Opt-in: post an "included in / excluded from the release notes" comment on success instead of deleting the sticky comment.</summary>
+	public bool CommentOnSuccess { get; init; }
+	/// <summary>Whether the PR ends up in the release notes. Carried forward across later writes so the comment job sees the first gate's verdict.</summary>
+	public ReleaseNoteOutcome? Outcome { get; init; }
+}
+
+/// <summary>What will happen to a PR at bundling time, as far as the PR-time gates can tell.</summary>
+public record ReleaseNoteOutcome
+{
+	public required bool Included { get; init; }
+	public string? Type { get; init; }
+	/// <summary>Comma-separated product specs.</summary>
+	public string? Products { get; init; }
+	/// <summary>Comma-separated areas.</summary>
+	public string? Areas { get; init; }
+	/// <summary>Why the PR is excluded. Only set when <see cref="Included"/> is <c>false</c>.</summary>
+	public string? Reason { get; init; }
 }
 
 /// <summary>A single finding from the changelog entry file validation gate.</summary>
@@ -106,6 +124,7 @@ public enum CommitOutcome
 [JsonSerializable(typeof(CreateRules))]
 [JsonSerializable(typeof(FieldMode))]
 [JsonSerializable(typeof(MatchMode))]
+[JsonSerializable(typeof(ReleaseNoteOutcome))]
 [JsonSerializable(typeof(EntryFinding))]
 [JsonSerializable(typeof(List<EntryFinding>))]
 public sealed partial class GithubDecisionMetadataJsonContext : JsonSerializerContext;

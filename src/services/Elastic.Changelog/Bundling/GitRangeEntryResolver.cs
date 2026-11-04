@@ -12,7 +12,7 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
@@ -38,12 +38,6 @@ public record GitRangeEntryResolutionOptions
 	/// to any product (typically the profile's <c>output_products</c>). Wildcards are ignored.
 	/// </summary>
 	public IReadOnlyList<ProductArgument>? FallbackProducts { get; init; }
-
-	/// <summary>
-	/// Products applied to every entry synthesized from PR metadata, replacing label-derived and
-	/// <see cref="FallbackProducts"/> products. Label-derived products still drive label blockers.
-	/// </summary>
-	public IReadOnlyList<ProductArgument>? EntryProducts { get; init; }
 }
 
 /// <summary>How a pull request's changelog entry was sourced for a commit-range bundle.</summary>
@@ -172,7 +166,6 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		var needSummary = resolution
 			.PullRequests
 			.Where(pr => !parsedCandidates.Any(c => MatchesPr(c, pr.Number, options.Owner, options.Repo)))
-			.Select(pr => pr.Number)
 			.ToList();
 		var prSummaries = await summaries.GetAsync(collector, options.Owner, options.Repo, needSummary, ctx);
 		if (prSummaries is null)
@@ -280,7 +273,11 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 		{
 			var checksum = ChangelogBundlingService.ComputeSha1(content);
 			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+			var dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				normalized,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions(fileName)
+			)
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 			var entry = new MatchedChangelogFile
 			{
 				Data = ReleaseNotesSerialization.ConvertEntry(dto),
@@ -313,9 +310,10 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 
 	/// <summary>
 	/// Synthesizes an in-memory changelog entry from PR metadata — the same extraction path
-	/// <c>changelog add</c> uses: release-note text from the PR body as the description, labels
-	/// mapped to type/areas/products/feature-id/highlight via the config pivots, and
-	/// <c>rules.create</c> label rules deciding inclusion.
+	/// <c>changelog add</c> uses: release-note text from the PR body as the description, its
+	/// <c>## Impact</c> and <c>## Action</c> sections as impact and action, labels mapped to
+	/// type/areas/products/feature-id/highlight via the config pivots, and <c>rules.create</c>
+	/// label rules deciding inclusion.
 	/// </summary>
 	private (GitRangePrReportRow Row, MatchedChangelogFile? Entry, bool Failed) SynthesizeFromPrMetadata(
 		IDiagnosticsCollector collector,
@@ -346,16 +344,20 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			if (PrInfoProcessor.ShouldSkipPrDueToLabelBlockers(labels, resolvedProducts, config, pr.Url, decisions))
 				return (Row(pr, GitRangePrSourceKind.Excluded), null, false);
 
-			// Two or more mapped products and no default: the pull request must name its product with a label,
-			// unless the caller sets the entry products itself.
-			if (
-				labelProducts.Count == 0
-				&& options.EntryProducts is not { Count: > 0 }
-				&& ProductResolution.Defaults(config).Count == 0
+			// Two or more mapped products and no default: the pull request must name its product with a label.
+			// pivot.required lists products: the label is required even when products.default is set.
+			var productLabelMissing = labelProducts.Count == 0
 				&& ProductResolution.RequiresProductLabel(config)
-			)
+				&& (ProductResolution.RequiresProductLabelExplicitly(config) || ProductResolution.Defaults(config).Count == 0);
+			if (productLabelMissing)
 			{
 				collector.EmitError(pr.Url, ProductResolution.MissingProductLabelMessage($"PR {pr.Url}", config));
+				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
+			}
+
+			if (AreaResolution.RequiresAreaLabel(config) && AreaResolution.FromLabels(labels, config).Count == 0)
+			{
+				collector.EmitError(pr.Url, AreaResolution.MissingAreaLabelMessage($"PR {pr.Url}", config));
 				return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 			}
 		}
@@ -381,16 +383,21 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			allowMatchingMetadataAttribute: true
 		) ? parsedType : ChangelogEntryType.Other;
 
-		var products = ResolveProducts(collector, pr, resolvedProducts, options);
+		var products = ResolveProducts(collector, pr, resolvedProducts);
 		if (products == null)
 			return (Row(pr, GitRangePrSourceKind.Missing), null, true);
 
 		string? description = null;
+		string? impact = null;
+		string? action = null;
 		if (config?.Extract.ReleaseNotes != false)
 		{
 			var extraction = summary.ReleaseNote;
 			description = extraction.Content;
 			ReleaseNoteExtractionDiagnostics.Record(decisions, pr.Number, extraction);
+			// The same sections changelog add reads: a breaking change written in the PR keeps its Impact and Action.
+			impact = summary.Impact;
+			action = summary.Action;
 		}
 
 		var areas = config?.LabelToAreas != null ? PrInfoProcessor.MapLabelsToAreas(labels, config.LabelToAreas) : [];
@@ -409,6 +416,8 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 			Title = title,
 			Type = type,
 			Description = description,
+			Impact = impact,
+			Action = action,
 			Products = products,
 			Areas = areas.Count > 0 ? areas : null,
 			FeatureId = featureId,
@@ -454,19 +463,15 @@ public class GitRangeEntryResolver(IPullRequestSummaryProvider summaries, Decisi
 	}
 
 	/// <summary>
-	/// Products for a synthesized entry: the explicit entry products when set; otherwise the products resolved from the
-	/// configuration. Returns null after emitting an error when none yields a product — a bundle entry without products is invalid.
+	/// Products for a synthesized entry: the products resolved from the configuration. Returns null after emitting an
+	/// error when none applies — a bundle entry without products is invalid.
 	/// </summary>
 	private static List<ProductReference>? ResolveProducts(
 		IDiagnosticsCollector collector,
 		CommitRangePullRequest pr,
-		IReadOnlyList<ProductArgument> resolvedProducts,
-		GitRangeEntryResolutionOptions options
+		IReadOnlyList<ProductArgument> resolvedProducts
 	)
 	{
-		if (options.EntryProducts is { Count: > 0 })
-			return options.EntryProducts.Select(p => p.ToProductReference()).ToList();
-
 		if (resolvedProducts.Count == 0)
 		{
 			collector.EmitError(

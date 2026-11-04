@@ -9,7 +9,7 @@
 	else if (item.Kind == NavigationRenderNodeKind.Leaf)
 	{
 		<li class="flex group/li pr-8 @(item.IsTopLevel ? "font-semibold mt-6" : "mt-4")">
-			<a href="@item.Url" class="sidebar-link nav-link" @(item.Url.Contains('#') ? "hx-boost=\"false\"" : "")>
+			<a href="@item.Url" class="sidebar-link nav-link"@(item.Url.Contains('#') ? new Microsoft.AspNetCore.Html.HtmlString(" hx-boost=\"false\"") : Microsoft.AspNetCore.Html.HtmlString.Empty)>
 				<span>@item.NavigationTitle</span>
 				@if (item.Badge is not null) { <span class="nav-badge nav-badge-@item.Badge">@item.Badge</span> }
 				@await RenderPartialAsync(_NavHttpMethodGlyph.Create(item))
@@ -50,11 +50,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true">
+							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip">
+			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>
@@ -80,11 +80,11 @@
 							id="@item.Id"
 							type="checkbox"
 							class="hidden"
-							aria-hidden="true">
+							aria-hidden="true"@(item.Expanded ? " checked data-nav-default-open" : "")>
 					</label>
 				}
 			</div>
-			<div class="nav-subtree-clip">
+			<div class="nav-subtree-clip@(item.Expanded ? " nav-subtree-clip--open" : "")">
 				<ul class="nav-subtree">
 					@await RenderPartialAsync(_TocTreeNavLegacy.Create(item.NavigationItems))
 				</ul>

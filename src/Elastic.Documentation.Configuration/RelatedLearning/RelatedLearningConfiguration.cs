@@ -4,7 +4,7 @@
 
 using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.RelatedLearning;
 
@@ -22,10 +22,9 @@ public record RelatedLearningConfiguration
 	public bool TryGet(string id, [NotNullWhen(true)] out RelatedLearningLink? link) => Links.TryGetValue(id, out link);
 
 	/// <summary>Parses and validates a <c>related-learning.yml</c> document.</summary>
-	public static RelatedLearningConfiguration Parse(string yaml)
+	public static RelatedLearningConfiguration Parse(string yaml, string? sourceName = null)
 	{
-		var dto = ConfigurationFileProvider.Deserializer.Deserialize<RelatedLearningConfigDto>(yaml)
-			?? throw new InvalidOperationException("related-learning.yml deserialized to null.");
+		var dto = ConfigurationFileProvider.Deserialize<RelatedLearningConfigDto>(yaml, sourceName);
 		return RelatedLearningConfigurationExtensions.FromDto(dto);
 	}
 }
@@ -38,20 +37,18 @@ public record RelatedLearningLink
 	public required string Url { get; init; }
 }
 
-[YamlSerializable]
-internal sealed class RelatedLearningConfigDto
+public sealed class RelatedLearningConfigDto
 {
-	[YamlMember(Alias = "links")]
+	[YamlPropertyName("links")]
 	public Dictionary<string, RelatedLearningLinkDto> Links { get; set; } = [];
 }
 
-[YamlSerializable]
-internal sealed class RelatedLearningLinkDto
+public sealed class RelatedLearningLinkDto
 {
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string Title { get; set; } = string.Empty;
 
-	[YamlMember(Alias = "url")]
+	[YamlPropertyName("url")]
 	public string Url { get; set; } = string.Empty;
 }
 
@@ -60,7 +57,7 @@ public static class RelatedLearningConfigurationExtensions
 	public static RelatedLearningConfiguration CreateRelatedLearningConfiguration(this ConfigurationFileProvider provider)
 	{
 		using var reader = provider.RelatedLearningFile.OpenText();
-		return RelatedLearningConfiguration.Parse(reader.ReadToEnd());
+		return RelatedLearningConfiguration.Parse(reader.ReadToEnd(), provider.RelatedLearningFile.FullName);
 	}
 
 	internal static RelatedLearningConfiguration FromDto(RelatedLearningConfigDto dto)

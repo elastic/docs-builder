@@ -12,13 +12,15 @@ public interface IGitHubBackportService
 	/// <summary>
 	/// Resolves the original pull request of each backport. The result has an entry for every requested number:
 	/// the originals, or <c>null</c> when none could be found. Returns <c>null</c> after emitting an error when
-	/// GitHub cannot be queried (missing credentials, API failures).
+	/// GitHub cannot be queried (missing credentials, API failures). The result for a backport is valid for the <c>updatedAt</c> that
+	/// <paramref name="updatedAt"/> gives, so a backport that has not changed since a run looked at it is not looked at again.
 	/// </summary>
 	Task<IReadOnlyDictionary<int, BackportRoots?>?> ResolveRootsAsync(
 		IDiagnosticsCollector collector,
 		string owner,
 		string repo,
 		IReadOnlyCollection<int> backportNumbers,
+		IReadOnlyDictionary<int, DateTimeOffset> updatedAt,
 		Cancel ctx
 	);
 }

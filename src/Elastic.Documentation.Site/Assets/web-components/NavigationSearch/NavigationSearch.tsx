@@ -2,6 +2,11 @@ import { availableIcons } from '../../eui-icons-cache'
 import { SearchInput } from './SearchInput'
 import { SearchResultsList } from './SearchResultsList'
 import {
+    GO_TO_LABELS,
+    groupSearchResults,
+    navigableRowCount,
+} from './apiPropertyResults'
+import {
     useSearchTerm,
     useSearchActions,
     useSelectedIndex,
@@ -13,6 +18,7 @@ import {
     type TypeFilter,
 } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
+import { useSlashToFocus } from './useSlashToFocus'
 import {
     EuiInputPopover,
     useEuiTheme,
@@ -21,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -46,7 +52,10 @@ export const NavigationSearch = ({
     const { trackOpened, trackClosed } =
         useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
+    const groups = useMemo(
+        () => groupSearchResults(data?.results ?? []),
+        [data]
+    )
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
@@ -55,7 +64,7 @@ export const NavigationSearch = ({
         trackClosed({
             reason: 'navigate',
             query: searchTerm,
-            hadResults: results.length > 0,
+            hadResults: groups.length > 0,
             hadSelection: selectedIndex >= 0,
         })
     }
@@ -66,12 +75,17 @@ export const NavigationSearch = ({
         handleInputKeyDown,
         handleMouseMove,
     } = useNavigationSearchKeyboardNavigation({
-        resultsCount: results.length,
+        resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
         onClose: () => setIsPopoverOpen(false),
         onNavigate: handleResultClick,
         typeFilter,
     })
+
+    const isApi = typeFilter === 'api'
+    // The sidebar is off-canvas on small screens, so there is nothing to focus.
+    const slashFocusEnabled = isApi && !isMobile
+    useSlashToFocus({ enabled: slashFocusEnabled, inputRef })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
@@ -85,11 +99,15 @@ export const NavigationSearch = ({
             trackClosed({
                 reason: 'escape',
                 query: searchTerm,
-                hadResults: results.length > 0,
+                hadResults: groups.length > 0,
                 hadSelection: selectedIndex >= 0,
             })
             setSearchTerm('')
             setIsPopoverOpen(false)
+            // After the re-render, so handleBlur doesn't log a second close for the same Escape.
+            if (isApi) {
+                queueMicrotask(() => inputRef.current?.blur())
+            }
             return
         }
         handleInputKeyDown(e)
@@ -109,33 +127,23 @@ export const NavigationSearch = ({
             trackClosed({
                 reason: 'blur',
                 query: searchTerm,
-                hadResults: results.length > 0,
+                hadResults: groups.length > 0,
                 hadSelection: selectedIndex >= 0,
             })
         }
         setIsPopoverOpen(false)
     }
 
-    // Close popover and blur input when htmx navigation starts from a search result
+    // Close after the swap, not before: the clicked result link must stay
+    // mounted so htmx can still read the body's inherited hx-swap and hx-select.
     useEffect(() => {
-        const handleBeforeSend = (event: CustomEvent) => {
-            const trigger = event.detail?.elt as HTMLElement | undefined
-            if (trigger?.hasAttribute('data-search-result-index')) {
-                setIsPopoverOpen(false)
-                inputRef.current?.blur()
-            }
+        const handleAfterSwap = () => {
+            setIsPopoverOpen(false)
+            inputRef.current?.blur()
         }
-
-        document.addEventListener(
-            'htmx:beforeSend',
-            handleBeforeSend as EventListener
-        )
-        return () => {
-            document.removeEventListener(
-                'htmx:beforeSend',
-                handleBeforeSend as EventListener
-            )
-        }
+        document.addEventListener('htmx:afterSwap', handleAfterSwap)
+        return () =>
+            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
     }, [inputRef])
 
     return (
@@ -178,18 +186,29 @@ export const NavigationSearch = ({
                         onKeyDown={handleKeyDown}
                         disabled={isSearchCooldownActive}
                         isLoading={isSearching}
+                        keyShortcuts={slashFocusEnabled ? '/ s' : undefined}
+                        shortcutHint={slashFocusEnabled ? '/' : undefined}
+                        ariaLabel={isApi ? 'Explore APIs' : undefined}
+                        title={
+                            isApi
+                                ? 'Explore API operations. Type / to focus.'
+                                : undefined
+                        }
                     />
                 </>
             }
         >
             {hasContent && (
                 <div ref={popoverContentRef}>
-                    <SearchDropdownContent
+                    <SearchResultsList
+                        results={groups}
+                        isLoading={isSearching}
                         isKeyboardNavigating={isKeyboardNavigating}
                         onMouseMove={handleMouseMove}
                         onResultClick={handleResultClick}
                         typeFilter={typeFilter}
                     />
+                    <SearchDropdownFooter />
                 </div>
             )}
         </EuiInputPopover>
@@ -197,48 +216,14 @@ export const NavigationSearch = ({
 }
 
 const KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to' },
+    { keys: ['returnKey'], label: GO_TO_LABELS.page },
     { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
     { keys: ['Esc'], label: 'Close' },
 ]
 
-const API_KEYBOARD_SHORTCUTS = [
-    { keys: ['returnKey'], label: 'Jump to API' },
-    { keys: ['sortUp', 'sortDown'], label: 'Navigate' },
-    { keys: ['Esc'], label: 'Close' },
-]
-
-interface SearchDropdownContentProps {
-    isKeyboardNavigating: React.MutableRefObject<boolean>
-    onMouseMove: () => void
-    onResultClick: () => void
-    typeFilter: TypeFilter
-}
-
-const SearchDropdownContent = ({
-    isKeyboardNavigating,
-    onMouseMove,
-    onResultClick,
-    typeFilter,
-}: SearchDropdownContentProps) => {
-    return (
-        <>
-            <SearchResultsList
-                isKeyboardNavigating={isKeyboardNavigating}
-                onMouseMove={onMouseMove}
-                onResultClick={onResultClick}
-                typeFilter={typeFilter}
-            />
-            <SearchDropdownFooter typeFilter={typeFilter} />
-        </>
-    )
-}
-
-const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
+const SearchDropdownFooter = () => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const shortcuts =
-        typeFilter === 'api' ? API_KEYBOARD_SHORTCUTS : KEYBOARD_SHORTCUTS
 
     if (isMobile) {
         return null
@@ -261,7 +246,7 @@ const SearchDropdownFooter = ({ typeFilter }: { typeFilter: TypeFilter }) => {
                 gap: ${euiTheme.size.base};
             `}
         >
-            {shortcuts.map((shortcut, index) => (
+            {KEYBOARD_SHORTCUTS.map((shortcut, index) => (
                 <KeyboardShortcutItem
                     key={index}
                     keys={shortcut.keys}

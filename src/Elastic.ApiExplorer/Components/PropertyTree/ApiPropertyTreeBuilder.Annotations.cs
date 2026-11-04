@@ -71,21 +71,11 @@ public partial class ApiPropertyTreeBuilder
 	// A value type (Field, IndexName) reads as its primitive, which its shown name already is.
 	private static void AppendArrayKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo)
 	{
-		if (typeInfo.IsEnum)
-			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
-		else if (typeInfo.IsUnion)
-			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-		else if (typeInfo is { IsObject: true, HasLink: true })
+		if (!AppendShapeKeyword(spans, typeInfo) && typeInfo is { IsObject: true, HasLink: true })
 			AppendObjectIcon(spans);
 	}
 
-	private static void AppendScalarKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo)
-	{
-		if (typeInfo.IsEnum)
-			AppendWrapperKeyword(spans, "enum", SchemaHelpers.WrapperEnumCssClass);
-		else if (typeInfo.IsUnion)
-			AppendWrapperKeyword(spans, "union", SchemaHelpers.WrapperUnionCssClass);
-	}
+	private static void AppendScalarKeywordSpans(List<TypeSpan> spans, TypeInfo typeInfo) => AppendShapeKeyword(spans, typeInfo);
 
 	private static void AppendDictionarySpans(List<TypeSpan> spans, TypeInfo typeInfo, bool hasActualProperties)
 	{
@@ -140,10 +130,14 @@ public partial class ApiPropertyTreeBuilder
 			spans.Add(new TypeSpan("object", SchemaHelpers.PrimitiveCssClass));
 	}
 
-	private static void AppendWrapperKeyword(List<TypeSpan> spans, string keyword, string cssClass)
+	private static bool AppendShapeKeyword(List<TypeSpan> spans, TypeInfo typeInfo)
 	{
-		spans.Add(new TypeSpan(keyword, cssClass));
+		var keyword = typeInfo.IsEnum ? "enum" : typeInfo.IsUnion ? "union" : null;
+		if (keyword is null)
+			return false;
+		spans.Add(new TypeSpan(keyword, SchemaHelpers.ShapeKeywordCssClassOrNull(keyword)));
 		spans.Add(new TypeSpan(" ", Bare: true));
+		return true;
 	}
 
 	private static void AppendUnionFormulaSpans(List<TypeSpan> spans, IReadOnlyList<TypeAlternative> alternatives)

@@ -2,11 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using AwesomeAssertions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
 
@@ -26,7 +28,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 	private static partial Regex AliasRegex();
 
 	/// <summary>What GitHub knows: backport details, and the pull requests the validation and trailer lookups find.</summary>
-	private sealed class FakeGitHub
+	private sealed partial class FakeGitHub
 	{
 		public Dictionary<int, (string Title, string? Body, string[] Messages)> Backports { get; } = [];
 		public Dictionary<int, (bool Merged, string Branch, string Repo)> PullRequests { get; } = [];
@@ -45,21 +47,13 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			if (query.Contains("def: defaultBranchRef", StringComparison.Ordinal))
 				fields.Add("\"def\": { \"name\": \"main\" }");
 
-			var more = Regex.Match(
-				query,
-				@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""",
-				RegexOptions.None,
-				RegexTimeouts.MatchTimeout
-			);
+			var more = CommitPageRegex().Match(query);
 			if (more.Success)
 				fields.Add(
-					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value), int.Parse(more.Groups[2].Value), 100)} }}"
+					$"\"p\": {{ \"commits\": {CommitPage(int.Parse(more.Groups[1].Value, CultureInfo.InvariantCulture), int.Parse(more.Groups[2].Value, CultureInfo.InvariantCulture), 100)} }}"
 				);
 
-			if (
-				query.Contains(" v", StringComparison.Ordinal)
-				&& Regex.IsMatch(query, @" v\d+: pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeout)
-			)
+			if (query.Contains(" v", StringComparison.Ordinal) && ValidationAliasRegex().IsMatch(query))
 			{
 				ValidationRequests++;
 				if (ValidationError != null)
@@ -68,7 +62,7 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 
 			foreach (Match m in AliasRegex().Matches(query))
 			{
-				var n = int.Parse(m.Groups["n"].Value);
+				var n = int.Parse(m.Groups["n"].Value, CultureInfo.InvariantCulture);
 				var alias = m.Groups["alias"].Value;
 				if (alias[0] == 'v' && !PullRequests.ContainsKey(n))
 					errors.Add(
@@ -111,6 +105,12 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			PullRequests.TryGetValue(n, out var pr)
 				? $"{{ \"number\": {n}, \"merged\": {(pr.Merged ? "true" : "false")}, \"baseRefName\": \"{pr.Branch}\", \"baseRepository\": {{ \"nameWithOwner\": \"{pr.Repo}\" }} }}"
 				: "null";
+
+		[GeneratedRegex(@"p: pullRequest\(number: (\d+)\) \{ commits\(first: 100, after: \""(\d+)\""", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+		private static partial Regex CommitPageRegex();
+
+		[GeneratedRegex(@" v\d+: pullRequest", RegexOptions.None, RegexTimeouts.MatchTimeoutMilliseconds)]
+		private static partial Regex ValidationAliasRegex();
 	}
 
 	private static (bool Merged, string Branch, string Repo) Merged(string branch = "main", string repo = $"{Owner}/{Repo}") =>
@@ -138,7 +138,14 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 		);
 
 	private async Task<IReadOnlyDictionary<int, BackportRoots?>?> ResolveAsync(FakeGitHub github, params int[] numbers) =>
-		await Service(github).ResolveRootsAsync(Collector, Owner, Repo, numbers, TestContext.Current!.Execution.CancellationToken);
+		await Service(github).ResolveRootsAsync(
+			Collector,
+			Owner,
+			Repo,
+			numbers,
+			new Dictionary<int, DateTimeOffset>(),
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 	[Test]
 	public async Task ResolveRoots_TitleNamesMergedPullRequest_ReturnsItAsRoot()
@@ -360,12 +367,150 @@ public partial class GitHubBackportServiceTests() : ChangelogTestBase()
 			Owner,
 			Repo,
 			[200],
+			new Dictionary<int, DateTimeOffset>(),
 			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeNull();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("GITHUB_TOKEN"));
 		github.GraphQlRequests.Should().Be(0);
+	}
+
+	// ── where a backport came from is kept until the backport changes ──
+
+	private static readonly DateTimeOffset UpdatedAt = new(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+	private readonly string _cacheDirectory = Path.Combine(
+		Path.GetTempPath(),
+		"docs-builder-backport-cache-tests",
+		Guid.NewGuid().ToString("N")
+	);
+
+	public override void Dispose()
+	{
+		if (Directory.Exists(_cacheDirectory))
+			Directory.Delete(_cacheDirectory, recursive: true);
+
+		base.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	private async Task<IReadOnlyDictionary<int, BackportRoots?>?> ResolveWithCacheAsync(
+		FakeGitHub github,
+		Dictionary<int, DateTimeOffset> updatedAt,
+		params int[] numbers
+	)
+	{
+		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance);
+		var service = new GitHubBackportService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(
+				new StubHandler(req =>
+				{
+					var query =
+						JsonDocument
+							.Parse(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+							.RootElement
+							.GetProperty("query")
+							.GetString()!;
+					return new HttpResponseMessage(HttpStatusCode.OK)
+					{
+						Content = new StringContent(github.Respond(query), Encoding.UTF8, "application/json")
+					};
+				}),
+				"test-token"
+			),
+			cache
+		);
+
+		var result = await service.ResolveRootsAsync(
+			Collector,
+			Owner,
+			Repo,
+			numbers,
+			updatedAt,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		await cache.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+		return result;
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_AnUnchangedBackportIsNotLookedAtAgain()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt };
+
+		var first = await ResolveWithCacheAsync(github, updatedAt, 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		first![200]!.Roots.Should().Equal(100);
+		second![200]!.Roots.Should().Equal(100);
+		second[200]!.Route.Should().Be(BackportRootRoute.Title);
+		github.GraphQlRequests.Should().Be(requestsAfterFirst, "the second run asked GitHub nothing");
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_ABackportThatChangedIsResolvedAgain()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+		github.PullRequests[101] = Merged();
+		_ = await ResolveWithCacheAsync(github, new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt }, 200);
+
+		github.Backports[200] = ("Fix the thing (#101)", null, []);
+		var second = await ResolveWithCacheAsync(github, new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt.AddMinutes(1) }, 200);
+
+		second![200]!.Roots.Should().Equal(101);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_ABackportWithoutAnOriginalIsRememberedToo()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Bump dependency", null, []);
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt };
+
+		_ = await ResolveWithCacheAsync(github, updatedAt, 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		second![200].Should().BeNull();
+		github.GraphQlRequests.Should().Be(requestsAfterFirst);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACache_OnlyTheNewBackportsAreLookedAt()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix one (#100)", null, []);
+		github.Backports[201] = ("Fix two (#101)", null, []);
+		github.PullRequests[100] = Merged();
+		github.PullRequests[101] = Merged();
+		var updatedAt = new Dictionary<int, DateTimeOffset> { [200] = UpdatedAt, [201] = UpdatedAt };
+		_ = await ResolveWithCacheAsync(github, updatedAt, 200);
+
+		var second = await ResolveWithCacheAsync(github, updatedAt, 200, 201);
+
+		second![200]!.Roots.Should().Equal(100);
+		second[201]!.Roots.Should().Equal(101);
+	}
+
+	[Test]
+	public async Task ResolveRoots_WithACacheButNoUpdateTime_IsResolvedEveryTime()
+	{
+		var github = new FakeGitHub();
+		github.Backports[200] = ("Fix the thing (#100)", null, []);
+		github.PullRequests[100] = Merged();
+
+		_ = await ResolveWithCacheAsync(github, [], 200);
+		var requestsAfterFirst = github.GraphQlRequests;
+		_ = await ResolveWithCacheAsync(github, [], 200);
+
+		github.GraphQlRequests.Should().BeGreaterThan(requestsAfterFirst);
 	}
 
 	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler

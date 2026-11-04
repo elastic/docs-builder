@@ -7,8 +7,10 @@ using System.Net;
 using System.Text;
 using System.Web;
 using AwesomeAssertions;
+using Elastic.Changelog.Caching;
 using Elastic.Changelog.GitHub;
 using Elastic.Documentation.Diagnostics;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -17,7 +19,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// (including pagination) and GraphQL <c>associatedPullRequests</c> resolution across the
 /// squash / merge-commit / no-PR / multi-PR shapes.
 /// </summary>
-public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
+public partial class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 {
 	private const string Owner = "elastic";
 	private const string Repo = "widget";
@@ -63,18 +65,43 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		return $$"""{ "data": { "repository": {{{sb}} } } }""";
 	}
 
-	private GitHubCommitRangeService Service(StubHandler handler) =>
+	private GitHubCommitRangeService Service(HttpMessageHandler handler) =>
 		new(new TestLoggerFactory(), new GitHubApiTransport(handler, "test-token"));
+
+	/// <summary>
+	/// The query for the title, labels and update time of the pull requests of a range. Unless a test asks for something else,
+	/// every pull request has a title and no label.
+	/// </summary>
+	private static string DefaultDetails(string query)
+	{
+		var pullRequests = AliasedPullRequestRegex()
+			.Matches(query)
+			.Select(
+				m =>
+					$$"""
+				"p{{m.Groups[1].Value}}": { "title": "PR {{m.Groups[1].Value}}", "updatedAt": "2026-10-01T00:00:00Z", "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [] } }
+				"""
+			);
+
+		return "{ \"data\": { \"repository\": { " + string.Join(",", pullRequests) + " } } }";
+	}
+
+	private static bool IsDetailsQuery(string body) => body.Contains("pullRequest(number:", StringComparison.Ordinal);
 
 	private static StubHandler Handler(
 		Func<HttpRequestMessage, string?> compareResponder,
-		Func<HttpRequestMessage, string> graphQlResponder
+		Func<HttpRequestMessage, string> graphQlResponder,
+		Func<string, string>? detailsResponder = null
 	) =>
 		new(req =>
 		{
 			var path = req.RequestUri!.AbsolutePath;
 			if (path == "/graphql")
-				return Json(graphQlResponder(req));
+			{
+				var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+				return Json(IsDetailsQuery(body) ? (detailsResponder ?? DefaultDetails)(body) : graphQlResponder(req));
+			}
+
 			if (path.StartsWith($"/repos/{Owner}/{Repo}/compare/", StringComparison.Ordinal))
 			{
 				var body = compareResponder(req);
@@ -83,6 +110,152 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 			return new HttpResponseMessage(HttpStatusCode.NotFound);
 		});
+
+	// ── cache ───────────────────────────────────────────────────────────
+
+	private readonly string _cacheDirectory = Path.Combine(
+		Path.GetTempPath(),
+		"docs-builder-range-cache-tests",
+		Guid.NewGuid().ToString("N")
+	);
+
+	public override void Dispose()
+	{
+		if (Directory.Exists(_cacheDirectory))
+			Directory.Delete(_cacheDirectory, recursive: true);
+
+		base.Dispose();
+		GC.SuppressFinalize(this);
+	}
+
+	private async Task<(CommitRangeResolution? Result, int Associations, int Details)> ResolveWithCacheAsync(
+		IReadOnlyList<(string Sha, string[] PrNodes)> commits,
+		Func<string, string>? details = null,
+		TimeProvider? time = null
+	)
+	{
+		var (associations, detailQueries) = (0, 0);
+		var cache = new ChangelogCache(_cacheDirectory, Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, time);
+		var handler = Handler(_ => CompareJson(commits.Count, commits.Select(c => c.Sha)), req =>
+		{
+			_ = Interlocked.Increment(ref associations);
+			var asked = CommitShaRegex()
+				.Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult())
+				.Select(m => m.Value)
+				.ToHashSet();
+			return GraphQlJson([.. commits.Where(c => asked.Contains(c.Sha))]);
+		}, query =>
+		{
+			_ = Interlocked.Increment(ref detailQueries);
+			return (details ?? DefaultDetails)(query);
+		});
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask),
+			cache
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args with { }, TestContext.Current!.Execution.CancellationToken);
+		await cache.SaveAsync(TestContext.Current!.Execution.CancellationToken);
+		return (result, associations, detailQueries);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_WithACache_TheSecondRunDoesNotAskAboutKnownCommits()
+	{
+		var (sha1, sha2) = (Sha(1), Sha(2));
+		IReadOnlyList<(string, string[])> commits =
+		[
+			(sha1, [PrNode(11, mergeCommitSha: sha1)]),
+			(sha2, [PrNode(12, mergeCommitSha: sha2)])
+		];
+
+		var (firstResult, firstAssociations, _) = await ResolveWithCacheAsync(commits);
+		var (secondResult, secondAssociations, _) = await ResolveWithCacheAsync(commits);
+
+		firstAssociations.Should().Be(1);
+		secondAssociations.Should().Be(0, "both commits were learned by the first run");
+		secondResult!.PullRequests.Select(p => p.Number).Should().Equal(firstResult!.PullRequests.Select(p => p.Number));
+		secondResult.PullRequests.Select(p => p.CommitShas.Single()).Should().Equal(sha1, sha2);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_WithACache_LabelsAreReadAgainEveryRun()
+	{
+		var sha1 = Sha(1);
+		IReadOnlyList<(string, string[])> commits = [(sha1, [PrNode(11, mergeCommitSha: sha1)])];
+
+		static string WithLabel(string label) =>
+			$$"""{ "data": { "repository": { "p11": { "title": "T", "updatedAt": "2026-10-01T00:00:00Z", "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "{{label}}" } ] } } } } }""";
+
+		var (firstResult, _, _) = await ResolveWithCacheAsync(commits, _ => WithLabel("before"));
+		var (secondResult, secondAssociations, _) = await ResolveWithCacheAsync(commits, _ => WithLabel("after"));
+
+		firstResult!.PullRequests.Single().Labels.Should().Equal("before");
+		secondAssociations.Should().Be(0);
+		// A label can change after the merge, so it is never cached.
+		secondResult!.PullRequests.Single().Labels.Should().Equal("after");
+		secondResult
+			.PullRequests
+			.Single()
+			.UpdatedAt
+			.Should()
+			.Be(DateTimeOffset.Parse("2026-10-01T00:00:00Z", CultureInfo.InvariantCulture));
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_WithACache_CommitsWithoutAMergedPullRequestAreAskedAgain()
+	{
+		var (direct, unmerged, merged) = (Sha(1), Sha(2), Sha(3));
+		IReadOnlyList<(string, string[])> commits =
+		[
+			(direct, []),
+			(unmerged, [PrNode(20, merged: false)]),
+			(merged, [PrNode(30, mergeCommitSha: merged)])
+		];
+
+		_ = await ResolveWithCacheAsync(commits);
+		var (result, associations, _) = await ResolveWithCacheAsync(commits);
+
+		associations.Should().Be(1, "GitHub may link a pull request to the other two later, so only the merged one is remembered");
+		result!.CommitsWithoutPullRequest.Should().BeEquivalentTo([direct, unmerged]);
+		result.PullRequests.Select(p => p.Number).Should().Equal(30);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_WithACache_ACommitWithoutAPullRequestIsBelievedOnceAFreshAnswerAfterADayConfirmsIt()
+	{
+		var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+		var (direct, merged) = (Sha(1), Sha(2));
+		IReadOnlyList<(string, string[])> commits = [(direct, []), (merged, [PrNode(30, mergeCommitSha: merged)])];
+
+		_ = await ResolveWithCacheAsync(commits, time: time);
+		var (_, sameDayAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
+		time.Advance(TimeSpan.FromHours(25));
+		var (_, nextDayAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
+		var (dayAfterResult, dayAfterAssociations, _) = await ResolveWithCacheAsync(commits, time: time);
+
+		sameDayAssociations.Should().Be(1, "the direct commit is too young to be believed");
+		nextDayAssociations.Should().Be(1, "a negative older than a day is asked of GitHub once more");
+		dayAfterAssociations.Should().Be(0, "the fresh negative confirmed it, so nothing is asked");
+		dayAfterResult!.CommitsWithoutPullRequest.Should().Equal(direct);
+		dayAfterResult.PullRequests.Select(p => p.Number).Should().Equal(30);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ANewCommitInTheRange_IsTheOnlyOneAsked()
+	{
+		var (sha1, sha2) = (Sha(1), Sha(2));
+		_ = await ResolveWithCacheAsync([(sha1, [PrNode(11, mergeCommitSha: sha1)])]);
+
+		var (result, associations, _) = await ResolveWithCacheAsync([
+			(sha1, [PrNode(11, mergeCommitSha: sha1)]),
+			(sha2, [PrNode(12, mergeCommitSha: sha2)])
+		]);
+
+		associations.Should().Be(1);
+		result!.PullRequests.Select(p => p.Number).Should().Equal(11, 12);
+	}
 
 	[Test]
 	public async Task ResolvePullRequests_SquashCommits_ResolvesOnePrPerCommitInRangeOrder()
@@ -102,6 +275,34 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests[0].Url.Should().Be($"https://github.com/{Owner}/{Repo}/pull/11");
 		result.PullRequests[0].CommitShas.Should().Equal(sha1);
 		result.CommitsWithoutPullRequest.Should().BeEmpty();
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_ComparePageGatewayError_IsRetriedAndResolves()
+	{
+		var sha1 = Sha(1);
+		var compareRequests = 0;
+		var handler = new StubHandler(req =>
+		{
+			if (req.RequestUri!.AbsolutePath == "/graphql")
+			{
+				var body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+				return Json(IsDetailsQuery(body) ? DefaultDetails(body) : GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]));
+			}
+
+			return ++compareRequests == 1 ? new HttpResponseMessage(HttpStatusCode.BadGateway) : Json(CompareJson(1, [sha1]));
+		});
+		var service = new GitHubCommitRangeService(
+			new TestLoggerFactory(),
+			new GitHubApiTransport(handler, "test-token", (_, _) => Task.CompletedTask)
+		);
+
+		var result = await service.ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		Collector.Errors.Should().Be(0);
+		compareRequests.Should().Be(2);
+		result.PullRequests.Select(pr => pr.Number).Should().Equal(11);
 	}
 
 	[Test]
@@ -274,18 +475,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 			// The batches may arrive in any order, so the answer follows the commits the request names. Every commit
 			// resolves to its own squashed PR (number = index + 1).
 			_ = Interlocked.Increment(ref graphQlBatches);
-			var batch = System
-				.Text
-				.RegularExpressions
-				.Regex
-				.Matches(
-					req.Content!.ReadAsStringAsync().GetAwaiter().GetResult(),
-					"(?<=u0022)[0-9a-f]{40}",
-					System.Text.RegularExpressions.RegexOptions.None,
-					RegexTimeouts.MatchTimeout
-				)
-				.Select(m => m.Value)
-				.ToList();
+			var batch = CommitShaRegex().Matches(req.Content!.ReadAsStringAsync().GetAwaiter().GetResult()).Select(m => m.Value).ToList();
 			return GraphQlJson(batch.Select(sha => (sha, new[] { PrNode(shas.IndexOf(sha) + 1, mergeCommitSha: sha) })).ToList());
 		});
 
@@ -299,6 +489,89 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		result.PullRequests.Should().HaveCount(150);
 		result.PullRequests[0].Number.Should().Be(1);
 		result.PullRequests[^1].Number.Should().Be(150);
+	}
+
+	private const string NoPullRequests = """{ "data": { "repository": {} } }""";
+
+	[Test]
+	public async Task ResolvePullRequests_ManyComparePages_AreReadSideBySideAndKeepCommitOrder()
+	{
+		var shas = Enumerable.Range(1, 1050).Select(Sha).ToList();
+		var (inFlight, maxInFlight) = (0, 0);
+		var pages = new System.Collections.Concurrent.ConcurrentQueue<int>();
+		var handler = new DelayedHandler(async req =>
+		{
+			if (req.RequestUri!.AbsolutePath == "/graphql")
+				return Json(NoPullRequests);
+
+			var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+			pages.Enqueue(page);
+			var now = Interlocked.Increment(ref inFlight);
+			int seen;
+			while (now > (seen = Volatile.Read(ref maxInFlight)))
+			{
+				if (Interlocked.CompareExchange(ref maxInFlight, now, seen) == seen)
+					break;
+			}
+
+			// Later pages answer sooner, so the pages do not finish in order.
+			await Task.Delay(Math.Max(10, 130 - (page * 10)));
+			_ = Interlocked.Decrement(ref inFlight);
+			return Json(CompareJson(shas.Count, shas.Skip((page - 1) * 100).Take(100)));
+		});
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.TotalCommits.Should().Be(1050);
+		result.CommitsWithoutPullRequest.Should().Equal(shas);
+		pages.Order().Should().Equal(Enumerable.Range(1, 11));
+		maxInFlight.Should().BeGreaterThan(1).And.BeLessThanOrEqualTo(BatchRunner.DefaultDegree);
+	}
+
+	private sealed class DelayedHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> responder) : HttpMessageHandler
+	{
+		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+			responder(request);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_GitHubReturnsShorterPagesThanAsked_ReadsOnUntilTheRangeIsComplete()
+	{
+		var shas = Enumerable.Range(1, 230).Select(Sha).ToList();
+		var handler = Handler(
+			req =>
+			{
+				// GitHub caps a page at 60 here, though 100 were asked for, so three pages cover less than the total says.
+				var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+				return CompareJson(shas.Count, shas.Skip((page - 1) * 60).Take(60));
+			},
+			_ => NoPullRequests
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().NotBeNull();
+		result.CommitsWithoutPullRequest.Should().Equal(shas);
+	}
+
+	[Test]
+	public async Task ResolvePullRequests_AMiddleComparePageFails_IsAnErrorNotAPartialRange()
+	{
+		var shas = Enumerable.Range(1, 450).Select(Sha).ToList();
+		var handler = Handler(
+			req =>
+			{
+				var page = int.Parse(HttpUtility.ParseQueryString(req.RequestUri!.Query)["page"]!, CultureInfo.InvariantCulture);
+				return page == 3 ? null : CompareJson(shas.Count, shas.Skip((page - 1) * 100).Take(100));
+			},
+			_ => NoPullRequests
+		);
+
+		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeNull();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("could not compare"));
 	}
 
 	[Test]
@@ -350,7 +623,7 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var sha1 = Sha(1);
 		var handler = Handler(
 			_ => CompareJson(1, [sha1]),
-			_ => /*lang=json,strict*/  """{ "data": null, "errors": [ { "message": "boom" } ] }"""
+			_ => /*lang=json,strict*/ """{ "data": null, "errors": [ { "message": "boom" } ] }"""
 		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
@@ -363,19 +636,11 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 	public async Task ResolvePullRequests_PullRequestWithManyLabels_ReadsEveryLabelPage()
 	{
 		var sha1 = Sha(1);
-		const string firstPage =
-			"""
-			{ "number": 11, "url": "https://github.com/elastic/widget/pull/11", "title": "Fix (#5)", "merged": true, "baseRefName": "main",
-			  "mergeCommit": { "oid": "0000000000000000000000000000000000000001" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
-			  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } }
-			""";
-		var handler = Handler(_ => CompareJson(1, [sha1]), req =>
-		{
-			var query = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
-			return query.Contains("cursor-1", StringComparison.Ordinal)
-				? """{ "data": { "repository": { "pullRequest": { "labels": { "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [ { "name": "backport" } ] } } } } }"""
-				: GraphQlJson([(sha1, [firstPage])]);
-		});
+		var handler = Handler(
+			_ => CompareJson(1, [sha1]),
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]),
+			query => query.Contains("cursor-1", StringComparison.Ordinal) ? LabelLastPage : LabelFirstPage
+		);
 
 		var result = await Service(handler).ResolvePullRequestsAsync(Collector, Args, TestContext.Current!.Execution.CancellationToken);
 
@@ -385,9 +650,8 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 
 	private const string LabelFirstPage =
 		"""
-		{ "number": 11, "url": "https://github.com/elastic/widget/pull/11", "title": "Fix (#5)", "merged": true, "baseRefName": "main",
-		  "mergeCommit": { "oid": "0000000000000000000000000000000000000001" }, "baseRepository": { "nameWithOwner": "elastic/widget" },
-		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } }
+		{ "data": { "repository": { "p11": { "title": "Fix (#5)", "updatedAt": "2026-10-01T00:00:00Z",
+		  "labels": { "pageInfo": { "hasNextPage": true, "endCursor": "cursor-1" }, "nodes": [ { "name": "bug" } ] } } } } }
 		""";
 
 	private const string LabelLastPage =
@@ -399,9 +663,8 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		var sha1 = Sha(1);
 		var handler = Handler(
 			_ => CompareJson(1, [sha1]),
-			req => req.Content!.ReadAsStringAsync().GetAwaiter().GetResult().Contains("cursor-1", StringComparison.Ordinal)
-				? laterPage()
-				: GraphQlJson([(sha1, [LabelFirstPage])])
+			_ => GraphQlJson([(sha1, [PrNode(11, mergeCommitSha: sha1)])]),
+			query => query.Contains("cursor-1", StringComparison.Ordinal) ? laterPage() : LabelFirstPage
 		);
 		var service = new GitHubCommitRangeService(
 			new TestLoggerFactory(),
@@ -523,4 +786,16 @@ public class GitHubCommitRangeServiceTests() : ChangelogTestBase()
 		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
 			Task.FromResult(Send(request, cancellationToken));
 	}
+
+	[System.Text.RegularExpressions.GeneratedRegex("(?<=u0022)[0-9a-f]{40}", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
+	private static partial System.Text.RegularExpressions.Regex CommitShaRegex();
+
+	[System.Text.RegularExpressions.GeneratedRegex(@" p(\d+): pullRequest", System.Text.RegularExpressions.RegexOptions.None, Elastic
+		.Documentation
+		.RegexTimeouts
+		.MatchTimeoutMilliseconds)]
+	private static partial System.Text.RegularExpressions.Regex AliasedPullRequestRegex();
 }

@@ -8,6 +8,18 @@ The `docset.yml` file is the configuration file for a documentation set. At mini
 
 For an overview of navigation concepts and common patterns, see [Navigation](../navigation.md).
 
+## Unknown keys
+
+Unknown keys in `docset.yml` and in nested `toc.yml` files are build errors, so a typo is never silently ignored. Each error points at the key, shows where it sits in the file, and suggests the closest valid key:
+
+```text
+Error: Unknown key 'fiel' in $.toc[1]. Did you mean 'file'?
+ 5 │   - fiel: other.md
+   ·     ────
+```
+
+If no valid key is close, the error lists the valid keys for that position. The same applies to [frontmatter](../../../syntax/frontmatter.md), `redirects.yml`, `{settings}` files, and the other YAML the build reads.
+
 ## `project`
 
 The name of the project.
@@ -186,7 +198,7 @@ See [CTA](../cta.md).
 
 ## `suppress`
 
-Suppresses specific diagnostic hints:
+Suppresses specific diagnostic hints. Available in `docset.yml` and in nested `toc.yml` files:
 
 ```yaml
 suppress:
@@ -195,14 +207,30 @@ suppress:
   - AutolinkElasticCoDocs
 ```
 
+### Scope
+
+Where you put `suppress` decides which navigation entries it covers:
+
+- In `docset.yml`, the list applies to the entries declared in `docset.yml` itself.
+- In a nested `toc.yml`, the list applies only to the entries in that `toc.yml`. It doesn't carry over to `docset.yml` or to other `toc.yml` files, and a `toc.yml` doesn't inherit the list from `docset.yml`.
+
+`AutolinkElasticCoDocs` is raised while Markdown is parsed, so it's only read from `docset.yml` and applies to every page in the docset.
+
 ### `DeepLinkingVirtualFile`
 
-Suppresses hints about files with children that use deep-linking (paths containing `/`). Prefer `folder:` structures instead.
+Suppresses the hint for a `file:` with `children` whose path contains `/`, for example `file: other/x.md` with children in `other/`. Prefer restructuring to a `folder:` instead. Only suppress the hint when the structure has to stay as it is:
+
+```yaml
+- folder: other
+  file: index.md
+```
+
+When you switch to `folder:` with `file: index.md` and no `children`, the folder picks up every Markdown file automatically. If you give the `folder:` explicit `children`, list every Markdown file in the folder, or the build fails with "is not listed in the table of contents" for each file you leave out. Moving the page to `folder:` can change its URL, so check the URLs before and after.
 
 ### `FolderFileNameMismatch`
 
-Suppresses hints about file names not matching folder names. Prefer matching names or `index.md`.
+Suppresses hints about file names not matching folder names in a `folder:` with a `file:`. Prefer matching names or `index.md`.
 
 ### `AutolinkElasticCoDocs`
 
-Suppresses hints about bare URLs pointing to elastic.co/docs. Prefer cross-links or relative links.
+Suppresses hints about bare URLs pointing to elastic.co/docs. Prefer cross-links or relative links. Only valid in `docset.yml`.
