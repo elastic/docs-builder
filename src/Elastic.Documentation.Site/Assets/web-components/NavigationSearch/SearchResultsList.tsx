@@ -64,9 +64,9 @@ export const navigationSearchBreadcrumbs = (
     return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
 }
 
-/** A modified or non-primary click opens the link in a new tab or window, so the search stays where it was. */
+/** A Ctrl, Cmd or non-primary click opens the link in a new tab, so the search stays where it was. htmx treats Shift-click as a normal navigation. */
 const opensElsewhere = (event: React.MouseEvent) =>
-    event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0
+    event.metaKey || event.ctrlKey || event.button !== 0
 
 export const emptyStateCopy = (typeFilter: TypeFilter) =>
     typeFilter === 'api'
