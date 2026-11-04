@@ -26,11 +26,8 @@ public class IncrementalDeployService(
 
 	// Standard mode retries throttling/5xx with jittered backoff; higher upload concurrency means more
 	// concurrent requests hitting S3, so let the SDK absorb transient failures instead of failing files outright.
-	private readonly IAmazonS3 _s3 = s3Client ?? new AmazonS3Client(new AmazonS3Config
-	{
-		RetryMode = RequestRetryMode.Standard,
-		MaxErrorRetry = 5
-	});
+	private readonly IAmazonS3 _s3 = s3Client
+		?? new AmazonS3Client(new AmazonS3Config { RetryMode = RequestRetryMode.Standard, MaxErrorRetry = 5 });
 
 	public async Task<bool> Plan(
 		IDiagnosticsCollector collector,
