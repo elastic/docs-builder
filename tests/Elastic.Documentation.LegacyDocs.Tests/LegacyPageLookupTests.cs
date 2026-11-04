@@ -9,7 +9,7 @@ namespace Elastic.Documentation.LegacyDocs.Tests;
 
 public class LegacyPageServiceTests
 {
-	[Fact]
+	[Test]
 	public void TestVersions()
 	{
 		var legacyPageChecker = new LegacyPageService(NullLoggerFactory.Instance);

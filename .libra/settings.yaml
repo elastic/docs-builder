@@ -1,0 +1,3 @@
+version: 1
+publication:
+  approve_on_clean: true

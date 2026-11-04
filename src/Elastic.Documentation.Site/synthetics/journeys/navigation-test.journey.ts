@@ -108,15 +108,15 @@ journey('navigation test', ({ page, params }) => {
 
     step('Click on "deployment options" in nav', async () => {
         await page
-            .getByRole('link', { name: 'Deployment options' })
+            .getByRole('link', { name: 'Elastic deployment options' })
             .first()
             .click()
         await expect(page).toHaveURL(
             `${docsRoot}/get-started/deployment-options`
         )
-        await expect(page).toHaveTitle(/Deployment options/)
+        await expect(page).toHaveTitle(/Elastic deployment options/)
         await expect(
-            page.getByRole('heading', { name: 'Deployment options' })
+            page.getByRole('heading', { name: 'Elastic deployment options' })
         ).toBeVisible()
 
         // Same-group navigation: no reload. The sidebar is hx-preserve'd, so
@@ -234,8 +234,8 @@ journey('navigation test', ({ page, params }) => {
             a.textContent = 'api'
             document.querySelector('#content-container')?.appendChild(a)
         }, apiUrl)
-        // A full page load is a navigation request; an htmx request would be an
-        // XHR carrying the ?v= cache-buster. Status doesn't matter (404 locally).
+        // A full page load is a navigation request; an htmx request would be XHR.
+        // Status doesn't matter (404 locally).
         const [request] = await Promise.all([
             page.waitForRequest((req) => req.url().startsWith(apiUrl), {
                 timeout: 30000,
@@ -243,6 +243,5 @@ journey('navigation test', ({ page, params }) => {
             page.locator('#synthetic-api-link').click(),
         ])
         expect(request.isNavigationRequest()).toBe(true)
-        expect(new URL(request.url()).searchParams.has('v')).toBe(false)
     })
 })

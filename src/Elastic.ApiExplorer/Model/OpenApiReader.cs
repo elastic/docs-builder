@@ -5,9 +5,11 @@
 using System.Globalization;
 using System.IO.Abstractions;
 using System.Text.Json;
+using Elastic.Documentation.Diagnostics;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
-using YamlDotNet.RepresentationModel;
+using SharpYaml;
+using SharpYaml.Model;
 
 namespace Elastic.ApiExplorer.Model;
 
@@ -20,9 +22,11 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	private OpenApiReader() { }
 
 	private static bool SupportsSpecFileName(string specFileName) =>
-		Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
+		System.IO.Path.GetExtension(specFileName).ToLowerInvariant() is ".json" or ".yaml" or ".yml";
 
-	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification)
+	private static bool IsJsonFileName(string specFileName) => System.IO.Path.GetExtension(specFileName).ToLowerInvariant() is ".json";
+
+	public async Task<OpenApiDocument?> ReadAsync(IFileInfo openApiSpecification, IDiagnosticsCollector? collector = null)
 	{
 		if (!openApiSpecification.Exists)
 			return null;
@@ -31,7 +35,7 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return null;
 
 		await using var fs = openApiSpecification.OpenRead();
-		return await ReadAsync(fs, openApiSpecification.Name);
+		return await ReadAsync(fs, openApiSpecification.Name, collector);
 	}
 
 	/// <summary>
@@ -39,29 +43,88 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 	/// <see cref="VersionIndexClient.FetchSpecStreamAsync"/>. Closes <paramref name="stream"/> when done.
 	/// </summary>
 	/// <remarks>
-	/// All supported spec formats (.json, .yaml, .yml) are parsed with YamlDotNet. JSON is a subset of
-	/// YAML 1.2, so one parser covers both. Microsoft.OpenApi accepts JSON input only, so the parsed
-	/// tree is serialized to JSON before <see cref="OpenApiDocument.LoadAsync"/> runs.
+	/// JSON specs are passed directly to Microsoft.OpenApi. YAML specs (.yaml / .yml) are first parsed
+	/// by SharpYaml and re-serialized to JSON because Microsoft.OpenApi accepts JSON only.
+	/// Microsoft.OpenApi auto-detects the spec version from the root <c>openapi</c> / <c>swagger</c>
+	/// property, so both OpenAPI 3.x and Swagger 2.0 documents are supported.
 	/// </remarks>
-	public async Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName)
+	public async Task<OpenApiDocument?> ReadAsync(Stream stream, string specFileName, IDiagnosticsCollector? collector = null)
 	{
 		if (!SupportsSpecFileName(specFileName))
 			return null;
 
-		await using var jsonStream = await ParseSpecToJsonStreamAsync(stream).ConfigureAwait(false);
-
 		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false, RuleSet = ValidationRuleSet.GetEmptyRuleSet() };
-		var openApiDocument = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
-		return openApiDocument.Document;
+
+		ReadResult result;
+		bool hasTemplatePlaceholderHost;
+
+		if (IsJsonFileName(specFileName))
+		{
+			// Buffer so the host value can be inspected before loading.
+			var buffered = new MemoryStream();
+			await stream.CopyToAsync(buffered).ConfigureAwait(false);
+			await stream.DisposeAsync().ConfigureAwait(false);
+			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(buffered);
+			buffered.Position = 0;
+			result = await OpenApiDocument.LoadAsync(buffered, settings: settings);
+		}
+		else
+		{
+			var jsonStream = await ParseYamlToJsonStreamAsync(stream).ConfigureAwait(false);
+			hasTemplatePlaceholderHost = HasTemplatePlaceholderHost(jsonStream);
+			result = await OpenApiDocument.LoadAsync(jsonStream, JsonFormat, settings: settings);
+		}
+
+		if (collector is not null && result.Diagnostic?.Errors is { Count: > 0 } errors)
+		{
+			foreach (var error in errors)
+			{
+				// Swagger 2.0 specs (e.g. the ECE API) may use template placeholders such as
+				// {{hostname}} in the host field. Microsoft.OpenApi rejects that as an invalid
+				// URI host but still returns a complete document. When the spec itself contains
+				// a template placeholder host, downgrade the "Invalid host" diagnostic to a
+				// warning. Any other invalid-host value remains a hard error.
+				if (hasTemplatePlaceholderHost && error.Message.Contains("Invalid host", StringComparison.OrdinalIgnoreCase))
+					collector.EmitGlobalHint(error.Message);
+				else
+					collector.EmitGlobalError(error.Message);
+			}
+		}
+
+		return result.Document;
 	}
 
-	private static async Task<MemoryStream> ParseSpecToJsonStreamAsync(Stream specStream)
+	// Reads the "host" field from a JSON representation of a spec and returns true when the
+	// value contains a template placeholder (e.g. {{hostname}}). Position is restored on exit.
+	private static bool HasTemplatePlaceholderHost(MemoryStream jsonStream)
+	{
+		var savedPosition = jsonStream.Position;
+		jsonStream.Position = 0;
+		try
+		{
+			using var doc = JsonDocument.Parse(jsonStream);
+			return doc.RootElement.TryGetProperty("host", out var hostElement)
+				&& hostElement.ValueKind == JsonValueKind.String
+				&& hostElement.GetString() is { } host
+				&& host.StartsWith("{{")
+				&& host.EndsWith("}}");
+		}
+		catch
+		{
+			return false;
+		}
+		finally
+		{
+			jsonStream.Position = savedPosition;
+		}
+	}
+
+	private static async Task<MemoryStream> ParseYamlToJsonStreamAsync(Stream specStream)
 	{
 		using var reader = new StreamReader(specStream, leaveOpen: false);
-		var yaml = new YamlStream();
-		yaml.Load(reader);
+		var yaml = YamlStream.Load(reader);
 
-		var root = yaml.Documents[0].RootNode ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
+		var root = yaml[0].Contents ?? throw new InvalidOperationException("OpenAPI spec document is empty.");
 
 		var jsonStream = new MemoryStream();
 		await using (var jsonWriter = new Utf8JsonWriter(jsonStream))
@@ -71,24 +134,24 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		return jsonStream;
 	}
 
-	private static void WriteYamlNode(Utf8JsonWriter writer, YamlNode node)
+	private static void WriteYamlNode(Utf8JsonWriter writer, YamlElement? node)
 	{
 		switch (node)
 		{
-			case YamlScalarNode scalar:
+			case YamlValue scalar:
 				WriteScalar(writer, scalar);
 				break;
-			case YamlSequenceNode sequence:
+			case YamlSequence sequence:
 				writer.WriteStartArray();
-				foreach (var child in sequence.Children)
+				foreach (var child in sequence)
 					WriteYamlNode(writer, child);
 				writer.WriteEndArray();
 				break;
-			case YamlMappingNode mapping:
+			case YamlMapping mapping:
 				writer.WriteStartObject();
-				foreach (var (keyNode, valueNode) in mapping.Children)
+				foreach (var (keyNode, valueNode) in mapping)
 				{
-					writer.WritePropertyName(keyNode.ToString());
+					writer.WritePropertyName(keyNode is YamlValue keyScalar ? keyScalar.Value ?? string.Empty : keyNode.ToString());
 					WriteYamlNode(writer, valueNode);
 				}
 				writer.WriteEndObject();
@@ -99,12 +162,21 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 		}
 	}
 
-	private static void WriteScalar(Utf8JsonWriter writer, YamlScalarNode scalar)
+	private static void WriteScalar(Utf8JsonWriter writer, YamlValue scalar)
 	{
 		var value = scalar.Value;
 		if (value is null)
 		{
 			writer.WriteNullValue();
+			return;
+		}
+
+		// Only plain (unquoted) scalars carry implicit YAML typing. A quoted scalar is always a string
+		// and must not be coerced — "2.0" quoted would otherwise become the JSON number 2, breaking
+		// Swagger 2.0 version detection in Microsoft.OpenApi's ParsingContext.
+		if (scalar.Style is not ScalarStyle.Plain)
+		{
+			writer.WriteStringValue(value);
 			return;
 		}
 
@@ -120,6 +192,8 @@ public sealed class OpenApiReader : IOpenApiSpecificationReader
 			return;
 		}
 
+		// The IsFinite guard exists for YAML specs that contain Infinity or NaN (e.g. enum regression
+		// tests). Those must round-trip as strings to avoid JSON serialization failures downstream.
 		if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var number) && double.IsFinite(number))
 		{
 			writer.WriteNumberValue(number);

@@ -59,11 +59,23 @@ products:
 ## After creation
 
 Upload is the same as for other changelog YAML files.
-An index at `changelog/{org}/{repo}/notes-{version}.json` lists every changelog "note" file that applies to each version.
+The scrubber writes two indexes per note:
 
-If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates an amend file so the changelog reaches published docs without a manual rerun.
+- `changelog/{org}/{repo}/notes-{product}-{version}.json` — notes for that product and version. `changelog bundle` reads this key first.
+- `changelog/{org}/{repo}/notes-{version}.json` — the union of notes for that version across products, kept for older CLI pins.
+
+`{changelog}` does not read these indexes. It loads published bundle YAML (and amend sidecars listed in `bundle/{product}/registry.json`).
+
+If the release bundle for that product and version or date has already shipped when you upload, the scrubber generates a `{parent}.amend-notes.yaml` sidecar so the changelog reaches published docs without a manual rerun. Don't run `changelog bundle-amend --add` for that file. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 
 If there is no existing or planned bundle for that product and version or date, you can create a bundle from a path list that contains all the relevant changelogs. Refer to [Bundle by file paths](/cli/changelog/bundle.md#changelog-bundle-files).
+
+## Remove a note from a published bundle [changelog-note-remove]
+
+`changelog remove` only deletes local YAML. It does not change a published bundle or the changelog pool.
+
+- If the note is already in the parent bundle or a numbered `amend-N` sidecar, use `changelog bundle-amend --remove` and upload `{parent}.amend-N.yaml` with `changelog upload --artifact-type bundle`. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
+- If the note exists only in `.amend-notes` (uploaded after the bundle shipped), no `changelog` command unpublishes it from the pool. Don't create, edit, or delete `.amend-notes` files.
 
 ## Configuration checks
 

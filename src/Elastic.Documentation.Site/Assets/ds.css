@@ -1,0 +1,113 @@
+/*
+ * Design system entry point. Layer order is the theming contract (all layers live under a ds namespace so they never merge with other stylesheets' layers):
+ *   tokens     raw palette and scales (no meaning attached)
+ *   theme      semantic roles (--color-*), the only layer a theme has to override
+ *   reset/base element defaults
+ *   components one file per component under ../../Components/<Name>/
+ *   patterns   compositions of components (page sections, layouts)
+ *   pages      page-specific adjustments
+ *   utilities  single-purpose escape hatches
+ * A custom theme is one more file loaded after this one, written inside @layer ds.theme; layer order lets it win without !important.
+ */
+/* The layer order lives in ds-layers.css, which loads first. These imports only fill the layers. */
+
+@import './ds/fonts.css' layer(ds.tokens);
+@import './ds/tokens/primitives.css' layer(ds.tokens);
+@import './ds/tokens/art.css' layer(ds.tokens);
+@import './ds/tokens/scales.css' layer(ds.tokens);
+@import './ds/themes/bold-minimal.css' layer(ds.theme);
+@import './ds/themes/surfaces.css' layer(ds.theme);
+@import './ds/reset.css' layer(ds.reset);
+@import './ds/base.css' layer(ds.base);
+
+@import '../Components/Primitives/Icon/icon.css' layer(ds.components);
+@import '../Components/Primitives/Button/button.css' layer(ds.components);
+@import '../Components/Primitives/Link/link.css' layer(ds.components);
+@import '../Components/Primitives/Badge/badge.css' layer(ds.components);
+@import '../Components/Primitives/Method/method.css' layer(ds.components);
+@import '../Components/Primitives/AppliesBadge/applies-badge.css'
+	layer(ds.components);
+@import '../Components/Primitives/Kbd/kbd.css' layer(ds.components);
+@import '../Components/Forms/TextField/text-field.css' layer(ds.components);
+@import '../Components/Forms/SelectField/select-field.css' layer(ds.components);
+@import '../Components/Forms/Check/check.css' layer(ds.components);
+@import '../Components/Forms/Switch/switch.css' layer(ds.components);
+@import '../Components/Forms/Chip/chip.css' layer(ds.components);
+@import '../Components/Forms/Segmented/segmented.css' layer(ds.components);
+@import '../Components/Navigation/PageJumper/page-jumper.css'
+	layer(ds.components);
+@import '../Components/Chrome/DeploymentInfo/deployment-info.css'
+	layer(ds.components);
+@import '../Components/Forms/FilterBar/filter-bar.css' layer(ds.components);
+@import '../Components/Forms/SplitButton/split-button.css' layer(ds.components);
+@import '../Components/Forms/SearchField/search-field.css' layer(ds.components);
+@import '../Components/Primitives/Slab/slab.css' layer(ds.components);
+@import '../Components/Cards/Card/card.css' layer(ds.components);
+@import '../Components/Cards/LinkTile/link-tile.css' layer(ds.components);
+@import '../Components/Cards/ReleaseCard/release-card.css' layer(ds.components);
+@import '../Components/Navigation/Breadcrumb/breadcrumb.css'
+	layer(ds.components);
+@import '../Components/Navigation/Pager/pager.css' layer(ds.components);
+@import '../Components/Markdown/Admonition/admonition.css' layer(ds.components);
+@import '../Components/Markdown/Disclosure/disclosure.css' layer(ds.components);
+@import '../Components/Markdown/Stepper/stepper.css' layer(ds.components);
+@import '../Components/Markdown/Tabs/tabs.css' layer(ds.components);
+@import '../Components/Markdown/ButtonGroup/button-directive.css'
+	layer(ds.components);
+@import '../Components/Markdown/CodeBlock/code-block.css' layer(ds.components);
+@import '../Components/Navigation/LinkMenu/link-menu.css' layer(ds.components);
+@import '../Components/Navigation/NavTree/nav-tree.css' layer(ds.components);
+@import '../Components/Navigation/NavSide/nav-side.css' layer(ds.components);
+@import '../Components/Navigation/Toc/toc.css' layer(ds.components);
+@import '../Components/Navigation/PageActions/page-actions.css'
+	layer(ds.components);
+@import '../Components/Cards/CtaCard/cta-card.css' layer(ds.components);
+@import '../Components/Chrome/SiteFooter/site-footer.css' layer(ds.components);
+@import '../Components/Chrome/SiteHeader/site-header.css' layer(ds.components);
+@import '../Components/Chrome/ThemeSwitch/theme-switch.css' layer(ds.components);
+@import '../Components/Pages/Hero/hero.css' layer(ds.components);
+@import './ds/patterns/layout.css' layer(ds.patterns);
+@import './ds/patterns/pages.css' layer(ds.pages);
+@import './ds/patterns/codex.css' layer(ds.pages);
+@import './ds/patterns/elastic-nav.css';
+@import '../Components/Markdown/Prose/prose.css' layer(ds.components);
+@import '../Components/Primitives/AppliesPopover/applies-popover.css'
+	layer(ds.components);
+@import '../Components/Chrome/Feedback/feedback.css' layer(ds.components);
+@import '../Components/Overlays/SearchDialog/search-dialog.css'
+	layer(ds.components);
+@import '../Components/Navigation/DocsBar/docs-bar.css' layer(ds.components);
+@import '../Components/Markdown/VectorSizing/vector-sizing.css'
+	layer(ds.components);
+@import '../Components/Chrome/DiagnosticsPanel/diagnostics-panel.css'
+	layer(ds.components);
+@import '../Components/Markdown/AgentSkill/agent-skill.css' layer(ds.components);
+@import '../Components/Markdown/Contributors/contributors.css'
+	layer(ds.components);
+@import '../Components/Markdown/RelatedLearning/related-learning.css'
+	layer(ds.components);
+@import '../Components/Markdown/CliModifiers/cli-modifiers.css'
+	layer(ds.components);
+@import '../Components/Markdown/AppliesSwitch/applies-switch.css'
+	layer(ds.components);
+@import '../Components/Markdown/Mermaid/mermaid.css' layer(ds.components);
+@import '../Components/Pages/Hub/hub.css' layer(ds.components);
+@import '../Components/Markdown/Table/table.css' layer(ds.components);
+@import '../Components/Markdown/PageCard/page-card.css' layer(ds.components);
+@import '../Components/Markdown/Listing/listing.css' layer(ds.components);
+@import '../Components/Markdown/Image/image.css' layer(ds.components);
+@import '../Components/Pages/SearchPage/search-page.css' layer(ds.components);
+@import '../Components/Pages/ApiReference/api-reference.css'
+	layer(ds.components);
+@import '../Components/Pages/ApiReference/api-code.css' layer(ds.components);
+@import './ds/utilities.css' layer(ds.utilities);
+@import './ds/a11y.css' layer(ds.utilities);
+@import '../Components/Pages/Storybook/storybook.css' layer(ds.components);
+@import '../Components/Primitives/Tooltip/tooltip.css' layer(ds.components);
+@import '../Components/Overlays/Toast/toast.css' layer(ds.components);
+@import '../Components/Chrome/Banner/banner.css' layer(ds.components);
+@import '../Components/Primitives/Skeleton/skeleton.css' layer(ds.components);
+@import '../Components/Cards/EmptyState/empty-state.css' layer(ds.components);
+@import '../Components/Overlays/Flyout/flyout.css' layer(ds.components);
+@import '../Components/Overlays/AskAi/ask-ai.css' layer(ds.components);
+@import './ds/tokens/language-icons.css' layer(ds.components);

@@ -56,7 +56,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		    cloud-serverless: "@Product:ESS"
 		""";
 
-	public ChangelogPrEvaluationServiceTests(ITestOutputHelper output) : base(output)
+	public ChangelogPrEvaluationServiceTests() : base()
 	{
 		_mockGitHub = A.Fake<IGitHubPrService>();
 		_mockCore = A.Fake<ICoreService>();
@@ -111,7 +111,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 	private void VerifyOutputSet(string name, string value) => A.CallTo(() => _mockCore.SetOutputAsync(name, value)).MustHaveHappened();
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_EditedNoRelevantChange_ReturnsSkipped()
 	{
 		var service = CreateService();
@@ -124,7 +124,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("should-generate", "false");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_EditedWithTitleChange_DoesNotSkip()
 	{
 		await WriteMinimalConfig();
@@ -138,7 +138,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("should-generate", "true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_EditedWithBodyChange_DoesNotSkip()
 	{
 		await WriteMinimalConfig();
@@ -152,7 +152,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("should-generate", "true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_BotCommit_ReturnsSkipped()
 	{
 		A.CallTo(() => _mockGitHub.FetchCommitAuthorAsync("elastic", "test-repo", "abc123", A<CancellationToken>._)).Returns(
@@ -168,14 +168,14 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "skipped");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ManuallyEdited_PrFilename_ReturnsManuallyEdited()
 	{
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
 		await FileSystem.File.WriteAllTextAsync(
 			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"),
 			"title: test",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		A.CallTo(
@@ -197,14 +197,14 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "manually-edited");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ManuallyEdited_TimestampFilename_ReturnsManuallyEdited()
 	{
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
 		await FileSystem.File.WriteAllTextAsync(
 			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		A.CallTo(
@@ -226,7 +226,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "manually-edited");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoExistingFile_SkipsManualEditCheck()
 	{
 		await WriteMinimalConfig();
@@ -242,7 +242,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTitle_ReturnsNoTitle()
 	{
 		await WriteMinimalConfig();
@@ -255,7 +255,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "no-title");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTypeLabel_ReturnsNoLabel()
 	{
 		await WriteMinimalConfig();
@@ -270,7 +270,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("label-table", A<string>.That.Contains("type:feature"))).MustHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTypeLabel_WithProductConfig_OutputsProductLabelTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -288,7 +288,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>.That.Contains("cloud-hosted"))).MustHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTypeLabel_WithProductLabels_DoesNotOutputProductLabelTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -305,7 +305,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_HappyPath_ReturnsSuccess()
 	{
 		await WriteMinimalConfig();
@@ -321,7 +321,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("type", "feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_StripTitlePrefix_RemovesBrackets()
 	{
 		await WriteMinimalConfig();
@@ -334,7 +334,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("title", "Fix timeout handling");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_StripTitlePrefix_RemovesKibanaStyleTeamHyphenSeparator()
 	{
 		await WriteMinimalConfig();
@@ -347,7 +347,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("title", "Enable cases numerical id service");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoConfig_UsesDefaults()
 	{
 		var service = CreateService();
@@ -359,7 +359,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("status", "no-label");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildLabelTable_WithEntries_BuildsMarkdownTable()
 	{
 		var labelToType = new Dictionary<string, string> { ["type:feature"] = "feature", ["type:bug"] = "bug-fix" };
@@ -371,14 +371,14 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		table.Should().Contain("| `type:bug` | bug-fix |");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildLabelTable_NullOrEmpty_ReturnsEmpty()
 	{
 		ChangelogPrEvaluationService.BuildLabelTable(null).Should().BeEmpty();
 		ChangelogPrEvaluationService.BuildLabelTable(new Dictionary<string, string>()).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void BuildProductLabelTable_WithEntries_BuildsMarkdownTable()
 	{
 		var labelToProducts = new Dictionary<string, string> { ["@Product:ECH"] = "cloud-hosted", ["@Product:ESS"] = "cloud-serverless" };
@@ -390,14 +390,14 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		table.Should().Contain("| `@Product:ESS` | cloud-serverless |");
 	}
 
-	[Fact]
+	[Test]
 	public void BuildProductLabelTable_NullOrEmpty_ReturnsEmpty()
 	{
 		ChangelogPrEvaluationService.BuildProductLabelTable(null).Should().BeEmpty();
 		ChangelogPrEvaluationService.BuildProductLabelTable(new Dictionary<string, string>()).Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void BuildMappingTable_UsesCustomHeaders()
 	{
 		var mapping = new Dictionary<string, string> { ["key1"] = "value1" };
@@ -408,7 +408,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		table.Should().Contain("| `key1` | value1 |");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ExistingTimestampFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
@@ -416,7 +416,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/1735689600-fix-something.yaml"),
 			"title: Fix something\nprs:\n  - \"42\"",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var service = CreateService();
@@ -429,7 +429,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("existing-changelog-filename", "1735689600-fix-something.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ExistingPrFile_OutputsFilename()
 	{
 		await WriteMinimalConfig();
@@ -437,7 +437,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"),
 			"title: Fix something",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var service = CreateService();
@@ -450,7 +450,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("existing-changelog-filename", "42.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void FindExistingChangelog_PrFilename_FindsByName()
 	{
 		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
@@ -463,7 +463,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().Be("42.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void FindExistingChangelog_TimestampFilename_FindsByContent()
 	{
 		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
@@ -476,7 +476,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().Be("1735689600-fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void FindExistingChangelog_GitHubUrl_FindsByContent()
 	{
 		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
@@ -492,7 +492,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().Be("1735689600-fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void FindExistingChangelog_NoMatch_ReturnsNull()
 	{
 		var dir = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog");
@@ -505,7 +505,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void FindExistingChangelog_DirectoryMissing_ReturnsNull()
 	{
 		var service = CreateService();
@@ -514,17 +514,36 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData("prs:\n  - \"42\"", true)]
-	[InlineData("prs:\n  - '42'", true)]
-	[InlineData("prs:\n  - \"https://github.com/elastic/repo/pull/42\"", true)]
-	[InlineData("prs:\n  - \"142\"", false)]
-	[InlineData("prs:\n  - \"4\"", false)]
-	[InlineData("title: Issue #42 was fixed", false)]
+	[Test]
+	[Arguments("prs:\n  - \"42\"", true)]
+	[Arguments("prs:\n  - '42'", true)]
+	[Arguments("prs:\n  - \"https://github.com/elastic/repo/pull/42\"", true)]
+	[Arguments("prs:\n  - \"142\"", false)]
+	[Arguments("prs:\n  - \"4\"", false)]
+	[Arguments("title: Issue #42 was fixed", false)]
 	public void ContentReferencesPr_MatchesPrNumberCorrectly(string content, bool expected) =>
 		ChangelogPrEvaluationService.ContentReferencesPr(content, "42").Should().Be(expected);
 
-	[Fact]
+	[Test]
+	public async Task EvaluatePr_WithImpliedProducts_OutputsTheImpliedProductsToo()
+	{
+		await WriteMinimalConfig(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
+			ConfigWithProducts + "\nproducts:\n  implies:\n    cloud-hosted: [cloud-serverless]\n"
+		);
+		var service = CreateService();
+		var args = DefaultArgs(
+			prLabels: [">enhancement", "@Product:ECH"],
+			config: Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml")
+		);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("products", "cloud-hosted, cloud-serverless");
+	}
+
+	[Test]
 	public async Task EvaluatePr_WithProductLabels_OutputsProductsAndNoTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -543,7 +562,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_WithoutProductLabels_ReturnsNoLabelAndOutputsProductLabelTable()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -564,7 +583,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("label-table", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_SingleProductConfigured_WithoutLabel_AutoAssignsProduct()
 	{
 		var singleProductConfig =
@@ -596,7 +615,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_SingleProductConfigured_WithMultipleLabelAliases_AutoAssignsProduct()
 	{
 		// Multi-label aliasing for the same product is still a single-product config — should
@@ -632,7 +651,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("product-label-table", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_WithoutProductLabels_WithDefaultProducts_ReturnsProceed()
 	{
 		var configWithDefaults =
@@ -668,7 +687,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("should-generate", "true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ShortReleaseNote_UsesPrTitleAndDescription()
 	{
 		await WriteMinimalConfig();
@@ -682,7 +701,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("description", "Added new search API endpoint");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_LongReleaseNote_UsedAsDescription_PrTitleAsTitle()
 	{
 		await WriteMinimalConfig();
@@ -697,7 +716,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("description", longNote);
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoReleaseNote_FallsBackToPrTitle()
 	{
 		await WriteMinimalConfig();
@@ -711,7 +730,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("description", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NullBody_FallsBackToPrTitle()
 	{
 		await WriteMinimalConfig();
@@ -724,7 +743,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("title", "Fix something");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ExtractionDisabled_IgnoresReleaseNote()
 	{
 		var configWithExtractionDisabled =
@@ -754,7 +773,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		VerifyOutputSet("title", "Original PR title");
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_ReleaseNoteHeader_ExtractedAsDescription_PrTitleAsTitle()
 	{
 		await WriteMinimalConfig();
@@ -779,7 +798,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 	// --- Gate: native error emission for no-label / no-title ---
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTitle_EmitsErrorAndReturnsFalse()
 	{
 		await WriteMinimalConfig();
@@ -796,7 +815,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("no title", StringComparison.OrdinalIgnoreCase));
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoTypeLabel_EmitsErrorAndReturnsFalse()
 	{
 		await WriteMinimalConfig();
@@ -813,7 +832,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_NoProductLabel_EmitsErrorAndReturnsFalse()
 	{
 		await WriteMinimalConfig(Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"), ConfigWithProducts);
@@ -833,7 +852,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 			.ContainSingle(d => d.Severity == Severity.Error && d.Message.Contains("label", StringComparison.OrdinalIgnoreCase));
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_Success_DoesNotEmitErrors()
 	{
 		await WriteMinimalConfig();
@@ -848,14 +867,14 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 
 	// --- CollectExcludeLabels unit tests ---
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_Null_ReturnsNull() => ChangelogPrEvaluationService.CollectExcludeLabels(null).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_NoLabels_ReturnsNull() =>
 		ChangelogPrEvaluationService.CollectExcludeLabels(new CreateRules()).Should().BeNull();
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_GlobalExcludeLabels_ReturnsCommaSeparated()
 	{
 		var rules = new CreateRules { Mode = FieldMode.Exclude, Labels = [">non-issue", ">test"] };
@@ -866,7 +885,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Split(',').Should().BeEquivalentTo([">non-issue", ">test"]);
 	}
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_IncludeMode_ReturnsNull()
 	{
 		var rules = new CreateRules { Mode = FieldMode.Include, Labels = [">non-issue"] };
@@ -874,7 +893,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		ChangelogPrEvaluationService.CollectExcludeLabels(rules).Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_PerProductExcludeOnly_ReturnsLabels()
 	{
 		var rules = new CreateRules
@@ -892,7 +911,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Split(',').Should().BeEquivalentTo([">skip-ech", ">skip-ess"]);
 	}
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_GlobalAndPerProduct_MergesUniqueLabels()
 	{
 		var rules = new CreateRules
@@ -911,7 +930,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Split(',').Should().BeEquivalentTo([">skip-all", ">shared", ">skip-ech"]);
 	}
 
-	[Fact]
+	[Test]
 	public void CollectExcludeLabels_PerProductIncludeMode_IgnoresIncludeProducts()
 	{
 		var rules = new CreateRules
@@ -951,7 +970,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		    exclude: ">non-issue, >test"
 		""";
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_WithExcludeRules_AllBlocked_OutputsSkipLabels()
 	{
 		await WriteMinimalConfig(content: ConfigWithExcludeRules);
@@ -966,7 +985,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">test"))).MustHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_WithExcludeRules_NoLabel_OutputsSkipLabels()
 	{
 		await WriteMinimalConfig(content: ConfigWithExcludeRules);
@@ -980,7 +999,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>.That.Contains(">non-issue"))).MustHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_WithoutExcludeRules_DoesNotOutputSkipLabels()
 	{
 		await WriteMinimalConfig();
@@ -994,7 +1013,7 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
 	}
 
-	[Fact]
+	[Test]
 	public async Task EvaluatePr_HappyPath_WithExcludeRules_DoesNotOutputSkipLabels()
 	{
 		await WriteMinimalConfig(content: ConfigWithExcludeRules);
@@ -1006,5 +1025,324 @@ public class ChangelogPrEvaluationServiceTests : ChangelogTestBase
 		result.Should().BeTrue();
 		VerifyOutputSet("status", "proceed");
 		A.CallTo(() => _mockCore.SetOutputAsync("skip-labels", A<string>._)).MustNotHaveHappened();
+	}
+
+	private const string ImpactActionBody =
+		"""
+		## Release note
+		Removes a parameter.
+
+		## Impact
+		Callers that pass it get a 400.
+
+		## Action
+		Stop sending it.
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithoutSections_FailsWithMissingImpactAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().Be(1);
+		VerifyOutputSet("status", "missing-impact-action");
+		VerifyOutputSet("should-generate", "false");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_OnlyImpactPresent_ErrorNamesAction()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## Impact\nUsers are affected.") with { RequireImpactAction = true };
+
+		_ = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		Collector.Errors.Should().Be(1);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("`## Action`") && !d.Message.Contains("`## Impact`"));
+		VerifyOutputSet("status", "missing-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_BreakingWithSections_ProceedsAndSetsOutputs()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("impact", "Callers that pass it get a 400.");
+		VerifyOutputSet("action", "Stop sending it.");
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequireImpactAction_NonBreakingWithoutSections_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:feature"], prBody: "Just a feature.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingWithoutSections_GateOff_Proceeds()
+	{
+		await WriteMinimalConfig();
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "## What\nSomething.");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	private async Task WriteHumanEntry(string type, string? impact = null, string? action = null, bool humanAuthor = true)
+	{
+		var yaml = $"type: {type}\ntitle: Remove simulate\nprs:\n  - \"42\"\nproducts:\n  - product: elasticsearch\n";
+		if (impact != null)
+			yaml += $"impact: {impact}\n";
+		if (action != null)
+			yaml += $"action: {action}\n";
+
+		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog"));
+		await FileSystem.File.WriteAllTextAsync(
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/changelog/42.yaml"),
+			yaml,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		if (!humanAuthor)
+			return;
+
+		A.CallTo(
+			() => _mockGitHub.FetchLastFileCommitAuthorAsync(
+				"elastic",
+				"test-repo",
+				"docs/changelog/42.yaml",
+				"feature/test",
+				A<CancellationToken>._
+			)
+		).Returns("human-user");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodyMatchesFileExactly_NoConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BreakingEntry_BodySectionMissingFromFile_FailsWithConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_MatchingBody_Proceeds()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Callers that pass it get a 400.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody) with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_DifferentBody_FailsWithConflict()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "Old impact.", action: "Stop sending it.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: ImpactActionBody);
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_BodyAlsoHasSections_FailsWithConflict()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().Be(1);
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_ConflictAppliesWithoutTheGateFlag()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "## Impact\nRepeated here.");
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "conflicting-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_MissingFieldsWithGate_FailsWithMissingImpactAction()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("`action:`") && !d.Message.Contains("`impact:`"));
+		VerifyOutputSet("status", "missing-impact-action");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_MissingFieldsWithoutGate_StaysManuallyEdited()
+	{
+		await WriteHumanEntry("breaking-change");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: "Nothing relevant."), CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanBreakingEntry_CompleteWithGate_StaysManuallyEdited()
+	{
+		await WriteHumanEntry("breaking-change", impact: "Callers break.", action: "Upgrade.");
+		var service = CreateService();
+		var args = DefaultArgs(prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_HumanNonBreakingEntry_BodySections_NoConflict()
+	{
+		await WriteHumanEntry("feature");
+		var service = CreateService();
+
+		var result = await service.EvaluatePr(Collector, DefaultArgs(prBody: ImpactActionBody), CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "manually-edited");
+	}
+
+	[Test]
+	public async Task EvaluatePr_BotAuthoredBreakingEntry_BodyHasNoSections_FileValuesGoToEntryOutputs()
+	{
+		await WriteMinimalConfig();
+		await WriteHumanEntry("breaking-change", impact: "File impact.", action: "File action.", humanAuthor: false);
+		var service = CreateService();
+		var args = DefaultArgs(prLabels: ["type:breaking"], prBody: "Nothing relevant.") with { RequireImpactAction = true };
+
+		var result = await service.EvaluatePr(Collector, args, CancellationToken.None);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		VerifyOutputSet("status", "proceed");
+		VerifyOutputSet("entry-impact", "File impact.");
+		A.CallTo(() => _mockCore.SetOutputAsync("impact", A<string>._)).MustNotHaveHappened();
+		VerifyOutputSet("entry-action", "File action.");
+	}
+
+	private const string ConfigWithRequiredAreas =
+		"""
+		pivot:
+		  required: [areas]
+		  types:
+		    feature: "type:feature"
+		    bug-fix: "type:bug"
+		    breaking-change: "type:breaking"
+		    enhancement: ">enhancement"
+		    deprecation:
+		    docs:
+		    known-issue:
+		    other:
+		    regression:
+		    security:
+		  areas:
+		    Search: ":Search"
+		""";
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaMissing_ReturnsNoLabelAndOutputsAreaLabelTable()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeFalse();
+		VerifyOutputSet("status", "no-label");
+		A.CallTo(() => _mockCore.SetOutputAsync("area-label-table", A<string>.That.Contains(":Search"))).MustHaveHappened();
+		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("No matching area label found"));
+	}
+
+	[Test]
+	public async Task EvaluatePr_RequiredAreaPresent_Proceeds()
+	{
+		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
+		await WriteMinimalConfig(configPath, ConfigWithRequiredAreas);
+
+		var result = await CreateService().EvaluatePr(
+			Collector,
+			DefaultArgs(prLabels: ["type:feature", ":Search"], config: configPath),
+			CancellationToken.None
+		);
+
+		result.Should().BeTrue();
+		VerifyOutputSet("status", "proceed");
 	}
 }

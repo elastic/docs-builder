@@ -9,7 +9,7 @@ namespace Elastic.ApiExplorer.Tests;
 
 public class ApiMarkdownFrontMatterTests
 {
-	[Fact]
+	[Test]
 	public void Write_EmitsLlmAndOkfFields()
 	{
 		var markdown = ApiMarkdownFrontMatter.Write(
@@ -35,7 +35,7 @@ public class ApiMarkdownFrontMatterTests
 		markdown.Should().Contain("# Run a search");
 	}
 
-	[Fact]
+	[Test]
 	public void Write_OmitsOptionalKeysWhenMissing()
 	{
 		var markdown = ApiMarkdownFrontMatter.Write("# API Explorer\n", new ApiPageFrontMatter("API Explorer", null, "/api", null));
@@ -50,7 +50,40 @@ public class ApiMarkdownFrontMatterTests
 		markdown.Should().NotContain("applies_to:");
 	}
 
-	[Fact]
+	[Test]
+	public void Write_EmitsRailFactsWhenPresent()
+	{
+		var facts = new ApiRailFacts(
+			"1.2",
+			"Apache 2.0: see terms",
+			["https://api.example.com", "{scheme}://x"],
+			"https://cdn.example/api/doc/es.json",
+			"https://cdn.example/api/doc/es.yaml"
+		);
+
+		// AppendLine writes the platform newline; normalise so the multi-line assertions hold on Windows too.
+		var markdown = ApiMarkdownFrontMatter.Write(
+			"# Elasticsearch\n",
+			new ApiPageFrontMatter("Elasticsearch", null, "/api", null, facts)
+		).ReplaceLineEndings("\n");
+
+		markdown.Should().Contain("version: \"1.2\"");
+		markdown.Should().Contain("license: \"Apache 2.0: see terms\"");
+		markdown.Should().Contain("servers:\n  - \"https://api.example.com\"\n  - \"{scheme}://x\"");
+		markdown.Should().Contain("spec:\n  json: https://cdn.example/api/doc/es.json\n  yaml: https://cdn.example/api/doc/es.yaml");
+	}
+
+	[Test]
+	public void Write_OmitsEmptyRailFacts()
+	{
+		var facts = new ApiRailFacts(null, null, [], null, null);
+
+		var markdown = ApiMarkdownFrontMatter.Write("# X\n", new ApiPageFrontMatter("X", null, "/api", null, facts));
+
+		markdown.Should().NotContain("version:").And.NotContain("license:").And.NotContain("servers:").And.NotContain("spec:");
+	}
+
+	[Test]
 	public void StripLeadingFrontMatter_RemovesAuthoredYaml()
 	{
 		var source =

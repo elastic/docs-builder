@@ -5,26 +5,26 @@
 using Elastic.Markdown.Diagnostics;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Markdig.Parsers;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Markdown.Myst.Directives.Contributors;
 
 /// <summary>YAML model for a single contributor entry.</summary>
 public class ContributorEntry
 {
-	[YamlMember(Alias = "gh")]
+	[YamlPropertyName("gh")]
 	public string? GitHub { get; set; }
 
-	[YamlMember(Alias = "name")]
+	[YamlPropertyName("name")]
 	public string? Name { get; set; }
 
-	[YamlMember(Alias = "title")]
+	[YamlPropertyName("title")]
 	public string? Title { get; set; }
 
-	[YamlMember(Alias = "location")]
+	[YamlPropertyName("location")]
 	public string? Location { get; set; }
 
-	[YamlMember(Alias = "image")]
+	[YamlPropertyName("image")]
 	public string? Image { get; set; }
 }
 

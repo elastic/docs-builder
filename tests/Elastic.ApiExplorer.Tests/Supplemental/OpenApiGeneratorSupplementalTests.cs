@@ -6,15 +6,17 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Supplemental;
+using Elastic.ApiExplorer.Topics;
 using Elastic.Documentation.Configuration.Products;
 using Elastic.Documentation.Configuration.Toc;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests.Supplemental;
 
-public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : IClassFixture<ApiExplorerFixture>
+[ClassDataSource<ApiExplorerFixture>(Shared = SharedType.PerClass)]
+public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture)
 {
-	[Fact]
+	[Test]
 	public void DiscoverSupplemental_MatchesFixtureFilesAndLeavesHtmlUnchanged()
 	{
 		var folder = "/docs/api/fixture";
@@ -45,7 +47,7 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 		navigation.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void CreateNavigation_VersionSuffixedChild_IncludedOnlyForMatchingMajor()
 	{
 		var folder = "/docs/api/fixture";
@@ -67,15 +69,24 @@ public class OpenApiGeneratorSupplementalTests(ApiExplorerFixture fixture) : ICl
 		var nav9 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 9);
 		var nav8 = generator.CreateNavigation("fixture", fixture.Document, apiConfig, versionMajor: 8);
 
-		nav9.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started", "knn-guide");
-		nav8.NavigationItems.OfType<SimpleMarkdownNavigationItem>().Select(n => n.Slug).Should().Equal("getting-started");
+		ChildSlugs(nav9).Should().Equal("getting-started", "knn-guide");
+		ChildSlugs(nav8).Should().Equal("getting-started");
 	}
 
-	[Theory]
-	[InlineData("8", 9, 8)]
-	[InlineData("9", 9, 9)]
-	[InlineData("main", 9, 9)]
-	[InlineData("main", null, null)]
+	private static IEnumerable<string> ChildSlugs(LandingNavigationItem navigation) =>
+		navigation
+			.NavigationItems
+			.OfType<TopicsNavigationItem>()
+			.Single()
+			.NavigationItems
+			.OfType<SimpleMarkdownNavigationItem>()
+			.Select(n => n.Slug);
+
+	[Test]
+	[Arguments("8", 9, 8)]
+	[Arguments("9", 9, 9)]
+	[Arguments("main", 9, 9)]
+	[Arguments("main", null, null)]
 	public void SupplementalMajor_NumericOrMainUsesHighest(string moniker, int? highest, int? expected) =>
 		OpenApiGenerator.SupplementalMajor(moniker, highest).Should().Be(expected);
 }

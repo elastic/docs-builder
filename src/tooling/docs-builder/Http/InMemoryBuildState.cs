@@ -192,7 +192,6 @@ public class InMemoryBuildState(ILoggerFactory loggerFactory, IConfigurationCont
 					SkipCrossLinks = false
 				},
 				WriteFileSystem, // reuse MockFileSystem across builds for caching; initialized above
-
 				ct
 			);
 

@@ -43,7 +43,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		references: {}
 		""";
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenFeatureFlagDisabled()
 	{
 		var fileSystem = new FileSystem();
@@ -68,7 +68,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken
+			siteTopNav: null,
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		fileSystem
@@ -78,7 +79,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			.BeFalse("OpenAPI generation must not run when the feature flag is disabled");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BuildAsync_SkipsWhenNoApiDeclarationsAndFlagEnabled()
 	{
 		var fileSystem = new FileSystem();
@@ -103,7 +104,8 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			NullLoggerFactory.Instance,
 			context,
 			assembleSources,
-			TestContext.Current.CancellationToken
+			siteTopNav: null,
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		fileSystem
@@ -113,7 +115,7 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 			.BeFalse("OpenAPI generation must not run without API declarations");
 	}
 
-	[Fact]
+	[Test]
 	public void DiscoverApiOwners_EmitsErrorWhenDuplicateKeysDeclared()
 	{
 		var collector = new DiagnosticsCollector([]);
@@ -130,7 +132,25 @@ public class AssemblerOpenApiBuildStepTests : IDisposable
 		collector.Errors.Should().Be(1);
 	}
 
-	[Fact]
+	[Test]
+	public void DiscoverApiOwners_SkipsIsolatedFixtureDocsets()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var content = CreateDocumentationSet("docs-content", "elasticsearch", collector);
+		var fixtures = CreateDocumentationSet("docs-builder", "docs-builder-elasticsearch", collector);
+		var assembleSets = new Dictionary<string, AssemblerDocumentationSet>
+		{
+			[content.Checkout.Repository.Name] = content,
+			[fixtures.Checkout.Repository.Name] = fixtures
+		}.ToFrozenDictionary();
+
+		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSets, collector);
+
+		collector.Errors.Should().Be(0);
+		owners.Should().ContainSingle().Which.Set.Checkout.Repository.Name.Should().Be("docs-content");
+	}
+
+	[Test]
 	public void DiscoverApiOwners_ReturnsOwnersForSetsWithApiDeclarations()
 	{
 		var collector = new DiagnosticsCollector([]);

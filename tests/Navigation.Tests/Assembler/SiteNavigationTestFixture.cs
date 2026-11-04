@@ -231,11 +231,10 @@ public static class SiteNavigationTestFixture
 	public static TestDocumentationSetContext CreateAssemblerContext(
 		MockFileSystem fileSystem,
 		string repositoryPath,
-		ITestOutputHelper output,
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		var context = CreateContext(fileSystem, repositoryPath, output, collector);
+		var context = CreateContext(fileSystem, repositoryPath, collector);
 		context.BuildType = BuildType.Assembler;
 		return context;
 	}
@@ -243,7 +242,6 @@ public static class SiteNavigationTestFixture
 	public static TestDocumentationSetContext CreateContext(
 		MockFileSystem fileSystem,
 		string repositoryPath,
-		ITestOutputHelper output,
 		TestDiagnosticsCollector? collector = null
 	)
 	{
@@ -258,6 +256,6 @@ public static class SiteNavigationTestFixture
 		// Extract repository name from path (e.g., "/checkouts/current/platform" -> "platform")
 		var repositoryName = fileSystem.Path.GetFileName(repositoryPath);
 
-		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, output, repositoryName, collector);
+		return new TestDocumentationSetContext(fileSystem, sourceDir, outputDir, configPath, repositoryName, collector);
 	}
 }

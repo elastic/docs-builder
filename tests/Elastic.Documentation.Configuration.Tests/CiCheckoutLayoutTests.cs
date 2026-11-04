@@ -34,7 +34,7 @@ public class CiCheckoutLayoutTests
 	// CheckoutsFileSystem
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void CheckoutsFileSystem_CheckoutInsideAppData_DoesNotThrow()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -48,7 +48,7 @@ public class CiCheckoutLayoutTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void CheckoutsFileSystem_CheckoutInsideAppData_ReadsFilesUnderCheckout()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -64,7 +64,7 @@ public class CiCheckoutLayoutTests
 	// DocumentationWriteFileSystem
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void DocumentationWriteFileSystem_CheckoutInsideAppData_DoesNotThrow()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -75,7 +75,7 @@ public class CiCheckoutLayoutTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationWriteFileSystem_CheckoutInsideAppData_WritesFilesUnderCheckout()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -92,7 +92,7 @@ public class CiCheckoutLayoutTests
 	// DocumentationFileSystem (read + write via Resolve)
 	// -----------------------------------------------------------------------
 
-	[Fact]
+	[Test]
 	public void DocumentationFileSystem_Resolve_CheckoutInsideAppData_DoesNotThrow()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -105,7 +105,7 @@ public class CiCheckoutLayoutTests
 		act.Should().NotThrow();
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationFileSystem_Resolve_CheckoutInsideAppData_CheckoutResolvedCorrectly()
 	{
 		var checkoutRoot = CiCheckoutRoot;
@@ -117,7 +117,7 @@ public class CiCheckoutLayoutTests
 		docFs.Paths.CheckoutDirectory.FullName.Should().Be(checkoutRoot);
 	}
 
-	[Fact]
+	[Test]
 	public void DocumentationFileSystem_Resolve_CheckoutInsideAppData_WriteDoesNotThrow()
 	{
 		var checkoutRoot = CiCheckoutRoot;

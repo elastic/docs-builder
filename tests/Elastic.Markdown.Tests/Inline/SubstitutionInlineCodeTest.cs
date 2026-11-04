@@ -6,8 +6,7 @@ using AwesomeAssertions;
 
 namespace Elastic.Markdown.Tests.Inline;
 
-public class SubstitutionInlineCodeTest(ITestOutputHelper output) : InlineTest(
-	output,
+public class SubstitutionInlineCodeTest() : InlineTest(
 	"""
 ---
 sub:
@@ -27,7 +26,7 @@ With mutations: {subs}`version {{version | M.M}}`
 """
 )
 {
-	[Fact]
+	[Test]
 	public void TestSubstitutionInlineCode()
 	{
 		// Check that regular code blocks are not processed
@@ -39,6 +38,6 @@ With mutations: {subs}`version {{version | M.M}}`
 		Html.Should().Contain("<code>version 8.15</code>");
 	}
 
-	[Fact]
+	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
 }

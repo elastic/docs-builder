@@ -9,28 +9,28 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 public class BundleRulesExtensionsTests
 {
-	[Fact]
+	[Test]
 	public void DetermineFilterMode_NoProductListsOrBlocker_IsNoFiltering()
 	{
 		var rules = new BundleRules();
 		rules.DetermineFilterMode().Should().Be(BundleFilterMode.NoFiltering);
 	}
 
-	[Fact]
+	[Test]
 	public void DetermineFilterMode_IncludeProducts_IsGlobalContent()
 	{
 		var rules = new BundleRules { IncludeProducts = ["kibana"] };
 		rules.DetermineFilterMode().Should().Be(BundleFilterMode.GlobalContent);
 	}
 
-	[Fact]
+	[Test]
 	public void DetermineFilterMode_ExcludeProducts_IsGlobalContent()
 	{
 		var rules = new BundleRules { ExcludeProducts = ["kibana"] };
 		rules.DetermineFilterMode().Should().Be(BundleFilterMode.GlobalContent);
 	}
 
-	[Fact]
+	[Test]
 	public void DetermineFilterMode_NonEmptyByProduct_IsPerProductContext()
 	{
 		var rules = new BundleRules

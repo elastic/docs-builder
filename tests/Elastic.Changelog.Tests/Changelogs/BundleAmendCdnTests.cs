@@ -11,7 +11,7 @@ using Elastic.Documentation.Diagnostics;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
-public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class BundleAmendCdnTests() : ChangelogTestBase()
 {
 	// language=yaml
 	private const string ExistingEntry =
@@ -43,7 +43,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		    target: 9.3.0
 		""";
 
-	[Fact]
+	[Test]
 	public async Task Amend_Remove_CdnPath_NoLocalFile_ExcludesByChecksum()
 	{
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
@@ -53,7 +53,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["/changelog/elastic/elasticsearch/main/existing.yaml"] },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -64,7 +64,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		amend.Should().Contain("name: existing.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_Add_CdnBasename_NoLocalFile_EmbedsEntry()
 	{
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
@@ -74,7 +74,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["late.yaml"] },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -87,7 +87,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		amend.Should().Contain("name: late.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_Add_CdnPoolMissingName_Fails()
 	{
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
@@ -96,7 +96,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = ["never-uploaded.yaml"] },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
@@ -108,14 +108,14 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_ForceLocal_DoesNotHitCdn()
 	{
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
 		var localDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(localDir);
 		var localFile = FileSystem.Path.Join(localDir, "late.yaml");
-		await FileSystem.File.WriteAllTextAsync(localFile, LateEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(localFile, LateEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
 		var service = ServiceWithCdn(handler);
@@ -123,7 +123,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, AddFiles = [localFile], ForceLocal = true },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -132,7 +132,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		amend.Should().Contain("title: Late addition");
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_Remove_CdnChecksumMismatch_WithoutForce_Fails()
 	{
 		var bundlePath = await WriteParentBundleAsync("existing.yaml", ExistingEntry);
@@ -141,14 +141,14 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["existing.yaml"] },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("different checksum"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task Amend_Remove_InferredEntry_ForceWithoutDummy_ExcludesByName()
 	{
 		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -169,7 +169,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 			  type: enhancement
 			  title: Inferred from PR
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var handler = CdnHandler(("existing.yaml", ExistingEntry));
@@ -178,7 +178,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 		var result = await service.AmendBundle(
 			Collector,
 			new AmendBundleArguments { BundlePath = bundlePath, RemoveFiles = ["300.yaml"], Force = true },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
@@ -216,7 +216,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 			  type: feature
 			  title: Existing feature
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		return bundlePath;
 	}
@@ -225,7 +225,7 @@ public class BundleAmendCdnTests(ITestOutputHelper output) : ChangelogTestBase(o
 	{
 		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath);
 		amendFiles.Should().ContainSingle();
-		return await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
+		return await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private static StubHandler CdnHandler(params (string FileName, string Yaml)[] entries)

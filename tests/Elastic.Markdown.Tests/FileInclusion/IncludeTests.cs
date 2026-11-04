@@ -10,7 +10,8 @@ using Elastic.Markdown.Tests.Directives;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
-public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output, """
+[InheritsTests]
+public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/test.md
 :::
 """)
@@ -22,24 +23,22 @@ public class IncludeTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesInclusionHtml() => Html.ShouldBeHtml("<p><em>Hello world</em></p>");
 }
 
-public class IncludeSubstitutionTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class IncludeSubstitutionTests() : DirectiveTest<IncludeBlock>("""
 ---
 sub:
   foo: "bar"
 ---
 :::{include} _snippets/test.md
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -48,28 +47,26 @@ sub:
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void InclusionInheritsYamlContext() => Html.Should().Contain("Hello bar").And.Be("<p><em>Hello bar</em></p>");
 }
 
-public class IncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class IncludeNotFoundTests() : DirectiveTest<IncludeBlock>("""
 :::{include} _snippets/notfound.md
 :::
-"""
-)
+""")
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
@@ -78,18 +75,19 @@ public class IncludeNotFoundTests(ITestOutputHelper output) : DirectiveTest<Incl
 	}
 }
 
-public class IncludeRequiresArgument(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output, """
+[InheritsTests]
+public class IncludeRequiresArgument() : DirectiveTest<IncludeBlock>("""
 :::{include}
 :::
 """)
 {
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
@@ -98,13 +96,11 @@ public class IncludeRequiresArgument(ITestOutputHelper output) : DirectiveTest<I
 	}
 }
 
-public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class IncludeNeedsToLiveInSpecialFolder() : DirectiveTest<IncludeBlock>("""
 ```{include} test.md
 ```
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem)
 	{
@@ -113,13 +109,13 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 		fileSystem.AddFile(@"docs/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -130,17 +126,15 @@ public class IncludeNeedsToLiveInSpecialFolder(ITestOutputHelper output) : Direc
 	}
 }
 
-public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(
-	output,
-	"""
+[InheritsTests]
+public class IncludeRelativeTraversalBlocked() : DirectiveTest<IncludeBlock>("""
 :::{include} ../../../outside.txt
 :::
-"""
-)
+""")
 {
 	protected override void AddToFileSystem(MockFileSystem fileSystem) => fileSystem.AddFile(@"outside.txt", "some content");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty();
@@ -151,7 +145,8 @@ public class IncludeRelativeTraversalBlocked(ITestOutputHelper output) : Directi
 	}
 }
 
-public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<IncludeBlock>(output, """
+[InheritsTests]
+public class CanNotIncludeItself() : DirectiveTest<IncludeBlock>("""
 ```{include} _snippets/test.md
 ```
 """)
@@ -166,13 +161,13 @@ public class CanNotIncludeItself(ITestOutputHelper output) : DirectiveTest<Inclu
 		fileSystem.AddFile(@"docs/_snippets/test.md", inclusion);
 	}
 
-	[Fact]
+	[Test]
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void IncludesNothing() => Html.Should().Be("");
 
-	[Fact]
+	[Test]
 	public void EmitsError()
 	{
 		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);

@@ -135,7 +135,6 @@ public class ChangelogFileWriter(IFileSystem fileSystem, ILogger logger)
 
 		var joined = $"{string.Join("-", numbers)}.yaml";
 		if (joined.Length <= MaxFilenameLength + 5) // ".yaml" = 5 chars
-
 			return joined;
 
 		return $"{numbers[0]}-to-{numbers[^1]}-{numbers.Count}-prs.yaml";
