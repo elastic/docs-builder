@@ -3988,11 +3988,15 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* Beside the article the response fills the window below the request instead of stopping at 12 lines,
-   so a tall window shows more of it. The 12-line cap stays as the minimum. */
+/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
+   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
+   above the response. The 12-line cap stays as the minimum. */
 @media (min-width: 1024px) {
 	#api-examples-panel .example-block-body {
-		max-height: max(var(--api-response-cap), calc(100dvh - 32rem));
+		max-height: max(
+			var(--api-response-cap),
+			calc(100dvh - var(--offset-top, 0px) - 26rem)
+		);
 	}
 }
 
