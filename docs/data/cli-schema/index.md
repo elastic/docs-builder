@@ -112,7 +112,7 @@ Your CLI reference section is live. As your CLI evolves, regenerate the schema a
 **Maintaining docs-builder itself:** after changing CLI options in `src/tooling/docs-builder/Commands/`, regenerate this repository's schema with:
 
 ```bash
-dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+mise run schema
 ```
 
 See [CONTRIBUTING.md](https://github.com/elastic/docs-builder/blob/main/CONTRIBUTING.md#cli-reference-maintenance) for the full workflow.

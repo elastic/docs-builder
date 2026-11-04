@@ -2,7 +2,9 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
@@ -54,6 +56,19 @@ internal static class TestSpecs
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, markdownRenderer ?? NoopMarkdownStringRenderer.Instance);
 		return (generator, await LoadValidSpecAsync(json));
 	}
+
+	/// <summary>
+	/// A spec with no operations whose components hold the given schemas. The schemas stay raw JSON
+	/// because they are what the test is about; only the scaffold around them is supplied.
+	/// </summary>
+	public static string WithSchemas([StringSyntax(StringSyntaxAttribute.Json)] string schemasJson, string openApiVersion = "3.0.3") =>
+		new JsonObject
+		{
+			["openapi"] = openApiVersion,
+			["info"] = new JsonObject { ["title"] = "t", ["version"] = "1" },
+			["paths"] = new JsonObject(),
+			["components"] = new JsonObject { ["schemas"] = JsonNode.Parse(schemasJson) }
+		}.ToJsonString();
 
 	public static ApiPropertyTreeBuilder BuilderFor(OpenApiDocument document) =>
 		new(document, new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" });
