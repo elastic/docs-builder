@@ -2,7 +2,7 @@ import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
 import { screen } from '@testing-library/react'
 
-const renderRow = (searchTerm: string, path: string) =>
+const renderRow = (searchTerm: string, path: string, showLocation = false) =>
     renderWithProviders(
         <PropertyResultRow
             property={{
@@ -16,7 +16,7 @@ const renderRow = (searchTerm: string, path: string) =>
                 children: [],
             }}
             searchTerm={searchTerm}
-            showLocation={false}
+            showLocation={showLocation}
             index={1}
             isSelected={false}
             isKeyboardNavigating={false}
@@ -57,6 +57,48 @@ it("uses the page's tooltip for the path and type", () => {
     expect(type).toHaveAttribute('data-tippy-content', 'object')
     expect(type).toHaveAttribute('data-tippy-theme', 'mono')
     expect(row).not.toHaveAttribute('title')
+})
+
+it('puts the path and the description on separate lines', () => {
+    renderRow('knn', 'retriever.knn')
+    const row = screen.getByRole('link')
+    expect(
+        row.querySelector('.property-path-line > code.property-path')
+    ).toHaveTextContent('retriever.knn')
+    const detail = row.querySelector('.property-detail-line')
+    expect(
+        Array.from(detail?.children ?? [], (child) => [
+            child.tagName,
+            child.textContent,
+        ])
+    ).toEqual([
+        ['CODE', 'object'],
+        ['SPAN', 'Property description'],
+    ])
+})
+
+it('keeps the leaf of a long path visible', () => {
+    renderRow('replicas', 'settings.index.number_of_replicas')
+    const path = screen.getByRole('link').querySelector('.property-path')
+    expect(path?.querySelector('strong')?.textContent).toBe(
+        'number_of_replicas'
+    )
+    expect(path?.querySelector('bdi')?.textContent).toBe(
+        'settings.index.number_of_replicas'
+    )
+    expect(path?.querySelector('bdi mark')?.textContent).toBe('replicas')
+})
+
+it('shows the location chip only when the same path appears twice', () => {
+    const { unmount } = renderRow('knn', 'retriever.knn', true)
+    const location = (row: HTMLElement) =>
+        row.querySelector('.property-path-line > span')
+    const chip = location(screen.getByRole('link'))
+    expect(chip).toHaveClass('property-location')
+    expect(chip).toHaveTextContent('request')
+    unmount()
+    renderRow('knn', 'retriever.knn')
+    expect(location(screen.getByRole('link'))).toHaveClass('sr-only')
 })
 
 it('offers "Go to property" as the Enter action', () => {

@@ -69,7 +69,7 @@ export const PropertyResultRow = ({
                 gap: ${euiTheme.size.s};
                 box-sizing: border-box;
                 min-height: ${euiTheme.size.xl};
-                padding: ${euiTheme.size.xs} ${euiTheme.size.base};
+                padding: ${euiTheme.size.s} ${euiTheme.size.base};
                 padding-left: calc(${euiTheme.size.xl} + ${euiTheme.size.base});
                 /* the Enter badge lines up with the operation row's, which insets it by size.l */
                 padding-right: ${euiTheme.size.l};
@@ -101,57 +101,69 @@ export const PropertyResultRow = ({
                     display: flex;
                     flex: 1;
                     flex-direction: column;
+                    gap: ${euiTheme.size.xxs};
                     min-width: 0;
                 }
-                .property-line {
+                .property-path-line,
+                .property-detail-line {
                     display: flex;
                     align-items: center;
                     gap: ${euiTheme.size.s};
                     min-width: 0;
                 }
+                .property-path,
+                .property-type,
+                .property-description,
                 .property-children {
+                    min-width: 0;
                     overflow: hidden;
                     white-space: nowrap;
                     text-overflow: ellipsis;
+                }
+                .property-path {
+                    flex: 0 1 auto;
+                    /* rtl moves the ellipsis to the start so the leaf stays visible; the bdi keeps the path itself left to right */
+                    direction: rtl;
+                    text-align: left;
+                    font-size: inherit;
+                    line-height: inherit;
+                    color: ${euiTheme.colors.textSubdued};
+                }
+                .property-path strong {
+                    color: ${euiTheme.colors.textParagraph};
+                    font-weight: ${euiTheme.font.weight.medium};
+                }
+                .property-location {
+                    flex: none;
+                    padding: 0 ${euiTheme.size.xs};
+                    border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                    border-radius: ${euiTheme.border.radius.medium};
+                    color: ${euiTheme.colors.textSubdued};
+                    font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
+                    line-height: ${euiTheme.size.base};
+                }
+                .property-type {
+                    flex: none;
+                    max-width: 40%;
+                    padding: 0 ${euiTheme.size.xs};
+                    border-radius: ${euiTheme.border.radius.small};
+                    background: ${euiTheme.colors.backgroundBaseSubdued};
+                    color: ${euiTheme.colors.textSubdued};
+                    font-family: ${euiTheme.font.familyCode};
+                    font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
+                    line-height: inherit;
+                }
+                .property-description {
+                    flex: 1;
+                    color: ${euiTheme.colors.textSubdued};
+                }
+                .property-children {
                     /* a monospace space is 1ch wide, so each gap comes out at size.m while the line still ellipsizes as text */
                     word-spacing: calc(${euiTheme.size.m} - 1ch);
                     color: ${euiTheme.colors.textSubdued};
                     font-family: ${euiTheme.font.familyCode};
                 }
-                .property-line > code,
-                .property-description,
-                .property-path > span {
-                    min-width: 0;
-                    overflow: hidden;
-                    white-space: nowrap;
-                    text-overflow: ellipsis;
-                    color: ${euiTheme.colors.textSubdued};
-                }
-                .property-line > code {
-                    flex: 0 1 auto;
-                    max-width: 28%;
-                    font-size: inherit;
-                    line-height: inherit;
-                }
-                .property-line > .property-path {
-                    display: flex;
-                    max-width: 55%;
-                    color: inherit;
-                }
-                .property-path > strong {
-                    flex-shrink: 0;
-                    font-weight: ${euiTheme.font.weight.medium};
-                }
-                .property-location {
-                    order: 1;
-                    flex-shrink: 0;
-                    color: ${euiTheme.colors.textSubdued};
-                }
-                .property-description {
-                    flex: 1;
-                }
                 .jump-to-indicator {
-                    order: 2;
                     margin-left: ${euiTheme.size.s};
                 }
                 &:hover:not([data-keyboard-navigating='true']) {
@@ -164,22 +176,18 @@ export const PropertyResultRow = ({
             `}
         >
             <span className="property-body">
-                <span className="property-line">
+                <span className="property-path-line">
                     <code
                         className="property-path"
                         data-tippy-content={property.path}
                         data-tippy-theme="mono"
                     >
-                        {highlight(property.path.slice(0, leafOffset))}
-                        <strong>
-                            {highlight(property.path.slice(leafOffset))}
-                        </strong>
-                    </code>
-                    <code
-                        data-tippy-content={property.type}
-                        data-tippy-theme="mono"
-                    >
-                        {property.type}
+                        <bdi>
+                            {highlight(property.path.slice(0, leafOffset))}
+                            <strong>
+                                {highlight(property.path.slice(leafOffset))}
+                            </strong>
+                        </bdi>
                     </code>
                     <span
                         className={
@@ -188,6 +196,15 @@ export const PropertyResultRow = ({
                     >
                         {property.location}
                     </span>
+                </span>
+                <span className="property-detail-line">
+                    <code
+                        className="property-type"
+                        data-tippy-content={property.type}
+                        data-tippy-theme="mono"
+                    >
+                        {property.type}
+                    </code>
                     <span
                         className="property-description"
                         data-tippy-content={property.description || undefined}
