@@ -123,5 +123,6 @@ internal class ListingFrontMatterConverter : YamlConverter<ListingFrontMatter>
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.GetStartedData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewData))]
 [YamlSerializable(typeof(Elastic.Markdown.Myst.Directives.Hub.WhatsNewConfig))]
-[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
+// Pinned to the runtime default so the generator skips the Populate readers. See YamlStaticContext.
+[YamlSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, PreferredObjectCreationHandling = JsonObjectCreationHandling.Replace)]
 public partial class DocsBuilderYamlStaticContext : YamlSerializerContext;
