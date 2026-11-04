@@ -358,7 +358,7 @@ public partial class OperationExamplesPanelRenderingTests
 			TabId = "create",
 			HttpMethod = "post",
 			Route = "/_search",
-			RequestJson = /*lang=json,strict*/  """{"query":{}}"""
+			RequestJson = /*lang=json,strict*/ """{"query":{}}"""
 		});
 
 		html.Should().Contain("api-method-post");
@@ -373,7 +373,7 @@ public partial class OperationExamplesPanelRenderingTests
 		{
 			Title = "createAgentRequestExample",
 			TabId = "create",
-			RequestJson = /*lang=json,strict*/  """{"id":"created-agent-id"}""",
+			RequestJson = /*lang=json,strict*/ """{"id":"created-agent-id"}""",
 			CodeSamples = [Sample("curl", "curl -X POST")]
 		});
 
@@ -391,7 +391,7 @@ public partial class OperationExamplesPanelRenderingTests
 		{
 			Title = "Match all",
 			TabId = "match-all",
-			RequestJson = /*lang=json,strict*/  """{"query":{}}""",
+			RequestJson = /*lang=json,strict*/ """{"query":{}}""",
 			CodeSamples = [Sample("Console", "POST /_search\n{\"query\":{}}")],
 			CodeSamplesIncludeRequest = true
 		});

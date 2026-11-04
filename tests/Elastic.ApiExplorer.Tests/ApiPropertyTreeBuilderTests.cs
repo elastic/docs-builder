@@ -292,6 +292,79 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public void BuildPropertyList_AllOfUnionRef_ReadsLikeTheUnionReferencedDirectly()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(Schema("fixture.AllOfUnionBody"), new PropertyTreeScope { Prefix = "req", IsRequest = true });
+
+		var direct = list!.Items.Single(p => p.Name == "direct");
+		var wrapped = list.Items.Single(p => p.Name == "text");
+		wrapped.Union.Should().NotBeNull("the One of: row names the union's options");
+		wrapped.Type.Spans.Select(s => s.Text).Should().Equal(direct.Type.Spans.Select(s => s.Text));
+		wrapped.Union.Should().BeEquivalentTo(direct.Union);
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedRecursiveUnion_Terminates()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		list!.Items.Single(p => p.Name == "nested").Union.Should().NotBeNull();
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnDiscriminator_KeepsIt()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var selected = list!.Items.Single(p => p.Name == "selected");
+		selected.Union!.DiscriminatorProperty.Should().Be("kind");
+		selected.Children.Variants!.Variants.Select(v => v.DiscriminatorLabel).Should().Equal("kind: a", "kind: b");
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrapperWithItsOwnRequiredSets_KeepsThem()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var needs = list!.Items.Single(p => p.Name == "needs");
+		needs.Requires.Should().BeEquivalentTo(new RequiredAlternatives("Requires exactly one of:", ["a", "b"]));
+	}
+
+	[Test]
+	public void BuildPropertyList_AllOfWrappedUnionWithSharedFields_ListsThemLikeTheDirectRef()
+	{
+		var builder = CreateBuilder();
+
+		var list = builder.BuildPropertyList(
+			Schema("fixture.WrappedUnionEdgesBody"),
+			new PropertyTreeScope { Prefix = "req", IsRequest = true }
+		);
+
+		var direct = list!.Items.Single(p => p.Name == "sharedDirect");
+		var wrapped = list.Items.Single(p => p.Name == "shared");
+		direct.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+		wrapped.Children.Kind.Should().Be(direct.Children.Kind);
+		wrapped.Children.Properties!.Items.Select(p => p.Name).Should().Contain("common");
+	}
+
+	[Test]
 	public void BuildPropertyList_ArrayOfInlineEnum_ShowsEnumValues()
 	{
 		var builder = CreateBuilder();

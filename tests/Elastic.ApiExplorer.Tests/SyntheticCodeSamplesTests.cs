@@ -493,7 +493,7 @@ public class SyntheticCodeSamplesTests
 	{
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost())
 		{
-			Body = /*lang=json,strict*/  """{"name":"it's"}"""
+			Body = /*lang=json,strict*/ """{"name":"it's"}"""
 		});
 
 		samples[1].Source.Should().Contain("it'\\''s");
@@ -725,7 +725,7 @@ public class SyntheticCodeSamplesTests
 	[Test]
 	public void BuildExampleScenarios_SyntheticSamplesWithTheExampleBody_CarryTheRequest()
 	{
-		const string body = /*lang=json,strict*/  """{"schema":{"foo":"bar"}}""";
+		const string body = /*lang=json,strict*/ """{"schema":{"foo":"bar"}}""";
 		var samples = SyntheticCodeSamples.Create(new SyntheticSampleInput(HttpMethod.Post, "/api/foo", JsonPost()) { Body = body });
 		var request = new ExampleDisplay("Example", null, body, null);
 

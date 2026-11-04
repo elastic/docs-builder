@@ -503,7 +503,6 @@ public class NavigationRenderModelTests() : DocumentationSetNavigationTestBase()
 		var model = NavigationRenderModel.Create(
 			tree: clients,
 			topLevelItems: [elasticsearch], // elasticsearch = the "top-level section" in the dropdown
-
 			isUsingNavigationDropdown: true,
 			isPrimaryNavEnabled: true,
 			isGlobalAssemblyBuild: false

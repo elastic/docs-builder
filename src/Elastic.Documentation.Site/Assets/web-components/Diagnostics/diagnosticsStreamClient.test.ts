@@ -5,8 +5,6 @@ import {
 import type { Mock } from 'vitest'
 
 describe('diagnosticsStreamClient', () => {
-    const originalFetch = globalThis.fetch
-
     beforeEach(() => {
         vi.useFakeTimers()
         disconnectFromDiagnosticsStream()
@@ -26,7 +24,6 @@ describe('diagnosticsStreamClient', () => {
 
     afterEach(() => {
         disconnectFromDiagnosticsStream()
-        globalThis.fetch = originalFetch
         Object.defineProperty(document, 'readyState', {
             configurable: true,
             get: () => 'complete',

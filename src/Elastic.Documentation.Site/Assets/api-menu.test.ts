@@ -34,7 +34,6 @@ describe('api menus', () => {
     })
 
     beforeEach(() => {
-        vi.clearAllMocks()
         ;(autoUpdate as Mock).mockImplementation(
             (_trigger, _menu, update: () => void) => {
                 update()

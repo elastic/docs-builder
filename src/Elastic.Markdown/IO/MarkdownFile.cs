@@ -379,7 +379,6 @@ public record MarkdownFile : DocumentationFile, ITableOfContentsScope, IDocument
 						Heading = processedTitle,
 						Slug = step.Anchor,
 						Level = step.HeadingLevel, // Use dynamic heading level
-
 						IsStepperStep = true
 					},
 					step.Line

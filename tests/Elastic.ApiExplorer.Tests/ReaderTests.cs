@@ -11,7 +11,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -35,9 +34,9 @@ public class ReaderTests
 	}
 
 	[Test]
-	[Arguments("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
+	[Arguments("json", /*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
 	[Arguments("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
-	[Arguments("json", /*lang=json,strict*/  """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
+	[Arguments("json", /*lang=json,strict*/ """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
 	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
@@ -70,9 +69,7 @@ public class ReaderTests
 	[Test]
 	[Arguments("not valid host")]
 	[Arguments("api{{prod.example.com")] // opening brace only — not a complete template placeholder
-
 	[Arguments("{{hostname}}suffix")] // does not end with }}
-
 	public async Task ReadsSwagger20WithInvalidHost_EmitsError(string host)
 	{
 		// Genuinely malformed hosts must remain hard errors. Only a host value that is itself
@@ -147,12 +144,7 @@ public class ReaderTests
 	public async Task Navigation()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext(collector);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		var openApiDocument = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());

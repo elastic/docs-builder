@@ -4,7 +4,6 @@
 
 using System.Collections.Concurrent;
 using System.Collections.Frozen;
-using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using System.Net;
 using AwesomeAssertions;
@@ -757,10 +756,4 @@ public class OpenApiGeneratorCatalogSplitTests
 				"application/json"
 			)
 		};
-
-	private sealed class StubHandler(Func<HttpRequestMessage, HttpResponseMessage> responder) : HttpMessageHandler
-	{
-		protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-			Task.FromResult(responder(request));
-	}
 }

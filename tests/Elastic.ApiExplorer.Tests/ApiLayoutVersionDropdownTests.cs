@@ -2,16 +2,12 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
-using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Versions;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using FakeItEasy;
@@ -136,13 +132,10 @@ public class ApiLayoutVersionDropdownTests
 		INavigationItem? current = null
 	)
 	{
-		var fs = new FileSystem();
-		var context = new BuildContext(
-			new DiagnosticsCollector([]),
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		)
-		{ BuildType = buildType, UrlPathPrefix = buildType == BuildType.Assembler ? "/docs" : null };
+		var context = TestHelpers.CreateBuildContext(
+			buildType: buildType,
+			urlPathPrefix: buildType == BuildType.Assembler ? "/docs" : null
+		);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var switcherItems = items ?? ApiVersionSwitcher.Build("", "elasticsearch", ["main", "9", "8"], "main");

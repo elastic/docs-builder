@@ -252,7 +252,6 @@ public sealed class NoteAmendReconciler(
 			var leaf = LeafName(note.Path);
 			if (leaf is not null && shippedLeaves.Contains(leaf))
 				seqByPath[note.Path] = 1; // shipped in original bundle or a human amend
-
 			else
 				lateNotes.Add(note);
 		}
