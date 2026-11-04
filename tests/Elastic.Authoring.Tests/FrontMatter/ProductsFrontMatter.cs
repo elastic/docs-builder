@@ -84,8 +84,7 @@ public class ProductsFrontMatterInLlmMarkdown : AuthoringTest
 		);
 		var file = await noProducts.Converts("index.md").MarkdownFile();
 		var products = file.YamlFrontMatter?.Products;
-		if (products is not null)
-			products.Count.Should().Be(0);
+		products?.Count.Should().Be(0);
 	}
 }
 

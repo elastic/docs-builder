@@ -7,7 +7,7 @@
 	<a class="api-group-row" href="@row.Url" @(new HtmlString(Model.HxAttributes))>
 		<span class="api-group-heading">
 			<span class="api-overview-title">@row.Title</span>
-			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(row.Availability, row.Deprecated)))
+			@await RenderPartialAsync(_TitleBadges.Create(new TitleBadgesModel(row.Availability, row.Deprecated, row.DesignSystem)))
 		</span>
 		<div class="api-group-routes">
 			@switch (row.Kind)

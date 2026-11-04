@@ -16,6 +16,12 @@ The cards for APIs that are in neither group show the API's deployments as small
 
 The API title comes from `info.title` in the spec, so fix naming and description copy in the spec.
 
+API search matches parameter and field names, including prefixes and qualified paths. The docs-wide search matches a field only by its exact name, and only for a word that contains `_` or `.`, so a plain word keeps ranking pages first. Direct operation and endpoint matches rank above field matches. An operation also matches the words of its operation id and path, split on dots, hyphens, underscores and case changes, and the name of its group, so `ml flush`, `flush ML job` and `_ml _flush` all find `POST /_ml/anomaly_detectors/{job_id}/_flush`. Combine an endpoint and a field, such as `_search knn`, to find the operation and its matching fields. The order does not matter: `knn /_search`, `/_search knn`, `knn search` and `search knn` read the same. A word with a leading slash, or an HTTP method word right before one, is always the endpoint; on its own a word such as `options` or `delete` may name a field. With two plain words the index tries both orders and keeps the one whose endpoint exists, so both halves must match. With three or more plain words the last word is the field. Each matching operation lists up to three matching fields beneath it, with their paths, types, and locations. Child rows match the field's own name; ancestor names and descriptions provide context without adding unrelated children. Select a field to open its anchor, including fields inside collapsed sections. Arrow keys move through operations and fields in order; Enter opens the selected row.
+
+When a query names a path, such as `_search`, the result shows one route in place of the description: the method the page leads with and the path with the match highlighted. The route whose whole path is the query word wins, so `/_search` shows `/_search`; otherwise the operation's primary route shows when it contains the word, and an alternate route only when the primary does not. Every result uses the same bordered box, with matching fields grouped beneath the operation when present. Matches use the same yellow tint as the destination property's flash. Navigating to a field reveals it and flashes its name, including when search replaces the current page without a full reload. Each result's breadcrumb ends with the operation's group, the same group the page shows.
+
+The assembler indexes fields from the same property trees used to render operation pages. Fields of a repeated shape appear under its first listing. On the existing semantic index, the indexer adds the nested `api.properties` mapping before incremental synchronization. Property changes participate in the document hash, so a field update is synchronized even when the operation description stays the same.
+
 :::{warning}
 This feature is still under development and the functionality described on this page might change.
 :::
@@ -74,7 +80,7 @@ api:
 Most docsets omit `repository:` — it's only needed for this cross-repo case. When omitted,
 {{dbuild}} derives the repository from the current checkout's GitHub remote.
 
-### `children:` (optional)
+### `children:` (optional) [api-children]
 
 Explicit hand-written pages rendered under `api/<key>/`, in the declared order:
 
@@ -87,7 +93,9 @@ api:
         - file: kibana-api-overview.md
 ```
 
-`children:` is the only way to inject hand-written content into an API reference section:
+Child pages are listed under the **Topics** heading in the sidebar, in the order you declare them, after Authentication and Rate limiting, which always come first. The spec's [`x-topics`](#x-topics) follow, and a child page takes priority over a topic it covers. A child covers a topic when its first heading matches the topic title, or when its text matches the topic content. The API Explorer then builds no page for that topic. Redirects from bump.sh topic URLs, such as `/topic/topic-kibana-spaces`, to the child page live in the CloudFront configuration in `elastic/docs-infra`, not in the build.
+
+Child pages also behave as follows:
 
 - Child pages are fully rendered Markdown with access to all MyST directives, substitutions, and cross-links.
 - Child files are automatically excluded from normal HTML generation — you do not need to add them to the `exclude:` list.
@@ -113,6 +121,7 @@ The following slugs are reserved and cannot be used as child file names:
 | `tags` | API Explorer uses this path for tag landing pages |
 | `group` | Tag landing pages use `/group/` |
 | `operation` | Operation pages use `/operation/` |
+| `topic` | Topic pages from `x-topics` use `/topic/` |
 | `authentication` | Reserved for API Explorer and cannot be used as a child file slug |
 | `servers` | Reserved for API Explorer and cannot be used as a child file slug |
 
@@ -343,6 +352,7 @@ The API Explorer supports some OpenAPI specification extensions to enhance navig
 - [x-displayName](#x-displayname)
 - [x-req-auth](#x-req-auth)
 - [x-tagGroups](#x-taggroups)
+- [x-topics](#x-topics)
 
 For background on OpenAPI vendor extensions, refer to [OpenAPI Specification](https://spec.openapis.org/oas/latest.html#specification-extensions).
 
@@ -441,9 +451,20 @@ A line that mixes `OR` and `AND`, or a bullet with extra words around the values
 
 ### Authentication
 
-The **Authentication** section shows how to send a credential. It sits below **Required authorization** and is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`, and also appears in the on-page table of contents.
+The **Authentication** section shows how to send a credential. It is collapsed by default, because a reader who already has auth set up does not need it. The header shows the scheme names, for example `Api key | Basic | Bearer`.
 
-The API Explorer reads OpenAPI `security` on the operation, or the document-level `security` when the operation omits the field. An empty operation `security: []` is an explicit override to none and hides the section.
+The API Explorer reads the document-level `security`, or one alternative per scheme in `components.securitySchemes` when the document has none. The full section lives on the product's `/authentication` page. An endpoint page shows its own section, below **Required authorization** and in the on-page table of contents, only when the operation sets a `security` that names other alternatives than the document's. An empty operation `security: []` is an explicit override to none and shows no section.
+
+Every endpoint with authentication has an `Auth` badge in the row under its path, before the availability badge. The badges in that row, `Auth` and `Deprecated`, share the outlined look of the availability badge. `Deprecated` keeps a red outline and text, and a badge that links is underlined:
+
+| Badge | When | Links to |
+|---|---|---|
+| `Auth` | The operation inherits the document `security` | The Authentication page |
+| `Auth` | The operation sets its own, different `security` | Its own **Authentication** section |
+| `Auth optional` | One alternative is empty (`{}`), which OpenAPI reads as "no authentication is fine too" | The Authentication page |
+| `No auth` | The operation sets `security: []` | Nothing |
+
+A spec that declares no `security` shows no badge.
 
 Each listed scheme is resolved against `components.securitySchemes`, in the order the spec lists them:
 
@@ -460,9 +481,33 @@ Other scheme types, such as `mutualTLS`, are omitted. OpenAPI treats items in th
 
 Open the section to see one tab per scheme. A tab shows the header or query parameter to send, for example `Authorization: Basic <credentials>`, and the scheme `description`. One scheme shows no tabs. A search with the browser's find-in-page opens the section and selects the tab that contains the match.
 
-The `/authentication` page is still generated, so old links keep working. It is not in the navigation, and operation pages do not link to it.
+The `/authentication` page is generated for every spec that declares security schemes, and the sidebar lists it under **Topics**. It shows the same tabs as an endpoint's section, so the Markdown below also applies there. The tabs are always open, under the page's own title, without the collapsible **Authentication** heading. Any prose comes first: an `x-topics` entry titled `Authentication` renders above the tabs, and so does a [`children:`](#api-children) page whose first heading is `Authentication`. When a child page stands for Authentication, it takes the place of the generated page in the sidebar and the badge links to it. The generated `/authentication` page stays for old links. Refer to [Topic pages](#x-topics).
 
 The same accordion applies to **Path Parameters**, **Query Parameters**, and **Request** when those sections have more than one item. A single-item section stays expanded as a plain heading.
+
+### Topic pages [x-topics]
+
+`x-topics` is deprecated: write these pages as [`children:`](#api-children) pages instead. A child page that covers a topic replaces it.
+
+The document-level `x-topics` extension lists pages of prose that explain the API as a whole, such as rate limits or how to use spaces. Each entry has a `title` and a Markdown `content`:
+
+```yaml
+x-topics:
+  - title: Rate limiting
+    content: |
+      API calls are rate limited in a timing window.
+  - title: Authentication
+    content: |
+      Elastic Cloud APIs support key-based authentication.
+```
+
+Each topic renders at `/topic/topic-<slug>`, the same URL as on bump.sh. The slug is the title in lowercase with spaces replaced by hyphens, so `Rate limiting` becomes `/topic/topic-rate-limiting`. Entries without a `title` are skipped.
+
+The sidebar lists the topics under a **Topics** heading, above the endpoint groups. The Authentication page always comes first and Rate limiting second, whether each comes from a `children:` page or the spec. Any other `children:` pages follow in the order the docset declares them, then the spec's other topics in alphabetical order of their titles. The heading starts expanded on every page, and it only appears when the product has at least one topic page.
+
+A topic titled `Authentication` does not get its own topic page. Its content opens the `/authentication` page, above the authentication tabs. This also works for a spec without security schemes. The redirect from the bump.sh URL `/topic/topic-authentication` lives in `elastic/docs-infra`.
+
+A `children:` page whose first heading or text matches a topic replaces it. Refer to [`children:`](#api-children).
 
 ### Tag labels [x-displayname]
 
@@ -517,7 +562,7 @@ The document-level `x-tagGroups` extension (from [Redocly](https://redocly.com/d
 }
 ```
 
-The default sidebar matches bump.sh. The product overview, Authentication, Servers, and any `children:` markdown pages sit in one group. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag.
+The default sidebar matches bump.sh. The product overview and the **Topics** heading sit in one group, and the Topics heading starts expanded on every page. A divider separates that group from tag folders. Each OpenAPI operation is a visible child of its tag. A second divider sets the **Types** heading apart after the tag folders. Like Topics, Types is a heading with no page of its own.
 
 Operations that share `x-namespace` and `x-api-name` render as **one page** when they are the same call (same parameters, request body and responses), built around the dominant method on the longest path. A sibling with a different contract keeps its own page. Specs without those extensions group by operation summary instead. The page URL uses the operation id without its numeric suffix: `search`, `search-1`, `search-2` and `search-3` become `operation-search`. The former per-operation URLs, such as `operation-search-2`, become redirect pages to the merged page, and they keep any query string and `#fragment`. Code samples carried by any of the merged operations show the dominant method of the path they call.
 

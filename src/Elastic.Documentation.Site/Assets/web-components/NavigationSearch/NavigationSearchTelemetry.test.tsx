@@ -1,30 +1,19 @@
 import * as logging from '../../telemetry/logging'
-import { cooldownStore } from '../shared/cooldown.store'
+import { renderWithProviders } from '../../test-utils/render'
+import { resetCooldownStore } from '../../test-utils/stores'
 import { NavigationSearch } from './NavigationSearch'
 import { SearchResultsList } from './SearchResultsList'
+import { groupSearchResults } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
 import * as queryHook from './useNavigationSearchQuery'
-import { EuiProvider } from '@elastic/eui'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
-// Mock htmx - it uses XPath which jsdom doesn't support properly
-vi.mock('htmx.org', () => ({
-    default: {
-        on: vi.fn(),
-        off: vi.fn(),
-        process: vi.fn(),
-        ajax: vi.fn(),
-    },
-}))
-
 // Mock the telemetry logging functions
-vi.mock('../../telemetry/logging', () => ({
-    logInfo: vi.fn(),
-    logWarn: vi.fn(),
-}))
+vi.mock('../../telemetry/logging', async () =>
+    (await import('../../test-utils/mocks')).logging()
+)
 
 // Mock search results for result click tests
 const mockSearchResults = {
@@ -35,7 +24,10 @@ const mockSearchResults = {
             description: 'Learn about Elasticsearch',
             score: 0.95,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Elasticsearch' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Elasticsearch', url: '/docs/elasticsearch' },
+            ],
         },
         {
             url: '/docs/kibana/dashboard',
@@ -43,47 +35,20 @@ const mockSearchResults = {
             description: 'Create dashboards',
             score: 0.85,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Kibana' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Kibana', url: '/docs/kibana' },
+            ],
         },
     ],
     totalResults: 2,
     pageCount: 1,
 }
 
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-        },
-    })
-
-// Wrapper component for tests
-const renderWithProviders = (ui: React.ReactElement) => {
-    const testQueryClient = createTestQueryClient()
-    return render(
-        <EuiProvider
-            colorMode="light"
-            globalStyles={false}
-            utilityClasses={false}
-        >
-            <QueryClientProvider client={testQueryClient}>
-                {ui}
-            </QueryClientProvider>
-        </EuiProvider>
-    )
-}
-
 // Helper to reset all stores
 const resetStores = () => {
     navigationSearchStore.getState().actions.clearSearchTerm()
-    cooldownStore.setState({
-        cooldowns: {
-            search: { cooldown: null, awaitingNewInput: false },
-            askAi: { cooldown: null, awaitingNewInput: false },
-        },
-    })
+    resetCooldownStore()
 }
 
 describe('Navigation Search Telemetry Integration', () => {
@@ -223,6 +188,8 @@ describe('Navigation Search Telemetry Integration', () => {
 describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
+        results: groupSearchResults(mockSearchResults.results),
+        isLoading: false,
         isKeyboardNavigating: { current: false },
         onMouseMove: vi.fn(),
         onResultClick: vi.fn(),

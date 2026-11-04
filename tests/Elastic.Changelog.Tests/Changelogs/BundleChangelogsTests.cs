@@ -1975,7 +1975,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			All = true,
 			Repo = "cloud", // Set repo to "cloud" - different from product ID "cloud-serverless"
-
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
@@ -2132,8 +2131,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			Repo =
-				"cloud" // explicit CLI --repo should win over bundle.repo: wrong-repo
+			Repo = "cloud" // explicit CLI --repo should win over bundle.repo: wrong-repo
 		};
 
 		// Act
@@ -4004,9 +4002,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Config = configPath,
 			Profile = "serverless-release",
 			ProfileArgument = "2026-02", // version string
-
 			ProfileReport = urlFile, // URL list file (Phase 3.4)
-
 			OutputDirectory = outputDir
 		};
 
@@ -4065,7 +4061,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Config = configPath,
 			Profile = "serverless-release",
 			ProfileArgument = reportFile, // wrong — this looks like a file, should be a version
-
 			ProfileReport = urlFile
 		};
 
@@ -5505,7 +5500,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 		{
 			Directory = changelogDir,
 			InputProducts = [new ProductArgument { Product = "*" }], // Input method should not affect bundle filtering
-
 			Config = configPath,
 			Output = outputPath,
 			OutputProducts = [new ProductArgument { Product = "security", Target = "9.3.0" }]

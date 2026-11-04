@@ -4,8 +4,6 @@
 @inherits RazorSlice<Elastic.ApiExplorer.Operations.AuthorizationSectionModel>
 @{
 	// Both sections fold away like every other section: a reader who is already set up does not need them.
-	var requirements = Model.Requirements;
-	var useTabs = requirements.Count > 1;
 }
 @if (Model.Privileges.Count > 0)
 {
@@ -40,51 +38,4 @@
 		</div>
 	</div>
 }
-@if (requirements.Count > 0)
-{
-	<div @ParamSectionHeader.WrapAttributes()>
-		@(await RenderPartialAsync<_ParamSectionHeader, ParamSectionHeader>(new ParamSectionHeader("Authentication", "authentication", [.. requirements.Select(static r => r.Label)], Style: SummaryStyle.Variants)))
-		<div @ParamSectionHeader.BodyAttributes("authentication-list")>
-			@* Each requirement is an alternative, so several of them become tabs: the same radio-button tabs as the docs. Switching needs no script; tabs.ts makes the other panels findable.
-			   The schemes inside one requirement are sent together, so they share a panel. *@
-			<div class="@(useTabs ? "api-tabs api-authentication-tabs" : null)">
-				@for (var i = 0; i < requirements.Count; i++)
-				{
-					var requirement = requirements[i];
-					var tabId = $"authentication-tab-{i}";
-					@if (useTabs)
-					{
-						<input class="tabs-input" id="@tabId" name="authentication-tabs" type="radio" checked="@(i == 0 ? "checked" : null)" tabindex="0">
-						<label class="tabs-label" for="@tabId">@requirement.Label</label>
-					}
-					<div class="@(useTabs ? "tabs-content " : "")api-authorization-panel">
-						@if (requirement.Schemes.Count > 1)
-						{
-							<p>Send all of these together.</p>
-						}
-						@foreach (var scheme in requirement.Schemes)
-						{
-							@if (requirement.Schemes.Count > 1)
-							{
-								<h3>@scheme.Label</h3>
-							}
-							@if (!string.IsNullOrEmpty(scheme.CredentialExample))
-							{
-								@(await RenderPartialAsync<_ApiCodeBlock, ApiCodeBlockModel>(new ApiCodeBlockModel("language-http", scheme.CredentialExample)))
-							}
-							@if (scheme.DescriptionMarkdown is not null)
-							{
-								@Model.RenderMarkdown(scheme.DescriptionMarkdown)
-							}
-							@* OAuth 2.0 and OpenID Connect have no credential example, and a description is optional. The open section must still name the scheme. *@
-							@if (string.IsNullOrEmpty(scheme.CredentialExample) && scheme.DescriptionMarkdown is null && requirement.Schemes.Count == 1)
-							{
-								<p>Uses @scheme.Label authentication.</p>
-							}
-						}
-					</div>
-				}
-			</div>
-		</div>
-	</div>
-}
+@(await RenderPartialAsync<_AuthenticationSection, AuthenticationSectionModel>(new AuthenticationSectionModel(Model.Requirements, Model.AuthenticationOptional, Model.RenderMarkdown)))

@@ -1074,8 +1074,7 @@ public class ChangelogConfigurationLoader(ILoggerFactory logFactory, IConfigurat
 			Match = globalMatch,
 			Create = createRules,
 			Bundle = bundleRules,
-			Publish =
-				null // rules.publish is retired; filtering happens at bundle time via rules.bundle
+			Publish = null // rules.publish is retired; filtering happens at bundle time via rules.bundle
 		};
 	}
 

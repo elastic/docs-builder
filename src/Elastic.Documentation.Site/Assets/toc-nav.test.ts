@@ -119,10 +119,6 @@ describe('TOC navigation', () => {
         )
     })
 
-    afterEach(() => {
-        vi.restoreAllMocks()
-    })
-
     it('marks a stepper heading with its own id as current', () => {
         document.body.innerHTML = `
             <main id="markdown-content">

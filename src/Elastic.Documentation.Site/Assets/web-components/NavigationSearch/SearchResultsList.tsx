@@ -1,20 +1,23 @@
 import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { JumpToIndicator } from './JumpToIndicator'
+import { PropertyResultRow } from './PropertyResultRow'
+import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
+import {
+    GO_TO_LABELS,
+    primaryRoute,
+    type ApiPropertyResult,
+    type ResultGroup,
+} from './apiPropertyResults'
 import {
     useSelectedIndex,
     useSearchActions,
     useSearchTerm,
 } from './navigationSearch.store'
-import {
-    useNavigationSearchQuery,
-    SearchResultItem,
-    type TypeFilter,
-} from './useNavigationSearchQuery'
+import { SearchResultItem, type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
-    EuiBadge,
-    EuiIcon,
     EuiLoadingSpinner,
     useEuiTheme,
     useEuiOverflowScroll,
@@ -44,11 +47,11 @@ export const navigationSearchBreadcrumbs = (
     buildType: string
 ) => {
     if (typeFilter === 'api') {
+        const [, product, ...rest] = parents
         return [
             'API',
-            ...parents
-                .slice(1)
-                .map((parent) => formatApiProductCrumb(parent.title)),
+            ...(product ? [formatApiProductCrumb(product.title)] : []),
+            ...rest.map((parent) => parent.title),
         ]
     }
 
@@ -65,6 +68,8 @@ export const emptyStateCopy = (typeFilter: TypeFilter) =>
         : "We couldn't find a page that matches your search"
 
 export interface SearchResultsListProps {
+    results: ResultGroup[]
+    isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
@@ -72,6 +77,8 @@ export interface SearchResultsListProps {
 }
 
 export const SearchResultsList = ({
+    results,
+    isLoading,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
@@ -80,13 +87,11 @@ export const SearchResultsList = ({
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useNavigationSearchQuery(typeFilter)
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
-    const isInitialLoading = isLoading && !data
+    const isInitialLoading = isLoading && results.length === 0
 
     // Scroll to top when search term changes
     useEffect(() => {
@@ -144,30 +149,69 @@ export const SearchResultsList = ({
         }
     }
 
-    const handleResultClick = (result: SearchResultItem, index: number) => {
+    const handleResultClick = (
+        result: SearchResultItem,
+        rank: number,
+        property?: ApiPropertyResult
+    ) => {
         trackResultClicked({
             query: searchTerm,
-            position: index,
-            url: result.url,
+            position: rank,
+            url: property?.url ?? result.url,
             score: result.score,
+            anchor: property?.anchor,
         })
         onResultClick()
     }
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map((result, index) => (
-                <SearchResultRow
+            {results.map(({ result, index, rank, properties }) => (
+                <div
                     key={result.url}
-                    index={index}
-                    result={result}
-                    isSelected={index === selectedIndex}
-                    isKeyboardNavigating={isKeyboardNavigating.current}
-                    onMouseEnter={() => handleMouseEnter(index)}
-                    onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={() => handleResultClick(result, index)}
-                    typeFilter={typeFilter}
-                />
+                    css={css`
+                        margin: ${euiTheme.size.s};
+                        border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                        border-radius: ${euiTheme.size.s};
+                        overflow: hidden;
+                    `}
+                >
+                    <SearchResultRow
+                        index={index}
+                        result={result}
+                        isSelected={index === selectedIndex}
+                        isKeyboardNavigating={isKeyboardNavigating.current}
+                        onMouseEnter={() => handleMouseEnter(index)}
+                        onMouseMove={() => handleItemMouseMove(index)}
+                        onClick={() => handleResultClick(result, rank)}
+                        typeFilter={typeFilter}
+                        searchTerm={searchTerm}
+                    />
+                    {properties.map(
+                        ({ property, index: propertyIndex, showLocation }) => (
+                            <PropertyResultRow
+                                key={property.url}
+                                index={propertyIndex}
+                                property={property}
+                                searchTerm={searchTerm}
+                                showLocation={showLocation}
+                                isSelected={propertyIndex === selectedIndex}
+                                isKeyboardNavigating={
+                                    isKeyboardNavigating.current
+                                }
+                                onMouseEnter={() =>
+                                    handleMouseEnter(propertyIndex)
+                                }
+                                onMouseMove={() =>
+                                    handleItemMouseMove(propertyIndex)
+                                }
+                                onClick={() =>
+                                    handleResultClick(result, rank, property)
+                                }
+                            />
+                        )
+                    )}
+                </div>
             ))}
         </div>
     )
@@ -182,6 +226,7 @@ interface SearchResultRowProps {
     onMouseMove: () => void
     onClick: () => void
     typeFilter: TypeFilter
+    searchTerm: string
 }
 
 const SearchResultRow = ({
@@ -193,10 +238,12 @@ const SearchResultRow = ({
     onMouseMove,
     onClick,
     typeFilter,
+    searchTerm,
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(result.url)
+    const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
     const breadcrumbItems = useMemo(
         () =>
             navigationSearchBreadcrumbs(
@@ -252,10 +299,6 @@ const SearchResultRow = ({
                             text-decoration: underline;
                         }
                     }
-
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
                 }
 
                 &[data-selected='true'] {
@@ -267,10 +310,6 @@ const SearchResultRow = ({
                             color: ${euiTheme.colors.textParagraph};
                             text-decoration: underline;
                         }
-                    }
-
-                    .jump-to-indicator {
-                        visibility: visible;
                     }
                 }
             `}
@@ -284,13 +323,21 @@ const SearchResultRow = ({
             >
                 <Breadcrumb items={breadcrumbItems} />
                 <Title text={result.title} />
-                {result.description && (
-                    <Description text={result.description} />
+                {route ? (
+                    <RouteLine route={route} tokens={tokens} />
+                ) : (
+                    result.description && (
+                        <Description text={result.description} />
+                    )
                 )}
             </div>
             {!isMobile && (
                 <JumpToIndicator
-                    label={typeFilter === 'api' ? 'Jump to API' : 'Jump to'}
+                    label={
+                        result.type === 'api'
+                            ? GO_TO_LABELS.operation
+                            : GO_TO_LABELS.page
+                    }
                 />
             )}
         </a>
@@ -382,7 +429,7 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -407,32 +454,12 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}
         >
             <SanitizedHtmlContent htmlContent={text} ellipsis />
-        </div>
-    )
-}
-
-const JumpToIndicator = ({ label }: { label: string }) => {
-    const { euiTheme } = useEuiTheme()
-
-    return (
-        <div
-            className="jump-to-indicator"
-            css={css`
-                flex-shrink: 0;
-                color: ${euiTheme.colors.textSubdued};
-                margin-left: ${euiTheme.size.xxxxl};
-                visibility: hidden;
-            `}
-        >
-            <EuiBadge color="hollow">
-                {label} <EuiIcon type="returnKey" size="s" />
-            </EuiBadge>
         </div>
     )
 }

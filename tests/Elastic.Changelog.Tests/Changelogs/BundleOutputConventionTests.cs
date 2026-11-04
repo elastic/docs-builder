@@ -606,7 +606,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.File
 			.Exists(FileSystem.Path.Join(_changelogDir, "kibana", "kibana-kibana-9.3.0.yaml"))
 			.Should()
-			.BeTrue("a sibling profile without output_directory writes to the conventional {output_directory}/{product}/ subfolder");
+			.BeTrue("a sibling profile without output_directory writes to the conventional {{output_directory}}/{{product}}/ subfolder");
 	}
 
 	[Test]
@@ -710,7 +710,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.Should()
 			.Be(
 				FileSystem.Path.Join(outputDir, "elasticsearch", "elasticsearch-elasticsearch-9.3.0.yaml").OptionalWindowsReplace(),
-				"plan output path must be {output_directory}/{product}/{repo}-{product}-{version}.yaml"
+				"plan output path must be {{output_directory}}/{{product}}/{{repo}}-{{product}}-{{version}}.yaml"
 			);
 
 		var result = await Service().BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
