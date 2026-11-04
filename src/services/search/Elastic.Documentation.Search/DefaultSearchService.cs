@@ -163,9 +163,7 @@ public partial class DefaultSearchService<TDocument>(
 		var options = new HighlightOptions
 		{
 			ApiLookup = apiLookup,
-			ListChildren = apiLookup
-				? ApiLookupQueryBuilder.ExpandsChildren(request.Query)
-				: SearchQueryBuilder.ExpandsChildren(request.Query, request.TypeFilter)
+			ListChildren = apiLookup && ApiLookupQueryBuilder.ExpandsChildren(request.Query)
 		};
 		var results = response
 			.Hits
