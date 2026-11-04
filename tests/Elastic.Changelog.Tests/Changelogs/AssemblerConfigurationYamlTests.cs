@@ -13,7 +13,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 /// </summary>
 public class AssemblerConfigurationYamlTests
 {
-	[Fact]
+	[Test]
 	public void ConfigAssemblerYml_DeserializesWithNonEmptyReferences()
 	{
 		var root = Paths.GetSolutionDirectory() ?? throw new InvalidOperationException("Solution directory not found.");

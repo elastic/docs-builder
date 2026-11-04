@@ -10,7 +10,7 @@ namespace Elastic.Documentation.Configuration.Tests;
 
 public class PhysicalDocsetTests
 {
-	[Fact]
+	[Test]
 	public void CliReferenceRefReadsTitleOverrides()
 	{
 		const string yaml =
@@ -23,21 +23,21 @@ public class PhysicalDocsetTests
 			    navigation_title: CLI reference
 			""";
 
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 		var cliRef = docSet.TableOfContents.OfType<CliReferenceRef>().Single();
 
 		cliRef.Title.Should().Be("Elastic CLI reference");
 		cliRef.NavigationTitle.Should().Be("CLI reference");
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetFileCanBeDeserialized()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		docSet.Project.Should().Be("doc-builder");
 		docSet.MaxTocDepth.Should().Be(2);
@@ -72,12 +72,12 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetContainsExpectedFolders()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		var folderNames = docSet.TableOfContents.OfType<FolderRef>().Select(f => f.PathRelativeToDocumentationSet).ToList();
 
@@ -95,12 +95,12 @@ public class PhysicalDocsetTests
 		cliRef.Should().NotBeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalDocsetHasValidNestedStructure()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs", "_docset.yml");
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		var documentationFolder = docSet
 			.TableOfContents
@@ -118,14 +118,14 @@ public class PhysicalDocsetTests
 		cliRef.Children.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void PhysicalTestDocsetContainsFileReferencesWithChildren()
 	{
 		var docsetPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs-tests", "docset.yml");
 		File.Exists(docsetPath).Should().BeTrue($"Expected test docset file to exist at {docsetPath}");
 
 		var yaml = File.ReadAllText(docsetPath);
-		var docSet = ConfigurationFileProvider.Deserializer.Deserialize<DocumentationSetFile>(yaml);
+		var docSet = ConfigurationFileProvider.Deserialize<DocumentationSetFile>(yaml);
 
 		var fileWithChildren = docSet
 			.TableOfContents

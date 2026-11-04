@@ -17,17 +17,14 @@
   
   <ItemGroup>
     <PackageReference Include="DotNet.Glob" />
-    <PackageReference Include="Elastic.Ingest.Elasticsearch" />
     <PackageReference Include="Generator.Equals" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Mermaider" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RazorSlices" />
     <PackageReference Include="Sep" />
-    <PackageReference Include="Slugify.Core" />
+    <PackageReference Include="SharpYaml" />
     <PackageReference Include="Utf8StreamReader" />
-    <PackageReference Include="Vecc.YamlDotNet.Analyzers.StaticGenerator" />
-    <PackageReference Include="YamlDotNet" />
     <PackageReference Include="System.IO.Abstractions" />
     <PackageReference Include="NetEscapades.EnumGenerators" />
     <PackageReference Include="Pagefind.Net" />
@@ -43,7 +40,6 @@
     <ProjectReference Include="..\Elastic.Documentation\Elastic.Documentation.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Tooling\Elastic.Documentation.Tooling.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Configuration\Elastic.Documentation.Configuration.csproj" />
-    <ProjectReference Include="..\Elastic.Documentation.Indexing\Elastic.Documentation.Indexing.csproj" />
     <ProjectReference Include="..\Elastic.Documentation.Navigation\Elastic.Documentation.Navigation.csproj" />
   </ItemGroup>
 

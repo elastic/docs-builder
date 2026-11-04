@@ -611,6 +611,15 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 			return;
 		}
 
+		if (Context.ReleaseNotesResolver.IsNotFoundDeclared(product))
+		{
+			this.EmitHint(
+				$"'{product}' is registered in products.yml but has no CDN bundles yet. " +
+					$"The changelog will render empty until the first release is published."
+			);
+			return;
+		}
+
 		_ = Context.ReleaseNotesResolver.TryGetBundles(product, out var loadedBundles);
 		ApplyLoadedBundles(loadedBundles);
 		Found = LoadedBundles.Count > 0;
@@ -637,7 +646,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 	}
 
 	/// <summary>
-	/// Prestage visibility filtering (release-notes onboarding RFC, B1): Prestage bundles are
+	/// DRA visibility filtering (release-notes onboarding RFC, B1): DRA bundles are
 	/// uploaded to S3 weeks before release day, so CDN-mode rendering must not show bundles whose
 	/// target version the published content source has not released yet. Production publishes the
 	/// <see cref="ContentSource.Current"/> content source, where only versions at or below the
@@ -807,10 +816,7 @@ public class ChangelogBlock(DirectiveBlockParser parser, ParserContext context) 
 		ChangelogTypeFilter.BreakingChange => type => type == ChangelogEntryType.BreakingChange,
 		ChangelogTypeFilter.Deprecation => type => type == ChangelogEntryType.Deprecation,
 		ChangelogTypeFilter.KnownIssue => type => type == ChangelogEntryType.KnownIssue,
-		_ =>
-			type =>
-				!SeparatedTypes.Contains(type) // Default: exclude separated types
-
+		_ => type => !SeparatedTypes.Contains(type) // Default: exclude separated types
 	};
 
 	/// <summary>

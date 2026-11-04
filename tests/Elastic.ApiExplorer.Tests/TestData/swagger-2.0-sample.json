@@ -1,0 +1,126 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Sample API",
+    "version": "1",
+    "description": "A minimal Swagger 2.0 fixture covering the constructs used in the ECE spec."
+  },
+  "host": "api.example.com",
+  "basePath": "/v1",
+  "schemes": ["https"],
+  "security": [{ "basicAuth": [] }],
+  "securityDefinitions": {
+    "apiKey": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
+    },
+    "basicAuth": {
+      "type": "basic"
+    }
+  },
+  "tags": [
+    { "name": "deployments", "description": "Manage deployments" },
+    { "name": "users", "description": "Manage users" }
+  ],
+  "paths": {
+    "/deployments": {
+      "get": {
+        "operationId": "list-deployments",
+        "summary": "List deployments",
+        "tags": ["deployments"],
+        "parameters": [
+          { "name": "q", "in": "query", "type": "string", "description": "Search query" },
+          { "name": "ids", "in": "query", "type": "array", "items": { "type": "string" }, "collectionFormat": "csv" }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": { "$ref": "#/definitions/DeploymentList" }
+          }
+        },
+        "x-state": "Generally available; Added in 1.0.0"
+      },
+      "post": {
+        "operationId": "create-deployment",
+        "summary": "Create a deployment",
+        "tags": ["deployments"],
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": { "$ref": "#/definitions/CreateDeploymentRequest" }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "schema": { "$ref": "#/definitions/Deployment" }
+          }
+        },
+        "x-state": "Generally available; Added in 1.0.0"
+      }
+    },
+    "/deployments/{id}": {
+      "get": {
+        "operationId": "get-deployment",
+        "summary": "Get a deployment",
+        "tags": ["deployments"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "type": "string" }
+        ],
+        "produces": ["application/json"],
+        "responses": {
+          "200": { "description": "OK", "schema": { "$ref": "#/definitions/Deployment" } },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/users/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Log in",
+        "tags": ["users"],
+        "consumes": ["application/x-www-form-urlencoded"],
+        "produces": ["application/json"],
+        "parameters": [
+          { "name": "username", "in": "formData", "required": true, "type": "string" },
+          { "name": "password", "in": "formData", "required": true, "type": "string", "format": "password" }
+        ],
+        "responses": {
+          "200": { "description": "OK" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Deployment": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["running", "stopped", "pending"] }
+      }
+    },
+    "DeploymentList": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Deployment" }
+        }
+      }
+    },
+    "CreateDeploymentRequest": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" }
+      }
+    }
+  }
+}

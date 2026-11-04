@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.IO.Abstractions;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Operations;
@@ -10,76 +9,84 @@ using Elastic.ApiExplorer.Structural;
 using Elastic.ApiExplorer.Types;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
-using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
-using Microsoft.Extensions.Logging.Abstractions;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.Navigation;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class ApiNavParityTests
 {
-	[Fact]
-	public async Task CreateNavigation_XTagGroupsWithMultipleGroups_Default_TagsHangOffLanding()
+	[Test]
+	public async Task CreateNavigation_WithServers_SeparatesIntroPagesFromEndpoints()
 	{
 		var openApiJson = /*lang=json,strict*/
 			"""
 			{
 			  "openapi": "3.0.3",
 			  "info": { "title": "ES", "version": "1.0" },
+			  "servers": [ { "url": "https://example.com" } ],
 			  "paths": {
-			    "/a": { "get": { "operationId": "a1", "tags": ["watcher"], "responses": { "200": { "description": "ok" } } } },
-			    "/b": { "get": { "operationId": "b1", "tags": ["tasks"], "responses": { "200": { "description": "ok" } } } },
-			    "/c": { "get": { "operationId": "c1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
+			    "/a": { "get": { "operationId": "a1", "tags": ["search"], "responses": { "200": { "description": "ok" } } } }
 			  },
-			  "tags": [
-			    { "name": "watcher", "x-displayName": "Watcher" },
-			    { "name": "tasks", "x-displayName": "Task management" },
-			    { "name": "search" }
-			  ],
-			  "x-tagGroups": [
-			    { "name": "Information", "tags": ["watcher", "tasks"] },
-			    { "name": "Search", "tags": ["search"] }
-			  ]
+			  "tags": [ { "name": "search" } ]
 			}
 			""";
 
-		var (generator, document) = await CreateGeneratorWithSpec(openApiJson);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(openApiJson);
 		var navigation = generator.CreateNavigation("elasticsearch", document);
+		var ordered = navigation.NavigationItems.ToList();
 
-		navigation.NavigationItems.OfType<ClassificationNavigationItem>().Should().BeEmpty();
-		var tags = navigation.NavigationItems.OfType<TagNavigationItem>().ToList();
-		tags.Select(t => t.NavigationTitle).Should().Equal("Task management", "Watcher", "search");
-		tags
-			.Select(t => t.Url)
-			.Should()
-			.Equal(
-				"/api/doc/elasticsearch/group/endpoint-tasks",
-				"/api/doc/elasticsearch/group/endpoint-watcher",
-				"/api/doc/elasticsearch/group/endpoint-search"
-			);
-
-		var structural = navigation.NavigationItems.OfType<StructuralNavigationItem>().ToList();
-		structural.Should().Contain(
-			item => item.Model.Kind == ApiStructuralKind.Authentication && item.Url == "/api/doc/elasticsearch/authentication"
-		);
-		structural.Should().Contain(item => item.Model.Kind == ApiStructuralKind.Servers && item.Url == "/api/doc/elasticsearch/servers");
+		ordered[0].Should().BeOfType<StructuralNavigationItem>().Which.Model.Kind.Should().Be(ApiStructuralKind.Servers);
+		ordered[1].Should().BeOfType<SidebarSeparatorNavigationItem>();
+		ordered[2].Should().BeOfType<TagNavigationItem>().Which.NavigationTitle.Should().Be("Search");
 	}
 
-	[Fact]
-	public async Task CreateNavigation_SharedSummaryOperations_Default_EachOperationIsVisible()
+	[Test]
+	public async Task CreateNavigation_SharedSummaryOperations_CollapsesIntoOnePage()
 	{
-		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec);
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(SharedSummarySpec);
 		var navigation = generator.CreateNavigation("test", document);
 
-		navigation
+		var page = navigation
 			.NavigationItems
 			.OfType<TagNavigationItem>()
-			.SelectMany(tag => tag.NavigationItems)
-			.OfType<EndpointNavigationItem>()
+			.Single()
+			.NavigationItems
 			.Should()
-			.BeEmpty();
+			.ContainSingle()
+			.Which
+			.Should()
+			.BeOfType<OperationNavigationItem>()
+			.Subject;
+
+		page.Hidden.Should().BeFalse();
+		page.Url.Should().Be("/api/doc/test/operation/operation-op-a");
+		page.Siblings.Select(o => o.Route).Should().Equal("/b");
+		page.AliasUrls.Should().Equal("/api/doc/test/operation/operation-op-b");
+	}
+
+	[Test]
+	public async Task CreateNavigation_QueryContainerSchema_AddsTypesNav()
+	{
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(QueryContainerSpec);
+		var navigation = generator.CreateNavigation("test", document);
+
+		var types = navigation.NavigationItems.OfType<TypesNavigationItem>().Should().ContainSingle().Subject;
+		types.Should().BeAssignableTo<ISidebarHeadingNavigationItem>("Types is a heading with no page, like Topics");
+		types.Url.Should().Be(navigation.Url);
+		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
+		var items = navigation.NavigationItems.ToList();
+		items[^1].Should().Be(types);
+		items[^2].Should().BeOfType<SidebarSeparatorNavigationItem>("a divider sets the types apart from the endpoint groups");
+	}
+
+	[Test]
+	public async Task CreateNavigation_GroupedOperationsWithDifferentContracts_KeepSeparatePages()
+	{
+		var (generator, document) = await TestSpecs.CreateGeneratorWithSpecAsync(DifferentContractsSpec);
+		var navigation = generator.CreateNavigation("test", document);
+
 		var operations = navigation
 			.NavigationItems
 			.OfType<TagNavigationItem>()
@@ -89,56 +96,42 @@ public class ApiNavParityTests
 			.ToList();
 
 		operations.Should().HaveCount(2);
-		operations.Should().OnlyContain(op => !op.Hidden);
+		operations.Should().OnlyContain(op => op.Siblings.Count == 0 && op.AliasUrls.Count == 0);
 		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
 	}
 
-	[Fact]
-	public async Task CreateNavigation_SharedSummaryOperations_GroupingEnabled_CollapsesIntoHiddenEndpoint()
-	{
-		var (generator, document) = await CreateGeneratorWithSpec(SharedSummarySpec, apiNavGroupingEnabled: true);
-		var navigation = generator.CreateNavigation("test", document);
-
-		var endpoint = navigation
-			.NavigationItems
-			.OfType<TagNavigationItem>()
-			.Single()
-			.NavigationItems
-			.OfType<EndpointNavigationItem>()
-			.Should()
-			.ContainSingle()
-			.Subject;
-
-		endpoint.Hidden.Should().BeFalse();
-		var operations = endpoint.NavigationItems.ToList();
-		operations.Should().HaveCount(2);
-		operations.Should().OnlyContain(op => op.Hidden);
-		operations.Select(op => op.Url).Should().Equal("/api/doc/test/operation/operation-op-a", "/api/doc/test/operation/operation-op-b");
-	}
-
-	[Fact]
-	public async Task CreateNavigation_QueryContainerSchema_Default_OmitsTypesNav()
-	{
-		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec);
-		var navigation = generator.CreateNavigation("test", document);
-
-		navigation.NavigationItems.OfType<SchemaCategoryNavigationItem>().Should().BeEmpty();
-	}
-
-	[Fact]
-	public async Task CreateNavigation_QueryContainerSchema_GroupingEnabled_AddsTypesNav()
-	{
-		var (generator, document) = await CreateGeneratorWithSpec(QueryContainerSpec, apiNavGroupingEnabled: true);
-		var navigation = generator.CreateNavigation("test", document);
-
-		var types = navigation
-			.NavigationItems
-			.OfType<SchemaCategoryNavigationItem>()
-			.Should()
-			.ContainSingle(item => item.NavigationTitle == "Types")
-			.Subject;
-		types.NavigationItems.OfType<SchemaCategoryNavigationItem>().Select(c => c.NavigationTitle).Should().Equal("Query DSL");
-	}
+	/// <summary>Same API name, but the POST takes a required query parameter the GET does not: not the same call.</summary>
+	private const string DifferentContractsSpec = /*lang=json,strict*/
+		"""
+		{
+		  "openapi": "3.0.3",
+		  "info": { "title": "T", "version": "1.0" },
+		  "paths": {
+		    "/a": {
+		      "get": {
+		        "operationId": "op-a",
+		        "summary": "Search",
+		        "tags": ["search"],
+		        "x-namespace": "_global",
+		        "x-api-name": "search",
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    },
+		    "/b": {
+		      "post": {
+		        "operationId": "op-b",
+		        "summary": "Search",
+		        "tags": ["search"],
+		        "x-namespace": "_global",
+		        "x-api-name": "search",
+		        "parameters": [{ "name": "scroll", "in": "query", "required": true, "schema": { "type": "string" } }],
+		        "responses": { "200": { "description": "ok" } }
+		      }
+		    }
+		  },
+		  "tags": [{ "name": "search" }]
+		}
+		""";
 
 	private const string SharedSummarySpec = /*lang=json,strict*/
 		"""
@@ -190,28 +183,6 @@ public class ApiNavParityTests
 		}
 		""";
 
-	private static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpec(
-		string openApiJson,
-		bool apiNavGroupingEnabled = false
-	)
-	{
-		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
-		context.Configuration.Features.ApiNavGroupingEnabled = apiNavGroupingEnabled;
-		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
-
-		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(openApiJson));
-		var settings = new OpenApiReaderSettings { LeaveStreamOpen = false };
-		var result = await OpenApiDocument.LoadAsync(stream, settings: settings);
-		var parseErrors = result.Diagnostic?.Errors;
-		if (parseErrors is not null && parseErrors.Any())
-			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", parseErrors.Select(e => e.Message))}");
-
-		return (generator, result.Document!);
-	}
+	private static string NodeLabel(NavigationRenderNode node) =>
+		node.Kind == NavigationRenderNodeKind.Separator ? "---" : node.NavigationTitle;
 }

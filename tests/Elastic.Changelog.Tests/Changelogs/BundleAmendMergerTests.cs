@@ -10,7 +10,7 @@ namespace Elastic.Changelog.Tests.Changelogs;
 
 public class BundleAmendMergerTests
 {
-	[Fact]
+	[Test]
 	public void MergeEntries_AppliesExclusionsBeforeAdditionsWithinAmend()
 	{
 		var parent = new List<BundledEntry> { CreateFileEntry("keep.yaml", "aaa"), CreateFileEntry("remove.yaml", "bbb") };
@@ -25,7 +25,7 @@ public class BundleAmendMergerTests
 		merged.Should().NotContain(e => e.File!.Name == "remove.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void MergeEntries_AppliesAmendsInOrder()
 	{
 		var parent = new List<BundledEntry> { CreateFileEntry("one.yaml", "1") };
@@ -39,32 +39,32 @@ public class BundleAmendMergerTests
 		merged[0].File!.Name.Should().Be("two.yaml");
 	}
 
-	[Theory]
-	[InlineData("9.3.0.amend-1.yaml", "9.3.0.yaml")]
-	[InlineData("repo-9.3.0.amend-12.yml", "repo-9.3.0.yml")]
-	[InlineData("cloud-2025-11.AMEND-2.YAML", "cloud-2025-11.YAML")]
-	[InlineData("/releases/9.3.0.amend-1.yaml", "/releases/9.3.0.yaml")]
-	[InlineData("elasticsearch-9.3.0.amend-notes.yaml", "elasticsearch-9.3.0.yaml")]
-	[InlineData("cloud-2025-11.amend-notes.yml", "cloud-2025-11.yml")]
+	[Test]
+	[Arguments("9.3.0.amend-1.yaml", "9.3.0.yaml")]
+	[Arguments("repo-9.3.0.amend-12.yml", "repo-9.3.0.yml")]
+	[Arguments("cloud-2025-11.AMEND-2.YAML", "cloud-2025-11.YAML")]
+	[Arguments("/releases/9.3.0.amend-1.yaml", "/releases/9.3.0.yaml")]
+	[Arguments("elasticsearch-9.3.0.amend-notes.yaml", "elasticsearch-9.3.0.yaml")]
+	[Arguments("cloud-2025-11.amend-notes.yml", "cloud-2025-11.yml")]
 	public void GetParentBundlePath_AmendFile_StripsAmendSuffix(string amendPath, string expectedParent) =>
 		BundleAmendMerger.GetParentBundlePath(amendPath).Should().Be(expectedParent);
 
-	[Theory]
-	[InlineData("elasticsearch-9.3.0.amend-notes.yaml", true)]
-	[InlineData("elasticsearch-9.3.0.amend-1.yaml", false)]
-	[InlineData("9.3.0.yaml", false)]
+	[Test]
+	[Arguments("elasticsearch-9.3.0.amend-notes.yaml", true)]
+	[Arguments("elasticsearch-9.3.0.amend-1.yaml", false)]
+	[Arguments("9.3.0.yaml", false)]
 	public void IsNotesAmendFile_DetectsNotesSidecar(string path, bool expected) =>
 		BundleAmendMerger.IsNotesAmendFile(path).Should().Be(expected);
 
-	[Theory]
-	[InlineData("9.3.0.amend-1.yaml", 1)]
-	[InlineData("9.3.0.amend-12.yaml", 12)]
-	[InlineData("9.3.0.amend-notes.yaml", int.MaxValue)]
-	[InlineData("9.3.0.yaml", int.MaxValue)]
+	[Test]
+	[Arguments("9.3.0.amend-1.yaml", 1)]
+	[Arguments("9.3.0.amend-12.yaml", 12)]
+	[Arguments("9.3.0.amend-notes.yaml", int.MaxValue)]
+	[Arguments("9.3.0.yaml", int.MaxValue)]
 	public void GetAmendMergeOrder_NumberedFirstNotesLast(string path, int expected) =>
 		BundleAmendMerger.GetAmendMergeOrder(path).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public void MergeEntries_NumberedExcludeThenNotesReadd_KeepsEntry()
 	{
 		var parent = new List<BundledEntry> { CreateFileEntry("shipped.yaml", "aaa") };
@@ -82,7 +82,7 @@ public class BundleAmendMergerTests
 		merged.Should().ContainSingle(e => e.File!.Name == "shipped.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public void MergeDescription_OmittedAmend_InheritsParent()
 	{
 		var parent = "Original intro";
@@ -91,7 +91,7 @@ public class BundleAmendMergerTests
 		BundleAmendMerger.MergeDescription(parent, [amend]).Should().Be(parent);
 	}
 
-	[Fact]
+	[Test]
 	public void MergeDescription_LastNumberedAmendWins()
 	{
 		var amend1 = new Bundle { Description = "First intro" };
@@ -100,7 +100,7 @@ public class BundleAmendMergerTests
 		BundleAmendMerger.MergeDescription("Original", [amend1, amend2]).Should().Be("Second intro");
 	}
 
-	[Fact]
+	[Test]
 	public void MergeDescription_EmptyString_ClearsParent()
 	{
 		var amend = new Bundle { Description = "" };

@@ -11,23 +11,23 @@ namespace Elastic.Markdown.Tests.DocSet;
 
 public class RepositoryLinksTests : NavigationTestsBase
 {
-	public RepositoryLinksTests(ITestOutputHelper output) : base(output) => Reference = Set.CreateLinkReference();
+	public RepositoryLinksTests() : base() => Reference = Set.CreateLinkReference();
 
 	private RepositoryLinks Reference { get; }
 
-	[Fact]
+	[Test]
 	public void ShouldNotBeNull() => Reference.Should().NotBeNull();
 
-	[Fact]
+	[Test]
 	public void EmitsLinks() => Reference.Links.Should().NotBeNullOrEmpty();
 
-	[Fact]
+	[Test]
 	public void ShouldNotIncludeSnippets() => Reference.Links.Should().NotContain(l => l.Key.Contains("_snippets/"));
 }
 
-public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationTestsBase(output)
+public class GitCheckoutInformationTests() : NavigationTestsBase()
 {
-	[Fact]
+	[Test]
 	public void Create()
 	{
 		var root = FileSystem.DirectoryInfo.New(Paths.WorkingDirectoryRoot.FullName);
@@ -47,7 +47,7 @@ public class GitCheckoutInformationTests(ITestOutputHelper output) : NavigationT
 
 public class LinkReferenceSerializationTests
 {
-	[Fact]
+	[Test]
 	public void SerializesCurrent()
 	{
 		var linkReference = new RepositoryLinks
@@ -78,7 +78,7 @@ public class LinkReferenceSerializationTests
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void Deserializes()
 	{
 		// language=json

@@ -21,7 +21,6 @@
     <PackageReference Include="Proc" />
     <PackageReference Include="SoftCircuits.IniFileParser" />
     <PackageReference Include="System.IO.Abstractions" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" />
   </ItemGroup>
 
 </Project>

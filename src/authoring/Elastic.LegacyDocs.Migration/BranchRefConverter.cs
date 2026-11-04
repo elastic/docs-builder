@@ -2,111 +2,120 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using SharpYaml;
+using SharpYaml.Serialization;
 
 namespace Elastic.LegacyDocs.Migration;
 
 /// <summary>Handles mixed-type branch sequences: plain strings and alias dicts like <c>{alias: branch}</c>.</summary>
-public class BranchRefListConverter : IYamlTypeConverter
+public class BranchRefListConverter : YamlConverter<List<BranchRef>>
 {
-	public bool Accepts(Type type) => type == typeof(List<BranchRef>);
-
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override List<BranchRef> Read(YamlReader reader)
 	{
 		var list = new List<BranchRef>();
 
-		if (!parser.TryConsume<SequenceStart>(out _))
-			return list;
-
-		while (!parser.TryConsume<SequenceEnd>(out _))
+		if (reader.TokenType != YamlTokenType.StartSequence)
 		{
-			if (parser.TryConsume<Scalar>(out var scalar))
+			reader.Skip();
+			return list;
+		}
+
+		_ = reader.Read(); // consume StartSequence
+
+		while (reader.TokenType != YamlTokenType.EndSequence)
+		{
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				list.Add(new BranchRef(scalar.Value));
+				var value = reader.ScalarValue ?? string.Empty;
+				_ = reader.Read();
+				list.Add(new BranchRef(value));
 			}
-			else if (parser.TryConsume<MappingStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartMapping)
 			{
+				_ = reader.Read();
+
 				// {alias: branch} — first key-value pair wins
-				var key = parser.Consume<Scalar>();
-				var value = parser.Consume<Scalar>();
-				list.Add(new BranchRef(Name: value.Value, Alias: key.Value));
+				var key = reader.GetScalarValue();
+				_ = reader.Read();
+				var value = reader.GetScalarValue();
+				_ = reader.Read();
+				list.Add(new BranchRef(Name: value, Alias: key));
 
 				// Consume remaining pairs (shouldn't exist but be safe)
-				while (!parser.TryConsume<MappingEnd>(out _))
-				{
-					_ = parser.Consume<Scalar>();
-					_ = parser.Consume<Scalar>();
-				}
+				while (reader.TokenType != YamlTokenType.EndMapping)
+					reader.Skip();
+				_ = reader.Read(); // consume EndMapping
 			}
+			else
+				reader.Skip();
 		}
+		_ = reader.Read(); // consume EndSequence
 
 		return list;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+	// Fully qualified: this project's own YamlWriter (string-building helper, unrelated to YAML
+	// parsing) shares a name with SharpYaml.Serialization.YamlWriter and wins unqualified lookups
+	// since both are in-scope and this one is in the same namespace.
+	public override void Write(SharpYaml.Serialization.YamlWriter writer, List<BranchRef> value)
 	{
-		if (value is not List<BranchRef> list)
-			return;
+		writer.WriteStartSequence();
 
-		emitter.Emit(new SequenceStart(null, null, false, SequenceStyle.Block));
-
-		foreach (var branch in list)
+		foreach (var branch in value)
 		{
 			if (branch.Alias is not null)
 			{
-				emitter.Emit(new MappingStart(null, null, false, MappingStyle.Flow));
-				emitter.Emit(new Scalar(branch.Alias));
-				emitter.Emit(new Scalar(branch.Name));
-				emitter.Emit(new MappingEnd());
+				writer.WriteStartMapping();
+				writer.WritePropertyName(branch.Alias);
+				writer.WriteScalar(branch.Name);
+				writer.WriteEndMapping();
 			}
 			else
-			{
-				emitter.Emit(new Scalar(branch.Name));
-			}
+				writer.WriteScalar(branch.Name);
 		}
 
-		emitter.Emit(new SequenceEnd());
+		writer.WriteEndSequence();
 	}
 }
 
 /// <summary>Handles a single <see cref="BranchRef"/> scalar or mapping node.</summary>
-public class BranchRefConverter : IYamlTypeConverter
+public class BranchRefConverter : YamlConverter<BranchRef>
 {
-	public bool Accepts(Type type) => type == typeof(BranchRef);
-
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override BranchRef Read(YamlReader reader)
 	{
-		if (parser.TryConsume<Scalar>(out var scalar))
-			return new BranchRef(scalar.Value);
-
-		if (parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
-			var key = parser.Consume<Scalar>();
-			var value = parser.Consume<Scalar>();
-			_ = parser.Consume<MappingEnd>();
-			return new BranchRef(Name: value.Value, Alias: key.Value);
+			var value = reader.ScalarValue ?? string.Empty;
+			_ = reader.Read();
+			return new BranchRef(value);
 		}
 
-		throw new YamlException("Expected scalar or mapping for BranchRef");
+		if (reader.TokenType == YamlTokenType.StartMapping)
+		{
+			_ = reader.Read();
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
+			var value = reader.GetScalarValue();
+			_ = reader.Read();
+			if (reader.TokenType != YamlTokenType.EndMapping)
+				throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected end of mapping for BranchRef");
+			_ = reader.Read();
+			return new BranchRef(Name: value, Alias: key);
+		}
+
+		throw new YamlException(reader.SourceName, reader.Start, reader.End, "Expected scalar or mapping for BranchRef");
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
+	public override void Write(SharpYaml.Serialization.YamlWriter writer, BranchRef value)
 	{
-		if (value is not BranchRef branch)
-			return;
-
-		if (branch.Alias is not null)
+		if (value.Alias is not null)
 		{
-			emitter.Emit(new MappingStart(null, null, false, MappingStyle.Flow));
-			emitter.Emit(new Scalar(branch.Alias));
-			emitter.Emit(new Scalar(branch.Name));
-			emitter.Emit(new MappingEnd());
+			writer.WriteStartMapping();
+			writer.WritePropertyName(value.Alias);
+			writer.WriteScalar(value.Name);
+			writer.WriteEndMapping();
 		}
 		else
-		{
-			emitter.Emit(new Scalar(branch.Name));
-		}
+			writer.WriteScalar(value.Name);
 	}
 }

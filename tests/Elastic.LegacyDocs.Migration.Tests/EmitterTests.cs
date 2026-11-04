@@ -18,7 +18,7 @@ public class EmitterTests
 
 	// ── Step 4: attribute emission ────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void UndefinedAttribute_EmittedAsSingleBraces_NotDouble()
 	{
 		var md = Emit("= T\n\n{undefined-attr} text\n");
@@ -27,7 +27,7 @@ public class EmitterTests
 		md.Should().NotContain("{{undefined-attr}}");
 	}
 
-	[Fact]
+	[Test]
 	public void ProductNameAttribute_EmittedAsDoubleBraces()
 	{
 		// {es} is a ProductNames key — should remain {{es}} for docs-builder substitution
@@ -35,7 +35,7 @@ public class EmitterTests
 		md.Should().Contain("{{es}}");
 	}
 
-	[Fact]
+	[Test]
 	public void DefinedAttribute_IsSubstituted_NotEmittedAsRef()
 	{
 		var md = Emit("= T\n\n:myattr: hello world\n\n{myattr}\n");
@@ -45,7 +45,7 @@ public class EmitterTests
 
 	// ── Step 5: callout list in output ───────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CodeBlock_WithCallouts_EmitsOrderedList()
 	{
 		var md = Emit("= T\n\n[source,python]\n----\nfoo() # <1>\nbar() # <2>\n----\n<1> Call foo\n<2> Call bar\n");
@@ -55,7 +55,7 @@ public class EmitterTests
 
 	// ── Step 7: xref with > in text ──────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CrossRef_Simple_IsEmittedCorrectly()
 	{
 		var md = Emit("= T\n\nSee <<my-anchor>>.\n");
@@ -63,7 +63,7 @@ public class EmitterTests
 		md.Should().Contain("[my-anchor](#my-anchor)");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_WithText_IsEmittedCorrectly()
 	{
 		var md = Emit("= T\n\nSee <<my-anchor,Click here>>.\n");
@@ -71,7 +71,7 @@ public class EmitterTests
 		md.Should().Contain("[Click here](#my-anchor)");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_WithBacktickInText_IsEmittedCorrectly()
 	{
 		var md = Emit("= T\n\nfilters like <<analysis-lowercase-tokenfilter,`lowercase`>> to normalise.\n");
@@ -79,7 +79,7 @@ public class EmitterTests
 		md.Should().Contain("[`lowercase`]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_InMultiLineParagraph_WithBacktick_IsEmittedCorrectly()
 	{
 		// Multi-line paragraph where xref with backtick in text is on one line
@@ -90,7 +90,7 @@ public class EmitterTests
 		md.Should().Contain("[`lowercase`]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_AfterDLItemWithBlankLineSeparator_IsEmittedCorrectly()
 	{
 		// Description list where term is followed by blank line, then description paragraph containing xref
@@ -101,7 +101,7 @@ public class EmitterTests
 		md.Should().Contain("[`lowercase`]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_InMultiLineParagraph_WithCurlyQuotes_IsEmittedCorrectly()
 	{
 		// Paragraph using AsciiDoc curly-quotes ``...'' before the xref line
@@ -112,7 +112,7 @@ public class EmitterTests
 		md.Should().Contain("[scroll-search-context]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_InOrderedListItem_WithBacktickText_IsEmittedCorrectly()
 	{
 		// Ordered list item with xref that has backtick-wrapped text (space after comma)
@@ -121,7 +121,7 @@ public class EmitterTests
 		md.Should().Contain("[`term`]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_InOrderedListItem_WithPrecedingCode_IsEmittedCorrectly()
 	{
 		// Ordered list item where a `code` span precedes the xref
@@ -130,7 +130,7 @@ public class EmitterTests
 		md.Should().Contain("[`term`]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_WithAsteriskInLinkText_IsEmittedCorrectly()
 	{
 		// Bold marker * between text and xref text must not consume the <<
@@ -139,7 +139,7 @@ public class EmitterTests
 		md.Should().Contain("[copy*to fields]");
 	}
 
-	[Fact]
+	[Test]
 	public void CrossRef_WithAngleBracketInText_IsEmittedCorrectly()
 	{
 		// <<target,a > b>> — text contains a literal >
@@ -149,14 +149,14 @@ public class EmitterTests
 
 	// ── Passthrough inline (constrained +..+) ─────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void PassthroughInline_BasicCase_EmitsCodeSpan()
 	{
 		var md = Emit("= T\n\nDefaults to +max(1, 10)+.\n");
 		md.Should().Contain("`max(1, 10)`");
 	}
 
-	[Fact]
+	[Test]
 	public void PassthroughInline_VersionSuffix_NotTreatedAsPassthrough()
 	{
 		// "8.0+" is a version indicator, NOT a passthrough delimiter — must not swallow following text
@@ -168,7 +168,7 @@ public class EmitterTests
 
 	// ── Verbatim include resolution (Step 6) ──────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void VerbatimBlock_StandardTaggedInclude_IsResolved()
 	{
 		// include::path[tag=name] inside a code block should be expanded
@@ -188,7 +188,7 @@ public class EmitterTests
 		md.Should().NotContain("include::");
 	}
 
-	[Fact]
+	[Test]
 	public void VerbatimBlock_IfevalConditionMarkers_AreStripped()
 	{
 		// ifeval/endif markers inside verbatim blocks should be stripped; content is kept
@@ -201,7 +201,7 @@ public class EmitterTests
 
 	// ── Conditional blocks (ifeval) ────────────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void Ifeval_FalseCondition_ExcludesContent()
 	{
 		// ifeval::[expr] — condition false, block content must be excluded
@@ -212,7 +212,7 @@ public class EmitterTests
 		md.Should().NotContain("Hidden text.");
 	}
 
-	[Fact]
+	[Test]
 	public void Ifeval_TrueCondition_IncludesContent()
 	{
 		// ifeval::[expr] — condition true, block content must be included
@@ -223,7 +223,7 @@ public class EmitterTests
 		md.Should().Contain("Visible text.");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeBlock_TrailingSpaceOnClosingDelimiter_StillClosesBlock()
 	{
 		// Source files sometimes have `---- ` (with trailing space) as the closing delimiter.
@@ -236,7 +236,7 @@ public class EmitterTests
 		md.Should().NotContain("==== Next section"); // raw AsciiDoc must not appear
 	}
 
-	[Fact]
+	[Test]
 	public void Ifeval_ContentAfterBlock_NotLeaked_WhenConditionFalse()
 	{
 		// Regression: ConditionalProcessor was not pushing to the stack for ifeval,
@@ -249,7 +249,7 @@ public class EmitterTests
 
 	// ── Long dash delimiter (50 dashes) ──────────────────────────────────────
 
-	[Fact]
+	[Test]
 	public void CodeBlock_LongDashDelimiter_IsTreatedAsCodeFence()
 	{
 		// Watcher 2.4 docs use 50-dash lines as code block delimiters (valid AsciiDoc: 4+ dashes).
@@ -262,7 +262,7 @@ public class EmitterTests
 		md.Should().Contain("Normal paragraph.");
 	}
 
-	[Fact]
+	[Test]
 	public void CodeBlock_LongDashDelimiter_InNestedSection_IsTreatedAsCodeFence()
 	{
 		// Watcher 2.4 docs: code blocks with 50-dash delimiters inside nested sections (== > === > ====).
@@ -298,7 +298,7 @@ public class EmitterTests
 
 	// ── Open block delimiter trailing whitespace ───────────────────────────────
 
-	[Fact]
+	[Test]
 	public void OpenBlock_TrailingSpaceOnOpeningDelimiter_StillClosesBlock()
 	{
 		// Source files can have `--  ` (trailing spaces) as the opening `--` delimiter.

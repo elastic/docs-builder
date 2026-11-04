@@ -15,6 +15,7 @@ using Elastic.Documentation.Configuration.Codex;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
+using Elastic.Documentation.Indexing.Exporters;
 using Elastic.Documentation.LinkIndex;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Links.CrossLinks;
@@ -347,7 +348,6 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 		{
 			Uri? uri;
 			if (Uri.IsWellFormedUriString(path, UriKind.Absolute)) // Cross-repo links
-
 			{
 				_ = linkResolver.TryResolve(
 					specificErrorMessage => context.Collector.EmitError(
@@ -360,7 +360,6 @@ public class CodexBuildService(ILoggerFactory logFactory, IConfigurationContext 
 				);
 			}
 			else // Relative links
-
 			{
 				uri = linkResolver.UriResolver.Resolve(new Uri($"{repository}://{path}"), CrossLinkResolver.ToTargetUrlPath(path));
 			}

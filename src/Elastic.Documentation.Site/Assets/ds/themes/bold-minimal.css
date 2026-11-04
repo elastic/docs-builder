@@ -1,0 +1,250 @@
+/*
+ * Bold Minimal: the default theme. Every role is written once as a light and a dark value that sit next to each other, so the two
+ * modes can't drift apart and a redesign only has to replace this file.
+ *
+ * Each pair is `var(--ds-l, light) var(--ds-d, dark)`: a toggle pair, defined below, is "initial" for the active mode and empty for
+ * the other, so only the active value survives. This is what the native `light-dark()` does, written out so it works in browsers
+ * that predate it. The mode follows the system unless an element (usually <html>) sets data-theme="light" or data-theme="dark".
+ * Roles are declared again on every [data-theme] element, and on the dark bands and heroes (and the light lagoon band and teal call to action),
+ * so a dark section can sit on a light page and what is inside it reads on it.
+ */
+:root {
+	color-scheme: light dark;
+	--ds-l: initial;
+	--ds-d: ;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme]) {
+		--ds-l: ;
+		--ds-d: initial;
+	}
+}
+
+[data-theme='light'],
+.band--lagoon,
+.cta-band--teal {
+	color-scheme: light;
+	--ds-l: initial;
+	--ds-d: ;
+}
+
+[data-theme='dark'],
+[data-theme='black'],
+.hero-block:not(.hero-block--paper),
+.band--ink,
+.band--blue,
+.band--dusk,
+.band--aurora,
+.cta-band:not(.cta-band--teal) {
+	color-scheme: dark;
+	--ds-l: ;
+	--ds-d: initial;
+}
+
+:root,
+[data-theme],
+.hero-block:not(.hero-block--paper),
+.band--ink,
+.band--blue,
+.band--dusk,
+.band--aurora,
+.cta-band:not(.cta-band--teal),
+.band--lagoon,
+.cta-band--teal {
+	--color-page: var(--ds-l, var(--palette-white)) var(--ds-d, #101c3f);
+	--color-surface: var(--ds-l, var(--palette-white)) var(--ds-d, #172652);
+	--color-surface-sunken: var(--ds-l, var(--palette-grey-50))
+		var(--ds-d, #0c1634);
+
+	--color-heading: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-white));
+	--color-text: var(--ds-l, var(--palette-grey-800))
+		var(--ds-d, var(--palette-grey-100));
+	--color-text-muted: var(--ds-l, var(--palette-grey-600))
+		var(--ds-d, var(--palette-grey-300));
+
+	--color-border: var(--ds-l, var(--palette-grey-100)) var(--ds-d, #2c3c6b);
+	--color-border-strong: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-white));
+	/* Control borders are 3:1 against their field (WCAG 1.4.11): 3.1 on white, 3.1 on the dark surface. */
+	--color-border-control: var(--ds-l, var(--palette-grey-400))
+		var(--ds-d, #5f73a8);
+
+	--color-accent: var(--ds-l, var(--palette-elastic-blue))
+		var(--ds-d, #6fa8ff);
+	--color-accent-hover: var(--ds-l, var(--palette-elastic-blue-dark))
+		var(--ds-d, #9cc2ff);
+	--color-on-accent: var(--ds-l, var(--palette-white))
+		var(--ds-d, var(--palette-developer-blue));
+	--color-accent-surface: var(--ds-l, #e5eefc) var(--ds-d, #16315f);
+	--color-accent-border: var(--ds-l, #b9d1f5) var(--ds-d, #2d5ba8);
+
+	/* Buttons keep their blue fill in both themes; only the surfaces around them change. */
+	--color-action: var(--palette-elastic-blue);
+	--color-action-hover: var(--ds-l, #0a5fd0) var(--ds-d, #3c86f0);
+	--color-action-hover-deep: var(--ds-l, #0a52b3) var(--ds-d, #0b64dd);
+	--color-action-deep: var(--ds-l, #0a58c4) var(--ds-d, #0a52b3);
+	--color-action-edge: var(--ds-l, #0a3fa0) var(--ds-d, #0a3d8f);
+	--color-action-border: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, var(--palette-elastic-blue-dark));
+	--color-on-action: var(--palette-white);
+	--color-action-danger: #b42a20;
+	--color-action-danger-deep: #6f1710;
+
+	--color-brand-deep: var(--ds-l, var(--palette-midnight))
+		var(--ds-d, var(--palette-elastic-blue));
+	--color-brand-bright: var(--palette-teal);
+	--color-highlight: var(--ds-l, var(--palette-pink)) var(--ds-d, #ee72a6);
+	--color-highlight-surface: var(--ds-l, #fbe3ee)
+		var(--ds-d, rgb(238 114 166 / 12%));
+
+	--color-emphasis: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, #2c3c6b);
+	--color-on-emphasis: var(--palette-teal);
+
+	/* Page-level washes: the hero band and the pastel field behind landing, hub and Codex pages. */
+	--gradient-hero: var(--hero-bg);
+	--gradient-wash: var(
+			--ds-l,
+			linear-gradient(
+				180deg,
+				#edf2fb 0%,
+				#dde8f8 30%,
+				#eeebf8 55%,
+				#e2f1f3 78%,
+				#edf2fb 100%
+			)
+		)
+		var(--ds-d, linear-gradient(180deg, #101c3f 0%, #0c1634 100%));
+	--color-hatch: var(--ds-l, rgb(16 28 63 / 4%))
+		var(--ds-d, rgb(255 255 255 / 3%));
+
+	/* Code stays a dark panel in both modes; only its depth changes. */
+	--color-code-bg: var(--ds-l, var(--palette-developer-blue))
+		var(--ds-d, #0a1330);
+	--color-code-border: var(--ds-l, transparent)
+		var(--ds-d, var(--color-border));
+	--color-code-text: var(--palette-grey-100);
+	/* Status colours for text on the code panel, which is dark in both themes. */
+	--color-code-danger: #ff957d;
+	--color-code-warning: #f9b110;
+	--color-code-info: #6fa8ff;
+	--color-code-muted: #8e9ab5;
+	--color-code-gutter: #7d8cad;
+	--color-code-keyword: var(--palette-teal);
+	--color-code-string: #ffa3d2;
+	--color-code-number: #f9b110;
+	--color-code-attr: #f9b110;
+	--color-code-type: #9ce9d9;
+	--color-code-variable: #b9a9f2;
+	--color-code-literal: #ffa3d2;
+	--color-code-punctuation: var(--palette-grey-300);
+
+	--color-focus-ring: var(--ds-l, var(--palette-elastic-blue))
+		var(--ds-d, var(--palette-teal));
+
+	--color-success: var(--ds-l, #0e7074) var(--ds-d, var(--palette-teal));
+	--color-success-surface: var(--ds-l, #f0fbf8)
+		var(--ds-d, rgb(72 239 207 / 10%));
+	--color-warning: var(--ds-l, #9a6200) var(--ds-d, #f9b110);
+	--color-warning-surface: var(--ds-l, #fff9e8)
+		var(--ds-d, rgb(249 177 16 / 10%));
+	--color-danger: var(--ds-l, #b42a20) var(--ds-d, #ff957d);
+	--color-danger-surface: var(--ds-l, #fff3f1)
+		var(--ds-d, rgb(255 149 125 / 10%));
+	--color-important: var(--ds-l, #4b3a9e) var(--ds-d, #b9a9f2);
+	--color-important-surface: var(--ds-l, #f6f4fd)
+		var(--ds-d, rgb(185 169 242 / 10%));
+
+	/* "Slab": the offset-plate elevation that carries the visual identity. */
+	--color-slab-plate: var(--ds-l, var(--palette-grey-100))
+		var(--ds-d, #0c1634);
+	--shadow-slab:
+		6px 6px 0 var(--color-brand-deep),
+		6px 6px 0 1px var(--color-border-strong);
+	--shadow-slab-sm:
+		4px 4px 0 var(--color-brand-deep),
+		4px 4px 0 1px var(--color-border-strong);
+	--shadow-slab-rest:
+		5px 5px 0 var(--color-slab-plate),
+		5px 5px 0 1px var(--color-border-strong);
+	--shadow-overlay: 0 12px 32px rgb(16 28 63 / 24%);
+}
+
+/* The call-to-action button: a teal accent for heroes and bands only, never on a page's content. */
+:root,
+[data-theme] {
+	--cta-top: #7df7e0;
+	--cta-bottom: #3fe3c4;
+	--cta-edge: #17a58c;
+	--cta-border: #2fd3b4;
+	--cta-fg: #0b1b3a;
+	--cta-glow: rgb(72 239 207 / 35%);
+	--cta-hover-top: #92fae8;
+	--cta-hover-bottom: #52ebce;
+	--cta-active-top: #3fe3c4;
+	--cta-active-bottom: #36d6b8;
+	/* What the theme switch shows for each theme, whatever theme the page is in. */
+	--swatch-light: #fff;
+	--swatch-dark: #101c3f;
+	--swatch-black: #000;
+}
+
+/*
+ * True black: the dark roles on black, for OLED screens. Surfaces step up in grey, and the accent and borders are re-tuned to hold their
+ * contrast on black.
+ */
+[data-theme='black'] {
+	--color-page: #000;
+	--color-surface: #111;
+	--color-surface-sunken: #0a0a0a;
+	--color-heading: #ececec;
+	--color-text: #cfcfcf;
+	--color-text-muted: #9a9a9a;
+	--color-border: #2e2e2e;
+	--color-border-control: #6e6e6e;
+	--color-accent: #7faeef;
+	--color-accent-hover: #9cc2ff;
+	--color-accent-surface: #0a1b38;
+	--color-accent-border: #1b4b96;
+	--color-emphasis: #222;
+	--color-slab-plate: #0a0a0a;
+	--color-code-bg: #050505;
+	--gradient-wash: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
+	--color-hatch: rgb(255 255 255 / 3%);
+}
+
+/* More contrast: text, hairlines and control borders are pushed apart from their surfaces, in each theme. */
+:root[data-contrast='more'],
+:root[data-contrast='more'] [data-theme] {
+	--color-heading: var(--ds-l, #0a1230) var(--ds-d, #fff);
+	--color-text: var(--ds-l, #101c3f) var(--ds-d, #fff);
+	--color-text-muted: var(--ds-l, #3a4257) var(--ds-d, #dce2ea);
+	--color-border: var(--ds-l, #6b7487) var(--ds-d, #8fa0c8);
+	--color-border-control: var(--ds-l, #4f596e) var(--ds-d, #b3c0de);
+	--color-surface-sunken: var(--ds-l, #eef1f6) var(--ds-d, #0c1634);
+	--color-accent: var(--ds-l, #0a52b3) var(--ds-d, #9cc2ff);
+	--color-accent-border: var(--ds-l, #7fa6e6) var(--ds-d, #2d5ba8);
+}
+
+:root[data-contrast='more'][data-theme='black'],
+:root[data-contrast='more'] [data-theme='black'] {
+	--color-border: #8a8a8a;
+	--color-border-control: #bdbdbd;
+	--color-text-muted: #e6e6e6;
+}
+
+@media (prefers-contrast: more) {
+	:root:not([data-contrast]),
+	:root:not([data-contrast]) [data-theme] {
+		--color-heading: var(--ds-l, #0a1230) var(--ds-d, #fff);
+		--color-text: var(--ds-l, #101c3f) var(--ds-d, #fff);
+		--color-text-muted: var(--ds-l, #3a4257) var(--ds-d, #dce2ea);
+		--color-border: var(--ds-l, #6b7487) var(--ds-d, #8fa0c8);
+		--color-border-control: var(--ds-l, #4f596e) var(--ds-d, #b3c0de);
+		--color-surface-sunken: var(--ds-l, #eef1f6) var(--ds-d, #0c1634);
+		--color-accent: var(--ds-l, #0a52b3) var(--ds-d, #9cc2ff);
+		--color-accent-border: var(--ds-l, #7fa6e6) var(--ds-d, #2d5ba8);
+	}
+}

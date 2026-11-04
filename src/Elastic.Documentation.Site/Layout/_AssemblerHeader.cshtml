@@ -14,5 +14,8 @@ else
 	<div id="elastic-nav-wrapper" hx-preserve>
 		<div id="elastic-nav" hx-disable="true"></div>
 	</div>
-	@await RenderPartialAsync(_SecondaryNav.Create(Model))
+	@if (Model.ShowSecondaryNav)
+	{
+		@await RenderPartialAsync(_SecondaryNav.Create(Model))
+	}
 }

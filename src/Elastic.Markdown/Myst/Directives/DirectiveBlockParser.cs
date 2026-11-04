@@ -157,6 +157,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{whats-new}") > 0)
 			return new WhatsNewBlock(this, context);
 
+		if (info.IndexOf("{on-this-page}") > 0)
+			return new OnThisPageBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
@@ -265,10 +268,11 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
-		// Once a directive has opened a nested directive child, an option line belongs to
-		// that inner directive, not this ancestor. Without this guard the ancestor swallows
-		// every descendant's options (last one wins) and corrupts its own.
-		if (directiveBlock.LastChild is DirectiveBlock)
+		// Option lines belong to a nested directive, not this ancestor. A list or quote can
+		// sit between them, so search the child tree, not only LastChild (see
+		// https://github.com/elastic/docs-builder/issues/4540). Do not use IsOpen: Markdig
+		// sets every opened block to closed before it runs TryContinue from the outside in.
+		if (HasNestedDirective(directiveBlock))
 			return base.TryContinue(processor, block);
 
 		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
@@ -281,5 +285,18 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;
+	}
+
+	private static bool HasNestedDirective(ContainerBlock block)
+	{
+		foreach (var child in block)
+		{
+			if (child is DirectiveBlock)
+				return true;
+			if (child is ContainerBlock container && HasNestedDirective(container))
+				return true;
+		}
+
+		return false;
 	}
 }

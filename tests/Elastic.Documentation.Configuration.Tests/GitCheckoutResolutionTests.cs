@@ -87,7 +87,7 @@ public class GitCheckoutResolutionTests
 		return fs;
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_ReturnsGitInfo()
 	{
 		var fs = BuildFs("/repo", branch: "feature/my-branch", sha: "deadbeef1234");
@@ -105,7 +105,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("test-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_DetachedHead_NeverReturnsRandomGuid()
 	{
 		var fs = BuildFs("/repo", branch: null, sha: "cafebabe9876");
@@ -125,7 +125,7 @@ public class GitCheckoutResolutionTests
 		result.Branch.Should().Be(expectedBranch);
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithAbsoluteGitDir_ResolvesViaMainRepo()
 	{
 		var sha = "1a2b3c4d5e6f";
@@ -158,7 +158,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("worktree-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithRelativeGitDir_ResolvesAgainstGitFileDirectory()
 	{
 		var fs = new MockFileSystem();
@@ -198,7 +198,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("relative-test");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeWithCommondir_ResolvesViaCommondir()
 	{
 		var fs = new MockFileSystem();
@@ -241,7 +241,7 @@ public class GitCheckoutResolutionTests
 		result.RepositoryName.Should().Be("commondir-test");
 	}
 
-	[Fact]
+	[Test]
 	public void WorktreeMissingGitDir_ReturnsUnavailable()
 	{
 		var fs = new MockFileSystem();
@@ -255,7 +255,7 @@ public class GitCheckoutResolutionTests
 		result.IsAvailable.Should().BeFalse("a worktree pointer to a missing gitdir must yield Unavailable");
 	}
 
-	[Fact]
+	[Test]
 	public void RegularRepo_PackedRefWithoutLooseRefFile_ResolvesShaFromPackedRefs()
 	{
 		// actions/checkout (and `git gc`) can leave HEAD pointing at a symbolic ref with no
@@ -304,7 +304,7 @@ public class GitCheckoutResolutionTests
 			);
 	}
 
-	[Fact]
+	[Test]
 	public void MockWithNoGitLayout_ReturnsCannedTestData()
 	{
 		// Back-compat: tests that seed no .git at all must continue to receive the canned
