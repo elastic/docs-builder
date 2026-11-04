@@ -48,6 +48,17 @@ it.each([
     expect(row.querySelector('code')).toHaveTextContent(path)
 })
 
+it("uses the page's tooltip for the path and type", () => {
+    renderRow('knn', 'retriever.knn')
+    const row = screen.getByRole('link')
+    const [path, type] = row.querySelectorAll('code')
+    expect(path).toHaveAttribute('data-tippy-content', 'retriever.knn')
+    expect(path).toHaveAttribute('data-tippy-theme', 'mono')
+    expect(type).toHaveAttribute('data-tippy-content', 'object')
+    expect(type).toHaveAttribute('data-tippy-theme', 'mono')
+    expect(row).not.toHaveAttribute('title')
+})
+
 it('offers "Go to property" as the Enter action', () => {
     renderRow('knn', 'retriever.knn')
     expect(screen.getByText('Go to property')).toBeInTheDocument()
@@ -92,8 +103,14 @@ it("lists the field's children under its path", () => {
     expect(row.querySelector('.property-children')?.textContent).toBe(
         'filter min_score _name query search_after terminate_after sort collapse'
     )
+    const children = row.querySelector('.property-children')
+    expect(children).toHaveAttribute(
+        'data-tippy-content',
+        'filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
+    )
+    expect(children).toHaveAttribute('data-tippy-theme', 'mono')
     expect(row).toHaveAttribute(
-        'title',
+        'aria-label',
         expect.stringContaining(
             'Fields: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
         )

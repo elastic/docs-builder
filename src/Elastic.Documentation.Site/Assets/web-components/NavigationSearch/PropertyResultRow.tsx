@@ -56,7 +56,6 @@ export const PropertyResultRow = ({
             ref={ref}
             href={href}
             aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${fields && ` ${fields}`}`}
-            title={`${property.location}: ${property.path}\n${property.type}\n${property.description}${fields && `\n${fields}`}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
@@ -166,13 +165,22 @@ export const PropertyResultRow = ({
         >
             <span className="property-body">
                 <span className="property-line">
-                    <code className="property-path" title={property.path}>
+                    <code
+                        className="property-path"
+                        data-tippy-content={property.path}
+                        data-tippy-theme="mono"
+                    >
                         {highlight(property.path.slice(0, leafOffset))}
                         <strong>
                             {highlight(property.path.slice(leafOffset))}
                         </strong>
                     </code>
-                    <code title={property.type}>{property.type}</code>
+                    <code
+                        data-tippy-content={property.type}
+                        data-tippy-theme="mono"
+                    >
+                        {property.type}
+                    </code>
                     <span
                         className={
                             showLocation ? 'property-location' : 'sr-only'
@@ -180,12 +188,19 @@ export const PropertyResultRow = ({
                     >
                         {property.location}
                     </span>
-                    <span className="property-description">
+                    <span
+                        className="property-description"
+                        data-tippy-content={property.description || undefined}
+                    >
                         {property.description}
                     </span>
                 </span>
                 {childLabels.length > 0 && (
-                    <span className="property-children">
+                    <span
+                        className="property-children"
+                        data-tippy-content={childLabels.join(', ')}
+                        data-tippy-theme="mono"
+                    >
                         {childLabels.join(' ')}
                     </span>
                 )}
