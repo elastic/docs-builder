@@ -1,5 +1,4 @@
 import { config } from '../../config'
-import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import { PropertyResultRow } from './PropertyResultRow'
 import { RouteLine } from './RouteLine'
@@ -24,6 +23,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+import htmx from 'htmx.org'
 import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 
 const RESULTS_MAX_HEIGHT = 465
@@ -99,6 +99,11 @@ export const SearchResultsList = ({
             containerRef.current.scrollTop = 0
         }
     }, [searchTerm])
+
+    // React renders the rows after htmx's own pass over the page, so they need their own to inherit hx-boost.
+    useEffect(() => {
+        if (containerRef.current) htmx.process(containerRef.current)
+    }, [results])
 
     const containerStyles = css`
         max-height: ${RESULTS_MAX_HEIGHT}px;
@@ -235,7 +240,6 @@ const SearchResultRow = ({
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const { ref, href } = useHtmxLink(result.url)
     const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
     const breadcrumbItems = useMemo(
         () =>
@@ -249,8 +253,7 @@ const SearchResultRow = ({
 
     return (
         <a
-            ref={ref}
-            href={href}
+            href={result.url}
             data-search-result-index={index}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

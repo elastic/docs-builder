@@ -27,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -59,6 +59,9 @@ export const NavigationSearch = ({
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
+    // The blur below runs before React re-renders, so handleBlur still sees the popover open.
+    const isNavigating = useRef(false)
+
     const handleResultClick = () => {
         // Track navigation close (actual click tracking is in SearchResultsList)
         trackClosed({
@@ -67,6 +70,9 @@ export const NavigationSearch = ({
             hadResults: groups.length > 0,
             hadSelection: selectedIndex >= 0,
         })
+        isNavigating.current = true
+        setIsPopoverOpen(false)
+        inputRef.current?.blur()
     }
 
     const {
@@ -123,7 +129,7 @@ export const NavigationSearch = ({
             // Focus is moving inside the popover, don't close
             return
         }
-        if (isPopoverOpen) {
+        if (isPopoverOpen && !isNavigating.current) {
             trackClosed({
                 reason: 'blur',
                 query: searchTerm,
@@ -133,18 +139,6 @@ export const NavigationSearch = ({
         }
         setIsPopoverOpen(false)
     }
-
-    // Close after the swap, not before: the clicked result link must stay
-    // mounted so htmx can still read the body's inherited hx-swap and hx-select.
-    useEffect(() => {
-        const handleAfterSwap = () => {
-            setIsPopoverOpen(false)
-            inputRef.current?.blur()
-        }
-        document.addEventListener('htmx:afterSwap', handleAfterSwap)
-        return () =>
-            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
-    }, [inputRef])
 
     return (
         <EuiInputPopover
@@ -177,6 +171,7 @@ export const NavigationSearch = ({
                         value={searchTerm}
                         onChange={handleChange}
                         onFocus={() => {
+                            isNavigating.current = false
                             trackOpened('focus')
                             if (hasContent) {
                                 setIsPopoverOpen(true)

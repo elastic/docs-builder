@@ -10,6 +10,7 @@ import { navigationSearchStore } from './navigationSearch.store'
 import type { SearchResultItem, TypeFilter } from './useNavigationSearchQuery'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import htmx from 'htmx.org'
 
 vi.mock('../../telemetry/logging', async () =>
     (await import('../../test-utils/mocks')).logging()
@@ -264,6 +265,30 @@ describe('property rows', () => {
                 (row) => row.querySelector('.property-location')?.textContent
             )
         ).toEqual([undefined, 'query', 'request body', 'request body'])
+    })
+
+    it('boosts the rendered rows once per render', () => {
+        vi.mocked(htmx.process).mockClear()
+        const { container } = renderList()
+        const list = container.querySelector('[data-search-result-index]')
+            ?.parentElement?.parentElement
+        expect(htmx.process).toHaveBeenCalledTimes(1)
+        expect(htmx.process).toHaveBeenCalledWith(list)
+    })
+
+    it('links each row to the URL as given', () => {
+        const { container } = renderList()
+        expect(
+            Array.from(
+                container.querySelectorAll('[data-search-result-index]'),
+                (row) => row.getAttribute('href')
+            )
+        ).toEqual([
+            operation.url,
+            `${operation.url}#query-track_total_hits`,
+            `${operation.url}#request-track_total_hits`,
+            `${operation.url}#request-size`,
+        ])
     })
 
     it('selects the property row under the mouse', async () => {

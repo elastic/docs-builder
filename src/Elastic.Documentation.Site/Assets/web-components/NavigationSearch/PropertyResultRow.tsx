@@ -1,4 +1,3 @@
-import { useHtmxLink } from '../shared/htmx/useHtmxLink'
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
@@ -53,7 +52,6 @@ export const PropertyResultRow = ({
 }) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
-    const { ref, href } = useHtmxLink(property.url)
     const leafOffset = property.path.lastIndexOf('.') + 1
     const propertySearch = fieldSearchTerms(searchTerm)
     const highlight = (text: string) => (
@@ -67,8 +65,7 @@ export const PropertyResultRow = ({
     )
     return (
         <a
-            ref={ref}
-            href={href}
+            href={property.url}
             aria-label={`${property.path} ${property.type} ${property.location} ${property.description}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}

@@ -134,6 +134,14 @@ it('says nothing about child properties in its accessible name', () => {
     expect(screen.queryByText('Contains')).toBeNull()
 })
 
+it('links to the URL as given', () => {
+    renderRow('knn', 'retriever.knn')
+    expect(screen.getByRole('link')).toHaveAttribute(
+        'href',
+        '/docs/api/search#req-property'
+    )
+})
+
 it('offers "Go to property" as the Enter action', () => {
     renderRow('knn', 'retriever.knn')
     expect(screen.getByText('Go to property')).toBeInTheDocument()
