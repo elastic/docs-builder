@@ -5,6 +5,7 @@ import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
 import {
     GO_TO_LABELS,
+    fieldSearchTerms,
     primaryRoute,
     type ApiPropertyResult,
     type ResultGroup,
@@ -90,6 +91,10 @@ export const SearchResultsList = ({
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
     const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
+    const propertySearch = useMemo(
+        () => fieldSearchTerms(searchTerm),
+        [searchTerm]
+    )
 
     const isInitialLoading = isLoading && results.length === 0
 
@@ -197,7 +202,7 @@ export const SearchResultsList = ({
                             key={property.url}
                             index={propertyIndex}
                             property={property}
-                            searchTerm={searchTerm}
+                            propertySearch={propertySearch}
                             isSelected={propertyIndex === selectedIndex}
                             isKeyboardNavigating={isKeyboardNavigating.current}
                             onMouseEnter={() => handleMouseEnter(propertyIndex)}

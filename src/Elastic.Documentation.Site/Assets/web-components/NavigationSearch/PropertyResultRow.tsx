@@ -1,8 +1,8 @@
+import { SLOW_TOOLTIP_DELAY } from '../../tooltip'
 import { JumpToIndicator } from './JumpToIndicator'
 import {
     GO_TO_LABELS,
     LOCATION_LABELS,
-    fieldSearchTerms,
     type ApiPropertyResult,
 } from './apiPropertyResults'
 import {
@@ -28,12 +28,9 @@ const FieldIcon = () => (
     </svg>
 )
 
-/** The page's tooltips show after 80ms; a mouse crossing result rows would open one on every row. */
-const TOOLTIP_DELAY = '[500, 0]'
-
 export const PropertyResultRow = ({
     property,
-    searchTerm,
+    propertySearch,
     index,
     isSelected,
     isKeyboardNavigating,
@@ -42,7 +39,7 @@ export const PropertyResultRow = ({
     onClick,
 }: {
     property: ApiPropertyResult
-    searchTerm: string
+    propertySearch: string[]
     index: number
     isSelected: boolean
     isKeyboardNavigating: boolean
@@ -53,7 +50,6 @@ export const PropertyResultRow = ({
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const leafOffset = property.path.lastIndexOf('.') + 1
-    const propertySearch = fieldSearchTerms(searchTerm)
     const highlight = (text: string) => (
         <EuiHighlight
             search={propertySearch}
@@ -206,7 +202,7 @@ export const PropertyResultRow = ({
                     <code
                         className="property-path"
                         data-tippy-content={property.path}
-                        data-tippy-delay={TOOLTIP_DELAY}
+                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
                         data-tippy-theme="mono"
                     >
                         <bdi>
@@ -224,7 +220,7 @@ export const PropertyResultRow = ({
                     <code
                         className="property-type"
                         data-tippy-content={property.type}
-                        data-tippy-delay={TOOLTIP_DELAY}
+                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
                         data-tippy-theme="mono"
                     >
                         {property.type}
@@ -232,7 +228,7 @@ export const PropertyResultRow = ({
                     <span
                         className="property-description"
                         data-tippy-content={property.description || undefined}
-                        data-tippy-delay={TOOLTIP_DELAY}
+                        data-tippy-delay={SLOW_TOOLTIP_DELAY}
                     >
                         {property.description}
                     </span>

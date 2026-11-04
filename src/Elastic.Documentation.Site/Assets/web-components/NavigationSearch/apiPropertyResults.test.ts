@@ -7,11 +7,7 @@ import {
 } from './apiPropertyResults'
 import type { SearchResultItem } from './useNavigationSearchQuery'
 
-const property = (
-    path: string,
-    location: 'query' | 'request',
-    { parent = '' } = {}
-) => ({
+const property = (path: string, location: 'query' | 'request') => ({
     name: path.split('.').pop() ?? path,
     path,
     type: 'boolean',
@@ -19,7 +15,6 @@ const property = (
     anchor: `${location}-${path}`,
     location,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
-    parent,
 })
 
 const search: SearchResultItem = {

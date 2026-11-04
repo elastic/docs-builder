@@ -1,5 +1,8 @@
 import { delegate, type DelegateInstance, type Instance } from 'tippy.js'
 
+/** For lists the mouse crosses: the page's 80ms delay would open a tooltip on every row. */
+export const SLOW_TOOLTIP_DELAY = '[500, 0]'
+
 let delegateInstance: DelegateInstance | null = null
 
 // tippy's delegate keeps every tooltip it creates, and with it the hovered element, until the delegate itself is

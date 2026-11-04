@@ -1,6 +1,6 @@
 import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
-import type { ApiPropertyResult } from './apiPropertyResults'
+import { fieldSearchTerms, type ApiPropertyResult } from './apiPropertyResults'
 import { screen } from '@testing-library/react'
 
 const renderRow = (
@@ -19,9 +19,8 @@ const renderRow = (
                 description: 'Property description',
                 anchor: 'req-property',
                 url: '/docs/api/search#req-property',
-                parent: '',
             }}
-            searchTerm={searchTerm}
+            propertySearch={fieldSearchTerms(searchTerm)}
             index={1}
             isSelected={isSelected}
             isKeyboardNavigating={false}

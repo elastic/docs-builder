@@ -9,8 +9,6 @@ export const ApiPropertyResult = z.object({
     anchor: z.string(),
     location: z.enum(['path', 'query', 'header', 'request', 'response']),
     url: z.string(),
-    /** The path of the row this one is listed under; empty for a top-level field or a parameter. */
-    parent: z.string().default(''),
 })
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>

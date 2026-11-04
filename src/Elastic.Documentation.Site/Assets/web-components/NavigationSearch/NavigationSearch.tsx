@@ -59,19 +59,27 @@ export const NavigationSearch = ({
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
-    // The blur below runs before React re-renders, so handleBlur still sees the popover open.
-    const isNavigating = useRef(false)
+    // Mirrors isPopoverOpen so a blur that fires before React re-renders sees the popover already closed.
+    const isOpenRef = useRef(false)
+    const setOpen = (open: boolean) => {
+        isOpenRef.current = open
+        setIsPopoverOpen(open)
+    }
+
+    const close = (reason: 'navigate' | 'escape' | 'blur') => {
+        if (isOpenRef.current) {
+            trackClosed({
+                reason,
+                query: searchTerm,
+                hadResults: groups.length > 0,
+                hadSelection: selectedIndex >= 0,
+            })
+        }
+        setOpen(false)
+    }
 
     const handleResultClick = () => {
-        // Track navigation close (actual click tracking is in SearchResultsList)
-        trackClosed({
-            reason: 'navigate',
-            query: searchTerm,
-            hadResults: groups.length > 0,
-            hadSelection: selectedIndex >= 0,
-        })
-        isNavigating.current = true
-        setIsPopoverOpen(false)
+        close('navigate')
         inputRef.current?.blur()
     }
 
@@ -83,7 +91,7 @@ export const NavigationSearch = ({
     } = useNavigationSearchKeyboardNavigation({
         resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
-        onClose: () => setIsPopoverOpen(false),
+        onClose: () => setOpen(false),
         onNavigate: handleResultClick,
         typeFilter,
     })
@@ -96,20 +104,14 @@ export const NavigationSearch = ({
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         setSearchTerm(value)
-        setIsPopoverOpen(!!value.trim())
+        setOpen(!!value.trim())
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Escape') {
             e.preventDefault()
-            trackClosed({
-                reason: 'escape',
-                query: searchTerm,
-                hadResults: groups.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
+            close('escape')
             setSearchTerm('')
-            setIsPopoverOpen(false)
             // After the re-render, so handleBlur doesn't log a second close for the same Escape.
             if (isApi) {
                 queueMicrotask(() => inputRef.current?.blur())
@@ -129,21 +131,13 @@ export const NavigationSearch = ({
             // Focus is moving inside the popover, don't close
             return
         }
-        if (isPopoverOpen && !isNavigating.current) {
-            trackClosed({
-                reason: 'blur',
-                query: searchTerm,
-                hadResults: groups.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
-        }
-        setIsPopoverOpen(false)
+        close('blur')
     }
 
     return (
         <EuiInputPopover
             isOpen={hasContent}
-            closePopover={() => setIsPopoverOpen(false)}
+            closePopover={() => setOpen(false)}
             ownFocus={false}
             anchorPosition="downLeft"
             // The panel stays mounted while hidden; an anchor jump scrolls the page under it.
@@ -173,10 +167,9 @@ export const NavigationSearch = ({
                         value={searchTerm}
                         onChange={handleChange}
                         onFocus={() => {
-                            isNavigating.current = false
                             trackOpened('focus')
                             if (hasContent) {
-                                setIsPopoverOpen(true)
+                                setOpen(true)
                             }
                         }}
                         onBlur={handleBlur}

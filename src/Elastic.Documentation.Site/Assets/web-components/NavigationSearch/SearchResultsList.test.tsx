@@ -113,11 +113,7 @@ describe('emptyStateCopy', () => {
     })
 })
 
-const property = (
-    path: string,
-    location: 'query' | 'request',
-    { parent = '' } = {}
-) => ({
+const property = (path: string, location: 'query' | 'request') => ({
     name: path.split('.').pop() ?? path,
     path,
     type: 'boolean',
@@ -125,7 +121,6 @@ const property = (
     description: 'Count hits',
     anchor: `${location}-${path}`,
     url: `/docs/api/doc/elasticsearch/operation/operation-search#${location}-${path}`,
-    parent,
 })
 
 const operation: SearchResultItem = {
