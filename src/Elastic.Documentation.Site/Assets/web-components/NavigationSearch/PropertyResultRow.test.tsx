@@ -164,13 +164,19 @@ const standardChildren = [
 ]
 
 const fieldsGroup = () =>
-    screen.getByRole('group', { name: 'Fields of retriever.standard' })
+    screen.getByRole('group', {
+        name: 'Child properties of retriever.standard',
+    })
 
 const tokens = () =>
     Array.from(fieldsGroup().querySelectorAll<HTMLElement>('.property-child'))
 
 it('renders every child as a token in page order', () => {
     renderParent(standardChildren)
+    const label = fieldsGroup().firstElementChild
+    expect(label).toHaveClass('property-children-label')
+    expect(label).toHaveTextContent('Child properties')
+    expect(tokens()).not.toContain(label)
     expect(tokens().map((token) => token.tagName)).toEqual(
         Array(8).fill('SPAN')
     )
@@ -194,7 +200,7 @@ it('renders every child as a token in page order', () => {
     expect(screen.getByRole('link')).toHaveAttribute(
         'aria-label',
         expect.stringContaining(
-            'Fields: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
+            'Child properties: filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
         )
     )
 })

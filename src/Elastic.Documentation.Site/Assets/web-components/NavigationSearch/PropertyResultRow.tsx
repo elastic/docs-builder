@@ -61,8 +61,10 @@ export const PropertyResultRow = ({
     const leafOffset = property.path.lastIndexOf('.') + 1
     const propertySearch = fieldSearchTerms(searchTerm)
     const childLabels = property.children.map(childLabel)
-    const fields =
-        childLabels.length > 0 ? `Fields: ${childLabels.join(', ')}` : ''
+    const childrenText =
+        childLabels.length > 0
+            ? `Child properties: ${childLabels.join(', ')}`
+            : ''
     const hiddenChildren = property.children.length - MAX_VISIBLE_CHILDREN
     const highlight = (text: string) => (
         <EuiHighlight
@@ -77,7 +79,7 @@ export const PropertyResultRow = ({
         <a
             ref={ref}
             href={href}
-            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${fields && ` ${fields}`}`}
+            aria-label={`${property.path} ${property.type} ${property.location} ${property.description}${childrenText && ` ${childrenText}`}`}
             onClick={onClick}
             onMouseEnter={onMouseEnter}
             onMouseMove={onMouseMove}
@@ -184,6 +186,13 @@ export const PropertyResultRow = ({
                     gap: ${euiTheme.size.xs} ${euiTheme.size.s};
                     margin-top: ${euiTheme.size.xxs};
                 }
+                .property-children-label {
+                    flex: none;
+                    margin-inline-end: ${euiTheme.size.xxs};
+                    color: ${euiTheme.colors.textSubdued};
+                    font-family: ${euiTheme.font.family};
+                    font-size: ${euiTheme.font.scale.xs * euiTheme.base}px;
+                }
                 .property-child {
                     padding: 0 ${euiTheme.size.xs};
                     border-radius: ${euiTheme.border.radius.small};
@@ -273,8 +282,11 @@ export const PropertyResultRow = ({
                     <span
                         className="property-children"
                         role="group"
-                        aria-label={`Fields of ${property.path}`}
+                        aria-label={`Child properties of ${property.path}`}
                     >
+                        <span className="property-children-label">
+                            Child properties
+                        </span>
                         {property.children
                             .slice(0, MAX_VISIBLE_CHILDREN)
                             .map((suffix) => (
