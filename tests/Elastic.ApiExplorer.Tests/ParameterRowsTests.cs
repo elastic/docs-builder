@@ -86,6 +86,8 @@ public partial class ParameterRowsTests(ApiExplorerFixture fixture)
 		html.Should().Contain("id=\"header-params-list\"");
 		html.Should().Contain("<dt id=\"header-X-Opaque-Id\">");
 		html.Should().Contain("href=\"#header-params\"");
+		html.Should().Contain("href=\"#header-params\" data-toc-link>Headers</a>", "the quick link names the section in the plural");
+		html.Should().Contain("data-toc-link>Path</a>").And.Contain("data-toc-link>Query</a>");
 	}
 
 	[Test]

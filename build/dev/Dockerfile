@@ -1,21 +1,23 @@
 # syntax=docker/dockerfile:1
 
-FROM node:26.13.0-trixie-slim AS node
-
 FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 
 WORKDIR /src
 
-# The documentation site is built as part of the docs-builder project, and
-# Native AOT compilation requires a C/C++ toolchain.
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+ARG TARGETARCH
 
+# The documentation site is built as part of the docs-builder project, and
+# Native AOT compilation requires a C/C++ toolchain. .nvmrc is the single
+# source of the Node version, so the official binary is installed from it.
+COPY .nvmrc ./
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates clang curl git \
+    && apt-get install -y --no-install-recommends ca-certificates clang curl git xz-utils \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+    && NODE_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo arm64 || echo x64) \
+    && NODE_VERSION=$(tr -d 'v\n ' < .nvmrc) \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local --strip-components=1 \
+    && node --version && npm --version
 
 # global.json is the single source of the SDK version. The base image only
 # supplies the OS and host; this installs the exact SDK the repo pins beside it.
