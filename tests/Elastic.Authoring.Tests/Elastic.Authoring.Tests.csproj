@@ -4,7 +4,7 @@
     <RootNamespace>Elastic.Authoring.Tests</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="SharpYaml" />
     <PackageReference Include="AngleSharp.Diffing" />
     <PackageReference Include="DiffPlex" />
   </ItemGroup>

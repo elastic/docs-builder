@@ -381,3 +381,57 @@ public class VscodeInsidersProtocolLinkTest() : LinkTestBase(
 	[Test]
 	public void EmitsNoCrossLinks() => Collector.CrossLinks.Should().HaveCount(0);
 }
+
+[InheritsTests]
+public class EncodedSpaceLinkToExistingFile() : LinkTestBase("""
+	[doc](testing/Contacting%20Support.png)
+	""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		base.AddToFileSystem(fileSystem);
+		fileSystem.AddFile(@"docs/testing/Contacting Support.png", new MockFileData(""));
+	}
+
+	[Test]
+	public void ExplainsEncodedSpacesAndSuggestsWorkarounds()
+	{
+		var error = Collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Error).Subject;
+		error.Message.Should().Contain("not URL-decoded").And.Contain("raw.githubusercontent.com").And.Contain("rename the file");
+	}
+}
+
+[InheritsTests]
+public class LiteralSpaceLinkToExistingFile() : LinkTestBase("""
+	[doc](<testing/Contacting Support.png>)
+	""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		base.AddToFileSystem(fileSystem);
+		fileSystem.AddFile(@"docs/testing/Contacting Support.png", new MockFileData(""));
+	}
+
+	[Test]
+	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+}
+
+[InheritsTests]
+public class LinkToUnpublishedFileType() : LinkTestBase("""
+	[doc](testing/support.pdf)
+	""")
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem)
+	{
+		base.AddToFileSystem(fileSystem);
+		fileSystem.AddFile(@"docs/testing/support.pdf", new MockFileData(""));
+	}
+
+	[Test]
+	public void WarnsThatFileIsNotPublished()
+	{
+		Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Should().BeEmpty();
+		var warning = Collector.Diagnostics.Should().ContainSingle(d => d.Severity == Severity.Warning).Subject;
+		warning.Message.Should().Contain("not published").And.Contain("raw.githubusercontent.com");
+	}
+}

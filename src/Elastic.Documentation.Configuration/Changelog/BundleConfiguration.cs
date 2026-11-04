@@ -4,6 +4,16 @@
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
+/// <summary>Which pull requests are backports of an earlier pull request.</summary>
+public record BackportsConfiguration
+{
+	/// <summary>
+	/// Exact label names that mark a pull request as a backport. Globs are not supported: a pattern such as
+	/// <c>backport*</c> would also match opt-out labels like <c>backport-skip</c>.
+	/// </summary>
+	public required IReadOnlyList<string> Labels { get; init; }
+}
+
 /// <summary>
 /// Configuration for bundle operations
 /// </summary>
@@ -75,6 +85,12 @@ public record BundleConfiguration
 	public bool? ReleaseDates { get; init; }
 
 	/// <summary>
+	/// Which pull requests are backports. When set, a commit-range bundle replaces a pull request that has one of
+	/// these labels with the original pull request it was backported from. <c>null</c> leaves tracing off.
+	/// </summary>
+	public BackportsConfiguration? Backports { get; init; }
+
+	/// <summary>
 	/// Named bundle profiles for different release scenarios.
 	/// </summary>
 	public IReadOnlyDictionary<string, BundleProfile>? Profiles { get; init; }
@@ -107,13 +123,12 @@ public record BundleProfile
 	public string? Products { get; init; }
 
 	/// <summary>
-	/// Legacy output filename pattern. No longer supported: bundle output names are derived by
+	/// Legacy output filename pattern. Deprecated: bundle output names are derived by
 	/// convention as <c>{repo}-{product}-{version}.yaml</c> from the authoring repo and the profile's
-	/// primary output product (elastic/docs-builder#3774). Any profile setting this is a hard error
-	/// at bundle time; the field remains parseable for one release cycle so authors get an actionable
-	/// error rather than a YAML parse failure.
+	/// primary output product (elastic/docs-builder#3774). The field remains parseable so existing
+	/// configs load; the value is ignored and a load-time warning asks authors to remove it.
 	/// </summary>
-	[Obsolete("No longer supported: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Setting 'output' is a hard error at bundle time.")]
+	[Obsolete("Deprecated: bundle output names are derived by convention as '{repo}-{product}-{version}.yaml' from the authoring repo and the profile's output_products. Remove this field.")]
 	public string? Output { get; init; }
 
 	/// <summary>

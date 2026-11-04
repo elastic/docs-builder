@@ -69,7 +69,6 @@ public class DocsSyncTests
 					Key = "docs/skip.md",
 					ETag = "\"69048c0964c9577a399b138b706a467a\""
 				}, // This is the result of CalculateS3ETag
-
 				new S3Object { Key = "docs/update.md", ETag = "\"existing-etag\"" }
 			]
 		});
@@ -98,6 +97,52 @@ public class DocsSyncTests
 
 		plan.DeleteRequests.Count.Should().Be(1);
 		plan.DeleteRequests.Should().Contain(i => i.DestinationPath == "docs/delete.md");
+	}
+
+	[Test]
+	public async Task TestPlan_RetainsRecentHashedAssetsInsteadOfDeletingThem()
+	{
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var mockS3Client = A.Fake<IAmazonS3>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/_static/main-newhash0.js", new MockFileData("new") } },
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem),
+			null,
+			Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly")
+		);
+		var start = new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc);
+		var remote = Enumerable
+			.Range(0, 11)
+			.Select(i => new S3Object { Key = $"docs/_static/main-old{i:D5}.js", LastModified = start.AddDays(i) })
+			.Append(new S3Object { Key = "docs/_static/styles.css", LastModified = start })
+			.ToList();
+		A.CallTo(() => mockS3Client.ListObjectsV2Async(A<ListObjectsV2Request>._, A<Cancel>._)).Returns(new ListObjectsV2Response
+		{
+			S3Objects = remote
+		});
+		var planStrategy = new AwsS3SyncPlanStrategy(new LoggerFactory(), mockS3Client, "fake", context);
+
+		var plan = await planStrategy.Plan(null, [], Cancel.None);
+
+		plan.AddRequests.Should().ContainSingle(i => i.DestinationPath == "docs/_static/main-newhash0.js");
+		plan.RetainedPaths.Should().HaveCount(10);
+		plan.RetainedPaths.Should().NotContain("docs/_static/main-old00000.js");
+		plan
+			.DeleteRequests
+			.Select(i => i.DestinationPath)
+			.Should()
+			.BeEquivalentTo("docs/_static/main-old00000.js", "docs/_static/styles.css");
+		plan.TotalSyncRequests.Should().Be(3);
 	}
 
 	[Test]
@@ -239,8 +284,8 @@ public class DocsSyncTests
 
 	// NotInParallel: this test subscribes the OTel in-memory exporter to the global activity source;
 	// concurrent tests that also call Apply() emit activities that bleed into this exporter.
-	[NotInParallel("deploying-apply")]
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))] // TestApply asserts on spans from a process-wide ActivitySource
 	public async Task TestApply()
 	{
 		// Arrange
@@ -344,8 +389,8 @@ public class DocsSyncTests
 		);
 	}
 
-	[NotInParallel("deploying-apply")]
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
 	public async Task TestApply_DeleteRequests_ChunksDeletesAtS3Limit()
 	{
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
@@ -387,8 +432,8 @@ public class DocsSyncTests
 		deleteBatches.Should().OnlyContain(r => r.Objects.Count <= 1000);
 	}
 
-	[NotInParallel("deploying-apply")]
 	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
 	public async Task Apply_UploadFailure_ReturnsFalse()
 	{
 		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
@@ -429,5 +474,67 @@ public class DocsSyncTests
 
 		applyOk.Should().BeFalse();
 		collector.Errors.Should().Be(1);
+	}
+
+	[Test]
+	[NotInParallel(nameof(AwsS3SyncApplyStrategy))]
+	public async Task Apply_SetsContentTypeOnSpecUploads()
+	{
+		// Arrange
+		IReadOnlyCollection<IDiagnosticsOutput> diagnosticsOutputs = [];
+		var collector = new DiagnosticsCollector(diagnosticsOutputs);
+		var moxTransferUtility = A.Fake<ITransferUtility>();
+		var fileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData>
+			{
+				{ "docs/api/doc/es.yaml", new MockFileData("openapi: 3.1.0") },
+				{ "docs/api/doc/es.json", new MockFileData("{}") },
+				{ "docs/index.md", new MockFileData("# Index") },
+			},
+			new MockFileSystemOptions { CurrentDirectory = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly"), }
+		);
+		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
+		var config = AssemblyConfiguration.Create(configurationContext.ConfigurationFileProvider);
+		var context = new AssembleContext(
+			config,
+			configurationContext,
+			"dev",
+			collector,
+			CheckoutsFileSystem.FromWorkingDirectory(fileSystem)
+		);
+		var plan = new SyncPlan
+		{
+			RemoteListingCompleted = true,
+			DeleteThresholdDefault = null,
+			ExcludePatterns = [],
+			TotalRemoteFiles = 0,
+			TotalSourceFiles = 3,
+			TotalSyncRequests = 3,
+			AddRequests =
+			[
+				new AddRequest { LocalPath = "docs/api/doc/es.yaml", DestinationPath = "docs/api/doc/es.yaml" },
+				new AddRequest { LocalPath = "docs/api/doc/es.json", DestinationPath = "docs/api/doc/es.json" },
+				new AddRequest { LocalPath = "docs/index.md", DestinationPath = "docs/index.md" }
+			],
+			UpdateRequests = [],
+			SkipRequests = [],
+			DeleteRequests = []
+		};
+		var uploads = new ConcurrentBag<TransferUtilityUploadRequest>();
+		A
+			.CallTo(() => moxTransferUtility.UploadAsync(A<TransferUtilityUploadRequest>._, A<Cancel>._))
+			.Invokes((TransferUtilityUploadRequest request, Cancel _) => uploads.Add(request))
+			.Returns(Task.CompletedTask);
+		var applier = new AwsS3SyncApplyStrategy(new LoggerFactory(), A.Fake<IAmazonS3>(), moxTransferUtility, "fake", context, collector);
+
+		// Act
+		await applier.Apply(plan, Cancel.None);
+
+		// Assert
+		uploads.Should().HaveCount(3);
+		var byKey = uploads.ToDictionary(u => u.Key, u => u.ContentType);
+		byKey["docs/api/doc/es.yaml"].Should().Be("text/plain; charset=utf-8");
+		byKey["docs/api/doc/es.json"].Should().Be("application/json");
+		byKey["docs/index.md"].Should().BeNull();
 	}
 }

@@ -7,7 +7,7 @@
 @if (Model.IsColumn)
 {
 	<li class="hub-col">
-		<h4 class="hub-col-title">
+		@(new HtmlString($"<h{Model.ColumnHeadingLevel} class=\"hub-col-title\">"))
 			@if (!string.IsNullOrWhiteSpace(d.Link))
 			{
 				<a @Model.LinkAttributes(d.Link)>@d.Title</a>
@@ -16,7 +16,7 @@
 			{
 				@d.Title
 			}
-		</h4>
+		@(new HtmlString($"</h{Model.ColumnHeadingLevel}>"))
 
 		@if (d.Links.Length > 0)
 		{

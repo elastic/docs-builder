@@ -216,6 +216,9 @@ public partial class AwsS3SyncApplyStrategy(
 						Key = upload.DestinationPath,
 						PartSize = S3EtagCalculator.PartSize
 					};
+					// Per-file requests own their headers, so the type cannot leak onto other uploads.
+					if (SpecContentType(upload.DestinationPath) is { } specType)
+						request.ContentType = specType;
 					request.UploadProgressEvent += DisplayUploadProgress;
 					await transferUtility.UploadAsync(request, token);
 					_ = Interlocked.Increment(ref uploadedCount);
@@ -243,6 +246,18 @@ public partial class AwsS3SyncApplyStrategy(
 		}
 		_ = uploadActivity?.SetTag("docs.sync.upload.duration_ms", sw.Elapsed.TotalMilliseconds);
 	}
+
+	/// <summary>
+	/// Explicit Content-Type for generated spec files. The SDK guesses from the extension and has no
+	/// <c>.yaml</c> entry, so YAML would be stored as application/octet-stream and browsers would download it.
+	/// YAML uses text/plain because browsers render it inline, unlike application/yaml.
+	/// </summary>
+	public static string? SpecContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+	{
+		".json" => "application/json",
+		".yaml" or ".yml" => "text/plain; charset=utf-8",
+		_ => null
+	};
 
 	private async Task Delete(SyncPlan plan, Cancel ctx)
 	{

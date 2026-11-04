@@ -1,0 +1,61 @@
+.stepper {
+	margin-block: var(--space-5);
+}
+
+.stepper__list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: step;
+}
+
+.stepper__step {
+	position: relative;
+	margin: 0;
+	padding: 0 0 var(--space-5) var(--space-7);
+	counter-increment: step;
+}
+
+.stepper__step::before {
+	content: counter(step);
+	position: absolute;
+	top: 0;
+	left: 0;
+	display: grid;
+	width: 2rem;
+	height: 2rem;
+	place-items: center;
+	border: var(--border-width) solid var(--color-border-strong);
+	border-radius: 50%;
+	background: var(--color-surface);
+	color: var(--color-heading);
+	font-family: var(--font-mono);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-bold);
+}
+
+/* The connector between step numbers. */
+.stepper__step:not(:last-child)::after {
+	content: '';
+	position: absolute;
+	top: 2.25rem;
+	bottom: 0.25rem;
+	left: calc(1rem - 1px);
+	width: 2px;
+	background: var(--color-border);
+}
+
+.stepper__title {
+	margin: 0 0 var(--space-2);
+	padding-top: var(--space-1);
+	font-size: var(--text-lg);
+	font-weight: var(--weight-bold);
+}
+
+.stepper__title a {
+	color: var(--color-heading);
+}
+
+.stepper__step > :last-child {
+	margin-bottom: 0;
+}

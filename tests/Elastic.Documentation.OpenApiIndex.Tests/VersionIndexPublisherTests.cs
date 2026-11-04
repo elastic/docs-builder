@@ -16,7 +16,7 @@ public class VersionIndexPublisherTests
 	private const string BucketName = "test-bucket";
 
 	/// <summary>The exact serialized index for a bucket holding only <c>elastic/elasticsearch/8.16/openapi.json</c>.</summary>
-	private const string Index816Json = /*lang=json,strict*/  """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
+	private const string Index816Json = /*lang=json,strict*/ """{"elastic/elasticsearch":{"openapi.json":{"8":{"version":"8.16"}}}}""";
 
 	private readonly IAmazonS3 _s3Client = A.Fake<IAmazonS3>();
 	private readonly List<PutObjectRequest> _puts = [];

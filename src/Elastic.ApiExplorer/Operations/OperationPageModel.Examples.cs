@@ -1,0 +1,606 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.RegularExpressions;
+using Elastic.ApiExplorer.Model;
+using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Operations;
+
+/// <summary>A request/response example with its markdown description prerendered.</summary>
+public record ExampleDisplay(
+	string Title,
+	HtmlString? DescriptionHtml,
+	string? JsonValue,
+	string? ExternalValue,
+	string? StatusCode = null,
+	string? DescriptionMarkdown = null
+)
+{
+	/// <summary>Method and path named by a <c>Run `METHOD path`</c> description, before boilerplate is stripped.</summary>
+	public (string Method, string Path)? RequestLine { get; init; }
+
+	/// <summary>What the response's status code means, from the spec's <c>responses.&lt;code&gt;.description</c>.</summary>
+	public string? StatusDescription { get; init; }
+
+	/// <summary>The request or response content type the example is listed under.</summary>
+	public string? MediaType { get; init; }
+
+	public bool Generated { get; init; }
+}
+
+/// <summary>The examples listed under one content type of a request body.</summary>
+internal sealed record RequestContent(string? MediaType, IDictionary<string, IOpenApiExample>? Examples);
+
+/// <summary>One response body example tagged with its HTTP status code for the examples rail.</summary>
+public record ExampleResponse
+{
+	public required string StatusCode { get; init; }
+	public IReadOnlyList<ExampleDisplay> Examples { get; init; } = [];
+
+	public HtmlString? DescriptionHtml => Examples.Count > 0 ? Examples[0].DescriptionHtml : null;
+
+	/// <summary>What the status code means; the status tab's tooltip.</summary>
+	public string? StatusDescription { get; init; }
+
+	/// <summary>
+	/// When true, the OpenAPI response declares no content (e.g. 204). The rail shows
+	/// "No body" instead of "No example".
+	/// </summary>
+	public bool IsNoBody { get; init; }
+}
+
+/// <summary>
+/// One named example scenario for the right rail: optional multi-language code samples,
+/// request body, and one or more response bodies (by status code) grouped under a shared title.
+/// </summary>
+public record ExampleScenario
+{
+	public required string Title { get; init; }
+	public required string TabId { get; init; }
+	public HtmlString? RequestDescriptionHtml { get; init; }
+	public string? RequestJson { get; init; }
+	public string? RequestExternalValue { get; init; }
+	public IReadOnlyList<ExampleResponse> Responses { get; init; } = [];
+	public IReadOnlyList<CodeSample> CodeSamples { get; init; } = [];
+	public string? HttpMethod { get; init; }
+	public string? Route { get; init; }
+
+	/// <summary>Method and path the example description says to run; generated samples use it.</summary>
+	public (string Method, string Path)? RequestLine { get; init; }
+
+	/// <summary>The request content type of the example; generated curl samples only fit JSON.</summary>
+	public string? MediaType { get; init; }
+
+	/// <summary>True for an example made only to hold code samples that match no named example.</summary>
+	public bool FromUnmatchedSamples { get; init; }
+
+	/// <summary>True when the attached code samples contain this scenario's request body verbatim.</summary>
+	public bool CodeSamplesIncludeRequest { get; init; }
+
+	/// <summary>Request JSON is omitted only when code samples already embed the request body.</summary>
+	public bool ShowRequest => (RequestJson is not null || !string.IsNullOrEmpty(RequestExternalValue)) && !CodeSamplesIncludeRequest;
+
+	public bool ShowResponse => Responses.Count > 0;
+}
+
+/// <summary>Right-rail examples panel: example chips over a carousel of language samples per example.</summary>
+public record OperationExamplesPanelModel
+{
+	public required IReadOnlyList<ExampleScenario> Scenarios { get; init; }
+}
+
+public partial record OperationPageModel
+{
+	internal static IReadOnlyList<ExampleScenario> WithOperationIdentity(
+		IReadOnlyList<ExampleScenario> scenarios,
+		string httpMethod,
+		string route
+	) => [.. scenarios.Select(s => s with { HttpMethod = httpMethod, Route = route })];
+
+	/// <summary>
+	/// Groups OpenAPI examples into rail scenarios:
+	/// <list type="bullet">
+	/// <item>Request examples define scenario variants (the Examples header <c>select</c>).</item>
+	/// <item>Response examples whose title matches a request join that scenario.</item>
+	/// <item>Unmatched response examples (typical error statuses) are shared across
+	/// those request scenarios as extra status-code tabs, without overwriting a
+	/// scenario-specific body for the same status.</item>
+	/// <item>When there are no request examples, responses are grouped by title and
+	/// then collapsed into a single scenario so status tabs stay primary.</item>
+	/// </list>
+	/// Multi-language <c>x-codeSamples</c> attach to the scenario whose request body
+	/// matches the Console sample (or the first / a code-only scenario).
+	/// </summary>
+	public static IReadOnlyList<ExampleScenario> BuildExampleScenarios(
+		IReadOnlyList<ExampleDisplay> requestExamples,
+		IReadOnlyList<ExampleDisplay> responseExamples,
+		IReadOnlyList<CodeSample> codeSamples
+	)
+	{
+		var scenarios = new List<ExampleScenario>();
+		var indexByTitle = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var example in requestExamples)
+			UpsertScenario(scenarios, indexByTitle, example, isRequest: true);
+
+		var hasRequestScenarios = scenarios.Count > 0;
+		var sharedResponses = new List<ExampleDisplay>();
+
+		foreach (var example in responseExamples)
+		{
+			if (hasRequestScenarios && !indexByTitle.ContainsKey(example.Title))
+			{
+				sharedResponses.Add(example);
+				continue;
+			}
+
+			UpsertScenario(scenarios, indexByTitle, example, isRequest: false);
+		}
+
+		if (hasRequestScenarios && sharedResponses.Count > 0)
+		{
+			for (var i = 0; i < scenarios.Count; i++)
+				scenarios[i] = scenarios[i] with { Responses = MergeSharedResponses(scenarios[i].Responses, sharedResponses) };
+		}
+		else if (!hasRequestScenarios && scenarios.Count > 1)
+			scenarios = CollapseIntoSingleScenario(scenarios);
+
+		// Samples that name an example, by language suffix (cURL_tag_names) or by title, belong to that example.
+		var tied = codeSamples.Where(static c => c.IsTied).ToArray();
+		var attached = AttachCodeSamples(scenarios, [.. codeSamples.Where(static c => !c.IsTied)]);
+		return tied.Length == 0 ? attached : ExampleCodeSamples.Join(attached, tied);
+	}
+
+	/// <summary>The content types of a request with their examples, the primary one first.</summary>
+	internal static IReadOnlyList<RequestContent> RequestContentTypes(
+		IOpenApiRequestBody? requestBody,
+		KeyValuePair<string, IOpenApiMediaType>? primary
+	)
+	{
+		var result = new List<RequestContent>();
+		if (primary is { } first)
+			result.Add(new RequestContent(first.Key, first.Value?.Examples));
+		foreach (var (mediaType, media) in requestBody?.Content ?? new Dictionary<string, IOpenApiMediaType>())
+		{
+			if (primary is not { } p || mediaType != p.Key)
+				result.Add(new RequestContent(mediaType, media?.Examples));
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// The request examples of every content type, the primary one first. Examples with the same title show as one.
+	/// </summary>
+	internal static IReadOnlyList<ExampleDisplay> MapRequestExamples(
+		IEnumerable<RequestContent> requestContent,
+		Func<string?, HtmlString> renderMarkdown,
+		OperationEndpoint? endpoint = null
+	) =>
+		[
+			.. requestContent.SelectMany(
+				c => MapExamples(c.Examples, renderMarkdown, endpoint: endpoint).Select(e => e with { MediaType = c.MediaType })
+			).DistinctBy(static e => e.Title, StringComparer.OrdinalIgnoreCase)
+		];
+
+	/// <summary>Links each sample's client label to the client's docs page where one exists for this product.</summary>
+	private static List<ExampleScenario> WithClientDocs(IReadOnlyList<ExampleScenario> scenarios, string? productId) =>
+		[
+			.. scenarios.Select(
+				s =>
+					s with
+					{
+						CodeSamples =
+						[
+							.. s.CodeSamples.Select(c => c with { ClientDocsUrl = CodeSample.ClientDocsUrlFor(c.Language, productId) })
+						]
+					}
+			)
+		];
+
+	private static List<ExampleScenario> AttachCodeSamples(List<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	{
+		if (codeSamples.Count == 0)
+			return scenarios;
+
+		if (scenarios.Count == 0)
+		{
+			scenarios.Add(new ExampleScenario { Title = "Examples", TabId = "examples", CodeSamples = codeSamples });
+			return scenarios;
+		}
+
+		var matchIndex = FindScenarioForCodeSamples(scenarios, codeSamples);
+		if (matchIndex is { } match)
+		{
+			scenarios[match] = scenarios[match] with { CodeSamples = codeSamples, CodeSamplesIncludeRequest = true };
+			return scenarios;
+		}
+
+		// Samples written for a body no named example has: keep them as their own first example instead of
+		// pinning them to an unrelated one. Body-less samples (e.g. synthetic curl) still join the first example.
+		if (SamplesCarryABody(codeSamples) && scenarios.Any(static s => !string.IsNullOrWhiteSpace(s.RequestJson)))
+		{
+			scenarios.Insert(
+				0,
+				new ExampleScenario
+				{
+					Title = "Example",
+					TabId = UniqueTabId("example", scenarios),
+					FromUnmatchedSamples = true,
+					CodeSamples = codeSamples,
+					Responses = scenarios[0].Responses.Where(static r => !r.StatusCode.StartsWith('2')).ToArray()
+				}
+			);
+			return scenarios;
+		}
+
+		scenarios[0] = scenarios[0] with { CodeSamples = codeSamples };
+		return scenarios;
+	}
+
+	/// <summary>
+	/// Adds shared (title-unmatched) response examples as status tabs, skipping any
+	/// status the scenario already owns so request-paired bodies win.
+	/// </summary>
+	private static IReadOnlyList<ExampleResponse> MergeSharedResponses(
+		IReadOnlyList<ExampleResponse> existing,
+		IReadOnlyList<ExampleDisplay> shared
+	)
+	{
+		var merged = existing;
+		foreach (var example in shared)
+		{
+			var statusCode = string.IsNullOrEmpty(example.StatusCode) ? "default" : example.StatusCode;
+			if (
+				merged.Any(
+					r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase) && r.Examples.Any(
+						e => e.MediaType == example.MediaType
+					)
+				)
+			)
+				continue;
+			merged = UpsertResponse(merged, example);
+		}
+
+		return merged;
+	}
+
+	/// <summary>
+	/// Response-only operations often name each status differently; fold them into one
+	/// scenario so the rail exposes status tabs instead of a scenario <c>select</c>.
+	/// </summary>
+	private static List<ExampleScenario> CollapseIntoSingleScenario(List<ExampleScenario> scenarios)
+	{
+		var responses = new List<ExampleResponse>();
+		foreach (var scenario in scenarios)
+		{
+			foreach (var response in scenario.Responses)
+			{
+				var alreadyPresent = responses.Any(
+					r => string.Equals(r.StatusCode, response.StatusCode, StringComparison.OrdinalIgnoreCase)
+				);
+				if (alreadyPresent)
+				{
+					var index = responses.FindIndex(r => r.StatusCode == response.StatusCode);
+					var current = responses[index];
+					responses[index] = current with
+					{
+						Examples =
+						[
+							.. current.Examples,
+							.. response.Examples.Where(e => !current.Examples.Any(c => c.MediaType == e.MediaType))
+						]
+					};
+					continue;
+				}
+				responses.Add(response);
+			}
+		}
+
+		var ordered = responses.OrderBy(r => StatusSortKey(r.StatusCode)).ThenBy(r => r.StatusCode, StringComparer.Ordinal).ToArray();
+
+		return [
+			new ExampleScenario
+			{
+				Title = scenarios[0].Title,
+				TabId = scenarios[0].TabId,
+				RequestDescriptionHtml = scenarios[0].RequestDescriptionHtml,
+				Responses = ordered
+			}
+		];
+	}
+
+	private static void UpsertScenario(
+		List<ExampleScenario> scenarios,
+		Dictionary<string, int> indexByTitle,
+		ExampleDisplay example,
+		bool isRequest
+	)
+	{
+		if (indexByTitle.TryGetValue(example.Title, out var index))
+		{
+			var existing = scenarios[index];
+			scenarios[index] = isRequest
+				? existing with
+				{
+					RequestDescriptionHtml = existing.RequestDescriptionHtml ?? example.DescriptionHtml,
+					RequestJson = example.JsonValue,
+					RequestExternalValue = example.ExternalValue,
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
+				}
+				: existing with { Responses = UpsertResponse(existing.Responses, example) };
+			return;
+		}
+
+		indexByTitle[example.Title] = scenarios.Count;
+		scenarios.Add(
+			isRequest
+				? new ExampleScenario
+				{
+					Title = example.Title,
+					TabId = ToTabId(example.Title, scenarios.Count),
+					RequestDescriptionHtml = example.DescriptionHtml,
+					RequestJson = example.JsonValue,
+					RequestExternalValue = example.ExternalValue,
+					RequestLine = example.RequestLine,
+					MediaType = example.MediaType
+				}
+				: new ExampleScenario
+				{
+					Title = example.Title,
+					TabId = ToTabId(example.Title, scenarios.Count),
+					Responses = UpsertResponse([], example)
+				}
+		);
+	}
+
+	private static IReadOnlyList<ExampleResponse> UpsertResponse(IReadOnlyList<ExampleResponse> existing, ExampleDisplay example)
+	{
+		var statusCode = string.IsNullOrEmpty(example.StatusCode) ? "default" : example.StatusCode;
+		var next = new ExampleResponse { StatusCode = statusCode, Examples = [example], StatusDescription = example.StatusDescription };
+		var list = existing.ToList();
+		var index = list.FindIndex(r => string.Equals(r.StatusCode, statusCode, StringComparison.OrdinalIgnoreCase));
+		if (index >= 0)
+			list[index] = next with { Examples = [.. list[index].Examples.Where(e => e.MediaType != example.MediaType), example] };
+		else
+			list.Add(next);
+
+		return list.OrderBy(r => StatusSortKey(r.StatusCode)).ThenBy(r => r.StatusCode, StringComparer.Ordinal).ToArray();
+	}
+
+	private static int StatusSortKey(string statusCode) =>
+		statusCode.Length > 0 && statusCode[0] == '2'
+			? 0
+			: statusCode.Length > 0 && statusCode[0] == '3'
+				? 1
+				: statusCode.Length > 0 && statusCode[0] == '4' ? 2 : statusCode.Length > 0 && statusCode[0] == '5' ? 3 : 4;
+
+	/// <summary>
+	/// The example the samples were written for: the one whose body the Console sample sends. Examples with the
+	/// same body are told apart by the request line their description names. Only when no body is equal (a
+	/// curl-only spec, or an example body the spec wrote with its path line) does a body contained anywhere in
+	/// the sample count.
+	/// </summary>
+	private static int? FindScenarioForCodeSamples(IReadOnlyList<ExampleScenario> scenarios, IReadOnlyList<CodeSample> codeSamples)
+	{
+		var probe = codeSamples.FirstOrDefault(static s => s.IsConsole) ?? codeSamples[0];
+		var byBody = GeneratedCodeSamples.SplitConsole(probe.Source) is { } console
+			? FindByEqualBody(scenarios, console.Line, console.Body)
+			: null;
+		return byBody ?? FindByContainedBody(scenarios, probe.Source);
+	}
+
+	private static int? FindByEqualBody(IReadOnlyList<ExampleScenario> scenarios, (string Method, string Path) line, string body)
+	{
+		var compactBody = Compact(body);
+		if (compactBody.Length == 0)
+			return null;
+
+		var candidates = Enumerable
+			.Range(0, scenarios.Count)
+			.Where(i => scenarios[i].RequestJson is { } requestJson && Compact(requestJson) == compactBody)
+			.ToArray();
+		if (candidates.Length == 0)
+			return null;
+
+		var byLine = candidates.Where(i => scenarios[i].RequestLine is { } named && SameRequestLine(named, line)).ToArray();
+		return byLine.Length == 1 ? byLine[0] : candidates[0];
+	}
+
+	private static int? FindByContainedBody(IReadOnlyList<ExampleScenario> scenarios, string source)
+	{
+		var compactProbe = Compact(source);
+		for (var i = 0; i < scenarios.Count; i++)
+		{
+			if (scenarios[i].RequestJson is not { Length: > 0 } requestJson)
+				continue;
+			var compactRequest = Compact(requestJson);
+			if (compactRequest.Length == 0)
+				continue;
+			if (compactProbe.Contains(compactRequest, StringComparison.Ordinal))
+				return i;
+		}
+
+		return null;
+	}
+
+	/// <summary>Same method, route and query. The query matters: <c>?size=10</c> and <c>?size=100</c> are different examples.</summary>
+	private static bool SameRequestLine((string Method, string Path) left, (string Method, string Path) right) =>
+		string.Equals(left.Method, right.Method, StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(OperationEndpoint.PathOf(left.Path), OperationEndpoint.PathOf(right.Path), StringComparison.OrdinalIgnoreCase)
+			&& string.Equals(QueryOf(left.Path), QueryOf(right.Path), StringComparison.Ordinal);
+
+	private static string QueryOf(string target)
+	{
+		var query = target.IndexOf('?');
+		if (query < 0)
+			return "";
+		var fragment = target.IndexOf('#', query);
+		return fragment < 0 ? target[(query + 1)..] : target[(query + 1)..fragment];
+	}
+
+	private static bool SamplesCarryABody(IReadOnlyList<CodeSample> codeSamples) =>
+		codeSamples.Any(static s => s.IsConsole ? s.Source.Trim().Contains('\n') : s.Source.Contains(" -d ", StringComparison.Ordinal));
+
+	internal static string UniqueTabId(string id, IReadOnlyList<ExampleScenario> scenarios)
+	{
+		var candidate = id;
+		for (var i = 1; scenarios.Any(s => s.TabId == candidate); i++)
+			candidate = $"{id}-{i}";
+		return candidate;
+	}
+
+	internal static string Compact(string value) => string.Concat(value.Where(static c => !char.IsWhiteSpace(c)));
+
+	internal static string ToTabId(string title, int index)
+	{
+		var chars = title.Trim().ToLowerInvariant().Select(static c => char.IsLetterOrDigit(c) ? c : '-').ToArray();
+		var slug = new string(chars).Trim('-');
+		while (slug.Contains("--", StringComparison.Ordinal))
+			slug = slug.Replace("--", "-", StringComparison.Ordinal);
+		return string.IsNullOrEmpty(slug) ? $"scenario-{index}" : slug;
+	}
+
+	/// <summary>
+	/// Fills each scenario's missing status tabs from the operation's declared responses without replacing its examples.
+	/// </summary>
+	public static IReadOnlyList<ExampleScenario> EnsureResponseTabs(IReadOnlyList<ExampleScenario> scenarios, OpenApiResponses? responses)
+	{
+		if (scenarios.Count == 0 || responses is null || responses.Count == 0)
+			return scenarios;
+
+		var fallback = BuildStatusOnlyResponses(responses);
+		if (fallback.Count == 0)
+			return scenarios;
+
+		return scenarios.Select(
+			s =>
+				s with
+				{
+					Responses =
+					[
+						.. s
+							.Responses
+							.Concat(fallback.Where(r => !s.Responses.Any(existing => existing.StatusCode == r.StatusCode)))
+							.OrderBy(static r => StatusSortKey(r.StatusCode))
+							.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
+					]
+				}
+		).ToArray();
+	}
+
+	private static IReadOnlyList<ExampleResponse> BuildStatusOnlyResponses(OpenApiResponses responses) =>
+		responses
+			.Where(static pair => pair.Value is not null)
+			.Select(
+				static pair => new ExampleResponse
+				{
+					StatusCode = pair.Key,
+					StatusDescription = StatusDescriptionOf(pair.Value),
+					IsNoBody = pair.Value.Content is null || pair.Value.Content.Count == 0
+				}
+			)
+			.OrderBy(static r => StatusSortKey(r.StatusCode))
+			.ThenBy(static r => r.StatusCode, StringComparer.Ordinal)
+			.ToArray();
+
+	/// <summary>Plain text for the status tab tooltip, which can't render Markdown, so inline code loses its backticks.</summary>
+	private static string? StatusDescriptionOf(IOpenApiResponse? response) =>
+		string.IsNullOrWhiteSpace(response?.Description) ? null : response.Description.Replace("`", "", StringComparison.Ordinal).Trim();
+
+	internal static IReadOnlyList<ExampleDisplay> MapResponseExamples(
+		OpenApiResponses? responses,
+		Func<string?, HtmlString> renderMarkdown,
+		SchemaAnalyzer analyzer
+	)
+	{
+		var list = new List<ExampleDisplay>();
+		foreach (var (statusCode, response) in responses ?? [])
+		{
+			foreach (var content in response?.Content ?? new Dictionary<string, IOpenApiMediaType>())
+			{
+				var examples = ResponseMediaExamples(statusCode, content, renderMarkdown, analyzer);
+				list.AddRange(examples.Select(e => e with { StatusDescription = StatusDescriptionOf(response), MediaType = content.Key }));
+			}
+		}
+		return list;
+	}
+
+	private static IReadOnlyList<ExampleDisplay> ResponseMediaExamples(
+		string statusCode,
+		KeyValuePair<string, IOpenApiMediaType> content,
+		Func<string?, HtmlString> renderMarkdown,
+		SchemaAnalyzer analyzer
+	)
+	{
+		var (mediaType, media) = content;
+		var named = MapExamples(media.Examples, renderMarkdown, statusCode);
+		if (named.Count > 0)
+			return named;
+		if (media.Example is { } example)
+			return [new ExampleDisplay(statusCode, null, ResponseBodyExample.CopyValue(example)?.ToString() ?? "null", null, statusCode)];
+		var generated = ResponseBodyExample.Build(analyzer, mediaType, media.Schema);
+		return [new ExampleDisplay(statusCode, null, generated, null, statusCode) { Generated = generated is not null }];
+	}
+
+	/// <summary>With <paramref name="endpoint"/>, a request description's <c>Run `METHOD path`</c> line follows the path's dominant method.</summary>
+	internal static IReadOnlyList<ExampleDisplay> MapExamples(
+		IDictionary<string, IOpenApiExample>? examples,
+		Func<string?, HtmlString> renderMarkdown,
+		string? statusCode = null,
+		OperationEndpoint? endpoint = null
+	) =>
+		examples is null
+			? []
+			: examples.Select(e =>
+			{
+				var description = string.IsNullOrWhiteSpace(e.Value?.Description) ? null : e.Value.Description.Trim();
+				if (description is not null && endpoint is not null)
+					description = SampleMethods.AlignDescription(description, endpoint);
+				return new ExampleDisplay(
+					ExampleTitle(e.Key, e.Value),
+					string.IsNullOrEmpty(description) ? null : renderMarkdown(description),
+					e.Value?.Value is { } value ? ResponseBodyExample.CopyValue(value)?.ToString() ?? "null" : null,
+					string.IsNullOrEmpty(e.Value?.ExternalValue) ? null : e.Value.ExternalValue,
+					statusCode,
+					description
+				)
+				{ RequestLine = GeneratedCodeSamples.ParseRequestLine(description) };
+			}).ToArray();
+
+	/// <summary>The title an example shows under: its summary, or its humanized key when it has none.</summary>
+	internal static string ExampleTitle(string key, IOpenApiExample? example) =>
+		string.IsNullOrEmpty(example?.Summary) ? HumanizeExampleKey(key) : example.Summary;
+
+	/// <summary>
+	/// Spec example keys stand in for a missing summary: <c>executeBuiltinEsqlToolRequest</c> reads as
+	/// "Execute builtin ES|QL tool". A trailing Request/Response/Example word is dropped so a request and its
+	/// response example still pair up by title. Keys that already contain spaces are kept as written.
+	/// </summary>
+	public static string HumanizeExampleKey(string key)
+	{
+		if (string.IsNullOrWhiteSpace(key) || key.Contains(' ', StringComparison.Ordinal))
+			return key;
+
+		var words = CamelCaseBoundary().Split(key.Replace('_', ' ').Replace('-', ' ')).Where(static w => w.Length > 0).ToList();
+		if (words.Count > 1 && words[^1] is "Request" or "Response" or "Example")
+			words.RemoveAt(words.Count - 1);
+
+		var text = string.Join(
+			' ',
+			words.Select(
+				static (w, i) => w.Equals("esql", StringComparison.OrdinalIgnoreCase)
+					? "ES|QL"
+					: i == 0 ? char.ToUpperInvariant(w[0]) + w[1..] : w.ToLowerInvariant()
+			)
+		);
+		return text.Length == 0 ? key : text;
+	}
+
+	[GeneratedRegex(@"(?<=[a-z0-9])(?=[A-Z])|\s+", RegexOptions.CultureInvariant)]
+	private static partial Regex CamelCaseBoundary();
+}

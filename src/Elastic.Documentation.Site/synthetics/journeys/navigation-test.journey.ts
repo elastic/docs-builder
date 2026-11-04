@@ -108,15 +108,15 @@ journey('navigation test', ({ page, params }) => {
 
     step('Click on "deployment options" in nav', async () => {
         await page
-            .getByRole('link', { name: 'Deployment options' })
+            .getByRole('link', { name: 'Elastic deployment options' })
             .first()
             .click()
         await expect(page).toHaveURL(
             `${docsRoot}/get-started/deployment-options`
         )
-        await expect(page).toHaveTitle(/Deployment options/)
+        await expect(page).toHaveTitle(/Elastic deployment options/)
         await expect(
-            page.getByRole('heading', { name: 'Deployment options' })
+            page.getByRole('heading', { name: 'Elastic deployment options' })
         ).toBeVisible()
 
         // Same-group navigation: no reload. The sidebar is hx-preserve'd, so

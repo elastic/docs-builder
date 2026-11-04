@@ -107,7 +107,7 @@ public sealed class ReleaseNotesFetcher(ILoggerFactory logFactory, IFileSystem f
 			var bundles = await fetcher.FetchAsync(baseUri, product, version: null, emitError: isRequired
 				? msg => collector.EmitError(string.Empty, msg)
 				: msg => collector.EmitWarning(string.Empty, msg), // inferred: real errors become warnings, not build failures
-			 emitWarning: msg => collector.EmitWarning(string.Empty, msg), ctx,
+			emitWarning: msg => collector.EmitWarning(string.Empty, msg), ctx,
 			// 404 for products registered in products.yml is a hint, not an error — products.yml
 			// membership is the authoritative gate; 404 means no release has been cut yet.
 			// 404 for inferred products is silently tracked (hint emitted by the directive).
