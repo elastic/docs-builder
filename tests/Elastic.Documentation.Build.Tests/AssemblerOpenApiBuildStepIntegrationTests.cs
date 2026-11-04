@@ -109,7 +109,13 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var stopwatch = Stopwatch.StartNew();
-		await AssemblerOpenApiBuildStep.BuildAsync(NullLoggerFactory.Instance, context, assembleSources, cancellationToken);
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			context,
+			assembleSources,
+			siteTopNav: null,
+			cancellationToken
+		);
 		stopwatch.Stop();
 
 		TestContext.Current?.Output.WriteLine($"OpenAPI assembler step completed in {stopwatch.ElapsedMilliseconds} ms");

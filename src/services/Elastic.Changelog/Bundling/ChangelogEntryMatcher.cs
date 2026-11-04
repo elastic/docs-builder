@@ -8,15 +8,14 @@ using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
-using YamlDotNet.Serialization;
+using SharpYaml;
 
 namespace Elastic.Changelog.Bundling;
 
 /// <summary>
 /// Service for parsing and filtering changelog entries
 /// </summary>
-public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deserializer, ILogger logger)
+public class ChangelogEntryMatcher(IFileSystem fileSystem, YamlSerializerOptions deserializerOptions, ILogger logger)
 {
 	/// <summary>
 	/// Parses and filters changelog files based on the provided filter criteria.
@@ -192,7 +191,8 @@ public class ChangelogEntryMatcher(IFileSystem fileSystem, IDeserializer deseria
 
 			// Deserialize YAML
 			var normalizedYaml = ReleaseNotesSerialization.NormalizeYaml(fileContent);
-			var yamlDto = deserializer.Deserialize<ChangelogEntryDto>(normalizedYaml);
+			var yamlDto = YamlSerializer.Deserialize<ChangelogEntryDto>(normalizedYaml, deserializerOptions with { SourceName = filePath })
+				?? throw new InvalidOperationException("Failed to deserialize changelog entry YAML.");
 
 			// Check for duplicates (using checksum)
 			if (seenChangelogs.Contains(checksum))

@@ -2,9 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using Elastic.Documentation.Diagnostics;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Changelog;
 
@@ -14,175 +13,149 @@ namespace Elastic.Documentation.Configuration.Changelog;
 /// Object form: { labels: "label1", subtypes: { api: "label" } }
 /// Labels and subtype values accept both scalar (comma-separated) and sequence (list) forms.
 /// </summary>
-public class TypeEntryYamlConverter : IYamlTypeConverter
+public class TypeEntryYamlConverter : YamlConverter<TypeEntryYaml>
 {
-	public bool Accepts(Type type) => type == typeof(TypeEntryYaml);
+	private static readonly string[] KnownKeys = ["labels", "subtypes"];
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override TypeEntryYaml Read(YamlReader reader)
 	{
 		// Handle null value
-		if (parser.TryConsume<Scalar>(out var scalar))
+		if (reader.TokenType == YamlTokenType.Scalar)
 		{
+			var scalarValue = reader.ScalarValue;
+			_ = reader.Read();
+
 			// Handle empty scalar (null/empty value)
-			if (string.IsNullOrEmpty(scalar.Value) || scalar.Value == "~")
+			if (string.IsNullOrEmpty(scalarValue) || scalarValue == "~")
 				return new TypeEntryYaml();
 
 			// Handle string form: just labels
-			return TypeEntryYaml.FromLabels(scalar.Value);
+			return TypeEntryYaml.FromLabels(scalarValue);
 		}
 
 		// Handle object form: { labels: "...", subtypes: {...} }
-		if (parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType == YamlTokenType.StartMapping)
 		{
+			_ = reader.Read();
 			var entry = new TypeEntryYaml();
 
-			while (!parser.TryConsume<MappingEnd>(out _))
+			while (reader.TokenType != YamlTokenType.EndMapping)
 			{
-				var key = parser.Consume<Scalar>();
+				var key = reader.GetScalarValue();
+				_ = reader.Read();
 
-				switch (key.Value)
+				switch (key)
 				{
 					case "labels":
 						// Accept both scalar and sequence for labels
-						entry = entry with { Labels = YamlLenientListConverter.ReadAsString(parser) };
+						entry = entry with { Labels = YamlLenientListConverter.ReadAsString(reader) };
 						break;
 					case "subtypes":
-						entry = entry with { Subtypes = ParseSubtypes(parser) };
+						entry = entry with { Subtypes = ParseSubtypes(reader) };
 						break;
 					default:
-						// Skip unknown keys - consume the value
-						SkipValue(parser);
+						reader.SkipOrReportUnmapped(typeof(TypeEntryYaml), KnownKeys, key, entry);
 						break;
 				}
 			}
+			_ = reader.Read(); // consume EndMapping
 
 			return entry;
 		}
 
 		// Unknown format
+		reader.Skip();
 		return new TypeEntryYaml();
 	}
 
-	private static Dictionary<string, YamlLenientList?>? ParseSubtypes(IParser parser)
+	private static Dictionary<string, YamlLenientList?>? ParseSubtypes(YamlReader reader)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType != YamlTokenType.StartMapping)
 		{
-			// Handle null value
-			if (parser.TryConsume<Scalar>(out _))
-				return null;
+			// Handle null/scalar value
+			reader.Skip();
 			return null;
 		}
 
+		_ = reader.Read(); // consume StartMapping
 		var subtypes = new Dictionary<string, YamlLenientList?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
-			var key = parser.Consume<Scalar>();
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
 
 			// Accept both scalar and sequence for each subtype value
-			if (parser.TryConsume<Scalar>(out var valueScalar))
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				if (string.IsNullOrEmpty(valueScalar.Value) || valueScalar.Value == "~")
-					subtypes[key.Value] = null;
+				var valueScalar = reader.ScalarValue;
+				_ = reader.Read();
+				if (string.IsNullOrEmpty(valueScalar) || valueScalar == "~")
+					subtypes[key] = null;
 				else
 				{
-					var items = valueScalar
-						.Value
-						.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-						.ToList();
-					subtypes[key.Value] = new YamlLenientList(items.Count > 0 ? items : null);
+					var items = valueScalar.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+					subtypes[key] = new YamlLenientList(items.Count > 0 ? items : null);
 				}
 			}
-			else if (parser.TryConsume<SequenceStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartSequence)
 			{
+				_ = reader.Read();
 				var items = new List<string>();
-				while (!parser.TryConsume<SequenceEnd>(out _))
+				while (reader.TokenType != YamlTokenType.EndSequence)
 				{
-					var item = parser.Consume<Scalar>();
-					if (!string.IsNullOrWhiteSpace(item.Value))
-						items.Add(item.Value.Trim());
+					var item = reader.GetScalarValue();
+					_ = reader.Read();
+					if (!string.IsNullOrWhiteSpace(item))
+						items.Add(item.Trim());
 				}
-				subtypes[key.Value] = new YamlLenientList(items.Count > 0 ? items : null);
+				_ = reader.Read(); // consume EndSequence
+				subtypes[key] = new YamlLenientList(items.Count > 0 ? items : null);
 			}
 			else
-				subtypes[key.Value] = null;
+			{
+				reader.Skip();
+				subtypes[key] = null;
+			}
 		}
+		_ = reader.Read(); // consume EndMapping
 
 		return subtypes;
 	}
 
-	private static void SkipValue(IParser parser)
+	public override void Write(YamlWriter writer, TypeEntryYaml value)
 	{
-		if (parser.TryConsume<Scalar>(out _))
-			return;
-
-		if (parser.TryConsume<MappingStart>(out _))
-		{
-			var depth = 1;
-			while (depth > 0)
-			{
-				if (parser.TryConsume<MappingStart>(out _))
-					depth++;
-				else if (parser.TryConsume<MappingEnd>(out _))
-					depth--;
-				else
-					_ = parser.MoveNext();
-			}
-		}
-		else if (parser.TryConsume<SequenceStart>(out _))
-		{
-			var depth = 1;
-			while (depth > 0)
-			{
-				if (parser.TryConsume<SequenceStart>(out _))
-					depth++;
-				else if (parser.TryConsume<SequenceEnd>(out _))
-					depth--;
-				else
-					_ = parser.MoveNext();
-			}
-		}
-	}
-
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer)
-	{
-		if (value is not TypeEntryYaml entry)
-		{
-			emitter.Emit(new Scalar(null, null, string.Empty, ScalarStyle.Plain, true, false));
-			return;
-		}
-
 		// If only labels and no subtypes, emit as simple string
-		if (entry.Subtypes == null || entry.Subtypes.Count == 0)
+		if (value.Subtypes == null || value.Subtypes.Count == 0)
 		{
-			emitter.Emit(new Scalar(null, null, entry.Labels ?? string.Empty, ScalarStyle.Plain, true, false));
+			writer.WriteScalar(value.Labels ?? string.Empty);
 			return;
 		}
 
 		// Otherwise emit as object
-		emitter.Emit(new MappingStart(null, null, false, MappingStyle.Block));
+		writer.WriteStartMapping();
 
-		if (!string.IsNullOrEmpty(entry.Labels))
+		if (!string.IsNullOrEmpty(value.Labels))
 		{
-			emitter.Emit(new Scalar(null, null, "labels", ScalarStyle.Plain, true, false));
-			emitter.Emit(new Scalar(null, null, entry.Labels, ScalarStyle.DoubleQuoted, false, true));
+			writer.WritePropertyName("labels");
+			writer.WriteString(value.Labels);
 		}
 
-		if (entry.Subtypes is { Count: > 0 })
+		if (value.Subtypes is { Count: > 0 })
 		{
-			emitter.Emit(new Scalar(null, null, "subtypes", ScalarStyle.Plain, true, false));
-			emitter.Emit(new MappingStart(null, null, false, MappingStyle.Block));
+			writer.WritePropertyName("subtypes");
+			writer.WriteStartMapping();
 
-			foreach (var (subKey, subValue) in entry.Subtypes)
+			foreach (var (subKey, subValue) in value.Subtypes)
 			{
-				emitter.Emit(new Scalar(null, null, subKey, ScalarStyle.Plain, true, false));
+				writer.WritePropertyName(subKey);
 				var joinedValue = subValue?.Values is { Count: > 0 } vals ? string.Join(", ", vals) : string.Empty;
-				emitter.Emit(new Scalar(null, null, joinedValue, ScalarStyle.Plain, true, false));
+				writer.WriteScalar(joinedValue);
 			}
 
-			emitter.Emit(new MappingEnd());
+			writer.WriteEndMapping();
 		}
 
-		emitter.Emit(new MappingEnd());
+		writer.WriteEndMapping();
 	}
 }

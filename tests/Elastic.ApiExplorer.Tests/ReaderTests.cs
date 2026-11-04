@@ -11,7 +11,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -21,7 +20,7 @@ public class ReaderTests
 	private static IFileInfo LocalSpecFile()
 	{
 		var fileSystem = new FileSystem();
-		var path = fileSystem.Path.Combine(Paths.WorkingDirectoryRoot.FullName, "docs", "elasticsearch.json");
+		var path = fileSystem.Path.Combine(AppContext.BaseDirectory, "TestData", "elasticsearch-openapi.json");
 		return fileSystem.FileInfo.New(path);
 	}
 
@@ -35,9 +34,9 @@ public class ReaderTests
 	}
 
 	[Test]
-	[Arguments("json", /*lang=json,strict*/  """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
+	[Arguments("json", /*lang=json,strict*/ """{"openapi":"3.1.0","info":{"title":"Test","version":"1.0"},"paths":{}}""")]
 	[Arguments("yaml", "openapi: 3.1.0\ninfo:\n  title: Test\n  version: 1.0\npaths: {}")]
-	[Arguments("json", /*lang=json,strict*/  """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
+	[Arguments("json", /*lang=json,strict*/ """{"swagger":"2.0","info":{"title":"Test","version":"1"},"paths":{},"host":"example.com","basePath":"/"}""")]
 	[Arguments("yaml", "swagger: \"2.0\"\ninfo:\n  title: Test\n  version: \"1\"\nhost: example.com\nbasePath: /\npaths: {}")]
 	public async Task ReadsStream(string extension, string specification)
 	{
@@ -70,9 +69,7 @@ public class ReaderTests
 	[Test]
 	[Arguments("not valid host")]
 	[Arguments("api{{prod.example.com")] // opening brace only — not a complete template placeholder
-
 	[Arguments("{{hostname}}suffix")] // does not end with }}
-
 	public async Task ReadsSwagger20WithInvalidHost_EmitsError(string host)
 	{
 		// Genuinely malformed hosts must remain hard errors. Only a host value that is itself
@@ -100,7 +97,24 @@ public class ReaderTests
 		var doc = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml");
 
 		doc.Should().NotBeNull("a quoted '2.0' YAML scalar must not be coerced to the JSON number 2");
-		doc!.Info.Title.Should().Be("QuotedVersion");
+		doc.Info.Title.Should().Be("QuotedVersion");
+	}
+
+	[Test]
+	public async Task ReadsYamlSpec_WithQuotedPathKeys()
+	{
+		// Quoted mapping keys ('/path/{id}') must reach Microsoft.OpenApi as the bare path, not as the
+		// quoted YAML representation, otherwise every path is rejected as "not a valid property".
+		const string yaml =
+			"openapi: 3.0.3\ninfo:\n  title: Quoted\n  version: '1'\npaths:\n  '/items/{item_id}':\n    get:\n      responses:\n        '200':\n          description: ok\n";
+		var stream = new MemoryStream(Encoding.UTF8.GetBytes(yaml));
+		var collector = new DiagnosticsCollector([]);
+
+		var document = await OpenApiReader.Instance.ReadAsync(stream, "spec.yaml", collector);
+
+		document.Should().NotBeNull();
+		document.Paths.Should().ContainKey("/items/{item_id}");
+		collector.Errors.Should().Be(0);
 	}
 
 	[Test]
@@ -120,7 +134,7 @@ public class ReaderTests
 		var document = await OpenApiReader.Instance.ReadAsync(fileInfo, collector);
 
 		document.Should().NotBeNull();
-		document!.Info.Title.Should().Be("Elastic Cloud Enterprise API");
+		document.Info.Title.Should().Be("Elastic Cloud Enterprise API");
 		document.Paths.Should().ContainKey("/account");
 		collector.Errors.Should().Be(0, "an invalid-host placeholder must not be treated as a hard error");
 		collector.Hints.Should().BeGreaterThan(0, "the invalid-host diagnostic must be emitted as a hint");
@@ -130,12 +144,7 @@ public class ReaderTests
 	public async Task Navigation()
 	{
 		var collector = new DiagnosticsCollector([]);
-		var configurationContext = TestHelpers.CreateConfigurationContext(new FileSystem());
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			configurationContext
-		);
+		var context = TestHelpers.CreateBuildContext(collector);
 		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, NoopMarkdownStringRenderer.Instance);
 
 		var openApiDocument = await OpenApiReader.Instance.ReadAsync(LocalSpecFile());

@@ -1,0 +1,106 @@
+/* The directive wraps a link that Markdown emits; style that link with the same tokens as .btn. */
+.button-directive {
+	display: flex;
+	margin-block: var(--space-4);
+}
+
+/* Explicit default: primary is the accent button. */
+.button-directive--primary a {
+	--btn-fg: var(--color-on-action);
+}
+
+.button-directive--left {
+	justify-content: flex-start;
+}
+
+.button-directive--center {
+	justify-content: center;
+}
+
+.button-directive--right {
+	justify-content: flex-end;
+}
+
+.button-directive a,
+.button-directive__item a {
+	--btn-fg: var(--color-on-action);
+	--btn-top: var(--color-action);
+	--btn-bottom: var(--color-action-deep);
+
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 2.75rem;
+	padding: 0 var(--space-5);
+	border: var(--border-width) solid var(--color-action-border);
+	border-radius: var(--radius-md);
+	background: linear-gradient(180deg, var(--btn-top), var(--btn-bottom));
+	box-shadow:
+		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 12%, transparent),
+		0 2px 0 var(--color-action-edge);
+	color: var(--btn-fg);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.button-directive a:hover,
+.button-directive__item a:hover {
+	--btn-top: var(--color-action-hover);
+	--btn-bottom: var(--color-action-hover-deep);
+}
+
+.button-directive--secondary a,
+.button-directive--secondary.button-directive__item a,
+.button-directive--neutral a,
+.button-directive--neutral.button-directive__item a {
+	--btn-fg: var(--color-heading);
+	--btn-top: var(--color-surface);
+	--btn-bottom: var(--color-surface-sunken);
+
+	border-color: var(--color-border-control);
+	box-shadow:
+		inset 0 1px 0 color-mix(in oklab, var(--btn-fg) 10%, transparent),
+		0 2px 0 var(--color-border-control);
+}
+
+.button-directive--secondary a:hover,
+.button-directive--neutral a:hover {
+	--btn-fg: var(--color-accent-hover);
+	--btn-top: var(--color-accent-surface);
+	--btn-bottom: var(--color-accent-border);
+}
+
+.button-directive__item {
+	display: inline-flex;
+	margin-right: var(--space-3);
+}
+
+.button-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	margin-block: var(--space-4);
+}
+
+.button-group--left {
+	justify-content: flex-start;
+}
+
+.button-group--center {
+	justify-content: center;
+}
+
+.button-group--right {
+	justify-content: flex-end;
+}
+
+/* Prose styles every link in an article; a button inside it keeps its own colour and has no underline. */
+.prose .button-directive a,
+.prose .button-directive__item a,
+.prose .button-directive a:hover,
+.prose .button-directive__item a:hover {
+	color: var(--btn-fg);
+	text-decoration: none;
+}

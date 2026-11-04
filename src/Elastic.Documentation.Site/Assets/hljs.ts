@@ -1,10 +1,10 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
 
 // highlight.js language modules and the esql plugin default-export the LanguageFn.
-// Parcel's dynamic import() resolves to the module's exports directly (the function),
-// whereas other bundlers/test runners (Babel/Jest) wrap it as a namespace with a
+// A bundler's dynamic import() can resolve to the module's exports directly (the function),
+// whereas test runners (test runners) wrap it as a namespace with a
 // `default`. Normalize both so registerLanguage always receives the function.
 export function toLanguageFn(mod: unknown): LanguageFn {
     const m = mod as { default?: LanguageFn }
@@ -23,9 +23,16 @@ function ensureHighlightReady(): Promise<void> {
             hljs.registerLanguage(name, languageFn)
         }
         hljs.registerAliases(['sh'], { languageName: 'shell' })
+        hljs.registerAliases(['fish'], { languageName: 'bash' })
+        hljs.registerAliases(['batch'], { languageName: 'dos' })
     })
 
     return allLanguagesReady
+}
+
+/** Starts loading the languages early; pages with code call this before the first init step runs. */
+export function preloadHighlight(): void {
+    void ensureHighlightReady()
 }
 
 export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
@@ -177,23 +184,20 @@ hljs.registerLanguage('console', function () {
         aliases: ['es-console'],
         contains: [
             {
-                className: 'meta',
+                // `starts` so the path is highlighted after the method, rather than inside a
+                // rule whose `begin` has already consumed it.
+                className: 'keyword',
                 begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
-                end: /$/,
-                contains: [
-                    {
-                        className: 'keyword',
-                        begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)/,
-                    },
-                    {
-                        className: 'string',
-                        begin: /\S+/,
-                    },
-                ],
+                starts: {
+                    end: /$/,
+                    contains: [{ className: 'string', begin: /\S+/ }],
+                },
             },
             {
                 begin: /\{/,
-                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)|$/,
+                // No `$`: highlight.js compiles regexes as multiline, so it would end the
+                // body after its first line. It runs to the next request or the end of the sample.
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)/,
                 subLanguage: 'json',
                 relevance: 0,
             },
@@ -203,6 +207,10 @@ hljs.registerLanguage('console', function () {
 
 // cURL samples: command, flags, HTTP methods, strings, line continuations
 hljs.registerLanguage('curl', function () {
+    const variable = {
+        className: 'variable',
+        begin: /\$(?:\{[^}\s"']*\}|[A-Za-z_]\w*)/,
+    }
     return {
         name: 'curl',
         contains: [
@@ -226,7 +234,16 @@ hljs.registerLanguage('curl', function () {
                 className: 'string',
                 begin: /"/,
                 end: /"/,
-                contains: [{ begin: /\\./ }],
+                contains: [{ begin: /\\./ }, variable],
+                relevance: 0,
+            },
+            {
+                // JSON request body, highlighted as JSON between the quotes
+                begin: /'(?=\s*[{[])/,
+                end: /'/,
+                subLanguage: 'json',
+                excludeBegin: true,
+                excludeEnd: true,
                 relevance: 0,
             },
             {
@@ -236,10 +253,7 @@ hljs.registerLanguage('curl', function () {
                 contains: [{ begin: /\\./ }],
                 relevance: 0,
             },
-            {
-                className: 'variable',
-                begin: /\$[A-Za-z_][\w]*/,
-            },
+            variable,
         ],
     }
 })

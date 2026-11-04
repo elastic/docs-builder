@@ -5,115 +5,165 @@
 using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Documentation.Configuration.Toc.DetectionRules;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
+using Elastic.Documentation.Diagnostics;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Toc;
 
-public class TocItemCollectionYamlConverter : IYamlTypeConverter
+public class TocItemCollectionYamlConverter(TocItemYamlConverter itemConverter) : YamlConverter<TableOfContents>
 {
-	public bool Accepts(Type type) => type == typeof(TableOfContents);
+	// Parameterless constructor required by the SharpYaml source generator for its static converter
+	// fallback field; the real instance (with the resolved ApplicableToYamlConverter) is always supplied
+	// via YamlSerializerOptions.Converters at runtime, which the generator consults first.
+	public TocItemCollectionYamlConverter() : this(new TocItemYamlConverter(new ApplicableToYamlConverter())) { }
 
-	public object ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	public override TableOfContents Read(YamlReader reader)
 	{
 		var collection = new TableOfContents();
 
-		if (!parser.TryConsume<SequenceStart>(out _))
-			return collection;
-
-		while (!parser.TryConsume<SequenceEnd>(out _))
+		if (reader.TokenType != YamlTokenType.StartSequence)
 		{
-			var item = rootDeserializer(typeof(ITableOfContentsItem));
-			if (item is ITableOfContentsItem tocItem)
-				collection.Add(tocItem);
+			reader.Skip();
+			return collection;
 		}
+
+		_ = reader.Read(); // consume StartSequence
+
+		while (reader.TokenType != YamlTokenType.EndSequence)
+		{
+			var item = itemConverter.Read(reader);
+			if (item is not null)
+				collection.Add(item);
+		}
+		_ = reader.Read(); // consume EndSequence
 
 		return collection;
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, TableOfContents value) =>
+		throw new NotSupportedException("TableOfContents YAML serialization is not supported; toc.yml is only ever read from YAML.");
 }
 
-public class TocItemYamlConverter : IYamlTypeConverter
+public class TocItemYamlConverter(ApplicableToYamlConverter appliesToConverter) : YamlConverter<ITableOfContentsItem>
 {
-	public bool Accepts(Type type) => type == typeof(ITableOfContentsItem);
+	// Parameterless constructor required by the SharpYaml source generator for its static converter
+	// fallback field; the real instance is always supplied via YamlSerializerOptions.Converters at
+	// runtime, which the generator consults first.
+	public TocItemYamlConverter() : this(new ApplicableToYamlConverter()) { }
 
-	public object? ReadYaml(IParser parser, Type type, ObjectDeserializer rootDeserializer)
+	private static readonly string[] KnownKeys =
+	[
+		"file",
+		"folder",
+		"hidden",
+		"toc",
+		"crosslink",
+		"children",
+		"sort",
+		"exclude",
+		"default_cta",
+		"listing",
+		"glob",
+		"extension",
+		"groups",
+		"visual",
+		"island",
+		"cli",
+		"title",
+		"navigation_title",
+		"applies_to",
+		"detection_rules",
+		"deprecated_file",
+		"deprecated_detection_rules"
+	];
+
+	public override ITableOfContentsItem? Read(YamlReader reader)
 	{
-		if (!parser.TryConsume<MappingStart>(out _))
+		if (reader.TokenType != YamlTokenType.StartMapping)
 		{
 			// A bare scalar (e.g. "- toc.yml") is not a valid toc entry. Consume the token so
-			// TocItemCollectionYamlConverter's while-loop can advance past it; return a sentinel
+			// the collection converter's while-loop can advance past it; return a sentinel
 			// so the resolver can emit a clear diagnostic instead of silently dropping the entry.
-			if (parser.Accept<Scalar>(out var scalar))
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				_ = parser.MoveNext();
-				return new InvalidTocItemRef(scalar.Value);
+				var scalarValue = reader.ScalarValue ?? string.Empty;
+				_ = reader.Read();
+				return new InvalidTocItemRef(scalarValue);
 			}
 			// Anything else unexpected — skip to avoid an infinite loop.
-			parser.SkipThisAndNestedEvents();
+			reader.Skip();
 			return null;
 		}
 
+		_ = reader.Read(); // consume StartMapping
 		var dictionary = new Dictionary<string, object?>();
 
-		while (!parser.TryConsume<MappingEnd>(out _))
+		while (reader.TokenType != YamlTokenType.EndMapping)
 		{
-			var key = parser.Consume<Scalar>();
+			var key = reader.GetScalarValue();
+			_ = reader.Read();
+
+			if (!KnownKeys.Contains(key))
+			{
+				reader.SkipOrReportUnmapped(typeof(ITableOfContentsItem), KnownKeys, key, null);
+				continue;
+			}
 
 			// Parse the value based on what type it is
 			object? value = null;
-			if (parser.Accept<Scalar>(out var scalarValue))
+			if (reader.TokenType == YamlTokenType.Scalar)
 			{
-				value = scalarValue.Value;
-				_ = parser.MoveNext();
+				value = reader.ScalarValue;
+				_ = reader.Read();
 			}
-			else if (parser.Accept<SequenceStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartSequence)
 			{
 				// This is a list - parse it manually for "children"
-				if (key.Value == "children")
+				if (key == "children")
 				{
 					// Parse the children list manually
 					var childrenList = new List<ITableOfContentsItem>();
-					_ = parser.Consume<SequenceStart>();
-					while (!parser.TryConsume<SequenceEnd>(out _))
+					_ = reader.Read(); // consume StartSequence
+					while (reader.TokenType != YamlTokenType.EndSequence)
 					{
-						var child = rootDeserializer(typeof(ITableOfContentsItem));
-						if (child is ITableOfContentsItem tocItem)
-							childrenList.Add(tocItem);
+						var child = Read(reader);
+						if (child is not null)
+							childrenList.Add(child);
 					}
+					_ = reader.Read(); // consume EndSequence
 					value = childrenList;
 				}
-				else if (key.Value is "detection_rules" or "exclude" or "deprecated_detection_rules" or "groups")
+				else if (key is "detection_rules" or "exclude" or "deprecated_detection_rules" or "groups")
 				{
 					// Parse the children list manually
 					var childrenList = new List<string>();
-					_ = parser.Consume<SequenceStart>();
-					while (!parser.TryConsume<SequenceEnd>(out _))
+					_ = reader.Read(); // consume StartSequence
+					while (reader.TokenType != YamlTokenType.EndSequence)
 					{
-						if (parser.Accept<Scalar>(out scalarValue))
-							childrenList.Add(scalarValue.Value);
-						_ = parser.MoveNext();
+						if (reader.TokenType == YamlTokenType.Scalar)
+							childrenList.Add(reader.ScalarValue ?? string.Empty);
+						_ = reader.Read();
 					}
+					_ = reader.Read(); // consume EndSequence
 					value = childrenList.ToArray();
 				}
 				else
 				{
 					// For other lists, just skip them
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 				}
 			}
-			else if (parser.Accept<MappingStart>(out _))
+			else if (reader.TokenType == YamlTokenType.StartMapping)
 			{
-				if (key.Value == "applies_to")
-					value = rootDeserializer(typeof(ApplicableTo));
+				if (key == "applies_to")
+					value = appliesToConverter.Read(reader);
 				else
-					parser.SkipThisAndNestedEvents();
+					reader.Skip();
 			}
 
-			dictionary[key.Value] = value;
+			dictionary[key] = value;
 		}
+		_ = reader.Read(); // consume EndMapping
 
 		var children = GetChildren(dictionary);
 
@@ -282,5 +332,6 @@ public class TocItemYamlConverter : IYamlTypeConverter
 		return [];
 	}
 
-	public void WriteYaml(IEmitter emitter, object? value, Type type, ObjectSerializer serializer) => serializer.Invoke(value, type);
+	public override void Write(YamlWriter writer, ITableOfContentsItem value) =>
+		throw new NotSupportedException("Table of contents items are only ever read from YAML.");
 }

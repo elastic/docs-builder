@@ -689,7 +689,6 @@ public class GitHubReleaseServiceFetchPreviousTagTests() : ChangelogTestBase()
 			page2Attempts++;
 			return page2Attempts < 4
 				? new HttpResponseMessage(HttpStatusCode.BadGateway) // first 3 attempts fail
-
 				: Json(ReleasesJson(page2Tags)); // 4th attempt succeeds
 		});
 

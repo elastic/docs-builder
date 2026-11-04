@@ -5,6 +5,15 @@
 }
 <div class="@highlightGroupClass notranslate"@lineNumbersAttr>
 	<div class="highlight">
+@if (Model.LineNumbers)
+{
+	@* The gutter is part of the page, not added by script after the first paint: the code does not jump
+	   sideways when the numbers arrive. Same count rule as countLines in code-line-numbers.ts. *@
+	<div class="code-lines"><div class="code-line-gutter" aria-hidden="true">@string.Join("\n", Enumerable.Range(1, ApiCodeBlockModel.LineCount(Model.Source)))</div><pre><code class="@Model.HighlightClass">@Model.Source</code></pre></div>
+}
+else
+{
 		<pre><code class="@Model.HighlightClass">@Model.Source</code></pre>
+}
 	</div>
 </div>

@@ -4,7 +4,7 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Documentation.Configuration.Tests;
 

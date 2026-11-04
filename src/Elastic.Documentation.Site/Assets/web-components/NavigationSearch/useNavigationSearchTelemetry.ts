@@ -12,6 +12,7 @@ import {
     ATTR_NAVIGATION_SEARCH_RESULT_URL,
     ATTR_NAVIGATION_SEARCH_RESULT_POSITION,
     ATTR_NAVIGATION_SEARCH_RESULT_SCORE,
+    ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR,
     ATTR_NAVIGATION_SEARCH_TRIGGER,
     ATTR_NAVIGATION_SEARCH_CLOSE_REASON,
     ATTR_NAVIGATION_SEARCH_HAD_RESULTS,
@@ -26,13 +27,14 @@ import {
 import { type TypeFilter } from './useNavigationSearchQuery'
 import { useCallback } from 'react'
 
-export type NavigationSearchTrigger = 'keyboard_shortcut' | 'focus' | 'click'
+export type NavigationSearchTrigger = 'focus' | 'click'
 export type NavigationSearchCloseReason =
     'escape' | 'blur' | 'navigate' | 'clear'
 export type NavigationMethod = 'keyboard' | 'mouse'
 export type NavigationDirection = 'up' | 'down'
 
 interface ResultClickParams {
+    anchor?: string
     query: string
     position: number
     url: string
@@ -96,12 +98,15 @@ export const useNavigationSearchTelemetry = (
     )
 
     const trackResultClicked = useCallback(
-        ({ query, position, url, score }: ResultClickParams) => {
+        ({ query, position, url, score, anchor }: ResultClickParams) => {
             logInfo('navigation_search_result_clicked', {
                 [ATTR_NAVIGATION_SEARCH_QUERY]: query,
                 [ATTR_NAVIGATION_SEARCH_RESULT_POSITION]: position,
                 [ATTR_NAVIGATION_SEARCH_RESULT_URL]: url,
                 [ATTR_NAVIGATION_SEARCH_RESULT_SCORE]: score,
+                ...(anchor
+                    ? { [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: anchor }
+                    : {}),
                 ...(surface
                     ? { [ATTR_NAVIGATION_SEARCH_SURFACE]: surface }
                     : {}),

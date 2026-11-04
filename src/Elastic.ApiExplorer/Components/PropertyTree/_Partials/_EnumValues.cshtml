@@ -13,7 +13,7 @@
 	}
 	@if (Model.Folded.Count > 0)
 	{
-		<span class="enum-values-folded" hidden="until-found">
+		<span class="enum-values-folded" hidden="until-found" role="group" tabindex="0" aria-label="@Model.Folded.Count more values">
 			@foreach (var enumVal in Model.Folded)
 			{
 				<code class="enum-value">@enumVal</code>

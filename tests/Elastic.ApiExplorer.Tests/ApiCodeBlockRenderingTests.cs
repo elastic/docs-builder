@@ -6,6 +6,8 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Operations._Partials;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -36,38 +38,57 @@ public class ApiCodeBlockRenderingTests
 	}
 
 	[Test]
-	public async Task Render_CodeSample_ExposesCardActionsAndPanels()
+	public async Task Render_CodeSample_ExposesCardActions()
 	{
-		var samples = new[]
-		{
-			new CodeSample("Console", "GET /", "language-console"),
-			new CodeSample("Python", "client.get()", "language-python")
-		};
-
-		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-x", samples)).RenderAsync(cancellationToken: Ct);
+		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel(new CodeSample("JSON", "{}", "language-json"))).RenderAsync(
+			cancellationToken: Ct
+		);
 
 		html.Should().Contain("data-code-card");
 		html.Should().Contain("data-code-actions");
-		html.Should().Contain("data-code-panel=\"Console\"");
-		html.Should().Contain("data-code-panel=\"Python\"");
 		html.Should().Contain("data-line-numbers");
 	}
 
 	[Test]
-	public async Task Render_CodeSample_GivesEachPanelItsOwnHighlightLanguage()
+	public async Task Render_Carousel_GivesEachCardItsOwnHighlightLanguage()
 	{
-		var samples = new[]
+		var scenario = new ExampleScenario
 		{
-			new CodeSample("Console", "GET /", CodeSample.GetHighlightClass("Console")),
-			new CodeSample("Python", "client.get()", CodeSample.GetHighlightClass("Python")),
-			new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
+			Title = "Example",
+			TabId = "example",
+			CodeSamples =
+			[
+				new CodeSample("Console", "GET /", CodeSample.GetHighlightClass("Console")),
+				new CodeSample("Python", "client.get()", CodeSample.GetHighlightClass("Python")),
+				new CodeSample("curl", "curl localhost", CodeSample.GetHighlightClass("curl"))
+			]
 		};
 
-		var html = await _ApiCodeSample.Create(new ApiCodeSampleModel("rail-x", samples)).RenderAsync(cancellationToken: Ct);
+		var html = await _ExampleScenarioContent.Create(scenario).RenderAsync(cancellationToken: Ct);
 
 		html.Should().Contain("<code class=\"language-console\">");
 		html.Should().Contain("<code class=\"language-python\">");
 		html.Should().Contain("<code class=\"language-curl\">");
 		html.Should().Contain("class=\"highlight-python notranslate\"");
 	}
+
+	[Test]
+	public async Task Render_LineNumbers_PutsTheGutterInTheMarkup()
+	{
+		var html = await _ApiCodeBlock.Create(new ApiCodeBlockModel("language-json", "{\n  \"a\": 1\n}\n", LineNumbers: true)).RenderAsync(
+			cancellationToken: Ct
+		);
+
+		html.Should().Contain(
+			"<div class=\"code-lines\"><div class=\"code-line-gutter\" aria-hidden=\"true\">1&#xA;2&#xA;3</div><pre><code class=\"language-json\">"
+		);
+	}
+
+	[Test]
+	[Arguments("", 1)]
+	[Arguments("one", 1)]
+	[Arguments("one\n", 1)]
+	[Arguments("one\n\n", 2)]
+	[Arguments("a\r\nb\r\nc", 3)]
+	public void LineCount_MatchesTheGutterRule(string source, int expected) => ApiCodeBlockModel.LineCount(source).Should().Be(expected);
 }

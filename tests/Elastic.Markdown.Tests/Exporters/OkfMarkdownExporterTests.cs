@@ -6,7 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Navigation;
 using Elastic.Markdown;
 using Elastic.Markdown.Exporters;
-using YamlDotNet.Serialization;
+using SharpYaml;
 
 namespace Elastic.Markdown.Tests.Exporters;
 
@@ -348,7 +348,7 @@ public class OkfMarkdownExporterTests
 		var lines = rendered.Split('\n');
 		lines.First().Should().Be("---");
 		var body = string.Join('\n', lines.Skip(1).TakeWhile(l => l != "---"));
-		return new DeserializerBuilder().Build().Deserialize<Dictionary<string, object>>(body);
+		return YamlSerializer.Deserialize<Dictionary<string, object>>(body) ?? [];
 	}
 
 	private sealed class FakeNavigationModel : INavigationModel;

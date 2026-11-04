@@ -21,10 +21,16 @@ jobs:
       - id: metadata
         uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
 
-      # For grouped PRs update-type is the highest across the group, so this only
-      # matches PRs where every dependency is a patch bump.
-      - name: Approve and enable auto-merge for patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      # For grouped PRs update-type is the highest across the group, so a PR with any
+      # major bump never matches. Patch bumps merge for every ecosystem; minor bumps
+      # only for npm, NuGet and GitHub Actions. Auto-merge waits for required checks.
+      - name: Approve and enable auto-merge for patch and selected minor updates
+        if: >-
+          steps.metadata.outputs.update-type == 'version-update:semver-patch'
+          || (
+            steps.metadata.outputs.update-type == 'version-update:semver-minor'
+            && contains(fromJSON('["npm_and_yarn", "nuget", "github_actions"]'), steps.metadata.outputs.package-ecosystem)
+          )
         run: |
           gh pr review --approve "$PR_URL"
           gh pr merge --auto --squash "$PR_URL"
