@@ -29,9 +29,9 @@ The everyday tasks:
 
 `./build.sh` and `./dev.sh` still work. The mise tasks call the same build project and scripts.
 
-### Docker, without local installs (`mise run isolated`)
+### Docker, without local installs (`./dev.sh`)
 
-If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite. It is not the primary development interface: use it when you don't want to install anything. `mise run isolated -- <command>` runs `./dev.sh <command>`:
+If you only need to validate rendering or authoring changes, the Docker setup removes the .NET/Node prerequisite. It is not the primary development interface: use it when you don't want to install anything. Run `./dev.sh <command>` directly: `mise run` would install the native .NET and Node toolchain first, which this route avoids.
 
 ```bash
 ./dev.sh build            # build images (once, or after Dockerfile changes)

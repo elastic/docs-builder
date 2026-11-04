@@ -125,9 +125,3 @@ description = "Frontend TypeScript type check"
 depends = ["site:install"]
 dir = "src/Elastic.Documentation.Site"
 run = "npm run compile:check"
-
-# ---- Docker ----
-
-[tasks.isolated]
-description = "Docker route (./dev.sh) for working without local installs, not the primary dev interface. No args prints its help"
-run = "./dev.sh"

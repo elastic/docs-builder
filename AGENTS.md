@@ -33,7 +33,7 @@ mise run lint                                   # C# format check (read-only)
 mise run fmt                                    # auto-fix C# formatting
 mise run clean                                  # remove .artifacts/
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
-mise run isolated -- <dev.sh command>           # Docker route, no local installs (see CONTRIBUTING.md)
+./dev.sh <command>                                  # Docker route, no local installs (see CONTRIBUTING.md)
 ```
 
 **CLI changes:** after editing `src/tooling/docs-builder/Commands/`, regenerate `docs/cli-schema.json`:
