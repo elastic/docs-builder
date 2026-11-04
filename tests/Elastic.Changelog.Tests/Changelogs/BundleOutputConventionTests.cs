@@ -83,7 +83,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 					"{repo}-{product}-{version}.yaml"
 				)
 			);
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml")).Should().BeTrue();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Test]
@@ -113,7 +113,7 @@ public class BundleOutputConventionTests() : ChangelogTestBase()
 			.Diagnostics
 			.Should()
 			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("bundle.profiles.legacy.output is deprecated"));
-		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch-9.3.0.yaml")).Should().BeTrue();
+		FileSystem.File.Exists(FileSystem.Path.Join(_changelogDir, "elasticsearch", "elasticsearch-9.3.0.yaml")).Should().BeTrue();
 	}
 
 	[Test]
