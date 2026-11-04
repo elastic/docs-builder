@@ -27,7 +27,7 @@ import {
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useMemo } from 'react'
 
 interface Props {
     placeholder?: string
@@ -59,14 +59,29 @@ export const NavigationSearch = ({
     const hasContent = !!searchTerm.trim()
     const isSearching = isLoading || isFetching
 
-    const handleResultClick = () => {
-        // Track navigation close (actual click tracking is in SearchResultsList)
-        trackClosed({
-            reason: 'navigate',
-            query: searchTerm,
-            hadResults: groups.length > 0,
-            hadSelection: selectedIndex >= 0,
-        })
+    // Mirrors isPopoverOpen so a blur that fires before React re-renders sees the popover already closed.
+    const isOpenRef = useRef(false)
+    const setOpen = (open: boolean) => {
+        isOpenRef.current = open
+        setIsPopoverOpen(open)
+    }
+
+    const close = (reason: 'navigate' | 'escape' | 'blur') => {
+        if (isOpenRef.current) {
+            trackClosed({
+                reason,
+                query: searchTerm,
+                hadResults: groups.length > 0,
+                hadSelection: selectedIndex >= 0,
+            })
+        }
+        setOpen(false)
+    }
+
+    const handleResultClick = (opensElsewhere = false) => {
+        if (opensElsewhere) return
+        close('navigate')
+        inputRef.current?.blur()
     }
 
     const {
@@ -77,8 +92,8 @@ export const NavigationSearch = ({
     } = useNavigationSearchKeyboardNavigation({
         resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
-        onClose: () => setIsPopoverOpen(false),
-        onNavigate: handleResultClick,
+        onClose: () => setOpen(false),
+        onNavigate: () => handleResultClick(),
         typeFilter,
     })
 
@@ -90,20 +105,14 @@ export const NavigationSearch = ({
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value
         setSearchTerm(value)
-        setIsPopoverOpen(!!value.trim())
+        setOpen(!!value.trim())
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Escape') {
             e.preventDefault()
-            trackClosed({
-                reason: 'escape',
-                query: searchTerm,
-                hadResults: groups.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
+            close('escape')
             setSearchTerm('')
-            setIsPopoverOpen(false)
             // After the re-render, so handleBlur doesn't log a second close for the same Escape.
             if (isApi) {
                 queueMicrotask(() => inputRef.current?.blur())
@@ -123,35 +132,17 @@ export const NavigationSearch = ({
             // Focus is moving inside the popover, don't close
             return
         }
-        if (isPopoverOpen) {
-            trackClosed({
-                reason: 'blur',
-                query: searchTerm,
-                hadResults: groups.length > 0,
-                hadSelection: selectedIndex >= 0,
-            })
-        }
-        setIsPopoverOpen(false)
+        close('blur')
     }
-
-    // Close after the swap, not before: the clicked result link must stay
-    // mounted so htmx can still read the body's inherited hx-swap and hx-select.
-    useEffect(() => {
-        const handleAfterSwap = () => {
-            setIsPopoverOpen(false)
-            inputRef.current?.blur()
-        }
-        document.addEventListener('htmx:afterSwap', handleAfterSwap)
-        return () =>
-            document.removeEventListener('htmx:afterSwap', handleAfterSwap)
-    }, [inputRef])
 
     return (
         <EuiInputPopover
             isOpen={hasContent}
-            closePopover={() => setIsPopoverOpen(false)}
+            closePopover={() => setOpen(false)}
             ownFocus={false}
             anchorPosition="downLeft"
+            // The panel stays mounted while hidden; an anchor jump scrolls the page under it.
+            repositionOnScroll
             disableFocusTrap={true}
             panelMinWidth={isMobile ? undefined : 640}
             panelPaddingSize="none"
@@ -179,7 +170,7 @@ export const NavigationSearch = ({
                         onFocus={() => {
                             trackOpened('focus')
                             if (hasContent) {
-                                setIsPopoverOpen(true)
+                                setOpen(true)
                             }
                         }}
                         onBlur={handleBlur}

@@ -51,4 +51,8 @@ public class DocumentHashTests
 	[Test]
 	public void DocumentHash_PropertyAdded_ChangesTheHash() =>
 		Hash(Operation(Property("knn"))).Should().NotBe(Hash(Operation(Property("knn"), Property("size"))));
+
+	[Test]
+	public void DocumentHash_ParentChanges_ChangesTheHash() =>
+		Hash(Operation(Property("knn.field") with { Parent = "knn" })).Should().NotBe(Hash(Operation(Property("knn.field"))));
 }

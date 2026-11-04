@@ -22,6 +22,7 @@ public static class QueryFieldNames
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
+	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
 	public static string ApiPropertiesPathMatch { get; } = $"{ApiProperties}.path.match";
 	public static string PathKeyword { get; } = $"{Doc.Fields.Path}.keyword";
 	public static string PathMatch { get; } = $"{Doc.Fields.Path}.match";

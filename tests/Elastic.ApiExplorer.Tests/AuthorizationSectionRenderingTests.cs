@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Operations._Partials;
 using Microsoft.AspNetCore.Html;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 
 namespace Elastic.ApiExplorer.Tests;
@@ -54,10 +55,8 @@ public class AuthorizationSectionRenderingTests
 			new AuthRequirement([Scheme("bearer", "Bearer", "Authorization: Bearer <token>")])
 		);
 
-		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-0\">Basic &#x2B; Api key</label>");
-		html.Should().Contain("<label class=\"tabs-label\" for=\"authentication-tab-1\">Bearer</label>");
+		html.Should().MatchHtmlSnapshot();
 		html.Should().Contain("Send all of these together.");
-		html.Should().Contain("<h3>Basic</h3>").And.Contain("<h3>Api key</h3>");
 	}
 
 	[Test]
@@ -68,11 +67,8 @@ public class AuthorizationSectionRenderingTests
 			Scheme("key", "Api key", "X-Key: <value>")
 		]));
 
-		html.Should().NotContain("api-tabs");
-		html.Should().NotContain("tabs-label");
-		html.Should().Contain("Send all of these together.");
-		html.Should().Contain("<h3>Basic</h3>").And.Contain("<h3>Api key</h3>");
-		html.Should().Contain("Authorization: Basic &lt;credentials&gt;").And.Contain("X-Key: &lt;value&gt;");
+		html.Should().MatchHtmlSnapshot();
+		html.Should().NotContain("api-tabs", "a single requirement needs no tabs");
 	}
 
 	[Test]
@@ -80,16 +76,8 @@ public class AuthorizationSectionRenderingTests
 	{
 		var html = await RenderPrivileges(new PrivilegeRow("Privileges", ["integrations-all", "fleet-agent-policies-all"], "and"));
 
-		html.Should().Contain("data-param-section");
-		html.Should().Contain("id=\"required-privileges\"");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"integrations-all\"></code>");
-		html.Should().Contain("<code class=\"api-param-summary-item\" data-name=\"fleet-agent-policies-all\"></code>");
-		html.Should().Contain("api-param-summary is-all");
-		html.Should().Contain("id=\"required-privileges-list\"");
-		html.Should().Contain("id=\"required-privileges-list\">", "the body has no hidden attribute, so it shows on load");
-		html.Should().NotContain("id=\"required-privileges-list\" hidden");
-		html.Should().MatchRegex("aria-expanded=\"true\"\\s+aria-controls=\"required-privileges-list\"");
-		html.Should().Contain("<span class=\"api-type-badge\">integrations-all</span>", "the rows are still listed in the body");
+		html.Should().MatchHtmlSnapshot();
+		html.Should().NotContain("id=\"required-privileges-list\" hidden", "the body has no hidden attribute, so it shows on load");
 	}
 
 	[Test]

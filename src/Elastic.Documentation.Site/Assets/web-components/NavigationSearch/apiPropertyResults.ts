@@ -13,6 +13,14 @@ export const ApiPropertyResult = z.object({
 
 export type ApiPropertyResult = z.infer<typeof ApiPropertyResult>
 
+export const LOCATION_LABELS: Record<ApiPropertyResult['location'], string> = {
+    path: 'path',
+    query: 'query',
+    header: 'header',
+    request: 'request body',
+    response: 'response body',
+}
+
 export const ApiRoute = z.object({
     path: z.string(),
     methods: z.array(z.string()),
@@ -63,8 +71,9 @@ export const fieldSearchTerms = (searchTerm: string) => {
 
 /**
  * The query words that can name a path, and the one route to show for them: the route whose whole
- * path is a query word, else the first route in page order whose path contains one. Routes arrive
- * with the page's primary route first, so that one wins among the partial matches.
+ * path is a query word, else the first route in page order whose path contains one, else the
+ * page's primary route, which no query word named and so highlights nothing. Routes arrive with
+ * the page's primary route first, so that one wins among the partial matches.
  */
 export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const all = words(searchTerm)
@@ -75,12 +84,10 @@ export const primaryRoute = (routes: ApiRoute[], searchTerm: string) => {
     const containing = routes.filter((route) =>
         tokens.some((token) => pathKey(route.path).includes(token))
     )
-    return {
-        tokens,
-        route:
-            containing.find((route) => tokens.includes(pathKey(route.path))) ??
-            containing[0],
-    }
+    const named =
+        containing.find((route) => tokens.includes(pathKey(route.path))) ??
+        containing[0]
+    return named ? { tokens, route: named } : { tokens: [], route: routes[0] }
 }
 
 export const GO_TO_LABELS = {
@@ -93,8 +100,6 @@ export interface PropertyRow {
     property: ApiPropertyResult
     /** Position among every navigable row; the keyboard selection index. */
     index: number
-    /** Set when the same path appears in two locations, so the row says which one it is. */
-    showLocation: boolean
 }
 
 export interface ResultGroup {
@@ -122,11 +127,6 @@ export const groupSearchResults = (
         group.properties = properties.map((property) => ({
             property,
             index: index++,
-            showLocation: properties.some(
-                (other) =>
-                    other.path === property.path &&
-                    other.location !== property.location
-            ),
         }))
         return group
     })
