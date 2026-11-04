@@ -23,10 +23,26 @@ public partial class OperationHeadingLevelTests(ApiExplorerFixture fixture)
 			.Select(match => match.Groups[1].Value)
 			.Should()
 			.Equal("h1", "h2", "h2", "h2", "h2", "h2", "h2", "h3");
+	}
 
-		// Snapshot the operation content only. The page chrome around it embeds the frontend bundle name and the
-		// CI git branch, commit and ref, which differ on every build.
-		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("main#content-container"));
+	[Test]
+	public async Task Render_SearchOperation_PathParameters() => await SnapshotSectionBodyAsync("path-params-list");
+
+	[Test]
+	public async Task Render_SearchOperation_QueryParameters() => await SnapshotSectionBodyAsync("query-params-list");
+
+	[Test]
+	public async Task Render_SearchOperation_RequestBody() => await SnapshotSectionBodyAsync("request-body-list");
+
+	// One snapshot per section body, so a markup change shows up in the section it touches and not in a whole page.
+	// The page chrome around them embeds the frontend bundle name and the CI git branch, commit and ref. The applicability
+	// popovers carry a data payload (product text, availability) that changes without any change to this markup, so it is left out.
+	private async Task SnapshotSectionBodyAsync(string bodyId)
+	{
+		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
+		var html = await fixture.RenderAsync(nav);
+
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select($"#{bodyId}").RemoveAttributes("popover-data"));
 	}
 
 	[GeneratedRegex("<(h[1-6])\\b")]
