@@ -21,7 +21,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_OperationWithXState_ShowsAppliesToBadgeInTitleBadges()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		Slice(html, "<h1>", "</h1>").Should().Be("<h1>Run a search");
 		var badges = Slice(html, "<span class=\"api-title-badges\">", "</applies-to-popover>");
@@ -37,7 +37,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_PropertyWithXState_ShowsInlineAppliesToBadge()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "search");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		var property = Slice(html, "<dt id=\"req-legacy_size\"", "</dt>");
 		property.Should().Contain("<span class=\"applies applies-inline\">");
@@ -49,7 +49,7 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 	public async Task Render_OperationWithoutXState_OmitsStateBadge()
 	{
 		var nav = fixture.Walk().OfType<OperationNavigationItem>().First(n => n.Model.Operation.OperationId == "docs-get");
-		var html = await RenderAsync(nav);
+		var html = await fixture.RenderAsync(nav);
 
 		html.Should().Contain("Get a document by id");
 		html.Should().NotContain("applies-to-popover");
@@ -68,22 +68,6 @@ public class OperationStateBadgeRenderingTests(ApiExplorerFixture fixture)
 		};
 
 		OpenApiExtensionReader.GetState(operation.Extensions).Should().Be(expected);
-	}
-
-	private async Task<string> RenderAsync(OperationNavigationItem nav)
-	{
-		var renderContext = new ApiRenderContext(
-			fixture.Context,
-			fixture.Document,
-			new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context))
-		)
-		{ NavigationHtml = string.Empty, CurrentNavigation = nav, MarkdownRenderer = PassthroughMarkdownRenderer.Instance };
-
-		var fs = new MockFileSystem();
-		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
-			await nav.Model.RenderAsync(stream, renderContext, null, TestContext.Current!.Execution.CancellationToken);
-
-		return fs.File.ReadAllText("/out.html");
 	}
 
 	private static string Slice(string html, string startMarker, string endMarker)

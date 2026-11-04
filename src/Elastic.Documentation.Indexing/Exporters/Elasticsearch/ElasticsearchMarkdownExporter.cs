@@ -139,6 +139,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
 		{
+			ForceReindex = _endpoint.ForceReindex,
 			ConfigurePrimary = opts => ConfigureChannelOptions("primary", opts),
 			ConfigureSecondary = opts => ConfigureChannelOptions("secondary", opts),
 			OnPostComplete = _aiEnrichment is not null ? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct) : null,
