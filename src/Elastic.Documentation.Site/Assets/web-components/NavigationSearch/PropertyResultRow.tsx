@@ -8,11 +8,29 @@ import {
 } from './apiPropertyResults'
 import {
     EuiHighlight,
-    EuiIcon,
     useEuiTheme,
     useIsWithinMaxBreakpoint,
 } from '@elastic/eui'
 import { css } from '@emotion/react'
+
+/** Braces drawn as strokes; EUI's tokenObject is a filled token glyph that blurs at this size. */
+const FieldIcon = () => (
+    <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="M6 2.5C4.6 2.5 4.2 3.2 4.2 4.4v1.2c0 1-.5 1.9-1.7 2.4 1.2.5 1.7 1.4 1.7 2.4v1.2c0 1.2.4 1.9 1.8 1.9M10 2.5c1.4 0 1.8.7 1.8 1.9v1.2c0 1 .5 1.9 1.7 2.4-1.2.5-1.7 1.4-1.7 2.4v1.2c0 1.2-.4 1.9-1.8 1.9" />
+    </svg>
+)
+
+/** The page's tooltips show after 80ms; a mouse crossing result rows would open one on every row. */
+const TOOLTIP_DELAY = '[500, 0]'
 
 export const PropertyResultRow = ({
     property,
@@ -169,6 +187,25 @@ export const PropertyResultRow = ({
                 }
                 &:hover:not([data-keyboard-navigating='true']) {
                     background: ${euiTheme.colors.backgroundBaseHighlighted};
+
+                    .property-path,
+                    .property-path strong {
+                        color: ${euiTheme.colors.link};
+                    }
+
+                    .property-path {
+                        text-decoration: underline;
+                    }
+                }
+                &[data-selected='true'] {
+                    .property-path,
+                    .property-path strong {
+                        color: ${euiTheme.colors.link};
+                    }
+
+                    .property-path {
+                        text-decoration: underline;
+                    }
                 }
                 &:focus-visible {
                     outline: 2px solid ${euiTheme.colors.primary};
@@ -177,13 +214,14 @@ export const PropertyResultRow = ({
             `}
         >
             <span className="property-icon" aria-hidden="true">
-                <EuiIcon type="tokenObject" size="m" />
+                <FieldIcon />
             </span>
             <span className="property-body">
                 <span className="property-path-line">
                     <code
                         className="property-path"
                         data-tippy-content={property.path}
+                        data-tippy-delay={TOOLTIP_DELAY}
                         data-tippy-theme="mono"
                     >
                         <bdi>
@@ -205,6 +243,7 @@ export const PropertyResultRow = ({
                     <code
                         className="property-type"
                         data-tippy-content={property.type}
+                        data-tippy-delay={TOOLTIP_DELAY}
                         data-tippy-theme="mono"
                     >
                         {property.type}
@@ -212,6 +251,7 @@ export const PropertyResultRow = ({
                     <span
                         className="property-description"
                         data-tippy-content={property.description || undefined}
+                        data-tippy-delay={TOOLTIP_DELAY}
                     >
                         {property.description}
                     </span>
@@ -220,6 +260,7 @@ export const PropertyResultRow = ({
                     <span
                         className="property-children"
                         data-tippy-content={childLabels.join(', ')}
+                        data-tippy-delay={TOOLTIP_DELAY}
                         data-tippy-theme="mono"
                     >
                         {childLabels.join(' ')}

@@ -2,7 +2,12 @@ import { renderWithProviders } from '../../test-utils/render'
 import { PropertyResultRow } from './PropertyResultRow'
 import { screen } from '@testing-library/react'
 
-const renderRow = (searchTerm: string, path: string, showLocation = false) =>
+const renderRow = (
+    searchTerm: string,
+    path: string,
+    showLocation = false,
+    isSelected = false
+) =>
     renderWithProviders(
         <PropertyResultRow
             property={{
@@ -18,13 +23,27 @@ const renderRow = (searchTerm: string, path: string, showLocation = false) =>
             searchTerm={searchTerm}
             showLocation={showLocation}
             index={1}
-            isSelected={false}
+            isSelected={isSelected}
             isKeyboardNavigating={false}
             onMouseEnter={vi.fn()}
             onMouseMove={vi.fn()}
             onClick={vi.fn()}
         />
     )
+
+it('underlines the path when the row is selected', () => {
+    const path = (row: HTMLElement) =>
+        row.querySelector('.property-path') as HTMLElement
+    const { unmount } = renderRow('knn', 'retriever.knn', false, true)
+    expect(
+        getComputedStyle(path(screen.getByRole('link'))).textDecoration
+    ).toContain('underline')
+    unmount()
+    renderRow('knn', 'retriever.knn', false, false)
+    expect(
+        getComputedStyle(path(screen.getByRole('link'))).textDecoration
+    ).not.toContain('underline')
+})
 
 it.each([
     ['search knn', 'retriever.knn', ['knn']],
@@ -56,6 +75,8 @@ it("uses the page's tooltip for the path and type", () => {
     expect(path).toHaveAttribute('data-tippy-theme', 'mono')
     expect(type).toHaveAttribute('data-tippy-content', 'object')
     expect(type).toHaveAttribute('data-tippy-theme', 'mono')
+    expect(path).toHaveAttribute('data-tippy-delay', '[500, 0]')
+    expect(type).toHaveAttribute('data-tippy-delay', '[500, 0]')
     expect(row).not.toHaveAttribute('title')
 })
 
@@ -151,6 +172,7 @@ it("lists the field's children under its path", () => {
         'filter, min_score, _name, query, search_after, terminate_after, sort, collapse'
     )
     expect(children).toHaveAttribute('data-tippy-theme', 'mono')
+    expect(children).toHaveAttribute('data-tippy-delay', '[500, 0]')
     expect(row).toHaveAttribute(
         'aria-label',
         expect.stringContaining(
