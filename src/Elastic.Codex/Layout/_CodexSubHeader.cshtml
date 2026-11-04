@@ -20,7 +20,6 @@
 				@if (!string.IsNullOrEmpty(crumb.Url))
 				{
 					<a href="@crumb.Url"
-					   hx-select-oob="#main-container"
 					   preload="mousedown"
 					   class="inline-flex items-center gap-1 font-medium hover:text-black hover:underline"
 					   @(crumb.Title == "Home" ? " aria-label=\"Home\"" : "")>@(crumb.Title == "Home" ? new HtmlString(EuiSvgIcons.GetIcon("home", "size-4 fill-current") ?? "") : (object)crumb.Title)</a>
@@ -38,7 +37,6 @@
 			@if (!string.IsNullOrEmpty(home.Url))
 			{
 				<a href="@home.Url"
-				   hx-select-oob="#main-container"
 				   preload="mousedown"
 				   class="inline-flex items-center font-medium hover:text-black hover:underline"
 				   aria-label="Back">@(new HtmlString(EuiSvgIcons.GetIcon("grid", "size-4 fill-current") ?? ""))</a>
@@ -47,7 +45,6 @@
 			@if (!string.IsNullOrEmpty(header.Url))
 			{
 				<a href="@header.Url"
-				   hx-select-oob="#main-container"
 				   preload="mousedown"
 				   class="font-medium hover:text-black hover:underline">@header.Title</a>
 			}

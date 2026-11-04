@@ -13,7 +13,9 @@ public static class MockFileSystemExtensions
 		this MockFileSystem fileSystem,
 		IDirectoryInfo root,
 		Dictionary<string, string>? globalVariables = null,
-		IReadOnlyList<string>? products = null)
+		IReadOnlyList<string>? products = null,
+		string? extraYaml = null
+	)
 	{
 		// language=yaml
 		var yaml = new StringWriter();
@@ -30,11 +32,10 @@ public static class MockFileSystemExtensions
 		yaml.WriteLine("  - docs-content");
 		yaml.WriteLine("  - kibana");
 		yaml.WriteLine("toc:");
-		var markdownFiles = fileSystem.Directory
-			.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);
+		var markdownFiles = fileSystem.Directory.EnumerateFiles(root.FullName, "*.md", SearchOption.AllDirectories);
 		foreach (var markdownFile in markdownFiles)
 		{
-			if (markdownFile.Contains("_snippet"))
+			if (markdownFile.Contains($"{Path.DirectorySeparatorChar}_snippets{Path.DirectorySeparatorChar}"))
 				continue;
 			var relative = fileSystem.Path.GetRelativePath(root.FullName, markdownFile);
 			yaml.WriteLine($" - file: {relative}");
@@ -46,6 +47,9 @@ public static class MockFileSystemExtensions
 			foreach (var (key, value) in globalVariables)
 				yaml.WriteLine($"  {key}: {value}");
 		}
+
+		if (!string.IsNullOrWhiteSpace(extraYaml))
+			yaml.WriteLine(extraYaml.Trim());
 
 		fileSystem.AddFile(Path.Join(root.FullName, "docset.yml"), new MockFileData(yaml.ToString()));
 	}

@@ -9,26 +9,48 @@ In the frontmatter block, you can define the following fields:
 ```yaml
 ---
 navigation_title: This is the navigation title. <1>
-description: This is a description of the page. <2>
-applies_to: <3>
+meta_title: This is the page title for search results and browser tabs. <2>
+description: This is a description of the page. <3>
+applies_to: <4>
   serverless: all
-products: <4>
+products: <5>
   - id: apm-agent
   - id: edot-sdk
-sub: <5>
+sub: <6>
   key: value 
+cta: <7>
+  id: beta
 ---
 ```
 
+Unknown frontmatter keys are ignored and reported as hints, not errors. The message names the key, its line, and the closest
+valid key when there is one, for example `Unknown key 'navigaton_title'. Did you mean 'navigation_title'?`.
+
 1. [`navigation_title`](#navigation-title)
-2. [`description`](#description)
-3. [`applies_to`](#applies-to)
-4. [`products`](#products)
-5. [`sub`](#subs)
+2. [`meta_title`](#meta-title)
+3. [`description`](#description)
+4. [`applies_to`](#applies-to)
+5. [`products`](#products)
+6. [`sub`](#subs)
+7. [`cta`](#cta)
 
 ## Navigation Title
 
 See [](./titles.md)
+
+## Meta title
+
+Use `meta_title` when the page title in browser tabs and search results needs different wording than the heading.
+By default, the page title comes from the level-one heading.
+The builder appends the site name, so don't include it in `meta_title`.
+
+```yaml
+---
+meta_title: Search across clusters
+---
+
+# Cross-cluster search
+```
 
 ## Description
 
@@ -65,9 +87,9 @@ Only products with the `public-reference` feature enabled in [`products.yml`](ht
 | `cloud-terraform`                           | Elastic Cloud Terraform                       |
 | `ecs`                                       | Elastic Common Schema (ECS)                   |
 | `ecs-logging`                               | ECS Logging                                   |
-| `edot-cf`                                   | EDOT Cloud Forwarder                          |
+| `edot-cf`                                   | Elastic Cloud Forwarder                       |
 | `edot-sdk`                                  | Elastic Distribution of OpenTelemetry SDK     |
-| `edot-collector`                            | Elastic Distribution of OpenTelemetry Collector |
+| `edot-collector`                            | Elastic Agent                                 |
 | `elastic-agent`                             | Elastic Agent                                 |
 | `elastic-serverless-forwarder`              | Elastic Serverless Forwarder                  |
 | `elastic-stack`                             | Elastic Stack                                 |
@@ -91,3 +113,7 @@ Only products with the `public-reference` feature enabled in [`products.yml`](ht
 ## Subs
 
 Use the `sub` field to define local substitutions. Refer to [Substitutions](substitutions.md) for more information.
+
+## CTA
+
+See [CTA](../documentation/isolated/cta.md).

@@ -16,6 +16,8 @@ export {
     ATTR_HTTP_RESPONSE_STATUS_CODE,
     ATTR_ERROR_TYPE,
     ATTR_EXCEPTION_MESSAGE,
+    ATTR_URL_PATH,
+    ATTR_URL_FULL,
 } from '@opentelemetry/semantic-conventions'
 
 // ============================================================================
@@ -159,6 +161,12 @@ export const ATTR_NAVIGATION_SEARCH_HAD_SELECTION =
     'navigation_search.had_selection'
 
 /**
+ * Which Jump to page surface emitted the event
+ * @example "api"
+ */
+export const ATTR_NAVIGATION_SEARCH_SURFACE = 'navigation_search.surface'
+
+/**
  * Navigation method used (keyboard or mouse)
  * @example "keyboard" | "mouse"
  */
@@ -193,11 +201,49 @@ export const ATTR_NAVIGATION_SEARCH_RESULT_SCORE =
     'navigation_search.result.score'
 
 /**
+ * Anchor of the clicked property on its operation page
+ * @example "req-track_total_hits"
+ */
+export const ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR =
+    'navigation_search.result.anchor'
+
+/**
  * Retry-After header value in seconds (for rate limiting)
  * @example 30
  */
 export const ATTR_NAVIGATION_SEARCH_RETRY_AFTER =
     'navigation_search.retry_after'
+
+// ============================================================================
+// CTA ATTRIBUTES (Custom)
+// ============================================================================
+
+/**
+ * Name of the right-gutter CTA template that was clicked
+ * @example "trial" | "mp"
+ */
+export const ATTR_CTA_NAME = 'cta.name'
+
+/**
+ * Destination URL of the clicked CTA button
+ * @example "https://cloud.elastic.co/registration?page=docs&placement=docs-siderail"
+ */
+export const ATTR_CTA_URL = 'cta.url'
+
+/**
+ * Button label shown on the clicked CTA — lets click counts be grouped by exact wording,
+ * so copy changes to the same cta.name can still be told apart.
+ * @example "Get started free"
+ */
+export const ATTR_CTA_LABEL = 'cta.label'
+
+/**
+ * Where on the page the CTA is placed. Lets performance be compared across placements
+ * (e.g. an always-visible sidebar card vs. a CTA embedded partway through the article body),
+ * which otherwise have very different exposure and aren't comparable by click count alone.
+ * @example "sidebar" | "inline"
+ */
+export const ATTR_CTA_LOCATION = 'cta.location'
 
 // ============================================================================
 // EVENT ATTRIBUTES (Custom)

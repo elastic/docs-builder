@@ -57,15 +57,14 @@ public class AppliesToRoleParser : RoleParser<AppliesToRole>
 
 	protected override bool Matches(ReadOnlySpan<char> role) => role is "{applies_to}";
 }
+
 public class PreviewRoleParser : RoleParser<AppliesToRole>
 {
 	protected override AppliesToRole CreateRole(string role, string content, InlineProcessor parserContext)
 	{
 		content = SemVersion.TryParse(content, out _)
 			? $"product: preview {content}"
-			: SemVersion.TryParse(content + ".0", out var version)
-				? $"product: preview {version}"
-				: "product: preview";
+			: SemVersion.TryParse(content + ".0", out var version) ? $"product: preview {version}" : "product: preview";
 		return new AppliesToRole(role, content, parserContext);
 	}
 

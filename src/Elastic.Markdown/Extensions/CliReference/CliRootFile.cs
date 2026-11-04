@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
+using Elastic.Documentation.AppliesTo;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc.CliReference;
 using Elastic.Markdown.Myst;
@@ -14,6 +15,8 @@ public record CliRootFile : IO.MarkdownFile
 {
 	private readonly CliSchema _schema;
 	private readonly IFileInfo? _supplementalDoc;
+	private readonly string _title;
+	private readonly string _navigationTitle;
 
 	public CliRootFile(
 		IFileInfo sourceFile,
@@ -21,19 +24,25 @@ public record CliRootFile : IO.MarkdownFile
 		MarkdownParser parser,
 		BuildContext build,
 		CliSchema schema,
-		IFileInfo? supplementalDoc
+		IFileInfo? supplementalDoc,
+		string? title = null,
+		string? navigationTitle = null,
+		ApplicableTo? appliesTo = null
 	) : base(sourceFile, rootPath, parser, build)
 	{
 		_schema = schema;
 		_supplementalDoc = supplementalDoc;
-		Title = schema.Name;
+		_title = string.IsNullOrWhiteSpace(title) ? schema.Name : title.Trim();
+		_navigationTitle = string.IsNullOrWhiteSpace(navigationTitle) ? $"{schema.Name} CLI" : navigationTitle.Trim();
+		Title = _title;
+		FallbackAppliesTo = appliesTo;
 	}
 
-	public override string NavigationTitle => $"{_schema.Name} CLI";
+	public override string NavigationTitle => _navigationTitle;
 
 	protected override Task<MarkdownDocument> GetMinimalParseDocumentAsync(Cancel ctx)
 	{
-		Title = _schema.Name;
+		Title = _title;
 		var markdown = BuildMarkdown();
 		return Task.FromResult(MarkdownParser.MinimalParseStringAsync(markdown, SourceFile, null));
 	}
@@ -41,7 +50,7 @@ public record CliRootFile : IO.MarkdownFile
 	protected override Task<MarkdownDocument> GetParseDocumentAsync(Cancel ctx)
 	{
 		var markdown = BuildMarkdown();
-		return Task.FromResult(MarkdownParser.ParseStringAsync(markdown, SourceFile, null));
+		return Task.FromResult(MarkdownParser.ParseStringAsync(markdown, SourceFile, YamlFrontMatter));
 	}
 
 	private string BuildMarkdown()
@@ -50,6 +59,8 @@ public record CliRootFile : IO.MarkdownFile
 			? _supplementalDoc.FileSystem.File.ReadAllText(_supplementalDoc.FullName)
 			: null;
 		var supplemental = CliSupplementalDoc.Parse(rawSupplemental);
-		return CliMarkdownGenerator.RootPage(_schema, supplemental);
+		var body = CliMarkdownGenerator.RootPage(_schema, supplemental, _title);
+		// Prepend supplemental front matter so applies_to (or any other field) in index.md overrides the fallback
+		return supplemental?.FrontMatter is { } fm ? $"{fm}\n\n{body}" : body;
 	}
 }

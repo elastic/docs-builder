@@ -22,6 +22,12 @@ public enum ChangelogDescriptionVisibility
 	KeepDescriptions,
 
 	/// <summary>
+	/// Always render record descriptions in the Highlights section only; hide them in every other section.
+	/// When <c>:highlights:</c> is omitted, descriptions are hidden everywhere.
+	/// </summary>
+	KeepHighlightDescriptions,
+
+	/// <summary>
 	/// Never render record descriptions (including dropdown authoring placeholders).
 	/// </summary>
 	HideDescriptions

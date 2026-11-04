@@ -1,0 +1,287 @@
+type HljsModule = typeof import('./hljs')
+
+async function loadModule(): Promise<HljsModule> {
+    // Re-import per test so the module-level registration cache and the shared hljs
+    // singleton start clean, isolating what each test loads.
+    vi.resetModules()
+    return await import('./hljs')
+}
+
+function setCodeBlocks(...languages: (string | null)[]) {
+    const blocks = languages
+        .map((language) => {
+            if (language === null) {
+                return '<pre><code>const x = 1</code></pre>'
+            }
+            return `<pre><code class="language-${language}">echo hello</code></pre>`
+        })
+        .join('')
+    document.body.innerHTML = `<div id="markdown-content">${blocks}</div>`
+}
+
+describe('initHighlight', () => {
+    it('loads all curated languages when any code block is present', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('bash')
+
+        await initHighlight()
+
+        expect(hljs.listLanguages()).toContain('bash')
+        expect(hljs.listLanguages()).toContain('python')
+        expect(hljs.listLanguages()).toContain('javascript')
+    })
+
+    it('registers the added grammars and the fish and batch aliases', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('fish')
+
+        await initHighlight()
+
+        for (const name of [
+            'clojure',
+            'diff',
+            'gherkin',
+            'graphql',
+            'makefile',
+        ]) {
+            expect(hljs.getLanguage(name)).toBeDefined()
+        }
+        expect(hljs.getLanguage('fish')?.name).toBe(
+            hljs.getLanguage('bash')?.name
+        )
+        expect(hljs.getLanguage('batch')?.name).toBe(
+            hljs.getLanguage('dos')?.name
+        )
+        expect(hljs.getLanguage('Gherkin')).toBeDefined()
+    })
+
+    it('loads no node_modules language when there are no code blocks', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        document.body.innerHTML = '<div id="markdown-content"></div>'
+
+        await initHighlight()
+
+        expect(hljs.listLanguages()).not.toContain('bash')
+        expect(hljs.listLanguages()).not.toContain('python')
+    })
+
+    it('highlights a supported language block', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks('bash')
+
+        await initHighlight()
+
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+    })
+
+    it.each([
+        ['js', 'javascript'],
+        ['ts', 'typescript'],
+        ['jsx', 'javascript'],
+    ])(
+        'highlights alias language-%s via %s aliases',
+        async (alias, canonical) => {
+            const { initHighlight } = await loadModule()
+            setCodeBlocks(alias)
+
+            await initHighlight()
+
+            const block = document.querySelector('#markdown-content pre code')
+            expect(block?.getAttribute('data-highlighted')).toBe('yes')
+            expect(block?.className).toContain(`language-${canonical}`)
+        }
+    )
+
+    it('autodetects an unlabeled code block', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks(null)
+
+        await initHighlight()
+
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.querySelector('.hljs-keyword')).not.toBeNull()
+    })
+
+    it('resolves sh alias to shell', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('sh')
+
+        await initHighlight()
+
+        expect(hljs.listLanguages()).toContain('shell')
+        const block = document.querySelector('#markdown-content pre code')
+        expect(block?.getAttribute('data-highlighted')).toBe('yes')
+        expect(block?.className).toContain('language-shell')
+    })
+
+    it('does not re-highlight a block when invoked concurrently', async () => {
+        const { initHighlight, hljs } = await loadModule()
+        setCodeBlocks('bash')
+        const spy = vi.spyOn(hljs, 'highlightElement')
+
+        await Promise.all([initHighlight(), initHighlight()])
+
+        const block = document.querySelector('#markdown-content pre code')
+        const callsForBlock = spy.mock.calls.filter(
+            (call) => call[0] === block
+        ).length
+        expect(callsForBlock).toBe(1)
+    })
+
+    it('ignores unknown languages without breaking other blocks', async () => {
+        const { initHighlight } = await loadModule()
+        setCodeBlocks('this-language-does-not-exist', 'bash')
+
+        await expect(initHighlight()).resolves.toBeUndefined()
+
+        const blocks = document.querySelectorAll('#markdown-content pre code')
+        const bashBlock = blocks[1]
+        expect(bashBlock.getAttribute('data-highlighted')).toBe('yes')
+    })
+})
+
+describe('highlightCodeBlocks', () => {
+    it('scopes highlighting to the supplied root', async () => {
+        const { highlightCodeBlocks } = await loadModule()
+        document.body.innerHTML = `
+            <div id="inside"><pre><code class="language-bash">echo inside</code></pre></div>
+            <div id="outside"><pre><code class="language-bash">echo outside</code></pre></div>
+        `
+
+        const inside = document.querySelector('#inside')!
+        await highlightCodeBlocks(inside)
+
+        expect(
+            inside.querySelector('code')?.getAttribute('data-highlighted')
+        ).toBe('yes')
+        expect(
+            document
+                .querySelector('#outside code')
+                ?.getAttribute('data-highlighted')
+        ).not.toBe('yes')
+    })
+})
+
+describe('toLanguageFn', () => {
+    // A bundler's dynamic import() can resolve a language module to the LanguageFn directly,
+    // while some test runners wrap it as { default: fn }. Both must yield the function; a
+    // regression here silently breaks highlighting only in the production bundle.
+    it('returns the function when the module is the function itself (bundler)', async () => {
+        const { toLanguageFn } = await loadModule()
+        const fn = () => ({ contains: [] })
+
+        expect(toLanguageFn(fn)).toBe(fn)
+    })
+
+    it('returns the default export when wrapped in a namespace (test runners)', async () => {
+        const { toLanguageFn } = await loadModule()
+        const fn = () => ({ contains: [] })
+
+        expect(toLanguageFn({ default: fn })).toBe(fn)
+    })
+})
+
+describe('API sample panels', () => {
+    it('highlights each panel with its own language, including the hidden one', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `
+            <div id="api-examples-panel">
+                <div data-code-panel="Console"><pre><code class="language-console">GET /_search</code></pre></div>
+                <div data-code-panel="Python" hidden><pre><code class="language-python">def f():\n    return 1</code></pre></div>
+            </div>`
+
+        await initHighlight()
+
+        const python = document.querySelector(
+            '[data-code-panel="Python"] code'
+        )!
+        const consoleCode = document.querySelector(
+            '[data-code-panel="Console"] code'
+        )!
+        expect(python.classList.contains('language-python')).toBe(true)
+        expect(python.querySelector('.hljs-keyword')?.textContent).toBe('def')
+        expect(consoleCode.classList.contains('language-console')).toBe(true)
+        expect((consoleCode as HTMLElement).dataset.highlighted).toBe('yes')
+    })
+
+    it('highlights the whole body of a console request, not just its first line', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-console">GET /my-index-000001/_search
+{
+  "query": {
+    "term": {
+      "user.id": "kimchy"
+    }
+  }
+}</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const keys = Array.from(code.querySelectorAll('.hljs-attr')).map(
+            (e) => e.textContent
+        )
+        expect(keys).toEqual(['"query"', '"term"', '"user.id"'])
+        expect(code.querySelector('.hljs-keyword')?.textContent).toBe('GET')
+        expect(code.querySelector('.hljs-string')?.textContent).toBe(
+            '/my-index-000001/_search'
+        )
+    })
+
+    it('ends a console body at the next request', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-console">PUT /a
+{
+  "x": 1
+}
+GET /b</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const methods = Array.from(code.querySelectorAll('.hljs-keyword')).map(
+            (e) => e.textContent
+        )
+        expect(methods).toEqual(['PUT', 'GET'])
+    })
+
+    it('highlights a curl -d JSON body as JSON', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-curl">curl -X GET "$ELASTICSEARCH_URL/_search" \\
+  -d '{
+  "query": {
+    "term": { "user.id": "kimchy" }
+  }
+}'</code></pre></div>`
+
+        await initHighlight()
+
+        const code = document.querySelector('code')!
+        const keys = Array.from(code.querySelectorAll('.hljs-attr')).map(
+            (e) => e.textContent
+        )
+        expect(keys).toEqual(['"query"', '"term"', '"user.id"'])
+        expect(code.querySelector('.hljs-variable')?.textContent).toBe(
+            '$ELASTICSEARCH_URL'
+        )
+    })
+
+    it('highlights braced ${VAR} variables in curl strings', async () => {
+        const { initHighlight } = await loadModule()
+        document.body.innerHTML = `<div id="api-examples-panel"><pre><code class="language-curl">curl -X GET "\${LOGSTASH_URL}/_node/pipelines" \\
+  -u "\${USERNAME}:\${PASSWORD}"</code></pre></div>`
+
+        await initHighlight()
+
+        const variables = Array.from(
+            document.querySelectorAll('code .hljs-variable')
+        ).map((e) => e.textContent)
+        expect(variables).toEqual([
+            '${LOGSTASH_URL}',
+            '${USERNAME}',
+            '${PASSWORD}',
+        ])
+    })
+})

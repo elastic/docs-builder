@@ -1,5 +1,5 @@
 @inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
-<div class="sticky top-0 z-30 h-12">
+<div class="sticky top-0 z-30 h-12" id="isolated-header" hx-preserve>
 	<elastic-docs-header title="@(Model.HeaderTitle ?? Model.DocSetName)"
 	                     logo-href="@(Model.Link("/"))"
 	                     github-repository="@(Model.GitRepository)"
@@ -8,6 +8,7 @@
 	                     git-commit="@(Model.GitCommitShort)"
 	                     github-ref="@(Model.GitHubRef)"
 	                     branded="@(Model.Branding != null ? "true" : "false")"
+	                     elastic-org="@(Model.IsElasticOrg ? "true" : "false")"
 	                     header-bg="@(Model.Branding?.HeaderBg)"
 	                     icon-src="@(Model.BrandingIconStaticPath)">
 	</elastic-docs-header>

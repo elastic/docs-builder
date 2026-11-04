@@ -1,0 +1,29 @@
+{
+  "title": "Elastic Announces New Security Analytics Features",
+  "url": "/about/press/elastic-announces-new-security-analytics",
+  "uid": "blt000000000000004d",
+  "_version": 2,
+  "locale": "en-us",
+  "ACL": {},
+  "created_at": "2023-09-01T08:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2023-09-05T10:30:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "date": "2023-09-01",
+  "location_l10n": "San Francisco, CA",
+  "main_header": {
+    "title_l10n": "Elastic Announces New Security Analytics Features",
+    "subtitle_l10n": "New capabilities help security teams detect and respond to threats faster"
+  },
+  "intro_paragraph_l10n": "<p>Elastic today announced new security analytics features designed to help organizations detect and respond to cyber threats more effectively.</p>",
+  "paragraph_l10n": "<p>The new features include advanced threat detection rules, improved investigation workflows, and enhanced integration with cloud security tools.</p><p>These capabilities build on Elastic Security's unified approach to SIEM, endpoint security, and cloud security.</p>",
+  "boilerplate": ["bltboilerplate00001"],
+  "press_contacts": ["bltcontact00000001"],
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2023-09-01T09:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

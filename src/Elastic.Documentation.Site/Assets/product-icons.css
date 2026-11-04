@@ -1,0 +1,9 @@
+@layer components {
+	/* The product marks are EUI's logos. EUI marks the parts that have to contrast with the background
+	   with euiIcon__fillNegative and fills them per theme. This is the light-theme value (Borealis
+	   darkestShade). On a dark background the same parts take #ffffff (Borealis fullShade). The site has
+	   no dark theme today, so only the light value is set. */
+	.euiIcon__fillNegative {
+		fill: #2b394f;
+	}
+}

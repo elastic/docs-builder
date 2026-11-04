@@ -8,10 +8,7 @@ using Markdig.Parsers;
 
 namespace Elastic.Markdown.Myst.Directives.AppliesTo;
 
-
-public class AppliesToDirective(BlockParser parser, ParserContext context)
-	: EnhancedCodeBlock(parser, context), IApplicableToElement
+public class AppliesToDirective(BlockParser parser, ParserContext context) : EnhancedCodeBlock(parser, context), IApplicableToElement
 {
 	public ApplicableTo? AppliesTo { get; set; }
 }
-

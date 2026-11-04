@@ -108,9 +108,11 @@ export const ChatInput = ({
                 border-radius: ${CONFIG.BORDER_RADIUS}px;
                 border: ${euiTheme.border.thin};
                 border-color: ${euiTheme.border.color};
-                background-color: ${disabled
-                    ? euiTheme.colors.lightestShade
-                    : euiTheme.colors.emptyShade};
+                background-color: ${
+                    disabled
+                        ? euiTheme.colors.lightestShade
+                        : euiTheme.colors.emptyShade
+                };
                 padding-right: 8px;
                 min-height: ${CONFIG.MIN_HEIGHT}px;
                 cursor: ${disabled ? 'not-allowed' : 'auto'};

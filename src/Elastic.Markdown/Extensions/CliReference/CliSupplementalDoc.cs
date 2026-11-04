@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 namespace Elastic.Markdown.Extensions.CliReference;
 
 internal sealed partial record CliSupplementalDoc(
+	string? FrontMatter,
 	string? Description,
 	Dictionary<string, string> OptionOverrides,
 	Dictionary<string, string> ArgumentOverrides,
@@ -18,13 +19,14 @@ internal sealed partial record CliSupplementalDoc(
 		if (raw is null)
 			return null;
 
-		var trimmed = raw.Trim();
+		var (frontMatter, rawContent) = ExtractFrontMatter(raw);
+		var trimmed = rawContent.Trim();
 		if (string.IsNullOrWhiteSpace(trimmed))
-			return null;
+			return string.IsNullOrWhiteSpace(frontMatter) ? null : new CliSupplementalDoc(frontMatter, null, [], [], null);
 
 		// Backward compat: no ## headings → entire content is description
 		if (!trimmed.Contains("\n## ") && !trimmed.StartsWith("## ", StringComparison.Ordinal))
-			return new CliSupplementalDoc(trimmed, [], [], null);
+			return new CliSupplementalDoc(frontMatter, trimmed, [], [], null);
 
 		var sections = SplitSections(trimmed);
 		string? description = null;
@@ -55,7 +57,16 @@ internal sealed partial record CliSupplementalDoc(
 		}
 
 		var postContent = postParts.Count > 0 ? string.Join("\n\n", postParts) : null;
-		return new CliSupplementalDoc(description, optionOverrides, argumentOverrides, postContent);
+		return new CliSupplementalDoc(frontMatter, description, optionOverrides, argumentOverrides, postContent);
+	}
+
+	private static (string? FrontMatter, string Content) ExtractFrontMatter(string raw)
+	{
+		var match = FrontMatterRegex().Match(raw);
+		if (!match.Success)
+			return (null, raw);
+
+		return (match.Value.Trim(), raw[match.Length..]);
 	}
 
 	private static List<(string? heading, string body)> SplitSections(string text)
@@ -124,4 +135,7 @@ internal sealed partial record CliSupplementalDoc(
 	// Matches: `: `--flag`` or `: --flag` or `: <name>`
 	[GeneratedRegex(@"^:\s+(`[^`]+`|--[\w-]+|<[\w-]+>)")]
 	private static partial Regex TermLineRegex();
+
+	[GeneratedRegex(@"\A---\r?\n[\s\S]*?\r?\n---[ \t]*(?:\r?\n|$)")]
+	private static partial Regex FrontMatterRegex();
 }

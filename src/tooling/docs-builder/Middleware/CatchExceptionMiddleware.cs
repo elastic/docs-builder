@@ -8,13 +8,19 @@ using Nullean.Argh.Middleware;
 
 namespace Documentation.Builder.Middleware;
 
-internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware> logger, IDiagnosticsCollector collector)
-	: ICommandMiddleware
+internal sealed class CatchExceptionMiddleware(
+	ILogger<CatchExceptionMiddleware> logger,
+	IDiagnosticsCollector collector
+) : ICommandMiddleware
 {
 	private bool _cancelKeyPressed;
 
 	public async ValueTask InvokeAsync(CommandContext context, CommandMiddlewareDelegate next)
 	{
+		// Start the background reader unconditionally. Every command path — success, handled error,
+		// and unhandled exception — needs the channel drained before StopAsync renders the summary.
+		_ = collector.StartAsync(context.CancellationToken);
+
 		Console.CancelKeyPress += (_, args) =>
 		{
 			// Suppress OS termination so the OperationCanceledException path below can run gracefully.
@@ -32,12 +38,16 @@ internal sealed class CatchExceptionMiddleware(ILogger<CatchExceptionMiddleware>
 			{
 				logger.LogInformation("Cancellation requested, exiting.");
 				context.ExitCode = 1;
-				return;
+				return; // finally still runs
 			}
-			_ = collector.StartAsync(context.CancellationToken);
 			collector.EmitGlobalError($"Global unhandled exception: {ex.Message}", ex);
-			await collector.StopAsync(context.CancellationToken);
 			context.ExitCode = 1;
+		}
+		finally
+		{
+			// Single finalization point for the whole CLI. Idempotent: a no-op when InvokeAsync
+			// already stopped the collector on the success / handled-error path (_stopped guard).
+			await collector.StopAsync(context.CancellationToken);
 		}
 	}
 }

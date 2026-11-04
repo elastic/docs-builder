@@ -6,7 +6,6 @@ using Markdig.Syntax.Inlines;
 
 namespace Elastic.Markdown.Myst.Roles;
 
-
 //TODO evaluate if we need this
 /// <summary>
 /// An inline custom container

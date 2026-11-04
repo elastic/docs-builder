@@ -1,220 +1,99 @@
 import { initAgentSkillCopy } from './agent-skill'
+import { initApiChromeSync } from './api-chrome-sync'
 import { initApiDocs } from './api-docs'
+import { initApiMenus } from './api-menu'
+import { changesPageChrome } from './api-navigation'
 import { initAppliesSwitch } from './applies-switch'
 import { config } from './config'
 import { initCopyButton } from './copybutton'
-import { initHighlight } from './hljs'
+import { initHighlight, preloadHighlight } from './hljs'
 import { initImageCarousel } from './image-carousel'
+import { initListing } from './listing'
+import { initMath } from './math'
 import { initMermaid } from './mermaid'
 import { openDetailsWithAnchor } from './open-details-with-anchor'
 import { initNav } from './pages-nav'
+import { initPrivacyConsent } from './privacy-consent'
+import { bindCtaClicks, initCtaImpressions } from './runtime/cta'
+import { applyEditParam } from './runtime/edit-param'
+import { bindHtmxHooks } from './runtime/htmx-hooks'
+import { runInitSteps } from './runtime/init-steps'
+import { initTelemetry } from './runtime/telemetry'
+import { initSecondaryNav } from './secondary-nav'
 import { initSmoothScroll } from './smooth-scroll'
+import { initTable } from './table'
 import { initTabs } from './tabs'
-import { initializeOtel } from './telemetry/instrumentation'
 import { initTocNav } from './toc-nav'
+import { loadWebComponents } from './web-components/loadWebComponents'
 import 'htmx-ext-head-support'
 import 'htmx-ext-preload'
-import * as katex from 'katex'
-import { $, $$ } from 'select-dom'
-import { UAParser } from 'ua-parser-js'
 
-// Injected at build time from MinVer
-const DOCS_BUILDER_VERSION =
-    process.env.DOCS_BUILDER_VERSION?.trim() ?? '0.0.0-dev'
+// The OTel SDK must be up before the web components run; the isolated and codex entries load after it.
+async function bootstrap() {
+    await initTelemetry()
 
-// Initialize OpenTelemetry FIRST, before any other code runs (when enabled)
-// This must happen early so all subsequent code is instrumented
-if (config.telemetryEnabled) {
-    initializeOtel({
-        serviceName: config.serviceName,
-        serviceVersion: DOCS_BUILDER_VERSION,
-        baseUrl: config.rootPath,
-        debug: false,
-    })
+    if (config.buildType === 'isolated' || config.airGapped) {
+        import('./isolated')
+    } else if (config.buildType === 'codex') {
+        import('./codex')
+    }
 }
 
-// Dynamically import web components after telemetry is initialized.
-// Parcel code-splits these into separate chunks loaded on demand.
-import('./web-components/NavigationSearch/NavigationSearchComponent')
-import('./web-components/AskAi/AskAi')
-import('./web-components/VersionDropdown')
-import('./web-components/AppliesToPopover')
-import('./web-components/FullPageSearch/FullPageSearchComponent')
-import('./web-components/Diagnostics/DiagnosticsComponent')
+const bootstrapPromise = bootstrap()
 
-if (config.buildType === 'isolated' || config.airGapped) {
-    import('./isolated')
-} else if (config.buildType === 'codex') {
-    import('./codex')
+async function initWebComponents() {
+    await bootstrapPromise
+    await loadWebComponents()
 }
 
-const { getOS } = new UAParser()
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type HtmxEvent = any
-
-/**
- * Initialize KaTeX math rendering for elements with class 'math'
- */
-function initMath() {
-    const mathElements = $$('.math:not([data-katex-processed])')
-    mathElements.forEach((element) => {
-        try {
-            const content = element.textContent?.trim()
-            if (!content) return
-
-            // Determine if this is display math based on content and element type
-            const isDisplayMath =
-                element.tagName === 'DIV' ||
-                content.includes('\\[') ||
-                content.includes('$$') ||
-                content.includes('\\begin{') ||
-                content.includes('\n')
-
-            // Clean up common LaTeX delimiters
-            const cleanContent = content
-                .replace(/^\$\$|\$\$$/g, '') // Remove $$ delimiters
-                .replace(/^\\\[|\\\]$/g, '') // Remove \[ \] delimiters
-                .trim()
-
-            // Clear the element content before rendering
-            element.innerHTML = ''
-
-            katex.render(cleanContent, element, {
-                throwOnError: false,
-                displayMode: isDisplayMath,
-                strict: false, // Allow some LaTeX extensions
-                trust: false, // Security: don't trust arbitrary commands
-                output: 'mathml', // Only render MathML, not HTML
-                macros: {
-                    // Add common macros if needed
-                },
-            })
-
-            // Mark as processed to prevent double processing
-            element.setAttribute('data-katex-processed', 'true')
-        } catch (error) {
-            console.warn('KaTeX rendering error:', error)
-            // Fallback: keep the original content
-            element.innerHTML = element.textContent || ''
-        }
-    })
-}
+// The languages chunk is the long pole for code pages; fetch it before the init steps get to it.
+if (document.querySelector('pre code')) preloadHighlight()
 
 // Initialize on initial page load
 document.addEventListener('DOMContentLoaded', function () {
-    initMath()
-    initMermaid()
+    runInitSteps([
+        ['loadWebComponents', initWebComponents],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initCtaImpressions', initCtaImpressions],
+    ])
 })
 
 document.addEventListener('htmx:load', function () {
-    initTocNav()
-    initHighlight()
-    initCopyButton()
-    initAgentSkillCopy()
-    initTabs()
-    initAppliesSwitch()
-    initMath()
-    initMermaid()
-    initNav()
-
-    initSmoothScroll()
-    openDetailsWithAnchor()
-    initImageCarousel()
-    initApiDocs()
-
-    const urlParams = new URLSearchParams(window.location.search)
-    const editParam = urlParams.has('edit')
-    if (editParam) {
-        $('.edit-this-page.hidden')?.classList.remove('hidden')
-    }
+    runInitSteps([
+        ['loadWebComponents', initWebComponents],
+        ['initTocNav', initTocNav],
+        ['initHighlight', initHighlight],
+        ['initCopyButton', initCopyButton],
+        ['initAgentSkillCopy', initAgentSkillCopy],
+        ['initTabs', initTabs],
+        ['initAppliesSwitch', initAppliesSwitch],
+        ['initMath', initMath],
+        ['initMermaid', initMermaid],
+        ['initNav', initNav],
+        ['initSmoothScroll', initSmoothScroll],
+        ['openDetailsWithAnchor', openDetailsWithAnchor],
+        ['initImageCarousel', initImageCarousel],
+        ['initListing', initListing],
+        ['initTable', initTable],
+        ['initApiDocs', initApiDocs],
+        ['applyEditParam', applyEditParam],
+        ['initCtaImpressions', initCtaImpressions],
+    ])
 })
 
-// Don't remove style tags because they are used by the elastic global nav.
-document.addEventListener(
-    'htmx:removingHeadElement',
-    function (event: HtmxEvent) {
-        const tagName = event.detail.headElement.tagName
-        if (tagName === 'STYLE') {
-            event.preventDefault()
-        }
-    }
-)
-
-document.addEventListener('htmx:beforeRequest', function (event: HtmxEvent) {
-    if (
-        event.detail.requestConfig.verb === 'get' &&
-        event.detail.requestConfig.triggeringEvent
-    ) {
-        const { ctrlKey, metaKey, shiftKey }: PointerEvent =
-            event.detail.requestConfig.triggeringEvent
-        const { name: os } = getOS()
-        const modifierKey: boolean = os === 'macOS' ? metaKey : ctrlKey
-        if (shiftKey || modifierKey) {
-            event.preventDefault()
-            window.open(
-                event.detail.requestConfig.path,
-                '_blank',
-                'noopener,noreferrer'
-            )
-        }
-    }
+bindCtaClicks()
+initPrivacyConsent()
+initSecondaryNav()
+initApiMenus()
+initApiChromeSync()
+bindHtmxHooks({
+    forcesFullPageLoad: (targetPath) =>
+        // A move between a docs page and an API page, or to another API product: the swap would
+        // leave the previous header or context bar in place.
+        changesPageChrome(
+            targetPath,
+            location.pathname,
+            config.rootPath.replace(/\/$/, '')
+        ),
 })
-
-document.body.addEventListener(
-    'htmx:oobBeforeSwap',
-    function (event: HtmxEvent) {
-        // Scroll to the top of the page when the content is swapped
-        if (
-            event.target?.id === 'main-container' ||
-            event.target?.id === 'markdown-content' ||
-            event.target?.id === 'content-container'
-        ) {
-            window.scrollTo(0, 0)
-        }
-    }
-)
-
-document.body.addEventListener(
-    'htmx:responseError',
-    function (event: HtmxEvent) {
-        // If you get a 404 error while clicking on a hx-get link, actually open the link
-        // This is needed because the browser doesn't update the URL when the response is a 404
-        // In production, cloudfront handles serving the 404 page.
-        // Locally, the DocumentationWebHost handles it.
-        // On previews, a generic 404 page is shown.
-        if (event.detail.xhr.status === 404) {
-            window.location.assign(event.detail.pathInfo.requestPath)
-        }
-    }
-)
-
-// We add a query string to the get request to make sure the requested page is up to date
-const docsBuilderVersion = $('body')?.dataset.docsBuilderVersion
-document.body.addEventListener(
-    'htmx:configRequest',
-    function (event: HtmxEvent) {
-        if (event.detail.verb === 'get' && docsBuilderVersion) {
-            event.detail.parameters['v'] = docsBuilderVersion
-        }
-    }
-)
-
-// Here we need to strip the v parameter from the URL so
-// that the browser doesn't show the v parameter in the address bar
-document.body.addEventListener(
-    'htmx:beforeHistoryUpdate',
-    function (event: HtmxEvent) {
-        const params = new URLSearchParams(
-            event.detail.history.path.split('?')[1] ?? ''
-        )
-        params.delete('v')
-        const pathWithoutQueryString = event.detail.history.path.split('?')[0]
-        if (params.size === 0) {
-            event.detail.history.path = pathWithoutQueryString
-        } else {
-            event.detail.history.path =
-                pathWithoutQueryString + '?' + params.toString()
-        }
-    }
-)

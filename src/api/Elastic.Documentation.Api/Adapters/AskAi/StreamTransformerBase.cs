@@ -42,7 +42,12 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// </summary>
 	public string AgentProvider => GetAgentProvider();
 
-	public Task<Stream> TransformAsync(Stream rawStream, Guid? generatedConversationId, Activity? parentActivity, Cancel cancellationToken = default)
+	public Task<Stream> TransformAsync(
+		Stream rawStream,
+		Guid? generatedConversationId,
+		Activity? parentActivity,
+		Cancel cancellationToken = default
+	)
 	{
 		// Configure pipe for low-latency streaming
 		var pipeOptions = new PipeOptions(
@@ -71,7 +76,13 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 	/// Process the pipe reader and write transformed events to the pipe writer.
 	/// This runs concurrently with the consumer reading from the output stream.
 	/// </summary>
-	private async Task ProcessPipeAsync(PipeReader reader, PipeWriter writer, Guid? generatedConversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	private async Task ProcessPipeAsync(
+		PipeReader reader,
+		PipeWriter writer,
+		Guid? generatedConversationId,
+		Activity? parentActivity,
+		CancellationToken cancellationToken
+	)
 	{
 		using var activityScope = parentActivity;
 		try
@@ -84,7 +95,11 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError(ex, "Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.", GetType().Name);
+			Logger.LogError(
+				ex,
+				"Error transforming stream for transformer {TransformerType}. Stream processing will be terminated.",
+				GetType().Name
+			);
 			_ = parentActivity?.SetTag("error.type", ex.GetType().Name);
 			try
 			{
@@ -94,7 +109,11 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 			catch (Exception completeEx)
 			{
-				Logger.LogError(completeEx, "Error completing pipe after transformation error for transformer {TransformerType}", GetType().Name);
+				Logger.LogError(
+					completeEx,
+					"Error completing pipe after transformation error for transformer {TransformerType}",
+					GetType().Name
+				);
 			}
 			return;
 		}
@@ -110,13 +129,18 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		}
 	}
 
-
 	/// <summary>
 	/// Process the raw stream and write transformed events to the pipe writer.
 	/// Default implementation parses SSE events and JSON, then calls TransformJsonEvent.
 	/// </summary>
 	/// <returns>Stream processing result with metrics and captured output</returns>
-	protected virtual async Task ProcessStreamAsync(PipeReader reader, PipeWriter writer, Guid? generatedConversationId, Activity? parentActivity, CancellationToken cancellationToken)
+	protected virtual async Task ProcessStreamAsync(
+		PipeReader reader,
+		PipeWriter writer,
+		Guid? generatedConversationId,
+		Activity? parentActivity,
+		CancellationToken cancellationToken
+	)
 	{
 		using var activity = StreamTransformerActivitySource.StartActivity("process ask_ai stream", ActivityKind.Internal);
 
@@ -138,15 +162,23 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 			}
 			catch (JsonException ex)
 			{
-				Logger.LogError(ex, "Failed to parse JSON from SSE event for transformer {TransformerType}. EventType: {EventType}, Data: {Data}",
-					GetType().Name, sseEvent.EventType, sseEvent.Data);
+				Logger.LogError(
+					ex,
+					"Failed to parse JSON from SSE event for transformer {TransformerType}. EventType: {EventType}, Data: {Data}",
+					GetType().Name,
+					sseEvent.EventType,
+					sseEvent.Data
+				);
 				throw;
 			}
 
 			if (transformedEvent == null)
 			{
-				Logger.LogWarning("Transformed event is null for transformer {TransformerType}. Skipping event. EventType: {EventType}",
-					GetType().Name, sseEvent.EventType);
+				Logger.LogWarning(
+					"Transformed event is null for transformer {TransformerType}. Skipping event. EventType: {EventType}",
+					GetType().Name,
+					sseEvent.EventType
+				);
 				Logger.LogWarning("Original event: {event}", JsonSerializer.Serialize(sseEvent, SseSerializerContext.Default.SseEvent));
 				continue;
 			}
@@ -260,8 +292,12 @@ public abstract class StreamTransformerBase(ILogger logger) : IStreamTransformer
 		}
 		catch (Exception ex)
 		{
-			Logger.LogError(ex, "Error writing event to stream for transformer {TransformerType}. EventType: {EventType}",
-				GetType().Name, transformedEvent.GetType().Name);
+			Logger.LogError(
+				ex,
+				"Error writing event to stream for transformer {TransformerType}. EventType: {EventType}",
+				GetType().Name,
+				transformedEvent.GetType().Name
+			);
 			throw; // Re-throw to be handled by caller
 		}
 	}

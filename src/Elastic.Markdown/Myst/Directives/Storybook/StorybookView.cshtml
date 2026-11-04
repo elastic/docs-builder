@@ -1,0 +1,26 @@
+@inherits RazorSlice<Elastic.Markdown.Myst.Directives.Storybook.StorybookViewModel>
+<div class="storybook-embed">
+@if (Model.HasInlineStory)
+{
+<storybook-story
+	story-id="@Model.StoryId"
+	entry="@Model.InlineEntry"
+	bootstrap="@Model.InlineBootstrapJson">
+</storybook-story>
+}
+else
+{
+	<iframe
+		src="@Model.StoryUrl"
+		title="@Model.IframeTitle"
+		style="width:100%;height:@Model.HeightStyle;border:none;"
+		sandbox="allow-scripts allow-same-origin"
+		loading="lazy"></iframe>
+}
+	@if (Model.HasBody)
+	{
+		<div class="storybook-embed-body">
+			@Model.RenderBlock()
+		</div>
+	}
+</div>

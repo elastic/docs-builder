@@ -2,12 +2,16 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Products;
+using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Changelog.Tests.Changelogs;
@@ -18,10 +22,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 	private ChangelogBundlingService ServiceWithConfig { get; }
 	private readonly string _changelogDir;
 
-	public BundleChangelogsTests(ITestOutputHelper output) : base(output)
+	public BundleChangelogsTests() : base()
 	{
-		Service = new(LoggerFactory, null, FileSystem);
-		ServiceWithConfig = new(LoggerFactory, ConfigurationContext, FileSystem);
+		Service = new(LoggerFactory, FileSystem);
+		ServiceWithConfig = new(LoggerFactory, FileSystem, ConfigurationContext);
 		_changelogDir = CreateChangelogDir();
 	}
 
@@ -32,7 +36,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		return changelogDir;
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithAllOption_CreatesValidBundle()
 	{
 		// language=yaml
@@ -61,8 +65,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-changelog.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-changelog.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -72,13 +76,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("products:");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("product: kibana");
@@ -89,7 +93,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("checksum:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProductsFilter_FiltersCorrectly()
 	{
 		// Arrange
@@ -121,8 +125,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -132,20 +136,20 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.2.0");
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrsFilter_FiltersCorrectly()
 	{
 		// Arrange
@@ -187,9 +191,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-pr.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-pr.yaml");
 		var file3 = FileSystem.Path.Join(_changelogDir, "1755268150-third-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -199,19 +203,81 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-first-pr.yaml");
 		bundleContent.Should().Contain("name: 1755268140-second-pr.yaml");
 		bundleContent.Should().NotContain("name: 1755268150-third-pr.yaml");
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_WithPrsFilter_MatchesFilenameDigitsWhenYamlPrsEmpty()
+	{
+		var changelog =
+			"""
+			title: Filename identity
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		var file = FileSystem.Path.Join(_changelogDir, "12345.yaml");
+		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current!.Execution.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain("name: 12345.yaml");
+	}
+
+	[Test]
+	public async Task BundleChangelogs_WithPrsFilter_MatchesTimestampFileViaYamlPrs()
+	{
+		var changelog =
+			"""
+			title: Timestamp identity
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/12345
+			""";
+
+		var file = FileSystem.Path.Join(_changelogDir, "1735-foo.yaml");
+		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current!.Execution.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue();
+		Collector.Errors.Should().Be(0);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain("name: 1735-foo.yaml");
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithIssuesFilter_FiltersCorrectly()
 	{
 		// Arrange
@@ -252,9 +318,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-issue.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-issue.yaml");
 		var file3 = FileSystem.Path.Join(_changelogDir, "1755268150-third-issue.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -264,19 +330,19 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-first-issue.yaml");
 		bundleContent.Should().Contain("name: 1755268140-second-issue.yaml");
 		bundleContent.Should().NotContain("name: 1755268150-third-issue.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOldPrFormat_StillMatchesWhenFilteringByPrs()
 	{
 		// Backward compat: changelog with legacy pr: (single string) should still match --prs filter
@@ -292,7 +358,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-legacy-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelogWithOldFormat, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithOldFormat, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -301,16 +367,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-legacy-pr.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrsFilterAndUnmatchedPrs_EmitsWarnings()
 	{
 		// Arrange
@@ -328,7 +394,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -343,21 +409,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().Be(2); // Two unmatched PRs
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/200"));
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Warning &&
-			d.Message.Contains("No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/200"
+				)
+			);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Warning && d.Message.Contains(
+					"No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300"
+				)
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrsFileFilter_FiltersCorrectly()
 	{
 		// Arrange
@@ -387,8 +463,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-pr.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		// Create PRs file
 		var prsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
@@ -399,7 +475,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			https://github.com/elastic/elasticsearch/pull/100
 			https://github.com/elastic/elasticsearch/pull/200
 			""";
-		await FileSystem.File.WriteAllTextAsync(prsFile, prsContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, prsContent, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -409,18 +485,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-first-pr.yaml");
 		bundleContent.Should().Contain("name: 1755268140-second-pr.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrNumberAndOwnerRepo_FiltersCorrectly()
 	{
 		// Arrange
@@ -438,7 +514,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-pr-number.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -450,17 +526,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-pr-number.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithShortPrFormat_FiltersCorrectly()
 	{
 		// Arrange
@@ -478,7 +554,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-short-format.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -488,17 +564,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-short-format.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithNoMatchingFiles_ReturnsError()
 	{
 		// Arrange
@@ -511,15 +587,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No YAML files found") || d.Message.Contains("No changelog entries matched"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(d => d.Message.Contains("No YAML files found") || d.Message.Contains("No changelog entries matched"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithInvalidDirectory_ReturnsError()
 	{
 		// Arrange
@@ -533,7 +612,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -541,7 +620,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Directory does not exist"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithNoFilterOption_ReturnsError()
 	{
 		// Arrange
@@ -573,8 +652,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-first-changelog.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-second-changelog.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -583,7 +662,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -591,7 +670,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one filter option must be specified"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithMultipleFilterOptions_ReturnsError()
 	{
 		// Arrange
@@ -605,7 +684,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -613,7 +692,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple filter options cannot be specified together"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithMultipleProducts_CreatesValidBundle()
 	{
 		// Arrange
@@ -643,8 +722,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-cloud-feature1.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-cloud-feature2.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -658,13 +737,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: cloud-serverless");
 		bundleContent.Should().Contain("target: 2025-12-02");
 		bundleContent.Should().Contain("target: 2025-12-06");
@@ -672,7 +751,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("name: 1755268140-cloud-feature2.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithWildcardProductFilter_MatchesAllProducts()
 	{
 		// Arrange
@@ -704,8 +783,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -715,18 +794,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithWildcardAllParts_EquivalentToAll()
 	{
 		// Arrange
@@ -758,8 +837,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -769,18 +848,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrefixWildcardTarget_MatchesCorrectly()
 	{
 		// Arrange
@@ -825,9 +904,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-es-9.3.0.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-es-9.3.1.yaml");
 		var file3 = FileSystem.Path.Join(_changelogDir, "1755268150-es-9.2.0.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -837,19 +916,19 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-es-9.3.0.yaml");
 		bundleContent.Should().Contain("name: 1755268140-es-9.3.1.yaml");
 		bundleContent.Should().NotContain("name: 1755268150-es-9.2.0.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithNonExistentFileAsPrs_ReturnsError()
 	{
 		// Arrange
@@ -864,7 +943,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		// File doesn't exist and there are no other PRs, so should return error
@@ -873,7 +952,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("File does not exist"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithUrlAsPrs_TreatsAsPrIdentifier()
 	{
 		// Arrange
@@ -890,7 +969,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-test-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current!.Execution.CancellationToken);
 
 		// Provide a URL - should be treated as a PR identifier, not a file path
 		var input = new BundleChangelogsArguments
@@ -901,7 +980,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		// URL should be treated as PR identifier and match the changelog
@@ -909,11 +988,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithNonExistentFileAndOtherPrs_EmitsWarning()
 	{
 		// Arrange
@@ -930,7 +1009,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/123
 			""";
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-test-pr.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current!.Execution.CancellationToken);
 
 		// Provide a non-existent file path along with a valid PR - should emit warning for file but continue with PR
 		var nonexistentFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "nonexistent.txt");
@@ -942,7 +1021,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		// Should succeed because we have a valid PR, but should emit warning for the non-existent file
@@ -953,11 +1032,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var fileWarning = Collector.Diagnostics.FirstOrDefault(d => d.Message.Contains("File does not exist, skipping"));
 		fileWarning.Should().NotBeNull("Expected a warning about the non-existent file being skipped");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProducts_OverridesChangelogProducts()
 	{
 		// Arrange
@@ -987,8 +1066,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1003,29 +1082,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-		// Output products should override changelog products
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("target: 2025-12-02");
-		bundleContent.Should().Contain("target: 2025-12-06");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
+		// Output products should override changelog products at the bundle level
+		var topLevel = bundleContent[..bundleContent.IndexOf("entries:", StringComparison.Ordinal)];
+		topLevel.Should().Contain("product: cloud-serverless");
+		topLevel.Should().Contain("target: 2025-12-02");
+		topLevel.Should().Contain("target: 2025-12-06");
 		// Lifecycle values should be included in products array
-		bundleContent.Should().Contain("lifecycle: ga");
-		bundleContent.Should().Contain("lifecycle: beta");
-		// Should not contain products from changelogs
-		bundleContent.Should().NotContain("product: elasticsearch");
-		bundleContent.Should().NotContain("product: kibana");
-		// But should still contain the entries
+		topLevel.Should().Contain("lifecycle: ga");
+		topLevel.Should().Contain("lifecycle: beta");
+		// Bundle-level products come only from --output-products
+		topLevel.Should().NotContain("product: elasticsearch");
+		topLevel.Should().NotContain("product: kibana");
+		// Entries are always inlined (with file provenance) and keep their own products
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().Contain("title: Elasticsearch feature");
+		bundleContent.Should().Contain("title: Kibana feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithMultipleProducts_IncludesAllProducts()
 	{
 		// Arrange
@@ -1069,9 +1151,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-kibana.yaml");
 		var file3 = FileSystem.Path.Join(_changelogDir, "1755268150-multi-product.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1081,13 +1163,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("product: kibana");
 		bundleContent.Should().Contain("target: 9.2.0");
@@ -1096,7 +1178,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		entryCount.Should().Be(3);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithInputProducts_IncludesLifecycleInProductsArray()
 	{
 		// Arrange
@@ -1128,8 +1210,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-ga.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-elasticsearch-beta.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1143,13 +1225,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array (extracted from changelog entries, not filter)
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.2.0");
@@ -1158,7 +1240,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("lifecycle: beta");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProducts_IncludesLifecycleInProductsArray()
 	{
 		// Arrange
@@ -1176,7 +1258,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1191,13 +1273,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array from --output-products
 		bundleContent.Should().Contain("product: cloud-serverless");
 		bundleContent.Should().Contain("target: 2025-12-02");
@@ -1206,7 +1288,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("lifecycle: beta");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_ExtractsLifecycleFromChangelogEntries()
 	{
 		// Arrange
@@ -1238,8 +1320,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-ga.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-elasticsearch-beta.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1249,13 +1331,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array extracted from changelog entries
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.2.0");
@@ -1264,7 +1346,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("lifecycle: beta");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithInputProductsWildcardLifecycle_ExtractsActualLifecycleFromChangelogs()
 	{
 		// Arrange - Test the scenario where --input-products uses "*" for lifecycle,
@@ -1284,26 +1366,23 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
-			InputProducts =
-			[
-				new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }
-			],
+			InputProducts = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "*" }],
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that the actual lifecycle value "ga" from the changelog is included in products array,
 		// not the wildcard "*" from the filter
 		bundleContent.Should().Contain("product: elasticsearch");
@@ -1314,7 +1393,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().NotContain("lifecycle: '*\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithMultipleTargets_WarningIncludesLifecycle()
 	{
 		// Arrange - Test that warning message includes lifecycle when multiple products
@@ -1359,9 +1438,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-elasticsearch-ga.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-elasticsearch-beta.yaml");
 		var file3 = FileSystem.Path.Join(_changelogDir, "1755268150-elasticsearch-no-lifecycle.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, changelog3, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1371,22 +1450,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		Collector.Warnings.Should().BeGreaterThan(0);
 		// Verify warning message includes lifecycle values
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") &&
-			d.Message.Contains("9.2.0") &&
-			d.Message.Contains("9.2.0 beta") &&
-			d.Message.Contains("9.2.0 ga"));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") && d.Message.Contains(
+					"9.2.0"
+				) && d.Message.Contains("9.2.0 beta") && d.Message.Contains("9.2.0 ga")
+			);
 	}
 
-	[Fact]
-	public async Task BundleChangelogs_WithResolve_CopiesChangelogContents()
+	[Test]
+	public async Task BundleChangelogs_CopiesChangelogContents()
 	{
 		// Arrange
 
@@ -1406,24 +1488,23 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("file:");
 		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
 		bundleContent.Should().Contain("checksum:");
@@ -1438,64 +1519,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("description: This is a test feature");
 	}
 
-	[Fact]
-	public async Task BundleChangelogs_WithExplicitResolveFalse_OverridesConfigResolveTrue()
-	{
-		// Arrange - config has resolve: true, but CLI passes Resolve = false (--no-resolve).
-		// The explicit CLI value must win.
-
-		// language=yaml
-		var configContent =
-			"""
-			bundle:
-			  resolve: true
-			""";
-
-		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
-		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
-
-		// language=yaml
-		var changelog1 =
-			"""
-			title: Test feature
-			type: feature
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			prs:
-			  - https://github.com/elastic/elasticsearch/pull/100
-			""";
-
-		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Resolve = false,
-			Config = configPath,
-			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
-		};
-
-		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-
-		// An unresolved bundle has only a file reference — no inline title/type fields
-		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
-		bundleContent.Should().NotContain("title: Test feature");
-		bundleContent.Should().NotContain("type: feature");
-	}
-
-	[Fact]
-	public async Task BundleChangelogs_WithResolve_PreservesSpecialCharactersInUtf8()
+	[Test]
+	public async Task BundleChangelogs_PreservesSpecialCharactersInUtf8()
 	{
 		// Arrange - Create changelog with special characters that could be corrupted
 		// These characters were reported as being corrupted to "&o0" and "*o0" in the original issue
@@ -1520,26 +1545,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-special-chars.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, Encoding.UTF8, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, Encoding.UTF8, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Resolve = true,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = outputPath };
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
 		// Read the bundle file with explicit UTF-8 encoding
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, Encoding.UTF8, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(
+			input.Output,
+			Encoding.UTF8,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Verify special characters are preserved correctly (not corrupted)
 		// The original issue reported "&o0" and "*o0" corruption, so we verify the characters are correct
@@ -1575,14 +1598,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("€");
 
 		// Verify the content structure is correct
-		bundleContent.Should().Contain("title: Feature with special characters & symbols");
+		bundleContent.Should().Contain("title: \"Feature with special characters & symbols\"");
 		bundleContent.Should().Contain("type: feature");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("target: 9.3.0");
 		bundleContent.Should().Contain("lifecycle: ga");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithDirectoryOutputPath_CreatesDefaultFilename()
 	{
 		// Arrange
@@ -1600,35 +1623,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		// Use a directory path with default filename (simulating command layer processing)
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		var outputPath = FileSystem.Path.Join(outputDir, "changelog-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = outputPath };
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		FileSystem.File.Exists(outputPath).Should().BeTrue("Output file should be created");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("products:");
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("entries:");
 		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithResolveAndMissingTitle_ReturnsError()
 	{
 		// Arrange
@@ -1643,18 +1661,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -1662,7 +1679,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithResolveAndMissingType_ReturnsError()
 	{
 		// Arrange
@@ -1677,18 +1694,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -1696,31 +1712,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: type"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithResolveAndMissingProducts_ReturnsError()
 	{
 		// Arrange
 
 		// language=yaml
-		var changelog1 =
-			"""
+		var changelog1 = """
 			title: Test feature
 			type: feature
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -1728,7 +1742,47 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_WithMultipleInvalidEntries_ReportsAllInOnePass()
+	{
+		// Arrange: one entry missing its title, another missing its products.
+		// language=yaml
+		var changelog1 =
+			"""
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			""";
+
+		// language=yaml
+		var changelog2 = """
+			title: Second feature
+			type: feature
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-missing-title.yaml");
+		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-missing-products.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			All = true,
+			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
+		};
+
+		// Act
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		// Assert: both problems are reported in a single run instead of aborting on the first.
+		result.Should().BeFalse();
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithResolveAndInvalidProduct_ReturnsError()
 	{
 		// Arrange
@@ -1743,18 +1797,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-test-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
 			Directory = _changelogDir,
 			All = true,
-			Resolve = true,
 			Output = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml")
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse();
@@ -1762,7 +1815,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product entry missing required field: product"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithHideFeaturesOption_IncludesHideFeaturesInBundle()
 	{
 		// Arrange - Test that --hide-features option writes feature IDs to the bundle output
@@ -1781,7 +1834,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1792,20 +1845,20 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is included in the bundle output
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:hidden-api");
-		bundleContent.Should().Contain("- feature:another-hidden");
+		bundleContent.Should().Contain("- \"feature:hidden-api\"");
+		bundleContent.Should().Contain("- \"feature:another-hidden\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithoutHideFeaturesOption_OmitsHideFeaturesFieldInOutput()
 	{
 		// Arrange - Test that without --hide-features option, no hide-features field is written
@@ -1823,7 +1876,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1834,18 +1887,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is NOT written when not specified
 		bundleContent.Should().NotContain("hide-features:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithHideFeaturesFromFile_IncludesHideFeaturesInBundle()
 	{
 		// Arrange - Test that --hide-features can read feature IDs from a file
@@ -1864,12 +1917,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		// Create feature IDs file
 		var featureIdsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "feature-ids.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(featureIdsFile)!);
-		await FileSystem.File.WriteAllTextAsync(featureIdsFile, "feature:from-file\nfeature:another", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			featureIdsFile,
+			"feature:from-file\nfeature:another",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1880,20 +1937,20 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field contains feature IDs from the file
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-file");
-		bundleContent.Should().Contain("- feature:another");
+		bundleContent.Should().Contain("- \"feature:from-file\"");
+		bundleContent.Should().Contain("- \"feature:another\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRepoOption_IncludesRepoInBundleProducts()
 	{
 		// Arrange - Test that --repo option sets the repo field in the bundle output
@@ -1911,7 +1968,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1922,22 +1979,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that repo field is included in the bundle output
 		bundleContent.Should().Contain("product: cloud-serverless");
 		bundleContent.Should().Contain("repo: cloud");
 	}
 
-	[Fact]
-	public async Task BundleChangelogs_WithoutRepoOption_OmitsRepoFieldInOutput()
+	[Test]
+	public async Task BundleChangelogs_WithoutRepoOption_UsesResolvedAuthoringRepoInOutput()
 	{
-		// Arrange - Test that without --repo option, no repo field is written to the bundle
+		// Arrange - Test that without --repo option, the resolved authoring repo is written to the bundle
+		var env = GithubRepositoryEnvironment("elastic/docs-builder");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
 
 		// language=yaml
 		var changelog1 =
@@ -1952,7 +2011,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-es-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -1963,26 +2022,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
-		// Verify that no repo field is written when not specified
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
+		// Verify that the resolved authoring repo is written when not explicitly specified
 		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().NotContain("repo:");
+		bundleContent.Should().Contain("repo: docs-builder");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithBundleLevelRepoConfig_UsesConfigRepoWhenOptionNotSpecified()
 	{
 		// Arrange - bundle.repo in config is used when --repo is not provided on the CLI
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  repo: cloud
 			  owner: elastic
@@ -1990,7 +2048,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2006,7 +2064,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -2021,31 +2079,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("repo: cloud", "bundle.repo config should be applied when --repo is not specified");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRepoOptionAndBundleLevelConfig_CliOptionTakesPrecedence()
 	{
 		// Arrange - explicit --repo overrides bundle.repo in config
 
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  repo: wrong-repo
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2061,7 +2120,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -2072,22 +2131,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			Repo = "cloud"  // explicit CLI --repo should win over bundle.repo: wrong-repo
+			Repo = "cloud" // explicit CLI --repo should win over bundle.repo: wrong-repo
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("repo: cloud", "explicit --repo should override bundle.repo config");
 		bundleContent.Should().NotContain("repo: wrong-repo");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProductsAndRepo_IncludesRepoInAllProducts()
 	{
 		// Arrange - Test that --repo option works with --output-products
@@ -2105,7 +2166,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -2121,13 +2182,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that repo field is included for all products
 		bundleContent.Should().Contain("product: cloud-serverless");
 		bundleContent.Should().Contain("product: elasticsearch-serverless");
@@ -2135,7 +2196,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("repo: cloud");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithConfigOutputDirectory_WhenOutputNotSpecified_UsesConfigOutputDirectory()
 	{
 		// Arrange - When --output is not specified, use bundle.output_directory from config if set
@@ -2153,7 +2214,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-output-dir", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2168,32 +2229,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Config = configPath,
-			Output = null,
-			All = true
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Config = configPath, Output = null, All = true };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		var expectedOutputPath = FileSystem.Path.Join(outputDir, "changelog-bundle.yaml");
 		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should be created in config output_directory");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithConfigDirectory_WhenDirectoryNotSpecified_UsesConfigDirectory()
 	{
 		// Arrange - When --directory is not specified (null), use bundle.directory from config if set
@@ -2207,11 +2264,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 			bundle:
 			  directory: "{_changelogDir.Replace("\\", "/")}"
 			  output_directory: "{outputDir.Replace("\\", "/")}"
+			  use_local_changelogs: true
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2226,32 +2284,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = null,
-			Config = configPath,
-			Output = null,
-			All = true
-		};
+		var input = new BundleChangelogsArguments { Directory = null, Config = configPath, Output = null, All = true };
 
 		// Act - Directory not specified, so ApplyConfigDefaults uses config.Bundle.Directory
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		var expectedOutputPath = FileSystem.Path.Join(outputDir, "changelog-bundle.yaml");
 		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should use config directory and output_directory");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithExplicitDirectory_OverridesConfigDirectory()
 	{
 		// Arrange - config has directory pointing elsewhere, but CLI passes --directory explicitly.
@@ -2272,7 +2326,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config-dir-override", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2287,7 +2341,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -2298,18 +2352,20 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act - Explicit Directory overrides config.Bundle.Directory
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - used _changelogDir (CLI), not configDir (config)
-		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("product: elasticsearch");
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfileHideFeatures_IncludesHideFeaturesInBundle()
 	{
 		// Arrange - Test that hide_features in a profile config are written to the bundle output
@@ -2321,7 +2377,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:profile-hidden
 			        - feature:another-profile-hidden
@@ -2329,7 +2384,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2346,7 +2401,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -2361,24 +2416,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that hide-features from the profile are written to the bundle
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:profile-hidden");
-		bundleContent.Should().Contain("- feature:another-profile-hidden");
+		bundleContent.Should().Contain("- \"feature:profile-hidden\"");
+		bundleContent.Should().Contain("- \"feature:another-profile-hidden\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_OnlyProfileHideFeaturesAreUsed()
 	{
 		// Arrange - In profile mode, only hide_features from the profile config are written to the bundle.
@@ -2392,14 +2449,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:from-profile
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config2", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2415,7 +2471,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -2430,23 +2486,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
 		// Find the output file
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that only the profile hide-features are present
 		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- feature:from-profile");
+		bundleContent.Should().Contain("- \"feature:from-profile\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfileMultipleHideFeatures_AllProfileFeaturesArePresent()
 	{
 		// Arrange - All hide_features from the profile are written to the bundle
@@ -2458,7 +2516,6 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      hide_features:
 			        - feature:profile-one
 			        - feature:profile-two
@@ -2466,7 +2523,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, "config3", "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2482,7 +2539,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -2497,21 +2554,23 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("- feature:profile-one");
-		bundleContent.Should().Contain("- feature:profile-two");
+		bundleContent.Should().Contain("- \"feature:profile-one\"");
+		bundleContent.Should().Contain("- \"feature:profile-two\"");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithComments_ProducesNormalizedChecksum()
 	{
 		// Arrange - File with comment headers should produce a normalized checksum
@@ -2544,7 +2603,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-with-comments.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -2554,13 +2613,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 
 		// The checksum in the bundle should be the normalized hash (comments stripped)
 		var expectedChecksum = ComputeSha1(changelogWithComments);
@@ -2569,11 +2628,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Both versions of the content should produce the same checksum (comments are normalized away)
 		var checksumFromCommented = ComputeSha1(changelogWithComments);
 		var checksumFromUncommented = ComputeSha1(changelogWithoutComments);
-		checksumFromCommented.Should().Be(checksumFromUncommented,
-			"checksums should be identical regardless of comments");
+		checksumFromCommented.Should().Be(checksumFromUncommented, "checksums should be identical regardless of comments");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithAndWithoutComments_ProduceSameChecksum()
 	{
 		// Arrange - Two separate bundles, one with and one without comments,
@@ -2609,42 +2667,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var dir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir1);
 		var file1 = FileSystem.Path.Join(dir1, "1755268130-shared.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelogWithComments, TestContext.Current!.Execution.CancellationToken);
 
 		var output1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle1.yaml");
-		var result1 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Directory = dir1, All = true, Output = output1
-		}, TestContext.Current.CancellationToken);
+		var result1 = await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir1, All = true, Output = output1 },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Bundle without comments
 		var dir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir2);
 		var file2 = FileSystem.Path.Join(dir2, "1755268130-shared.yaml");
-		await FileSystem.File.WriteAllTextAsync(file2, changelogWithoutComments, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelogWithoutComments, TestContext.Current!.Execution.CancellationToken);
 
 		var output2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle2.yaml");
-		var result2 = await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Directory = dir2, All = true, Output = output2
-		}, TestContext.Current.CancellationToken);
+		var result2 = await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir2, All = true, Output = output2 },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Assert
 		result1.Should().BeTrue();
 		result2.Should().BeTrue();
 
-		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current.CancellationToken);
-		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current.CancellationToken);
+		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current!.Execution.CancellationToken);
+		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current!.Execution.CancellationToken);
 
 		// Extract checksum values from both bundles
 		var checksum1 = ExtractChecksum(bundle1);
 		var checksum2 = ExtractChecksum(bundle2);
 
-		checksum1.Should().Be(checksum2,
-			"bundles from files with and without comments should have the same normalized checksum");
+		checksum1.Should().Be(checksum2, "bundles from files with and without comments should have the same normalized checksum");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithDifferentData_ProducesDifferentChecksum()
 	{
 		// Arrange - Files with actually different data should produce different checksums
@@ -2676,37 +2735,46 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Bundle first file
 		var dir1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir1);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(dir1, "1755268130-a.yaml"), changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(dir1, "1755268130-a.yaml"),
+			changelog1,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var output1 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle1.yaml");
-		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Directory = dir1, All = true, Output = output1
-		}, TestContext.Current.CancellationToken);
+		await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir1, All = true, Output = output1 },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Bundle second file
 		var dir2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(dir2);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(dir2, "1755268130-b.yaml"), changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(dir2, "1755268130-b.yaml"),
+			changelog2,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var output2 = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle2.yaml");
-		await Service.BundleChangelogs(Collector, new BundleChangelogsArguments
-		{
-			Directory = dir2, All = true, Output = output2
-		}, TestContext.Current.CancellationToken);
+		await Service.BundleChangelogs(
+			Collector,
+			new BundleChangelogsArguments { Directory = dir2, All = true, Output = output2 },
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Assert
-		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current.CancellationToken);
-		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current.CancellationToken);
+		var bundle1 = await FileSystem.File.ReadAllTextAsync(output1, TestContext.Current!.Execution.CancellationToken);
+		var bundle2 = await FileSystem.File.ReadAllTextAsync(output2, TestContext.Current!.Execution.CancellationToken);
 
 		var checksum1 = ExtractChecksum(bundle1);
 		var checksum2 = ExtractChecksum(bundle2);
 
-		checksum1.Should().NotBe(checksum2,
-			"files with different data should produce different checksums");
+		checksum1.Should().NotBe(checksum2, "files with different data should produce different checksums");
 	}
 
-	[Fact]
+	[Test]
 	public async Task AmendBundle_WithComments_ProducesNormalizedChecksum()
 	{
 		// Arrange - Amend service should also use normalized checksums
@@ -2724,75 +2792,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    target: 9.2.0
 			entries: []
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
-
-		// Create a changelog file with comments
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
-		// language=yaml
-		var changelogWithComments =
-			"""
-			# This is a comment header
-			# Generated by changelog add
-			title: Amend feature
-			type: feature
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			prs:
-			  - https://github.com/elastic/elasticsearch/pull/100
-			""";
-
-		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268130-amend-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current.CancellationToken);
-
-		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
-
-		var amendInput = new AmendBundleArguments
-		{
-			BundlePath = bundleFile,
-			AddFiles = [changelogFile],
-			Resolve = false
-		};
-
-		// Act
-		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current.CancellationToken);
-
-		// Assert
-		result.Should().BeTrue();
-		Collector.Errors.Should().Be(0);
-
-		// Read the amend file
-		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundleFile);
-		amendFiles.Should().HaveCount(1);
-
-		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
-
-		// The checksum should be the normalized hash (comments stripped before hashing)
-		var expectedChecksum = ComputeSha1(changelogWithComments);
-		amendContent.Should().Contain($"checksum: {expectedChecksum}");
-	}
-
-	[Fact]
-	public async Task AmendBundle_WithResolve_ProducesNormalizedChecksum()
-	{
-		// Arrange - Amend with --resolve should also use normalized checksums
-
-		// Create a base bundle file
-		var bundleDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(bundleDir);
-
-		var bundleFile = FileSystem.Path.Join(bundleDir, "bundle.yaml");
-		// language=yaml
-		var bundleContent =
-			"""
-			products:
-			  - product: elasticsearch
-			    target: 9.2.0
-			entries: []
-			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create a changelog file with comments
 		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -2812,19 +2812,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var changelogFile = FileSystem.Path.Join(changelogDir, "1755268140-resolved-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(changelogFile, changelogWithComments, TestContext.Current!.Execution.CancellationToken);
 
 		var amendService = new ChangelogBundleAmendService(LoggerFactory, FileSystem);
 
-		var amendInput = new AmendBundleArguments
-		{
-			BundlePath = bundleFile,
-			AddFiles = [changelogFile],
-			Resolve = true
-		};
+		var amendInput = new AmendBundleArguments { BundlePath = bundleFile, AddFiles = [changelogFile] };
 
 		// Act
-		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current.CancellationToken);
+		var result = await amendService.AmendBundle(Collector, amendInput, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -2834,7 +2829,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var amendFiles = ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundleFile);
 		amendFiles.Should().HaveCount(1);
 
-		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current.CancellationToken);
+		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// The checksum should be the normalized hash
 		var expectedChecksum = ComputeSha1(changelogWithComments);
@@ -2845,7 +2840,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		amendContent.Should().Contain("type: feature");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_OutputProducts_OverridesProductsArray()
 	{
 		// Arrange - output_products overrides the products array written to the bundle.
@@ -2859,13 +2854,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} *"
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} ga"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -2881,7 +2875,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -2896,22 +2890,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// output_products overrides: the products array in the bundle output should have lifecycle: ga
 		// even though the matched changelog has lifecycle: preview
 		bundleContent.Should().Contain("lifecycle: ga", "output_products should write lifecycle: ga to the bundle products array");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_MalformedOutputProducts_EmitsError()
 	{
 		var configContent =
@@ -2920,13 +2916,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} *"
-			      output: "elasticsearch-{version}.yaml"
 			      output_products: "elasticsearch {version} ga extra-token"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var changelog1 =
 			"""
@@ -2941,7 +2936,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -2955,16 +2950,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 			OutputDirectory = outputDir
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
-			d.Message.Contains("elasticsearch 9.2.0 ga extra-token", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) && d.Message.Contains(
+					"elasticsearch 9.2.0 ga extra-token",
+					StringComparison.Ordinal
+				)
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_MalformedProductsPattern_EmitsError()
 	{
 		var configContent =
@@ -2973,12 +2974,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} ga extra bad"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var changelog1 =
 			"""
@@ -2993,7 +2993,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -3007,17 +3007,91 @@ public class BundleChangelogsTests : ChangelogTestBase
 			OutputDirectory = outputDir
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) &&
-			d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) &&
-			d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) && d.Message.Contains(
+					"at most three space-separated fields",
+					StringComparison.Ordinal
+				) && d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal)
+			);
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_WithProfile_DateVersionAndLifecyclePlaceholder_WritesGaLifecycle()
+	{
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    serverless-release:
+			      output_products: "cloud-serverless {version} {lifecycle}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-07-21
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/kibana/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+
+		var prListPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prListPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			prListPath,
+			"https://github.com/elastic/kibana/pull/100\n",
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2026-07-21",
+			ProfileReport = prListPath,
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
+		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
+
+		bundleContent.Should().Contain("target: 2026-07-21");
+		bundleContent.Should().Contain("lifecycle: ga", "ISO date version args should derive ga lifecycle, not preview");
+		bundleContent.Should().NotContain("lifecycle: preview");
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithProfile_RepoAndOwner_WritesValuesToProductEntries()
 	{
 		// Arrange - repo and owner in the profile are written to each product entry in the bundle.
@@ -3032,14 +3106,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    serverless-release:
 			      products: "cloud-serverless {version} *"
-			      output: "serverless-{version}.yaml"
 			      repo: cloud
 			      owner: elastic
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3055,7 +3128,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-serverless-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -3070,21 +3143,23 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		bundleContent.Should().Contain("repo: cloud", "Profile repo should be written to bundle product entries");
 		bundleContent.Should().Contain("owner: elastic", "Profile owner should be written to bundle product entries");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_BundleLevelRepo_AppliesWhenProfileOmitsRepo()
 	{
 		// Arrange - repo is set at bundle level, not in the profile; profile should inherit it
@@ -3098,12 +3173,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3119,7 +3193,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -3134,20 +3208,112 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		bundleContent.Should().Contain("repo: elasticsearch", "bundle-level repo should be applied when profile omits repo");
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_ServerlessProfile_WritesAuthoringRepoNotCatalogRepository()
+	{
+		// products.yml maps cloud-serverless → repository: cloud (docs catalog). The bundle must
+		// still stamp the authoring checkout (elasticsearch) for PR/issue defaults.
+		var versions = ConfigurationContext.VersionsConfiguration;
+		var cloudServerless = new Product
+		{
+			Id = "cloud-serverless",
+			DisplayName = "Elastic Cloud Serverless",
+			VersioningSystem = versions.GetVersioningSystem(VersioningSystemId.Stack),
+			Repository = "cloud"
+		};
+		var productsConfiguration = new ProductsConfiguration
+		{
+			Products = new Dictionary<string, Product> { ["cloud-serverless"] = cloudServerless }.ToFrozenDictionary(),
+			PublicReferenceProducts = FrozenDictionary<string, Product>.Empty,
+			ProductDisplayNames = new Dictionary<string, string> { ["cloud-serverless"] = cloudServerless.DisplayName }.ToFrozenDictionary()
+		};
+		var catalogContext = new ConfigurationContext
+		{
+			Endpoints = ConfigurationContext.Endpoints,
+			ConfigurationFileProvider = ConfigurationContext.ConfigurationFileProvider,
+			VersionsConfiguration = versions,
+			ProductsConfiguration = productsConfiguration,
+			SearchConfiguration = ConfigurationContext.SearchConfiguration,
+			LegacyUrlMappings = ConfigurationContext.LegacyUrlMappings
+		};
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, catalogContext);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    serverless-release:
+			      products: "cloud-serverless {version} *"
+			      output_products: "cloud-serverless {version}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/158340
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "158340.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "serverless-release",
+			ProfileArgument = "2026-09-08",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
+
+		bundleContent.Should().Contain("product: cloud-serverless");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("repo: cloud");
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithProfile_ProfileRepoOverridesBundleRepo()
 	{
 		// Arrange - both bundle-level and profile-level repo are set; profile-level wins
@@ -3160,13 +3326,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			      repo: elasticsearch
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3182,7 +3347,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -3197,25 +3362,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		bundleContent.Should().Contain("repo: elasticsearch", "profile-level repo should override bundle-level repo");
 		bundleContent.Should().NotContain("repo: wrong-repo", "bundle-level repo should be overridden by profile-level repo");
 	}
 
-	[Fact]
-	public async Task BundleChangelogs_WithProfile_NoRepoOwner_PreservesExistingFallbackBehavior()
+	[Test]
+	public async Task BundleChangelogs_WithProfile_NoRepoOwner_UsesResolvedAuthoringRepoFallback()
 	{
-		// Arrange - when profile has no repo/owner, the bundle products have no repo field
-		// (existing fallback: product ID is used at render time if no repo is present)
+		// Arrange - when profile has no repo/owner, the bundle still resolves the authoring repo
+		// while leaving owner unset.
+		var env = GithubRepositoryEnvironment("elastic/docs-builder");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, env: env);
 
 		// language=yaml
 		var configContent =
@@ -3224,12 +3393,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3245,7 +3413,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(outputDir);
@@ -3260,31 +3428,94 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
-		// Assert — succeeds without error; no repo field written to products
-		result.Should().BeTrue($"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		// Assert — succeeds without error; resolved authoring repo is written to products
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().NotContain("repo:", "No repo field should be present when profile omits repo");
+		bundleContent.Should().Contain("repo: docs-builder", "resolved authoring repo should be present when profile omits repo");
 		bundleContent.Should().NotContain("owner:", "No owner field should be present when profile omits owner");
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_WithProfile_OmittedRepoOwner_DescriptionUsesResolvedCheckout()
+	{
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, ConfigurationContext, env: env);
+
+		// language=yaml
+		var configContent =
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "Release from {owner}/{repo}"
+			""";
+
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
+
+		// language=yaml
+		var changelog1 =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+
+		var file1 = FileSystem.Path.Join(_changelogDir, "1755268131-feature.yaml");
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
+
+		bundleContent.Should().Contain("Release from elastic/elasticsearch");
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().NotContain("owner:", "description default must not stamp owner onto YAML");
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithProfileMode_MissingConfig_ReturnsErrorWithAdvice()
 	{
 		// Arrange - no config file exists at ./changelog.yml or ./docs/changelog.yml.
 		// Use a fresh MockFileSystem with a known CWD so discovery returns no results.
-		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
-			null,
-			currentDirectory: "/empty-project"
-		);
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(null, currentDirectory: "/empty-project");
 		cwdFs.Directory.CreateDirectory("/empty-project");
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3294,26 +3525,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when no config file is found");
-		Collector.Diagnostics.Should().ContainSingle(d =>
-			d.Severity == Severity.Error &&
-			(d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
-			"Error message should mention changelog.yml or advise running changelog init"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.ContainSingle(
+				d => d.Severity == Severity.Error && (d.Message.Contains("changelog.yml") || d.Message.Contains("changelog init")),
+				"Error message should mention changelog.yml or advise running changelog init"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtCurrentDir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./changelog.yml (in the current working directory)
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
-			null,
-			currentDirectory: root
-		);
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(null, currentDirectory: root);
 		cwdFs.Directory.CreateDirectory(root);
 		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
 		cwdFs.Directory.CreateDirectory(Path.Join(root, "output"));
@@ -3323,12 +3553,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelog.yml"), configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(
+			Path.Join(root, "changelog.yml"),
+			configContent,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// language=yaml
 		var changelogContent =
@@ -3342,9 +3576,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(
+			Path.Join(root, "changelogs/1755268130-feature.yaml"),
+			changelogContent,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3355,23 +3593,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfileMode_ConfigAtDocsSubdir_LoadsSuccessfully()
 	{
 		// Arrange - changelog.yml is at ./docs/changelog.yml (the second discovery candidate)
 		var root = Paths.WorkingDirectoryRoot.FullName;
-		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(
-			null,
-			currentDirectory: root
-		);
+		var cwdFs = new System.IO.Abstractions.TestingHelpers.MockFileSystem(null, currentDirectory: root);
 		cwdFs.Directory.CreateDirectory(root);
 		cwdFs.Directory.CreateDirectory(Path.Join(root, "docs"));
 		cwdFs.Directory.CreateDirectory(Path.Join(root, "changelogs"));
@@ -3382,13 +3623,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 			$$"""
 			bundle:
 			  directory: {{Path.Join(root, "changelogs")}}
+			  use_local_changelogs: true
 			  profiles:
 			    es-release:
 			      products: "elasticsearch {version} {lifecycle}"
-			      output: "elasticsearch-{version}.yaml"
 			""";
 		// Config is in docs/ subdir, not in CWD directly
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "docs/changelog.yml"), configContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(
+			Path.Join(root, "docs/changelog.yml"),
+			configContent,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// language=yaml
 		var changelogContent =
@@ -3402,9 +3647,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
-		await cwdFs.File.WriteAllTextAsync(Path.Join(root, "changelogs/1755268130-feature.yaml"), changelogContent, TestContext.Current.CancellationToken);
+		await cwdFs.File.WriteAllTextAsync(
+			Path.Join(root, "changelogs/1755268130-feature.yaml"),
+			changelogContent,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-		var service = new ChangelogBundlingService(LoggerFactory, ConfigurationContext, FileSystemFactory.ScopeCurrentWorkingDirectory(cwdFs));
+		var service = new ChangelogBundlingService(LoggerFactory, ChangelogFileSystem.FromWorkingDirectory(cwdFs), ConfigurationContext);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3415,30 +3664,37 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
-		result.Should().BeTrue($"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}");
+		result.Should().BeTrue(
+			$"Expected bundling to succeed. Errors: {string.Join("; ", Collector.Diagnostics.Where(d => d.Severity == Severity.Error).Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().Be(0);
-		cwdFs.Directory.GetFiles(Path.Join(root, "output"), "*.yaml").Should().NotBeEmpty("Expected output file to be created");
+		cwdFs
+			.Directory
+			.GetFiles(Path.Join(root, "output"), "*.yaml", System.IO.SearchOption.AllDirectories)
+			.Should()
+			.NotBeEmpty("Expected output file to be created");
 	}
 
 	// ─── Phase 3: URL list file and combined version+report ─────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_UrlListFile_PrUrls_FiltersCorrectly()
 	{
 		// Arrange - profile argument is a text file containing fully-qualified PR URLs
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3467,53 +3723,50 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-matched.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-unmatched.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/elasticsearch/pull/100\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
-		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "bundle.yaml");
+		// URL-list invocations have no version, so the default changelog-bundle.yaml naming applies
+		// in bundle.directory (the fallback for output_directory).
+		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			Profile = "release",
-			ProfileArgument = urlFile
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, Profile = "release", ProfileArgument = urlFile };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268130-matched.yaml");
 		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_UrlListFile_IssueUrls_FiltersCorrectly()
 	{
 		// Arrange - profile argument is a text file containing fully-qualified issue URLs
-		var configContent = $"""
+		var configContent =
+			$"""
 			bundle:
 			  directory: {_changelogDir}
+			  use_local_changelogs: true
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3542,57 +3795,51 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-matched.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-unmatched.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "issues.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/elasticsearch/issues/100\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
-		// Profile writes to _changelogDir/bundle.yaml (output: "bundle.yaml" + no output_directory in config)
-		// Profile writes to _changelogDir/bundle.yaml because bundle.directory is the fallback for output_directory
-		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "bundle.yaml");
+		// URL-list invocations have no version, so the default changelog-bundle.yaml naming applies
+		// in bundle.directory (the fallback for output_directory).
+		var expectedOutputPath = FileSystem.Path.Join(_changelogDir, "changelog-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			Config = configPath,
-			Profile = "release",
-			ProfileArgument = urlFile
-		};
+		var input = new BundleChangelogsArguments { Config = configPath, Profile = "release", ProfileArgument = urlFile };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268130-matched.yaml");
 		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_UrlListFile_Numbers_ReturnsError()
 	{
 		// Arrange - file contains bare PR numbers (not fully-qualified URLs)
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile,
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
 			"""
 			title: Feature
 			type: feature
@@ -3602,11 +3849,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
-			""", TestContext.Current.CancellationToken);
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
-		await FileSystem.File.WriteAllTextAsync(urlFile, "100\n200\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(urlFile, "100\n200\n", TestContext.Current!.Execution.CancellationToken);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3617,35 +3866,36 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when file contains bare numbers");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("fully-qualified GitHub URLs"),
-			"Error should mention fully-qualified URLs requirement"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
+				"Error should mention fully-qualified URLs requirement"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_UrlListFile_MixedPrsAndIssues_ReturnsError()
 	{
 		// Arrange - file contains both PR and issue URLs
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  profiles:
 			    release:
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile,
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
 			"""
 			title: Feature
 			type: feature
@@ -3655,14 +3905,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
-			""", TestContext.Current.CancellationToken);
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "mixed.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/elasticsearch/pull/100\nhttps://github.com/elastic/elasticsearch/issues/200\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var input = new BundleChangelogsArguments
@@ -3674,19 +3926,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when file mixes PR and issue URLs");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("only pull request URLs or only issue URLs"),
-			"Error should mention homogeneous URL requirement"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("only pull request URLs or only issue URLs"),
+				"Error should mention homogeneous URL requirement"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_CombinedVersionAndReport_SubstitutesVersionCorrectly()
 	{
 		// Arrange - version + report: version used for {version} substitution; report used for PR filter
@@ -3696,11 +3950,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    serverless-release:
 			      output_products: "cloud-serverless {version}"
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3729,15 +3982,15 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-feb.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-other.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
 		await FileSystem.File.WriteAllTextAsync(
 			urlFile,
 			"https://github.com/elastic/cloud/pull/100\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
@@ -3748,25 +4001,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			Config = configPath,
 			Profile = "serverless-release",
-			ProfileArgument = "2026-02",   // version string
-			ProfileReport = urlFile,        // URL list file (Phase 3.4)
+			ProfileArgument = "2026-02", // version string
+			ProfileReport = urlFile, // URL list file (Phase 3.4)
 			OutputDirectory = outputDir
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 
 		// Output file name should use the version (not "unknown")
 		outputFiles[0].Should().Contain("2026-02", "Output file path should contain the version string");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		// Only the matched PR should be bundled
 		bundleContent.Should().Contain("1755268130-feb.yaml");
 		bundleContent.Should().NotContain("1755268140-other.yaml");
@@ -3775,29 +4028,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("2026-02");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_CombinedVersion_ReportArgLooksLikeVersion_ReturnsError()
 	{
 		// If the first profile arg looks like a report but a second arg is also provided, error
-		var configContent =
-			"""
+		var configContent = """
 			bundle:
 			  profiles:
 			    serverless-release:
-			      output: "serverless-{version}.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// A "fake" HTML file to act as the profile arg (simulating user accidentally reversing the order)
 		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "report.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
-		await FileSystem.File.WriteAllTextAsync(reportFile, "<html></html>", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(reportFile, "<html></html>", TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
-		await FileSystem.File.WriteAllTextAsync(urlFile, "https://github.com/elastic/cloud/pull/100\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			urlFile,
+			"https://github.com/elastic/cloud/pull/100\n",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Act: profileArg is a file (should be version), profileReport is a URL file — report arg and version arg are swapped
 		var input = new BundleChangelogsArguments
@@ -3805,23 +4060,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = _changelogDir,
 			Config = configPath,
 			Profile = "serverless-release",
-			ProfileArgument = reportFile,  // wrong — this looks like a file, should be a version
+			ProfileArgument = reportFile, // wrong — this looks like a file, should be a version
 			ProfileReport = urlFile
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when first arg looks like a report");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("version string"),
-			"Error should mention that the first arg should be the version"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("version string"),
+				"Error should mention that the first arg should be the version"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithProfile_CombinedVersion_ProfileHasProducts_ReturnsError()
 	{
 		// A profile with a products pattern cannot also use a report/URL-file filter
@@ -3831,15 +4088,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  profiles:
 			    release:
 			      products: "elasticsearch 9.2.0 ga"
-			      output: "bundle.yaml"
 			""";
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		var urlFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(urlFile)!);
-		await FileSystem.File.WriteAllTextAsync(urlFile, "https://github.com/elastic/elasticsearch/pull/100\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			urlFile,
+			"https://github.com/elastic/elasticsearch/pull/100\n",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3850,20 +4110,22 @@ public class BundleChangelogsTests : ChangelogTestBase
 			ProfileReport = urlFile
 		};
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse("Should fail when profile has products pattern and a report is also provided");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("products"),
-			"Error should mention the products pattern conflict"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("products"),
+				"Error should mention the products pattern conflict"
+			);
 	}
 
 	// ─── Phase 4: --report option (option-based mode) ─────────────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithReportOption_ParsesPromotionReportAndFilters()
 	{
 		// Arrange - option-based mode with --report pointing to an HTML-like file
@@ -3876,7 +4138,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 		var reportFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "report.html");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(reportFile)!);
-		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReportContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(reportFile, htmlReportContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var changelog1 =
@@ -3905,41 +4167,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var file1 = FileSystem.Path.Join(_changelogDir, "1755268130-matched.yaml");
 		var file2 = FileSystem.Path.Join(_changelogDir, "1755268140-unmatched.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, changelog1, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, changelog2, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Report = reportFile,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Report = reportFile, Output = outputPath };
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268130-matched.yaml");
 		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithReportOption_FileNotFound_ReturnsError()
 	{
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Report = "/nonexistent/path/report.html"
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Report = "/nonexistent/path/report.html" };
 
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse("Should fail when report file does not exist");
 		Collector.Errors.Should().BeGreaterThan(0);
@@ -3947,16 +4200,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	// ─── Phase 4.2: --prs and --issues file URL validation ───────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrsFile_ContainingNumbers_ReturnsError()
 	{
 		// Arrange - prs file contains bare numbers (not fully-qualified URLs)
 		var prsFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "prs.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(prsFile)!);
-		await FileSystem.File.WriteAllTextAsync(prsFile, "100\n200\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(prsFile, "100\n200\n", TestContext.Current!.Execution.CancellationToken);
 
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile,
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
 			"""
 			title: Feature
 			type: feature
@@ -3966,7 +4220,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    lifecycle: ga
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/100
-			""", TestContext.Current.CancellationToken);
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -3976,28 +4232,35 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when prs file contains bare numbers");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("fully-qualified GitHub URLs"),
-			"Error should mention fully-qualified URL requirement"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
+				"Error should mention fully-qualified URL requirement"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithIssuesFile_ContainingShortForms_ReturnsError()
 	{
 		// Arrange - issues file contains short forms (not fully-qualified URLs)
 		var issuesFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "issues.txt");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(issuesFile)!);
-		await FileSystem.File.WriteAllTextAsync(issuesFile, "elastic/elasticsearch#100\n", TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			issuesFile,
+			"elastic/elasticsearch#100\n",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile,
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
 			"""
 			title: Feature
 			type: feature
@@ -4007,7 +4270,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 			    lifecycle: ga
 			issues:
 			  - https://github.com/elastic/elasticsearch/issues/100
-			""", TestContext.Current.CancellationToken);
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var input = new BundleChangelogsArguments
 		{
@@ -4017,19 +4282,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("Should fail when issues file contains short forms");
 		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("fully-qualified GitHub URLs"),
-			"Error should mention fully-qualified URL requirement"
-		);
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
+				"Error should mention fully-qualified URL requirement"
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPrsFile_ContainingValidUrls_FiltersCorrectly()
 	{
 		// Verify that a prs file with valid fully-qualified URLs still works correctly
@@ -4038,7 +4305,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			prsFile,
 			"https://github.com/elastic/elasticsearch/pull/100\n",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		// language=yaml
@@ -4054,31 +4321,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - https://github.com/elastic/elasticsearch/pull/100
 			""";
 		var file = FileSystem.Path.Join(_changelogDir, "1755268130-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file, changelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			Prs = [prsFile],
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, Prs = [prsFile], Output = outputPath };
 
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRulesBundleExclude_ExcludesMatchingProducts()
 	{
 		// Arrange
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_products: cloud-hosted
@@ -4086,7 +4347,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var elasticsearchChangelog =
@@ -4116,41 +4377,34 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-cloud-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, cloudChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, cloudChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-cloud-feature.yaml");
 		// Verify warning was emitted for the excluded entry
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]"));
+		Logged.Should().Contain(l => l.Contains("global product filter, exclude"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRulesBundleInclude_IncludesOnlyMatchingProducts()
 	{
 		// Arrange
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    include_products: elasticsearch
@@ -4158,7 +4412,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var elasticsearchChangelog =
@@ -4188,40 +4442,33 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-include]"));
+		Logged.Should().Contain(l => l.Contains("global product filter, include"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithAllFilter_AppliesRulesBundle()
 	{
 		// Arrange - rules.bundle applies to --all primary filter too
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_products: kibana
@@ -4229,7 +4476,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var elasticsearchChangelog =
@@ -4259,33 +4506,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-elasticsearch-feature.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithGlobalExcludeProductsMatchConjunction_ExcludesOnlyWhenAllListedProductsOnEntry()
 	{
 		var configContent =
@@ -4300,9 +4541,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var kibanaOnly = """
+		var kibanaOnly =
+			"""
 			title: Kibana only
 			type: feature
 			products:
@@ -4312,7 +4554,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/kibana/pull/100
 			""";
-		var esAndKibana = """
+		var esAndKibana =
+			"""
 			title: Elasticsearch and Kibana
 			type: feature
 			products:
@@ -4329,34 +4572,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "1755268001-kibana-only.yaml"),
 			kibanaOnly,
-			TestContext.Current.CancellationToken);
+			TestContext.Current!.Execution.CancellationToken
+		);
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "1755268002-es-kibana.yaml"),
 			esAndKibana,
-			TestContext.Current.CancellationToken);
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268001-kibana-only.yaml");
 		bundleContent.Should().NotContain("1755268002-es-kibana.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithGlobalIncludeProductsMatchConjunction_RequiresAllListedProductsOnEntry()
 	{
 		var configContent =
@@ -4371,9 +4610,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var esOnly = """
+		var esOnly =
+			"""
 			title: ES only
 			type: feature
 			products:
@@ -4383,7 +4623,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 			prs:
 			  - https://github.com/elastic/elasticsearch/pull/400
 			""";
-		var esSec = """
+		var esSec =
+			"""
 			title: ES and security
 			type: feature
 			products:
@@ -4399,40 +4640,35 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "1755268011-es-only.yaml"),
 			esOnly,
-			TestContext.Current.CancellationToken);
+			TestContext.Current!.Execution.CancellationToken
+		);
 		await FileSystem.File.WriteAllTextAsync(
 			FileSystem.Path.Join(changelogDir, "1755268012-es-sec.yaml"),
 			esSec,
-			TestContext.Current.CancellationToken);
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268012-es-sec.yaml");
 		bundleContent.Should().NotContain("1755268011-es-only.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithInputProducts_AppliesBundleRules()
 	{
 		// Arrange - rules.bundle always applies regardless of input method
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_products: elasticsearch
@@ -4440,7 +4676,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var elasticsearchChangelog =
@@ -4457,7 +4693,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-elasticsearch-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -4472,21 +4708,20 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - elasticsearch entry is excluded by exclude_products rule even with InputProducts
 		result.Should().BeFalse("Bundle should fail because all entries are excluded by rules.bundle");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-exclude]") && d.Message.Contains("1755268130-elasticsearch-feature.yaml"));
+		Logged.Should().Contain(l => l.Contains("global product filter, exclude") && l.Contains("1755268130-elasticsearch-feature.yaml"));
 		Collector.Errors.Should().BeGreaterThan(0, "Should have error about no entries remaining");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRulesBundleExcludeType_ExcludesMatchingType()
 	{
 		// Arrange
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_types: enhancement
@@ -4494,7 +4729,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var featureChangelog =
@@ -4524,40 +4759,33 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-feature.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-enhancement.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, featureChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, enhancementChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, featureChangelog, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, enhancementChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-enhancement.yaml");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
+		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRulesBundleIncludeArea_ExcludesNonMatchingArea()
 	{
 		// Arrange
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    include_areas: "Search"
@@ -4565,7 +4793,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var searchChangelog =
@@ -4599,33 +4827,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-search-feature.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-internal-fix.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, searchChangelog, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, internalChangelog, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, searchChangelog, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, internalChangelog, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("name: 1755268130-search-feature.yaml");
 		bundleContent.Should().NotContain("name: 1755268140-internal-fix.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithRulesBundlePerProductOverride_AppliesProductSpecificFilter()
 	{
 		// Arrange — global rule excludes "enhancement", but cloud-serverless overrides to allow all types
@@ -4642,7 +4864,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var esEnhancement =
@@ -4689,29 +4911,23 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-es-enhancement.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-serverless-search.yaml");
 		var file3 = FileSystem.Path.Join(changelogDir, "1755268150-serverless-other.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, esEnhancement, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, serverlessSearch, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, serverlessOther, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, esEnhancement, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, serverlessSearch, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, serverlessOther, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
 
-		var input = new BundleChangelogsArguments
-		{
-			Directory = changelogDir,
-			All = true,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = changelogDir, All = true, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().NotContain("name: 1755268130-es-enhancement.yaml");
 		bundleContent.Should().Contain("name: 1755268140-serverless-search.yaml");
 		bundleContent.Should().NotContain("name: 1755268150-serverless-other.yaml");
@@ -4719,7 +4935,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	// ── Multi-product rule resolution: intersection + alphabetical first-match ────────────────────────
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProducts_SingleProductEntry_UsesMatchingProductRule()
 	{
 		// Arrange — output_products has two products; rule context = "kibana" (first alphabetically).
@@ -4740,7 +4956,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// kibana-docs entry: kibana rule says exclude docs → excluded
 		// language=yaml
@@ -4789,9 +5005,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268130-kibana-doc.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268140-security-entry.yaml");
 		var file3 = FileSystem.Path.Join(changelogDir, "1755268150-security-other.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, kibanaDoc, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, securityEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, securityOtherArea, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, kibanaDoc, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, securityEntry, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, securityOtherArea, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -4802,22 +5018,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }, new ProductArgument { Product = "security", Target = "9.3.0" }]
+			OutputProducts =
+			[
+				new ProductArgument { Product = "kibana", Target = "9.3.0" },
+				new ProductArgument { Product = "security", Target = "9.3.0" }
+			]
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		// Rule context = "kibana" (first alphabetically from output products)
 		// All security entries are disjoint from kibana context → excluded
-		// Kibana entry uses kibana rules (exclude docs) → excluded  
+		// Kibana entry uses kibana rules (exclude docs) → excluded
 		// Result: No entries remain → bundle should fail
-		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		result.Should().BeFalse(
+			$"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProducts_SharedProductEntry_UsesAlphabeticalFirstMatch()
 	{
 		// Arrange — entry belongs to both kibana and security (shared entry).
@@ -4841,7 +5063,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var sharedEntry =
@@ -4876,8 +5098,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268160-shared.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268161-kibana-other.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, sharedEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, kibanaOtherEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, sharedEntry, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaOtherEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -4888,22 +5110,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 			All = true,
 			Config = configPath,
 			Output = outputPath,
-			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }, new ProductArgument { Product = "security", Target = "9.3.0" }]
+			OutputProducts =
+			[
+				new ProductArgument { Product = "kibana", Target = "9.3.0" },
+				new ProductArgument { Product = "security", Target = "9.3.0" }
+			]
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert — kibana wins alphabetically; its exclude_areas rule fires for the shared entry
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().NotContain("name: 1755268160-shared.yaml", "kibana rule (alphabetically first) should exclude the shared entry");
-		bundleContent.Should().Contain("name: 1755268161-kibana-other.yaml", "kibana entry with a different area should pass the exclude_areas rule");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-type-area]"));
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().NotContain(
+			"name: 1755268160-shared.yaml",
+			"kibana rule (alphabetically first) should exclude the shared entry"
+		);
+		bundleContent.Should().Contain(
+			"name: 1755268161-kibana-other.yaml",
+			"kibana entry with a different area should pass the exclude_areas rule"
+		);
+		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithoutOutputProducts_FallsBackToEntryProducts()
 	{
 		// Arrange — no output_products; fallback uses entry's own product list (alphabetical first-match).
@@ -4920,7 +5152,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var kibanaDoc =
@@ -4949,8 +5181,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268170-kibana-doc.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268180-es-doc.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, kibanaDoc, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, esDoc, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, kibanaDoc, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, esDoc, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -4965,18 +5197,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().NotContain("name: 1755268170-kibana-doc.yaml", "kibana docs should be excluded by its per-product rule");
-		bundleContent.Should().Contain("name: 1755268180-es-doc.yaml", "elasticsearch docs entry has no per-product rule and no global rule, so it is included");
+		bundleContent.Should().Contain(
+			"name: 1755268180-es-doc.yaml",
+			"elasticsearch docs entry has no per-product rule and no global rule, so it is included"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithOutputProducts_EntryNotInContext_FallsBackToEntryProducts()
 	{
 		// Arrange — output_products is [kibana]; entry belongs to [elasticsearch] only (disjoint).
@@ -4993,7 +5228,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var esFeature =
@@ -5009,7 +5244,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268190-es-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, esFeature, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, esFeature, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(outputPath)!);
@@ -5024,18 +5259,21 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert — disjoint entry excluded entirely (new single-product rule resolution behavior)
 		result.Should().BeFalse($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "elasticsearch entry should be excluded as disjoint from kibana context");
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'kibana'"),
+			"elasticsearch entry should be excluded as disjoint from kibana context"
+		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPerProductIncludeProducts_IncludesOnlyContextMatchingProducts()
 	{
 		// language=yaml
@@ -5056,7 +5294,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create test entries
 		var changelogDir = CreateChangelogDir();
@@ -5076,21 +5314,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - single-product rule resolution: only security changelog matches bundle context
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Only security changelog should be included (it matches the bundle context "security")
-		bundleContent.Should().Contain("security-feature.yaml", "security entry matches bundle context and should be included by security-specific rules");
+		bundleContent.Should().Contain(
+			"security-feature.yaml",
+			"security entry matches bundle context and should be included by security-specific rules"
+		);
 
 		// Disjoint changelogs are excluded entirely (not included via global fallback)
 		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context and should be excluded");
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context and should be excluded");
+		bundleContent.Should().NotContain(
+			"elasticsearch-feature.yaml",
+			"elasticsearch entry is disjoint from security context and should be excluded"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPerProductExcludeProducts_ExcludesContextMatchingProducts()
 	{
 		// language=yaml
@@ -5107,7 +5351,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create test entries
 		var changelogDir = CreateChangelogDir();
@@ -5116,7 +5360,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 		await CreateTestEntry(changelogDir, "elasticsearch-feature.yaml", "Elasticsearch feature", "elasticsearch");
 
 		// Create multi-product entry that should be excluded by security context rule
-		var multiProductContent = """
+		var multiProductContent =
+			"""
 			title: Security+Kibana feature
 			type: feature
 			products:
@@ -5128,7 +5373,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - "123"
 			""";
 		var multiProductFile = FileSystem.Path.Join(changelogDir, "security-kibana-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(multiProductFile, multiProductContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(multiProductFile, multiProductContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("bundle.yaml");
 
@@ -5142,11 +5387,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - single-product rule resolution: disjoint entries are excluded entirely
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Rule context = "security" (from output products)
 		// Disjoint entries (kibana, elasticsearch) are excluded entirely
@@ -5157,10 +5402,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
 
 		// Multi-product entry (security + kibana) matches security context and gets excluded by exclude_products=[kibana] → EXCLUDED
-		bundleContent.Should().NotContain("security-kibana-feature.yaml", "security+kibana entry should be excluded by security context rule");
+		bundleContent.Should().NotContain(
+			"security-kibana-feature.yaml",
+			"security+kibana entry should be excluded by security context rule"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPerProductRules_FallsBackToGlobalWhenNoContextRule()
 	{
 		// language=yaml
@@ -5179,7 +5427,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create test entries
 		var changelogDir = CreateChangelogDir();
@@ -5201,7 +5449,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		// Rule context = "security" (from output products)
@@ -5209,14 +5457,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// elasticsearch and kibana entries are disjoint from security context → excluded
 		// Security-only entry is included (disjoint satisfied; no per-product product filter)
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (Mode 3 pass-through when no per-product block for context)");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain(
+			"security-feature.yaml",
+			"security entry should be included (Mode 3 pass-through when no per-product block for context)"
+		);
 		// Disjoint entries are excluded entirely in single-product rule resolution
 		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
 		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithPerProductRules_ContextRulesTakePrecedenceOverGlobal()
 	{
 		// language=yaml
@@ -5235,7 +5486,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Create test entries
 		var changelogDir = CreateChangelogDir();
@@ -5255,11 +5506,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - single-product rule resolution: disjoint entries are excluded entirely
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Rule context = "security" (from output products)
 		// Disjoint entries (kibana, elasticsearch) are excluded entirely
@@ -5272,7 +5523,8 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
 	{
-		var content = $"""
+		var content =
+			$"""
 			title: {title}
 			type: feature
 			products:
@@ -5282,7 +5534,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			  - "123"
 			""";
 		var filePath = FileSystem.Path.Join(changelogDir, filename);
-		await FileSystem.File.WriteAllTextAsync(filePath, content, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(filePath, content, TestContext.Current!.Execution.CancellationToken);
 	}
 
 	private string CreateTempFilePath(string filename)
@@ -5300,14 +5552,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 		return checksumLine.Split("checksum:")[1].Trim();
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithNoProductsField_FallsBackToGlobalRules()
 	{
 		// Arrange — global-only rules.bundle (Mode 2): entries with no products get a warning; product filters are skipped;
 		// type/area blocker still applies.
 		// language=yaml
-		var configContent =
-			"""
+		var configContent = """
 			rules:
 			  bundle:
 			    exclude_types:
@@ -5316,7 +5567,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var noProductsEntry =
@@ -5329,20 +5580,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268200-no-products.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("no-products-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert — docs entry excluded by global type filter; bundle fails with no entries remained
 		result.Should().BeFalse("bundling should fail when all entries are filtered out");
@@ -5353,7 +5598,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_GlobalMode_IncludeProductsAny_IncludesEntryMatchingAnyListedProduct()
 	{
 		// Mode 2 — global rules only: match_products: any with include_products lists means OR over changelog products.
@@ -5370,7 +5615,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var esOnly =
@@ -5400,31 +5645,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268205-es.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268206-kibana.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, esOnly, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, kibanaOnly, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, esOnly, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, kibanaOnly, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("global-or-bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268205-es.yaml");
 		bundleContent.Should().Contain("1755268206-kibana.yaml");
 	}
 
-	[Fact]
-	public async Task BundleChangelogs_GlobalMode_EmptyProducts_IncludesFeatureEntryWithWarning()
+	[Test]
+	public async Task BundleChangelogs_GlobalMode_EmptyProducts_WarnsThenFailsResolvedValidation()
 	{
-		// Mode 2 — missing/empty changelog products: include with warning; product include/exclude lists are skipped for that entry.
+		// Mode 2 — missing/empty changelog products: the global product include/exclude lists are skipped
+		// for that entry (with a warning), but since bundles always inline entry content the entry then
+		// fails resolved-entry validation, which requires products.
 		// language=yaml
 		var configContent =
 			"""
@@ -5436,10 +5677,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
-		var noProductsEntry =
-			"""
+		var noProductsEntry = """
 			title: No products
 			type: feature
 			prs:
@@ -5448,27 +5688,19 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268207-no-products-feature.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, noProductsEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("global-empty-products.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
-		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
-		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("1755268207-no-products-feature.yaml");
+		result.Should().BeFalse();
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithEmptyProductsYamlMap_UsesGlobalRulesWhenGlobalFiltersPresent()
 	{
 		// rules.bundle.products: {} — no per-product rules; same as omitting products (Mode 2 when global filters exist).
@@ -5483,7 +5715,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var es =
@@ -5510,28 +5742,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		var changelogDir = CreateChangelogDir();
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "1755268208-es.yaml"), es, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(FileSystem.Path.Join(changelogDir, "1755268209-kibana.yaml"), kibana, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "1755268208-es.yaml"),
+			es,
+			TestContext.Current!.Execution.CancellationToken
+		);
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "1755268209-kibana.yaml"),
+			kibana,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		var outputPath = CreateTempFilePath("empty-products-map-bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("1755268208-es.yaml");
 		bundleContent.Should().NotContain("1755268209-kibana.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithEmptyProductsList_FallsBackToGlobalRules()
 	{
 		// Arrange - changelog with empty products list should use global rules only
@@ -5550,7 +5784,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var emptyProductsEntry =
@@ -5564,20 +5798,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268201-empty-products.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, emptyProductsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, emptyProductsEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("empty-products-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - entry excluded by global type rule (empty products list)
 		// Since all entries are filtered out, the bundling should fail
@@ -5589,10 +5817,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
 		errorMessages.Should().Contain("Bundle has no product context", "bundle validation should report lack of product context");
-		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter", "system should report empty bundle error");
+		errorMessages.Should().Contain(
+			"No changelog entries remained after applying rules.bundle filter",
+			"system should report empty bundle error"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithMultipleProducts_UnifiedProductFiltering_AlphabeticalFirstMatch()
 	{
 		// Arrange - entry belongs to both kibana and security; test product filtering uses same resolution as type/area
@@ -5615,7 +5846,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var multiProductEntry =
@@ -5633,7 +5864,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268202-multi-product.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("unified-product-filtering-bundle.yaml");
 
@@ -5643,11 +5874,15 @@ public class BundleChangelogsTests : ChangelogTestBase
 			Directory = changelogDir,
 			Config = configPath,
 			Output = outputPath,
-			OutputProducts = [new ProductArgument { Product = "kibana", Target = "9.3.0" }, new ProductArgument { Product = "security", Target = "9.3.0" }]
+			OutputProducts =
+			[
+				new ProductArgument { Product = "kibana", Target = "9.3.0" },
+				new ProductArgument { Product = "security", Target = "9.3.0" }
+			]
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - entry excluded by product filter (kibana rule wins alphabetically)
 		// Since all entries are filtered out, the bundling should fail
@@ -5658,10 +5893,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
 
 		// Should be excluded by kibana product rule (alphabetical first-match)
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-context-exclude]") && d.Message.Contains("multi-product"));
+		Logged.Should().Contain(l => l.Contains("per-product filter, context-exclude") && l.Contains("multi-product"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_DisjointBundleContext_ProductFilteringFollowsSameLogicAsTypeArea()
 	{
 		// Arrange - bundle context [kibana]; entry products [elasticsearch] (disjoint)
@@ -5686,7 +5921,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var elasticsearchEntry =
@@ -5702,7 +5937,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268203-elasticsearch-disjoint.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("disjoint-context-bundle.yaml");
 
@@ -5716,7 +5951,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - disjoint entry excluded entirely (new single-product rule resolution behavior)
 		// The entry has products=[elasticsearch] but bundle context is kibana, so it's disjoint and excluded
@@ -5724,11 +5959,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain("disjoint from rule context 'kibana'", "disjoint entry should be excluded with informative message");
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'kibana'"),
+			"disjoint entry should be excluded with informative message"
+		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_MultiProductDisjoint_UsesGlobalRules()
 	{
 		// Arrange - bundle context [security]; entry products [kibana, elasticsearch] (both disjoint)
@@ -5758,7 +5996,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var multiProductEntry =
@@ -5776,7 +6014,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268204-multiproduct-disjoint.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, multiProductEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("multiproduct-disjoint-bundle.yaml");
 
@@ -5790,7 +6028,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - multi-product disjoint entry excluded entirely (new single-product rule resolution behavior)
 		// The entry has products=[kibana, elasticsearch] but bundle context is security, so it's disjoint and excluded
@@ -5798,11 +6036,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
 
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
-		errorMessages.Should().Contain("disjoint from rule context 'security'", "disjoint entry should be excluded with informative message");
+		Logged.Should().Contain(
+			l => l.Contains("disjoint from rule context 'security'"),
+			"disjoint entry should be excluded with informative message"
+		);
 		errorMessages.Should().Contain("No changelog entries remained", "system should report empty bundle error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_BundleAll_DisjointUsesOwnProductRules()
 	{
 		// Arrange - bundling ALL changelogs (no OutputProducts specified)
@@ -5828,7 +6069,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// Single-product elasticsearch entry - should be excluded by elasticsearch rule
 		// language=yaml
@@ -5844,7 +6085,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			""";
 
 		// Multi-product entry - should be excluded by elasticsearch rule (alphabetically first)
-		// language=yaml  
+		// language=yaml
 		var multiProductEntry =
 			"""
 			title: Multi-product entry with elasticsearch
@@ -5875,9 +6116,9 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268205-elasticsearch-single.yaml");
 		var file2 = FileSystem.Path.Join(changelogDir, "1755268206-multiproduct-elasticsearch.yaml");
 		var file3 = FileSystem.Path.Join(changelogDir, "1755268207-security-included.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file2, multiProductEntry, TestContext.Current.CancellationToken);
-		await FileSystem.File.WriteAllTextAsync(file3, securityEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, elasticsearchEntry, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file2, multiProductEntry, TestContext.Current!.Execution.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file3, securityEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("bundle-all-product-rules.yaml");
 
@@ -5891,16 +6132,18 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - rule context = "elasticsearch" (first alphabetically from aggregated products)
 		// Security entry is disjoint from elasticsearch context → excluded
-		// All elasticsearch entries are excluded by elasticsearch rule → no entries remain → bundle fails  
-		result.Should().BeFalse($"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
+		// All elasticsearch entries are excluded by elasticsearch rule → no entries remain → bundle fails
+		result.Should().BeFalse(
+			$"Expected bundle to fail when no entries remain. Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
 		Collector.Errors.Should().BeGreaterThan(0, "Should have error when no entries remain after filtering");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_PartialPerProductRules_AllOrNothingReplacement()
 	{
 		// Arrange - kibana rule has product filters but no type/area filters
@@ -5921,7 +6164,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
-		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(configPath, configContent, TestContext.Current!.Execution.CancellationToken);
 
 		// language=yaml
 		var docsEntry =
@@ -5937,20 +6180,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var changelogDir = CreateChangelogDir();
 		var file1 = FileSystem.Path.Join(changelogDir, "1755268204-partial-rule.yaml");
-		await FileSystem.File.WriteAllTextAsync(file1, docsEntry, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(file1, docsEntry, TestContext.Current!.Execution.CancellationToken);
 
 		var outputPath = CreateTempFilePath("partial-rule-bundle.yaml");
 
-		var input = new BundleChangelogsArguments
-		{
-			All = true,
-			Directory = changelogDir,
-			Config = configPath,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { All = true, Directory = changelogDir, Config = configPath, Output = outputPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert - entry included because kibana rule completely replaces global rules
 		// Global exclude_types is ignored when per-product rule applies (all-or-nothing replacement)
@@ -5958,11 +6195,14 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		Collector.Errors.Should().Be(0, "no errors expected when entry is included");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("1755268204-partial-rule.yaml", "entry should be included - per-product rule ignores global type exclusions");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain(
+			"1755268204-partial-rule.yaml",
+			"entry should be included - per-product rule ignores global type exclusions"
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_OptionModeWithPlaceholdersButNoOutputProducts_ReturnsError()
 	{
 		// Arrange
@@ -5977,24 +6217,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("bundling should fail when placeholders are used without --output-products");
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(
-			"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains(
+					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
+				)
+			);
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_OptionModeWithPlaceholdersAndOutputProducts_Succeeds()
 	{
 		// Arrange
 		CreateSampleChangelogs();
-		var outputProducts = new List<ProductArgument>
-		{
-			new() { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }
-		};
+		var outputProducts = new List<ProductArgument> { new() { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" } };
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		var input = new BundleChangelogsArguments
@@ -6009,18 +6252,119 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("bundling should succeed when placeholders have --output-products");
 		Collector.Errors.Should().Be(0, "no errors expected when validation passes");
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
-		bundleContent.Should().Contain("Release includes 9.2.0 with ga features from elastic/elasticsearch",
-			"placeholders should be substituted correctly");
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain(
+			"Release includes 9.2.0 with ga features from elastic/elasticsearch",
+			"placeholders should be substituted correctly"
+		);
 	}
 
-	[Fact]
+	[Test]
+	public async Task BundleChangelogs_OptionModeOmittedRepo_DescriptionUsesResolvedRepoNotProductId()
+	{
+		// Omitting --repo still stamps products[].repo from GITHUB_REPOSITORY; {repo} must
+		// match that checkout name, not the output product id.
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
+
+		var changelogDir = CreateChangelogDir();
+		var changelog =
+			"""
+			title: Serverless feature
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/158340
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "158340.yaml"),
+			changelog,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = outputPath,
+			OutputProducts = [new() { Product = "cloud-serverless", Target = "2026-09-08", Lifecycle = "ga" }],
+			Description = "Release from {owner}/{repo}",
+			Owner = "elastic"
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().Contain("Release from elastic/elasticsearch");
+		bundleContent.Should().NotContain("elastic/cloud-serverless");
+	}
+
+	[Test]
+	public async Task BundleChangelogs_OptionModeOmittedRepo_SanitizerUsesResolvedRepoForBarePrs()
+	{
+		var env = GithubRepositoryEnvironment("elastic/elasticsearch");
+		var service = new ChangelogBundlingService(LoggerFactory, FileSystem, env: env);
+
+		var changelogDir = CreateChangelogDir();
+		var changelog =
+			"""
+			title: Feature with bare PR
+			type: feature
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			prs:
+			  - "158340"
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(changelogDir, "158340.yaml"),
+			changelog,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
+		var input = new BundleChangelogsArguments
+		{
+			Directory = changelogDir,
+			All = true,
+			Output = outputPath,
+			OutputProducts = [new() { Product = "cloud-serverless", Target = "2026-09-08", Lifecycle = "ga" }],
+#pragma warning disable CS0618
+			LinkAllowRepos = ["elastic/elasticsearch"]
+#pragma warning restore CS0618
+		};
+
+		var result = await service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain("repo: elasticsearch");
+		bundleContent.Should().Contain("158340");
+		bundleContent.Should().NotContain("# PRIVATE:");
+	}
+
+	[Test]
 	public async Task BundleChangelogs_OptionModeWithConfigDescriptionAndPlaceholders_ReturnsError()
 	{
 		// Arrange - config-provided description with placeholders but no --output-products
@@ -6035,17 +6379,155 @@ public class BundleChangelogsTests : ChangelogTestBase
 		};
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeFalse("bundling should fail when description has placeholders without --output-products");
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains(
-			"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."));
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains(
+					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
+				)
+			);
 	}
 
+	[Test]
+	public async Task BundleChangelogs_ProfileWithoutDescription_UsesCliDescription()
+	{
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  repo: elasticsearch
+			  owner: elastic
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      output_products: "elasticsearch {version} {lifecycle}"
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
 
-	[Fact]
+		var changelog =
+			"""
+			title: Elasticsearch feature
+			type: feature
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			prs:
+			  - https://github.com/elastic/elasticsearch/pull/100
+			""";
+		await FileSystem.File.WriteAllTextAsync(
+			FileSystem.Path.Join(_changelogDir, "1755268999-feature.yaml"),
+			changelog,
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
+		FileSystem.Directory.CreateDirectory(outputDir);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			OutputDirectory = outputDir,
+			ForceLocal = true,
+			Description = "CLI intro for {version}"
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeTrue(
+			$"Expected bundling to succeed, but got errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}"
+		);
+		Collector.Errors.Should().Be(0);
+
+		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
+		outputFiles.Should().NotBeEmpty();
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
+		bundleContent.Should().Contain("CLI intro for 9.2.0");
+	}
+
+	[Test]
+	public async Task BundleChangelogs_ProfileWithDescription_RejectsCliDescription()
+	{
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			ForceLocal = true,
+			Description = "From CLI"
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Test]
+	public async Task BundleChangelogs_ProfileWithDescription_RejectsEmptyCliDescription()
+	{
+		// --description "" reaches the service as an empty string, not null. The collision check keys off
+		// the flag being supplied at all, so an empty value must fail rather than silently take the profile intro.
+		var configPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "changelog.yml");
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
+			"""
+			bundle:
+			  profiles:
+			    es-release:
+			      products: "elasticsearch {version} {lifecycle}"
+			      description: "From profile"
+			""",
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var input = new BundleChangelogsArguments
+		{
+			Directory = _changelogDir,
+			Profile = "es-release",
+			ProfileArgument = "9.2.0",
+			Config = configPath,
+			ForceLocal = true,
+			Description = string.Empty
+		};
+
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
+
+		result.Should().BeFalse();
+		Collector.Errors.Should().BeGreaterThan(0);
+		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+	}
+
+	[Test]
 	public async Task BundleChangelogs_WithBundleReleaseDatesFalse_SuppressesReleaseDate()
 	{
 		// Arrange
@@ -6057,35 +6539,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			bundle:
 			  release_dates: false
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Output = outputPath,
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = outputPath, Config = configPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("bundling should succeed with release_dates config");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().NotContain("release-date:", "release date should be suppressed when bundle.release_dates is false");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithBundleReleaseDatesTrue_AutoPopulatesReleaseDate()
 	{
 		// Arrange
@@ -6097,35 +6574,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.Directory.CreateDirectory(docsDir);
 		var configPath = FileSystem.Path.Join(docsDir, "changelog.yml");
 		// language=yaml
-		await FileSystem.File.WriteAllTextAsync(configPath,
+		await FileSystem.File.WriteAllTextAsync(
+			configPath,
 			"""
 			bundle:
 			  release_dates: true
 			""",
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Output = outputPath,
-			Config = configPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = outputPath, Config = configPath };
 
 		// Act
-		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("bundling should succeed with release_dates config");
 		Collector.Errors.Should().Be(0);
 
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
 	}
 
-	[Fact]
+	[Test]
 	public async Task BundleChangelogs_WithBomPrefixedInput_ProducesNormalizedOutput()
 	{
 		// Arrange - Create changelog with BOM prefix
@@ -6147,33 +6619,33 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var changelogFile = FileSystem.Path.Join(_changelogDir, "changelog-with-bom.yaml");
 
 		// Write the file with BOM using explicit encoding
-		await FileSystem.File.WriteAllTextAsync(changelogFile, contentWithBom, Encoding.UTF8, TestContext.Current.CancellationToken);
+		await FileSystem.File.WriteAllTextAsync(
+			changelogFile,
+			contentWithBom,
+			Encoding.UTF8,
+			TestContext.Current!.Execution.CancellationToken
+		);
 
 		// Verify the source file has BOM by reading as bytes
-		var sourceBytes = await FileSystem.File.ReadAllBytesAsync(changelogFile, TestContext.Current.CancellationToken);
+		var sourceBytes = await FileSystem.File.ReadAllBytesAsync(changelogFile, TestContext.Current!.Execution.CancellationToken);
 		ChangelogUtf8Normalization.HasUtf8Bom(sourceBytes).Should().BeTrue("source file should contain BOM");
 
 		var outputPath = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
-		var input = new BundleChangelogsArguments
-		{
-			Directory = _changelogDir,
-			All = true,
-			Output = outputPath
-		};
+		var input = new BundleChangelogsArguments { Directory = _changelogDir, All = true, Output = outputPath };
 
 		// Act
-		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("bundling should succeed");
 		Collector.Errors.Should().Be(0);
 
 		// Verify output file does not contain BOM
-		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputPath, TestContext.Current.CancellationToken);
+		var outputBytes = await FileSystem.File.ReadAllBytesAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		ChangelogUtf8Normalization.HasUtf8Bom(outputBytes).Should().BeFalse("bundled output should not contain UTF-8 BOM");
 
 		// Verify content refs (bundle uses file refs + checksum unless resolve inlines entries)
-		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current.CancellationToken);
+		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 		bundleContent.Should().Contain("changelog-with-bom.yaml");
 		bundleContent.Should().Contain("entries:");
 	}

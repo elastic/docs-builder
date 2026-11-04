@@ -9,6 +9,7 @@ using Elastic.Documentation.Mcp.Remote.Gateways;
 using Elastic.Documentation.Mcp.Remote.Tools;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
+using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.ServiceDefaults;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -17,26 +18,26 @@ namespace Mcp.Remote.IntegrationTests;
 /// <summary>
 /// Base class for MCP Lambda integration tests providing shared configuration and factory methods.
 /// </summary>
-public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
+public abstract class McpToolsIntegrationTestsBase
 {
-	protected ITestOutputHelper Output { get; } = output;
-
 	protected void LogDiagnostics(ElasticsearchClientAccessor? clientAccessor)
 	{
 		if (clientAccessor is null)
 			return;
 
-		Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
-		Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
-		Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
+		TestContext.Current?.Output.WriteLine($"Endpoint: {clientAccessor.Endpoint.Uri}");
+		TestContext.Current?.Output.WriteLine($"SearchIndex: {clientAccessor.SearchIndex}");
+		TestContext.Current?.Output.WriteLine($"RulesetName: {clientAccessor.RulesetName ?? "(none)"}");
 	}
 
 	protected async Task LogIndexCount(ElasticsearchClientAccessor clientAccessor, CancellationToken ctx)
 	{
 		var countResponse = await clientAccessor.Client.CountAsync(c => c.Indices(clientAccessor.SearchIndex), ctx);
-		Output.WriteLine(countResponse.IsValidResponse
-			? $"Index document count: {countResponse.Count}"
-			: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}");
+		TestContext.Current?.Output.WriteLine(
+			countResponse.IsValidResponse
+				? $"Index document count: {countResponse.Count}"
+				: $"Index count ERROR: {countResponse.ElasticsearchServerError?.Error?.Reason}"
+		);
 	}
 
 	/// <summary>
@@ -80,19 +81,23 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 
 	private static FullSearchService BuildFullSearchAdapter(
 		ElasticsearchClientAccessor clientAccessor,
-		Elastic.Documentation.Configuration.Products.ProductsConfiguration productsConfig)
+		ProductsConfiguration productsConfig
+	)
 	{
-		var sharedConfig = new Elastic.Internal.Search.Configuration.SearchConfiguration
+		var queryConfig = new SearchQueryConfiguration
 		{
 			SynonymBiDirectional = clientAccessor.SynonymBiDirectional,
-			DiminishTerms = clientAccessor.DiminishTerms.ToArray(),
+			DiminishTerms = clientAccessor.DiminishTerms,
 			RulesetName = clientAccessor.RulesetName,
 			SemanticEnabled = true
 		};
-		var inner = new Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>(
-			clientAccessor.Client, clientAccessor.SearchIndex, sharedConfig,
-			NullLogger<Elastic.Internal.Search.Elasticsearch.DefaultSearchService<Elastic.Internal.Search.DocumentationDocument>>.Instance,
-			productsConfig);
+		var inner = new DefaultSearchService<DocumentationDocument>(
+			clientAccessor.Client,
+			clientAccessor.SearchIndex,
+			queryConfig,
+			NullLogger<DefaultSearchService<DocumentationDocument>>.Instance,
+			productsConfig
+		);
 		return new FullSearchService(inner, productsConfig, NullLogger<FullSearchService>.Instance);
 	}
 
@@ -101,7 +106,7 @@ public abstract class McpToolsIntegrationTestsBase(ITestOutputHelper output)
 	/// </summary>
 	private static ElasticsearchClientAccessor CreateElasticsearchClientAccessor()
 	{
-		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler", environment: "dev");
+		var endpoints = ElasticsearchEndpointFactory.Create(buildType: "assembler");
 
 		var searchConfig = new SearchConfiguration
 		{

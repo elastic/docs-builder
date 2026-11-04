@@ -6,10 +6,12 @@ using Documentation.Builder;
 using Documentation.Builder.Commands;
 using Documentation.Builder.Commands.Assembler;
 using Documentation.Builder.Commands.Codex;
+using Documentation.Builder.Commands.ReleaseAutomation;
 using Documentation.Builder.Middleware;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.ServiceDefaults;
+using Elastic.Documentation.ServiceDefaults.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Nullean.Argh;
@@ -19,14 +21,19 @@ using Nullean.Argh.Hosting;
 // before the host (and its startup logs) are ever constructed.
 await ArghApp.TryArghIntrinsicCommand(args);
 
-_ = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
-var builder = Host.CreateApplicationBuilder()
+var argh = GlobalCliOptions.TryParseArgh(args, out var cliOptions);
+var builder = Host
+	.CreateApplicationBuilder()
 	.AddDocumentationServiceDefaults(cliOptions ?? new GlobalCliOptions(), (s, p) =>
 	{
 		_ = s.AddSingleton(AssemblyConfiguration.Create(p));
 	})
 	.AddDocumentationToolingDefaults()
-	.AddOpenTelemetryDefaults();
+	.AddDocumentationOpenTelemetry(new OtelRegistration("docs-builder")
+	{
+		Metrics = (_, m) => m.AddMeter(TelemetryConstants.AssemblerSyncInstrumentationName),
+		Tracing = (_, t) => t.AddSource(TelemetryConstants.AssemblerSyncInstrumentationName),
+	});
 
 _ = builder.Services.AddArgh(args, app =>
 {
@@ -45,6 +52,12 @@ _ = builder.Services.AddArgh(args, app =>
 	_ = app.Map<ServeCommand>();
 	_ = app.Map<IndexCommand>();
 	_ = app.MapNamespace<ChangelogCommands>("changelog");
+
+	_ = app.MapNamespace<ReleaseCommands>("release", g =>
+	{
+		_ = g.MapNamespace<UnifiedReleaseCommands>("unified");
+		_ = g.Map<ServerlessReleaseCommand>();
+	});
 	_ = app.MapNamespace<InboundLinkCommands>("inbound-links");
 
 	_ = app.Map<AssembleOneShotCommand>();
@@ -58,6 +71,7 @@ _ = builder.Services.AddArgh(args, app =>
 		_ = g.MapNamespace<NavigationCommands>("navigation");
 		_ = g.MapNamespace<ConfigurationCommand>("config");
 		_ = g.Map<AssemblerIndexCommand>();
+		_ = g.Map<AssemblerAiEnrichCommand>();
 		_ = g.Map<AssemblerSitemapCommand>();
 	});
 
@@ -66,6 +80,7 @@ _ = builder.Services.AddArgh(args, app =>
 	{
 		_ = g.Map<CodexIndexCommand>();
 		_ = g.Map<CodexUpdateRedirectsCommand>();
+		_ = g.MapNamespace<CodexSyncCommand>("sync");
 	});
 });
 

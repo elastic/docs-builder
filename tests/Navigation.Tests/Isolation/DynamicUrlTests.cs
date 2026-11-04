@@ -12,13 +12,14 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class DynamicUrlTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void DynamicUrlUpdatesWhenRootUrlChanges()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: setup
@@ -56,11 +57,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/v9.0/setup/install");
 	}
 
-	[Fact]
+	[Test]
 	public void UrlRootPropagatesCorrectlyThroughFolders()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: outer
@@ -88,11 +90,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		file.Url.Should().Be("/base/outer/inner/deep");
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithoutIndexUsesFirstChildUrl()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -113,11 +116,66 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		folder!.Url.Should().Be("/guides/getting-started");
 	}
 
-	[Fact]
+	[Test]
+	public void FolderWithoutIndexUsesFirstVisibleChildUrlWhenHiddenChildComesFirst()
+	{
+		// language=yaml
+		var yaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		                 - file: getting-started.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+
+		folder.Hidden.Should().BeFalse();
+		folder.NavigationTitle.Should().Be("getting-started");
+		folder.Url.Should().Be("/guides/getting-started");
+		folder.NavigationItems.Should().ContainSingle().Which.Hidden.Should().BeTrue();
+	}
+
+	[Test]
+	public void FolderWithoutIndexAndOnlyHiddenChildrenIsHidden()
+	{
+		// language=yaml
+		var yaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - folder: guides
+		               children:
+		                 - hidden: autopilot.md
+		           """;
+
+		var fileSystem = new MockFileSystem();
+		fileSystem.AddDirectory("/docs");
+		var context = CreateContext();
+		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
+
+		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
+		var folder = navigation.NavigationItems.First().Should().BeOfType<FolderNavigation<IDocumentationFile>>().Subject;
+
+		folder.Hidden.Should().BeTrue();
+		folder.Index.Hidden.Should().BeTrue();
+		folder.NavigationItems.Should().BeEmpty();
+	}
+
+	[Test]
 	public void FolderWithNestedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -149,11 +207,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Parent.Should().BeSameAs(folder);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithNestedDeeplinkedChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -185,11 +244,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Parent.Should().BeSameAs(folder);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithNestedDeeplinkedOfIndexChildren()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -221,11 +281,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		gettingStarted.Parent.Should().BeSameAs(folder);
 	}
 
-	[Fact]
+	[Test]
 	public void FolderWithIndexUsesOwnUrl()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides
@@ -246,11 +307,12 @@ public class DynamicUrlTests(ITestOutputHelper output) : DocumentationSetNavigat
 		folder!.Url.Should().Be("/guides");
 	}
 
-	[Fact]
+	[Test]
 	public void UrlRootChangesForTableOfContentsNavigation()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: guides

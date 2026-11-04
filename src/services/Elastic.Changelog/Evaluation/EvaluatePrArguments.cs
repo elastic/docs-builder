@@ -21,4 +21,27 @@ public record EvaluatePrArguments
 	public bool BodyChanged { get; init; }
 	public bool StripTitlePrefix { get; init; }
 	public string BotName { get; init; } = "github-actions[bot]";
+
+	/// <summary>
+	/// When true, a missing changelog entry file causes evaluation to fail with
+	/// <see cref="PrEvaluationResult.MissingEntry"/> instead of proceeding.
+	/// Passed as a workflow input (<c>require-changelog-file</c>) so repos can opt into the gate
+	/// without editing <c>changelog.yml</c>.
+	/// </summary>
+	public bool RequireChangelogFile { get; init; }
+
+	/// <summary>
+	/// When true, a <c>breaking-change</c> PR whose description lacks an <c>Impact</c> and/or <c>Action</c> section
+	/// fails with <see cref="PrEvaluationResult.MissingImpactAction"/>.
+	/// Passed as a workflow input (<c>require-impact-action</c>).
+	/// </summary>
+	public bool RequireImpactAction { get; init; }
+
+	// Additional PR context for GithubDecisionMetadata — optional, populated when known.
+	public bool IsFork { get; init; }
+	public bool CanCommit { get; init; }
+	public bool MaintainerCanModify { get; init; }
+	public string? HeadRepo { get; init; }
+	/// <summary>Opt-in: record the release-note outcome so the comment job says whether the PR will be part of the release notes.</summary>
+	public bool CommentOnSuccess { get; init; }
 }

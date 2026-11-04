@@ -28,7 +28,7 @@ public class IrregularSpaceFormatter : IFormatter
 		'\ufeff', // Zero Width No-Break Space - <BOM>
 		'\u200B', // Zero Width Space - <ZWSP>
 		'\u2028', // Line Separator
-		'\u2029'  // Paragraph Separator
+		'\u2029' // Paragraph Separator
 	];
 
 	// Characters to preserve (semantically meaningful)
@@ -37,7 +37,7 @@ public class IrregularSpaceFormatter : IFormatter
 		'\u00A0', // No-Break Space - <NBSP>
 		'\u2007', // Figure Space
 		'\u202F', // Narrow No-Break Space
-		'\u205F'  // Medium Mathematical Space
+		'\u205F' // Medium Mathematical Space
 	];
 
 	// Characters to replace with regular spaces (visible but problematic)
@@ -53,7 +53,7 @@ public class IrregularSpaceFormatter : IFormatter
 		'\u2008', // Punctuation Space - <PUNCSP>
 		'\u2009', // Thin Space
 		'\u200A', // Hair Space
-		'\u3000'  // Ideographic Space
+		'\u3000' // Ideographic Space
 	];
 
 	private static readonly SearchValues<char> CharactersToRemoveValues = SearchValues.Create(CharactersToRemove);
@@ -64,9 +64,11 @@ public class IrregularSpaceFormatter : IFormatter
 	{
 		// Quick check - if no irregular space characters, return original
 		var span = content.AsSpan();
-		if (span.IndexOfAny(CharactersToRemoveValues) == -1 &&
-			span.IndexOfAny(CharactersToPreserveValues) == -1 &&
-			span.IndexOfAny(CharactersToReplaceValues) == -1)
+		if (
+			span.IndexOfAny(CharactersToRemoveValues) == -1
+			&& span.IndexOfAny(CharactersToPreserveValues) == -1
+			&& span.IndexOfAny(CharactersToReplaceValues) == -1
+		)
 			return new FormatResult(content, 0);
 
 		// Process each character with appropriate handling

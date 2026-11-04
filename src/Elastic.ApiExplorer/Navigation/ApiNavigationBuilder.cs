@@ -1,0 +1,429 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
+using Elastic.ApiExplorer.Structural;
+using Elastic.ApiExplorer.Topics;
+using Elastic.ApiExplorer.Types;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Extensions;
+using Elastic.Documentation.Navigation;
+using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Navigation;
+
+/// <summary>
+/// Builds the navigation tree for one API product: tags, operations, and intro/outro markdown pages.
+/// </summary>
+public class ApiNavigationBuilder(ILogger logger, BuildContext context, IMarkdownStringRenderer markdownRenderer)
+{
+	private const string TagOnlyClassificationKey = "__api_explorer_tag_only__";
+	private const string UnknownTagGroupName = "unknown";
+
+	private readonly ILogger _logger = logger;
+	private readonly ApiTopicsNavigationBuilder _topics = new(logger, context);
+
+	public LandingNavigationItem CreateNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		ResolvedApiConfiguration? apiConfig = null,
+		int? versionMajor = null
+	)
+	{
+		var url = ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, apiUrlSuffix);
+		var rootNavigation = new LandingNavigationItem(url);
+
+		var tagMetadataByName = OpenApiExtensionReader.ParseTagMetadata(openApiDocument);
+		var xTagGroups = OpenApiExtensionReader.ParseXTagGroups(openApiDocument);
+		var orphanTagsLogged = new HashSet<string>(StringComparer.Ordinal);
+
+		var ops = openApiDocument
+			.Paths
+			.SelectMany(p => (p.Value.Operations ?? []).Select(op => (Path: p, Operation: op)))
+			.Select(pair =>
+			{
+				var op = pair.Operation;
+				var (ns, api) = OpenApiExtensionReader.GetNamespaceAndApiName(op.Value);
+				var tag = op.Value.Tags?.FirstOrDefault() is { } firstTag ? OpenApiExtensionReader.TagName(firstTag) : null;
+				var tagClassification = ResolveTagClassification(tag, xTagGroups, orphanTagsLogged);
+
+				// Fall back to the operationId, then a deterministic route:method key; Guid.NewGuid() made grouping keys
+				// (and thus navigation titles) change on every build.
+				var apiString = ns is null
+					? api ?? OpenApiExtensionReader.GetSummary(op.Value) ?? NullIfBlank(op.Value.OperationId) ?? $"{pair.Path.Key}:{op.Key}"
+					: $"{ns}.{api}";
+				return new { Classification = tagClassification, Api = apiString, Tag = tag, pair.Path, pair.Operation };
+			})
+			.ToArray();
+
+		// Every page URL claimed so far: each operation's own, plus each shared page as it is created, so a
+		// collapsed group never takes a URL that belongs to an operation outside it or to an earlier group.
+		var takenMonikers = ops.Select(o => ApiUrlBuilder.OperationMoniker(o.Operation.Value.OperationId, o.Path.Key)).ToHashSet(
+			StringComparer.Ordinal
+		);
+
+		var distinctTagNames = ops.Select(o => o.Tag ?? "unknown").Distinct().ToList();
+		var tagNameToUrlSegment = BuildTagMonikerMap(distinctTagNames);
+
+		// intermediate grouping of models to create the navigation tree
+		// this is two-phased because we need to know if an endpoint has one or more operations
+		var presentClassifications = ops.Select(o => o.Classification).ToHashSet();
+		var orderedClassificationKeys = xTagGroups is null
+			? [TagOnlyClassificationKey]
+			: GetOrderedClassificationKeys(xTagGroups, presentClassifications);
+
+		var classifications = new List<ApiClassification>();
+		foreach (var classKey in orderedClassificationKeys)
+		{
+			var classOps = ops.Where(o => o.Classification == classKey).ToArray();
+			if (classOps.Length == 0)
+				continue;
+
+			var tags = new List<ApiTag>();
+			foreach (var tagGroup in classOps.GroupBy(o => o.Tag))
+			{
+				var apis = new List<ApiEndpoint>();
+				foreach (var apiGroup in tagGroup.GroupBy(o => o.Api))
+				{
+					var operations = new List<ApiOperation>();
+					foreach (var api in apiGroup)
+					{
+						var operation = api.Operation;
+						var apiOperation = new ApiOperation(operation.Key, operation.Value, api.Path.Key, api.Path.Value, apiGroup.Key);
+						operations.Add(apiOperation);
+					}
+					var apiEndpoint = new ApiEndpoint(operations, apiGroup.Key);
+					apis.Add(apiEndpoint);
+				}
+				var tagName = tagGroup.Key ?? "unknown";
+				var tagMeta = OpenApiExtensionReader.TagMetadataFor(tagName, tagMetadataByName);
+				if (!tagNameToUrlSegment.TryGetValue(tagName, out var urlSegment))
+					throw new InvalidOperationException($"Internal error: no URL segment for OpenAPI tag '{tagName}'.");
+
+				var tag = new ApiTag(tagName, tagMeta.DisplayName, tagMeta.Description, tagMeta.ExternalDocs, urlSegment, apis);
+				tags.Add(tag);
+			}
+
+			// Sort tags alphabetically by display name, fallback to canonical name
+			tags = tags.OrderBy(t => t.DisplayName ?? t.Name, StringComparer.OrdinalIgnoreCase).ToList();
+
+			classifications.Add(new ApiClassification(classKey, "", tags));
+		}
+
+		var topLevelNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+		var hasClassifications = classifications.Count > 1;
+		foreach (var classification in classifications)
+		{
+			if (hasClassifications)
+			{
+				var classificationNavigationItem = new ClassificationNavigationItem(classification, rootNavigation, rootNavigation);
+				var tagNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					classificationNavigationItem,
+					classificationNavigationItem,
+					takenMonikers,
+					tagNavigationItems
+				);
+				topLevelNavigationItems.Add(classificationNavigationItem);
+				// if there is only a single tag item will be added directly to the classificationNavigationItem, otherwise they will be added to the tagNavigationItems
+				if (classificationNavigationItem.NavigationItems.Count == 0)
+					classificationNavigationItem.NavigationItems = tagNavigationItems;
+			}
+			else
+				CreateTagNavigationItems(
+					apiUrlSuffix,
+					classification,
+					rootNavigation,
+					rootNavigation,
+					takenMonikers,
+					topLevelNavigationItems
+				);
+		}
+		var typesNavigation = CreateTypesNavigation(apiUrlSuffix, openApiDocument, rootNavigation);
+
+		var finalNavigationItems = new List<INavigationItem>();
+		var (topicsNavigation, listsAuthentication) = _topics.Create(
+			apiUrlSuffix,
+			openApiDocument,
+			ApiTopicsNavigationBuilder.ChildFiles(apiConfig, versionMajor),
+			rootNavigation
+		);
+		if (topicsNavigation.NavigationItems.Count > 0)
+			finalNavigationItems.Add(topicsNavigation);
+
+		// The Topics heading lists the Authentication page itself, unless a children: page stands for it. The generated page then stays hidden for old links.
+		finalNavigationItems.AddRange(
+			StructuralNavigationItem.Create(context.UrlPathPrefix, apiUrlSuffix, rootNavigation, openApiDocument).Where(
+				item => !(listsAuthentication && item.Model.Kind == ApiStructuralKind.Authentication)
+			)
+		);
+
+		IReadOnlyList<INavigationItem> endpointItems = topLevelNavigationItems.Count > 0
+			? topLevelNavigationItems
+			: rootNavigation.NavigationItems.Count > 0 ? rootNavigation.NavigationItems.ToArray() : [];
+		AddSection(finalNavigationItems, endpointItems, rootNavigation);
+		// Types are reference material, not endpoints, so a divider sets them apart as it does the topics.
+		AddSection(finalNavigationItems, typesNavigation is null ? [] : [typesNavigation], rootNavigation);
+
+		rootNavigation.NavigationItems = finalNavigationItems;
+
+		return rootNavigation;
+	}
+
+	/// <summary>Adds one block of the sidebar, with a divider from whatever comes before it. An empty block adds nothing.</summary>
+	private static void AddSection(
+		List<INavigationItem> navigationItems,
+		IReadOnlyList<INavigationItem> section,
+		LandingNavigationItem rootNavigation
+	)
+	{
+		if (section.Count == 0)
+			return;
+
+		if (navigationItems.Count > 0)
+			navigationItems.Add(new SidebarSeparatorNavigationItem(rootNavigation, rootNavigation));
+		navigationItems.AddRange(section);
+	}
+
+	private void CreateTagNavigationItems(
+		string apiUrlSuffix,
+		ApiClassification classification,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent,
+		HashSet<string> takenMonikers,
+		List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>> parentNavigationItems
+	)
+	{
+		foreach (var tag in classification.Tags)
+		{
+			var endpointNavigationItems = new List<IEndpointOrOperationNavigationItem>();
+			var tagNavigationItem = new TagNavigationItem(tag, context.UrlPathPrefix, apiUrlSuffix, rootNavigation, parent);
+			CreateEndpointNavigationItems(apiUrlSuffix, rootNavigation, tag, tagNavigationItem, takenMonikers, endpointNavigationItems);
+			parentNavigationItems.Add(tagNavigationItem);
+			tagNavigationItem.NavigationItems = endpointNavigationItems;
+			tagNavigationItem.ApplyIntroHeadings(ApiMarkdown.ReadIntroHeadings(
+				markdownRenderer,
+				tag.Description,
+				rootNavigation.Url,
+				postSections: []
+			));
+		}
+	}
+
+	private void CreateEndpointNavigationItems(
+		string apiUrlSuffix,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+		ApiTag tag,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		HashSet<string> takenMonikers,
+		List<IEndpointOrOperationNavigationItem> endpointNavigationItems
+	)
+	{
+		foreach (var endpoint in tag.Endpoints)
+		{
+			// One page can only stand in for several operations when they are the same call; a sibling with
+			// its own parameters or responses keeps its own page rather than redirecting to a page that lacks them.
+			var differences = endpoint.Operations.Count > 1 ? OperationEndpoint.Differences(endpoint.Operations) : [];
+			if (endpoint.Operations.Count > 1 && differences.Count == 0)
+			{
+				endpointNavigationItems.Add(
+					CreateCollapsedOperationNavigationItem(apiUrlSuffix, rootNavigation, endpoint, parentNavigationItem, takenMonikers)
+				);
+			}
+			else
+			{
+				// Siblings of one API are meant to be the same call; a difference is worth a look at the spec.
+				if (differences.Count > 0)
+				{
+					_logger.LogWarning(
+						"Operations {Operations} of API '{Api}' differ in {Facets}; each keeps its own page instead of sharing one.",
+						string.Join(", ", endpoint.Operations.Select(static o => $"{o.OperationType.Method.ToUpperInvariant()} {o.Route}")),
+						endpoint.Name,
+						string.Join(", ", differences)
+					);
+				}
+				foreach (var operation in endpoint.Operations)
+				{
+					var operationNavigationItem = new OperationNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						operation,
+						rootNavigation,
+						parentNavigationItem
+					);
+					endpointNavigationItems.Add(operationNavigationItem);
+				}
+			}
+		}
+	}
+
+	/// <summary>
+	/// Every method and route of one API renders as a single page built around the primary operation.
+	/// The other operations' former URLs become redirects.
+	/// </summary>
+	private OperationNavigationItem CreateCollapsedOperationNavigationItem(
+		string apiUrlSuffix,
+		IRootNavigationItem<IApiGroupingModel, INavigationItem> rootNavigation,
+		ApiEndpoint endpoint,
+		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parentNavigationItem,
+		HashSet<string> takenMonikers
+	)
+	{
+		var primary = OperationEndpoint.SelectPrimary(endpoint.Operations);
+		var moniker = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary, takenMonikers);
+		var preferred = ApiUrlBuilder.CanonicalOperationMoniker(endpoint.Operations, primary);
+		if (moniker != preferred)
+		{
+			_logger.LogWarning(
+				"The shared page for API '{Api}' would be '{Preferred}', but another page already owns that URL; it is '{Moniker}' instead.",
+				endpoint.Name,
+				preferred,
+				moniker
+			);
+		}
+		_ = takenMonikers.Add(moniker);
+		var url = ApiUrlBuilder.OperationUrl(context.UrlPathPrefix, apiUrlSuffix, moniker);
+		var aliases = endpoint
+			.Operations
+			.Select(
+				o => ApiUrlBuilder.OperationUrl(
+					context.UrlPathPrefix,
+					apiUrlSuffix,
+					ApiUrlBuilder.OperationMoniker(o.Operation.OperationId, o.Route)
+				)
+			)
+			.Where(alias => alias != url)
+			.Distinct(StringComparer.Ordinal)
+			.ToArray();
+		return new OperationNavigationItem(context.UrlPathPrefix, apiUrlSuffix, primary, rootNavigation, parentNavigationItem, moniker)
+		{
+			Siblings = [.. endpoint.Operations.Where(o => !ReferenceEquals(o, primary))],
+			AliasUrls = aliases
+		};
+	}
+
+	/// <summary>The Types folder of shared schema pages, or null when the spec has none of the listed types.</summary>
+	private TypesNavigationItem? CreateTypesNavigation(
+		string apiUrlSuffix,
+		OpenApiDocument openApiDocument,
+		LandingNavigationItem rootNavigation
+	)
+	{
+		var schemas = openApiDocument.Components?.Schemas;
+		if (schemas is null || schemas.Count == 0)
+			return null;
+
+		var typesCategoryNav = new TypesNavigationItem(rootNavigation);
+		var categoryNavigationItems = new List<IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem>>();
+
+		// One category per group of type pages (Query DSL, Aggregations, Ingest), in the order TypePages lists them.
+		foreach (var category in TypePages.All.GroupBy(static p => p.Category))
+		{
+			var present = category.Where(p => schemas.ContainsKey(p.SchemaId)).ToArray();
+			if (present.Length == 0)
+				continue;
+
+			var categoryNav = new SchemaCategoryNavigationItem(
+				new SchemaCategory(category.Key.Title, category.Key.Description),
+				rootNavigation,
+				typesCategoryNav
+			);
+			categoryNav.NavigationItems =
+			[
+				.. present.Select(
+					page => new SchemaNavigationItem(
+						context.UrlPathPrefix,
+						apiUrlSuffix,
+						new ApiSchema(page.SchemaId, page.Title, category.Key.Slug, schemas[page.SchemaId]),
+						rootNavigation,
+						categoryNav
+					)
+				)
+			];
+			categoryNavigationItems.Add(categoryNav);
+		}
+
+		if (categoryNavigationItems.Count == 0)
+			return null;
+
+		typesCategoryNav.NavigationItems = categoryNavigationItems;
+		return typesCategoryNav;
+	}
+	private string ResolveTagClassification(string? tag, XTagGroups? xTagGroups, HashSet<string> orphanTagsLogged)
+	{
+		if (xTagGroups is null)
+			return TagOnlyClassificationKey;
+
+		var tagName = tag ?? UnknownTagGroupName;
+		if (xTagGroups.TagToGroup.TryGetValue(tagName, out var group))
+			return group;
+
+		if (orphanTagsLogged.Add(tagName))
+		{
+			_logger.LogWarning(
+				"OpenAPI tag '{TagName}' is not listed in any x-tagGroups entry; navigation will group it under '{UnknownGroup}'.",
+				tagName,
+				UnknownTagGroupName
+			);
+		}
+
+		return UnknownTagGroupName;
+	}
+
+	// The raw operationId stays the grouping key: humanized titles of distinct ids (get-script, get_script) can collide.
+	private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+
+	private static List<string> GetOrderedClassificationKeys(XTagGroups xTagGroups, HashSet<string> presentClassifications)
+	{
+		var ordered = new List<string>();
+		foreach (var g in xTagGroups.OrderedGroupNames)
+		{
+			if (presentClassifications.Contains(g))
+				ordered.Add(g);
+		}
+
+		if (presentClassifications.Contains(UnknownTagGroupName) && !ordered.Contains(UnknownTagGroupName))
+			ordered.Add(UnknownTagGroupName);
+
+		foreach (var c in presentClassifications)
+		{
+			if (!ordered.Contains(c))
+				ordered.Add(c);
+		}
+
+		return ordered;
+	}
+
+	private static IReadOnlyDictionary<string, string> BuildTagMonikerMap(IReadOnlyList<string> distinctTagNames)
+	{
+		var toSegment = new Dictionary<string, string>(StringComparer.Ordinal);
+		var segmentToTagName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+		foreach (var name in distinctTagNames)
+		{
+			var segment = ApiUrlBuilder.TagMoniker(name);
+			if (segmentToTagName.TryGetValue(segment, out var existing) && !string.Equals(existing, name, StringComparison.Ordinal))
+			{
+				throw new InvalidOperationException(
+					$"OpenAPI tag URL segment conflict: tags '{existing}' and '{name}' both normalize to the same path segment '{segment}'. " +
+						"Rename one of the tag names in the spec."
+				);
+			}
+
+			segmentToTagName[segment] = name;
+			toSegment[name] = segment;
+		}
+
+		return toSegment;
+	}
+}

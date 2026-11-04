@@ -7,6 +7,7 @@ using System.IO.Abstractions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.InboundLinks;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,7 @@ namespace Documentation.Builder.Commands;
 /// </remarks>
 internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnosticsCollector collector)
 {
-	private readonly LinkIndexService _linkIndexService = new(logFactory, FileSystemFactory.RealRead);
+	private readonly LinkIndexService _linkIndexService = new(logFactory, CheckoutsFileSystem.FromWorkingDirectory());
 
 	/// <summary>Validate all cross-links across every published <c>links.json</c> in the registry.</summary>
 	[NoOptionsInjection]
@@ -42,7 +43,9 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 	public async Task<int> Validate(string? from = null, string? to = null, CancellationToken ct = default)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		serviceInvoker.AddCommand(_linkIndexService, (to, from),
+		serviceInvoker.AddCommand(
+			_linkIndexService,
+			(to, from),
 			static async (s, collector, state, ctx) => await s.CheckRepository(collector, state.to, state.from, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);
@@ -56,10 +59,16 @@ internal sealed class InboundLinkCommands(ILoggerFactory logFactory, IDiagnostic
 	/// <param name="file">Path to <c>links.json</c>. Defaults to <c>.artifacts/docs/html/links.json</c>.</param>
 	/// <param name="path">-p, Root of the documentation source. Defaults to <c>cwd</c>.</param>
 	[NoOptionsInjection]
-	public async Task<int> ValidateLinkReference([Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? file = null, string? path = null, CancellationToken ct = default)
+	public async Task<int> ValidateLinkReference(
+		[Existing, ExpandUserProfile, RejectSymbolicLinks, FileExtensions(Extensions = "json")] FileInfo? file = null,
+		string? path = null,
+		CancellationToken ct = default
+	)
 	{
 		await using var serviceInvoker = new ServiceInvoker(collector);
-		serviceInvoker.AddCommand(_linkIndexService, (file, path),
+		serviceInvoker.AddCommand(
+			_linkIndexService,
+			(file, path),
 			static async (s, collector, state, ctx) => await s.CheckWithLocalLinksJson(collector, state.file?.FullName, state.path, ctx)
 		);
 		return await serviceInvoker.InvokeAsync(ct);

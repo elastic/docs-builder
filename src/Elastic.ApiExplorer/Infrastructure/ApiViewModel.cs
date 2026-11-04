@@ -1,0 +1,203 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.ApiExplorer.Model;
+using Elastic.Documentation;
+using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
+using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site;
+using Elastic.Documentation.Site.Components.Navigation.PageActions;
+using Elastic.Documentation.Site.FileProviders;
+using Elastic.Documentation.Site.Icons;
+using Elastic.Documentation.Site.Navigation;
+using Microsoft.AspNetCore.Html;
+using Microsoft.OpenApi;
+
+namespace Elastic.ApiExplorer.Infrastructure;
+
+public record ApiLayoutViewModel : GlobalLayoutViewModel
+{
+	public required IReadOnlyList<TocItem> TocItems { get; init; }
+
+	public required INavigationItem[] Breadcrumbs { get; init; }
+
+	/// <summary>Assembler builds host Jump to API unless the site is air-gapped.</summary>
+	public bool ShowJumpToPage => BuildType == BuildType.Assembler && !Features.AirGappedEnabled;
+
+	public required string MarkdownUrl { get; init; }
+
+	/// <summary>Intro/outro markdown pages have no Markdown export, so they have no Copy page.</summary>
+	public bool ShowPageActions { get; init; } = true;
+
+	/// <summary>The Copy page menu, the spec download alone on a page with no Markdown export, or null when the page has neither.</summary>
+	public ApiPageActionsModel? PageActions { get; init; }
+
+	/// <summary>The design-system rail's page actions. The assembler's docs bar already carries the spec download.</summary>
+	public PageActionsModel? DesignSystemPageActions { get; init; }
+
+	public string? ProductName { get; init; }
+
+	/// <summary>
+	/// Preload hint for API links. Body already hx-boosts into <c>#main-container</c>,
+	/// so the examples rail swaps with the article without a dedicated OOB provider.
+	/// </summary>
+	public string HxAttributes => $" preload=\"{Htmx.Preload}\"";
+}
+
+public abstract class ApiViewModel(ApiRenderContext context)
+{
+	public string NavigationHtml { get; } = context?.NavigationHtml ?? string.Empty;
+	public StaticFileContentHashProvider StaticFileContentHashProvider { get; } = context?.StaticFileContentHashProvider
+		?? throw new ArgumentNullException(nameof(context), "StaticFileContentHashProvider cannot be null");
+	public INavigationItem CurrentNavigationItem { get; } = context?.CurrentNavigation
+		?? throw new ArgumentNullException(nameof(context), "CurrentNavigation cannot be null");
+	public IMarkdownStringRenderer MarkdownRenderer { get; } = context?.MarkdownRenderer
+		?? throw new ArgumentNullException(nameof(context), "MarkdownRenderer cannot be null");
+	public BuildContext BuildContext { get; } = context?.BuildContext
+		?? throw new ArgumentNullException(nameof(context), "BuildContext cannot be null");
+	public OpenApiDocument Document { get; } = context?.Model
+		?? throw new ArgumentNullException(nameof(context), "OpenApiDocument cannot be null");
+
+	/// <summary>Current API render context (OpenAPI model, nav, optional logging).</summary>
+	protected ApiRenderContext RenderContext { get; } = context ?? throw new ArgumentNullException(nameof(context));
+
+	public HtmlString RenderMarkdown(string? markdown) => ApiMarkdown.Render(RenderContext, markdown);
+
+	public IReadOnlyList<TocItem> TocItems => field ??= GetTocItems();
+
+	protected virtual IReadOnlyList<TocItem> GetTocItems() => [];
+
+	protected virtual bool ShowPageActions => true;
+
+	/// <summary>When set, drives <see cref="GlobalLayoutViewModel.Title"/> for this page (e.g. intro/outro markdown). Does not affect <see cref="GlobalLayoutViewModel.HeaderTitle"/> which stays as the API product name.</summary>
+	protected virtual string? LayoutPageTitle => null;
+
+	/// <summary>Current page name for the structured breadcrumb. Defaults to <see cref="LayoutPageTitle"/>.</summary>
+	protected virtual string? BreadcrumbCurrentTitle => LayoutPageTitle;
+
+	/// <summary>Raw markdown used for the meta description. Excerpted before it reaches the layout.</summary>
+	protected virtual string? LayoutPageDescription => null;
+
+	private string? GetGitHubDocsUrl()
+	{
+		var repo = BuildContext.Git.RepositoryName;
+		var branch = BuildContext.Git.Branch;
+		if (string.IsNullOrEmpty(repo) || repo == "unavailable" || string.IsNullOrEmpty(branch) || branch == "unavailable")
+			return null;
+		return $"https://github.com/elastic/{repo}/tree/{branch}/docs";
+	}
+
+	public ApiLayoutViewModel CreateGlobalLayoutModel()
+	{
+		var docTitle = Document.Info?.Title ?? "API Documentation";
+		var pageTitle = LayoutPageTitle;
+		var documentTitle = pageTitle is not null ? $"{pageTitle} | {docTitle}" : docTitle;
+		var catalogUrl = ApiUrlBuilder.ApiRoot(BuildContext.UrlPathPrefix);
+
+		var specRootUrl = CurrentNavigationItem.NavigationRoot.Url;
+		var onCatalog = SameUrl(specRootUrl, catalogUrl) || SameUrl(CurrentNavigationItem.Url, catalogUrl);
+		var docsUrl = string.IsNullOrEmpty(BuildContext.UrlPathPrefix) ? "/" : BuildContext.UrlPathPrefix;
+		var specCrumbName = SpecCrumbName(docTitle);
+		var breadcrumbs = ApiBreadcrumbs.Build(CurrentNavigationItem, docsUrl, catalogUrl, specCrumbName, onCatalog: onCatalog);
+		var apiContext = onCatalog ? null : BuildApiContext(docTitle, catalogUrl, specRootUrl);
+		var markdownUrl = ApiOutputPaths.MarkdownUrl(CurrentNavigationItem.Url);
+
+		return new()
+		{
+			DocSetName = "Api Explorer",
+			Description = ApiSeoDescription.Excerpt(LayoutPageDescription) ?? "",
+			Title = documentTitle,
+			CurrentNavigationItem = CurrentNavigationItem,
+			Previous = null,
+			Next = null,
+			NavigationHtml = NavigationHtml,
+			NavigationActiveUrl = CurrentNavigationItem.Url,
+			UrlPathPrefix = BuildContext.UrlPathPrefix,
+			AllowIndexing = BuildContext.AllowIndexing,
+			CanonicalBaseUrl = BuildContext.CanonicalBaseUrl,
+			GoogleTagManager = BuildContext.GoogleTagManager,
+			Optimizely = BuildContext.Optimizely,
+			Features = BuildContext.Configuration.Features,
+			StaticFileContentHashProvider = StaticFileContentHashProvider,
+			BuildType = BuildContext.BuildType,
+			PageFeedbackSurface = "api",
+			TocItems = TocItems,
+			Breadcrumbs = breadcrumbs,
+			StructuredBreadcrumbsJson = BreadcrumbJson.Serialize(
+				breadcrumbs,
+				BreadcrumbCurrentTitle ?? ApiBreadcrumbs.CurrentPageName(CurrentNavigationItem, specCrumbName),
+				BuildContext.CanonicalBaseUrl
+			),
+			ProductName = RenderContext.Product?.DisplayName,
+			SiteTopNav = RenderContext.SiteTopNav,
+			ApiCatalogUrl = catalogUrl,
+			ShowSecondaryNav = false,
+			ApiContext = apiContext,
+			MarkdownUrl = markdownUrl,
+			ShowPageActions = ShowPageActions,
+			PageActions = BuildPageActions(markdownUrl, apiContext?.Spec),
+			DesignSystemPageActions = BuildDesignSystemPageActions(markdownUrl, apiContext?.Spec),
+			// Header properties for isolated mode
+			HeaderTitle = docTitle,
+			HeaderVersion = Document.Info?.Version ?? "1.0",
+			GitBranch = BuildContext.Git.Branch != "unavailable" ? BuildContext.Git.Branch : null,
+			GitCommitShort = BuildContext.Git.Ref is { Length: >= 7 } r && r != "unavailable" ? r[..7] : null,
+			GitRepository = BuildContext.Git.RepositoryName != "unavailable" ? BuildContext.Git.RepositoryName : null,
+			GitHubDocsUrl = GetGitHubDocsUrl(),
+			GitHubRef = BuildContext.Git.GitHubRef
+		};
+	}
+
+	private ApiPageActionsModel? BuildPageActions(string markdownUrl, ApiSpecDownload? spec) =>
+		ShowPageActions || spec is not null ? new ApiPageActionsModel(ShowPageActions ? markdownUrl : null, spec) : null;
+
+	/// <summary>The API name followed by the selected version, when the API has more than one.</summary>
+	private string SpecCrumbName(string docTitle)
+	{
+		var selected = RenderContext.VersionSwitcherItems.FirstOrDefault(static v => v.Selected);
+		return selected?.ShortLabel is { Length: > 0 } version ? $"{docTitle} {version}" : docTitle;
+	}
+
+	private PageActionsModel? BuildDesignSystemPageActions(string markdownUrl, ApiSpecDownload? spec)
+	{
+		var downloads = spec is not null && BuildContext.BuildType != BuildType.Assembler
+			? new PageActionDownload[]
+			{
+				new("Download OpenAPI spec (JSON)", spec.JsonUrl),
+				new("Download OpenAPI spec (YAML)", spec.YamlUrl)
+			}
+			: [];
+		if (!ShowPageActions && downloads.Length == 0)
+			return null;
+
+		return new PageActionsModel { MarkdownUrl = ShowPageActions ? markdownUrl : null, Downloads = downloads };
+	}
+
+	private ApiIdentity BuildApiContext(string docTitle, string catalogUrl, string specRootUrl)
+	{
+		var productId = RenderContext.Product?.Id ?? RenderContext.CurrentApiKey;
+		var versions = ApiVersionSwitcher.ForPage(RenderContext.VersionSwitcherItems, CurrentNavigationItem.Url);
+		var productGroups = ApiHubSwitcher.Build(RenderContext.CatalogEntries, RenderContext.CurrentApiKey);
+		// Same text as the menu row, so the trigger and the menu name the API alike.
+		var title = productGroups.SelectMany(static g => g.Products).FirstOrDefault(static p => p.Selected)?.Label
+			?? RenderContext.Product?.DisplayName
+			?? docTitle;
+		return new ApiIdentity(
+			title,
+			ProductIcons.Get(productId),
+			productGroups,
+			catalogUrl,
+			[.. versions.Select(static v => new NavigationSelectOption(v.Label, v.Url, v.Selected, v.ShortLabel))],
+			new ApiSpecDownload(ApiOutputPaths.JsonUrl(specRootUrl), ApiOutputPaths.YamlUrl(specRootUrl))
+		);
+	}
+
+	private static bool SameUrl(string? left, string? right)
+	{
+		if (left is null || right is null)
+			return false;
+		return string.Equals(left.TrimEnd('/'), right.TrimEnd('/'), StringComparison.Ordinal);
+	}
+}

@@ -6,6 +6,7 @@ module Targets
 
 open System.IO
 open System.IO.Compression
+open System.Text
 open Argu
 open CommandLine
 open Fake.Core
@@ -33,25 +34,18 @@ let private version _ =
     printfn $"Informational version: %s{version.AsString}"
     printfn $"Semantic version: %s{version.Normalize()}"
 
-let private format (formatArgs: ParseResults<FormatArgs>) =
-    let includeFiles = formatArgs.TryGetResult FormatArgs.Include |> Option.defaultValue []
-    let includeArgs = 
-        if includeFiles.IsEmpty then []
-        else ["--include"] @ includeFiles
-    exec { run "dotnet" (["format"; "--verbosity"; "quiet"] @ includeArgs) }
+let private format _ =
+    exec { run "dotnet" ["curb"; "format"; "."] }
+    exec { run "dotnet" ["curb"; "cleanup"; "--forward"] }
 
 let private watch _ = exec { run "dotnet" "watch" "--project" "src/tooling/docs-builder" "--configuration" "debug" "--" "serve" "--watch" }
 
-let private lint (lintArgs: ParseResults<LintArgs>) =
-    let includeFiles = lintArgs.TryGetResult LintArgs.Include |> Option.defaultValue []
-    let includeArgs = 
-        if includeFiles.IsEmpty then []
-        else ["--include"] @ includeFiles
-    match exec {
-        exit_code_of "dotnet" (["format"; "--verify-no-changes"] @ includeArgs)
-    } with
-    | 0 -> printfn "There are no dotnet formatting violations, continuing the build."
-    | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
+let private watchAll _ = exec { run "dotnet" "watch" "--project" "aspire" "--configuration" "debug" }
+
+let private lint _ =
+    match exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" } with
+    | 0 -> printfn "No formatting violations found."
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private pristineCheck (arguments:ParseResults<Build>) =
     let skipCheck = arguments.TryGetResult Skip_Dirty_Check |> Option.isSome
@@ -60,10 +54,10 @@ let private pristineCheck (arguments:ParseResults<Build>) =
     | _, true  -> printfn "The checkout folder does not have pending changes, proceeding"
     | _ -> failwithf "The checkout folder has pending changes, aborting. Specify -c to ./build.sh to skip this check"
     
-    match skipCheck, (exec { exit_code_of "dotnet" "format" "--verify-no-changes" }) with
+    match skipCheck, (exec { exit_code_of "dotnet" "curb" "check" "." "--cache" ".artifacts/curb.cache" }) with
     | true, _ -> printfn "Skip formatting checks since -c is specified"
-    | _, 0  -> printfn "There are no dotnet formatting violations, continuing the build."
-    | _ -> failwithf "There are dotnet formatting violations. Call `dotnet format` to fix or specify -c to ./build.sh to skip this check"
+    | _, 0  -> printfn "No formatting violations found."
+    | _ -> failwithf "Formatting violations found. Run `dotnet curb format .` to fix, or specify -c to ./build.sh to skip this check"
 
 let private publishBinaries _ =
     exec { run "dotnet" "publish" "src/tooling/docs-builder/docs-builder.csproj" }
@@ -106,6 +100,8 @@ let private runLocalContainer _ =
         | _ -> "edge"
     let image = $"elastic/docs-builder:%s{tag}"
     exec { run "docker" ["docker"; "run"; image; "--help"] }
+    let esscImage = $"elastic/website-search-essc:%s{tag}"
+    exec { run "docker" ["docker"; "run"; esscImage; "--help"] }
 
 let private runDotnetWithRegistryPushRetry (args: string list) =
     let maxAttempts = 3
@@ -154,21 +150,61 @@ let private publishContainers _ =
     createImage "src/tooling/docs-builder/docs-builder.csproj" "docs-builder"
     createImage "src/api/Elastic.Documentation.Mcp.Remote/Elastic.Documentation.Mcp.Remote.csproj" "docs-builder-mcp"
     createImage "src/api/Elastic.Documentation.Api/Elastic.Documentation.Api.csproj" "docs-builder-api"
+    createImage "src/tooling/essc/essc.csproj" "website-search-essc"
 
-let private runTests (testSuite: TestSuite) _ =
-    let testFilter =
+let private runTests (testSuite: TestSuite) (parsed: ParseResults<Build>) =
+    let directories =
         match testSuite with
-        | All -> []
-        | Unit -> ["--filter"; "FullyQualifiedName~.Tests|FullyQualifiedName~AuthoringTests"]
-        | Integration -> ["--filter"; "FullyQualifiedName~.IntegrationTests"]
+        | All -> [ "tests"; "tests-integration" ]
+        | Unit -> [ "tests" ]
+        | Integration -> [ "tests-integration" ]
 
-    exec {
-        run "dotnet" (
-            ["test"; "-c"; "release"; "--no-restore"; "--no-build"; "--logger"; "GitHubActions"]
-            @ testFilter
-            @ ["--"; "RunConfiguration.CollectSourceInformation=true"]
+    let projects =
+        directories
+        |> List.collect (fun d ->
+            Directory.EnumerateFiles(Path.Combine(Paths.Root.FullName, d), "*.csproj", SearchOption.AllDirectories)
+            |> Seq.sort
+            |> Seq.toList
         )
-    }
+
+    if List.isEmpty projects then
+        failwithf "No test projects found under %A" directories
+
+    let parallelism = parsed.TryGetResult Test_Parallelism |> Option.defaultValue System.Environment.ProcessorCount
+
+    // Test projects run concurrently; output is buffered per project so logs stay readable.
+    let runOne (project: string) =
+        async {
+            let psi = System.Diagnostics.ProcessStartInfo("dotnet", [ "test"; project; "-c"; "release"; "--no-restore"; "--no-build" ])
+            psi.RedirectStandardOutput <- true
+            psi.RedirectStandardError <- true
+            let log = StringBuilder()
+            let append (e: System.Diagnostics.DataReceivedEventArgs) = if not (isNull e.Data) then lock log (fun () -> log.AppendLine e.Data |> ignore)
+            use proc = new System.Diagnostics.Process(StartInfo = psi)
+            proc.OutputDataReceived.Add append
+            proc.ErrorDataReceived.Add append
+            proc.Start() |> ignore
+            proc.BeginOutputReadLine()
+            proc.BeginErrorReadLine()
+            do! proc.WaitForExitAsync() |> Async.AwaitTask
+            lock stdout (fun () ->
+                printfn "::group::dotnet test %s (exit code %d)" (Path.GetFileNameWithoutExtension project) proc.ExitCode
+                printf "%s" (log.ToString())
+                printfn "::endgroup::"
+            )
+            return project, proc.ExitCode = 0
+        }
+
+    let failures =
+        projects
+        |> List.map runOne
+        |> fun runs -> Async.Parallel(runs, maxDegreeOfParallelism = parallelism)
+        |> Async.RunSynchronously
+        |> Array.filter (snd >> not)
+        |> Array.map fst
+        |> Array.toList
+    if not (List.isEmpty failures) then
+        failwithf "Test projects failed:\n%s" (String.concat "\n" failures)
     
 let private compressibleExtensions = set [".html"; ".css"; ".js"; ".json"; ".svg"; ".xml"; ".txt"]
 
@@ -244,8 +280,6 @@ let private validateLicenses _ =
     exec { run "dotnet" (["dotnet-project-licenses"] @ args) }
 
 let Setup (parsed:ParseResults<Build>) =
-    let emptyLintArgs = ArgumentParser.Create<LintArgs>().Parse([||])
-    
     let wireCommandLine (t: Build) =
         match t with
         // commands
@@ -254,7 +288,7 @@ let Setup (parsed:ParseResults<Build>) =
         | Compile -> Build.Step compile
         | Build ->
             Build.Cmd
-                [Clean; Lint emptyLintArgs; Compile] [] build
+                [Clean; Lint; Compile] [] build
         
         | Test -> Build.Cmd [Compile] [] <| runTests TestSuite.All
         | Unit_Test -> Build.Cmd [Compile] [] <| runTests TestSuite.Unit
@@ -272,11 +306,12 @@ let Setup (parsed:ParseResults<Build>) =
                 [PublishBinaries; PublishContainers]
                 release
 
-        | Format formatArgs -> Build.Step (fun _ -> format formatArgs)
+        | Format -> Build.Step format
         | Watch -> Build.Step watch
+        | Watch_All -> Build.Step watchAll
 
         // steps
-        | Lint lintArgs -> Build.Step (fun _ -> lint lintArgs)
+        | Lint -> Build.Step lint
         | PristineCheck -> Build.Step pristineCheck
         | PublishBinaries -> Build.Step publishBinaries
         | PublishContainers -> Build.Step publishContainers
@@ -289,6 +324,7 @@ let Setup (parsed:ParseResults<Build>) =
         // flags
         | Single_Target
         | Test_Suite _
+        | Test_Parallelism _
         | Token _
         | Skip_Dirty_Check -> Build.Ignore
 

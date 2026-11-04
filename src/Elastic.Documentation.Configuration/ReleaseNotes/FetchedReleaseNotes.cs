@@ -1,0 +1,42 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Collections.Frozen;
+using Elastic.Documentation.ReleaseNotes;
+
+namespace Elastic.Documentation.Configuration.ReleaseNotes;
+
+/// <summary>
+/// The immutable result of prefetching CDN-hosted changelog bundles for every product declared under
+/// <c>release_notes</c> in docset.yml. Built once at startup by <see cref="ReleaseNotesFetcher"/> and
+/// consumed by the <c>{changelog}</c> directive via <see cref="IReleaseNotesResolver"/>.
+/// </summary>
+public sealed record FetchedReleaseNotes
+{
+	/// <summary>Loaded bundles per product id. A declared product with no usable bundles maps to an empty list.</summary>
+	public required FrozenDictionary<string, IReadOnlyList<LoadedBundle>> BundlesByProduct { get; init; }
+
+	/// <summary>Product ids declared under <c>release_notes</c>, used to distinguish "undeclared" from "declared but empty".</summary>
+	public required FrozenSet<string> DeclaredProducts { get; init; }
+
+	/// <summary>
+	/// Inferred products that returned HTTP 404 during prefetch — bundles are not yet published.
+	/// Kept separate from <see cref="DeclaredProducts"/> so a 404 from repo A does not suppress the
+	/// undeclared-product error for an explicit <c>:cdn:</c> reference in repo B.
+	/// </summary>
+	public FrozenSet<string> NotFoundInferredProducts { get; init; } = [];
+
+	/// <summary>
+	/// Products registered in products.yml (via <c>release_notes</c> in docset.yml) that returned HTTP
+	/// 404 during prefetch — no bundles have been published yet. A 404 is a warning, not an error:
+	/// products.yml membership is the authoritative gate; 404 only means no release has been cut yet.
+	/// </summary>
+	public FrozenSet<string> NotFoundDeclaredProducts { get; init; } = [];
+
+	public static FetchedReleaseNotes Empty { get; } = new()
+	{
+		BundlesByProduct = FrozenDictionary<string, IReadOnlyList<LoadedBundle>>.Empty,
+		DeclaredProducts = []
+	};
+}

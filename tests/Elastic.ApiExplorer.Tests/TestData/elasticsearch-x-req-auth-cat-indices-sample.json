@@ -1,0 +1,55 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Elasticsearch sample (x-req-auth cat indices)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/_cat/indices": {
+      "get": {
+        "tags": [
+          "cat"
+        ],
+        "summary": "Get index information",
+        "operationId": "cat-indices",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-req-auth": [
+          "Index privileges: `monitor`\n",
+          "Cluster privileges: `monitor`\n"
+        ]
+      }
+    },
+    "/_cat/indices/{index}": {
+      "get": {
+        "tags": [
+          "cat"
+        ],
+        "summary": "Get index information",
+        "operationId": "cat-indices-1",
+        "parameters": [
+          {
+            "name": "index",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-req-auth": [
+          "Index privileges: `monitor`\n",
+          "Cluster privileges: `monitor`\n"
+        ]
+      }
+    }
+  }
+}

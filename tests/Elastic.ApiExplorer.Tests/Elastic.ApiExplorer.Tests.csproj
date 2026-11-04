@@ -6,12 +6,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Elastic.ApiExplorer\Elastic.ApiExplorer.csproj"/>
-    <ProjectReference Include="..\authoring\authoring.fsproj" />
+    <ProjectReference Include="..\..\src\Elastic.Markdown\Elastic.Markdown.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FakeItEasy" />
     <PackageReference Include="Nullean.ScopedFileSystem" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="TestData\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="TestData\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

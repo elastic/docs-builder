@@ -7,16 +7,14 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Builder;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
 using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor.Tracking;
 
-public class LocalChangeTrackingService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-) : IService
+public class LocalChangeTrackingService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<LocalChangeTrackingService>();
 
@@ -24,7 +22,8 @@ public class LocalChangeTrackingService(
 	{
 		var runningOnCi = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
 
-		var buildContext = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var docFs = DocumentationFileSystem.Resolve(path);
+		var buildContext = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 		var redirectFile = new RedirectFile(buildContext);
 		if (!redirectFile.Source.Exists)
 		{
@@ -42,7 +41,10 @@ public class LocalChangeTrackingService(
 		var root = Paths.FindGitRoot(buildContext.DocumentationSourceDirectory);
 		if (root is null)
 		{
-			collector.EmitError(redirectFile.Source, $"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}.");
+			collector.EmitError(
+				redirectFile.Source,
+				$"Unable to determine the root of the source directory {buildContext.DocumentationSourceDirectory}."
+			);
 			return Task.FromResult(false);
 		}
 		var relativePath = Path.GetRelativePath(root.FullName, buildContext.DocumentationSourceDirectory.FullName);
@@ -50,7 +52,8 @@ public class LocalChangeTrackingService(
 		IRepositoryTracker tracker = runningOnCi
 			? new IntegrationGitRepositoryTracker(relativePath)
 			: new LocalGitRepositoryTracker(logFactory, collector, root, relativePath);
-		var changed = tracker.GetChangedFiles()
+		var changed = tracker
+			.GetChangedFiles()
 			.Where(c =>
 			{
 				var fi = fs.FileInfo.New(c.FilePath);
@@ -66,7 +69,10 @@ public class LocalChangeTrackingService(
 		foreach (var change in deletedAndRenamed)
 		{
 			var lookupPath = change is RenamedGitChange renamed ? renamed.OldFilePath : change.FilePath;
-			var docSetRelativePath = Path.GetRelativePath(buildContext.DocumentationSourceDirectory.FullName, Path.Join(root.FullName, lookupPath));
+			var docSetRelativePath = Path.GetRelativePath(
+				buildContext.DocumentationSourceDirectory.FullName,
+				Path.Join(root.FullName, lookupPath)
+			);
 			var rootRelativePath = Path.GetRelativePath(root.FullName, Path.Join(root.FullName, lookupPath));
 			if (buildContext.Configuration.IsExcluded(docSetRelativePath.OptionalWindowsReplace()))
 				continue;
@@ -74,22 +80,34 @@ public class LocalChangeTrackingService(
 				continue;
 			if (redirects.ContainsKey(rootRelativePath))
 			{
-				collector.EmitError(redirectFile.Source,
-					$"Redirect contains path relative to root '{rootRelativePath}' but should be relative to the documentation set '{docSetRelativePath}'");
+				collector.EmitError(
+					redirectFile.Source,
+					$"Redirect contains path relative to root '{rootRelativePath}' but should be relative to the documentation set '{docSetRelativePath}'"
+				);
 				continue;
 			}
 			missingCount++;
 
 			if (change is RenamedGitChange rename)
-				collector.EmitError(redirectFile.Source, $"Missing '{docSetRelativePath}' in redirects.yml. '{rename.OldFilePath}' was renamed to '{rename.NewFilePath}' but it has no redirect configuration set.");
+				collector.EmitError(
+					redirectFile.Source,
+					$"Missing '{docSetRelativePath}' in redirects.yml. '{rename.OldFilePath}' was renamed to '{rename.NewFilePath}' but it has no redirect configuration set."
+				);
 			else if (change.ChangeType is GitChangeType.Deleted)
-				collector.EmitError(redirectFile.Source, $"Missing '{docSetRelativePath}' in redirects.yml. '{change.FilePath}' was deleted but it has no redirect targets. This will lead to broken links.");
+				collector.EmitError(
+					redirectFile.Source,
+					$"Missing '{docSetRelativePath}' in redirects.yml. '{change.FilePath}' was deleted but it has no redirect targets. This will lead to broken links."
+				);
 		}
 
 		if (missingCount != 0)
 		{
 			var relativeRedirectFile = Path.GetRelativePath(root.FullName, redirectFile.Source.FullName);
-			_logger.LogInformation("Found {Count} changes that still require updates to: {RedirectFile}", missingCount, relativeRedirectFile);
+			_logger.LogInformation(
+				"Found {Count} changes that still require updates to: {RedirectFile}",
+				missingCount,
+				relativeRedirectFile
+			);
 		}
 
 		return Task.FromResult(collector.Errors == 0);

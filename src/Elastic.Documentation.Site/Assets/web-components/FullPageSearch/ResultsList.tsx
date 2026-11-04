@@ -439,8 +439,9 @@ export const ResultsList = ({
                                         height: 16px;
                                         border: 2px solid
                                             ${euiTheme.colors.lightShade};
-                                        border-top-color: ${euiTheme.colors
-                                            .primary};
+                                        border-top-color: ${
+                                            euiTheme.colors.primary
+                                        };
                                         border-radius: 50%;
                                         animation: spin 0.8s linear infinite;
                                         @keyframes spin {

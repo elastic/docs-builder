@@ -1,0 +1,14 @@
+@using Elastic.ApiExplorer.Components.PropertyTree
+@inherits RazorSlice<Elastic.ApiExplorer.Components.PropertyTree.ApiPropertyList>
+@{
+	if (Model.Items.Count == 0)
+	{
+		return;
+	}
+}
+<dl class="property-list">
+	@foreach (var property in Model.Items)
+	{
+		@(await RenderPartialAsync<_PropertyItem, ApiProperty>(property))
+	}
+</dl>

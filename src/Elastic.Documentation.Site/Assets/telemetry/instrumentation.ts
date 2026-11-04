@@ -22,14 +22,10 @@ import {
 import {
     LoggerProvider,
     BatchLogRecordProcessor,
-    type LogRecordProcessor,
-    type SdkLogRecord,
 } from '@opentelemetry/sdk-logs'
 import {
     WebTracerProvider,
     BatchSpanProcessor,
-    SpanProcessor,
-    Span,
 } from '@opentelemetry/sdk-trace-web'
 import {
     ATTR_SERVICE_NAME,
@@ -41,6 +37,7 @@ let traceProvider: WebTracerProvider | null = null
 let loggerProvider: LoggerProvider | null = null
 
 export function initializeOtel(options: OtelConfigOptions = {}): boolean {
+    if (isSyntheticMonitor()) return false
     if (isAlreadyInitialized()) return false
 
     markAsInitialized()
@@ -64,6 +61,14 @@ export function initializeOtel(options: OtelConfigOptions = {}): boolean {
         isInitialized = false
         return false
     }
+}
+
+// The backend excludes synthetic traffic via the X-Docs-Synthetic-Monitor header (see
+// synthetics.config.ts / TelemetryConstants.SyntheticMonitorHeaderName), but page JS can't
+// read its own outgoing request headers. @elastic/synthetics appends this to the browser's
+// UA instead (unless a custom userAgent is configured), so we sniff that for the same effect.
+function isSyntheticMonitor(): boolean {
+    return navigator.userAgent.includes('Elastic/Synthetics')
 }
 
 function isAlreadyInitialized(): boolean {
@@ -125,11 +130,10 @@ function initializeTracing(
     })
 
     const spanProcessor = new BatchSpanProcessor(traceExporter)
-    const euidProcessor = new EuidSpanProcessor()
 
     traceProvider = new WebTracerProvider({
         resource,
-        spanProcessors: [euidProcessor, spanProcessor],
+        spanProcessors: [spanProcessor],
     })
 
     traceProvider.register({
@@ -147,11 +151,7 @@ function registerFetchInstrumentation(): void {
                 propagateTraceHeaderCorsUrls: [
                     new RegExp(`${window.location.origin}/.*`),
                 ],
-                ignoreUrls: [
-                    /_api\/v1\/o\/.*/,
-                    /_api\/v1\/?$/,
-                    /__parcel_code_frame$/,
-                ],
+                ignoreUrls: [/_api\/v1\/o\/.*/, /_api\/v1\/?$/],
             }),
         ],
     })
@@ -167,12 +167,13 @@ function initializeLogging(
         headers: { ...commonHeaders },
     })
 
-    const batchLogProcessor = new BatchLogRecordProcessor(logExporter)
-    const euidLogProcessor = new EuidLogRecordProcessor()
+    const batchLogProcessor = new BatchLogRecordProcessor({
+        exporter: logExporter,
+    })
 
     loggerProvider = new LoggerProvider({
         resource,
-        processors: [euidLogProcessor, batchLogProcessor],
+        processors: [batchLogProcessor],
     })
 
     logs.setGlobalLoggerProvider(loggerProvider)
@@ -269,49 +270,6 @@ function logInitializationSuccess(config: ResolvedConfig): void {
 
 function logInitializationError(error: unknown): void {
     console.error('[OTEL] Failed to initialize OpenTelemetry:', error)
-}
-
-function getCookie(name: string): string | null {
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || null
-    return null
-}
-
-class EuidSpanProcessor implements SpanProcessor {
-    onStart(span: Span): void {
-        const euid = getCookie('euid')
-        if (euid) {
-            span.setAttribute('user.euid', euid)
-        }
-    }
-
-    onEnd(): void {}
-
-    shutdown(): Promise<void> {
-        return Promise.resolve()
-    }
-
-    forceFlush(): Promise<void> {
-        return Promise.resolve()
-    }
-}
-
-class EuidLogRecordProcessor implements LogRecordProcessor {
-    onEmit(logRecord: SdkLogRecord): void {
-        const euid = getCookie('euid')
-        if (euid) {
-            logRecord.setAttribute('user.euid', euid)
-        }
-    }
-
-    shutdown(): Promise<void> {
-        return Promise.resolve()
-    }
-
-    forceFlush(): Promise<void> {
-        return Promise.resolve()
-    }
 }
 
 /**

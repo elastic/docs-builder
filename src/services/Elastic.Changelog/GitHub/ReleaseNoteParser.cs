@@ -63,12 +63,14 @@ public record ParsedReleaseNotes
 /// </summary>
 public static partial class ReleaseNoteParser
 {
-	// Regex for PR line: "* Title by @author in #123" or "* Title by @author in https://..."
-	[GeneratedRegex(@"^\*\s+(.+?)\s+by\s+@([\w-]+)\s+in\s+(?:#(\d+)|https://github\.com/[^/]+/[^/]+/pull/(\d+))", RegexOptions.Multiline | RegexOptions.IgnoreCase)]
+	// Regex for PR line, with either bullet char: "* Title by @author in #123",
+	// "- Title by @author in #123", or "... in https://github.com/owner/repo/pull/123".
+	[GeneratedRegex(@"^[*-]\s+(.+?)\s+by\s+@([\w-]+)\s+in\s+(?:#(\d+)|https://github\.com/[^/]+/[^/]+/pull/(\d+))", RegexOptions.Multiline
+		| RegexOptions.IgnoreCase)]
 	private static partial Regex PrLineRegex();
 
-	// Regex for section headers: "### 💥 Breaking Changes" or "### ✨ Features"
-	[GeneratedRegex(@"^###\s+(.+)$", RegexOptions.Multiline)]
+	// Regex for section headers at any level >= 2: "## 🐛 Bug Fixes" or "### ✨ Features".
+	[GeneratedRegex(@"^#{2,}\s+(.+)$", RegexOptions.Multiline)]
 	private static partial Regex SectionHeaderRegex();
 
 	// Regex for full changelog URL
@@ -79,7 +81,7 @@ public static partial class ReleaseNoteParser
 	private static readonly string[] ReleaseDrafterEmojis =
 	[
 		"\uD83D\uDCA5", // Breaking Changes
-		"\u2728",       // Features
+		"\u2728", // Features
 		"\uD83D\uDC1B", // Bug Fixes
 		"\uD83D\uDCDD", // Documentation
 		"\uD83E\uDDF0", // Maintenance
@@ -87,7 +89,7 @@ public static partial class ReleaseNoteParser
 		"\uD83C\uDFA8", // Redesign
 		"\uD83D\uDD12", // Security
 		"\u26A0\uFE0F", // Deprecation
-		"\uD83D\uDE80"  // Release
+		"\uD83D\uDE80" // Release
 	];
 
 	// Mapping from section header keywords to changelog types
@@ -126,11 +128,7 @@ public static partial class ReleaseNoteParser
 	{
 		if (string.IsNullOrWhiteSpace(body))
 		{
-			return new ParsedReleaseNotes
-			{
-				Format = ReleaseNoteFormat.Unknown,
-				PrReferences = []
-			};
+			return new ParsedReleaseNotes { Format = ReleaseNoteFormat.Unknown, PrReferences = [] };
 		}
 
 		var format = DetectFormat(body);
@@ -143,12 +141,7 @@ public static partial class ReleaseNoteParser
 			_ => ParseUnknownFormat(body)
 		};
 
-		return new ParsedReleaseNotes
-		{
-			Format = format,
-			PrReferences = prReferences,
-			FullChangelogUrl = fullChangelogUrl
-		};
+		return new ParsedReleaseNotes { Format = format, PrReferences = prReferences, FullChangelogUrl = fullChangelogUrl };
 	}
 
 	/// <summary>
@@ -157,7 +150,7 @@ public static partial class ReleaseNoteParser
 	public static ReleaseNoteFormat DetectFormat(string body)
 	{
 		// Release Drafter format has emoji prefixed section headers like:
-		// "### 💥 Breaking Changes", "### ✨ Features", "### 🐛 Bug Fixes"
+		// "## 💥 Breaking Changes", "### ✨ Features", "## 🐛 Bug Fixes"
 		if (HasEmojiSectionHeaders(body))
 			return ReleaseNoteFormat.ReleaseDrafter;
 
@@ -168,8 +161,7 @@ public static partial class ReleaseNoteParser
 		return ReleaseNoteFormat.Unknown;
 	}
 
-	private static bool HasEmojiSectionHeaders(string body) =>
-		body.Contains("###") && ReleaseDrafterEmojis.Any(body.Contains);
+	private static bool HasEmojiSectionHeaders(string body) => body.Contains("##") && ReleaseDrafterEmojis.Any(body.Contains);
 
 	private static string? ExtractFullChangelogUrl(string body)
 	{

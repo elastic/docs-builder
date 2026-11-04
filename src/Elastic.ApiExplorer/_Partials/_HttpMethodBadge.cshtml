@@ -1,0 +1,15 @@
+@inherits RazorSlice<string>
+@* Labeled HTTP method chip — Figma APIs node 10067:6424. Icons match the Nav V2 glyphs. *@
+<span class="api-method api-method-@Model">
+	<span class="api-method-icon" aria-hidden="true">
+		@if (Model == "delete")
+		{
+			<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-x"/></svg>
+		}
+		else
+		{
+			<svg width="12" height="12" viewBox="0 0 12 12"><use href="#icon-api-arrow"/></svg>
+		}
+	</span>
+	<span class="api-method-label">@Model.ToUpperInvariant()</span>
+</span>

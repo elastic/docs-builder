@@ -10,15 +10,20 @@ using Elastic.Markdown.Myst.Directives.Button;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Elastic.Markdown.Myst.Directives.CliModifiers;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Elastic.Markdown.Myst.Directives.Hub;
 using Elastic.Markdown.Myst.Directives.Image;
 using Elastic.Markdown.Myst.Directives.Include;
+using Elastic.Markdown.Myst.Directives.Listing;
 using Elastic.Markdown.Myst.Directives.Math;
 using Elastic.Markdown.Myst.Directives.PageCard;
+using Elastic.Markdown.Myst.Directives.RelatedLearning;
 using Elastic.Markdown.Myst.Directives.Settings;
 using Elastic.Markdown.Myst.Directives.Stepper;
+using Elastic.Markdown.Myst.Directives.Storybook;
 using Elastic.Markdown.Myst.Directives.SubPages;
 using Elastic.Markdown.Myst.Directives.Table;
 using Elastic.Markdown.Myst.Directives.Tabs;
+using Elastic.Markdown.Myst.Directives.VectorSizing;
 using Elastic.Markdown.Myst.Directives.Version;
 using Markdig.Parsers;
 using Markdig.Syntax;
@@ -75,8 +80,7 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		{ "csv-table", 33 }
 	}.ToFrozenDictionary();
 
-	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup =
-		UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
+	private static readonly FrozenDictionary<string, int>.AlternateLookup<ReadOnlySpan<char>> UnsupportedLookup = UnsupportedBlocks.GetAlternateLookup<ReadOnlySpan<char>>();
 
 	protected override DirectiveBlock CreateFencedBlock(BlockProcessor processor)
 	{
@@ -135,11 +139,35 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{math}") > 0)
 			return new MathBlock(this, context);
 
+		if (info.IndexOf("{hero}") > 0)
+			return new HeroBlock(this, context);
+
+		if (info.IndexOf("{explore}") > 0)
+			return new ExploreBlock(this, context);
+
+		if (info.IndexOf("{card-group}") > 0)
+			return new CardGroupBlock(this, context);
+
+		if (info.IndexOf("{link-card}") > 0)
+			return new LinkCardBlock(this, context);
+
+		if (info.IndexOf("{get-started}") > 0)
+			return new GetStartedBlock(this, context);
+
+		if (info.IndexOf("{whats-new}") > 0)
+			return new WhatsNewBlock(this, context);
+
+		if (info.IndexOf("{on-this-page}") > 0)
+			return new OnThisPageBlock(this, context);
+
 		if (info.IndexOf("{agent-skill}") > 0)
 			return new AgentSkillBlock(this, context);
 
 		if (info.IndexOf("{cli-modifiers}") > 0)
 			return new CliModifiersBlock(this, context);
+
+		if (info.IndexOf("{storybook}") > 0)
+			return new StorybookBlock(this, context);
 
 		foreach (var admonition in Admonitions)
 		{
@@ -152,6 +180,9 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 			if (info.IndexOf(version) > 0)
 				return new VersionBlock(this, version[1..^1], context);
 		}
+
+		if (info.IndexOf("{related-learning}") > 0)
+			return new RelatedLearningBlock(this, context);
 
 		if (info.IndexOf("{page-card}") > 0)
 			return new PageCardBlock(this, context);
@@ -168,8 +199,14 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (info.IndexOf("{button}") > 0)
 			return new ButtonBlock(this, context);
 
+		if (info.IndexOf("{vector-sizing-calculator}") > 0)
+			return new VectorSizingBlock(this, context);
+
 		if (info.IndexOf("{list-sub-pages}") > 0)
 			return new ListSubPagesBlock(this, context);
+
+		if (info.IndexOf("{listing}") > 0)
+			return new ListingBlock(this, context);
 
 		if (info.IndexOf("{table}") > 0)
 			return new TableDirectiveBlock(this, context);
@@ -231,6 +268,13 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		if (block is not DirectiveBlock directiveBlock)
 			return base.TryContinue(processor, block);
 
+		// Option lines belong to a nested directive, not this ancestor. A list or quote can
+		// sit between them, so search the child tree, not only LastChild (see
+		// https://github.com/elastic/docs-builder/issues/4540). Do not use IsOpen: Markdig
+		// sets every opened block to closed before it runs TryContinue from the outside in.
+		if (HasNestedDirective(directiveBlock))
+			return base.TryContinue(processor, block);
+
 		var tokens = line.ToString().Split(':', 2, RemoveEmptyEntries | TrimEntries);
 		if (tokens.Length < 1)
 			return base.TryContinue(processor, block);
@@ -241,6 +285,18 @@ public class DirectiveBlockParser : FencedBlockParserBase<DirectiveBlock>
 		directiveBlock.AddProperty(name, data);
 
 		return BlockState.Continue;
+	}
 
+	private static bool HasNestedDirective(ContainerBlock block)
+	{
+		foreach (var child in block)
+		{
+			if (child is DirectiveBlock)
+				return true;
+			if (child is ContainerBlock container && HasNestedDirective(container))
+				return true;
+		}
+
+		return false;
 	}
 }

@@ -1,0 +1,24 @@
+redirects:
+  'redirects/4th-page.md': 'redirects/5th-page.md'
+  'redirects/9th-page.md': '!redirects/5th-page.md'
+  'redirects/6th-page.md':
+  'redirects/7th-page.md':
+    to: 'redirects/5th-page.md'
+    anchors: '!'
+  'redirects/first-page-old.md':
+    to: 'redirects/second-page.md'
+    anchors:
+      'old-anchor': 'active-anchor'
+      'removed-anchor':
+  'redirects/second-page-old.md':
+    many:
+      - to: "redirects/second-page.md"
+        anchors:
+          "aa": "zz"
+          "removed-anchor":
+      - to: "redirects/third-page.md"
+        anchors:
+          "yy": "bb"
+  'redirects/third-page.md':
+    anchors:
+      'removed-anchor':

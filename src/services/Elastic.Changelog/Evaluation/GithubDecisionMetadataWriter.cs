@@ -1,0 +1,112 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.Json;
+using Elastic.Documentation.FileSystems;
+using Microsoft.Extensions.Logging;
+
+namespace Elastic.Changelog.Evaluation;
+
+/// <summary>
+/// Writes <see cref="GithubDecisionMetadata"/> to the conventional decision-artifact location
+/// (<c>.artifacts/changelog-decision/metadata.json</c>) so a downstream <c>workflow_run</c> job can
+/// pick it up for comment rendering.
+/// <para>
+/// The path is relative to the working root managed by <see cref="RunnerTempFileSystem"/>.
+/// <c>.artifacts</c> is already allow-listed as a hidden folder by that file system, so no additional
+/// scope configuration is needed.
+/// </para>
+/// </summary>
+internal class GithubDecisionMetadataWriter(ILoggerFactory logFactory, IRunnerTempFileSystem fileSystem)
+{
+	/// <summary>
+	/// Conventional artifact directory, relative to the checkout root.
+	/// Consumers (action.yml files, docs) should reference this constant rather than hard-coding the path.
+	/// </summary>
+	internal const string ArtifactDir = ".artifacts/changelog-decision";
+
+	/// <summary>The metadata filename within <see cref="ArtifactDir"/>.</summary>
+	internal const string MetadataFilename = "metadata.json";
+
+	private readonly ILogger _logger = logFactory.CreateLogger<GithubDecisionMetadataWriter>();
+
+	/// <summary>
+	/// Serialises <paramref name="metadata"/> to <c>.artifacts/changelog-decision/metadata.json</c>
+	/// in the current working directory.
+	/// </summary>
+	internal async Task WriteAsync(GithubDecisionMetadata metadata, Cancel ctx)
+	{
+		// The comment job builds a link from this path, so it must not carry the runner's checkout location.
+		metadata = metadata with { ConfigFile = RepoRelative(metadata.ConfigFile) };
+
+		var dir = fileSystem.Path.GetFullPath(ArtifactDir);
+		_ = fileSystem.Directory.CreateDirectory(dir);
+
+		var path = fileSystem.Path.Combine(dir, MetadataFilename);
+		metadata = await CarryForward(metadata, path, ctx);
+		var json = JsonSerializer.Serialize(metadata, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		await fileSystem.File.WriteAllTextAsync(path, json, ctx);
+		_logger.LogInformation("Wrote decision metadata to {Path}", path);
+	}
+
+	/// <summary>
+	/// Each gate overwrites the file, but the release-note outcome and the opt-in flag are decided by the first gate that knows them,
+	/// so a later write that doesn't set them must not erase them.
+	/// </summary>
+	private async Task<GithubDecisionMetadata> CarryForward(GithubDecisionMetadata metadata, string path, Cancel ctx)
+	{
+		if (metadata.Outcome is not null && metadata.CommentOnSuccess)
+			return metadata;
+
+		var existing = await ReadAsync(path, ctx);
+		if (existing is null || existing.PrNumber != metadata.PrNumber)
+			return metadata;
+
+		return metadata with
+		{
+			Outcome = metadata.Outcome ?? existing.Outcome,
+			CommentOnSuccess = metadata.CommentOnSuccess || existing.CommentOnSuccess
+		};
+	}
+
+	/// <summary>Returns <paramref name="path"/> relative to the working directory when it lies inside it, otherwise unchanged.</summary>
+	private string? RepoRelative(string? path)
+	{
+		if (string.IsNullOrWhiteSpace(path) || !fileSystem.Path.IsPathRooted(path))
+			return path;
+
+		var relative = fileSystem.Path.GetRelativePath(fileSystem.Path.GetFullPath("."), path);
+		return relative.StartsWith("..", StringComparison.Ordinal) || fileSystem.Path.IsPathRooted(relative)
+			? path
+			: relative.Replace('\\', '/');
+	}
+
+	/// <summary>
+	/// Reads the metadata file from the conventional location and returns the deserialised record,
+	/// or <c>null</c> when the file is absent or cannot be parsed.
+	/// </summary>
+	internal async Task<GithubDecisionMetadata?> ReadAsync(string metadataPath, Cancel ctx)
+	{
+		try
+		{
+			var json = await fileSystem.File.ReadAllTextAsync(metadataPath, ctx);
+			return JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata);
+		}
+		catch (FileNotFoundException)
+		{
+			_logger.LogInformation("Decision metadata not found at {Path}", metadataPath);
+			return null;
+		}
+		catch (DirectoryNotFoundException)
+		{
+			_logger.LogInformation("Decision metadata not found at {Path}", metadataPath);
+			return null;
+		}
+		catch (Exception ex) when (ex is IOException or JsonException)
+		{
+			_logger.LogWarning(ex, "Failed to read decision metadata from {Path}", metadataPath);
+			return null;
+		}
+	}
+}

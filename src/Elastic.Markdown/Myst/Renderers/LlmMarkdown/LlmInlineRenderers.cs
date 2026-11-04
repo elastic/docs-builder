@@ -33,8 +33,10 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 			renderer.WriteChildren(obj);
 			renderer.Writer.Write("](");
 			var url = obj.GetDynamicUrl?.Invoke() ?? obj.Url;
-			var absoluteUrl = LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
-			renderer.Writer.Write(absoluteUrl ?? string.Empty);
+			var rewrittenUrl = renderer.LinkUrlRewriter is { } rewriter
+				? rewriter(url)
+				: LlmRenderingHelpers.MakeAbsoluteUrl(renderer, url);
+			renderer.Writer.Write(rewrittenUrl ?? string.Empty);
 		}
 		if (!string.IsNullOrEmpty(obj.Title))
 		{
@@ -44,7 +46,6 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 		}
 		renderer.Writer.Write(")");
 	}
-
 }
 
 public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, EmphasisInline>
@@ -60,8 +61,8 @@ public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 public class LlmSubstitutionLeafRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, SubstitutionLeaf>
 {
-	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj)
-		=> renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
+	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj) =>
+		renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
 }
 
 public class LlmCodeInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, CodeInline>
@@ -106,7 +107,8 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 				{
 					var text = LlmApplicabilityHelper.RenderForLlm(
 						appliesToRole.AppliesTo,
-						appliesToRole.BuildContext.VersionsConfiguration);
+						appliesToRole.BuildContext.VersionsConfiguration
+					);
 					if (!string.IsNullOrEmpty(text))
 						renderer.Writer.Write(text);
 					break;

@@ -226,10 +226,12 @@ const RotatingQueryCard = ({
                                     display: inline-grid;
                                     vertical-align: baseline;
                                     text-align: center;
-                                    background: ${euiTheme.colors
-                                        .lightestShade};
-                                    border-radius: ${euiTheme.border.radius
-                                        .small};
+                                    background: ${
+                                        euiTheme.colors.lightestShade
+                                    };
+                                    border-radius: ${
+                                        euiTheme.border.radius.small
+                                    };
                                     padding: 0 ${euiTheme.size.xs};
                                     perspective: 200px;
                                     overflow: hidden;
@@ -261,10 +263,13 @@ const RotatingQueryCard = ({
                                             key={variant}
                                             css={css`
                                                 grid-area: 1 / 1;
-                                                font-weight: ${euiTheme.font
-                                                    .weight.semiBold};
-                                                color: ${euiTheme.colors
-                                                    .primary};
+                                                font-weight: ${
+                                                    euiTheme.font.weight
+                                                        .semiBold
+                                                };
+                                                color: ${
+                                                    euiTheme.colors.primary
+                                                };
                                                 transform-style: preserve-3d;
                                                 backface-visibility: hidden;
                                                 transition:
@@ -302,9 +307,11 @@ const RotatingQueryCard = ({
                                         width: 6px;
                                         height: 6px;
                                         border-radius: 50%;
-                                        background: ${i === index
-                                            ? euiTheme.colors.primary
-                                            : euiTheme.colors.lightShade};
+                                        background: ${
+                                            i === index
+                                                ? euiTheme.colors.primary
+                                                : euiTheme.colors.lightShade
+                                        };
                                         transition: background 0.2s ease;
                                     `}
                                 />
@@ -372,8 +379,9 @@ export const LandingPage = ({
                                         ${euiTheme.colors.primary} 0%,
                                         ${euiTheme.colors.accent} 100%
                                     );
-                                    border-radius: ${euiTheme.border.radius
-                                        .medium};
+                                    border-radius: ${
+                                        euiTheme.border.radius.medium
+                                    };
                                     display: flex;
                                     align-items: center;
                                     justify-content: center;
@@ -413,9 +421,11 @@ export const LandingPage = ({
                     <div
                         ref={searchInputRef}
                         css={css`
-                            transform: ${isAnimatingOut
-                                ? 'translateY(-40px) scale(0.98)'
-                                : 'translateY(0) scale(1)'};
+                            transform: ${
+                                isAnimatingOut
+                                    ? 'translateY(-40px) scale(0.98)'
+                                    : 'translateY(0) scale(1)'
+                            };
                             opacity: ${isAnimatingOut ? 0 : 1};
                             transition:
                                 transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),

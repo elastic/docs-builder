@@ -18,11 +18,15 @@ permissions:
   contents: read
   id-token: write
   pull-requests: read
+  deployments: write
 
 # PR number avoids grouping disparate PRs that share the same head.ref (e.g. forks).
 concurrency:
   group: docs-preview-local-${{ github.event_name == 'pull_request' && format('pr{0}-{1}', github.event.pull_request.number, github.event.pull_request.head.ref) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
 jobs:
   match:
@@ -83,6 +87,11 @@ jobs:
       deployments: none
       id-token: none
       pull-requests: read
+    env:
+      IGNORE_PATTERNS: |
+        .github/**
+        .libra/**
+        README.md
     outputs:
       any_modified: ${{ steps.check-files.outputs.any_modified }}
       all_changed_files: ${{ steps.check-files.outputs.all_changed_files }}
@@ -93,7 +102,7 @@ jobs:
     steps:
       - name: Checkout
         if: github.event_name == 'push'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
@@ -104,18 +113,12 @@ jobs:
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: '**'
-          files_ignore: |
-            .github/**
-            README.md
+          files_ignore: ${{ env.IGNORE_PATTERNS }}
 
       - name: Get modified file detail
         if: github.event_name == 'pull_request'
         id: check-modified-file-detail
-        uses: actions/github-script@v8
-        env:
-          IGNORE_PATTERNS: |
-            .github/**
-            README.md
+        uses: actions/github-script@v9
         with:
           script: |
             const ignorePatterns = process.env.IGNORE_PATTERNS;
@@ -180,21 +183,32 @@ jobs:
               }
             }
 
-            core.setOutput('added_files', added.join(' '));
-            core.setOutput('modified_files', modified.join(' '));
-            core.setOutput('deleted_files', deleted.join(' '));
-            core.setOutput('renamed_files', renamed.join(' '));
+            // When too many files change the joined strings exceed Linux's ARG_MAX,
+            // crashing bash before any step can run. Empty outputs tell the build to
+            // do a full rebuild instead of an incremental one.
+            const MAX_INCREMENTAL_FILES = 500;
+            const total = added.length + modified.length + deleted.length + renamed.length;
+            if (total > MAX_INCREMENTAL_FILES) {
+              core.setOutput('added_files', '');
+              core.setOutput('modified_files', '');
+              core.setOutput('deleted_files', '');
+              core.setOutput('renamed_files', '');
+            } else {
+              core.setOutput('added_files', added.join(' '));
+              core.setOutput('modified_files', modified.join(' '));
+              core.setOutput('deleted_files', deleted.join(' '));
+              core.setOutput('renamed_files', renamed.join(' '));
+            }
 
   build:
     if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      deployments: none
+      deployments: write
       id-token: write
       pull-requests: none
     outputs:
-      deployment_result: ${{ steps.deployment.outputs.result }}
       path_prefix: ${{ steps.generate-path-prefix.outputs.result }}
     env:
       GITHUB_PR_REF_NAME: ${{ github.event.pull_request.head.ref }}
@@ -211,51 +225,25 @@ jobs:
         if: >
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
           persist-credentials: false
 
       - name: Create Deployment
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (
             github.event_name == 'push'
             || github.event_name == 'pull_request'
           )
-        uses: actions/github-script@v8
         id: deployment
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref_name }}
+        uses: $/.github/actions/deployment-start
         with:
-          result-encoding: string
-          script: |
-            const { owner, repo } = context.repo;
-            const prNumber = process.env.PR_NUMBER;
-            const environment = 'docs-preview';
-            const task = prNumber ? `docs-preview-${prNumber}` : undefined;
-            const deployment = await github.rest.repos.createDeployment({
-                owner,
-                repo,
-                environment,
-                task,
-                ref: process.env.REF,
-                auto_merge: false,
-                transient_environment: true,
-                required_contexts: [],
-            })
-            await github.rest.repos.createDeploymentStatus({
-                deployment_id: deployment.data.id,
-                owner,
-                repo,
-                state: "in_progress",
-                log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-            })
-            return deployment.data.id
+          environment: docs-preview
+          pr-number: ${{ github.event.pull_request.number }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.ref_name }}
 
       - name: Generate env.PATH_PREFIX
         id: generate-path-prefix
@@ -278,8 +266,8 @@ jobs:
               exit 1;
               ;;
           esac
-          echo "PATH_PREFIX=${path_prefix}" >> $GITHUB_ENV
-          echo "result=${path_prefix}" >> $GITHUB_OUTPUT
+          echo "PATH_PREFIX=${path_prefix}" >> "$GITHUB_ENV"
+          echo "result=${path_prefix}" >> "$GITHUB_OUTPUT"
 
       - name: Bootstrap Action Workspace
         if: >
@@ -293,6 +281,7 @@ jobs:
           env.MATCH == 'true'
           && needs.check.outputs.any_modified != 'false'
           && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
         run: |
           dotnet run --project src/tooling/docs-builder -- diff validate
 
@@ -335,6 +324,7 @@ jobs:
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
           && steps.internal-validate-path-prefixes.outcome == 'success'
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
 
       - name: Upload to S3
         id: s3-upload
@@ -343,14 +333,26 @@ jobs:
           && !cancelled()
           && steps.internal-docs-build.outputs.skip != 'true'
           && steps.internal-docs-build.outcome == 'success'
-        env:
-          AWS_RETRY_MODE: standard
-          AWS_MAX_ATTEMPTS: 6
+          && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: $/.github/actions/upload-preview
+        with:
+          source: .artifacts/docs/html
+          path-prefix: ${{ env.PATH_PREFIX }}
+
+      - name: Deploy redirects to CloudFront KVS
+        if: >
+          env.MATCH == 'true'
+          && !cancelled()
+          && needs.check.outputs.any_modified != 'false'
+          && github.event_name == 'push'
+          && steps.s3-upload.outcome == 'success'
+        # Best-effort: the preview role may not yet have cloudfront-keyvaluestore:PutKey granted.
+        # Don't block the preview deploy on it; treat a permissions gap as a follow-up, not an outage.
+        continue-on-error: true
         run: |
-          aws s3 sync .artifacts/docs/html "s3://elastic-docs-v3-website-preview${PATH_PREFIX}" --delete --no-follow-symlinks
-          aws cloudfront create-invalidation \
-            --distribution-id EKT7LT5PM8RKS \
-            --paths "${PATH_PREFIX}" "${PATH_PREFIX}/*"
+          if [ -f .artifacts/docs/html/redirects.json ]; then
+            dotnet run --project src/tooling/docs-builder -- assembler deploy update-redirects --no-delete preview --redirectsFile .artifacts/docs/html/redirects.json
+          fi
 
       - name: Update Link Index
         if: >
@@ -363,23 +365,89 @@ jobs:
         uses: elastic/docs-builder/actions/update-link-index@main
 
       - name: Update deployment status
-        uses: actions/github-script@v8
-        # disabled: deployments are not enabled on this branch
         if: >
-          false
-          && env.MATCH == 'true'
+          env.MATCH == 'true'
           && always()
-          && steps.deployment.outputs.result
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          LANDING_PAGE_PATH: ${{ env.PATH_PREFIX }}
+          && steps.deployment.outputs.id
+        uses: $/.github/actions/deployment-finish
         with:
-          script: | # zizmor: ignore[template-injection] deployment_id from prior step output
-            await github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
-              state: "${{ steps.internal-docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}",
-              environment_url: `https://docs-v3-preview.elastic.dev${process.env.LANDING_PAGE_PATH}`,
-              log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+          deployment-id: ${{ steps.deployment.outputs.id }}
+          state: ${{ steps.internal-docs-build.outputs.skip == 'true' && 'inactive' || (steps.s3-upload.outcome == 'success' && 'success' || 'failure') }}
+          environment-url: https://docs-v3-preview.elastic.dev${{ env.PATH_PREFIX }}
+
+  comment:
+    if: >
+      github.event_name == 'pull_request'
+      && needs.check.outputs.any_modified == 'true'
+      && needs.build.outputs.path_prefix != ''
+      && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    needs:
+      - check
+      - build
+    permissions:
+      contents: none
+      deployments: none
+      id-token: none
+      pull-requests: write
+    steps:
+      - name: Comment handbook preview links on PR
+        uses: actions/github-script@v9
+        env:
+          PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
+          ALL_CHANGED_FILES: ${{ needs.check.outputs.all_changed_files }}
+        with:
+          script: |
+            const title = '## Docs preview (local build)'
+            const base = `https://docs-v3-preview.elastic.dev${process.env.PATH_PREFIX}`
+            const changedMdFiles = process.env.ALL_CHANGED_FILES
+              .split(/\s+/)
+              .filter(Boolean)
+              .filter((i) => i.endsWith('.md'))
+              .filter((i) => !i.includes('/_snippets/'))
+
+            const lines = [title, '', `**Handbook preview:** ${base}/`, '']
+
+            if (changedMdFiles.length > 0) {
+              lines.push('Sample changed pages:')
+              for (const file of changedMdFiles.slice(0, 15)) {
+                const path = file
+                  .replace(/^docs\//, '')
+                  .replace(/\/index\.md$/, '')
+                  .replace(/\.md$/, '')
+                lines.push(`- [${file}](${base}/${path})`)
+              }
+              if (changedMdFiles.length > 15) {
+                lines.push(`- …and ${changedMdFiles.length - 15} more`)
+              }
+            }
+
+            const body = lines.join('\n')
+            const owner = context.repo.owner
+            const repo = context.repo.repo
+            const issue_number = context.payload.pull_request.number
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
             })
+            const existing = comments.find(
+              (c) =>
+                c.user.type === 'Bot' && c.body.startsWith(title)
+            )
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              })
+            }

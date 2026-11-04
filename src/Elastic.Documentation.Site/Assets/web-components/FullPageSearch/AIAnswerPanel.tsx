@@ -842,8 +842,9 @@ export const AIAnswerPanel = ({
                                             font-size: 12px;
                                             background: rgba(0, 119, 204, 0.1);
                                             padding: 4px 8px;
-                                            border-radius: ${euiTheme.border
-                                                .radius.medium};
+                                            border-radius: ${
+                                                euiTheme.border.radius.medium
+                                            };
                                             color: #0077cc !important;
 
                                             &:hover {

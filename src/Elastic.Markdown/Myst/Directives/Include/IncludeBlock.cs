@@ -7,13 +7,13 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Extensions;
 using Elastic.Markdown.Diagnostics;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Myst.Directives.Include;
 
 public class LiteralIncludeBlock : IncludeBlock
 {
-	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) =>
-		Literal = true;
+	public LiteralIncludeBlock(DirectiveBlockParser parser, ParserContext context) : base(parser, context) => Literal = true;
 
 	public override string Directive => "literalinclude";
 }
@@ -34,6 +34,20 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 	public string? Language { get; private set; }
 	public string? Caption { get; private set; }
 	public string? Label { get; private set; }
+
+	/// <summary>Parses the included snippet as Markdown in the context of the page that includes it.</summary>
+	public MarkdownDocument ParseSnippet()
+	{
+		var snippet = Build
+			.ReadFileSystem
+			.FileInfo
+			.New(IncludePath ?? throw new InvalidOperationException("The include has no resolved path."));
+		var parentPath = Context.MarkdownParentPath ?? Context.MarkdownSourcePath;
+		return MarkdownParser
+			.ParseSnippetAsync(Build, Context, snippet, parentPath, Context.YamlFrontMatter, default, Line)
+			.GetAwaiter()
+			.GetResult();
+	}
 
 	//TODO add all options from
 	//https://mystmd.org/guide/directives#directive-include
@@ -93,7 +107,10 @@ public class IncludeBlock(DirectiveBlockParser parser, ParserContext context) : 
 		if (Literal)
 			return;
 
-		if (file.Directory != null && file.Directory.FullName.IndexOf("_snippets", StringComparison.Ordinal) < 0)
+		if (
+			file.Directory != null
+			&& !file.Directory.FullName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Contains("_snippets")
+		)
 		{
 			this.EmitError($"{{include}} only supports including snippets from `_snippet` folders. `{IncludePath}` is not a snippet");
 			Found = false;

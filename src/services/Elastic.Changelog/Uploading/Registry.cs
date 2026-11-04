@@ -1,0 +1,98 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Text.Json.Serialization;
+
+namespace Elastic.Changelog.Uploading;
+
+/// <summary>
+/// Per-product manifest published alongside scrubbed changelog bundles.
+/// Lets consumers (e.g. the <c>changelog</c> directive in <c>cdn:</c> mode) enumerate
+/// bundle files without an S3 listing call.
+/// </summary>
+/// <remarks>
+/// Stored at <c>bundle/{product}/registry.json</c> (bundle index) or
+/// <c>changelog/{org}/{repo}/{branch}/registry.json</c> (changelog-entry index). Ownership differs
+/// per tree: public bundle indexes are produced by the scrubber Lambda's
+/// <see cref="Reconciliation.BundleRegistryReconciler"/> from public-bucket state, while
+/// changelog-entry indexes remain client-authored and are mirrored verbatim to the public bucket
+/// (pass-through) until Phase 3 of elastic/docs-eng-team#688 retires them.
+/// </remarks>
+public sealed record Registry
+{
+	/// <summary>The schema version written by this producer; consumers refuse newer versions.</summary>
+	public const int CurrentSchemaVersion = 1;
+
+	/// <summary>
+	/// Manifest schema version. Incremented when consumers must change their parser.
+	/// </summary>
+	public int SchemaVersion { get; init; } = CurrentSchemaVersion;
+
+	/// <summary>
+	/// Identifies the algorithm (and its version) that produced this manifest. The registry
+	/// reconciler recomputes every entry — and rewrites the manifest even when the entries are
+	/// unchanged — whenever this differs from its own value, so metadata-logic changes roll out
+	/// deterministically. Null on manifests written by the legacy client-side refresh.
+	/// </summary>
+	public string? Producer { get; init; }
+
+	/// <summary>
+	/// Grouping identifier: the product for a bundle index (<c>bundle/{product}/…</c>) or the
+	/// <c>{org}/{repo}/{branch}</c> prefix for a changelog-entry index
+	/// (<c>changelog/{org}/{repo}/{branch}/…</c>). Informational only; consumers locate the manifest by key.
+	/// </summary>
+	public required string Product { get; init; }
+
+	/// <summary>
+	/// Time the manifest was last regenerated, in UTC.
+	/// </summary>
+	public required DateTimeOffset GeneratedAt { get; init; }
+
+	/// <summary>
+	/// Bundles currently known for this product, sorted by <see cref="RegistryBundle.Target"/>
+	/// descending (newest first), with a deterministic tiebreak on <see cref="RegistryBundle.File"/>.
+	/// </summary>
+	public required IReadOnlyList<RegistryBundle> Bundles { get; init; }
+}
+
+/// <summary>
+/// One entry in <see cref="Registry.Bundles"/>.
+/// </summary>
+public sealed record RegistryBundle
+{
+	/// <summary>
+	/// Bundle file name (e.g. <c>9.3.0.yaml</c> or <c>cloud-2025-11.yaml</c>),
+	/// resolved at <c>bundle/{product}/{file}</c>. For changelog-entry indexes this is the entry
+	/// file name resolved at <c>changelog/{org}/{repo}/{branch}/{file}</c>.
+	/// </summary>
+	public required string File { get; init; }
+
+	/// <summary>
+	/// Target version or release date as declared in the bundle's first product
+	/// (e.g. <c>9.3.0</c> or <c>2025-11-01</c>). May be null if the bundle declares no products.
+	/// </summary>
+	public string? Target { get; init; }
+
+	/// <summary>
+	/// S3 ETag of the object in the bucket this manifest describes. For single-part uploads smaller
+	/// than <see cref="Elastic.Documentation.Integrations.S3.S3EtagCalculator.PartSize"/> this is
+	/// the MD5 of the body.
+	/// </summary>
+	/// <remarks>
+	/// Whose ETag this is follows the manifest's producer. Bundle indexes written by the scrubber
+	/// Lambda's <see cref="Reconciliation.BundleRegistryReconciler"/> record the <em>public</em>
+	/// (post-scrub) object's ETag, valid for HTTP cache validation against the CDN. Client-authored
+	/// manifests — changelog-entry indexes, and everything in the private bucket — record the
+	/// <em>private</em> (pre-scrub) upload's ETag: a best-effort change hint that will <em>not</em>
+	/// match the public object for scrubbed content, so consumers MUST NOT use it for integrity
+	/// checks or cache validation there. Either way it is safe for detecting that an entry changed
+	/// between manifest reads.
+	/// </remarks>
+	public required string ETag { get; init; }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(Registry))]
+[JsonSerializable(typeof(RegistryBundle))]
+public sealed partial class RegistryJsonContext : JsonSerializerContext;

@@ -1,0 +1,57 @@
+{
+  "_version": 6,
+  "locale": "en-us",
+  "uid": "blt0000000000000090",
+  "ACL": {},
+  "created_at": "2023-03-01T10:00:00.000Z",
+  "created_by": "bltuser00000000001a",
+  "updated_at": "2024-05-20T16:00:00.000Z",
+  "updated_by": "bltuser00000000002b",
+  "tags": [],
+  "title": "What is Cloud Security?",
+  "url": "/what-is/cloud-security",
+  "hero": ["blthero0000000002"],
+  "main_header": {
+    "title_l10n": "What is Cloud Security?"
+  },
+  "main_header_reference": [],
+  "footnote_l10n": "",
+  "footer_cta_article": [],
+  "topic": [
+    {
+      "title_l10n": "Cloud Security Fundamentals",
+      "subtopic": [
+        {
+          "title_l10n": "What is cloud security?",
+          "link": {
+            "title": "what-is-cloud-security",
+            "href": "#what-is-cloud-security"
+          },
+          "paragraph_l10n": "<p>Cloud security encompasses the technologies, policies, and controls used to protect data, applications, and infrastructure in cloud computing environments.</p>",
+          "enable_structured_data": true
+        },
+        {
+          "title_l10n": "Why is cloud security important?",
+          "link": {
+            "title": "why-is-cloud-security-important",
+            "href": "#why-is-cloud-security-important"
+          },
+          "paragraph_l10n": "<p>As organizations migrate workloads to the cloud, ensuring the security of cloud resources becomes critical to protecting sensitive data and maintaining compliance.</p>",
+          "enable_structured_data": true
+        }
+      ]
+    }
+  ],
+  "seo": {
+    "seo_title_l10n": "What is Cloud Security? | Elastic",
+    "seo_description_l10n": "Learn about cloud security fundamentals and best practices.",
+    "seo_keywords_l10n": "cloud security, what is",
+    "seo_image": "https://images.contentstack.io/v3/assets/sample/cloud-security.png"
+  },
+  "publish_details": {
+    "environment": "bltenv00000000001a",
+    "locale": "en-us",
+    "time": "2024-05-20T17:00:00.000Z",
+    "user": "bltuser00000000001a"
+  }
+}

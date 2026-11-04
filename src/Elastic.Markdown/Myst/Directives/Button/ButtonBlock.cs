@@ -20,8 +20,7 @@ public class ButtonGroupBlock(DirectiveBlockParser parser, ParserContext context
 	/// </summary>
 	public string Align { get; private set; } = "left";
 
-	public override void FinalizeAndValidate(ParserContext context) =>
-		Align = Prop("align") ?? "left";
+	public override void FinalizeAndValidate(ParserContext context) => Align = Prop("align") ?? "left";
 }
 
 /// <summary>
@@ -38,11 +37,11 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 {
 	public override string Directive => "button";
 
-	private static readonly HashSet<string> ValidTypes = ["primary", "secondary"];
+	private static readonly HashSet<string> ValidTypes = ["primary", "secondary", "neutral"];
 	private static readonly HashSet<string> ValidAligns = ["left", "center", "right"];
 
 	/// <summary>
-	/// Button variant: "primary" (filled) or "secondary" (outlined).
+	/// Button variant: "primary" (filled), "secondary" (outlined), or "neutral" (outlined, monochrome).
 	/// </summary>
 	public string Type { get; private set; } = "primary";
 
@@ -56,8 +55,8 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 	/// </summary>
 	public bool IsInGroup { get; private set; }
 
-	// Regex to match a Markdown link: [text](url)
-	[GeneratedRegex(@"^\s*\[[^\]]+\]\([^\)]+\)\s*$", RegexOptions.Singleline)]
+	// Regex to match a single Markdown link, including reference-style links.
+	[GeneratedRegex(@"^\s*\[[^\]]*\](?:\([^\)]+\)|\[[^\]]+\]|\[\])\s*$", RegexOptions.Singleline)]
 	private static partial Regex LinkPattern();
 
 	public override void FinalizeAndValidate(ParserContext context)
@@ -69,7 +68,7 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 		var type = Prop("type", "variant")?.ToLowerInvariant();
 		if (type != null && !ValidTypes.Contains(type))
 		{
-			this.EmitWarning($"Invalid button type '{type}'. Valid types are: primary, secondary. Defaulting to 'primary'.");
+			this.EmitWarning($"Invalid button type '{type}'. Valid types are: primary, secondary, neutral. Defaulting to 'primary'.");
 			type = "primary";
 		}
 		Type = type ?? "primary";
@@ -94,14 +93,16 @@ public partial class ButtonBlock(DirectiveBlockParser parser, ParserContext cont
 
 		if (string.IsNullOrWhiteSpace(content))
 		{
-			this.EmitError("Button directive requires a link. Use: :::{button}\n[text](url)\n:::");
+			this.EmitError("Button directive requires a link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::");
 			return;
 		}
 
 		// Check if content matches the link pattern
 		if (!LinkPattern().IsMatch(content))
 		{
-			this.EmitError("Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::");
+			this.EmitError(
+				"Button directive must contain only a single Markdown link. Use: :::{button}\n[text](url)\n:::\nOr: :::{button}\n[text][ref]\n:::"
+			);
 		}
 	}
 

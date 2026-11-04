@@ -50,8 +50,7 @@ export const Chat = () => {
     const handleScroll = useScrollPersistence(scrollRef)
     useFocusOnComplete(inputRef)
 
-    // Focus input when Cmd+; is pressed
-    const handleMetaSemicolon = useCallback(() => {
+    const focusInput = useCallback(() => {
         inputRef.current?.focus()
     }, [])
 
@@ -69,7 +68,7 @@ export const Chat = () => {
             gutterSize="none"
             css={containerStyles}
         >
-            <ChatHeader />
+            <ChatHeader onClear={focusInput} />
 
             {hasHydrated && isEmpty ? (
                 <EuiFlexItem grow={true} css={emptyStateContainerStyles}>
@@ -108,7 +107,7 @@ export const Chat = () => {
 
             <ChatInputArea
                 inputRef={inputRef}
-                onMetaSemicolon={handleMetaSemicolon}
+                onMetaSemicolon={focusInput}
                 onStateChange={setScrollAreaProps}
             />
             <InfoBanner />
@@ -116,12 +115,17 @@ export const Chat = () => {
     )
 }
 
-const ChatHeader = () => {
+const ChatHeader = ({ onClear }: { onClear: () => void }) => {
     const { closeModal } = useAskAiModalActions()
     const { clearChat } = useChatActions()
     const messages = useChatMessages()
     const { euiTheme } = useEuiTheme()
     const smallFontsize = useEuiFontSize('s').fontSize
+
+    const handleClearClick = useCallback(() => {
+        clearChat()
+        onClear()
+    }, [clearChat, onClear])
 
     // Prevent EUI's focus management from auto-focusing the clear button when it first appears.
     // EUI components have internal focus management that tries to focus the first focusable
@@ -188,7 +192,7 @@ const ChatHeader = () => {
                                 aria-label="Clear conversation"
                                 iconType="trash"
                                 color="text"
-                                onClick={() => clearChat()}
+                                onClick={handleClearClick}
                                 tabIndex={isClearButtonFocusable ? 0 : -1}
                             />
                         </EuiToolTip>

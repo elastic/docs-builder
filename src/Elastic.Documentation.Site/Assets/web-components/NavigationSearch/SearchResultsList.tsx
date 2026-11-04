@@ -1,16 +1,23 @@
 import { config } from '../../config'
 import { useHtmxLink } from '../shared/htmx/useHtmxLink'
+import { JumpToIndicator } from './JumpToIndicator'
+import { PropertyResultRow } from './PropertyResultRow'
+import { RouteLine } from './RouteLine'
 import { SanitizedHtmlContent } from './SanitizedHtmlContent'
-import { useSelectedIndex, useSearchActions } from './navigationSearch.store'
-import { useSearchTerm } from './navigationSearch.store'
 import {
-    useNavigationSearchQuery,
-    SearchResultItem,
-} from './useNavigationSearchQuery'
+    GO_TO_LABELS,
+    primaryRoute,
+    type ApiPropertyResult,
+    type ResultGroup,
+} from './apiPropertyResults'
+import {
+    useSelectedIndex,
+    useSearchActions,
+    useSearchTerm,
+} from './navigationSearch.store'
+import { SearchResultItem, type TypeFilter } from './useNavigationSearchQuery'
 import { useNavigationSearchTelemetry } from './useNavigationSearchTelemetry'
 import {
-    EuiBadge,
-    EuiIcon,
     EuiLoadingSpinner,
     useEuiTheme,
     useEuiOverflowScroll,
@@ -22,27 +29,69 @@ import { useRef, useMemo, MutableRefObject, useEffect } from 'react'
 const RESULTS_MAX_HEIGHT = 465
 const BREADCRUMB_SEPARATOR = ' / '
 
+export const formatApiProductCrumb = (title: string) => {
+    if (/ API$/i.test(title)) {
+        return title
+    }
+
+    const displayName = title
+        .split(/[-_]/)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    return `${displayName} API`
+}
+
+export const navigationSearchBreadcrumbs = (
+    parents: SearchResultItem['parents'],
+    typeFilter: TypeFilter,
+    buildType: string
+) => {
+    if (typeFilter === 'api') {
+        const [, product, ...rest] = parents
+        return [
+            'API',
+            ...(product ? [formatApiProductCrumb(product.title)] : []),
+            ...rest.map((parent) => parent.title),
+        ]
+    }
+
+    if (buildType === 'codex') {
+        return parents.map((parent) => parent.title)
+    }
+
+    return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
+}
+
+export const emptyStateCopy = (typeFilter: TypeFilter) =>
+    typeFilter === 'api'
+        ? "We couldn't find an API that matches your search"
+        : "We couldn't find a page that matches your search"
+
 export interface SearchResultsListProps {
+    results: ResultGroup[]
+    isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
     onResultClick: () => void
+    typeFilter?: TypeFilter
 }
 
 export const SearchResultsList = ({
+    results,
+    isLoading,
     isKeyboardNavigating,
     onMouseMove,
     onResultClick,
+    typeFilter = 'all',
 }: SearchResultsListProps) => {
     const { euiTheme } = useEuiTheme()
     const selectedIndex = useSelectedIndex()
     const { setSelectedIndex } = useSearchActions()
-    const { isLoading, data } = useNavigationSearchQuery()
     const containerRef = useRef<HTMLDivElement>(null)
     const searchTerm = useSearchTerm()
-    const { trackResultClicked } = useNavigationSearchTelemetry()
+    const { trackResultClicked } = useNavigationSearchTelemetry(typeFilter)
 
-    const results = data?.results ?? []
-    const isInitialLoading = isLoading && !data
+    const isInitialLoading = isLoading && results.length === 0
 
     // Scroll to top when search term changes
     useEffect(() => {
@@ -82,9 +131,7 @@ export const SearchResultsList = ({
     if (results.length === 0) {
         return (
             <div css={containerStyles}>
-                <div css={emptyStateStyles}>
-                    We couldn't find a page that matches your search
-                </div>
+                <div css={emptyStateStyles}>{emptyStateCopy(typeFilter)}</div>
             </div>
         )
     }
@@ -102,29 +149,69 @@ export const SearchResultsList = ({
         }
     }
 
-    const handleResultClick = (result: SearchResultItem, index: number) => {
+    const handleResultClick = (
+        result: SearchResultItem,
+        rank: number,
+        property?: ApiPropertyResult
+    ) => {
         trackResultClicked({
             query: searchTerm,
-            position: index,
-            url: result.url,
+            position: rank,
+            url: property?.url ?? result.url,
             score: result.score,
+            anchor: property?.anchor,
         })
         onResultClick()
     }
 
     return (
         <div ref={containerRef} css={containerStyles}>
-            {results.map((result, index) => (
-                <SearchResultRow
+            {results.map(({ result, index, rank, properties }) => (
+                <div
                     key={result.url}
-                    index={index}
-                    result={result}
-                    isSelected={index === selectedIndex}
-                    isKeyboardNavigating={isKeyboardNavigating.current}
-                    onMouseEnter={() => handleMouseEnter(index)}
-                    onMouseMove={() => handleItemMouseMove(index)}
-                    onClick={() => handleResultClick(result, index)}
-                />
+                    css={css`
+                        margin: ${euiTheme.size.s};
+                        border: 1px solid ${euiTheme.colors.borderBaseSubdued};
+                        border-radius: ${euiTheme.size.s};
+                        overflow: hidden;
+                    `}
+                >
+                    <SearchResultRow
+                        index={index}
+                        result={result}
+                        isSelected={index === selectedIndex}
+                        isKeyboardNavigating={isKeyboardNavigating.current}
+                        onMouseEnter={() => handleMouseEnter(index)}
+                        onMouseMove={() => handleItemMouseMove(index)}
+                        onClick={() => handleResultClick(result, rank)}
+                        typeFilter={typeFilter}
+                        searchTerm={searchTerm}
+                    />
+                    {properties.map(
+                        ({ property, index: propertyIndex, showLocation }) => (
+                            <PropertyResultRow
+                                key={property.url}
+                                index={propertyIndex}
+                                property={property}
+                                searchTerm={searchTerm}
+                                showLocation={showLocation}
+                                isSelected={propertyIndex === selectedIndex}
+                                isKeyboardNavigating={
+                                    isKeyboardNavigating.current
+                                }
+                                onMouseEnter={() =>
+                                    handleMouseEnter(propertyIndex)
+                                }
+                                onMouseMove={() =>
+                                    handleItemMouseMove(propertyIndex)
+                                }
+                                onClick={() =>
+                                    handleResultClick(result, rank, property)
+                                }
+                            />
+                        )
+                    )}
+                </div>
             ))}
         </div>
     )
@@ -138,6 +225,8 @@ interface SearchResultRowProps {
     onMouseEnter: () => void
     onMouseMove: () => void
     onClick: () => void
+    typeFilter: TypeFilter
+    searchTerm: string
 }
 
 const SearchResultRow = ({
@@ -148,19 +237,22 @@ const SearchResultRow = ({
     onMouseEnter,
     onMouseMove,
     onClick,
+    typeFilter,
+    searchTerm,
 }: SearchResultRowProps) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')
     const { ref, href } = useHtmxLink(result.url)
-
-    const breadcrumbItems = useMemo(() => {
-        if (config.buildType == 'codex') {
-            return result.parents.map((p) => p.title)
-        }
-
-        const typePrefix = result.type === 'api' ? 'API' : 'Docs'
-        return [typePrefix, ...result.parents.slice(1).map((p) => p.title)]
-    }, [result.type, result.parents])
+    const { route, tokens } = primaryRoute(result.routes ?? [], searchTerm)
+    const breadcrumbItems = useMemo(
+        () =>
+            navigationSearchBreadcrumbs(
+                result.parents,
+                typeFilter,
+                config.buildType
+            ),
+        [result.parents, typeFilter]
+    )
 
     return (
         <a
@@ -181,18 +273,22 @@ const SearchResultRow = ({
                 text-decoration: none;
                 cursor: pointer;
                 border-bottom: 1px solid ${euiTheme.colors.borderBaseSubdued};
-                background: ${isSelected
-                    ? euiTheme.colors.backgroundBaseSubdued
-                    : 'transparent'};
+                background: ${
+                    isSelected
+                        ? euiTheme.colors.backgroundBaseSubdued
+                        : 'transparent'
+                };
 
                 &:last-child {
                     border-bottom: none;
                 }
 
                 &:hover:not([data-keyboard-navigating='true']) {
-                    background: ${isSelected
-                        ? euiTheme.colors.backgroundBaseSubdued
-                        : euiTheme.colors.backgroundBaseHighlighted};
+                    background: ${
+                        isSelected
+                            ? euiTheme.colors.backgroundBaseSubdued
+                            : euiTheme.colors.backgroundBaseHighlighted
+                    };
 
                     .title-text {
                         color: ${euiTheme.colors.link};
@@ -202,10 +298,6 @@ const SearchResultRow = ({
                             color: ${euiTheme.colors.textParagraph};
                             text-decoration: underline;
                         }
-                    }
-
-                    .jump-to-indicator {
-                        visibility: visible;
                     }
                 }
 
@@ -219,10 +311,6 @@ const SearchResultRow = ({
                             text-decoration: underline;
                         }
                     }
-
-                    .jump-to-indicator {
-                        visibility: visible;
-                    }
                 }
             `}
         >
@@ -235,11 +323,23 @@ const SearchResultRow = ({
             >
                 <Breadcrumb items={breadcrumbItems} />
                 <Title text={result.title} />
-                {result.description && (
-                    <Description text={result.description} />
+                {route ? (
+                    <RouteLine route={route} tokens={tokens} />
+                ) : (
+                    result.description && (
+                        <Description text={result.description} />
+                    )
                 )}
             </div>
-            {!isMobile && <JumpToIndicator />}
+            {!isMobile && (
+                <JumpToIndicator
+                    label={
+                        result.type === 'api'
+                            ? GO_TO_LABELS.operation
+                            : GO_TO_LABELS.page
+                    }
+                />
+            )}
         </a>
     )
 }
@@ -329,7 +429,7 @@ const Title = ({ text }: { text: string }) => {
                 margin-bottom: calc(${euiTheme.size.xs} / 2);
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                     color: ${euiTheme.colors.textParagraph};
                 }
@@ -354,32 +454,12 @@ const Description = ({ text }: { text: string }) => {
                 text-overflow: ellipsis;
 
                 mark {
-                    background-color: ${euiTheme.colors.backgroundLightPrimary};
+                    background-color: var(--search-highlight-tint);
                     font-weight: ${euiTheme.font.weight.bold};
                 }
             `}
         >
             <SanitizedHtmlContent htmlContent={text} ellipsis />
-        </div>
-    )
-}
-
-const JumpToIndicator = () => {
-    const { euiTheme } = useEuiTheme()
-
-    return (
-        <div
-            className="jump-to-indicator"
-            css={css`
-                flex-shrink: 0;
-                color: ${euiTheme.colors.textSubdued};
-                margin-left: ${euiTheme.size.xxxxl};
-                visibility: hidden;
-            `}
-        >
-            <EuiBadge color="hollow">
-                Jump to <EuiIcon type="returnKey" size="s" />
-            </EuiBadge>
         </div>
     )
 }

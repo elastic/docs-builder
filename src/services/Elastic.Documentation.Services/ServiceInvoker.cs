@@ -16,10 +16,25 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 		public required bool Strict { get; init; }
 		public required Func<Cancel, Task<bool>> Command { get; init; }
 	}
-	private readonly List<InvokeState> _tasks = [];
 
-	public void AddCommand<TService, TState>(TService service, TState state, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	// Start the reader eagerly so diagnostics emitted before InvokeAsync (config load,
+	// guard clauses, context construction) are drained live instead of dropped.
+	// EnsureStarted is idempotent, so InvokeAsync's StartAsync call becomes a no-op.
+	// The side-effectful StartAsync call is folded into the _tasks field initializer
+	// (via EnsureReaderStarted) so that TreatWarningsAsErrors does not flag an unread field.
+	private readonly List<InvokeState> _tasks = EnsureReaderStarted(collector);
+
+	private static List<InvokeState> EnsureReaderStarted(IDiagnosticsCollector c)
+	{
+		_ = c.StartAsync(CancellationToken.None);
+		return [];
+	}
+
+	public void AddCommand<TService, TState>(
+		TService service,
+		TState state,
+		Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -27,8 +42,12 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommand<TService, TState>(TService service, TState state, bool strict, Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	public void AddCommand<TService, TState>(
+		TService service,
+		TState state,
+		bool strict,
+		Func<TService, IDiagnosticsCollector, TState, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -36,8 +55,10 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 			Command = async ctx => await invoke(service, collector, state, ctx)
 		});
 
-	public void AddCommand<TService>(TService service, Func<TService, IDiagnosticsCollector, Cancel, Task<bool>> invoke)
-		where TService : IService =>
+	public void AddCommand<TService>(
+		TService service,
+		Func<TService, IDiagnosticsCollector, Cancel, Task<bool>> invoke
+	) where TService : IService =>
 		_tasks.Add(new InvokeState
 		{
 			ServiceName = service.GetType().Name,
@@ -55,7 +76,9 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 				var success = await task.Command(ctx).ConfigureAwait(false);
 				await collector.WaitForDrain();
 				if (!success && task.Strict && collector.Errors + collector.Warnings == 0)
-					collector.EmitGlobalError($"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings ");
+					collector.EmitGlobalError(
+						$"Service {task.ServiceName} registered as strict but returned false without emitting errors or warnings "
+					);
 				if (!success && !task.Strict && collector.Errors == 0)
 					collector.EmitGlobalError($"Service {task.ServiceName} returned false without emitting errors");
 			}
@@ -81,9 +104,13 @@ public class ServiceInvoker(IDiagnosticsCollector collector) : IAsyncDisposable
 	}
 
 	/// <inheritdoc />
-	public async ValueTask DisposeAsync()
+	public ValueTask DisposeAsync()
 	{
-		await collector.DisposeAsync();
+		// The collector is a shared singleton owned by the host; a per-command invoker must not
+		// finalize it. Finalization happens once, at the CatchExceptionMiddleware boundary (via a
+		// finally block), so an escaping exception's diagnostic is emitted BEFORE the summary is
+		// drained and printed — not after.
 		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
 	}
 }

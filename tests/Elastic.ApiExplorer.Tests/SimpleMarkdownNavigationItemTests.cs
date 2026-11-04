@@ -4,17 +4,20 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Landing;
+using Elastic.ApiExplorer.Model;
+using Elastic.ApiExplorer.Operations;
 
 namespace Elastic.ApiExplorer.Tests;
 
 public class SimpleMarkdownNavigationItemTests
 {
-	[Theory]
-	[InlineData("intro.md", "intro")]
-	[InlineData("getting-started.md", "getting-started")]
-	[InlineData("getting_started.md", "getting-started")]
-	[InlineData("Getting Started.md", "getting-started")]
-	[InlineData("API_Overview.md", "api-overview")]
+	[Test]
+	[Arguments("intro.md", "intro")]
+	[Arguments("getting-started.md", "getting-started")]
+	[Arguments("getting_started.md", "getting-started")]
+	[Arguments("Getting Started.md", "getting-started")]
+	[Arguments("API_Overview.md", "api-overview")]
 	public void CreateSlugFromFile_GeneratesCorrectSlug(string fileName, string expectedSlug)
 	{
 		var fileSystem = new MockFileSystem();
@@ -25,50 +28,45 @@ public class SimpleMarkdownNavigationItemTests
 		slug.Should().Be(expectedSlug);
 	}
 
-	[Theory]
-	[InlineData("types", "types")]
-	[InlineData("tags", "tags")]
+	[Test]
+	[Arguments("knn-guide.v9.md", "knn-guide")]
+	[Arguments("migration-from-v7.v8.md", "migration-from-v7")]
+	public void CreateSlugFromFile_StripsVersionSuffix(string fileName, string expectedSlug)
+	{
+		var fileSystem = new MockFileSystem();
+		var file = fileSystem.FileInfo.New($"/docs/{fileName}");
+
+		var slug = SimpleMarkdownNavigationItem.CreateSlugFromFile(file);
+
+		slug.Should().Be(expectedSlug);
+	}
+
+	[Test]
+	[Arguments("types", "types")]
+	[Arguments("group", "group")]
+	[Arguments("operation", "operation")]
+	[Arguments("authentication", "authentication")]
+	[Arguments("servers", "servers")]
 	public void ValidateSlugForCollisions_ThrowsForReservedSegments(string slug, string reservedSegment)
 	{
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			slug, "elasticsearch", "/docs/file.md");
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(slug, "elasticsearch", "/docs/file.md");
 
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage($"*conflicts with reserved API Explorer segment*{reservedSegment}*");
+		act.Should().Throw<InvalidOperationException>().WithMessage($"*conflicts with reserved API Explorer segment*{reservedSegment}*");
 	}
 
-	[Fact]
-	public void ValidateSlugForCollisions_ThrowsForOperationMoniker()
+	[Test]
+	public void ValidateSlugForCollisions_AllowsSlugThatMatchesOperationId()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"search", "elasticsearch", "/docs/search.md", operationMonikers);
-
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*conflicts with existing operation moniker*");
-	}
-
-	[Fact]
-	public void ValidateSlugForCollisions_AllowsValidSlug()
-	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
-
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"overview", "elasticsearch", "/docs/overview.md", operationMonikers);
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("search", "elasticsearch", "/docs/search.md");
 
 		act.Should().NotThrow();
 	}
 
-	[Fact]
-	public void ValidateSlugForCollisions_IsCaseInsensitive()
+	[Test]
+	public void ValidateSlugForCollisions_AllowsValidSlug()
 	{
-		var operationMonikers = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "search", "index", "get" };
+		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions("overview", "elasticsearch", "/docs/overview.md");
 
-		var act = () => SimpleMarkdownNavigationItem.ValidateSlugForCollisions(
-			"SEARCH", "elasticsearch", "/docs/search.md", operationMonikers);
-
-		act.Should().Throw<InvalidOperationException>()
-			.WithMessage("*conflicts with existing operation moniker*");
+		act.Should().NotThrow();
 	}
 }

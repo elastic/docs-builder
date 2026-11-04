@@ -1,4 +1,13 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-dotnet husky run --group pre-commit
+# Run under mise when it is installed, so the hook gets the pinned SDK and Node even where mise is not activated
+# (GUI git clients, non-interactive shells).
+if command -v mise >/dev/null 2>&1; then
+  run() { mise exec -- "$@"; }
+else
+  run() { "$@"; }
+fi
+
+run dotnet tool restore --verbosity quiet
+run dotnet tool run husky -- run --group pre-commit

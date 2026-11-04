@@ -9,10 +9,7 @@ using Elastic.Documentation.Extensions;
 namespace Elastic.Documentation.Navigation.Isolated.Node;
 
 [DebuggerDisplay("{Url}")]
-public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>
-	, INavigationHomeAccessor
-	, INavigationHomeProvider
-	where TModel : class, IDocumentationFile
+public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INavigationItem>, INavigationHomeAccessor, INavigationHomeProvider, IAssignableIslandNavigation, IAssignableNavigationTitle where TModel : class, IDocumentationFile
 {
 	public TableOfContentsNavigation(
 		IDirectoryInfo tableOfContentsDirectory,
@@ -57,7 +54,10 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	public string Url => Index.Url;
 
 	/// <inheritdoc />
-	public string NavigationTitle => Index.NavigationTitle;
+	public string? NavigationTitleOverride { get; set; }
+
+	/// <inheritdoc />
+	public string NavigationTitle => NavigationTitleOverride ?? Index.NavigationTitle;
 
 	/// <summary>
 	/// TableOfContentsNavigation's NavigationRoot comes from its HomeProvider.
@@ -77,7 +77,10 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 	public INavigationHomeProvider HomeProvider { get; set; }
 
 	/// <inheritdoc />
-	public bool Hidden { get; }
+	public bool IsIsland { get; set; }
+
+	/// <inheritdoc />
+	public bool Hidden { get; private set; }
 
 	/// <inheritdoc />
 	public int NavigationIndex { get; set; }
@@ -99,11 +102,13 @@ public class TableOfContentsNavigation<TModel> : IRootNavigationItem<TModel, INa
 
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; }
 
-	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => SetNavigationItems(navigationItems);
+	void IAssignableChildrenNavigation.SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) =>
+		SetNavigationItems(navigationItems);
 	internal void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems)
 	{
 		var indexNavigation = navigationItems.QueryIndex<TModel>(this, $"{ParentPath}/index.md", out navigationItems);
 		Index = indexNavigation;
+		Hidden = Index.Hidden;
 		// Include NavigationRoot.Id to ensure uniqueness across docsets in assembler builds
 		Id = ShortId.Create(NavigationRoot.Id, Index.Url);
 		NavigationItems = navigationItems;

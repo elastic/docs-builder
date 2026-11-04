@@ -3,24 +3,40 @@
 // See the LICENSE file in the project root for more information
 
 using System.IO.Abstractions;
-using System.Text.RegularExpressions;
 using Amazon.S3;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Changelog;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Integrations.S3;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Changelog.Uploading;
 
-public enum ArtifactType { Changelog, Bundle }
+public enum ArtifactType
+{
+	Changelog,
+	Bundle,
 
-public enum UploadTargetKind { S3, Elasticsearch }
+	/// <summary>
+	/// Amend sidecars only: files matching <c>*.amend-{N}.yaml|yml</c> in the bundle output directory.
+	/// The Lambda-reserved <c>.amend-notes</c> suffix is excluded. Keyed identically to
+	/// <see cref="Bundle"/> (product list comes from the sidecar, falling back to the parent bundle).
+	/// Use this on <c>push</c> to sync manual post-release overrides from <c>main</c> without
+	/// accidentally overwriting a freshly-published parent bundle.
+	/// </summary>
+	Amend
+}
+
+public enum UploadTargetKind
+{
+	S3,
+	Elasticsearch
+}
 
 public record ChangelogUploadArguments
 {
@@ -29,26 +45,57 @@ public record ChangelogUploadArguments
 	public required string S3BucketName { get; init; }
 	public string? Config { get; init; }
 	public string? Directory { get; init; }
+
+	/// <summary>
+	/// Authoring repository identifier used to scope changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads (which are product-scoped from the bundle YAML). Resolved by the
+	/// CLI via the precedence <c>--repo</c> &gt; <c>bundle.repo</c> &gt; git remote origin.
+	/// </summary>
+	public string? Repo { get; init; }
+
+	/// <summary>
+	/// GitHub owner (org), the first segment of changelog-entry keys
+	/// (<c>changelog/{org}/{repo}/{branch}/{file}</c>). Required for <see cref="ArtifactType.Changelog"/>
+	/// uploads; unused for bundle uploads. Resolved by the CLI via the precedence
+	/// <c>--owner</c> &gt; <c>bundle.owner</c> &gt; git remote origin.
+	/// </summary>
+	public string? Owner { get; init; }
+
+	/// <summary>
+	/// Branch segment of changelog-entry keys (<c>changelog/{org}/{repo}/{branch}/{file}</c>), stored
+	/// verbatim so any <c>/</c> in the branch become real key separators (e.g. <c>feature/foo</c>).
+	/// Required for <see cref="ArtifactType.Changelog"/> uploads; unused for bundle uploads. Resolved by the
+	/// CLI via the precedence <c>--branch</c> &gt; the current git branch.
+	/// </summary>
+	public string? Branch { get; init; }
+
+	/// <summary>
+	/// When true, upload every discovered file even when its content hash matches the remote object.
+	/// Useful to re-trigger downstream scrubbers without changing file content.
+	/// </summary>
+	public bool SkipEtagCheck { get; init; }
+
+	/// <summary>
+	/// When true, do not replace a remote object whose content differs from the local file.
+	/// New keys are still uploaded. Unchanged (ETag match) files are still skipped.
+	/// Mutually exclusive with <see cref="SkipEtagCheck"/>.
+	/// </summary>
+	public bool NoOverwrite { get; init; }
 }
 
-public partial class ChangelogUploadService(
+public class ChangelogUploadService(
 	ILoggerFactory logFactory,
+	IChangelogFileSystem fileSystem,
 	IConfigurationContext? configurationContext = null,
-	ScopedFileSystem? fileSystem = null,
 	IAmazonS3? s3Client = null
 ) : IService
 {
 	private readonly ILogger _logger = logFactory.CreateLogger<ChangelogUploadService>();
-	private readonly IFileSystem _fileSystem = fileSystem ?? FileSystemFactory.RealRead;
+	private readonly IChangelogFileSystem _fileSystem = fileSystem;
 	private readonly ChangelogConfigurationLoader? _configLoader = configurationContext != null
-		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem ?? FileSystemFactory.RealRead)
+		? new ChangelogConfigurationLoader(logFactory, configurationContext, fileSystem)
 		: null;
-
-	[GeneratedRegex(@"^[a-zA-Z0-9_-]+$")]
-	private static partial Regex ProductNameRegex();
-
-	private static readonly YamlDotNet.Serialization.IDeserializer EntryDeserializer =
-		ReleaseNotesSerialization.GetEntryDeserializer();
 
 	public async Task<bool> Upload(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
 	{
@@ -58,50 +105,203 @@ public partial class ChangelogUploadService(
 			return true;
 		}
 
-		var directory = args.ArtifactType == ArtifactType.Bundle
-			? await ResolveBundleDirectory(collector, args, ctx)
-			: await ResolveChangelogDirectory(collector, args, ctx);
+		var directories = args.ArtifactType is ArtifactType.Bundle or ArtifactType.Amend
+			? await ResolveBundleScanDirectories(collector, args, ctx)
+			: [await ResolveChangelogDirectory(collector, args, ctx) ?? "docs/changelog"];
 
-		if (directory == null)
-			return false;
-
-		if (!_fileSystem.Directory.Exists(directory))
+		var existing = directories.Where(d => !string.IsNullOrWhiteSpace(d) && _fileSystem.Directory.Exists(d)).ToList();
+		if (existing.Count == 0)
 		{
-			_logger.LogInformation("{ArtifactType} directory {Directory} does not exist; nothing to upload", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"{ArtifactType} directory {Directory} does not exist; nothing to upload",
+				args.ArtifactType,
+				string.Join(", ", directories.Where(d => !string.IsNullOrWhiteSpace(d)))
+			);
 			return true;
 		}
 
-		var targets = args.ArtifactType == ArtifactType.Bundle
-			? DiscoverBundleUploadTargets(collector, directory)
-			: DiscoverUploadTargets(collector, directory);
+		var targets = DiscoverTargets(collector, args, existing);
+
+		// Entry uploads abort (rather than no-op) when the repo cannot be resolved: the keys would be
+		// unscoped and a silent skip would look like "nothing to upload".
+		if (collector.Errors > 0)
+			return false;
 
 		if (targets.Count == 0)
 		{
-			_logger.LogInformation("No {ArtifactType} files found to upload in {Directory}", args.ArtifactType, directory);
+			_logger.LogInformation(
+				"No {ArtifactType} files found to upload in {Directory}",
+				args.ArtifactType,
+				string.Join(", ", existing)
+			);
 			return true;
 		}
 
-		_logger.LogInformation("Found {Count} {ArtifactType} upload target(s) from {Directory}", targets.Count, args.ArtifactType, directory);
+		_logger.LogInformation(
+			"Found {Count} {ArtifactType} upload target(s) from {Directory}",
+			targets.Count,
+			args.ArtifactType,
+			string.Join(", ", existing)
+		);
 
 		using var defaultClient = s3Client == null ? new AmazonS3Client() : null;
 		var client = s3Client ?? defaultClient!;
 		var etagCalculator = new S3EtagCalculator(logFactory, _fileSystem);
 		var uploader = new S3IncrementalUploader(logFactory, client, _fileSystem, etagCalculator, args.S3BucketName);
-		var result = await uploader.Upload(targets, ctx);
+		var result = await uploader.Upload(
+			targets,
+			new S3UploadOptions { SkipEtagCheck = args.SkipEtagCheck, NoOverwrite = args.NoOverwrite },
+			ctx
+		);
 
-		_logger.LogInformation("Upload complete: {Uploaded} uploaded, {Skipped} skipped, {Failed} failed", result.Uploaded, result.Skipped, result.Failed);
+		LogUploadComplete(result);
+
+		foreach (var conflict in result.Conflicts)
+			collector.EmitWarning(string.Empty, FormatNotOverwrittenWarning(args.S3BucketName, conflict));
 
 		if (result.Failed > 0)
 			collector.EmitError(string.Empty, $"{result.Failed} file(s) failed to upload");
 
-		return result.Failed == 0;
+		if (result.NotOverwritten > 0)
+			collector.EmitError(string.Empty, FormatNotOverwrittenError(result));
+
+		// No registry refresh here: the scrubber Lambda is the sole producer of the public
+		// registry.json, reconciled from actual public bucket state on every S3 event this upload
+		// just emitted (elastic/docs-eng-team#688). A private-bucket registry no longer exists.
+		return result.Failed == 0 && result.NotOverwritten == 0;
 	}
 
-	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(IDiagnosticsCollector collector, string changelogDir)
+	private void LogUploadComplete(UploadResult result)
 	{
+		if (result.NotOverwritten > 0)
+		{
+			_logger.LogInformation(
+				"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {NotOverwritten} not overwritten, {Failed} failed",
+				result.Uploaded,
+				result.New,
+				result.Replaced,
+				result.Skipped,
+				result.NotOverwritten,
+				result.Failed
+			);
+			return;
+		}
+
+		_logger.LogInformation(
+			"Upload complete: {Uploaded} uploaded ({New} new, {Replaced} replaced), {Skipped} skipped, {Failed} failed",
+			result.Uploaded,
+			result.New,
+			result.Replaced,
+			result.Skipped,
+			result.Failed
+		);
+	}
+
+	private static string FormatNotOverwrittenError(UploadResult result)
+	{
+		var markerCount = result.Conflicts.Count(static c => IsPrAliasMarker(c));
+		if (markerCount == result.NotOverwritten && markerCount > 0)
+			return $"{markerCount} PR-alias marker(s) already exist at the destination and were not overwritten.";
+
+		return $"{result.NotOverwritten} file(s) already exist at the destination and were not overwritten.";
+	}
+
+	private static string FormatNotOverwrittenWarning(string bucket, UploadConflict conflict)
+	{
+		var uri = $"s3://{bucket}/{conflict.S3Key}";
+		if (IsPrAliasMarker(conflict))
+			return FormatMarkerNotOverwrittenWarning(uri, conflict);
+
+		var local = string.IsNullOrEmpty(conflict.LocalPath) ? "local changelog" : conflict.LocalPath;
+		if (conflict.RemoteContent is { Length: > 0 } body)
+		{
+			return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Merge the products (and other fields) manually, or re-run without --no-overwrite to replace.\nExisting remote changelog:\n{body}";
+		}
+
+		return $"Skipped {uri}: a changelog already exists at this key with different content. Local file: {local}. Could not fetch the existing remote changelog. Merge manually, or re-run without --no-overwrite to replace.";
+	}
+
+	private static string FormatMarkerNotOverwrittenWarning(string uri, UploadConflict conflict)
+	{
+		var canonicalPr = TryMarkerLink(conflict.RemoteContent) ?? TryMarkerLink(conflict.InlineContent);
+		var pointer = canonicalPr is null
+			? "The remote object is a pointer to another changelog, not a full entry."
+			: $"The remote object is a pointer to the canonical changelog for PR {canonicalPr}, not a full entry.";
+		var source = string.IsNullOrEmpty(conflict.LocalPath)
+			? "Upload writes this alias because a local changelog lists more than one PR."
+			: $"Upload writes this alias because {conflict.LocalPath} lists more than one PR.";
+		var body = conflict.RemoteContent is { Length: > 0 } remote
+			? $"\nExisting remote marker:\n{remote}"
+			: " Could not fetch the existing remote marker.";
+
+		return $"Skipped {uri}: a PR-alias marker already exists at this key with different content. {pointer} {source} Leave the existing pointer, or re-run without --no-overwrite to replace it.{body}";
+	}
+
+	private static bool IsPrAliasMarker(UploadConflict conflict) =>
+		conflict.InlineContent is not null || TryMarkerLink(conflict.RemoteContent) is not null;
+
+	private static string? TryMarkerLink(string? yaml)
+	{
+		if (string.IsNullOrWhiteSpace(yaml))
+			return null;
+
+		try
+		{
+			var entry = ReleaseNotesSerialization.DeserializeEntry(yaml);
+			return entry.IsMarker ? entry.Link : null;
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+	}
+
+	internal IReadOnlyList<UploadTarget> DiscoverUploadTargets(
+		IDiagnosticsCollector collector,
+		string changelogDir,
+		string? org,
+		string? repo,
+		string? branch
+	)
+	{
+		// Option AD: entries live once, under the authoring org/repo/branch pool — independent of which
+		// products later consume them. Org, repo, and branch must all resolve (CLI flags > bundle config >
+		// git); a missing/invalid value is fatal because every entry key derives from them.
+		if (!ChangelogKeys.IsValidOrg(org))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"A valid GitHub owner is required to upload changelog entries (resolved: \"{org ?? "<none>"}\"). " +
+					"Set --owner, bundle.owner in changelog.yml, or run inside a checkout with a github.com origin remote."
+			);
+			return [];
+		}
+
+		if (!ChangelogKeys.IsValidRepo(repo))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"A valid repository identifier is required to upload changelog entries (resolved: \"{repo ?? "<none>"}\"). " +
+					"Set --repo, bundle.repo in changelog.yml, or run inside a checkout with a github.com origin remote."
+			);
+			return [];
+		}
+
+		if (!ChangelogKeys.IsValidBranch(branch))
+		{
+			collector.EmitError(
+				string.Empty,
+				$"A valid branch is required to upload changelog entries (resolved: \"{branch ?? "<none>"}\"). " +
+					"Set --branch or run inside a checkout with a current branch."
+			);
+			return [];
+		}
+
 		var rootDir = _fileSystem.DirectoryInfo.New(changelogDir);
 
-		var yamlFiles = _fileSystem.Directory.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
+		var yamlFiles = _fileSystem
+			.Directory
+			.GetFiles(changelogDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(changelogDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
 
@@ -116,24 +316,135 @@ public partial class ChangelogUploadService(
 				continue;
 			}
 
-			var products = ReadProductsFromFragment(filePath);
-			if (products.Count == 0)
+			var fileName = _fileSystem.Path.GetFileName(filePath);
+
+			if (fileName.StartsWith("note-", StringComparison.OrdinalIgnoreCase))
 			{
-				_logger.LogDebug("No products found in {File}, skipping", filePath);
+				targets.Add(new UploadTarget(filePath, ChangelogKeys.ChangelogFileKey(org, repo, branch, fileName)));
 				continue;
 			}
 
-			var fileName = _fileSystem.Path.GetFileName(filePath);
+			ChangelogEntry? entry = null;
+			try
+			{
+				var content = _fileSystem.File.ReadAllText(filePath);
+				entry = ReleaseNotesSerialization.DeserializeEntry(content);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning(ex, "Could not read entry from {File}; using filename for key", filePath);
+			}
 
+			var (canonicalFileName, markerEntries) = DeriveCanonicalFileNameAndMarkers(fileName, entry, _logger);
+			var primaryKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, canonicalFileName);
+			targets.Add(new UploadTarget(filePath, primaryKey));
+
+			foreach (var (markerFileName, markerContent) in markerEntries)
+			{
+				var markerKey = ChangelogKeys.ChangelogFileKey(org, repo, branch, markerFileName);
+				targets.Add(new UploadTarget(filePath, markerKey, markerContent));
+			}
+		}
+
+		return targets;
+	}
+
+	internal static (string CanonicalFileName, IReadOnlyList<(string FileName, string Content)> Markers) DeriveCanonicalFileNameAndMarkers(
+		string fileName,
+		ChangelogEntry? entry,
+		ILogger? logger = null
+	)
+	{
+		if (entry is null)
+			return (fileName, []);
+
+		var prNumbers = entry.Prs?.Select(pr => ChangelogTextUtilities.ExtractPrNumber(pr))
+			.Where(n => n.HasValue)
+			.Select(n => n!.Value)
+			.Distinct()
+			.OrderBy(n => n)
+			.ToList();
+
+		if (prNumbers is null or { Count: 0 })
+		{
+			logger?.LogWarning("Entry {File} has no PR references; using filename as-is for key", fileName);
+			return (fileName, []);
+		}
+
+		var primaryPr = prNumbers[0]; // already sorted ascending, min is first
+		var canonicalFileName = $"{primaryPr}.yaml";
+
+		if (prNumbers.Count == 1)
+			return (canonicalFileName, []);
+
+		var markerContent = ReleaseNotesSerialization.SerializeEntry(new ChangelogEntry
+		{
+			Link = primaryPr.ToString(System.Globalization.CultureInfo.InvariantCulture)
+		});
+		var markers = prNumbers.Skip(1).Select(pr => ($"{pr}.yaml", markerContent)).ToList();
+
+		return (canonicalFileName, markers);
+	}
+
+	/// <summary>
+	/// Discovers numbered amend sidecars (<c>*.amend-{N}.yaml|yml</c>) in <paramref name="bundleDir"/>.
+	/// The Lambda-reserved <c>.amend-notes.yaml</c> sidecar is excluded; only user-authored amends
+	/// (those with a positive numeric suffix) are returned. Each sidecar is keyed identically to a
+	/// parent bundle: product list comes from the sidecar, falling back to the sibling parent bundle
+	/// file when the sidecar predates the products-copy feature.
+	/// </summary>
+	internal IReadOnlyList<UploadTarget> DiscoverAmendUploadTargets(IDiagnosticsCollector collector, string bundleDir)
+	{
+		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
+
+		var yamlFiles = _fileSystem
+			.Directory
+			.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
+			.ToList();
+
+		var targets = new List<UploadTarget>();
+
+		foreach (var filePath in yamlFiles)
+		{
+			// Only numbered amend sidecars; skip parent bundles and the Lambda-reserved .amend-notes sidecar
+			if (!BundleAmendMerger.IsAmendFile(filePath))
+				continue;
+			if (BundleAmendMerger.GetAmendFileNumber(filePath) <= 0)
+				continue;
+
+			var fileInfo = _fileSystem.FileInfo.New(filePath);
+			if (SymlinkValidator.ValidateFileAccess(fileInfo, rootDir) is { } accessError)
+			{
+				collector.EmitWarning(filePath, $"Skipping: {accessError}");
+				continue;
+			}
+
+			var products = ReadProductsFromBundle(filePath);
+			if (products.Count == 0)
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(
+						filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+							"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products."
+					);
+					continue;
+				}
+			}
+
+			var fileName = _fileSystem.Path.GetFileName(filePath);
 			foreach (var product in products)
 			{
-				if (!ProductNameRegex().IsMatch(product))
+				if (!ChangelogKeys.IsValidProduct(product))
 				{
 					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
 					continue;
 				}
 
-				var s3Key = $"{product}/changelog/{fileName}";
+				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}
@@ -141,34 +452,13 @@ public partial class ChangelogUploadService(
 		return targets;
 	}
 
-	private List<string> ReadProductsFromFragment(string filePath)
-	{
-		try
-		{
-			var content = _fileSystem.File.ReadAllText(filePath);
-			var normalized = ReleaseNotesSerialization.NormalizeYaml(content);
-			var entry = EntryDeserializer.Deserialize<ChangelogEntryDto>(normalized);
-			if (entry?.Products == null)
-				return [];
-
-			return entry.Products
-				.Select(p => p?.Product)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Select(p => p!)
-				.ToList();
-		}
-		catch (Exception ex)
-		{
-			_logger.LogWarning(ex, "Could not read products from {File}", filePath);
-			return [];
-		}
-	}
-
 	internal IReadOnlyList<UploadTarget> DiscoverBundleUploadTargets(IDiagnosticsCollector collector, string bundleDir)
 	{
 		var rootDir = _fileSystem.DirectoryInfo.New(bundleDir);
 
-		var yamlFiles = _fileSystem.Directory.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
+		var yamlFiles = _fileSystem
+			.Directory
+			.GetFiles(bundleDir, "*.yaml", SearchOption.TopDirectoryOnly)
 			.Concat(_fileSystem.Directory.GetFiles(bundleDir, "*.yml", SearchOption.TopDirectoryOnly))
 			.ToList();
 
@@ -184,6 +474,23 @@ public partial class ChangelogUploadService(
 			}
 
 			var products = ReadProductsFromBundle(filePath);
+
+			// Amends published before products were copied from the parent omit them; derive the
+			// destination from the parent bundle next to the amend so they are not silently skipped.
+			if (products.Count == 0 && BundleAmendMerger.IsAmendFile(filePath))
+			{
+				products = ReadProductsFromParentBundle(filePath);
+				if (products.Count == 0)
+				{
+					collector.EmitWarning(
+						filePath,
+						"Amend bundle declares no products and its parent bundle is missing or has none; " +
+							"skipping upload. Re-create the amend with a current docs-builder so it carries the parent's products."
+					);
+					continue;
+				}
+			}
+
 			if (products.Count == 0)
 			{
 				_logger.LogDebug("No products found in bundle {File}, skipping", filePath);
@@ -194,18 +501,24 @@ public partial class ChangelogUploadService(
 
 			foreach (var product in products)
 			{
-				if (!ProductNameRegex().IsMatch(product))
+				if (!ChangelogKeys.IsValidProduct(product))
 				{
 					collector.EmitWarning(filePath, $"Skipping invalid product name \"{product}\" (must match [a-zA-Z0-9_-]+)");
 					continue;
 				}
 
-				var s3Key = $"{product}/bundle/{fileName}";
+				var s3Key = ChangelogKeys.BundleFileKey(product, fileName);
 				targets.Add(new UploadTarget(filePath, s3Key));
 			}
 		}
 
 		return targets;
+	}
+
+	private List<string> ReadProductsFromParentBundle(string amendFilePath)
+	{
+		var parentPath = BundleAmendMerger.GetParentBundlePath(amendFilePath);
+		return parentPath != null && _fileSystem.File.Exists(parentPath) ? ReadProductsFromBundle(parentPath) : [];
 	}
 
 	private List<string> ReadProductsFromBundle(string filePath)
@@ -215,17 +528,150 @@ public partial class ChangelogUploadService(
 			var content = _fileSystem.File.ReadAllText(filePath);
 			var bundle = ReleaseNotesSerialization.DeserializeBundle(content);
 
-			return bundle.Products
-				.Select(p => p.ProductId)
-				.Where(p => !string.IsNullOrWhiteSpace(p))
-				.Distinct()
-				.ToList();
+			return bundle.Products.Select(p => p.ProductId).Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
 		}
 		catch (Exception ex)
 		{
 			_logger.LogWarning(ex, "Could not read products from bundle {File}", filePath);
 			return [];
 		}
+	}
+
+	private IReadOnlyList<UploadTarget> DiscoverTargets(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		IReadOnlyList<string> directories
+	)
+	{
+		var targets = new List<UploadTarget>();
+		foreach (var directory in directories)
+		{
+			var found = args.ArtifactType switch
+			{
+				ArtifactType.Bundle => DiscoverBundleUploadTargets(collector, directory),
+				ArtifactType.Amend => DiscoverAmendUploadTargets(collector, directory),
+				_ => DiscoverUploadTargets(collector, directory, args.Owner, args.Repo, args.Branch)
+			};
+			targets.AddRange(found);
+		}
+
+		return CollapseByS3Key(collector, targets);
+	}
+
+	/// <summary>
+	/// The root of <c>bundle.output_directory</c> and its product subdirectories are both scanned, so a stale
+	/// flat bundle and its per-product copy can map to the same S3 key. Keeps one target per key: the file in
+	/// the deeper directory (the per-product folder) wins, the first one found on a tie, and the other is
+	/// reported as a warning.
+	/// </summary>
+	internal static IReadOnlyList<UploadTarget> CollapseByS3Key(IDiagnosticsCollector collector, IReadOnlyList<UploadTarget> targets)
+	{
+		var byKey = new Dictionary<string, UploadTarget>(StringComparer.Ordinal);
+		var order = new List<string>();
+		foreach (var target in targets)
+		{
+			if (!byKey.TryGetValue(target.S3Key, out var existing))
+			{
+				byKey[target.S3Key] = target;
+				order.Add(target.S3Key);
+				continue;
+			}
+
+			var keep = Depth(target.LocalPath) > Depth(existing.LocalPath) ? target : existing;
+			var skip = ReferenceEquals(keep, target) ? existing : target;
+			byKey[target.S3Key] = keep;
+			collector.EmitWarning(
+				skip.LocalPath,
+				$"Skipping '{skip.LocalPath}': '{keep.LocalPath}' uploads to the same key '{target.S3Key}'. Remove the stale file."
+			);
+		}
+
+		return order.Select(key => byKey[key]).ToList();
+
+		static int Depth(string path) => path.Replace('\\', '/').Count(c => c == '/');
+	}
+
+	/// <summary>
+	/// Directories to scan for bundle/amend YAML: explicit <c>--directory</c>, else
+	/// <c>bundle.output_directory</c> plus its immediate subdirectories (the per-product folders
+	/// written by the conventional <c>{output_directory}/{product}/{file}</c> layout) plus each
+	/// deprecated profile <c>output_directory</c>. Without <c>bundle.output_directory</c>, bundles land in
+	/// <c>bundle.directory</c>, so its product folders are scanned too, and its top level when nothing else
+	/// is configured. Last, <c>docs/releases</c>. Each directory is scanned <see cref="SearchOption.TopDirectoryOnly"/>.
+	/// A product folder that is a symlink or hidden is not scanned.
+	/// </summary>
+	internal static IReadOnlyList<string> CollectBundleScanDirectories(
+		string? explicitDirectory,
+		ChangelogConfiguration? config,
+		IFileSystem? fileSystem = null
+	)
+	{
+		if (!string.IsNullOrWhiteSpace(explicitDirectory))
+			return [explicitDirectory];
+
+		var dirs = new List<string>();
+		var seen = new HashSet<string>(StringComparer.Ordinal);
+		var globalOutputDir = config?.Bundle?.OutputDirectory;
+		AddUnique(dirs, seen, globalOutputDir);
+		AddProductFolders(dirs, seen, globalOutputDir, fileSystem);
+
+		if (config?.Bundle?.Profiles != null)
+		{
+#pragma warning disable CS0618
+			foreach (var profile in config.Bundle.Profiles.Values)
+				AddUnique(dirs, seen, profile.OutputDirectory);
+#pragma warning restore CS0618
+		}
+
+		if (string.IsNullOrWhiteSpace(globalOutputDir))
+		{
+			var bundleDir = config?.Bundle?.Directory;
+			if (dirs.Count == 0)
+				AddUnique(dirs, seen, bundleDir);
+			AddProductFolders(dirs, seen, bundleDir, fileSystem);
+		}
+
+		if (dirs.Count == 0)
+			AddUnique(dirs, seen, "docs/releases");
+		return dirs;
+	}
+
+	/// <summary>
+	/// Adds the immediate subdirectories of <paramref name="root"/>, the per-product folders of the conventional
+	/// layout. A subdirectory that is a symlink or hidden is skipped: the upload guard only checks the path below
+	/// a scan root, so a symlinked root would let it read files outside the bundle directory.
+	/// </summary>
+	private static void AddProductFolders(List<string> dirs, HashSet<string> seen, string? root, IFileSystem? fileSystem)
+	{
+		if (string.IsNullOrWhiteSpace(root) || fileSystem == null || !fileSystem.Directory.Exists(root))
+			return;
+
+		var rootInfo = fileSystem.DirectoryInfo.New(root);
+		foreach (var subDir in rootInfo.EnumerateDirectories())
+		{
+			if (!subDir.Name.StartsWith('.') && SymlinkValidator.ValidateDirectoryAccess(subDir, rootInfo) is null)
+				AddUnique(dirs, seen, fileSystem.Path.Join(root, subDir.Name));
+		}
+	}
+
+	private static void AddUnique(List<string> dirs, HashSet<string> seen, string? directory)
+	{
+		if (string.IsNullOrWhiteSpace(directory) || !seen.Add(directory))
+			return;
+		dirs.Add(directory);
+	}
+
+	private async Task<IReadOnlyList<string>> ResolveBundleScanDirectories(
+		IDiagnosticsCollector collector,
+		ChangelogUploadArguments args,
+		Cancel ctx
+	)
+	{
+		if (!string.IsNullOrWhiteSpace(args.Directory) || _configLoader == null)
+			return CollectBundleScanDirectories(args.Directory, null);
+
+		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx).ConfigureAwait(false);
+		return CollectBundleScanDirectories(null, config, _fileSystem);
 	}
 
 	private async Task<string?> ResolveChangelogDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
@@ -238,17 +684,5 @@ public partial class ChangelogUploadService(
 
 		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
 		return config?.Bundle?.Directory ?? "docs/changelog";
-	}
-
-	private async Task<string?> ResolveBundleDirectory(IDiagnosticsCollector collector, ChangelogUploadArguments args, Cancel ctx)
-	{
-		if (!string.IsNullOrWhiteSpace(args.Directory))
-			return args.Directory;
-
-		if (_configLoader == null)
-			return "docs/releases";
-
-		var config = await _configLoader.LoadChangelogConfiguration(collector, args.Config, ctx);
-		return config?.Bundle?.OutputDirectory ?? config?.Bundle?.Directory ?? "docs/releases";
 	}
 }

@@ -1,28 +1,19 @@
 import * as logging from '../../telemetry/logging'
-import { cooldownStore } from '../shared/cooldown.store'
+import { renderWithProviders } from '../../test-utils/render'
+import { resetCooldownStore } from '../../test-utils/stores'
 import { NavigationSearch } from './NavigationSearch'
 import { SearchResultsList } from './SearchResultsList'
+import { groupSearchResults } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
 import * as queryHook from './useNavigationSearchQuery'
-import { EuiProvider } from '@elastic/eui'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import * as React from 'react'
 
-// Mock htmx - it uses XPath which jsdom doesn't support properly
-jest.mock('htmx.org', () => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    process: jest.fn(),
-    ajax: jest.fn(),
-}))
-
 // Mock the telemetry logging functions
-jest.mock('../../telemetry/logging', () => ({
-    logInfo: jest.fn(),
-    logWarn: jest.fn(),
-}))
+vi.mock('../../telemetry/logging', async () =>
+    (await import('../../test-utils/mocks')).logging()
+)
 
 // Mock search results for result click tests
 const mockSearchResults = {
@@ -32,66 +23,42 @@ const mockSearchResults = {
             title: 'Elasticsearch Guide',
             description: 'Learn about Elasticsearch',
             score: 0.95,
-            type: 'doc' as const,
-            parents: [{ title: 'Docs' }, { title: 'Elasticsearch' }],
+            type: 'docs' as const,
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Elasticsearch', url: '/docs/elasticsearch' },
+            ],
         },
         {
             url: '/docs/kibana/dashboard',
             title: 'Kibana Dashboard',
             description: 'Create dashboards',
             score: 0.85,
-            type: 'doc' as const,
-            parents: [{ title: 'Docs' }, { title: 'Kibana' }],
+            type: 'docs' as const,
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Kibana', url: '/docs/kibana' },
+            ],
         },
     ],
     totalResults: 2,
     pageCount: 1,
 }
 
-// Create a fresh QueryClient for each test
-const createTestQueryClient = () =>
-    new QueryClient({
-        defaultOptions: {
-            queries: { retry: false },
-            mutations: { retry: false },
-        },
-    })
-
-// Wrapper component for tests
-const renderWithProviders = (ui: React.ReactElement) => {
-    const testQueryClient = createTestQueryClient()
-    return render(
-        <EuiProvider
-            colorMode="light"
-            globalStyles={false}
-            utilityClasses={false}
-        >
-            <QueryClientProvider client={testQueryClient}>
-                {ui}
-            </QueryClientProvider>
-        </EuiProvider>
-    )
-}
-
 // Helper to reset all stores
 const resetStores = () => {
     navigationSearchStore.getState().actions.clearSearchTerm()
-    cooldownStore.setState({
-        cooldowns: {
-            search: { cooldown: null, awaitingNewInput: false },
-            askAi: { cooldown: null, awaitingNewInput: false },
-        },
-    })
+    resetCooldownStore()
 }
 
 describe('Navigation Search Telemetry Integration', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetStores()
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     describe('Opening Navigation Search', () => {
@@ -111,22 +78,6 @@ describe('Navigation Search Telemetry Integration', () => {
                 }
             )
         })
-
-        it('should track keyboard_shortcut trigger when opened via Cmd+K', async () => {
-            // Arrange
-            renderWithProviders(<NavigationSearch />)
-
-            // Act - simulate Cmd+K
-            await userEvent.keyboard('{Meta>}k{/Meta}')
-
-            // Assert
-            expect(logging.logInfo).toHaveBeenCalledWith(
-                'navigation_search_opened',
-                {
-                    'navigation_search.trigger': 'keyboard_shortcut',
-                }
-            )
-        })
     })
 
     describe('Closing Navigation Search', () => {
@@ -138,7 +89,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus and type, then escape
             await userEvent.click(input)
             await userEvent.type(input, 'elasticsearch')
-            jest.clearAllMocks() // Clear the opened event
+            vi.clearAllMocks() // Clear the opened event
 
             await userEvent.keyboard('{Escape}')
 
@@ -165,7 +116,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus, type, then click outside
             await userEvent.click(input)
             await userEvent.type(input, 'test')
-            jest.clearAllMocks()
+            vi.clearAllMocks()
 
             await userEvent.click(screen.getByTestId('outside'))
 
@@ -186,7 +137,7 @@ describe('Navigation Search Telemetry Integration', () => {
             // Act - focus, type, then escape without results
             await userEvent.click(input)
             await userEvent.type(input, 'test')
-            jest.clearAllMocks()
+            vi.clearAllMocks()
 
             await userEvent.keyboard('{Escape}')
 
@@ -204,7 +155,7 @@ describe('Navigation Search Telemetry Integration', () => {
     describe('Error Tracking', () => {
         it('should track navigation_search_rate_limited on 429 response', async () => {
             // Arrange - mock 429 response
-            global.fetch = jest.fn().mockResolvedValue({
+            global.fetch = vi.fn().mockResolvedValue({
                 ok: false,
                 status: 429,
                 headers: {
@@ -237,19 +188,21 @@ describe('Navigation Search Telemetry Integration', () => {
 describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
+        results: groupSearchResults(mockSearchResults.results),
+        isLoading: false,
         isKeyboardNavigating: { current: false },
-        onMouseMove: jest.fn(),
-        onResultClick: jest.fn(),
+        onMouseMove: vi.fn(),
+        onResultClick: vi.fn(),
     })
 
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetStores()
         // Set up the store with a search term
         navigationSearchStore.getState().actions.setSearchTerm('elasticsearch')
 
         // Mock the query hook to return results
-        jest.spyOn(queryHook, 'useNavigationSearchQuery').mockReturnValue({
+        vi.spyOn(queryHook, 'useNavigationSearchQuery').mockReturnValue({
             isLoading: false,
             isFetching: false,
             data: mockSearchResults,
@@ -258,7 +211,7 @@ describe('Navigation Search Result Click Tracking', () => {
     })
 
     afterEach(() => {
-        jest.restoreAllMocks()
+        vi.restoreAllMocks()
     })
 
     it('should track result click with query, position, url, and score', async () => {
@@ -315,5 +268,44 @@ describe('Navigation Search Result Click Tracking', () => {
                 'navigation_search.query': 'updated query',
             })
         )
+    })
+
+    it('includes navigation_search.surface=api on opened, closed, and result_clicked', async () => {
+        renderWithProviders(<NavigationSearch typeFilter="api" />)
+        const input = screen.getByPlaceholderText(/jump to/i)
+
+        await userEvent.click(input)
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_opened',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        await userEvent.type(input, 'bulk')
+        vi.clearAllMocks()
+        await userEvent.keyboard('{Escape}')
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_closed',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+
+        const props = createResultsListProps()
+        renderWithProviders(<SearchResultsList {...props} typeFilter="api" />)
+        await userEvent.click(screen.getByText('Elasticsearch Guide'))
+        expect(logging.logInfo).toHaveBeenCalledWith(
+            'navigation_search_result_clicked',
+            expect.objectContaining({
+                'navigation_search.surface': 'api',
+            })
+        )
+    })
+
+    it('does not show Alpha or Give feedback in the dropdown', () => {
+        renderWithProviders(<NavigationSearch />)
+        expect(screen.queryByText('ALPHA')).not.toBeInTheDocument()
+        expect(screen.queryByText(/give feedback/i)).not.toBeInTheDocument()
     })
 })

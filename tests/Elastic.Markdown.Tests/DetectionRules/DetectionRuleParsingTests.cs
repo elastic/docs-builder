@@ -9,7 +9,8 @@ namespace Elastic.Markdown.Tests.DetectionRules;
 
 public class DetectionRuleParsingTests
 {
-	private const string MinimalRule = """
+	private const string MinimalRule =
+		"""
 		[metadata]
 		creation_date = "2024/08/01"
 		maturity = "production"
@@ -27,7 +28,7 @@ public class DetectionRuleParsingTests
 		query = "process.name : evil.exe"
 		""";
 
-	[Fact]
+	[Test]
 	public void FromToml_MinimalRule_ParsesCorrectly()
 	{
 		var rule = DetectionRule.FromToml(MinimalRule);
@@ -40,10 +41,11 @@ public class DetectionRuleParsingTests
 		rule.Authors.Should().ContainSingle().Which.Should().Be("Elastic");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_ImplicitIntermediateTable_ParsesTransformInvestigate()
 	{
-		var toml = MinimalRule + """
+		var toml = MinimalRule
+			+ """
 
 			[[transform.investigate]]
 			label = "Alerts associated with the user"
@@ -75,11 +77,12 @@ public class DetectionRuleParsingTests
 		rule.Threats[0].Techniques[0].Id.Should().Be("T1071");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MultiLineStringWithMarkdownLinks_ParsesCorrectly()
 	{
 		// TOML uses """ for multi-line strings; use 4-quote C# raw literals to embed them
-		var toml = """"
+		var toml =
+			""""
 			[metadata]
 			creation_date = "2024/08/01"
 			maturity = "production"
@@ -109,11 +112,12 @@ public class DetectionRuleParsingTests
 		rule.Setup.Should().Contain("elastic.co/docs");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MixedMultiLineDelimiters_ParsesCorrectly()
 	{
 		// Triple-quoted """ appears inside a '''-delimited multi-line string
-		var toml = """"
+		var toml =
+			""""
 			[metadata]
 			creation_date = "2024/08/01"
 			maturity = "production"
@@ -143,10 +147,11 @@ public class DetectionRuleParsingTests
 		rule.Note.Should().Contain("Triage");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_DeprecatedRule_ParsesDeprecationDate()
 	{
-		var toml = """
+		var toml =
+			"""
 			[metadata]
 			creation_date = "2024/08/01"
 			deprecation_date = "2025/03/15"
@@ -169,10 +174,11 @@ public class DetectionRuleParsingTests
 		rule.Maturity.Should().Be("deprecated");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_ThreatWithSubTechniques_ParsesFullHierarchy()
 	{
-		var toml = MinimalRule + """
+		var toml = MinimalRule
+			+ """
 
 			[[rule.threat]]
 			framework = "MITRE ATT&CK"
@@ -204,10 +210,11 @@ public class DetectionRuleParsingTests
 		technique.SubTechniques[1].Id.Should().Be("T1566.002");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_MultipleThreats_ParsesAll()
 	{
-		var toml = MinimalRule + """
+		var toml = MinimalRule
+			+ """
 
 			[[rule.threat]]
 			framework = "MITRE ATT&CK"
@@ -231,7 +238,7 @@ public class DetectionRuleParsingTests
 		rule.Threats[1].Tactic.Id.Should().Be("TA0005");
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_OptionalFieldsMissing_DefaultsCorrectly()
 	{
 		var rule = DetectionRule.FromToml(MinimalRule);
@@ -247,10 +254,11 @@ public class DetectionRuleParsingTests
 		rule.Threats.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void FromToml_DomainTag_ExtractedCorrectly()
 	{
-		var toml = """
+		var toml =
+			"""
 			[metadata]
 			creation_date = "2024/08/01"
 			maturity = "production"

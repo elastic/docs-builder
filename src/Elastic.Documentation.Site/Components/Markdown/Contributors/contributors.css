@@ -1,0 +1,64 @@
+.contributors-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+	gap: var(--space-6) var(--space-5);
+	margin: var(--space-5) 0;
+}
+
+.contributor-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.contributor-avatar {
+	display: block;
+	flex: none;
+	width: 6rem;
+	height: 6rem;
+	overflow: hidden;
+	border-radius: var(--radius-pill);
+	transition: box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.contributor-avatar:hover {
+	box-shadow: 0 0 0 3px var(--color-accent);
+}
+
+.contributor-avatar img {
+	width: 100%;
+	height: 100%;
+	border-radius: var(--radius-pill);
+	background: var(--color-surface-sunken);
+	object-fit: cover;
+}
+
+.contributor-info {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	max-width: 10rem;
+	margin-top: var(--space-3);
+}
+
+.contributor-name {
+	color: var(--color-heading);
+	font-size: var(--text-sm);
+	font-weight: var(--weight-semibold);
+	line-height: var(--leading-tight);
+	text-decoration: none;
+}
+
+a.contributor-name:hover {
+	color: var(--color-accent);
+	text-decoration: underline;
+}
+
+.contributor-title,
+.contributor-location {
+	color: var(--color-text-muted);
+	font-size: var(--text-xs);
+	line-height: var(--leading-tight);
+}
