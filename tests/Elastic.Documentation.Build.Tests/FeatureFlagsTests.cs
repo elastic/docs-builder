@@ -10,9 +10,11 @@ using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Build.Tests;
 
+// The environment-variable override test mutates process-wide state that every flag-reading test here depends on
+[NotInParallel(nameof(FeatureFlagsTests))]
 public class FeatureFlagsTests
 {
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_ReadsYamlKey()
 	{
 		var flags = new FeatureFlags([]);
@@ -21,7 +23,7 @@ public class FeatureFlagsTests
 		flags.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_DefaultsToFalse()
 	{
 		var flags = new FeatureFlags([]);
@@ -29,7 +31,7 @@ public class FeatureFlagsTests
 		flags.AssemblerApiExplorerEnabled.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public void AssemblerApiExplorerEnabled_EnvironmentVariableOverridesYaml()
 	{
 		var previous = Environment.GetEnvironmentVariable("FEATURE_ASSEMBLER_API_EXPLORER");
@@ -46,17 +48,29 @@ public class FeatureFlagsTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void StagingEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("staging");
 
-	[Fact]
+	[Test]
 	public void PreviewEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("preview");
+
+	[Test]
+	public void EdgeEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("edge");
+
+	[Test]
+	public void AirGappedEnvironment_EnablesAssemblerApiExplorer() => AssertEnvironmentEnablesAssemblerApiExplorer("air-gapped");
+
+	[Test]
+	public void EdgeEnvironment_DoesNotAllowIndexing()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["edge"].AllowIndexing.Should().BeFalse();
+	}
 
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
-		var config = AssemblyConfiguration.Create(
-			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
-		);
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var environment = config.Environments[environmentName];
 
 		environment.FeatureFlags.Should().ContainKey("ASSEMBLER_API_EXPLORER").WhoseValue.Should().BeTrue();
@@ -67,12 +81,10 @@ public class FeatureFlagsTests
 		features.AssemblerApiExplorerEnabled.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ProdEnvironment_DoesNotEnableAssemblerApiExplorer()
 	{
-		var config = AssemblyConfiguration.Create(
-			new ConfigurationFileProvider(new TestLoggerFactory(null), new ConfigurationFileSystem())
-		);
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 		var prod = config.Environments["prod"];
 
 		prod.FeatureFlags.Should().NotContainKey("ASSEMBLER_API_EXPLORER");

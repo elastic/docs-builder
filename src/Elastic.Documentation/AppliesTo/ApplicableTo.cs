@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Versions;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.AppliesTo;
 
@@ -52,6 +53,9 @@ public record ApplicableTo
 	[JsonIgnore]
 	public ApplicabilityDiagnosticsCollection? Diagnostics { get; set; }
 
+	// Static singletons, not YAML members — the source generator doesn't filter static properties
+	// on its own, so these must be explicitly ignored to avoid CS0176 in the generated (de)serializer.
+	[YamlIgnore]
 	public static ApplicableTo All { get; } = new()
 	{
 		Stack = AppliesCollection.GenerallyAvailable,
@@ -62,6 +66,7 @@ public record ApplicableTo
 
 	private static readonly VersionSpec DefaultVersion = VersionSpec.TryParse("9.0", out var v) ? v : AllVersionsSpec.Instance;
 
+	[YamlIgnore]
 	public static ApplicableTo Default { get; } = new()
 	{
 		Stack = new AppliesCollection([new Applicability { Version = DefaultVersion, Lifecycle = ProductLifecycle.GenerallyAvailable }]),
@@ -205,6 +210,7 @@ public record DeploymentApplicability
 
 	public AppliesCollection? Ess { get; set; }
 
+	[YamlIgnore]
 	public static DeploymentApplicability All { get; } = new()
 	{
 		Ece = AppliesCollection.GenerallyAvailable,
@@ -269,6 +275,7 @@ public record ServerlessProjectApplicability
 	public AppliesCollection? AllProjects =>
 		Elasticsearch == Observability && Observability == Security && Security == VectorDatabase ? Elasticsearch : null;
 
+	[YamlIgnore]
 	public static ServerlessProjectApplicability All { get; } = new()
 	{
 		Elasticsearch = AppliesCollection.GenerallyAvailable,

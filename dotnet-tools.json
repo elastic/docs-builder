@@ -38,16 +38,9 @@
       "rollForward": false
     },
     "curb-cli": {
-      "version": "0.7.1",
+      "version": "0.9.0",
       "commands": [
         "curb"
-      ],
-      "rollForward": true
-    },
-    "aspire.cli": {
-      "version": "13.5.3",
-      "commands": [
-        "aspire"
       ],
       "rollForward": false
     }

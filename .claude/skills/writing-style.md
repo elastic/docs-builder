@@ -73,6 +73,28 @@ Do **not** backtick prose nouns that merely share a name with code — the assem
 
 ---
 
+## Linking to issues and pull requests
+
+Link liberally. Any issue, PR, or discussion named in prose gets a link — first mention and every repeat.
+
+**Always the full URL.** Never a bare `#3855`, and never a short form like `elastic/repo#3855`. GitHub resolves `#num` against whatever repo the current page lives in — the same body pasted into a different repo silently points at the wrong thing.
+
+Markdown form: `[#3855](https://github.com/elastic/docs-builder/pull/3855)`. Keep the `#num` as link text so it stays scannable in a git log or review tool that strips HTML.
+
+Cross-repo mentions include the org and repo in the link text:
+
+```
+[elastic/docs-actions#412](https://github.com/elastic/docs-actions/pull/412)
+```
+
+| Wrong | Right |
+|---|---|
+| See #3855 for context | See [#3855](https://github.com/elastic/docs-builder/pull/3855) for context |
+| elastic/docs-actions#412 fixed this | [elastic/docs-actions#412](https://github.com/elastic/docs-actions/pull/412) fixed this |
+| Refs #3856 | Refs [#3856](https://github.com/elastic/docs-builder/pull/3856) |
+
+---
+
 ## Anti-mechanical rules for "What" sections
 
 `## What` uses `####` subheadings, not bullet points. Each subheading names the thing that changed (a file, a command, a concept). The prose under it states what changed and why it matters — two to four sentences, same plain-language rules as everywhere else.
@@ -97,13 +119,13 @@ Lead with the behaviour change; name the symbol second when the reviewer needs i
 
 These are the rules in action. If a new rule does not survive this test, the rule is wrong.
 
-**#3951 — `## What`, first bullet:**
+**[#3951](https://github.com/elastic/docs-builder/pull/3951) — `## What`, first bullet:**
 
 > ❌ `GitLocks.ClearStale(IFileSystem, ...)` sweeps `*.lock` files under `.git/` before each retry. Called only from the retry path — never before attempt 1, where a lock could belong to a concurrent process.
 
 > ✅ A retry clears stale `*.lock` files under `.git/` before it runs. The first attempt is never affected — a lock there can belong to a live process.
 
-**#3941 — opening of `## Why`:**
+**[#3941](https://github.com/elastic/docs-builder/pull/3941) — opening of `## Why`:**
 
 > ❌ [#3911](https://github.com/elastic/docs-builder/pull/3911) tried to fix stale CDN pool listings by bringing back `changelog/{org}/{repo}/{branch}/registry.json`. That approach was rejected…
 
@@ -111,7 +133,7 @@ These are the rules in action. If a new rule does not survive this test, the rul
 
 The history of a rejected PR is not the problem this PR solves. Lead with the problem.
 
-**#3856 — label:**
+**[#3856](https://github.com/elastic/docs-builder/pull/3856) — label:**
 
 > ❌ `feature`
 

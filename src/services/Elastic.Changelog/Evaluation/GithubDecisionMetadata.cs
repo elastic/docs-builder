@@ -27,6 +27,7 @@ public record GithubDecisionMetadata
 	public string? HeadRepo { get; init; }
 	public string? LabelTable { get; init; }
 	public string? ProductLabelTable { get; init; }
+	public string? AreaLabelTable { get; init; }
 	public string? SkipLabels { get; init; }
 	/// <summary>Comma-separated list of type labels that all matched when only one is allowed.</summary>
 	public string? AmbiguousTypeLabels { get; init; }
@@ -42,6 +43,45 @@ public record GithubDecisionMetadata
 	public CommitOutcome? CommitOutcome { get; init; }
 	/// <summary>Repo-relative path to the committed changelog file, when <see cref="CommitOutcome"/> is <c>Committed</c>.</summary>
 	public string? CommittedFile { get; init; }
+	/// <summary>Findings from the entry-file validation gate. Non-null and non-empty when <see cref="Gate"/> is <see cref="ValidationGate.Entries"/> and validation failed.</summary>
+	public List<EntryFinding>? EntryFindings { get; init; }
+	/// <summary>Comma-separated product IDs resolved for this PR (from labels or products.yml repo lookup). Used to pre-populate the missing-entry comment snippet.</summary>
+	public string? ResolvedProducts { get; init; }
+	/// <summary>Comma-separated sections (<c>impact</c>, <c>action</c>) missing from a breaking-change PR description when the <c>missing-impact-action</c> gate failed.</summary>
+	public string? MissingSections { get; init; }
+	/// <summary>Comma-separated sections (<c>impact</c>, <c>action</c>) found in the PR description when a human-authored entry file already provides them.</summary>
+	public string? ConflictingSections { get; init; }
+	/// <summary>Resolved changelog type (for example <c>breaking-change</c>), written by <c>evaluate-pr</c> on success.</summary>
+	public string? ResolvedType { get; init; }
+	/// <summary>Impact section captured from the PR description, written by <c>evaluate-pr</c> for breaking changes so the comment can echo it without a staged entry file.</summary>
+	public string? Impact { get; init; }
+	/// <summary>Action section captured from the PR description. See <see cref="Impact"/>.</summary>
+	public string? Action { get; init; }
+	/// <summary>Opt-in: post an "included in / excluded from the release notes" comment on success instead of deleting the sticky comment.</summary>
+	public bool CommentOnSuccess { get; init; }
+	/// <summary>Whether the PR ends up in the release notes. Carried forward across later writes so the comment job sees the first gate's verdict.</summary>
+	public ReleaseNoteOutcome? Outcome { get; init; }
+}
+
+/// <summary>What will happen to a PR at bundling time, as far as the PR-time gates can tell.</summary>
+public record ReleaseNoteOutcome
+{
+	public required bool Included { get; init; }
+	public string? Type { get; init; }
+	/// <summary>Comma-separated product specs.</summary>
+	public string? Products { get; init; }
+	/// <summary>Comma-separated areas.</summary>
+	public string? Areas { get; init; }
+	/// <summary>Why the PR is excluded. Only set when <see cref="Included"/> is <c>false</c>.</summary>
+	public string? Reason { get; init; }
+}
+
+/// <summary>A single finding from the changelog entry file validation gate.</summary>
+public record EntryFinding
+{
+	public required string File { get; init; }
+	public required string Severity { get; init; }
+	public required string Message { get; init; }
 }
 
 /// <summary>
@@ -50,6 +90,7 @@ public record GithubDecisionMetadata
 /// <list type="bullet">
 ///   <item><see cref="Labels"/> — written by <c>validate-labels</c> (Step 1: label gate).</item>
 ///   <item><see cref="File"/> — written by <c>evaluate-pr</c> (Step 2: changelog file gate).</item>
+///   <item><see cref="Entries"/> — written by <c>validate-entries</c> (Step 2: entry-file content gate).</item>
 /// </list>
 /// Nullable on the record so artifacts without this field still deserialize.
 /// </summary>
@@ -57,8 +98,12 @@ public enum ValidationGate
 {
 	/// <summary>Written by <c>validate-labels</c>. Only label presence is checked.</summary>
 	Labels,
-	/// <summary>Written by <c>evaluate-pr</c>. The changelog file is also evaluated.</summary>
+	/// <summary>Written by <c>evaluate-pr</c>. The changelog file presence is evaluated.</summary>
 	File,
+	/// <summary>Written by <c>validate-entries</c>. The content of changelog entry files is validated.</summary>
+	Entries,
+	/// <summary>Written by <c>validate-entries</c> pre-flight. The repository is not registered in <c>products.yml</c>.</summary>
+	Onboarding,
 }
 
 /// <summary>Outcome of the apply job's changelog commit step.</summary>
@@ -79,4 +124,7 @@ public enum CommitOutcome
 [JsonSerializable(typeof(CreateRules))]
 [JsonSerializable(typeof(FieldMode))]
 [JsonSerializable(typeof(MatchMode))]
+[JsonSerializable(typeof(ReleaseNoteOutcome))]
+[JsonSerializable(typeof(EntryFinding))]
+[JsonSerializable(typeof(List<EntryFinding>))]
 public sealed partial class GithubDecisionMetadataJsonContext : JsonSerializerContext;

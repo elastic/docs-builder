@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using System.Text;
 using Elastic.Changelog.Utilities;
+using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.Changelog;
@@ -60,6 +61,12 @@ public record AmendBundleArguments
 	/// write beside the parent file.
 	/// </summary>
 	public string? Output { get; init; }
+
+	/// <summary>
+	/// Bundle intro patch. <see langword="null"/> inherits the parent; empty string clears;
+	/// any other value replaces (after placeholder substitution).
+	/// </summary>
+	public string? Description { get; init; }
 }
 
 /// <summary>
@@ -93,9 +100,9 @@ public class ChangelogBundleAmendService(
 	{
 		try
 		{
-			if (input.AddFiles.Count == 0 && input.RemoveFiles.Count == 0)
+			if (input.AddFiles.Count == 0 && input.RemoveFiles.Count == 0 && input.Description is null)
 			{
-				collector.EmitError(string.Empty, "At least one file must be specified with --add or --remove");
+				collector.EmitError(string.Empty, BundleDescriptionInput.AmendRequiresChange);
 				return false;
 			}
 
@@ -123,13 +130,15 @@ public class ChangelogBundleAmendService(
 
 			var parentBundle = parent.Bundle;
 			var useLocalChangelogs = (changelogConfig?.Bundle?.UseLocalChangelogs ?? false) || input.ForceLocal;
+#pragma warning disable CS0618
 			var authoringRepo = ChangelogRepoOwnerResolver.NormalizeRepo(
 				changelogConfig?.Bundle?.Repo ?? (parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null)
 			);
+#pragma warning restore CS0618
 			var useCdn = ChangelogEntrySourcing.ShouldSourceFromCdn(authoringRepo, useLocalChangelogs: useLocalChangelogs);
 
 			IReadOnlyDictionary<string, string>? cdnContents = null;
-			if (useCdn)
+			if (useCdn && (input.AddFiles.Count > 0 || input.RemoveFiles.Count > 0))
 			{
 				var fetched = await FetchCdnContentsAsync(
 					collector,
@@ -191,41 +200,9 @@ public class ChangelogBundleAmendService(
 				_ = appliedExclusionKeys.Add(BundleAmendMerger.BuildExclusionKey(entry));
 			}
 
-			var linkAllowRepos = changelogConfig?.Bundle?.LinkAllowRepos;
-			var linkAllowlistActive = linkAllowRepos != null;
-
 			var entries = new List<BundledEntry>();
 			if (addSources.Count > 0)
 			{
-				if (linkAllowlistActive)
-				{
-					var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-					var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-					if (
-						!LinkAllowlistSanitizer.TryApplyBundle(
-							collector,
-							parentBundle,
-							linkAllowRepos!,
-							owner,
-							repo,
-							out _,
-							out var parentHadAllowlistChanges
-						)
-					)
-						return false;
-
-					if (parentHadAllowlistChanges)
-					{
-						collector.EmitError(
-							string.Empty,
-							"bundle.link_allow_repos requires the parent bundle to already reflect filtered PR/issue references. " +
-								"Re-create the parent bundle with the same bundle.link_allow_repos, " +
-								"or remove bundle.link_allow_repos for amend."
-						);
-						return false;
-					}
-				}
-
 				foreach (var addSource in addSources)
 				{
 					var entry = LoadChangelogContent(collector, addSource);
@@ -235,10 +212,37 @@ public class ChangelogBundleAmendService(
 				}
 			}
 
-			if (excludeEntries.Count == 0 && entries.Count == 0)
+			if (excludeEntries.Count == 0 && entries.Count == 0 && input.Description is null)
 			{
 				collector.EmitWarning(string.Empty, "No changes to apply; amend file was not created.");
 				return true;
+			}
+
+			string? amendDescription = null;
+			if (input.Description is not null)
+			{
+				if (input.Description.Length == 0)
+					amendDescription = string.Empty;
+				else
+				{
+					var firstProduct = parentBundle.Products.Count > 0 ? parentBundle.Products[0] : null;
+					try
+					{
+						amendDescription = BundleDescriptionSubstitution.SubstitutePlaceholders(
+							input.Description,
+							firstProduct?.Target,
+							firstProduct?.Lifecycle?.ToStringFast(true),
+							firstProduct?.Owner ?? "elastic",
+							firstProduct?.Repo ?? firstProduct?.ProductId,
+							validateResolvable: true
+						);
+					}
+					catch (InvalidOperationException ex)
+					{
+						collector.EmitError(string.Empty, $"Description placeholder substitution failed: {ex.Message}");
+						return false;
+					}
+				}
 			}
 
 			var amendFileName = $"{parent.BaseName}.amend-{nextAmendNumber}{parent.Extension}";
@@ -259,55 +263,29 @@ public class ChangelogBundleAmendService(
 			if (input.DryRun)
 			{
 				_logger.LogInformation(
-					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries at {AmendFilePath}",
+					"Dry run: would exclude {ExcludeCount} and add {AddCount} entries at {AmendFilePath} (description patch: {HasDescriptionPatch})",
 					excludeEntries.Count,
 					entries.Count,
-					amendFilePath
+					amendFilePath,
+					input.Description is not null
 				);
 				return true;
 			}
 
 			_logger.LogInformation(
-				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount})",
+				"Creating amend file: {AmendFilePath} (exclude={ExcludeCount}, add={AddCount}, description patch: {HasDescriptionPatch})",
 				amendFilePath,
 				excludeEntries.Count,
-				entries.Count
+				entries.Count,
+				input.Description is not null
 			);
 
 			// Copy the parent's complete products (target, repo, owner) so the amend is self-contained:
 			// upload destination discovery, the registry's per-product target, and :version:-filtered
 			// CDN fetches all derive from a bundle file's own products.
-			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries);
+			var amendBundle = AmendDocumentBuilder.Build(parentBundle.Products, entries, excludeEntries, description: amendDescription);
 
-			var bundleForWrite = amendBundle;
-			if (entries.Count > 0 && linkAllowRepos != null)
-			{
-				var owner = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Owner ?? "elastic" : "elastic";
-				var repo = parentBundle.Products.Count > 0 ? parentBundle.Products[0].Repo : null;
-
-				if (!LinkAllowlistSanitizer.TryApplyBundle(collector, amendBundle, linkAllowRepos, owner, repo, out var sanitized, out _))
-					return false;
-				bundleForWrite = sanitized;
-
-				if (configurationContext != null && linkAllowRepos.Count > 0)
-				{
-					try
-					{
-						var assemblyYaml = configurationContext.ConfigurationFileProvider.AssemblerFile.ReadToEnd();
-						var assembly = AssemblyConfiguration.Deserialize(assemblyYaml, skipPrivateRepositories: false);
-						LinkAllowlistSanitizer.EmitAssemblerDiagnostics(collector, linkAllowRepos, assembly);
-					}
-					catch (Exception ex) when (ex is not (OutOfMemoryException or StackOverflowException))
-					{
-						collector.EmitWarning(
-							string.Empty,
-							$"Could not load assembler.yml for bundle.link_allow_repos diagnostics: {ex.Message}"
-						);
-					}
-				}
-			}
-
-			var yaml = ReleaseNotesSerialization.SerializeBundle(bundleForWrite);
+			var yaml = ReleaseNotesSerialization.SerializeBundle(amendBundle);
 
 			var outputDir = _fileSystem.Path.GetDirectoryName(amendFilePath);
 			if (!string.IsNullOrWhiteSpace(outputDir) && !_fileSystem.Directory.Exists(outputDir))
@@ -354,11 +332,13 @@ public class ChangelogBundleAmendService(
 	)
 	{
 		var parentOwner = request.ParentBundle.Products.Count > 0 ? request.ParentBundle.Products[0].Owner : null;
+#pragma warning disable CS0618
 		var owner = ChangelogRepoOwnerResolver.ResolveOwner(
 			request.ChangelogConfig?.Bundle?.Owner,
 			request.ChangelogConfig?.Bundle?.Repo,
 			parentOwner
 		)
+#pragma warning restore CS0618
 			?? ChangelogEntrySourcing.DefaultOwner;
 		var configuredBranch = request.ChangelogConfig?.Bundle?.Branch;
 		var branch = string.IsNullOrWhiteSpace(configuredBranch) ? ChangelogEntrySourcing.DefaultBranch : configuredBranch;
@@ -731,7 +711,7 @@ public class ChangelogBundleAmendService(
 			}
 		}
 
-		var orderedNames = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendFileNumber).ToList();
+		var orderedNames = byFileName.Keys.OrderBy(BundleAmendMerger.GetAmendMergeOrder).ToList();
 		var bundles = orderedNames.Select(name => byFileName[name]).ToList();
 		var nextNumber = orderedNames.Select(BundleAmendMerger.GetAmendFileNumber).DefaultIfEmpty(0).Max() + 1;
 		return (true, bundles, nextNumber);
@@ -924,7 +904,7 @@ public class ChangelogBundleAmendService(
 			.Directory
 			.GetFiles(directory, $"{baseName}.amend-*.y*ml")
 			.Where(file => string.Equals(fileSystem.Path.GetExtension(file), extension, StringComparison.OrdinalIgnoreCase))
-			.OrderBy(BundleAmendMerger.GetAmendFileNumber)
+			.OrderBy(BundleAmendMerger.GetAmendMergeOrder)
 			.ToList();
 
 		return amendFiles;

@@ -13,7 +13,7 @@ Files a GitHub issue that matches the repo's templates, applies correct labels, 
 
 ### 1. Check for duplicates
 
-Search for near-duplicates before opening anything. Link any you find in the issue body rather than filing a second.
+Search for near-duplicates before opening anything. Link any you find in the issue body rather than filing a second. Use the full URL form for all links — see `## Linking to issues and pull requests` in [`writing-style.md`](../writing-style.md).
 
 ```bash
 gh issue list --search "<key terms>" --limit 10

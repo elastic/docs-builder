@@ -14,7 +14,7 @@ public class XReqAuthTests
 {
 	private static string TestDataPath(string fileName) => Path.Join(AppContext.BaseDirectory, "TestData", fileName);
 
-	[Fact]
+	[Test]
 	public async Task TryGetPrerequisiteLines_MinimalOpenApi3Spec_MatchesElasticsearchShape()
 	{
 		var json = /*lang=json,strict*/
@@ -36,34 +36,20 @@ public class XReqAuthTests
 		  }
 		}
 		""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current.CancellationToken
-			);
-			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var op = document.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(op, null, "/a", "op-a");
+		var lines = OpenApiXReqAuthParser.TryGetPrerequisiteLines(op, null, "/a", "op-a");
 
-			lines.Should().NotBeNull();
-			lines!.Should().HaveCount(2);
-			lines[0].Should().Contain("Index");
-			lines[0].Should().Contain("monitor");
-			lines[1].Should().Contain("Cluster");
-			lines[1].Should().Contain("monitor");
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		lines.Should().NotBeNull();
+		lines!.Should().HaveCount(2);
+		lines[0].Should().Contain("Index");
+		lines[0].Should().Contain("monitor");
+		lines[1].Should().Contain("Cluster");
+		lines[1].Should().Contain("monitor");
 	}
 
-	[Fact]
+	[Test]
 	public async Task TryGetPrerequisiteLines_EmptyArray_ReturnsNull()
 	{
 		var json = /*lang=json,strict*/
@@ -82,30 +68,16 @@ public class XReqAuthTests
 		  }
 		}
 		""";
-		var jsonPath = Path.Join(Path.GetTempPath(), $"xreqauth-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current.CancellationToken
-			);
-			var op = loaded.Document!.Paths!["/a"].Operations![HttpMethod.Get]!;
+		var document = await TestSpecs.LoadSpecAsync(json);
+		var op = document.Paths!["/a"].Operations![HttpMethod.Get]!;
 
-			OpenApiXReqAuthParser
-				.TryGetPrerequisiteLines(op, null, "/a", "op-a")
-				.Should()
-				.BeNull("empty x-req-auth should not show Prerequisites");
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		OpenApiXReqAuthParser
+			.TryGetPrerequisiteLines(op, null, "/a", "op-a")
+			.Should()
+			.BeNull("empty x-req-auth should not show Prerequisites");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ElasticsearchSample_CatIndicesOperations_HaveXReqAuth()
 	{
 		var specPath = TestDataPath("elasticsearch-x-req-auth-cat-indices-sample.json");
@@ -114,7 +86,7 @@ public class XReqAuthTests
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
 			new OpenApiReaderSettings { LeaveStreamOpen = false },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var doc = loaded.Document!;
 		var getIndices = doc.Paths!["/_cat/indices"].Operations![HttpMethod.Get]!;
@@ -129,7 +101,7 @@ public class XReqAuthTests
 		b!.Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task KibanaStyleSample_FirstPathsLackXReqAuth()
 	{
 		var specPath = TestDataPath("kibana-openapi-no-x-req-auth-sample.json");
@@ -138,7 +110,7 @@ public class XReqAuthTests
 		var loaded = await OpenApiDocument.LoadAsync(
 			specPath,
 			new OpenApiReaderSettings { LeaveStreamOpen = false },
-			TestContext.Current.CancellationToken
+			TestContext.Current!.Execution.CancellationToken
 		);
 		var doc = loaded.Document!;
 

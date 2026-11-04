@@ -9,10 +9,13 @@
 @import './markdown/related-learning.css';
 @import './markdown/tabs.css';
 @import './markdown/applies-switch.css';
+@import './code-block.css';
 @import './markdown/code.css';
 @import './markdown/icons.css';
+@import './product-icons.css';
 @import './markdown/kbd.css';
 @import './copybutton.css';
+@import './page-feedback.css';
 @import './markdown/admonition.css';
 @import './markdown/dropdown.css';
 @import './markdown/table.css';
@@ -25,6 +28,7 @@
 @import './modal.css';
 @import './secondary-nav.css';
 @import './secondary-nav-dropdown.css';
+@import './api-identity.css';
 @import './archive.css';
 @import './markdown/stepper.css';
 @import './markdown/button.css';
@@ -34,6 +38,7 @@
 @import './markdown/storybook.css';
 @import './markdown/hub.css';
 @import './api-docs.css';
+@import './api-language-icons.css';
 @import './web-components/VectorSizingCalculator/vector-sizing-calculator.css';
 @import './pages-nav-figma.css';
 @import 'tippy.js/dist/tippy.css';
@@ -75,7 +80,8 @@ body {
 	);
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
-	--max-examples-width: calc(var(--max-api-sidebar-width) * 2);
+	--max-examples-width: calc(var(--spacing) * 110);
+	--max-api-content-width: var(--max-text-width);
 }
 
 #pages-nav li.current {
@@ -127,10 +133,13 @@ body {
 				max-height 0.3s ease;
 		}
 
+		#toc-nav.sidebar-nav {
+			box-sizing: border-box;
+			padding-top: 24px;
+		}
+
 		@media (width >= 1280px) {
 			#toc-nav.sidebar-nav {
-				box-sizing: border-box;
-				padding-top: 24px;
 				padding-bottom: 24px;
 			}
 		}
@@ -175,6 +184,10 @@ body {
 		@apply relative flex flex-wrap;
 	}
 
+	.nav-subtree-clip {
+		@apply w-full;
+	}
+
 	.nav-toggle-btn {
 		@apply hover:bg-grey-20 cursor-pointer rounded-sm p-1;
 	}
@@ -187,10 +200,11 @@ body {
 	}
 
 	.nav-subtree {
-		@apply relative ml-4 hidden w-full;
+		@apply relative ml-4 hidden;
 
 		/* revealed when the sibling .peer div contains a checked checkbox */
-		.peer:has(:checked) ~ & {
+		.peer:has(:checked) ~ &,
+		.peer:has(:checked) ~ .nav-subtree-clip > & {
 			display: block;
 		}
 
@@ -202,7 +216,8 @@ body {
 
 		/* darken connector line when subtree contains the current page */
 		&:has(.current)::before,
-		.peer:has(.current) ~ &::before {
+		.peer:has(.current) ~ &::before,
+		.peer:has(.current) ~ .nav-subtree-clip > &::before {
 			@apply bg-grey-40;
 		}
 	}

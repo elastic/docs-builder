@@ -8,10 +8,10 @@ using Elastic.Markdown.Myst.Directives.Changelog;
 
 namespace Elastic.Markdown.Tests.Directives;
 
+[InheritsTests]
 public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDateVersionedBundlesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogDateVersionedBundlesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -81,10 +81,10 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersInDateOrderDescending()
 	{
 		// Should be sorted by date descending: 2025-08-15 > 2025-08-05 > 2025-08-01
@@ -96,7 +96,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 		idx05.Should().BeLessThan(idx01, "August 5, 2025 should appear before August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllDateVersions()
 	{
 		Html.Should().Contain("August 15, 2025");
@@ -104,7 +104,7 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersEntriesForDateVersions()
 	{
 		Html.Should().Contain("August 15th feature");
@@ -113,10 +113,10 @@ public class ChangelogDateVersionedBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogMixedVersionTypesTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogMixedVersionTypesTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -206,10 +206,10 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsAllBundles() => Block!.LoadedBundles.Should().HaveCount(4);
 
-	[Fact]
+	[Test]
 	public void SemverVersionsAppearBeforeDates()
 	{
 		// Semver versions should appear before date versions
@@ -229,7 +229,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		idxDate1.Should().BeLessThan(idxDate2, "August 5, 2025 should appear before July 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllVersions()
 	{
 		Html.Should().Contain("9.3.0");
@@ -238,7 +238,7 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("July 1, 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries()
 	{
 		Html.Should().Contain("Semver 9.3.0 feature");
@@ -253,10 +253,10 @@ public class ChangelogMixedVersionTypesTests : DirectiveTest<ChangelogBlock>
 /// Verifies that headings render as "Month Year" (e.g., "December 2025") and that
 /// slugs/anchors retain the original yyyy-MM format.
 /// </summary>
+[InheritsTests]
 public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogYearMonthVersionTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogYearMonthVersionTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -332,10 +332,10 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(3);
 
-	[Fact]
+	[Test]
 	public void RendersHeadingsAsMonthYear()
 	{
 		Html.Should().Contain("December 2025");
@@ -343,7 +343,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void DoesNotRenderRawYearMonthInHeadings()
 	{
 		// The raw yyyy-MM format should only appear in slugs/anchors, not in visible headings
@@ -352,7 +352,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().NotContain(">2025-08<");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersInDescendingMonthOrder()
 	{
 		var idxDec = Html.IndexOf("December 2025", StringComparison.Ordinal);
@@ -363,7 +363,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		idxOct.Should().BeLessThan(idxAug, "October 2025 should appear before August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void PreservesOriginalSlugsForAnchors()
 	{
 		// Anchors should use the original yyyy-MM format, not the display format
@@ -372,7 +372,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("2025-08");
 	}
 
-	[Fact]
+	[Test]
 	public void RendersAllEntries()
 	{
 		Html.Should().Contain("December feature");
@@ -381,7 +381,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("August bugfix");
 	}
 
-	[Fact]
+	[Test]
 	public void TocUsesMonthYearHeadings()
 	{
 		var toc = Block!.GeneratedTableOfContent.ToList();
@@ -392,7 +392,7 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 		versionHeadings.Should().Contain("August 2025");
 	}
 
-	[Fact]
+	[Test]
 	public void TocSlugMatchesHeadingId()
 	{
 		// The TOC slug must match the heading ID that SectionedHeadingRenderer derives from
@@ -406,10 +406,10 @@ public class ChangelogYearMonthVersionTests : DirectiveTest<ChangelogBlock>
 	}
 }
 
+[InheritsTests]
 public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogRawVersionFallbackTests(ITestOutputHelper output) : base(
-			output,
+	public ChangelogRawVersionFallbackTests() : base(
 			// language=markdown
 			"""
 		:::{changelog}
@@ -459,10 +459,10 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 		);
 	}
 
-	[Fact]
+	[Test]
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(2);
 
-	[Fact]
+	[Test]
 	public void RendersNonStandardVersions()
 	{
 		// Both non-standard versions should be rendered (sorted lexicographically)
@@ -472,7 +472,7 @@ public class ChangelogRawVersionFallbackTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Beta release feature");
 	}
 
-	[Fact]
+	[Test]
 	public void SortsLexicographically()
 	{
 		// "release-beta" > "release-alpha" lexicographically

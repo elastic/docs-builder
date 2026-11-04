@@ -15,11 +15,8 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
-import {
-    usePageNumber,
-    useSearchTerm,
-    useTypeFilter,
-} from './navigationSearch.store'
+import { ApiPropertyResult, ApiRoute } from './apiPropertyResults'
+import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
     useIsNavigationSearchAwaitingNewInput,
     useNavigationSearchCooldownActions,
@@ -40,12 +37,14 @@ const SearchResultItemParent = z.object({
 })
 
 const SearchResultItem = z.object({
-    type: z.enum(['docs']),
+    type: z.enum(['docs', 'api']),
     url: z.string(),
     title: z.string(),
     description: z.string(),
     score: z.number(),
     parents: z.array(SearchResultItemParent),
+    properties: z.array(ApiPropertyResult).optional(),
+    routes: z.array(ApiRoute).optional(),
 })
 
 export type SearchResultItem = z.infer<typeof SearchResultItem>
@@ -54,7 +53,7 @@ const SearchAggregations = z.object({
     type: z.record(z.string(), z.number()).optional(),
 })
 
-const SearchResponse = z.object({
+export const SearchResponse = z.object({
     results: z.array(SearchResultItem),
     totalResults: z.number(),
     pageCount: z.number(),
@@ -65,10 +64,11 @@ const SearchResponse = z.object({
 
 export type SearchResponse = z.infer<typeof SearchResponse>
 
-export const useNavigationSearchQuery = () => {
+export type TypeFilter = 'all' | 'docs' | 'api'
+
+export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
     const searchTerm = useSearchTerm()
     const pageNumber = usePageNumber() + 1
-    const typeFilter = useTypeFilter()
     const trimmedSearchTerm = searchTerm.trim()
     const debouncedSearchTerm = useDebounce(trimmedSearchTerm, 300)
     const isCooldownActive = useIsNavigationSearchCooldownActive()

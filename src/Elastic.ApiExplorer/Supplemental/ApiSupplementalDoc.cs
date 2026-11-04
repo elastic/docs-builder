@@ -174,7 +174,7 @@ internal sealed partial record ApiSupplementalDoc(
 			|| heading.Equals("Query parameters", StringComparison.OrdinalIgnoreCase)
 			|| heading.Equals("Path parameters", StringComparison.OrdinalIgnoreCase);
 
-	private static (string? FrontMatter, string Content) ExtractFrontMatter(string raw)
+	internal static (string? FrontMatter, string Content) ExtractFrontMatter(string raw)
 	{
 		var match = FrontMatterRegex().Match(raw);
 		if (!match.Success)

@@ -11,7 +11,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Creation;
 
-public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class CIEnrichmentTests() : ChangelogTestBase()
 {
 	private static CreateChangelogArguments DefaultInput() => new() { Products = [] };
 
@@ -47,7 +47,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 	private ChangelogCreationService CreateServiceWithEnv(IEnvironmentVariables env) =>
 		new(LoggerFactory, ConfigurationContext, FileSystem, env: env);
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_NotInCI_ReturnsUnchanged()
 	{
 		var service = CreateServiceWithEnv(FakeLocalEnv());
@@ -58,7 +58,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Should().BeSameAs(input);
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_NoEnvVars_ReturnsUnchanged()
 	{
 		var service = CreateServiceWithEnv(FakeCIEnv());
@@ -69,7 +69,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Should().BeSameAs(input);
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_AllEnvVars_FillsMissingFields()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix bug", type: "bug-fix", owner: "elastic", repo: "kibana");
@@ -85,7 +85,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Repo.Should().Be("kibana");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitPrs_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "CI title", type: "bug-fix", owner: "elastic", repo: "kibana");
@@ -97,7 +97,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Prs.Should().BeEquivalentTo(["99"]);
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitTitle_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "CI title", type: "bug-fix");
@@ -110,7 +110,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Type.Should().Be("bug-fix");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitType_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", type: "bug-fix");
@@ -122,7 +122,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Type.Should().Be("enhancement");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitOwnerRepo_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", owner: "ci-owner", repo: "ci-repo");
@@ -135,7 +135,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Repo.Should().Be("my-repo");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_PartialEnvVars_OnlyFillsAvailable()
 	{
 		var env = FakeCIEnv(prNumber: "42");
@@ -151,7 +151,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Repo.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_TitleOnly_EnrichesWithoutPr()
 	{
 		var env = FakeCIEnv(title: "CI title");
@@ -164,7 +164,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Prs.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_NullEnv_ReturnsUnchanged()
 	{
 		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem);
@@ -175,7 +175,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Should().BeSameAs(input);
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_Products_FillsProducts()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "cloud-hosted, cloud-serverless");
@@ -189,7 +189,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Products[1].Product.Should().Be("cloud-serverless");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ProductsWithTargetAndLifecycle_ParsesCorrectly()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "elasticsearch 9.2.0 ga, cloud-serverless 2025-06");
@@ -207,7 +207,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Products[1].Lifecycle.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitProducts_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix", products: "cloud-hosted, cloud-serverless");
@@ -220,7 +220,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Products[0].Product.Should().Be("elasticsearch");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_NoProducts_RemainsEmpty()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", type: "bug-fix");
@@ -232,7 +232,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Products.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_Description_FillsMissingDescription()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
@@ -244,7 +244,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Description.Should().Be("Extracted release note");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExplicitDescription_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
@@ -256,7 +256,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Description.Should().Be("My explicit description");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExtractionDisabled_SkipsCIDescription()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
@@ -268,7 +268,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Description.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExtractionDisabled_ExplicitDescription_CLIWins()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "CI description");
@@ -280,7 +280,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Description.Should().Be("My explicit description");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExtractionNull_UsesCIDescription()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");
@@ -292,7 +292,7 @@ public class CIEnrichmentTests(ITestOutputHelper output) : ChangelogTestBase(out
 		result.Description.Should().Be("Extracted release note");
 	}
 
-	[Fact]
+	[Test]
 	public void EnrichFromCI_InCI_ExtractionEnabled_UsesCIDescription()
 	{
 		var env = FakeCIEnv(prNumber: "42", title: "Fix", description: "Extracted release note");

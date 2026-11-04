@@ -17,9 +17,9 @@ namespace Elastic.Documentation.Navigation.Tests.Codex;
 /// - Grouped repos: sidebar shows the group landing + all group members as top-level items
 /// - Ungrouped repos: sidebar shows only that repo's internal navigation
 /// </summary>
-public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavigationTestBase(output)
+public class CodexNavigationRenderingTests() : CodexNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task ProjectlessRepositories_DifferentTrees_ProduceDifferentContentHashes()
 	{
 		var docSetNavigations = CreateMockDocSetNavigations(["codex-environments", "ml-team"], includeProject: false);
@@ -39,7 +39,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		secondResult.Html.Should().Contain("ml-team");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_TopLevelItems_ContainsAllGroupMembers()
 	{
 		// Arrange: Create a codex with grouped repos
@@ -61,7 +61,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		groupNav.NavigationItems.Select(i => i.Url).Should().BeEquivalentTo(["/docs/r/apm-agent", "/docs/r/uptime", "/docs/r/logs"]);
 	}
 
-	[Fact]
+	[Test]
 	public void GroupNavigation_TopLevelItems_UseIndexH1()
 	{
 		// Arrange: Mock creates index.md with "# {repoName}" so h1 is "apm-agent" and "uptime"
@@ -80,7 +80,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		groupNav.NavigationItems.Select(i => i.NavigationTitle).Should().BeEquivalentTo(["apm-agent", "uptime"]);
 	}
 
-	[Fact]
+	[Test]
 	public void UngroupedRepo_NavigationRoot_IsItself()
 	{
 		// Arrange
@@ -104,7 +104,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		navRoot.Url.Should().Be("/docs/r/standalone");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupedRepo_NavigationRoot_IsGroupNavigation()
 	{
 		// Arrange
@@ -133,7 +133,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		groupNav.NavigationItems.Should().HaveCount(2);
 	}
 
-	[Fact]
+	[Test]
 	public void CodexNavigation_TopLevelItems_ShowsGroupLinksAndUngroupedRepos()
 	{
 		// Arrange: Mix of grouped and ungrouped repos
@@ -163,7 +163,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		docSetNavs.Select(n => n.Url).Should().BeEquivalentTo(["/docs/r/standalone1", "/docs/r/standalone2"]);
 	}
 
-	[Fact]
+	[Test]
 	public void AllGroupMembers_ShareSameNavigationRoot()
 	{
 		// Arrange
@@ -188,7 +188,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		repo1Root.Should().BeOfType<GroupNavigation>();
 	}
 
-	[Fact]
+	[Test]
 	public void DifferentGroups_HaveDifferentNavigationRoots()
 	{
 		// Arrange
@@ -211,7 +211,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 		((GroupNavigation)secRoot!).GroupSlug.Should().Be("security");
 	}
 
-	[Fact]
+	[Test]
 	public void GroupLandingPage_HasAllMembersAsNavigationItems()
 	{
 		// Arrange
@@ -244,7 +244,7 @@ public class CodexNavigationRenderingTests(ITestOutputHelper output) : CodexNavi
 			isPrimaryNavEnabled: false,
 			isGlobalAssemblyBuild: false
 		);
-		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current.CancellationToken);
+		var html = await _TocTree.Create(renderModel).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 		return new NavigationRenderResult { Html = html, Id = renderModel.ContentHash };
 	}
 }

@@ -152,9 +152,38 @@ vector-sizing-calculator:not(:defined) {
 	line-height: 20px !important;
 }
 
+.vectorSizingCalc__diskRamSentence {
+	margin-top: 12px;
+}
+
+.vectorSizingCalc__diskRamSentence .vectorSizingCalc__labelRow {
+	align-items: flex-start;
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 500;
+	color: #1d2a3e;
+	white-space: normal;
+}
+
+.vectorSizingCalc__diskRamSentence
+	.vectorSizingCalc__labelRow
+	> span:first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
 .vectorSizingCalc__disclaimerFooter {
 	margin-top: auto;
 	padding-top: 16px;
+}
+
+.vectorSizingCalc__serverlessNote {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 12px !important;
+	line-height: 16px !important;
+	font-weight: 600 !important;
+	color: #1d2a3e !important;
 }
 
 .vectorSizingCalc__byteSizeValue {
@@ -207,12 +236,6 @@ vector-sizing-calculator:not(:defined) {
 	line-height: 16px !important;
 	font-weight: 400 !important;
 	color: #798eaf !important;
-}
-
-.vectorSizingCalc__disclaimer .euiLink {
-	font-size: 12px !important;
-	line-height: 16px !important;
-	font-weight: 400 !important;
 }
 
 .vectorSizingCalc__sectionTitle {

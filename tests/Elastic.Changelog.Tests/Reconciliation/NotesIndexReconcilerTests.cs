@@ -34,6 +34,12 @@ public class NotesIndexReconcilerTests
 		+ "  - product: elasticsearch\n"
 		+ "    versions: [9.0.0, 9.1.0]\n";
 
+	private const string NoteYamlKibanaSameVersion = "title: Kibana known issue\n"
+		+ "type: known-issue\n"
+		+ "products:\n"
+		+ "  - product: kibana\n"
+		+ "    versions: [9.0.0]\n";
+
 	private readonly FakeS3 _s3 = new(PublicBucket);
 	private readonly NotesIndexReconciler _reconciler;
 
@@ -55,34 +61,45 @@ public class NotesIndexReconcilerTests
 			NotesIndexJsonContext.Default.NotesIndex
 		)!;
 
+	private NotesIndex ReadProductIndex(string product, string version) =>
+		JsonSerializer.Deserialize(
+			_s3.ContentOf(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", product, version)),
+			NotesIndexJsonContext.Default.NotesIndex
+		)!;
+
 	// Helper that projects entries to their paths for compact assertions.
 	private static IEnumerable<string> Paths(NotesIndex index) => index.Notes.Select(e => e.Path);
 
-	[Fact]
+	[Test]
 	public void DirectYamlParse_NoteYaml_HasVersions()
 	{
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(NoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(NoteYaml, ReleaseNotesSerialization.GetEntryDeserializerOptions())!;
 		dto.Products.Should().NotBeNullOrEmpty("YAML has products");
 		dto.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
 	}
 
-	[Fact]
+	[Test]
 	public void DirectYamlParse_LegacyTargetField_FallsBackToVersions()
 	{
 		// Existing notes in pools still carry `target:` — the reconciler must still read them.
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(LegacyNoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				LegacyNoteYaml,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions()
+			)!;
 		dto.Products.Should().NotBeNullOrEmpty();
 #pragma warning disable CS0618 // testing backward-compat read of obsolete Target
 		dto.Products?[0].Target.Should().Be("9.0.0");
 #pragma warning restore CS0618
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_SingleNote_WritesIndex()
 	{
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.ListCalls.Should().BeGreaterThan(0, "reconciler should have listed the bucket");
 		_s3
@@ -100,112 +117,119 @@ public class NotesIndexReconcilerTests
 			.BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		index.Product.Should().BeNull();
+		index.Version.Should().BeNull();
+
+		var productIndex = ReadProductIndex("elasticsearch", "9.0.0");
+		Paths(productIndex).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		productIndex.Product.Should().Be("elasticsearch");
+		productIndex.Version.Should().Be("9.0.0");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_SingleNote_DefaultsBundleSeqToZero()
 	{
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
 		index.Notes.Should().ContainSingle().Which.BundleSeq.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_LegacyTargetNote_IndexedViaFallback()
 	{
 		// A note that still uses the old `target:` field must still be indexed.
 		SeedNote("main", "note-legacy.yml", LegacyNoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-legacy.yml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_NoteWithTwoVersions_AppearsInBothIndexes()
 	{
 		SeedNote("main", "note-two-versions.yml", NoteYamlTwoVersions);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-two-versions.yml"]);
 		Paths(ReadIndex("9.1.0")).Should().BeEquivalentTo(["main/note-two-versions.yml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_SameNoteNameOnTwoBranches_BothInIndex()
 	{
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 		SeedNote("9.0", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().BeEquivalentTo(["9.0/note-slow-rollover.yml", "main/note-slow-rollover.yml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_NoNotes_WritesNoIndexes()
 	{
 		// Seed a regular changelog entry that is not a note-*.yml
 		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_NoteWithNoProducts_NotIncludedInAnyIndex()
 	{
 		SeedNote("main", "note-no-products.yml", "title: Note with no products\ntype: known-issue");
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		_s3.Puts.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_IndexPathsAreSorted()
 	{
 		SeedNote("main", "note-b.yml", NoteYaml);
 		SeedNote("9.0", "note-a.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().Equal(["9.0/note-a.yml", "main/note-b.yml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_BranchWithSlashInName_IsIncludedInIndex()
 	{
 		// Branch name contains '/' — e.g. "feature/my-fix"
 		SeedNote("feature/my-fix", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().BeEquivalentTo(["feature/my-fix/note-slow-rollover.yml"]);
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_BranchWithSlashInName_FullPathInIndex()
 	{
 		// A feature branch with '/' in its name must index the full pool-relative path.
 		// The branch is derivable from the path (everything before the last '/'), so it is not stored.
 		SeedNote("feature/my-fix", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		var index = ReadIndex("9.0.0");
 		index.Notes.Should().ContainSingle().Which.Path.Should().Be("feature/my-fix/note-slow-rollover.yml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_StaleTargetRemoved_OldIndexDeleted()
 	{
 		// Pre-seed a stale notes-8.0.0.json index from a previous reconcile run.
@@ -219,7 +243,7 @@ public class NotesIndexReconcilerTests
 		// Only seed a note for 9.0.0.
 		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		// 9.0.0 index should be written.
 		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
@@ -228,7 +252,7 @@ public class NotesIndexReconcilerTests
 		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "8.0.0"));
 	}
 
-	[Fact]
+	[Test]
 	public async Task ReconcileRepo_NoNotes_DeletesAllExistingIndexes()
 	{
 		// Pre-seed a stale notes index.
@@ -242,12 +266,80 @@ public class NotesIndexReconcilerTests
 		// No note files — just an unrelated changelog entry.
 		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
 
-		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current.CancellationToken);
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
 
 		// No new indexes should be written.
 		_s3.Puts.Should().BeEmpty();
 
 		// The stale index should be deleted.
 		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
+	}
+
+	[Test]
+	public async Task ReconcileRepo_TwoProductsSameVersion_ProductIndexesAreIsolated()
+	{
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+		SeedNote("main", "note-kibana.yml", NoteYamlKibanaSameVersion);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		Paths(ReadProductIndex("elasticsearch", "9.0.0")).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		Paths(ReadProductIndex("kibana", "9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml"]);
+		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml", "main/note-slow-rollover.yml"]);
+	}
+
+	[Test]
+	public async Task ReconcileRepo_ProductScopedStale_DeletedWithoutDroppingLegacyVersion()
+	{
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"kibana","version":"9.0.0","notes":[]}"""
+		);
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeTrue();
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")).Should().BeTrue();
+		_s3
+			.Deletes
+			.Should()
+			.ContainSingle()
+			.Which
+			.Key
+			.Should()
+			.Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"));
+	}
+
+	[Test]
+	public async Task ReconcileRepo_NoNotes_DeletesProductScopedAndLegacyIndexes()
+	{
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.0.0","notes":[]}"""
+		);
+		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		_s3.Puts.Should().BeEmpty();
+		_s3
+			.Deletes
+			.Select(d => d.Key)
+			.Should()
+			.BeEquivalentTo([
+				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")
+			]);
 	}
 }

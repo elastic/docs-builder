@@ -16,7 +16,7 @@ public class ChangelogContentScrubberTests
 	private static ChangelogContentScrubber Scrubber(IReadOnlyList<string>? allowRepos = null) =>
 		new(NullLoggerFactory.Instance, allowRepos ?? AllowAll);
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_MarkerEntry_LinkFieldPreserved()
 	{
 		// A marker is link: only — the scrubber must pass it through (re-serialized to strip
@@ -33,7 +33,7 @@ public class ChangelogContentScrubberTests
 		result.Markers.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_MarkerEntryWithSourceRedirect_StripsSourceRedirectFromOutput()
 	{
 		// source-redirect: true is processor-owned metadata. If a private author adds it to a
@@ -50,7 +50,7 @@ public class ChangelogContentScrubberTests
 		result.IsMarker.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_NormalEntry_LinkIsNull()
 	{
 		var yaml = "title: Fix search performance\n" + "type: bug-fix\n" + "products:\n" + "  - product: elasticsearch\n";
@@ -63,7 +63,7 @@ public class ChangelogContentScrubberTests
 		entry.IsMarker.Should().BeFalse();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_NonCanonicalKey_ReturnsCanonicalKey()
 	{
 		var yaml = "title: Fix search performance\n"
@@ -78,7 +78,7 @@ public class ChangelogContentScrubberTests
 		result.Markers.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_AlreadyCanonicalKey_CanonicalKeyIsNull()
 	{
 		var yaml = "title: Fix search performance\n"
@@ -92,7 +92,7 @@ public class ChangelogContentScrubberTests
 		result.CanonicalKey.Should().BeNull("source key is already canonical");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_MultiPrEntry_WritesMarkersForNonPrimaryPrs()
 	{
 		// prs [100, 200, 300] → primary is 100 (min), markers for 200 and 300
@@ -119,7 +119,7 @@ public class ChangelogContentScrubberTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public async Task ScrubAsync_NoteFile_PassesThroughWithNoCanonicalKey()
 	{
 		var yaml = "title: Known issue with rollover\n"

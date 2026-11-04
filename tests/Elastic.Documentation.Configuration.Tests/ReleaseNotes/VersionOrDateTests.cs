@@ -12,10 +12,10 @@ namespace Elastic.Documentation.Configuration.Tests.ReleaseNotes;
 /// </summary>
 public class VersionOrDateTests
 {
-	[Theory]
-	[InlineData("9.3.0")]
-	[InlineData("1.0.0")]
-	[InlineData("10.0.0-beta1")]
+	[Test]
+	[Arguments("9.3.0")]
+	[Arguments("1.0.0")]
+	[Arguments("10.0.0-beta1")]
 	public void Parse_SemverVersions_ReturnsSemVer(string version)
 	{
 		var result = VersionOrDate.Parse(version);
@@ -24,10 +24,10 @@ public class VersionOrDateTests
 		result.Raw.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData("2025-08-05")]
-	[InlineData("2025-12-31")]
-	[InlineData("2024-01-01")]
+	[Test]
+	[Arguments("2025-08-05")]
+	[Arguments("2025-12-31")]
+	[Arguments("2024-01-01")]
 	public void Parse_FullDates_ReturnsDate(string version)
 	{
 		var result = VersionOrDate.Parse(version);
@@ -36,10 +36,10 @@ public class VersionOrDateTests
 		result.Raw.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData("2025-08")]
-	[InlineData("2025-12")]
-	[InlineData("2024-01")]
+	[Test]
+	[Arguments("2025-08")]
+	[Arguments("2025-12")]
+	[Arguments("2024-01")]
 	public void Parse_YearMonthDates_ReturnsDate(string version)
 	{
 		var result = VersionOrDate.Parse(version);
@@ -48,9 +48,9 @@ public class VersionOrDateTests
 		result.Raw.Should().BeNull();
 	}
 
-	[Theory]
-	[InlineData("release-alpha")]
-	[InlineData("custom-version")]
+	[Test]
+	[Arguments("release-alpha")]
+	[Arguments("custom-version")]
 	public void Parse_NonStandardVersions_ReturnsRaw(string version)
 	{
 		var result = VersionOrDate.Parse(version);
@@ -59,34 +59,34 @@ public class VersionOrDateTests
 		result.Raw.Should().Be(version);
 	}
 
-	[Theory]
-	[InlineData("2025-08", "August 2025")]
-	[InlineData("2025-12", "December 2025")]
-	[InlineData("2025-01", "January 2025")]
-	[InlineData("2024-06", "June 2024")]
+	[Test]
+	[Arguments("2025-08", "August 2025")]
+	[Arguments("2025-12", "December 2025")]
+	[Arguments("2025-01", "January 2025")]
+	[Arguments("2024-06", "June 2024")]
 	public void FormatDisplayVersion_YearMonth_ReturnsMonthYear(string version, string expected) =>
 		VersionOrDate.FormatDisplayVersion(version).Should().Be(expected);
 
-	[Theory]
-	[InlineData("2025-08-05", "August 5, 2025")]
-	[InlineData("2025-12-31", "December 31, 2025")]
-	[InlineData("2025-01-01", "January 1, 2025")]
+	[Test]
+	[Arguments("2025-08-05", "August 5, 2025")]
+	[Arguments("2025-12-31", "December 31, 2025")]
+	[Arguments("2025-01-01", "January 1, 2025")]
 	public void FormatDisplayVersion_FullDate_ReturnsMonthDayYear(string version, string expected) =>
 		VersionOrDate.FormatDisplayVersion(version).Should().Be(expected);
 
-	[Theory]
-	[InlineData("9.3.0", "9.3.0")]
-	[InlineData("1.0.0", "1.0.0")]
+	[Test]
+	[Arguments("9.3.0", "9.3.0")]
+	[Arguments("1.0.0", "1.0.0")]
 	public void FormatDisplayVersion_Semver_ReturnsUnchanged(string version, string expected) =>
 		VersionOrDate.FormatDisplayVersion(version).Should().Be(expected);
 
-	[Theory]
-	[InlineData("release-alpha", "release-alpha")]
-	[InlineData("custom-version", "custom-version")]
+	[Test]
+	[Arguments("release-alpha", "release-alpha")]
+	[Arguments("custom-version", "custom-version")]
 	public void FormatDisplayVersion_RawString_ReturnsUnchanged(string version, string expected) =>
 		VersionOrDate.FormatDisplayVersion(version).Should().Be(expected);
 
-	[Fact]
+	[Test]
 	public void Parse_YearMonthDates_SortChronologically()
 	{
 		var dec = VersionOrDate.Parse("2025-12");
@@ -97,7 +97,7 @@ public class VersionOrDateTests
 		aug.Should().BeGreaterThan(jan);
 	}
 
-	[Fact]
+	[Test]
 	public void Parse_YearMonthDates_SortWithFullDates()
 	{
 		var yearMonth = VersionOrDate.Parse("2025-08");

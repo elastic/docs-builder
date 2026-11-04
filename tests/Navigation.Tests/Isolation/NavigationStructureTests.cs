@@ -12,9 +12,9 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class NavigationStructureTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class NavigationStructureTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public void NavigationIndexIsSetCorrectly()
 	{
 		// language=yaml
@@ -40,7 +40,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		navigation.NavigationItems.ElementAt(1).NavigationIndex.Should().Be(2);
 	}
 
-	[Fact]
+	[Test]
 	public void CanQueryNavigationForBothInterfaceAndConcreteTypes()
 	{
 		// language=yaml
@@ -109,7 +109,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		firstItem.Url.Should().Be("/first");
 	}
 
-	[Fact]
+	[Test]
 	public async Task ComplexNestedStructureBuildsCorrectly()
 	{
 		// language=yaml
@@ -159,7 +159,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		fileSystem.AddFile("/docs/setup/advanced/performance/benchmarks.md", new MockFileData("# Benchmarks"));
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
 			docSet,
@@ -168,7 +168,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 			crossLinkResolver: TestCrossLinkResolver.Instance
 		);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		navigation.NavigationItems.Should().HaveCount(2);
 		navigation.IsUsingNavigationDropdown.Should().BeTrue();
@@ -223,7 +223,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		context.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void NestedTocUrlsDoNotDuplicatePath()
 	{
 		// This test verifies that nested TOC URLs are constructed correctly
@@ -297,7 +297,7 @@ public class NavigationStructureTests(ITestOutputHelper output) : DocumentationS
 		context.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public void AllNavigationItemsHaveNavigationRootSet()
 	{
 		// language=yaml

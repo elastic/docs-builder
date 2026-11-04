@@ -15,7 +15,7 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Evaluation;
 
-public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogPrepareArtifactServiceTests() : ChangelogTestBase()
 {
 	private readonly ICoreService _mockCore = A.Fake<ICoreService>();
 
@@ -84,7 +84,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		return JsonSerializer.Deserialize(json, GithubDecisionMetadataJsonContext.Default.GithubDecisionMetadata)!;
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_GenerateSuccess_CopiesYamlAndWritesMetadata()
 	{
 		await SetupStagingYaml();
@@ -108,13 +108,13 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	// Those paths are descendants of the working root (not added as extra roots), so
 	// RunnerTempFileSystem must allow the `.artifacts` hidden folder or prepare-artifact
 	// fails with "path must not traverse hidden directories" (elastic/cloud changelog-submit).
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_DotArtifactsPaths_CopiesYamlAndWritesMetadata()
 	{
 		var artifactsStaging = Path.Join(Root, ".artifacts", "changelog-staging");
 		var artifactsOutput = Path.Join(Root, ".artifacts", "changelog-artifact");
 
-		var ct = TestContext.Current.CancellationToken;
+		var ct = TestContext.Current!.Execution.CancellationToken;
 		RunnerTempFileSystem.Directory.CreateDirectory(artifactsStaging);
 		await RunnerTempFileSystem.File.WriteAllTextAsync(Path.Join(artifactsStaging, "42.yaml"), "title: test changelog", ct);
 		await SetupConfig();
@@ -132,7 +132,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("42.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ForkFields_PersistedInMetadata()
 	{
 		await SetupStagingYaml();
@@ -149,7 +149,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.MaintainerCanModify.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ForkNoMaintainerEdits_CanCommitFalse()
 	{
 		await SetupStagingYaml();
@@ -171,7 +171,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 	// that to false in the persisted metadata so the downstream apply step does
 	// NOT attempt a commit+push. Failing closed on "unspecified" is the whole
 	// point of moving these flags to nullable bool.
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_NullableBoolsUnspecified_CoerceToFalseInMetadata()
 	{
 		await SetupStagingYaml();
@@ -187,7 +187,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.MaintainerCanModify.Should().BeFalse("an omitted --maintainer-can-modify flag must not be treated as granted");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ProductLabelTableAndSkipLabels_PersistedInMetadata()
 	{
 		await SetupStagingYaml();
@@ -202,7 +202,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.SkipLabels.Should().Be("changelog:skip,skip-ci");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_GenerateFailure_StatusError()
 	{
 		await SetupConfig();
@@ -217,7 +217,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.Status.Should().Be("error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_NoLabel_WritesMetadataWithoutYaml()
 	{
 		await SetupConfig();
@@ -234,7 +234,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_MetadataContainsCreateRules()
 	{
 		await SetupStagingYaml();
@@ -249,7 +249,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.CreateRules.Mode.Should().Be(FieldMode.Exclude);
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_ExistingFilename_RenamesStagingFileToMatch()
 	{
 		await SetupStagingYaml("1735700000-new-title.yaml");
@@ -266,7 +266,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("1735689600-old-title.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_EmptyExistingFilename_FallsBackToStagingFilename()
 	{
 		// Regression: CLI parsers (Argh) forward `--existing-changelog-filename ""`
@@ -286,7 +286,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("1735700000-new-title.yaml");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_MissingStagingYaml_StatusError()
 	{
 		await SetupConfig();
@@ -298,7 +298,7 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.Status.Should().Be("error");
 	}
 
-	[Fact]
+	[Test]
 	public async Task PrepareArtifact_WithBomPrefixedYaml_NormalizesOutput()
 	{
 		// Arrange
@@ -348,14 +348,14 @@ public class ChangelogPrepareArtifactServiceTests(ITestOutputHelper output) : Ch
 		metadata.ChangelogFilename.Should().Be("changelog.yaml");
 	}
 
-	[Theory]
-	[InlineData("proceed", "success", PrEvaluationResult.Success)]
-	[InlineData("proceed", "failure", PrEvaluationResult.Error)]
-	[InlineData("no-label", "success", PrEvaluationResult.NoLabel)]
-	[InlineData("no-title", "success", PrEvaluationResult.NoTitle)]
-	[InlineData("skipped", "success", PrEvaluationResult.Skipped)]
-	[InlineData("manually-edited", "success", PrEvaluationResult.ManuallyEdited)]
-	[InlineData("unknown", "success", PrEvaluationResult.Error)]
+	[Test]
+	[Arguments("proceed", "success", PrEvaluationResult.Success)]
+	[Arguments("proceed", "failure", PrEvaluationResult.Error)]
+	[Arguments("no-label", "success", PrEvaluationResult.NoLabel)]
+	[Arguments("no-title", "success", PrEvaluationResult.NoTitle)]
+	[Arguments("skipped", "success", PrEvaluationResult.Skipped)]
+	[Arguments("manually-edited", "success", PrEvaluationResult.ManuallyEdited)]
+	[Arguments("unknown", "success", PrEvaluationResult.Error)]
 	public void ResolveStatus_ReturnsExpected(string evaluateStatus, string generateOutcome, PrEvaluationResult expected)
 	{
 		var result = ChangelogPrepareArtifactService.ResolveStatus(evaluateStatus, generateOutcome);

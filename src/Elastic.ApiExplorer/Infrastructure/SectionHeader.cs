@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Frozen;
-using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Supplemental;
 using Microsoft.AspNetCore.Html;
@@ -16,15 +15,45 @@ namespace Elastic.ApiExplorer.Infrastructure;
 /// </summary>
 public record SectionHeader(string Title, string Anchor, string? Route = null, string? ContentTypeBadge = null);
 
+/// <summary>How a section's one-line name summary is written, so its punctuation says what the names are.</summary>
+public enum SummaryStyle
+{
+	/// <summary>The fields of a JSON object: <c>{ a, b }</c>.</summary>
+	Fields,
+
+	/// <summary>The fields of each object in a JSON array: <c>[{ a, b }]</c>.</summary>
+	ArrayOfFields,
+
+	/// <summary>Alternatives, as when a body is a union: <c>A | B</c>.</summary>
+	Variants,
+
+	/// <summary>Names that are all needed together, such as required privileges: <c>a + b</c>, as the credentials of one requirement are.</summary>
+	All,
+
+	/// <summary>Names that are neither an object's fields nor alternatives, such as parameters or the fields of a form: <c>a, b</c>.</summary>
+	List
+}
+
+/// <summary>Collapsible Parameters / Query parameters heading with a one-line name summary written in <paramref name="Style"/>.</summary>
+public record ParamSectionHeader(string Title, string Anchor, IReadOnlyList<string> Names, SummaryStyle Style = SummaryStyle.Fields)
+{
+	public static HtmlString WrapAttributes() => new("class=\"api-param-section expanded\" data-param-section");
+
+	public static HtmlString BodyAttributes(string listId) => new($"class=\"api-param-section-body\" id=\"{listId}\"");
+}
+
 /// <summary>A leftover <c>##</c> section from a supplemental file, pre-rendered for the view.</summary>
-public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
+public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml, string BodyMarkdown)
 {
 	internal static readonly FrozenSet<string> OperationReservedAnchors = FrozenSet.ToFrozenSet(
 		[
 			"paths",
-			"prerequisites",
+			"required-privileges",
+			"authentication",
 			"description",
+			"path-params",
 			"query-params",
+			"header-params",
 			"request-body",
 			"response",
 			"responses",
@@ -41,16 +70,29 @@ public record ApiPostSection(string Heading, string Anchor, HtmlString BodyHtml)
 		if (sections.Count == 0)
 			return [];
 
-		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		var anchors = Anchors(sections);
 		var result = new List<ApiPostSection>(sections.Count);
-		foreach (var s in sections)
+		for (var i = 0; i < sections.Count; i++)
 		{
-			var (title, explicitId) = SplitHeading(s.Heading);
-			var anchor = ResolveAnchor(title, explicitId, used);
-			result.Add(new ApiPostSection(title, anchor, ApiMarkdown.Render(context, s.Body)));
+			var s = sections[i];
+			result.Add(new ApiPostSection(SplitHeading(s.Heading).Title, anchors[i], ApiMarkdown.Render(context, s.Body), s.Body));
 		}
 
 		return result;
+	}
+
+	/// <summary>The anchor of each section, without rendering the bodies. Group intro headings use it to avoid these anchors.</summary>
+	internal static IReadOnlyList<string> Anchors(IReadOnlyList<ApiSupplementalSection> sections)
+	{
+		var used = OperationReservedAnchors.ToHashSet(StringComparer.Ordinal);
+		var anchors = new List<string>(sections.Count);
+		foreach (var s in sections)
+		{
+			var (title, explicitId) = SplitHeading(s.Heading);
+			anchors.Add(ResolveAnchor(title, explicitId, used));
+		}
+
+		return anchors;
 	}
 
 	internal static (string Title, string? ExplicitId) SplitHeading(string heading)

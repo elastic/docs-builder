@@ -87,6 +87,10 @@ On a **tag** file, those headings are not shown. Tag files use the description a
 
 Any other `##` heading is appended after the generated reference content. Headings stay in document order.
 
+### Sidebar entries for tag intros
+
+A group's intro lists its top-level sections in the sidebar, above the endpoints. Only the shallowest heading level in the intro gets an entry, which is `##` when the intro follows the rules above. A `###` heading stays on the page as a subsection of its parent `##` and has no sidebar entry. Use the heading structure to keep the sidebar short.
+
 ## Version-specific files
 
 If one major needs different text, add a `.vN.md` file next to the base file:
@@ -145,6 +149,8 @@ These slugs are reserved:
 | `types` | Schema type pages use `/types/` |
 | `group` | Tag landing pages use `/group/` |
 | `operation` | Operation pages use `/operation/` |
+| `authentication` | Each API product has an `/authentication` page |
+| `servers` | Each API product has a `/servers` page |
 
 Do not list `op-*.md` or `tag-*.md` under `children:`.
 
@@ -169,7 +175,7 @@ Unmatched base files are reported against `the latest spec`. Version-suffixed fi
 ```text
 Child page 'op-search.md' for API 'elasticsearch' uses a supplemental file name (op-*.md / tag-*.md). Those files are auto-discovered and cannot be listed under children:.
 Child page 'missing.md' for API 'elasticsearch' does not exist under 'api/elasticsearch/'.
-Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation
+Markdown file slug 'types' (from 'types.md') conflicts with reserved API Explorer segment in product 'elasticsearch'. Reserved segments: types, group, operation, authentication, servers
 Duplicate markdown slug 'getting-started' found in API product 'elasticsearch'.
 ```
 

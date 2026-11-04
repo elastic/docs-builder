@@ -16,15 +16,15 @@ See the [docs-builder documentation hub](../examples/products/docs-builder.md) f
 :::
 ```
 
-The `:title:` option doubles as the page title, so a hub page needs no body H1. See [Page title](hub-pages.md#page-title).
+The `:title:` option doubles as the default page title, so a hub page needs no body H1. See [Page title](hub-pages.md#page-title).
 
 ## Options
 
 | Option | Type | Notes |
 |---|---|---|
-| `:title:` | string | **Required.** Renders as the page `<h1>` next to the icon. Also used as the document title. |
+| `:title:` | string | **Required.** Renders as the page `<h1>` next to the icon. Also used as the default document title. |
 | `:description:` | inline markdown | One-line summary below the title. Supports bold, italics, and links. |
-| `:icon:` | string | Product key. Resolves to an inline SVG. Known keys: `elasticsearch`, `kibana`, `logstash`, `observability`, `security`, `elastic-stack`. An unknown key falls back to a single-letter chip. |
+| `:icon:` | string | Product key. Resolves to an inline SVG. Known keys: `elasticsearch`, `kibana`, `logstash`, `observability`, `security`, `beats`, `elastic-agent`, `elastic-stack`, `ess`. `elastic-agent` is a placeholder "A" tile until Elastic Agent has an official logo. Serverless ids reuse the matching stack or Cloud mark. An unknown key falls back to a single-letter chip. |
 | `:primary-action:` | markdown link | First action. Format: `[Label](/url)` or `[Label](#anchor)`. |
 | `:secondary-action:` | markdown link | Second action. |
 | `:tertiary-action:` | markdown link | Third action. |
@@ -46,7 +46,7 @@ The option names set the order, not the weight. All three render as neutral butt
 :::
 ```
 
-Actions render as buttons, and no button on the site carries an arrow. The arrow belongs to the eyebrow link, which sends the reader onward to the docs home.
+Actions render as buttons, and no button on the site carries an arrow.
 
 Action URLs validate at build time. Use one of these forms:
 

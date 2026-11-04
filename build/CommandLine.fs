@@ -27,7 +27,6 @@ type Build =
 
     | [<CliPrefix(CliPrefix.None);SubCommand>] Format
     | [<CliPrefix(CliPrefix.None);SubCommand>] Watch
-    | [<CliPrefix(CliPrefix.None);SubCommand>] Watch_All
 
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] Lint
     | [<CliPrefix(CliPrefix.None);Hidden;SubCommand>] PristineCheck
@@ -48,6 +47,7 @@ type Build =
     | [<Inherit>] Token of string 
     | [<Inherit;AltCommandLine("-c")>] Skip_Dirty_Check
     | [<Inherit;EqualsAssignment>] Test_Suite of TestSuite
+    | [<Inherit;EqualsAssignment>] Test_Parallelism of int
 with
     interface IArgParserTemplate with
         member this.Usage =
@@ -69,7 +69,6 @@ with
             | Format -> "runs dotnet format"
 
             | Watch -> "runs dotnet watch to continuous build code/templates and web assets on the fly"
-            | Watch_All -> "runs dotnet watch on the Aspire AppHost to continuously rebuild and serve the fully assembled site"
 
             // steps
             | Lint -> "runs dotnet curb check"
@@ -86,6 +85,7 @@ with
             | Token _ -> "Token to be used to authenticate with github"
             | Skip_Dirty_Check -> "Skip the clean checkout check that guards the release/publish targets"
             | Test_Suite _ -> "Specify the test suite to run, defaults to all"
+            | Test_Parallelism _ -> "Max number of test projects to run at once, defaults to the processor count"
 
     member this.StepName =
         match FSharpValue.GetUnionFields(this, typeof<Build>) with

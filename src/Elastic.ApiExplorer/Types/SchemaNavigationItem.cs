@@ -14,48 +14,48 @@ using RazorSlices;
 
 namespace Elastic.ApiExplorer.Types;
 
-public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel
+public record ApiSchema(string SchemaId, string DisplayName, string Category, IOpenApiSchema Schema) : IApiModel<SchemaPageModel>
 {
-	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, Cancel ctx = default)
+	public SchemaPageModel? CreatePageModel(ApiRenderContext context) => SchemaPageModel.Create(this, context);
+
+	public async Task RenderAsync(FileSystemStream stream, ApiRenderContext context, SchemaPageModel? pageModel, Cancel ctx = default)
 	{
-		var viewModel = new SchemaViewModel(context) { Schema = this, Page = SchemaPageModel.Create(this, context) };
+		var page = pageModel ?? SchemaPageModel.Create(this, context);
+		var viewModel = new SchemaViewModel(context) { Schema = this, Page = page };
 		var slice = SchemaView.Create(viewModel);
 		await slice.RenderAsync(stream, cancellationToken: ctx);
 	}
-}
 
-public class SchemaNavigationItem : ILeafNavigationItem<ApiSchema>
-{
-	public SchemaNavigationItem(
-		string? urlPathPrefix,
-		string apiUrlSuffix,
-		ApiSchema apiSchema,
-		IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
-		IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
-	)
+	public Task<string?> RenderCommonMarkAsync(ApiRenderContext context, SchemaPageModel? pageModel, Cancel ctx = default)
 	{
-		NavigationRoot = root;
-		Model = apiSchema;
-		NavigationTitle = apiSchema.DisplayName;
-		Parent = parent;
-		var moniker = ApiUrlBuilder.SchemaMoniker(apiSchema.SchemaId);
-		Url = $"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/types/{moniker}";
-		Id = ShortId.Create(Url);
+		var page = pageModel ?? SchemaPageModel.Create(this, context);
+		return Task.FromResult<string?>(SchemaCommonMark.Write(this, page, context));
 	}
-
-	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot { get; }
-	public string Id { get; }
-	public ApiSchema Model { get; }
-	public string Url { get; }
-	public bool Hidden { get; set; }
-	public string NavigationTitle { get; }
-	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-	public int NavigationIndex { get; set; }
 }
+
+public class SchemaNavigationItem(
+	string? urlPathPrefix,
+	string apiUrlSuffix,
+	ApiSchema apiSchema,
+	IRootNavigationItem<IApiGroupingModel, INavigationItem> root,
+	IApiGroupingNavigationItem<IApiGroupingModel, INavigationItem> parent
+) : ApiPageNavigationItem<ApiSchema>(
+	$"{ApiUrlBuilder.ProductRoot(urlPathPrefix, apiUrlSuffix)}/types/{ApiUrlBuilder.SchemaMoniker(apiSchema.SchemaId)}",
+	apiSchema.DisplayName,
+	apiSchema,
+	root,
+	parent
+);
 
 public record SchemaCategory(string Name, string Description) : IApiGroupingModel
 {
 	public Task RenderAsync(FileSystemStream stream, ApiRenderContext context, CancellationToken ctx = default) => Task.CompletedTask;
+}
+
+/// <summary>The Types sidebar heading. It groups the shared type pages after the endpoint groups.</summary>
+public class TypesNavigationItem(LandingNavigationItem rootNavigation) : ApiSidebarHeadingNavigationItem(Title, rootNavigation)
+{
+	public const string Title = "Types";
 }
 
 public class SchemaCategoryNavigationItem(

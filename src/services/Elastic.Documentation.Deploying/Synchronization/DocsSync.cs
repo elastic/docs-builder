@@ -87,6 +87,10 @@ public record SyncPlan
 	[JsonPropertyName("skip")]
 	public required IReadOnlyList<SkipRequest> SkipRequests { get; init; }
 
+	/// Stale hashed frontend assets kept by <see cref="StaticAssetRetention"/>; not counted in <see cref="TotalSyncRequests"/>
+	[JsonPropertyName("retain")]
+	public IReadOnlyList<string> RetainedPaths { get; init; } = [];
+
 	public static string Serialize(SyncPlan plan) => JsonSerializer.Serialize(plan, SyncSerializerContext.Default.SyncPlan);
 
 	public static SyncPlan Deserialize(string json) =>

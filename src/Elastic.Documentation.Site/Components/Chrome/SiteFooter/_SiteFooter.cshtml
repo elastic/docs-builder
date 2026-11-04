@@ -1,0 +1,62 @@
+@inherits RazorSlice<Elastic.Documentation.Site.Components.Chrome.SiteFooter.SiteFooterModel>
+<footer class="@Model.CssClass" hx-disable="true">
+	@if (Model.Branded && !string.IsNullOrWhiteSpace(Model.Copyright))
+	{
+		<div class="site-footer__inner site-footer__inner--branded">
+			@if (Model.BrandIconSrc is { } icon)
+			{
+				<img class="site-footer__brand-icon" loading="lazy" alt="" src="@icon" width="32" height="32">
+			}
+			<p class="site-footer__legal">@Model.Copyright</p>
+		</div>
+	}
+	else if (!Model.Branded)
+	{
+		<div class="site-footer__inner">
+			<a class="site-footer__brand" href="https://www.elastic.co/">
+				@if (!Model.Dark && Model.ColorLogoSrc is { } colorLogo)
+				{
+					<img class="site-footer__logo site-footer__logo--light" loading="lazy" alt="Elastic" src="@colorLogo" width="120" height="41">
+					<img class="site-footer__logo site-footer__logo--dark" loading="lazy" alt="" src="@Model.LogoSrc" width="120" height="41">
+				}
+				else
+				{
+					<img class="site-footer__logo" loading="lazy" alt="Elastic" src="@Model.LogoSrc" width="120" height="41">
+				}
+			</a>
+			<div class="site-footer__columns">
+				<div class="site-footer__nav">
+					<ul class="site-footer__links">
+						@foreach (var link in Model.Links)
+						{
+							<li><a href="@link.Href">@link.Label</a></li>
+						}
+					</ul>
+					<p class="site-footer__legal">© @Model.Year Elasticsearch B.V. All Rights Reserved.</p>
+				</div>
+				@if (Model.Notices.Count > 0 || Model.PrivacyChoices)
+				{
+					<div class="site-footer__notices">
+						@foreach (var notice in Model.Notices)
+						{
+							<p>@notice</p>
+						}
+						@if (Model.PrivacyChoices)
+						{
+							<p>
+								<a class="site-footer__link iubenda-cs-uspr-link" href="#">Notice at Collection</a>
+								|
+								<a class="site-footer__link iubenda-cs-preferences-link" href="#">Your Privacy Choices</a>
+							</p>
+						}
+					</div>
+				}
+			</div>
+		</div>
+	}
+	@if (Model.DiagnosticsPanel)
+	{
+		<div class="site-footer__diagnostics" data-diagnostics-placeholder></div>
+		@await RenderPartialAsync(_DiagnosticsPanel.Create(new DiagnosticsPanelModel()))
+	}
+</footer>

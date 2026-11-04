@@ -11,7 +11,6 @@ using Elastic.ApiExplorer.Operations;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
-using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
 
@@ -31,17 +30,13 @@ public class ApiMarkdownIntraApiLinkTests
 		}
 	}
 
-	[Fact]
+	[Test]
 	public void Render_RewritesGroupAndOperationLinksAgainstCurrentApiBase()
 	{
 		var renderer = new CapturingRenderer();
 		var collector = new DiagnosticsCollector([]);
 		var fs = new FileSystem();
-		var context = new BuildContext(
-			collector,
-			DocumentationFileSystem.Resolve(Paths.WorkingDirectoryRoot.FullName),
-			TestHelpers.CreateConfigurationContext(fs)
-		);
+		var context = TestHelpers.CreateBuildContext(collector);
 		var renderContext = new ApiRenderContext(
 			context,
 			new OpenApiDocument(),
@@ -63,5 +58,23 @@ public class ApiMarkdownIntraApiLinkTests
 
 		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/group/endpoint-data-views)");
 		renderer.LastMarkdown.Should().Contain("(/api/doc/kibana/operation/operation-post-saved-objects-export)");
+	}
+
+	[Test]
+	public void CanonicalizeLinks_UsesLlmAbsoluteUrlStrategyWithoutMarkdownSuffix()
+	{
+		var markdown =
+			"""
+			[Regions](/docs/api/doc/cloud-serverless/group/endpoint-regions)
+			[Relative](docs/api/doc/cloud-serverless/operation/operation-listregions)
+			[External](https://example.com/reference)
+			""";
+
+		var rewritten = ApiMarkdown.CanonicalizeLinks(markdown, new Uri("https://www.elastic.co"));
+
+		rewritten.Should().Contain("[Regions](https://www.elastic.co/docs/api/doc/cloud-serverless/group/endpoint-regions)");
+		rewritten.Should().Contain("[Relative](https://www.elastic.co/docs/api/doc/cloud-serverless/operation/operation-listregions)");
+		rewritten.Should().Contain("[External](https://example.com/reference)");
+		rewritten.Should().NotContain("endpoint-regions.md");
 	}
 }

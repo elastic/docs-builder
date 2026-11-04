@@ -1,0 +1,14 @@
+@inherits RazorSlice<Elastic.Documentation.Site.GlobalLayoutViewModel>
+@using Elastic.Documentation.Site.Components.Chrome.SiteHeader
+@await RenderPartialAsync(_SiteHeader.Create(new SiteHeaderModel
+{
+	Title = Model.HeaderTitle ?? Model.DocSetName,
+	HomeHref = Model.Link("/"),
+	Search = true,
+	Links = Model.GitHubDocsUrl is { Length: > 0 } github && Model.GitRepository is not null
+		? [new SiteHeaderLink("GitHub", github, "logo_github")]
+		: [],
+	Deployment = Model.GitBranch is { } branch
+		? new Elastic.Documentation.Site.Components.Chrome.DeploymentInfo.DeploymentInfoModel { Branch = branch, Commit = Model.GitCommitShort, Repository = Model.GitRepository, GitHubRef = Model.GitHubRef }
+		: null
+}))

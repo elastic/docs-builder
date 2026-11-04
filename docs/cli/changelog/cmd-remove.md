@@ -7,7 +7,7 @@ Two mutually exclusive modes are available:
 - **Profile-based**: `docs-builder changelog remove <profile> <version|promotion-report>` — uses the same `bundle.profiles` configuration as [`changelog bundle`](/cli/changelog/bundle.md) to determine which changelogs to remove.
 - **Option-based**: `docs-builder changelog remove --products "..."` (or `--prs`, `--issues`, `--all`, `--release-version`, `--report`, `--files`) — specify the filter directly.
 
-Bundles are self-contained (every entry is embedded inline), so removing changelog source files never affects existing bundles or the `{changelog}` directive. The command deletes matching files without any bundle dependency check.
+Bundles are self-contained (every entry is embedded inline), so removing changelog source files never affects existing bundles or the `{changelog}` directive. The command deletes matching files without any bundle dependency check. That includes changelog notes (`note-*.yml`): local delete never drops a note from a published bundle or from a `.amend-notes` sidecar. Refer to [](/data/release-notes/bundle.md#changelog-bundle-notes-after-ship).
 
 For more context, go to [](/data/release-notes/bundle.md#changelog-remove).
 

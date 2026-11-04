@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO.Abstractions;
 using System.Text;
 using Actions.Core.Services;
+using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler.Navigation;
 using Elastic.Documentation.Assembler.Sourcing;
@@ -128,7 +129,11 @@ public class AssemblerBuildService(
 		);
 
 		var navigationFileInfo = configurationContext.ConfigurationFileProvider.NavigationFile;
-		var siteNavigationFile = SiteNavigationFile.Deserialize(await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx));
+		var siteNavigationFile = SiteNavigationFile.Deserialize(
+			await fileSystem.File.ReadAllTextAsync(navigationFileInfo.FullName, ctx),
+			assembleContext.Collector,
+			navigationFileInfo.FullName
+		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
 		var navigation = new SiteNavigation(
@@ -167,10 +172,17 @@ public class AssemblerBuildService(
 		if (assembleContext.WriteFileSystem.File.Exists(redirectsPath))
 			await githubActionsService.SetOutputAsync("redirects-artifact-path", redirectsPath);
 
+		IReadOnlyList<ApiCatalogEntry> catalogEntries = [];
 		if (exporters.Contains(Exporter.Html))
 		{
 			var openApiStopwatch = Stopwatch.StartNew();
-			await AssemblerOpenApiBuildStep.BuildAsync(logFactory, assembleContext, assembleSources, ctx);
+			catalogEntries = await AssemblerOpenApiBuildStep.BuildAsync(
+				logFactory,
+				assembleContext,
+				assembleSources,
+				navigation.TopNav,
+				ctx
+			);
 			openApiStopwatch.Stop();
 			_logger.LogInformation("OpenAPI build step completed in {DurationMs} ms", openApiStopwatch.ElapsedMilliseconds);
 
@@ -204,7 +216,7 @@ public class AssemblerBuildService(
 		{
 			_logger.LogInformation("Enhancing llms.txt with navigation structure");
 			var llmsEnhancer = new LlmsNavigationEnhancer();
-			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, ctx);
+			await EnhanceLlmsTxtFile(assembleContext, navigation, llmsEnhancer, catalogEntries, ctx);
 		}
 
 		await collector.StopAsync(ctx);
@@ -239,6 +251,7 @@ public class AssemblerBuildService(
 		AssembleContext context,
 		SiteNavigation navigation,
 		LlmsNavigationEnhancer enhancer,
+		IReadOnlyList<ApiCatalogEntry> catalogEntries,
 		Cancel ctx
 	)
 	{
@@ -252,9 +265,10 @@ public class AssemblerBuildService(
 		// Assembler always uses the production URL as canonical base URL
 		var canonicalBaseUrl = new Uri(context.Environment.Uri);
 		var navigationSections = enhancer.GenerateNavigationSections(navigation, canonicalBaseUrl);
+		var apiSection = enhancer.GenerateApiSection(catalogEntries, canonicalBaseUrl);
 
 		// Append the navigation sections to the existing boilerplate
-		var enhancedContent = existingContent + Environment.NewLine + navigationSections;
+		var enhancedContent = existingContent + Environment.NewLine + navigationSections + apiSection;
 
 		await context.WriteFileSystem.File.WriteAllTextAsync(llmsTxtPath, enhancedContent, Encoding.UTF8, ctx);
 	}
