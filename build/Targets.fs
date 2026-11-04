@@ -108,7 +108,7 @@ let private publishContainers _ =
     let createImage projectPath containerName =
         let ci = Environment.environVarOrNone "GITHUB_ACTIONS"
         let pr = prNumber()
-        let baseImageTag = "10.0-noble-chiseled"
+        let baseImageTag = "11.0-noble-chiseled"
         let labels = imageTags()
         let args =
             ["publish"; projectPath]
@@ -199,9 +199,8 @@ let private gzipCompressDirectory (directory: string) =
     let files =
         Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories)
         |> Seq.filter (fun f ->
-            match Path.GetExtension(f) with
-            | null -> false
-            | ext -> compressibleExtensions.Contains(ext.ToLowerInvariant())
+            let ext = Path.GetExtension(f)
+            not (System.String.IsNullOrEmpty ext) && compressibleExtensions.Contains(ext.ToLowerInvariant())
         )
         |> Seq.toArray
 

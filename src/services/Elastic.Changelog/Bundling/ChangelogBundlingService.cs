@@ -1087,7 +1087,7 @@ public partial class ChangelogBundlingService(
 		if (input.DryRun)
 		{
 			// The report is the dry run's product: print it verbatim for release-PR bodies / job summaries.
-			await Console.Out.WriteLineAsync(report);
+			await Console.Out.WriteLineAsync(report, ctx);
 			return result.Success && collector.Errors == 0;
 		}
 

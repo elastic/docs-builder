@@ -20,7 +20,7 @@ RUN dnf install -y tar
 RUN dnf install -y findutils
 RUN curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
 RUN chmod +x ./dotnet-install.sh
-RUN ./dotnet-install.sh
+RUN ./dotnet-install.sh --channel 11.0
 ENV PATH="$PATH:/root/.dotnet"
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 # /end temporary
