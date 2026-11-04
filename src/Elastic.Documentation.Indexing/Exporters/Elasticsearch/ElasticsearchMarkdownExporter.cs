@@ -47,7 +47,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly IReadOnlyList<string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
-	private readonly string _forceReindexSalt;
 
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
@@ -80,7 +79,6 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_logFactory = logFactory;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
-		_forceReindexSalt = ForceReindexSalt.Create(_endpoint.ForceReindex);
 		_buildType = endpoints.BuildType;
 		_environment = endpoints.Environment;
 		_versionsConfiguration = context.VersionsConfiguration;
@@ -141,6 +139,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 
 		_orchestrator = new IncrementalSyncOrchestrator<DocumentationDocument>(_transport, _lexicalTypeContext, _semanticTypeContext)
 		{
+			ForceReindex = _endpoint.ForceReindex,
 			ConfigurePrimary = opts => ConfigureChannelOptions("primary", opts),
 			ConfigureSecondary = opts => ConfigureChannelOptions("secondary", opts),
 			OnPostComplete = _aiEnrichment is not null ? async (ctx, _, ct) => await PostCompleteAsync(ctx, ct) : null,

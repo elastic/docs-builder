@@ -36,14 +36,11 @@ public partial class ElasticsearchMarkdownExporter
 	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
-	private DocumentHashInputs HashInputs =>
-		new(_semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash, _forceReindexSalt);
+	private void AssignDocumentMetadata(DocumentationDocument doc) =>
+		AssignDocumentMetadata(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
 
-	internal static void AssignDocumentMetadata(DocumentationDocument doc, DocumentHashInputs inputs) =>
-		doc.Hash = ForceReindexSalt.Apply(
-			DocumentHash(doc, inputs.SemanticHash, inputs.LexicalHash, inputs.FixedSynonymsHash),
-			inputs.ForceReindexSalt
-		);
+	internal static void AssignDocumentMetadata(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
+		doc.Hash = DocumentHash(doc, semanticHash, lexicalHash, synonymsHash);
 
 	/// <summary>The change-detection hash. Everything the index stores for a page takes part, so a metadata-only edit still syncs.</summary>
 	internal static string DocumentHash(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
@@ -251,7 +248,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		CommonEnrichments(doc, currentNavigation);
 		AssignContentHash(doc);
-		AssignDocumentMetadata(doc, HashInputs);
+		AssignDocumentMetadata(doc);
 
 		return await WriteDocumentAsync(doc, ctx);
 	}
@@ -280,7 +277,7 @@ public partial class ElasticsearchMarkdownExporter
 			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
 			AssignContentHash(doc);
-			AssignDocumentMetadata(doc, HashInputs);
+			AssignDocumentMetadata(doc);
 
 			if (!await WriteDocumentAsync(doc, ctx))
 			{

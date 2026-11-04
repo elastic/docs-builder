@@ -10,13 +10,6 @@ namespace Elastic.Documentation.Indexing.Tests;
 
 public class DocumentHashAssignmentTests
 {
-	private static readonly DocumentHashInputs Normal = new(
-		"semantic",
-		"lexical",
-		"synonyms",
-		ForceReindexSalt.Create(forceReindex: false)
-	);
-
 	private static DocumentationDocument NewDocument() =>
 		new()
 		{
@@ -28,32 +21,14 @@ public class DocumentHashAssignmentTests
 			Applies = [new AppliesToEntry { Type = "stack", SubType = "all", Lifecycle = "beta", Version = "9.0" }]
 		};
 
-	private static string Hash(DocumentationDocument doc, DocumentHashInputs inputs) => AssignHash(doc, inputs);
-
-	private static string AssignHash(DocumentationDocument doc, DocumentHashInputs inputs)
+	private static string Hash(DocumentationDocument doc)
 	{
-		ElasticsearchMarkdownExporter.AssignDocumentMetadata(doc, inputs);
+		ElasticsearchMarkdownExporter.AssignDocumentMetadata(doc, "semantic", "lexical", "synonyms");
 		return doc.Hash;
 	}
 
 	[Test]
-	public void AssignDocumentMetadata_UnchangedDocumentWithoutForce_IsStable() =>
-		Hash(NewDocument(), Normal).Should().Be(Hash(NewDocument(), Normal));
-
-	[Test]
-	public void AssignDocumentMetadata_UnchangedDocumentWithForce_DiffersFromNormalRun() =>
-		Hash(NewDocument(), Normal with { ForceReindexSalt = ForceReindexSalt.Create(forceReindex: true) })
-			.Should()
-			.NotBe(Hash(NewDocument(), Normal));
-
-	[Test]
-	public void AssignDocumentMetadata_UnchangedDocumentAcrossForcedRuns_Differs()
-	{
-		var first = Normal with { ForceReindexSalt = ForceReindexSalt.Create(forceReindex: true) };
-		var second = Normal with { ForceReindexSalt = ForceReindexSalt.Create(forceReindex: true) };
-
-		Hash(NewDocument(), first).Should().NotBe(Hash(NewDocument(), second));
-	}
+	public void AssignDocumentMetadata_UnchangedDocument_IsStable() => Hash(NewDocument()).Should().Be(Hash(NewDocument()));
 
 	[Test]
 	public void AssignDocumentMetadata_OnlyProductChanged_Differs()
@@ -61,7 +36,7 @@ public class DocumentHashAssignmentTests
 		var changed = NewDocument();
 		changed.Product = "cloud";
 
-		Hash(changed, Normal).Should().NotBe(Hash(NewDocument(), Normal));
+		Hash(changed).Should().NotBe(Hash(NewDocument()));
 	}
 
 	[Test]
@@ -70,7 +45,7 @@ public class DocumentHashAssignmentTests
 		var changed = NewDocument();
 		changed.Applies = [new AppliesToEntry { Type = "stack", SubType = "all", Lifecycle = "ga", Version = "9.0" }];
 
-		Hash(changed, Normal).Should().NotBe(Hash(NewDocument(), Normal));
+		Hash(changed).Should().NotBe(Hash(NewDocument()));
 	}
 
 	[Test]
@@ -81,6 +56,6 @@ public class DocumentHashAssignmentTests
 		var changed = NewDocument();
 		changed.Api = new ApiOperationMetadata { Endpoints = ["GET /a"], Method = "GET", Path = "/a", OperationId = "renamed" };
 
-		Hash(changed, Normal).Should().NotBe(Hash(original, Normal));
+		Hash(changed).Should().NotBe(Hash(original));
 	}
 }
