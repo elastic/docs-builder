@@ -1,0 +1,123 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using Elastic.Markdown.Diagnostics;
+using SharpYaml;
+using SharpYaml.Serialization;
+
+namespace Elastic.Markdown.Myst.Directives.Hub;
+
+/// <summary>
+/// The first hub-body section: a short onboarding funnel with an intro line, an
+/// optional install snippet, an optional tutorial link, and a set of numbered
+/// steps. The schema is YAML-formatted in the directive body for predictable
+/// structure.
+/// </summary>
+/// <example>
+/// <code>
+/// :::{get-started}
+/// title: Get started in 3 steps
+/// intro: Spin up Kibana, connect your data, and start exploring in minutes.
+/// :::
+/// </code>
+/// </example>
+public class GetStartedBlock(DirectiveBlockParser parser, ParserContext context) : DirectiveBlock(parser, context)
+{
+	public override string Directive => "get-started";
+
+	public GetStartedData Data { get; private set; } = GetStartedData.Empty;
+
+	public override void FinalizeAndValidate(ParserContext context)
+	{
+		var yaml = HubYamlBody.Extract(this, new BuildContextFileReader(Build.ReadFileSystem));
+		if (yaml is null)
+		{
+			this.EmitError("{get-started} requires a YAML body. See the get-started directive docs.");
+			return;
+		}
+
+		try
+		{
+			Data = YamlSerialization.Deserialize<GetStartedData>(yaml, Build.ProductsConfiguration, this.YamlReporting())
+				?? GetStartedData.Empty;
+		}
+		catch (YamlException ex)
+		{
+			this.EmitError($"{{get-started}} YAML parse error: {ex.Message}");
+			return;
+		}
+
+		if (string.IsNullOrWhiteSpace(Data.Title))
+			this.EmitError("{get-started} requires a `title` field in its YAML body.");
+
+		Data.Intro = DirectiveLinkValidator.ResolveMarkdownLinks(Data.Intro, this, context);
+		foreach (var step in Data.Steps)
+		{
+			if (!string.IsNullOrWhiteSpace(step.Link))
+				step.Link = DirectiveLinkValidator.ValidateAndResolve(step.Link, this, context);
+			step.Description = DirectiveLinkValidator.ResolveMarkdownLinks(step.Description, this, context);
+			foreach (var option in step.Options)
+			{
+				option.Url = DirectiveLinkValidator.ValidateAndResolve(option.Url, this, context);
+				option.Description = DirectiveLinkValidator.ResolveMarkdownLinks(option.Description, this, context);
+			}
+		}
+	}
+}
+
+public record GetStartedData
+{
+	[YamlPropertyName("title")]
+	public string? Title { get; set; }
+
+	[YamlPropertyName("intro")]
+	public string? Intro { get; set; }
+
+	[YamlPropertyName("steps")]
+	public GetStartedStep[] Steps { get; set; } = [];
+
+	[YamlIgnore]
+	public static GetStartedData Empty { get; } = new();
+}
+
+public record GetStartedStep
+{
+	[YamlPropertyName("title")]
+	public string? Title { get; set; }
+
+	[YamlPropertyName("description")]
+	public string? Description { get; set; }
+
+	/// <summary>When set, the whole step card links here.</summary>
+	[YamlPropertyName("link")]
+	public string? Link { get; set; }
+
+	[YamlPropertyName("link-label")]
+	public string? LinkLabel { get; set; }
+
+	/// <summary>Two-or-more equally-weighted start options rendered side by side.</summary>
+	[YamlPropertyName("options")]
+	public GetStartedStepOption[] Options { get; set; } = [];
+}
+
+public record GetStartedStepOption
+{
+	[YamlPropertyName("label")]
+	public string? Label { get; set; }
+
+	[YamlPropertyName("description")]
+	public string? Description { get; set; }
+
+	[YamlPropertyName("code")]
+	public string? Code { get; set; }
+
+	[YamlPropertyName("language")]
+	public string? Language { get; set; }
+
+	[YamlPropertyName("url")]
+	public string? Url { get; set; }
+
+	[YamlPropertyName("url-label")]
+	public string? UrlLabel { get; set; }
+}

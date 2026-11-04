@@ -15,10 +15,7 @@ internal sealed class ContentStackConfiguration
 
 	public static ContentStackConfiguration CreateFromEnvironment()
 	{
-		var config = new ConfigurationBuilder()
-			.AddUserSecrets("docs-builder")
-			.AddEnvironmentVariables()
-			.Build();
+		var config = new ConfigurationBuilder().AddUserSecrets("docs-builder").AddEnvironmentVariables().Build();
 
 		return CreateFromConfiguration(config);
 	}
@@ -29,20 +26,14 @@ internal sealed class ContentStackConfiguration
 	/// </summary>
 	public static ContentStackConfiguration? TryCreateFromConfiguration(IConfiguration config)
 	{
-		var apiKey = config["ContentStack:ApiKey"]
-			?? config["CONTENTSTACK_API_KEY"];
+		var apiKey = config["ContentStack:ApiKey"] ?? config["CONTENTSTACK_API_KEY"];
 
-		var deliveryToken = config["ContentStack:DeliveryToken"]
-			?? config["CONTENTSTACK_DELIVERY_TOKEN"];
+		var deliveryToken = config["ContentStack:DeliveryToken"] ?? config["CONTENTSTACK_DELIVERY_TOKEN"];
 
 		if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(deliveryToken))
 			return null;
 
-		return new ContentStackConfiguration
-		{
-			ApiKey = apiKey,
-			DeliveryToken = deliveryToken
-		};
+		return new ContentStackConfiguration { ApiKey = apiKey, DeliveryToken = deliveryToken };
 	}
 
 	public static ContentStackConfiguration CreateFromConfiguration(IConfiguration config)
@@ -55,10 +46,12 @@ internal sealed class ContentStackConfiguration
 		if (string.IsNullOrWhiteSpace(apiKey))
 			throw new InvalidOperationException(
 				"Contentstack API key not found. Set 'ContentStack:ApiKey' via dotnet user-secrets " +
-				"or the CONTENTSTACK_API_KEY environment variable.");
+					"or the CONTENTSTACK_API_KEY environment variable."
+			);
 
 		throw new InvalidOperationException(
 			"Contentstack delivery token not found. Set 'ContentStack:DeliveryToken' via dotnet user-secrets " +
-			"or the CONTENTSTACK_DELIVERY_TOKEN environment variable.");
+				"or the CONTENTSTACK_DELIVERY_TOKEN environment variable."
+		);
 	}
 }

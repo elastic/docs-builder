@@ -1,0 +1,14 @@
+.method {
+	padding: 0 var(--space-2);
+	font-weight: var(--weight-bold);
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.method--sm {
+	height: 1.25rem;
+	min-width: 2.375rem;
+	justify-content: center;
+	padding: 0 var(--space-1);
+	font-size: 0.625rem;
+}

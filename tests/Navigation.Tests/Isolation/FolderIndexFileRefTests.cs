@@ -12,13 +12,14 @@ using Elastic.Documentation.Navigation.Isolated.Node;
 
 namespace Elastic.Documentation.Navigation.Tests.Isolation;
 
-public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSetNavigationTestBase(output)
+public class FolderIndexFileRefTests() : DocumentationSetNavigationTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task FolderWithFileCreatesCorrectStructure()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -32,11 +33,11 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		var navigation = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should create a FolderNavigation with the file as index
 		navigation.NavigationItems.Should().HaveCount(1);
@@ -50,11 +51,12 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		context.Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithFileChildrenPathsAreScopedToFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -67,11 +69,11 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that the FileRef for getting-started.md is a FolderIndexFileRef
 		var folderItem = docSet.TableOfContents.First().Should().BeOfType<FolderRef>().Subject;
@@ -84,11 +86,12 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		childFile.PathRelativeToDocumentationSet.Should().Be("getting-started/install.md");
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithFileEmitsHintWhenFileNameDoesNotMatchFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -101,27 +104,28 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should emit hint about file name not matching folder name
 		context.Collector.Hints.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Hint &&
-			d.Message.Contains("intro.md") &&
-			d.Message.Contains("getting-started") &&
-			d.Message.Contains("Best practice"));
+		diagnostics.Should().Contain(
+			d => d.Severity == Severity.Hint && d.Message.Contains("intro.md") && d.Message.Contains(
+				"getting-started"
+			) && d.Message.Contains("Best practice")
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithFileDoesNotEmitHintWhenFileNameMatchesFolder()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -134,22 +138,23 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should not emit any hints
 		context.Collector.Hints.Should().Be(0);
 		context.Diagnostics.Should().BeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithFileEmitsErrorForDeepLinkingInFile()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -162,26 +167,28 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Should emit error about deep linking in the file attribute
 		context.Collector.Errors.Should().BeGreaterThan(0);
 		var diagnostics = context.Diagnostics;
-		diagnostics.Should().Contain(d =>
-			d.Severity == Severity.Error &&
-			d.Message.Contains("Deep linking on folder 'file' is not supported") &&
-			d.Message.Contains("intro/file.md"));
+		diagnostics.Should().Contain(
+			d => d.Severity == Severity.Error && d.Message.Contains("Deep linking on folder 'file' is not supported") && d.Message.Contains(
+				"intro/file.md"
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithIndexMdFileDoesNotNeedToMatchFolderName()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: getting-started
@@ -194,22 +201,23 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// index.md is a special case - should not emit hint
 		// (Though the hint check doesn't exclude index.md, it's a reasonable best practice to allow it)
 		context.Collector.Errors.Should().Be(0);
 	}
 
-	[Fact]
+	[Test]
 	public async Task FolderWithFileCaseInsensitiveMatch()
 	{
 		// language=yaml
-		var yaml = """
+		var yaml =
+			"""
 		           project: 'test-project'
 		           toc:
 		             - folder: GettingStarted
@@ -222,11 +230,11 @@ public class FolderIndexFileRefTests(ITestOutputHelper output) : DocumentationSe
 		fileSystem.AddDirectory("/docs");
 		var context = CreateContext(fileSystem);
 		var docSet = DocumentationSetFile.LoadAndResolve(context.Collector, yaml, fileSystem.NewDirInfo("docs"));
-		_ = context.Collector.StartAsync(TestContext.Current.CancellationToken);
+		_ = context.Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
 
 		_ = new DocumentationSetNavigation<IDocumentationFile>(docSet, context, GenericDocumentationFileFactory.Instance);
 
-		await context.Collector.StopAsync(TestContext.Current.CancellationToken);
+		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		// Case-insensitive match should not emit hint
 		context.Collector.Hints.Should().Be(0);

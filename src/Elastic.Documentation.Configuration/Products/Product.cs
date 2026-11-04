@@ -5,7 +5,7 @@
 using System.Collections.Frozen;
 using Elastic.Documentation.Configuration.Versions;
 using Elastic.Documentation.Search.Contract;
-using YamlDotNet.Serialization;
+using SharpYaml.Serialization;
 
 namespace Elastic.Documentation.Configuration.Products;
 
@@ -33,14 +33,33 @@ public record ProductsConfiguration : IProductNameLookup
 	public FrozenDictionary<string, string>.AlternateLookup<ReadOnlySpan<char>> DisplayNameLookup =>
 		_displayNameLookup ??= ProductDisplayNames.GetAlternateLookup<ReadOnlySpan<char>>();
 
-	public Product? GetProductByRepositoryName(string repository)
+	/// <summary>
+	/// Returns every product that maps to <paramref name="repository"/>.
+	/// A product matches when its ID equals the repo name, or when its explicit
+	/// <c>repository:</c> field equals the repo name (case-insensitive).
+	/// One repo → many products is valid (e.g., <c>cloud</c> → cloud-hosted / cloud-serverless / cloud-enterprise).
+	/// </summary>
+	public IReadOnlyList<Product> GetProductsByRepositoryName(string repository)
 	{
 		var tokens = repository.Split('/');
 		var repositoryName = tokens.Last();
-		if (Products.TryGetValue(repositoryName, out var product))
-			return product;
-		var match = Products.Values.SingleOrDefault(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase));
-		return match;
+		if (Products.TryGetValue(repositoryName, out var direct))
+			return [direct];
+		return Products
+			.Values
+			.Where(p => p.Repository is not null && p.Repository.Equals(repositoryName, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+	}
+
+	/// <summary>
+	/// Returns the single product that maps to <paramref name="repository"/>, or <c>null</c>
+	/// when there is no match or more than one match. Use <see cref="GetProductsByRepositoryName"/>
+	/// when a repo may host multiple products.
+	/// </summary>
+	public Product? GetProductByRepositoryName(string repository)
+	{
+		var matches = GetProductsByRepositoryName(repository);
+		return matches.Count == 1 ? matches[0] : null;
 	}
 
 	/// <summary>
@@ -68,10 +87,30 @@ public record ProductsConfiguration : IProductNameLookup
 	}
 }
 
-[YamlSerializable]
 public record ProductLink
 {
 	public string Id { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// The release-notes onboarding path a product follows, declared via <c>features.release-notes</c>
+/// in <c>products.yml</c>. A product either ships via the Elastic DRA pipeline
+/// (<see cref="DailyReleasableArtifacts"/>) or cuts bundles at release time
+/// (<see cref="OnRelease"/>, the default).
+/// </summary>
+public enum ReleaseNotesPath
+{
+	/// <summary>Product does not participate in release notes automation (<c>release-notes: false</c>).</summary>
+	None,
+
+	/// <summary>Final bundles are built and uploaded at release time (<c>release-notes</c> omitted, <c>true</c>, or <c>on-release</c>).</summary>
+	OnRelease,
+
+	/// <summary>
+	/// Release bundles are generated from the DRA (Daily Releasable Artifacts) build manifest
+	/// and reviewed before GA (<c>release-notes: dra</c>; <c>prestage</c> accepted as an alias).
+	/// </summary>
+	DailyReleasableArtifacts
 }
 
 /// <summary>Declares which docs-builder subsystems a product participates in.</summary>
@@ -80,22 +119,40 @@ public record ProductFeatures
 	/// <summary>Product can be referenced in applies_to blocks, page frontmatter, and gets display-name substitutions.</summary>
 	public bool PublicReference { get; init; }
 
-	/// <summary>Product participates in the changelog / release-notes system.</summary>
-	public bool ReleaseNotes { get; init; }
+	/// <summary>
+	/// The product's release-notes onboarding path. <see cref="ReleaseNotesPath.OnRelease"/> when
+	/// <c>features.release-notes</c> is omitted or <c>true</c> (preserving the historical boolean
+	/// participation default), <see cref="ReleaseNotesPath.None"/> when <c>false</c>,
+	/// <see cref="ReleaseNotesPath.DailyReleasableArtifacts"/> when <c>dra</c>.
+	/// </summary>
+	public ReleaseNotesPath ReleaseNotes { get; init; }
+
+	/// <summary>Whether the product participates in the changelog / release-notes system at all.</summary>
+	public bool ParticipatesInReleaseNotes => ReleaseNotes != ReleaseNotesPath.None;
 
 	/// <summary>All features enabled -- the implicit default when no <c>features</c> map is present in YAML.</summary>
-	public static ProductFeatures All => new() { PublicReference = true, ReleaseNotes = true };
+	[YamlIgnore]
+	public static ProductFeatures All => new() { PublicReference = true, ReleaseNotes = ReleaseNotesPath.OnRelease };
 
-	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(["public-reference", "release-notes"], StringComparer.OrdinalIgnoreCase);
+	public static readonly FrozenSet<string> KnownKeys = FrozenSet.ToFrozenSet(
+		["public-reference", "release-notes"],
+		StringComparer.OrdinalIgnoreCase
+	);
 }
 
-[YamlSerializable]
 public record Product
 {
 	public required string Id { get; init; }
 	public required string DisplayName { get; init; }
 	public VersioningSystem? VersioningSystem { get; init; }
 	public string? Repository { get; init; }
+
+	/// <summary>
+	/// The key used to look up this product in the DRA build manifest.
+	/// When null the manifest lookup falls back to <see cref="Repository"/> then <see cref="Id"/>.
+	/// Set this when the artifact name in the DRA manifest differs from the repository name.
+	/// </summary>
+	public string? DraArtifact { get; init; }
+
 	public ProductFeatures Features { get; init; } = ProductFeatures.All;
 }
-

@@ -3,7 +3,6 @@ import {
     DiagnosticItem,
     BuildStatus,
 } from './diagnostics.store'
-import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 interface DiagnosticData {
     severity: string
@@ -24,68 +23,73 @@ interface BuildEvent {
     status?: string
 }
 
-let abortController: AbortController | null = null
+const STATE_URL = '/_api/diagnostics/state'
+const POLL_MS = 1500
+
+let closed = true
+let connectionGeneration = 0
+let pollTimer: ReturnType<typeof setInterval> | null = null
+let pollAbort: AbortController | null = null
 let diagnosticIdCounter = 0
 
+function afterDocumentLoad(callback: () => void): void {
+    const run = () => window.setTimeout(callback, 0)
+    if (document.readyState === 'complete') {
+        run()
+        return
+    }
+    window.addEventListener('load', run, { once: true })
+}
+
 export function connectToDiagnosticsStream(): void {
-    // Disconnect any existing connection
     disconnectFromDiagnosticsStream()
-
-    abortController = new AbortController()
-    const store = useDiagnosticsStore.getState()
-
-    fetchEventSource('/_api/diagnostics/stream', {
-        signal: abortController.signal,
-
-        onopen: async (response) => {
-            if (response.ok) {
-                store.setConnected(true)
-            } else {
-                console.error(
-                    '[Diagnostics] SSE connection failed:',
-                    response.status
-                )
-                store.setConnected(false)
-            }
-        },
-
-        onmessage: (event) => {
-            try {
-                const data: BuildEvent = JSON.parse(event.data)
-                handleBuildEvent(data)
-            } catch (e) {
-                console.error('[Diagnostics] Failed to parse event:', e)
-            }
-        },
-
-        onerror: (err) => {
-            console.error('[Diagnostics] SSE error:', err)
-            store.setConnected(false)
-
-            // Retry connection after a delay
-            setTimeout(() => {
-                if (abortController && !abortController.signal.aborted) {
-                    connectToDiagnosticsStream()
-                }
-            }, 3000)
-        },
-
-        onclose: () => {
-            store.setConnected(false)
-        },
-    }).catch((err) => {
-        if (err.name !== 'AbortError') {
-            console.error('[Diagnostics] SSE fetch error:', err)
-        }
+    closed = false
+    const generation = ++connectionGeneration
+    afterDocumentLoad(() => {
+        if (closed || generation !== connectionGeneration) return
+        void pollDiagnosticsState()
+        pollTimer = setInterval(() => {
+            void pollDiagnosticsState()
+        }, POLL_MS)
     })
 }
 
 export function disconnectFromDiagnosticsStream(): void {
-    if (abortController) {
-        abortController.abort()
-        abortController = null
+    closed = true
+    if (pollTimer !== null) {
+        clearInterval(pollTimer)
+        pollTimer = null
     }
+    pollAbort?.abort()
+    pollAbort = null
     useDiagnosticsStore.getState().setConnected(false)
+}
+
+async function pollDiagnosticsState(): Promise<void> {
+    if (pollAbort) return
+    const abort = new AbortController()
+    pollAbort = abort
+    try {
+        const response = await fetch(STATE_URL, {
+            signal: abort.signal,
+            cache: 'no-store',
+        })
+        if (closed) return
+        if (!response.ok) {
+            useDiagnosticsStore.getState().setConnected(false)
+            return
+        }
+        const data = (await response.json()) as BuildEvent
+        if (closed) return
+        useDiagnosticsStore.getState().setConnected(true)
+        handleBuildEvent(data)
+    } catch (err) {
+        if (closed || (err instanceof Error && err.name === 'AbortError'))
+            return
+        useDiagnosticsStore.getState().setConnected(false)
+    } finally {
+        if (pollAbort === abort) pollAbort = null
+    }
 }
 
 function handleBuildEvent(event: BuildEvent): void {
@@ -93,37 +97,7 @@ function handleBuildEvent(event: BuildEvent): void {
 
     switch (event.type) {
         case 'state':
-            // Initial state from server - includes status, counts, and historical diagnostics
-            store.setCounts(
-                event.errors ?? 0,
-                event.warnings ?? 0,
-                event.hints ?? 0
-            )
-            if (event.status) {
-                store.setStatus(event.status as BuildStatus)
-            }
-            // Load any stored diagnostics from previous builds
-            if (event.diagnostics && event.diagnostics.length > 0) {
-                store.clearDiagnostics()
-                // Restore counts since clearDiagnostics resets them
-                store.setCounts(
-                    event.errors ?? 0,
-                    event.warnings ?? 0,
-                    event.hints ?? 0
-                )
-                event.diagnostics.forEach((diag) => {
-                    const diagnostic: DiagnosticItem = {
-                        id: `diag-${++diagnosticIdCounter}`,
-                        severity: diag.severity as DiagnosticItem['severity'],
-                        file: diag.file,
-                        message: diag.message,
-                        line: diag.line,
-                        column: diag.column,
-                        timestamp: event.timestamp,
-                    }
-                    store.addDiagnostic(diagnostic)
-                })
-            }
+            applyStateSnapshot(store, event)
             break
 
         case 'build_start':
@@ -185,5 +159,29 @@ function handleBuildEvent(event: BuildEvent): void {
 
         default:
             console.warn('[Diagnostics] Unknown event type:', event.type)
+    }
+}
+
+function applyStateSnapshot(
+    store: ReturnType<typeof useDiagnosticsStore.getState>,
+    event: BuildEvent
+): void {
+    const errors = event.errors ?? 0
+    const warnings = event.warnings ?? 0
+    const hints = event.hints ?? 0
+    if (event.status) store.setStatus(event.status as BuildStatus)
+    store.clearDiagnostics()
+    diagnosticIdCounter = 0
+    store.setCounts(errors, warnings, hints)
+    for (const diag of event.diagnostics ?? []) {
+        store.addDiagnostic({
+            id: `diag-${++diagnosticIdCounter}`,
+            severity: diag.severity as DiagnosticItem['severity'],
+            file: diag.file,
+            message: diag.message,
+            line: diag.line,
+            column: diag.column,
+            timestamp: event.timestamp,
+        })
     }
 }

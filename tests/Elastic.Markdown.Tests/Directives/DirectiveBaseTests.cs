@@ -5,34 +5,33 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives;
 using JetBrains.Annotations;
 using Markdig.Syntax;
-using Nullean.ScopedFileSystem;
+using TUnit.Core.Interfaces;
 
 namespace Elastic.Markdown.Tests.Directives;
 
-public abstract class DirectiveTest<TDirective>(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
-	: DirectiveTest(output, content)
-	where TDirective : DirectiveBlock
+public abstract class DirectiveTest<TDirective>([LanguageInjection("markdown")] string content) : DirectiveTest(
+	content
+) where TDirective : DirectiveBlock
 {
 	protected TDirective? Block { get; private set; }
 
-	public override async ValueTask InitializeAsync()
+	public override async Task InitializeAsync()
 	{
 		await base.InitializeAsync();
-		Block = Document
-			.Descendants<TDirective>()
-			.FirstOrDefault();
+		Block = Document.Descendants<TDirective>().FirstOrDefault();
 	}
 
-	[Fact]
+	[Test]
 	public void BlockIsNotNull() => Block.Should().NotBeNull();
 }
 
-public abstract class DirectiveTest : IAsyncLifetime
+public abstract class DirectiveTest : IAsyncInitializer, IAsyncDisposable
 {
 	protected MarkdownFile File { get; }
 	protected string Html { get; private set; }
@@ -43,26 +42,25 @@ public abstract class DirectiveTest : IAsyncLifetime
 
 	private bool TestingFullDocument { get; }
 
-	protected DirectiveTest(ITestOutputHelper output, [LanguageInjection("markdown")] string content)
+	protected DirectiveTest([LanguageInjection("markdown")] string content)
 	{
-		var logger = new TestLoggerFactory(output);
+		var logger = new TestLoggerFactory();
 
 		TestingFullDocument = string.IsNullOrEmpty(content) || content.StartsWith("---", StringComparison.OrdinalIgnoreCase);
-		var documentContents = TestingFullDocument ? content :
-// language=markdown
-$"""
+		var documentContents = TestingFullDocument
+			? content
+			:
+			// language=markdown
+			$"""
  # Test Document
 
  {content}
  """;
 
-		FileSystem = new MockFileSystem(new Dictionary<string, MockFileData>
-		{
-			{ "docs/index.md", new MockFileData(documentContents) }
-		}, new MockFileSystemOptions
-		{
-			CurrentDirectory = Paths.WorkingDirectoryRoot.FullName
-		});
+		FileSystem = new MockFileSystem(
+			new Dictionary<string, MockFileData> { { "docs/index.md", new MockFileData(documentContents) } },
+			new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName }
+		);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		// nasty but sub implementations won't use class state.
 		AddToFileSystem(FileSystem);
@@ -70,12 +68,18 @@ $"""
 		var root = FileSystem.DirectoryInfo.New(Path.Join(Paths.WorkingDirectoryRoot.FullName, "docs/"));
 		// ReSharper disable once VirtualMemberCallInConstructor
 		FileSystem.GenerateDocSetYaml(root, products: GetDocsetProducts(), extraYaml: GetDocsetExtraYaml());
-
-		Collector = new TestDiagnosticsCollector(output);
+		Collector = new TestDiagnosticsCollector();
 		var configurationContext = TestHelpers.CreateConfigurationContext(FileSystem);
 		// ReSharper disable once VirtualMemberCallInConstructor
 		var environment = GetEnvironment();
-		var context = new BuildContext(Collector, FileSystemFactory.ScopeCurrentWorkingDirectory(FileSystem), configurationContext, environment);
+		// ReSharper disable once VirtualMemberCallInConstructor
+		var context = new BuildContext(
+			Collector,
+			TestHelpers.CreateDocumentationFileSystem(FileSystem, root, GetGitCheckoutInformation()),
+			configurationContext,
+			environment
+		)
+		{ ContentSource = GetContentSource() };
 		var linkResolver = new TestCrossLinkResolver();
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Set = new DocumentationSet(context, logger, linkResolver, GetReleaseNotesResolver());
@@ -85,6 +89,12 @@ $"""
 	}
 
 	protected virtual void AddToFileSystem(MockFileSystem fileSystem) { }
+
+	/// <summary>
+	/// Override to supply an explicit <see cref="GitCheckoutInformation"/> for the build context.
+	/// Returns <see langword="null"/> by default (factory produces canned test data).
+	/// </summary>
+	protected virtual GitCheckoutInformation? GetGitCheckoutInformation() => null;
 
 	/// <summary>
 	/// Override to specify products for the docset configuration.
@@ -103,12 +113,18 @@ $"""
 	/// <summary>Override to inject a deterministic environment for env-dependent config (e.g. <c>storybook.registry</c>).</summary>
 	protected virtual IEnvironmentVariables? GetEnvironment() => null;
 
-	public virtual async ValueTask InitializeAsync()
-	{
-		_ = Collector.StartAsync(TestContext.Current.CancellationToken);
+	/// <summary>
+	/// Override to simulate an assembler build publishing a specific content source
+	/// (<c>current</c> = production, <c>next</c> = staging). Null (default) mimics isolated builds.
+	/// </summary>
+	protected virtual ContentSource? GetContentSource() => null;
 
-		await Set.ResolveDirectoryTree(TestContext.Current.CancellationToken);
-		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current.CancellationToken);
+	public virtual async Task InitializeAsync()
+	{
+		_ = Collector.StartAsync(TestContext.Current!.Execution.CancellationToken);
+
+		await Set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
+		Document = await File.ParseFullAsync(Set.TryFindDocumentByRelativePath, TestContext.Current!.Execution.CancellationToken);
 		var html = MarkdownFile.CreateHtml(Document).AsSpan();
 		var find = "</section>";
 		var start = html.IndexOf(find, StringComparison.Ordinal);
@@ -116,12 +132,28 @@ $"""
 			? html[(start + find.Length)..].ToString().Trim(Environment.NewLine.ToCharArray())
 			: html.ToString().Trim(Environment.NewLine.ToCharArray());
 
-		await Collector.StopAsync(TestContext.Current.CancellationToken);
+		await Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 	}
 
-	public ValueTask DisposeAsync()
+	/// <summary>
+	/// Returns the content of all SVG files written to the output directory during rendering.
+	/// Use this to assert on diagram content after the switch from inline SVG to external files.
+	/// </summary>
+	protected IReadOnlyList<string> ReadMermaidSvgs()
+	{
+		var outputDir = Set.Context.OutputDirectory.FullName;
+		return FileSystem
+			.AllFiles
+			.Where(
+				f => f.StartsWith(outputDir, StringComparison.OrdinalIgnoreCase) && f.EndsWith(".svg", StringComparison.OrdinalIgnoreCase)
+			)
+			.Select(f => FileSystem.File.ReadAllText(f))
+			.ToList();
+	}
+
+	public async ValueTask DisposeAsync()
 	{
 		GC.SuppressFinalize(this);
-		return ValueTask.CompletedTask;
+		await Collector.DisposeAsync();
 	}
 }

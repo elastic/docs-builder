@@ -16,16 +16,21 @@ namespace Elastic.Markdown.Tests.Directives;
 /// With :type: deprecation, only deprecations are shown.
 /// With :type: known-issue, only known issues are shown.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterDefaultTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterDefaultTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -74,43 +79,42 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 		  action: Use new feature.
 		  prs:
 		  - "555555"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void DefaultBehaviorExcludesSeparatedTypes()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
-	}
+	[Test]
+	public void DefaultBehaviorExcludesSeparatedTypes() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorShowsFeatures()
 	{
 		Html.Should().Contain("Features and enhancements");
 		Html.Should().Contain("New feature");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorShowsBugFixes()
 	{
 		Html.Should().Contain(">Fixes<");
 		Html.Should().Contain("Bug fix");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorExcludesBreakingChanges()
 	{
 		Html.Should().NotContain("Breaking changes");
 		Html.Should().NotContain("Breaking API change");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorExcludesKnownIssues()
 	{
 		Html.Should().NotContain("Known issues");
 		Html.Should().NotContain("Known issue");
 	}
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorExcludesDeprecations()
 	{
 		Html.Should().NotContain("Deprecations");
@@ -121,17 +125,22 @@ public class ChangelogTypeFilterDefaultTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: all - shows all entry types including separated types.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterAllTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterAllTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -180,15 +189,14 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		  action: Use new feature.
 		  prs:
 		  - "555555"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void TypeFilterIsAll()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
-	}
+	[Test]
+	public void TypeFilterIsAll() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
 
-	[Fact]
+	[Test]
 	public void ShowsAllEntryTypes()
 	{
 		Html.Should().Contain("Features and enhancements");
@@ -203,7 +211,7 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Deprecated feature");
 	}
 
-	[Fact]
+	[Test]
 	public void TableOfContentsIncludesSeparatedTypeSections()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
@@ -213,14 +221,16 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 		tocItems.Should().Contain(t => t.Heading == "Deprecations" && t.Level == 3);
 	}
 
-	[Fact]
+	[Test]
 	public void SeparatedTypeTocSlugsMatchHtmlIds()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
 		foreach (var item in tocItems.Where(t => t.Level == 3))
 		{
-			Html.Should().Contain($"id=\"{item.Slug}\"",
-				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id");
+			Html.Should().Contain(
+				$"id=\"{item.Slug}\"",
+				$"TOC item '{item.Heading}' (slug '{item.Slug}') must have a matching heading-wrapper id"
+			);
 		}
 	}
 }
@@ -228,17 +238,22 @@ public class ChangelogTypeFilterAllTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: breaking-change - shows only breaking changes.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterBreakingChangeTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterBreakingChangeTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -270,15 +285,14 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 		  action: Workaround available.
 		  prs:
 		  - "444444"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void TypeFilterIsBreakingChange()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.BreakingChange);
-	}
+	[Test]
+	public void TypeFilterIsBreakingChange() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.BreakingChange);
 
-	[Fact]
+	[Test]
 	public void ShowsBreakingChanges()
 	{
 		Html.Should().NotContain("### Breaking changes");
@@ -286,7 +300,7 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 		Html.Should().Contain("Breaking API change");
 	}
 
-	[Fact]
+	[Test]
 	public void ExcludesOtherTypes()
 	{
 		Html.Should().NotContain("Features and enhancements");
@@ -299,17 +313,22 @@ public class ChangelogTypeFilterBreakingChangeTests : DirectiveTest<ChangelogBlo
 /// <summary>
 /// Tests for :type: deprecation - shows only deprecations.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterDeprecationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterDeprecationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -341,15 +360,14 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 		  action: Migrate to new API.
 		  prs:
 		  - "666666"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void TypeFilterIsDeprecation()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Deprecation);
-	}
+	[Test]
+	public void TypeFilterIsDeprecation() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Deprecation);
 
-	[Fact]
+	[Test]
 	public void ShowsDeprecations()
 	{
 		Html.Should().NotContain("### Deprecations");
@@ -358,7 +376,7 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Another deprecation");
 	}
 
-	[Fact]
+	[Test]
 	public void ExcludesOtherTypes()
 	{
 		Html.Should().NotContain("Features and enhancements");
@@ -369,17 +387,22 @@ public class ChangelogTypeFilterDeprecationTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for :type: known-issue - shows only known issues.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterKnownIssueTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterKnownIssueTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: known-issue
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -411,15 +434,14 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 		  action: Different workaround.
 		  prs:
 		  - "555555"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void TypeFilterIsKnownIssue()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.KnownIssue);
-	}
+	[Test]
+	public void TypeFilterIsKnownIssue() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.KnownIssue);
 
-	[Fact]
+	[Test]
 	public void ShowsKnownIssues()
 	{
 		Html.Should().NotContain("### Known issues");
@@ -428,7 +450,7 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 		Html.Should().Contain("Known issue 2");
 	}
 
-	[Fact]
+	[Test]
 	public void ExcludesOtherTypes()
 	{
 		Html.Should().NotContain("Features and enhancements");
@@ -439,17 +461,22 @@ public class ChangelogTypeFilterKnownIssueTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for invalid :type: values - should emit warning and use default behavior.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterInvalidTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterInvalidTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: invalid-value
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -471,21 +498,17 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 		  action: Action.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void FallsBackToDefaultBehavior()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
-	}
+	[Test]
+	public void FallsBackToDefaultBehavior() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.Default);
 
-	[Fact]
-	public void EmitsWarningForInvalidValue()
-	{
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :type: value"));
-	}
+	[Test]
+	public void EmitsWarningForInvalidValue() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Invalid :type: value"));
 
-	[Fact]
+	[Test]
 	public void DefaultBehaviorIsApplied()
 	{
 		Html.Should().Contain("Features and enhancements");
@@ -497,17 +520,22 @@ public class ChangelogTypeFilterInvalidTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests for case-insensitive :type: values.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterCaseInsensitiveTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterCaseInsensitiveTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: ALL
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -529,15 +557,14 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 		  action: Action.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
-	public void AcceptsUppercaseAll()
-	{
-		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
-	}
+	[Test]
+	public void AcceptsUppercaseAll() => Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
 
-	[Fact]
+	[Test]
 	public void ShowsAllTypes()
 	{
 		Html.Should().Contain("Features and enhancements");
@@ -548,18 +575,23 @@ public class ChangelogTypeFilterCaseInsensitiveTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests for combining :type: with other options like :subsections:.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterWithSubsectionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterWithSubsectionsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -592,16 +624,18 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 		  action: Action.
 		  prs:
 		  - "333333"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void TypeFilterAndSubsectionsBothWork()
 	{
 		Block!.TypeFilter.Should().Be(ChangelogTypeFilter.All);
 		Block!.Subsections.Should().BeTrue();
 	}
 
-	[Fact]
+	[Test]
 	public void ShowsAllTypesWithSubsections()
 	{
 		Html.Should().Contain("Features and enhancements");
@@ -614,17 +648,22 @@ public class ChangelogTypeFilterWithSubsectionsTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that :type: filter affects generated anchors correctly.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterGeneratedAnchorsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterGeneratedAnchorsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -646,9 +685,11 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 		  action: Action.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void GeneratedAnchorsRespectTypeFilter()
 	{
 		var anchors = Block!.GeneratedAnchors.ToList();
@@ -661,17 +702,22 @@ public class ChangelogTypeFilterGeneratedAnchorsTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that :type: filter affects table of contents correctly.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterTableOfContentsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterTableOfContentsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -693,9 +739,11 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 		  action: Action.
 		  prs:
 		  - "222222"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void TableOfContentsRespectTypeFilter()
 	{
 		var tocItems = Block!.GeneratedTableOfContent.ToList();
@@ -709,17 +757,22 @@ public class ChangelogTypeFilterTableOfContentsTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that empty bundles are omitted when type filter excludes all entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyKnownIssueTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterEmptyKnownIssueTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: known-issue
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -731,9 +784,11 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("There are no known issues associated with this release");
@@ -744,17 +799,22 @@ public class ChangelogTypeFilterEmptyKnownIssueTests : DirectiveTest<ChangelogBl
 /// <summary>
 /// Tests that empty result shows breaking-change-specific message when using breaking-change filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyBreakingChangeTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterEmptyBreakingChangeTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: breaking-change
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -766,9 +826,11 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("There are no breaking changes associated with this release");
@@ -779,17 +841,22 @@ public class ChangelogTypeFilterEmptyBreakingChangeTests : DirectiveTest<Changel
 /// <summary>
 /// Tests that empty result shows deprecation-specific message when using deprecation filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyDeprecationTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterEmptyDeprecationTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -801,9 +868,11 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("There are no deprecations associated with this release");
@@ -814,16 +883,21 @@ public class ChangelogTypeFilterEmptyDeprecationTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that empty result shows generic message when using default filter.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyDefaultTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterEmptyDefaultTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -838,9 +912,11 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 		  action: Follow guide.
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("No new features, enhancements, or fixes");
@@ -851,24 +927,31 @@ public class ChangelogTypeFilterEmptyDefaultTests : DirectiveTest<ChangelogBlock
 /// <summary>
 /// Tests that empty result shows generic message when using "all" filter with empty bundle.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterEmptyAllTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterEmptyAllTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
 		entries: []
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
 		Html.Should().NotContain("No new features, enhancements, or fixes");
@@ -879,19 +962,23 @@ public class ChangelogTypeFilterEmptyAllTests : DirectiveTest<ChangelogBlock>
 /// <summary>
 /// Tests that only bundles with matching entries render when multiple bundles are loaded.
 /// </summary>
+[InheritsTests]
 public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogTypeFilterMixedBundlesEmptyOmissionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogTypeFilterMixedBundlesEmptyOmissionTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: known-issue
 		:::
-		""")
+		"""
+		)
 	{
-		FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-			// language=yaml
-			"""
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.3.0
@@ -906,10 +993,14 @@ public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<C
 			  action: Workaround available.
 			  prs:
 			  - "444444"
-			"""));
-		FileSystem.AddFile("docs/changelog/bundles/9.2.0.yaml", new MockFileData(
-			// language=yaml
 			"""
+			)
+		);
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.2.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 			products:
 			- product: elasticsearch
 			  target: 9.2.0
@@ -921,10 +1012,12 @@ public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<C
 			    target: 9.2.0
 			  prs:
 			  - "111111"
-			"""));
+			"""
+			)
+		);
 	}
 
-	[Fact]
+	[Test]
 	public void RendersOnlyPopulatedVersions()
 	{
 		Html.Should().Contain("Known issue in 9.3");
@@ -936,26 +1029,33 @@ public class ChangelogTypeFilterMixedBundlesEmptyOmissionTests : DirectiveTest<C
 /// <summary>
 /// Tests that :type: all preserves bundle description when there are no entries.
 /// </summary>
+[InheritsTests]
 public class ChangelogEmptyBundleWithDescriptionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyBundleWithDescriptionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogEmptyBundleWithDescriptionTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
 		description: |
 		  This release was pulled due to critical issues.
 		entries: []
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void ShowsVersionAndDescriptionWithoutPlaceholder()
 	{
 		Html.Should().Contain("9.3.0");
@@ -967,25 +1067,32 @@ public class ChangelogEmptyBundleWithDescriptionTests : DirectiveTest<ChangelogB
 /// <summary>
 /// Tests that release-date alone does not preserve an otherwise empty release on general pages.
 /// </summary>
+[InheritsTests]
 public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogEmptyBundleWithReleaseDateOnlyTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogEmptyBundleWithReleaseDateOnlyTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: all
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
 		release-date: "2026-04-09"
 		entries: []
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsVersionBlockWhenOnlyReleaseDate()
 	{
 		Html.Should().NotContain("9.3.0");
@@ -996,17 +1103,22 @@ public class ChangelogEmptyBundleWithReleaseDateOnlyTests : DirectiveTest<Change
 /// <summary>
 /// Tests that dedicated type pages omit empty bundles even when they have a description.
 /// </summary>
+[InheritsTests]
 public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDedicatedPageIgnoresDescriptionTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDedicatedPageIgnoresDescriptionTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -1020,9 +1132,11 @@ public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<Chang
 		    target: 9.3.0
 		  prs:
 		  - "111111"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void OmitsVersionBlockWhenNoMatchingEntries()
 	{
 		Html.Should().NotContain("9.3.0");
@@ -1033,18 +1147,23 @@ public class ChangelogDedicatedPageIgnoresDescriptionTests : DirectiveTest<Chang
 /// <summary>
 /// Tests that :subsections: area grouping works on dedicated deprecation pages without a section H3.
 /// </summary>
+[InheritsTests]
 public class ChangelogDedicatedPageWithSubsectionsTests : DirectiveTest<ChangelogBlock>
 {
-	public ChangelogDedicatedPageWithSubsectionsTests(ITestOutputHelper output) : base(output,
-		// language=markdown
-		"""
+	public ChangelogDedicatedPageWithSubsectionsTests() : base(
+			// language=markdown
+			"""
 		:::{changelog}
 		:type: deprecation
 		:subsections:
 		:::
-		""") => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(
-		// language=yaml
 		"""
+		) =>
+		FileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				// language=yaml
+				"""
 		products:
 		- product: elasticsearch
 		  target: 9.3.0
@@ -1073,9 +1192,11 @@ public class ChangelogDedicatedPageWithSubsectionsTests : DirectiveTest<Changelo
 		  action: Update config.
 		  prs:
 		  - "666666"
-		"""));
+		"""
+			)
+		);
 
-	[Fact]
+	[Test]
 	public void GroupsEntriesByAreaWithoutSectionHeading()
 	{
 		Html.Should().NotContain("### Deprecations");

@@ -6,18 +6,19 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Codex.Sourcing;
 using Elastic.Documentation.Configuration;
-using Nullean.ScopedFileSystem;
+using Elastic.Documentation.FileSystems;
 
 namespace Elastic.Documentation.Navigation.Tests.Codex;
 
 public class FindDocsetFileTests
 {
+	private const string Environment = "internal";
+
 	private static readonly string RepoRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, "repo");
 
-	private static ScopedFileSystem CreateScopedFs(MockFileSystem mockFs) =>
-		FileSystemFactory.ScopeCurrentWorkingDirectory(mockFs);
+	private static CheckoutsFileSystem CreateScopedFs(MockFileSystem mockFs) => CheckoutsFileSystem.FromWorkingDirectory(mockFs);
 
-	[Fact]
+	[Test]
 	public void StandardPath_Found()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -25,13 +26,13 @@ public class FindDocsetFileTests
 			{ Path.Join(RepoRoot, "docs/docset.yml"), new MockFileData("project: test") }
 		});
 
-		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot));
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), Environment);
 
 		result.Should().NotBeNull();
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void NonStandardPath_FoundViaRecursion()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -39,13 +40,13 @@ public class FindDocsetFileTests
 			{ Path.Join(RepoRoot, "docs-codex/docset.yml"), new MockFileData("project: test") }
 		});
 
-		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot));
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), Environment);
 
 		result.Should().NotBeNull();
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void HiddenDirectory_SkippedByScopedFileSystem()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -55,13 +56,13 @@ public class FindDocsetFileTests
 		});
 		var scopedFs = CreateScopedFs(mockFs);
 
-		var result = CodexCloneService.FindDocsetFile(scopedFs, scopedFs.DirectoryInfo.New(RepoRoot));
+		var result = CodexCloneService.FindDocsetFile(scopedFs, scopedFs.DirectoryInfo.New(RepoRoot), Environment);
 
 		result.Should().NotBeNull();
 		result.Name.Should().Be("docset.yml");
 	}
 
-	[Fact]
+	[Test]
 	public void NoDocset_ReturnsNull()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -69,12 +70,12 @@ public class FindDocsetFileTests
 			{ Path.Join(RepoRoot, "src/main.py"), new MockFileData("print('hello')") }
 		});
 
-		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot));
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), Environment);
 
 		result.Should().BeNull();
 	}
 
-	[Fact]
+	[Test]
 	public void NodeModules_Skipped()
 	{
 		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
@@ -82,8 +83,53 @@ public class FindDocsetFileTests
 			{ Path.Join(RepoRoot, "node_modules/some-pkg/docset.yml"), new MockFileData("project: fake") }
 		});
 
-		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot));
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), Environment);
 
 		result.Should().BeNull();
+	}
+
+	[Test]
+	public void MultipleDocsets_PrefersRegistryMatchingEnvironment()
+	{
+		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ Path.Join(RepoRoot, "docs/docset.yml"), new MockFileData("project: test") },
+			{ Path.Join(RepoRoot, "docs-dev/docset.yml"), new MockFileData("registry: internal") }
+		});
+
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), Environment);
+
+		result.Should().NotBeNull();
+		result.Directory!.Name.Should().Be("docs-dev");
+	}
+
+	[Test]
+	public void MultipleDocsets_NoRegistryMatch_FallsBackToFirstKnownPath()
+	{
+		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ Path.Join(RepoRoot, "docs/docset.yml"), new MockFileData("project: test") },
+			{ Path.Join(RepoRoot, "docs-dev/docset.yml"), new MockFileData("registry: internal") }
+		});
+
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), "security");
+
+		result.Should().NotBeNull();
+		result.Directory!.Name.Should().Be("docs");
+	}
+
+	[Test]
+	public void CustomEnvironment_MatchesArbitraryRegistryValueViaRecursion()
+	{
+		var mockFs = new MockFileSystem(new Dictionary<string, MockFileData>
+		{
+			{ Path.Join(RepoRoot, "docs/docset.yml"), new MockFileData("project: test") },
+			{ Path.Join(RepoRoot, "docs-dev/docset.yml"), new MockFileData("registry: my-environment") }
+		});
+
+		var result = CodexCloneService.FindDocsetFile(mockFs, mockFs.DirectoryInfo.New(RepoRoot), "my-environment");
+
+		result.Should().NotBeNull();
+		result.Directory!.Name.Should().Be("docs-dev");
 	}
 }

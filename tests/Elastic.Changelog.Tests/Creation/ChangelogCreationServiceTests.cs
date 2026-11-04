@@ -11,15 +11,17 @@ using Elastic.Changelog.Tests.Changelogs;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Creation;
 
-public class ChangelogCreationServiceTests(ITestOutputHelper output) : ChangelogTestBase(output)
+public class ChangelogCreationServiceTests() : ChangelogTestBase()
 {
 	private readonly IGitHubPrService _mockGitHub = A.Fake<IGitHubPrService>();
 
-	private const string ConfigWithProductLabels = """
+	private const string ConfigWithProductLabels =
+		"""
 		pivot:
 		  types:
 		    feature: ">feature"
@@ -51,7 +53,8 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		string? type = null,
 		string? owner = null,
 		string? repo = null,
-		string? products = null)
+		string? products = null
+	)
 	{
 		var env = A.Fake<IEnvironmentVariables>();
 		A.CallTo(() => env.IsRunningOnCI).Returns(true);
@@ -68,7 +71,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When all CHANGELOG_* env vars are provided (including CHANGELOG_PRODUCTS),
 	/// changelog add should succeed without making any GitHub API calls.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_CIWithProducts_SkipsPrFetchAndSucceeds()
 	{
 		await WriteConfig(ConfigWithProductLabels);
@@ -83,7 +86,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "cloud-hosted, cloud-serverless"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -94,8 +97,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._))
-			.MustNotHaveHappened();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync(A<string>._, A<string>._, A<string>._, A<CancellationToken>._)).MustNotHaveHappened();
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -105,18 +107,17 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When CI provides title+type but NOT products, changelog add falls back to
 	/// fetching the PR from the API and resolving products from labels.
 	/// </summary>
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_CIWithoutProducts_FallsBackToPrFetchForProducts()
 	{
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Cache tfconsole lookups and batch terraform console calls",
-				Labels = [">enhancement", "@Product:ECH", "@Product:ESS", "@Public"]
-			});
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Cache tfconsole lookups and batch terraform console calls",
+			Labels = [">enhancement", "@Product:ECH", "@Product:ESS", "@Public"]
+		});
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -126,7 +127,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -137,8 +138,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -148,18 +148,17 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 	/// When CI provides title+type but NOT products, the PR has no product labels,
 	/// and the repo name doesn't match any product ID, the command fails.
 	/// </summary>
-	[Fact]
-	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsWithProductRequired()
+	[Test]
+	public async Task CreateChangelog_CIWithoutProducts_NoPrProductLabels_FailsAndListsTheProductLabels()
 	{
 		await WriteConfig(ConfigWithProductLabels);
 		FileSystem.Directory.CreateDirectory(Path.Join(Paths.WorkingDirectoryRoot.FullName, "output"));
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.Returns(new GitHubPrInfo
-			{
-				Title = "Cache tfconsole lookups and batch terraform console calls",
-				Labels = [">enhancement", "@Public"]
-			});
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).Returns(new GitHubPrInfo
+		{
+			Title = "Cache tfconsole lookups and batch terraform console calls",
+			Labels = [">enhancement", "@Public"]
+		});
 
 		var env = FakeCIEnv(
 			prNumber: "153344",
@@ -169,7 +168,7 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			repo: "cloud"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, env);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
 		var input = new CreateChangelogArguments
 		{
 			Products = [],
@@ -180,33 +179,30 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 
 		var result = await service.CreateChangelog(Collector, input, CancellationToken.None);
 
-		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._))
-			.MustHaveHappenedOnceExactly();
+		A.CallTo(() => _mockGitHub.FetchPrInfoAsync("153344", "elastic", "cloud", A<CancellationToken>._)).MustHaveHappenedOnceExactly();
 
 		result.Should().BeFalse();
 		Collector.Errors.Should().Be(1);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one product is required"));
+		// Two products are mapped and no default is set, so the PR must name its product with a label.
+		Collector
+			.Diagnostics
+			.Should()
+			.Contain(
+				d => d.Message.Contains("No matching product label found on PR") && d.Message.Contains("Add one of the following labels")
+			);
 	}
 
 	/// <summary>
-	/// When --output points to a temp directory (e.g. /tmp/changelog-staging in CI),
-	/// the service must use a write-scoped filesystem that allows temp paths.
-	/// Regression test for ScopedFileSystemException on temp output.
+	/// When --output points to a subdirectory of the repo root, the service writes changelog files there.
 	/// </summary>
-	[Fact]
-	public async Task CreateChangelog_TempOutputDirectory_Succeeds()
+	[Test]
+	public async Task CreateChangelog_OutputSubdirectory_Succeeds()
 	{
-		var mockFs = new MockFileSystem(new MockFileSystemOptions { CurrentDirectory = Paths.WorkingDirectoryRoot.FullName });
-		var writeFs = FileSystemFactory.ScopeCurrentWorkingDirectoryForWrite(mockFs);
-
 		var configPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml");
-		writeFs.Directory.CreateDirectory(writeFs.Path.GetDirectoryName(configPath)!);
-		await writeFs.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current.CancellationToken);
+		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(configPath)!);
+		await FileSystem.File.WriteAllTextAsync(configPath, ConfigWithProductLabels, TestContext.Current!.Execution.CancellationToken);
 
-		// Use the real system temp path so AllowedSpecialFolder.Temp matches cross-platform.
-		// MockFileSystem's GetTempPath() returns a hardcoded "C:\temp" that diverges from the
-		// real temp on Windows CI (D:\Temp), causing scope validation to fail.
-		var tempOutput = Path.Join(Path.GetTempPath(), "changelog-staging");
+		var output = Path.Join(Paths.WorkingDirectoryRoot.FullName, "changelog-staging");
 
 		var env = FakeCIEnv(
 			prNumber: "1044",
@@ -217,43 +213,38 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 			products: "elasticsearch"
 		);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, writeFs, env);
-		var input = new CreateChangelogArguments
-		{
-			Products = [],
-			Config = configPath,
-			Output = tempOutput,
-			Concise = true
-		};
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, env);
+		var input = new CreateChangelogArguments { Products = [], Config = configPath, Output = output, Concise = true };
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		writeFs.Directory.Exists(tempOutput).Should().BeTrue();
-		writeFs.Directory.GetFiles(tempOutput, "*.yaml").Should().NotBeEmpty();
+		FileSystem.Directory.Exists(output).Should().BeTrue();
+		FileSystem.Directory.GetFiles(output, "*.yaml").Should().NotBeEmpty();
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_OutputDoesNotContainBom()
 	{
 		await WriteConfig(ConfigWithProductLabels);
 		var tempOutput = Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 		FileSystem.Directory.CreateDirectory(tempOutput);
 
-		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, _mockGitHub, FileSystem, null);
+		var service = new ChangelogCreationService(LoggerFactory, ConfigurationContext, FileSystem, _mockGitHub, null);
 		var input = new CreateChangelogArguments
 		{
 			Title = "Test BOM handling",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.1.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Config = Path.Join(Paths.WorkingDirectoryRoot.FullName, "config", "changelog.yml"),
 			Output = tempOutput,
 			Concise = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue("changelog creation should succeed");
@@ -264,11 +255,11 @@ public class ChangelogCreationServiceTests(ITestOutputHelper output) : Changelog
 		yamlFiles.Should().NotBeEmpty("should create a YAML file");
 
 		var yamlFile = yamlFiles[0];
-		var bytes = await FileSystem.File.ReadAllBytesAsync(yamlFile, TestContext.Current.CancellationToken);
+		var bytes = await FileSystem.File.ReadAllBytesAsync(yamlFile, TestContext.Current!.Execution.CancellationToken);
 		ChangelogUtf8Normalization.HasUtf8Bom(bytes).Should().BeFalse("created changelog should not contain UTF-8 BOM");
 
 		// Verify content is correct
-		var content = await FileSystem.File.ReadAllTextAsync(yamlFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(yamlFile, TestContext.Current!.Execution.CancellationToken);
 		content.Should().Contain("Test BOM handling");
 		content.Should().Contain("type: feature");
 	}

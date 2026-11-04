@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FakeItEasy" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Exporter.InMemory" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\Elastic.Documentation.Deploying\Elastic.Documentation.Deploying.csproj" />
+    <ProjectReference Include="..\..\src\services\Elastic.Documentation.Assembler\Elastic.Documentation.Assembler.csproj" />
+    <ProjectReference Include="..\..\src\Elastic.Codex\Elastic.Codex.csproj" />
+  </ItemGroup>
+
+</Project>

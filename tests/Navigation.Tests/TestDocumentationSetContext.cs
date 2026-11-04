@@ -8,29 +8,28 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Navigation.Isolated;
 using Markdig;
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Navigation.Tests;
 
-public class TestDiagnosticsOutput(ITestOutputHelper output) : IDiagnosticsOutput
+public class TestDiagnosticsOutput : IDiagnosticsOutput
 {
 	public void Write(Diagnostic diagnostic)
 	{
 		if (diagnostic.Severity == Severity.Error)
-			output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Error: {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 		else
-			output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
+			TestContext.Current?.Output.WriteLine($"Warn : {diagnostic.Message} ({diagnostic.File}:{diagnostic.Line})");
 	}
 }
 
-public class TestDiagnosticsCollector(ITestOutputHelper output)
-	: DiagnosticsCollector([new TestDiagnosticsOutput(output)])
+public class TestDiagnosticsCollector() : DiagnosticsCollector([new TestDiagnosticsOutput()])
 {
 	private readonly List<Diagnostic> _diagnostics = [];
 
@@ -69,41 +68,39 @@ public class TestCrossLinkResolver : ICrossLinkResolver
 	public bool IsDeclaredCrossLinkScheme(string scheme) => true;
 
 	private TestCrossLinkResolver() { }
-
 }
 
 public class TestDocumentationSetContext : IDocumentationSetContext
 {
-	public TestDocumentationSetContext(IFileSystem fileSystem,
+	public TestDocumentationSetContext(
+		IFileSystem fileSystem,
 		IDirectoryInfo sourceDirectory,
 		IDirectoryInfo outputDirectory,
 		IFileInfo configPath,
-		ITestOutputHelper output,
 		string? repository = null,
 		TestDiagnosticsCollector? collector = null
 	)
 	{
-		ReadFileSystem = FileSystemFactory.ScopeSourceDirectory(fileSystem, sourceDirectory.FullName);
-		WriteFileSystem = FileSystemFactory.ScopeSourceDirectoryForWrite(fileSystem, outputDirectory.FullName);
+		ReadFileSystem = DocumentationFileSystem.Resolve(
+			sourceDirectory,
+			new DocumentationScopeOptions { Inner = fileSystem, ConfigurationFile = configPath.FullName }
+		);
+		WriteFileSystem = new DocumentationWriteFileSystem(sourceDirectory, outputDirectory, fileSystem);
 		DocumentationSourceDirectory = sourceDirectory;
 		OutputDirectory = outputDirectory;
 		ConfigurationPath = configPath;
-		Collector = collector ?? new TestDiagnosticsCollector(output);
-		Git = repository is null ? GitCheckoutInformation.Unavailable : new GitCheckoutInformation
-		{
-			Branch = "main",
-			Remote = $"elastic/{repository}",
-			Ref = "main",
-			RepositoryName = repository
-		};
+		Collector = collector ?? new TestDiagnosticsCollector();
+		Git = repository is null
+			? GitCheckoutInformation.Unavailable
+			: new GitCheckoutInformation { Branch = "main", Remote = $"elastic/{repository}", Ref = "main", RepositoryName = repository };
 
 		// Start the diagnostics collector to process messages
 		_ = Collector.StartAsync(Cancel.None);
 	}
 
 	public IDiagnosticsCollector Collector { get; }
-	public ScopedFileSystem ReadFileSystem { get; }
-	public ScopedFileSystem WriteFileSystem { get; }
+	public IDocumentationFileSystem ReadFileSystem { get; }
+	public DocumentationWriteFileSystem WriteFileSystem { get; }
 	public IDirectoryInfo OutputDirectory { get; }
 	public IDirectoryInfo DocumentationSourceDirectory { get; }
 	public GitCheckoutInformation Git { get; }
@@ -138,9 +135,7 @@ public class TestDocumentationFileFactory : IDocumentationFileFactory<TestDocume
 	{
 		// Extract the title from the file name (without extension)
 		var fileName = path.Name;
-		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fileName[..^3]
-			: fileName;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? fileName[..^3] : fileName;
 		return new TestDocumentationFile(title);
 	}
 }
@@ -156,9 +151,7 @@ public class CodexTestDocumentationFileFactory : IDocumentationFileFactory<TestD
 	public TestDocumentationFile TryCreateDocumentationFile(IFileInfo path, IFileSystem readFileSystem)
 	{
 		var fileName = path.Name;
-		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fileName[..^3]
-			: fileName;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? fileName[..^3] : fileName;
 		if (path.Exists)
 		{
 			var text = readFileSystem.File.ReadAllText(path.FullName);
@@ -185,9 +178,7 @@ public class MissingFileDocumentationFileFactory : IDocumentationFileFactory<IDo
 			return null;
 
 		var fileName = path.Name;
-		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fileName[..^3]
-			: fileName;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? fileName[..^3] : fileName;
 		return new TestDocumentationFile(title);
 	}
 }
@@ -202,9 +193,7 @@ public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocume
 	{
 		// Extract the title from the file name (without extension)
 		var fileName = path.Name;
-		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
-			? fileName[..^3]
-			: fileName;
+		var title = fileName.EndsWith(".md", StringComparison.OrdinalIgnoreCase) ? fileName[..^3] : fileName;
 		if (path.Exists)
 		{
 			var text = readFileSystem.File.ReadAllText(path.FullName);
@@ -214,7 +203,6 @@ public class GenericDocumentationFileFactory : IDocumentationFileFactory<IDocume
 			if (inline != null)
 				title = inline.Trim(['#', ' ']);
 		}
-
 
 		return new TestDocumentationFile(title);
 	}

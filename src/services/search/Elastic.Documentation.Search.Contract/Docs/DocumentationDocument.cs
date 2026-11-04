@@ -17,6 +17,12 @@ public record DocumentationDocument : SearchDocumentBase
 	[JsonIgnore]
 	public override string Type { get; } = "docs";
 
+	/// <summary>OpenAPI operation attributes. Null on Markdown pages.</summary>
+	[Object]
+	[JsonPropertyName("api")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public ApiOperationMetadata? Api { get; set; }
+
 	/// <summary>Canonical product id for this page (the product the page is primarily about).</summary>
 	[Keyword(Normalizer = "keyword_normalizer")]
 	[JsonPropertyName("product")]
@@ -54,4 +60,13 @@ public record DocumentationDocument : SearchDocumentBase
 	/// </summary>
 	[JsonPropertyName("content_last_updated")]
 	public DateTimeOffset ContentLastUpdated { get; set; }
+
+	/// <summary>
+	/// GitHub blob URL for the Markdown source file. Null when git context is unavailable
+	/// (e.g. OpenAPI-exported API reference pages until Elastic.ApiExplorer lands).
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("source_url")]
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string? SourceUrl { get; set; }
 }

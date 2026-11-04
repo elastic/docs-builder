@@ -36,7 +36,7 @@ let initializationController: AbortController | null = null
 function initializeTocElements(): TocElements {
     const contentRoot = $optional('#markdown-content, #elastic-api-v3') ?? null
     const headingElements = $$optional(
-        '#markdown-content h2, #markdown-content h3, #elastic-api-v3 h3[data-section]'
+        '#markdown-content h2, #markdown-content h3, #elastic-api-v3 h2[data-section], #elastic-api-v3 h3[data-section], #elastic-api-v3 h4[data-section]'
     )
     const tocLinks = $$optional('#toc-nav li>a') as HTMLAnchorElement[]
     const tocContainer = $optional(

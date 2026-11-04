@@ -3,7 +3,10 @@
 @using FontPreloader = Elastic.Documentation.Site.FileProviders.FontPreloader
 	<meta charset="utf-8">
 	<title>@Model.Title</title>
-	<meta name="description" content="@Model.Description">
+	@if (!string.IsNullOrEmpty(Model.Description))
+	{
+		<meta name="description" content="@Model.Description">
+	}
 	@if (Model.Optimizely.Enabled && !string.IsNullOrEmpty(Model.Optimizely.Id))
 	{
 		<script src="https://cdn.optimizely.com/js/@(Model.Optimizely.Id).js"></script>
@@ -12,6 +15,15 @@
 	{
 		<link rel="preload" href="@fontFile" as="font" type="font/woff2" crossorigin>
 	}
+	@if (Model.Features.NavigationPreviewEnabled)
+	{
+		@* With the flag on the design system is the only bundle: it carries its own runtime, so styles.css and main.js are not loaded. *@
+		@Elastic.Documentation.Site.Components.Chrome.ThemeSwitch.PreferencesScript.Inline
+		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds-layers.css")" crossorigin/>
+		<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("ds.css")" crossorigin/>
+	}
+	@if (!Model.Features.NavigationPreviewEnabled)
+	{
 	<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("styles.css")" crossorigin/>
 	@switch (Model.BuildType)
 	{
@@ -25,13 +37,26 @@
 			<link rel="stylesheet preload" as="style" type="text/css" href="@Model.Static("codex.css")" crossorigin/>
 			break;
 	}
+	}
 	<script>window.__DOCS_CONFIG__=@(new HtmlString(Model.FrontendConfigJson));</script>
-	<script src="@Model.Static("main.js")" defer></script>
+	@* hx-history=false stops new snapshots but still restores sessionStorage
+	   leftovers from older pages, which keeps the previous island tree. *@
+	<script>try{sessionStorage.removeItem("htmx-history-cache")}catch(e){}</script>
+	@if (Model.Features.NavigationPreviewEnabled)
+	{
+		<script type="module" src="@Model.Static("ds.js")"></script>
+	}
+	else
+	{
+	<script type="module" src="@Model.Static("main.js")"></script>
+	}
 	@if (Model.BuildType == BuildType.Assembler && !Model.Features.AirGappedEnabled)
 	{
 		@* In <head> so head-support's merge keeps the identical tag across htmx navigations
-		   instead of re-executing it in the swapped body. Fills #elastic-nav (hx-preserve). *@
-		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" async></script>
+		   instead of re-executing it in the swapped body. Fills #elastic-nav (hx-preserve).
+		   defer, not async: the script dereferences #elastic-nav without a null check, so a
+		   cached copy running before the parser reaches the body throws. *@
+		<script src="@(Model.Features.StagingElasticNavEnabled ? "https://stag-www.elastic.co/elastic-nav.js" : "https://www.elastic.co/elastic-nav.js")" defer></script>
 	}
 	@if (Model.Features.WebsiteSearchEnabled && Model.Features.WebsiteSearchScriptUrl is { } websiteSearchUrl)
 	{
@@ -53,14 +78,24 @@
 	}
 	@await RenderPartialAsync(_Favicon.Create(Model))
 	<meta name="robots" content="@(Model.AllowIndexing ? "index, follow" : "noindex, nofollow")">
-	<meta name="htmx-config" content='{"selfRequestsOnly": true}'>
+	<meta name="htmx-config" content='{"selfRequestsOnly": true, "defaultSettleDelay": 0, "historyCacheSize": 0, "refreshOnHistoryMiss": true}'>
 	@if (!string.IsNullOrEmpty(Model.NavigationActiveUrl))
 	{
 		<meta name="docs:nav-active" content="@Model.NavigationActiveUrl">
 	}
+	<meta name="docs:current-section" content="@(Model.CurrentNavigationItem.NavigationRoot?.Id ?? "")">
 	<meta property="og:type" content="website"/>
 	<meta property="og:title" content="@Model.Title"/>
-	<meta property="og:description" content="@Model.Description"/>
+	@if (!string.IsNullOrEmpty(Model.Description))
+	{
+		<meta property="og:description" content="@Model.Description"/>
+	}
+	@if (!string.IsNullOrEmpty(Model.StructuredBreadcrumbsJson))
+	{
+		<script type="application/ld+json">
+		@(new HtmlString(Model.StructuredBreadcrumbsJson))
+		</script>
+	}
 	@if (Model.Branding is null)
 	{
 		<meta property="og:image" content="https://www.elastic.co/static-res/images/social_media_default.png"/>

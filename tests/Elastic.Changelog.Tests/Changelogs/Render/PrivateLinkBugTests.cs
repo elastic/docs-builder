@@ -13,15 +13,12 @@ namespace Elastic.Changelog.Tests.Changelogs.Render;
 /// Tests that CLI rendering does not produce incomplete "For more information, check." sentences
 /// when entries have only PRIVATE PR/issue references.
 /// </summary>
-public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTestBase(output)
+public class PrivateLinkBugTests() : RenderChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithOnlyPrivateLinks_DoesNotRenderIncompleteForMoreInformationSentence()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create deprecation entry with only private links (matching Cloud scenario)
 		// language=yaml
 		var changelog =
@@ -38,39 +35,33 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Follow the migration guide.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "153728-deprecate-costs-api-v1.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			    repo: elasticsearch
 			    owner: elastic
-			entries:
-			  - file:
-			      name: 153728-deprecate-costs-api-v1.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("153728-deprecate-costs-api-v1.yaml", changelog));
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -79,7 +70,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
 		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should not contain the incomplete sentence
 		content.Should().NotContain("For more information, check.");
@@ -93,13 +84,10 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		content.Should().Contain("Follow the migration guide");
 	}
 
-	[Fact]
+	[Test]
 	public async Task RenderChangelogs_WithMixedPrivateAndPublicLinks_RendersOnlyPublicLinks()
 	{
 		// Arrange
-		var changelogDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
-		FileSystem.Directory.CreateDirectory(changelogDir);
-
 		// Create entry with mix of private and public links
 		// language=yaml
 		var changelog =
@@ -120,39 +108,33 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 			action: Follow upgrade guide.
 			""";
 
-		var changelogFile = FileSystem.Path.Join(changelogDir, "123456-mixed-links.yaml");
-		await FileSystem.File.WriteAllTextAsync(changelogFile, changelog, TestContext.Current.CancellationToken);
-
 		// Create bundle file
 		var bundleFile = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString(), "bundle.yaml");
 		FileSystem.Directory.CreateDirectory(FileSystem.Path.GetDirectoryName(bundleFile)!);
 
 		// language=yaml
-		var bundleContent =
-			$"""
+		var bundleHeader =
+			"""
 			products:
 			  - product: elasticsearch
 			    target: 9.3.0
 			    repo: elasticsearch
 			    owner: elastic
-			entries:
-			  - file:
-			      name: 123456-mixed-links.yaml
-			      checksum: {ComputeSha1(changelog)}
 			""";
-		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current.CancellationToken);
+		var bundleContent = CreateResolvedBundleContent(bundleHeader, ("123456-mixed-links.yaml", changelog));
+		await FileSystem.File.WriteAllTextAsync(bundleFile, bundleContent, TestContext.Current!.Execution.CancellationToken);
 
 		var outputDir = FileSystem.Path.Join(Paths.WorkingDirectoryRoot.FullName, Guid.NewGuid().ToString());
 
 		var input = new RenderChangelogsArguments
 		{
-			Bundles = [new BundleInput { BundleFile = bundleFile, Directory = changelogDir, Repo = "elasticsearch" }],
+			Bundles = [new BundleInput { BundleFile = bundleFile, Repo = "elasticsearch" }],
 			Output = outputDir,
 			Title = "9.3.0"
 		};
 
 		// Act
-		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current.CancellationToken);
+		var result = await Service.RenderChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -161,7 +143,7 @@ public class PrivateLinkBugTests(ITestOutputHelper output) : RenderChangelogTest
 		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.3.0", "breaking-changes.md");
 		FileSystem.File.Exists(breakingChangesFile).Should().BeTrue();
 
-		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current.CancellationToken);
+		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current!.Execution.CancellationToken);
 
 		// Should contain proper "For more information" with only public links
 		content.Should().Contain("For more information, check");

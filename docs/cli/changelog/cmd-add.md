@@ -1,16 +1,19 @@
 ## Description
 
 Create a changelog file that describes a single item in the release documentation.
-For details and examples, go to [](/contribute/create-changelogs.md).
+For details and examples, go to [](/data/release-notes/create.md).
+
+For changelogs that don't need a PR link (for example, known issues or security advisories), use [`changelog note`](/cli/changelog/note.md) instead.
 
 ## Options
 
 : `--no-extract-release-notes`
   Turn off extraction of release notes from PR or issue descriptions.
-  By default, the behavior is determined by the [extract.release_notes](/contribute/configure-changelogs-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
+  By default, the behavior is determined by the [extract.release_notes](/data/release-notes/configure-ref.md#extract) changelog configuration setting. Release notes are extracted when using `--prs` or `--report` (and from issues when using `--issues`).
 
 : `--products`
-  Products affected in format `"product target lifecycle, ..."` (for example, `"elasticsearch 9.2.0 ga, cloud-serverless 2025-08-05"`).
+  Products affected in format `"product [lifecycle], ..."` (for example, `"cloud-serverless, kibana"` or `"elasticsearch ga"`).
+  Do not include a version or date in the middle slot; that is an error.
   The valid product identifiers are listed in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml).
   For more information about valid product and lifecycle values, go to [Product format](#product-format-and-resolution).
 
@@ -38,19 +41,19 @@ By default, output files are named according to the `filename` strategy in `chan
 | `pr` | `137431.yaml` | Uses the PR number. |
 | `issue` | `2571.yaml` | Uses the issue number. |
 
-Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/contribute/configure-changelogs-ref.md).
+Refer to [changelog.example.yml](https://github.com/elastic/docs-builder/blob/main/config/changelog.example.yml) or [](/data/release-notes/configure-ref.md).
 
 You can override those settings with the `--use-pr-number` or `--use-issue-number` flags:
 
 ```sh
 docs-builder changelog add \
   --prs 1234 \
-  --products "elasticsearch 9.2.3" \
+  --products "elasticsearch ga" \
   --use-pr-number
 
 docs-builder changelog add \
   --issues 4567 \
-  --products "elasticsearch 9.3.0" \
+  --products "elasticsearch" \
   --use-issue-number
 ```
 
@@ -62,30 +65,42 @@ docs-builder changelog add \
 
 ## Product format and resolution
 
-The `--products` option accepts values with the format `"product target lifecycle, ..."` where:
+The `--products` option accepts values with the format `"product [lifecycle], ..."` where:
 
 - `product` is a product ID that exists in [products.yml](https://github.com/elastic/docs-builder/blob/main/config/products.yml) (required)
-- `target` is the target version or date (optional)
 - `lifecycle` exists in [Lifecycle.cs](https://github.com/elastic/docs-builder/blob/main/src/Elastic.Documentation/Lifecycle.cs) (optional)
 
-You can further limit the possible values with the [products](/contribute/configure-changelogs-ref.md#products) and [lifecycles](/contribute/configure-changelogs-ref.md#lifecycles) options in the changelog configuration file.
+You can further limit the possible values with the [products](/data/release-notes/configure-ref.md#products) and [lifecycles](/data/release-notes/configure-ref.md#lifecycles) options in the changelog configuration file.
 
 For example:
 
-- `"kibana 9.2.0 ga"`
-- `"cloud-serverless 2025-08-05"`
-- `"cloud-enterprise 4.0.3, cloud-hosted 2025-10-31"`
+- `"kibana"`
+- `"kibana ga"`
+- `"cloud-serverless, kibana"`
 
 The `changelog add` command resolves product values in the following order:
 
 1. The `--products` CLI option always takes priority.
-1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied.
-1. If `products.default` is defined in the changelog configuration file, those default products are used.
+1. If `pivot.products` is defined in the changelog configuration file and the PR or issue has labels that match, those products are used. Multiple matching entries are all applied. Products listed in `products.implies` for a matched product are added.
+1. If `products.default` is defined in the changelog configuration file, those default products are used. This does not apply when `pivot.required` lists `products`: a PR or issue with no matching label is then an error.
+1. If `products.default` is not defined and `pivot.products` maps two or more distinct products, a PR or issue with no matching label is an error. The error names the PR or issue and lists the labels to add.
 1. If `--repo` is specified (or `bundle.repo` is set in the changelog configuration file), the repository name is matched against known product IDs in `products.yml` and the derived value is used.
 
 The same order applies when using `--report` (after PR URLs are resolved from the promotion report), and when using batch `--prs` with multiple pull requests.
 
 If none of these steps yield at least one product, the command returns an error.
+
+## Feature ID resolution
+
+The optional `feature-id` field associates a changelog with a feature flag or project.
+The `changelog add` command resolves it in the following order:
+
+1. The `--feature-id` CLI option always takes priority.
+1. If `pivot.features` is defined in the changelog configuration file and the PR or issue has labels that match, that feature ID is used.
+   If the PR or issue has multiple labels that map to different feature IDs, the first match is used and a warning is emitted.
+
+When you map unreleased features in `pivot.features`, also list those feature IDs under the relevant bundle profile's [`hide_features`](/data/release-notes/configure-ref.md#bundle-profiles) setting so the entries stay commented out until the feature is ready to publish.
+For more information, refer to [](/data/release-notes/bundle.md#changelog-bundle-hide-features).
 
 ## Configuration checks
 
@@ -95,12 +110,13 @@ If a configuration file exists, the command validates its values before generati
 
 - If the configuration file contains `lifecycles`, `products`, `subtype`, or `type` values that don't match the known valid values, validation fails.
 - If the configuration file contains `areas` values and they don't match what you specify in `--areas`, validation fails.
+- If `pivot.required` lists `areas`, a PR or issue with no matching area label is an error unless you pass `--areas`.
 - If the configuration file contains `lifecycles` or `products` values that are a subset of the available values and you try to create a changelog with values outside that subset, validation fails.
 
 In each of these cases where validation fails, a changelog file is not created.
 
 If the configuration file contains `rules.create` definitions and a PR or issue has a blocking label, that PR is skipped and no changelog file is created for it.
-For more information, refer to [](/contribute/create-changelogs.md#rules).
+For more information, refer to [](/data/release-notes/create.md#rules).
 
 ## Fetch failures
 
@@ -132,6 +148,10 @@ When running inside GitHub Actions, `changelog add` automatically reads the foll
 | `CHANGELOG_PR_NUMBER` | `--prs` | `github.event.pull_request.number` |
 | `CHANGELOG_TITLE` | `--title` | `steps.evaluate.outputs.title` |
 | `CHANGELOG_DESCRIPTION` | `--description` | `steps.evaluate.outputs.description` |
+| `CHANGELOG_IMPACT` | `--impact` | `steps.evaluate.outputs.impact` |
+| `CHANGELOG_ACTION` | `--action` | `steps.evaluate.outputs.action` |
+| `CHANGELOG_ENTRY_IMPACT` | `--impact` | `steps.evaluate.outputs.entry-impact` |
+| `CHANGELOG_ENTRY_ACTION` | `--action` | `steps.evaluate.outputs.entry-action` |
 | `CHANGELOG_TYPE` | `--type` | `steps.evaluate.outputs.type` |
 | `CHANGELOG_PRODUCTS` | `--products` | `steps.evaluate.outputs.products` |
 | `CHANGELOG_OWNER` | `--owner` | `github.repository_owner` |
@@ -144,6 +164,8 @@ Explicit CLI arguments always take priority over environment variables.
 - If `--description` is provided on the command line, it always wins.
 - If `--no-extract-release-notes` is passed (or `extract.release_notes: false` is set in the changelog configuration), `CHANGELOG_DESCRIPTION` is ignored.
 - Otherwise, `CHANGELOG_DESCRIPTION` fills `--description` when it is not set on the command line.
+
+`CHANGELOG_IMPACT` and `CHANGELOG_ACTION` follow the same rules: explicit `--impact` and `--action` win, and both are ignored when release note extraction is disabled. `CHANGELOG_ENTRY_IMPACT` and `CHANGELOG_ENTRY_ACTION` carry what the PR's existing entry file already holds, so they apply even when extraction is disabled and fill `--impact` and `--action` only when the other sources are empty. When `--prs` is used without them, `changelog add` also derives `impact` and `action` from the `## Impact` and `## Action` sections of the PR description. For a `breaking-change` entry with extraction enabled, it fetches the PR for this even when the title, type, and products are already set. Disabling extraction, on the command line or with `extract.release_notes: false`, also drops the CI-provided values.
 
 This allows the CI action to invoke `changelog add` with a minimal command line:
 

@@ -28,8 +28,7 @@ internal static class SyncProgressConsole
 		{
 			var pct = (int)(info.Processed * 100 / Math.Max(1, info.Total));
 			var prefix = info.IsComplete ? "[green]✓ [/]" : "";
-			return
-				$"{prefix}[aqua]{label}[/] [dim]—[/] [dim]{pct}%[/] [white]{info.Processed:N0}[/]/[dim]{info.Total:N0}[/]";
+			return $"{prefix}[aqua]{label}[/] [dim]—[/] [dim]{pct}%[/] [white]{info.Processed:N0}[/]/[dim]{info.Total:N0}[/]";
 		}
 
 		if (info.Processed > 0)
@@ -62,28 +61,14 @@ internal static class SyncProgressConsole
 
 		return p.Phase switch
 		{
-			AiEnrichmentPhase.Querying => new SyncProgressInfo(
-				$"AI enrichment — querying{msg}",
-				totalCandidates,
-				0,
-				false),
-			AiEnrichmentPhase.Enriching => new SyncProgressInfo(
-				$"AI enrichment — enriching{msg}",
-				Math.Max(1, totalCandidates),
-				done,
-				false),
-			AiEnrichmentPhase.Complete => totalCandidates > 0
-				? new SyncProgressInfo(
-					$"AI enrichment — complete{msg}",
-					totalCandidates,
-					Math.Min(done, totalCandidates),
-					true)
-				: new SyncProgressInfo($"AI enrichment — complete{msg}", 1, 1, true),
-			_ => new SyncProgressInfo(
-				$"AI enrichment — {p.Phase}{msg}",
-				0,
-				p.Enriched,
-				false)
+			AiEnrichmentPhase.Querying => new SyncProgressInfo($"AI enrichment — querying{msg}", totalCandidates, 0, false),
+			AiEnrichmentPhase.Enriching =>
+				new SyncProgressInfo($"AI enrichment — enriching{msg}", Math.Max(1, totalCandidates), done, false),
+			AiEnrichmentPhase.Complete =>
+				totalCandidates > 0
+					? new SyncProgressInfo($"AI enrichment — complete{msg}", totalCandidates, Math.Min(done, totalCandidates), true)
+					: new SyncProgressInfo($"AI enrichment — complete{msg}", 1, 1, true),
+			_ => new SyncProgressInfo($"AI enrichment — {p.Phase}{msg}", 0, p.Enriched, false)
 		};
 	}
 }

@@ -28,8 +28,10 @@ public sealed record InterpolatedValue(string? Value, string? Fallback);
 public static partial class EnvironmentInterpolation
 {
 	/// <summary>Environment variable names that may be interpolated into committed config values.</summary>
-	public static readonly FrozenSet<string> AllowedVariables =
-		new HashSet<string>(StringComparer.Ordinal) { "KIBANA_STORYBOOK_REGISTRY" }.ToFrozenSet(StringComparer.Ordinal);
+	public static readonly FrozenSet<string> AllowedVariables = new HashSet<string>(StringComparer.Ordinal)
+	{
+		"KIBANA_STORYBOOK_REGISTRY"
+	}.ToFrozenSet(StringComparer.Ordinal);
 
 	[GeneratedRegex(@"\$\{(?<name>[A-Za-z_][A-Za-z0-9_]*)(?::-(?<default>[^}]*))?\}", RegexOptions.CultureInvariant)]
 	private static partial Regex ExpressionRegex();

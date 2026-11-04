@@ -46,7 +46,6 @@ public class LlmLinkInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer,
 		}
 		renderer.Writer.Write(")");
 	}
-
 }
 
 public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, EmphasisInline>
@@ -62,8 +61,8 @@ public class LlmEmphasisInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRende
 
 public class LlmSubstitutionLeafRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, SubstitutionLeaf>
 {
-	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj)
-		=> renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
+	protected override void Write(LlmMarkdownRenderer renderer, SubstitutionLeaf obj) =>
+		renderer.Writer.Write(obj.Found ? obj.Replacement : obj.Content);
 }
 
 public class LlmCodeInlineRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, CodeInline>
@@ -108,7 +107,8 @@ public class LlmRoleRenderer : MarkdownObjectRenderer<LlmMarkdownRenderer, RoleL
 				{
 					var text = LlmApplicabilityHelper.RenderForLlm(
 						appliesToRole.AppliesTo,
-						appliesToRole.BuildContext.VersionsConfiguration);
+						appliesToRole.BuildContext.VersionsConfiguration
+					);
 					if (!string.IsNullOrEmpty(text))
 						renderer.Writer.Write(text);
 					break;

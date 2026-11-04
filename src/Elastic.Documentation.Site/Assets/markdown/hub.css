@@ -1,0 +1,1031 @@
+/*
+ * Hub-page styling. Class names mirror the directive output:
+ *
+ *   .hub-page    page wrapper, set by RenderHub in _Layout.cshtml
+ *   .hub-content article wrapper inside the content column
+ *   .hub-hero    hero section, light, with a divider below
+ *
+ * Later hub directives append their own sections to this file.
+ */
+
+@layer components {
+	/* Page wrapper: full-width content. Stays white so the page reads
+	   consistently whether the user lands via full navigation or via an
+	   htmx-boosted swap from a regular docs page.
+
+	   The content column supplies the horizontal gutter. No hub section adds one
+	   of its own: a section that did would inset itself alone and break alignment
+	   with the rest below the shared max-width. */
+	.hub-page .hub-content {
+		@apply mb-20 w-full max-w-none p-0;
+	}
+
+	/* Hero ------------------------------------------------------------- */
+	/* Light hero on the page background, separated from the body by a rule
+	   (matches the redesign, no dark band). */
+	.hub-hero {
+		background-color: transparent;
+		color: var(--color-ink-dark);
+		padding: 40px 0 28px;
+		margin-bottom: 44px;
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-hero .hub-hero-inner {
+		@apply mx-auto w-full max-w-5xl;
+	}
+	/* Shared arrow -----------------------------------------------------
+	   The site puts an arrow on exactly two kinds of link: one that sends the
+	   reader onward out of a section, and a row that is itself the target. It
+	   never marks an ordinary link, and never a button. Hub links that qualify
+	   use this class.
+
+	   The glyph and the hover slide come from `.link-arrow` in styles.css. The
+	   class is not reused directly because it is nested under `.link`, which
+	   also forces a blue semibold type treatment that a pill or a card would
+	   have to undo. */
+	.hub-arrow {
+		flex-shrink: 0;
+		width: 1.25em;
+		height: 1.25em;
+		transition: transform 0.15s ease-out;
+	}
+	a:hover .hub-arrow,
+	a:focus-visible .hub-arrow {
+		transform: translateX(4px);
+	}
+	.hub-hero .hub-hero-top {
+		display: flex;
+		align-items: center;
+		column-gap: 14px;
+		margin-bottom: 16px;
+	}
+	.hub-hero .hub-hero-icon {
+		@apply inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-xl text-2xl font-bold;
+		width: 48px;
+		height: 48px;
+		background-color: var(--color-grey-10);
+		color: var(--color-ink-dark);
+	}
+	/* The letter fallback keeps the fixed chip. A product mark does not: its box hugs
+	   the glyph, so the mark's left edge lines up with the description below it. Each icon's viewBox is cropped to its glyph, so there is no transparent
+	   padding left to absorb. Width follows from the glyph's own aspect ratio. */
+	.hub-hero .hub-hero-icon-svg {
+		width: auto;
+		height: 40px;
+		background-color: transparent;
+		border-radius: 0;
+	}
+	.hub-hero .hub-hero-icon-svg svg {
+		width: auto;
+		height: 40px;
+	}
+	.hub-hero .hub-hero-top h1 {
+		font-size: var(--text-4xl);
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.5px;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-hero .hub-hero-top h1 a.headerlink {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-hero .hub-hero-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		max-width: 760px;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.hub-hero .hub-hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+		margin-top: 24px;
+	}
+	/* The three actions carry equal weight, so they all take the neutral button
+	   treatment from the {button} directive rather than a bespoke hero button. A blue
+	   variant would make each one claim to be the call to action. Only the layout
+	   properties the hero needs are set here: the type, height, colour and radius come
+	   from `.doc-button-neutral`. */
+	.hub-hero .hub-hero-action {
+		gap: 8px;
+	}
+	.hub-hero .hub-hero-action svg {
+		flex-shrink: 0;
+	}
+
+	/* On this page ----------------------------------------------------- */
+	/* A row of in-page links under the hero rule. It borrows the right-rail TOC look: 14px
+	   ink-light links, each with a grey rule on its left edge that darkens on hover. */
+	.hub-hero:has(+ .hub-on-this-page) {
+		margin-bottom: 0;
+	}
+	.hub-on-this-page {
+		@apply mx-auto w-full max-w-5xl;
+		display: flex;
+		align-items: baseline;
+		column-gap: 16px;
+		padding-top: 20px;
+		margin-bottom: 40px;
+	}
+	.hub-on-this-page .hub-on-this-page-label {
+		flex: none;
+		font-size: var(--text-base);
+		font-weight: 700;
+		line-height: 24px;
+		white-space: nowrap;
+		color: var(--color-ink);
+	}
+	/* The links wrap inside their own column, so a second line starts under the first link
+	   and never under the label. */
+	.hub-on-this-page .hub-on-this-page-list {
+		@apply m-0 list-none p-0;
+		display: flex;
+		flex: 1;
+		flex-wrap: wrap;
+		min-width: 0;
+		row-gap: 4px;
+	}
+	.hub-on-this-page .hub-on-this-page-list li {
+		@apply m-0 p-0;
+	}
+	.hub-on-this-page .hub-on-this-page-list a {
+		display: block;
+		padding: 0 16px;
+		border-left: 1px solid var(--color-grey-20);
+		font-size: var(--text-sm);
+		line-height: 20px;
+		color: var(--color-ink-light);
+		text-decoration: none;
+	}
+	.hub-on-this-page .hub-on-this-page-list a:hover,
+	.hub-on-this-page .hub-on-this-page-list a:focus-visible {
+		border-left-color: var(--color-grey-80);
+		color: var(--color-ink-dark);
+	}
+	@media (max-width: 640px) {
+		.hub-on-this-page {
+			display: block;
+		}
+		.hub-on-this-page .hub-on-this-page-label {
+			margin-bottom: 8px;
+		}
+	}
+
+	/* Get started ------------------------------------------------------ */
+	/* The first step sits in a tinted box. The steps after it sit below in open columns, and
+	   share three grid rows (title, text, link) so each row lines up across the columns. One
+	   number slot and one column gap serve both, so every step starts at the same left edge.
+
+	   A container, not the viewport: the left sidebar narrows the body, so the layout has to
+	   answer to the space it actually has. */
+	.hub-get-started {
+		@apply mx-auto w-full max-w-5xl;
+		--hub-slot: 48px;
+		--hub-col-gap: 40px;
+		--hub-pad: 28px;
+		--hub-step-gap: 28px;
+		container-type: inline-size;
+		margin-bottom: 56px;
+		scroll-margin-top: 96px;
+	}
+	/* The lead is a section heading like `.hub-zone`, so it takes the same type and the same
+	   gap above the content. */
+	.hub-get-started .hub-get-started-lead {
+		margin-bottom: 24px;
+	}
+	.hub-get-started .hub-get-started-title {
+		margin: 0;
+		font-size: var(--text-2xl);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+	}
+	.hub-get-started .hub-get-started-intro {
+		margin: 8px 0 0;
+		font-size: var(--text-base);
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.5;
+	}
+	/* An option command stays a real code block, so it keeps highlighting and a
+	   copy button. The box hugs the command and matches the option button. */
+	.hub-get-started .hub-get-started-install {
+		position: relative;
+		flex: none;
+		align-self: flex-start;
+		width: fit-content;
+		max-width: 100%;
+		min-width: 0;
+		margin: 0;
+		/* `code-block.css` pads `pre code` with an !important padding and fills it with its own
+		   background. Left alone, the code box is taller than the 37px `pre` and scrolls vertically.
+		   The `--code-*` properties are its theming hook, so the box shrinks to the command. */
+		--code-pad: 0;
+		--code-bg: transparent;
+		--code-size: var(--text-xs);
+		--code-leading: 1.2;
+	}
+	/* A long command wraps inside its box, so the whole command stays visible.
+	   The box keeps the option button's height for a one-line command. */
+	.hub-get-started .hub-get-started-install pre {
+		display: flex;
+		align-items: center;
+		box-sizing: border-box;
+		min-height: 37px;
+		margin: 0;
+		padding: 8px 36px 8px 12px;
+		background: var(--color-ink-navy);
+		border-radius: 8px;
+	}
+	.hub-get-started .hub-get-started-install code {
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.hub-get-started .hub-get-started-track {
+		display: flex;
+		flex-direction: column;
+	}
+	.hub-get-started .hub-get-started-first,
+	.hub-get-started .hub-get-started-grid {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.hub-get-started .hub-get-started-box {
+		padding: 24px var(--hub-pad) 26px;
+		background: var(--color-blue-elastic-10);
+		border-radius: 12px;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-head {
+		display: flex;
+		align-items: center;
+	}
+	.hub-get-started .hub-get-started-step-num {
+		flex: none;
+		width: var(--hub-slot);
+		font-size: 40px;
+		font-weight: 600;
+		line-height: 1;
+		color: var(--color-blue-elastic-100);
+	}
+	.hub-get-started .hub-get-started-step-title {
+		margin: 0;
+		font-size: var(--text-lg);
+		font-weight: 700;
+		line-height: 1.3;
+		letter-spacing: -0.2px;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-step-desc {
+		margin: 8px 0 0;
+		font-size: var(--text-base);
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.45;
+	}
+	/* Content of the first step lines up under its title, past the number. */
+	.hub-get-started .hub-get-started-indent {
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-indent.hub-get-started-step-desc {
+		max-width: calc(560px + var(--hub-slot));
+	}
+	.hub-get-started
+		.hub-get-started-box
+		> .hub-get-started-indent:not(.hub-get-started-step-desc) {
+		margin-top: 4px;
+	}
+
+	/* A link that leads onward ends in the shared arrow. The arrow follows the last word and
+	   wraps with it. */
+	.hub-get-started .hub-get-started-step-arrow,
+	.hub-get-started .hub-get-started-option-link {
+		display: inline-block;
+		margin-top: 12px;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-get-started .hub-get-started-nowrap {
+		white-space: nowrap;
+	}
+	.hub-get-started .hub-get-started-step-arrow .hub-arrow,
+	.hub-get-started .hub-get-started-option-link .hub-arrow {
+		display: inline-block;
+		margin-left: 4px;
+		vertical-align: -0.2em;
+	}
+	.hub-get-started .hub-get-started-step-arrow:hover,
+	.hub-get-started .hub-get-started-step-arrow:focus-visible,
+	.hub-get-started .hub-get-started-option-link:hover,
+	.hub-get-started .hub-get-started-option-link:focus-visible {
+		text-decoration: underline;
+	}
+
+	/* Two options sit side by side with an "or" between them. Each option is indented past
+	   the number, so it lines up under the step title. */
+	.hub-get-started .hub-get-started-fork {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		column-gap: var(--hub-col-gap);
+		margin-top: 12px;
+	}
+	.hub-get-started .hub-get-started-fork .hub-get-started-option,
+	.hub-get-started .hub-get-started-box .hub-get-started-options {
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-or {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: calc(50% - var(--hub-col-gap) / 2);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--hub-col-gap);
+		color: var(--color-ink-light);
+		font-size: 0.8125rem;
+	}
+	.hub-get-started .hub-get-started-or::before {
+		content: '';
+		position: absolute;
+		top: 8px;
+		bottom: 8px;
+		left: 50%;
+		width: 1px;
+		background: var(--color-blue-elastic-30);
+	}
+	.hub-get-started .hub-get-started-or span {
+		position: relative;
+		z-index: 1;
+		padding: 4px 0;
+		background: var(--color-blue-elastic-10);
+	}
+	.hub-get-started .hub-get-started-option {
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.hub-get-started .hub-get-started-option-label {
+		font-size: var(--text-base);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-option-desc {
+		margin: 8px 0 12px;
+		font-size: var(--text-base);
+		color: var(--color-ink-light, #4c4c4c);
+		line-height: 1.45;
+	}
+	.hub-get-started .hub-get-started-option .hub-get-started-install,
+	.hub-get-started .hub-get-started-option-btn {
+		margin-top: auto;
+	}
+	/* Same height as the command chip, and smaller than the body type. */
+	.hub-get-started .hub-get-started-option-btn {
+		@apply inline-flex items-center justify-center;
+		align-self: flex-start;
+		box-sizing: border-box;
+		width: auto;
+		height: 37px;
+		padding: 0 12px;
+		font-size: var(--text-sm);
+		font-weight: 600;
+		line-height: 1.2;
+		color: var(--color-ink-dark);
+		background: var(--color-white);
+		border: 1px solid var(--color-ink-dark);
+		border-radius: 8px;
+		text-decoration: none;
+	}
+	.hub-get-started .hub-get-started-option-btn:hover,
+	.hub-get-started .hub-get-started-option-btn:focus-visible {
+		background: var(--color-grey-10);
+		color: var(--color-ink-dark);
+	}
+	/* Options that are not a pair of two (one, or three and more) share the row without an "or".
+	   The column minimum is capped at the width of the container, so in a narrow step column or
+	   on a small screen the options fall to one column instead of overflowing. */
+	.hub-get-started .hub-get-started-options {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+		gap: 16px var(--hub-col-gap);
+		margin-top: 12px;
+	}
+
+	/* The steps after the first. Each one spans the same three rows, shared through subgrid, so
+	   titles, text and links line up across the columns whatever their length. The link row
+	   carries the space below the step, and the grid takes it back, so rows of steps are
+	   spaced without leaving a gap at the end. */
+	.hub-get-started .hub-get-started-grid {
+		display: grid;
+		grid-template-columns: repeat(
+			var(--hub-step-columns, 2),
+			minmax(0, 1fr)
+		);
+		grid-template-rows: auto auto auto;
+		column-gap: var(--hub-col-gap);
+		row-gap: 0;
+		margin-top: 28px;
+		margin-bottom: calc(-1 * var(--hub-step-gap));
+		padding: 0 var(--hub-pad);
+	}
+	.hub-get-started .hub-get-started-step {
+		display: grid;
+		grid-row: span 3;
+		grid-template-rows: subgrid;
+		row-gap: 0;
+		min-width: 0;
+		color: var(--color-ink-dark);
+	}
+	.hub-get-started .hub-get-started-step > .hub-get-started-head {
+		grid-row: 1;
+	}
+	.hub-get-started .hub-get-started-step > .hub-get-started-step-desc {
+		grid-row: 2;
+		padding-left: var(--hub-slot);
+	}
+	.hub-get-started .hub-get-started-step > .hub-get-started-step-foot {
+		grid-row: 3;
+		align-self: end;
+		padding: 0 0 var(--hub-step-gap) var(--hub-slot);
+	}
+
+	/* Below this the steps stack in one column, with the link under the text. The first
+	   step's options stack too, with the "or" line between them. */
+	@container (max-width: 720px) {
+		.hub-get-started {
+			--hub-pad: 20px;
+			--hub-step-gap: 32px;
+		}
+		.hub-get-started .hub-get-started-box {
+			padding-top: 20px;
+			padding-bottom: 20px;
+		}
+		.hub-get-started .hub-get-started-fork {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: 12px;
+		}
+		.hub-get-started .hub-get-started-or {
+			position: relative;
+			top: auto;
+			bottom: auto;
+			left: auto;
+			width: 100%;
+			height: 28px;
+			padding-left: var(--hub-slot);
+		}
+		.hub-get-started .hub-get-started-or::before {
+			top: 50%;
+			bottom: auto;
+			left: var(--hub-slot);
+			width: auto;
+			right: 0;
+			height: 1px;
+		}
+		.hub-get-started .hub-get-started-or span {
+			padding: 0 12px;
+		}
+		.hub-get-started .hub-get-started-grid {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: none;
+		}
+		.hub-get-started .hub-get-started-step {
+			grid-row: auto;
+			grid-template-rows: auto auto auto;
+		}
+		.hub-get-started .hub-get-started-step > .hub-get-started-step-desc {
+			padding-left: var(--hub-slot);
+		}
+		.hub-get-started .hub-get-started-step > .hub-get-started-step-foot {
+			align-self: start;
+		}
+	}
+	/* Three columns need more room than two, since each also gives up the number slot. They
+	   stack sooner. */
+	@container (max-width: 800px) {
+		.hub-get-started .hub-get-started-grid.has-three-columns {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: none;
+		}
+		.hub-get-started
+			.hub-get-started-grid.has-three-columns
+			> .hub-get-started-step {
+			grid-row: auto;
+			grid-template-rows: auto auto auto;
+		}
+		.hub-get-started
+			.hub-get-started-grid.has-three-columns
+			> .hub-get-started-step
+			> .hub-get-started-step-foot {
+			align-self: start;
+		}
+	}
+
+	/* What's new ------------------------------------------------------- */
+	.hub-whats-new {
+		@apply mx-auto w-full max-w-5xl;
+		margin-bottom: 56px;
+		scroll-margin-top: 120px;
+	}
+	.hub-whats-new .hub-wn-header {
+		@apply mb-6 flex flex-wrap items-end justify-between gap-4;
+	}
+	.hub-whats-new .hub-wn-title {
+		font-size: var(--text-2xl);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+		max-width: 60ch;
+	}
+	.hub-whats-new .hub-wn-rn {
+		@apply flex flex-shrink-0 flex-wrap items-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer {
+		@apply mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1;
+	}
+	.hub-whats-new .hub-wn-footer-text {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-upgrade {
+		@apply inline-flex items-center gap-1.5;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-upgrade:hover,
+	.hub-whats-new .hub-wn-upgrade:focus-visible {
+		text-decoration: underline;
+	}
+	.hub-whats-new .hub-wn-upgrade svg {
+		flex-shrink: 0;
+	}
+	.hub-whats-new .hub-wn-rn-label {
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-ink-light);
+	}
+	.hub-whats-new .hub-wn-rn-list {
+		@apply m-0 flex flex-wrap items-center p-0;
+		list-style: none;
+	}
+	.hub-whats-new .hub-wn-rn-list li {
+		@apply inline-flex items-center;
+	}
+	.hub-whats-new .hub-wn-rn-list li:not(:last-child)::after {
+		content: '|';
+		color: var(--color-grey-70);
+		margin: 0 8px;
+	}
+	.hub-whats-new .hub-wn-rn-link {
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+		text-decoration: none;
+	}
+	.hub-whats-new .hub-wn-rn-link:hover,
+	.hub-whats-new .hub-wn-rn-link:focus-visible {
+		text-decoration: underline;
+	}
+
+	/* What's new card grid */
+	.hub-whats-new .hub-wn-grid {
+		@apply m-0 grid list-none p-0;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 16px;
+	}
+	.hub-whats-new .hub-wn-card {
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured {
+		grid-column: span 2;
+	}
+	.hub-whats-new .hub-wn-card-link {
+		@apply flex h-full flex-col gap-2.5;
+		padding: 18px 20px;
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			border-color 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	/* Same hover treatment as every other card that is itself a link. The pale blue this
+	   replaced read at 2.12:1 against white, so the state was barely visible. */
+	.hub-whats-new a.hub-wn-card-link:hover,
+	.hub-whats-new .hub-wn-card-link:focus-visible {
+		border-color: var(--color-grey-80);
+		box-shadow: 0 2px 10px rgb(0 0 0 / 0.06);
+	}
+	.hub-whats-new .hub-wn-card-meta {
+		@apply flex items-center justify-between gap-2;
+		font-size: var(--text-sm);
+	}
+	.hub-whats-new .hub-wn-card-meta-left {
+		@apply inline-flex items-center gap-2;
+	}
+	/* The date is authored, so it keeps the casing the writer chose. Forcing
+	   uppercase shouts, and it mangles a month name in any language. */
+	.hub-whats-new .hub-wn-card-date {
+		font-weight: 600;
+		color: var(--color-ink-light);
+		letter-spacing: 0.03em;
+	}
+	.hub-whats-new .hub-wn-card-tag {
+		color: var(--color-grey-80, #69707d);
+		font-weight: 500;
+	}
+	.hub-whats-new .hub-wn-card-title {
+		font-size: var(--text-base);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-featured .hub-wn-card-title {
+		font-size: var(--text-lg);
+	}
+	.hub-whats-new .hub-wn-card-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		line-height: 1.45;
+		margin: 0;
+	}
+	.hub-whats-new .hub-wn-card-more {
+		@apply mt-auto inline-flex items-center gap-1.5;
+		font-size: var(--text-base);
+		font-weight: 600;
+		color: var(--color-blue-elastic-100);
+	}
+	@media (max-width: 900px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-whats-new .hub-wn-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-whats-new .hub-wn-card-featured {
+			grid-column: span 1;
+		}
+	}
+
+	/* Zone (section heading) ------------------------------------------ */
+	.hub-zone {
+		@apply mx-auto w-full max-w-5xl;
+		margin-top: 56px;
+		margin-bottom: 24px;
+		scroll-margin-top: 120px;
+	}
+	.hub-zone:first-of-type {
+		margin-top: 0;
+	}
+	.hub-zone .hub-zone-title {
+		font-size: var(--text-2xl);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.2;
+		margin: 0;
+	}
+	.hub-zone .hub-zone-intro {
+		color: var(--color-ink-light);
+		margin-top: 8px;
+	}
+	/* A link in a section intro looks like the links in the cards below it. */
+	.hub-zone .hub-zone-intro a {
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+	}
+	.hub-zone .hub-zone-intro a:hover,
+	.hub-zone .hub-zone-intro a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
+	/* A section nested under another zone ({explore} with :level: 3). It sits closer to the
+	   zone above and steps its title down so the H2 stays the strongest heading. */
+	.hub-zone.hub-zone-nested {
+		margin-top: 40px;
+	}
+	.hub-zone.hub-zone-nested .hub-zone-title {
+		font-size: var(--text-xl);
+	}
+	/* Accordion titles are text-xl, the same size as a nested section title. Under a nested
+	   section they step down so the section title still reads as the heading. */
+	.hub-zone-nested + .hub-explore .hub-accordion-title {
+		font-size: var(--text-base);
+		font-weight: 600;
+	}
+
+	/* Card grid -------------------------------------------------------- */
+	.hub-card-grid {
+		@apply m-0 mx-auto w-full max-w-5xl list-none p-0;
+		display: grid;
+		/* min() so a container narrower than one track shrinks it instead of overflowing. */
+		grid-template-columns: repeat(auto-fill, minmax(min(310px, 100%), 1fr));
+		gap: 24px;
+	}
+
+	/* Solutions variant: lock to a 3-up layout that tolerates a future 4th card
+	   (it wraps to the next row rather than shrinking into a 4th narrow column). */
+	.hub-card-grid-solutions {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	/* Card ------------------------------------------------------------- */
+	.hub-card {
+		background: var(--color-white);
+		border: 1px solid var(--color-grey-20);
+		border-radius: 14px;
+		padding: 22px 22px 20px;
+		transition:
+			box-shadow 0.15s,
+			border-color 0.15s;
+		margin: 0;
+		list-style: none;
+	}
+	/* Only a card that is itself a link lifts on hover. A card without one holds
+	   several links and no whole-card target, so a lift would promise a click the
+	   card cannot answer. Keyboard focus still lifts either way, because it marks
+	   where focus sits rather than what is clickable. */
+	.hub-card-linked:hover,
+	.hub-card:focus-within {
+		/* grey-80 is what {page-card} uses for the same job, and it clears the 3:1 ratio a
+		   state indicator needs. The resting grey-20 border is a container edge, not the
+		   thing that identifies the control, so it stays quiet. */
+		border-color: var(--color-grey-80);
+		box-shadow: 0 2px 8px rgb(0 0 0 / 0.05);
+	}
+	/* The card title's link covers the whole card, so the lift and the target agree.
+	   Links inside the card sit above it and stay clickable in their own right. */
+	.hub-card-linked .hub-card-title a::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+	}
+	.hub-card-linked {
+		position: relative;
+	}
+	.hub-card .hub-card-links {
+		position: relative;
+	}
+
+	.hub-card .hub-card-head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 6px;
+	}
+	.hub-card .hub-card-icon svg {
+		width: 28px;
+		height: 28px;
+		display: block;
+	}
+	.hub-card .hub-card-title {
+		font-size: var(--text-base);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0;
+	}
+	.hub-card .hub-card-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-card .hub-card-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: none;
+	}
+
+	.hub-card .hub-card-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		margin-bottom: 14px;
+		line-height: 1.5;
+	}
+
+	/* A card's link list is an index, not a set of buttons, so its entries take the
+	   site's standard link affordance: a bullet, blue, underlined. An arrow is
+	   reserved for a control that behaves like a button, such as a hero action. */
+	.hub-card .hub-card-links {
+		margin: 0;
+		padding-left: 1.1em;
+		list-style: disc;
+	}
+	.hub-card .hub-card-links li {
+		margin: 0 0 4px;
+		list-style: disc;
+	}
+	.hub-card .hub-card-links li a {
+		font-size: var(--text-base);
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+		/* Inline-block so the padding counts toward the target height. */
+		display: inline-block;
+		padding-block: 2px;
+		line-height: 1.35;
+	}
+	.hub-card .hub-card-links li a:hover,
+	.hub-card .hub-card-links li a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
+
+	/* Explore {product} — accordion stack ------------------------------ */
+	/* Shares the section max-width, so the accordion rows line up with the zone
+	   heading rather than running wider than it. */
+	.hub-explore {
+		@apply mx-auto w-full max-w-5xl;
+		border-top: 1px solid var(--color-grey-20);
+	}
+
+	.hub-accordion {
+		border-bottom: 1px solid var(--color-grey-20);
+	}
+	.hub-accordion-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 16px;
+		/* No horizontal padding: the accordion title has to start on the same line as the
+		   section heading, and the toggle icon has to end on the same line as its right edge. */
+		padding: 18px 0;
+		cursor: pointer;
+		list-style: none;
+		user-select: none;
+	}
+	/* Hide the native disclosure triangle across browsers. */
+	.hub-accordion-summary::-webkit-details-marker {
+		display: none;
+	}
+	.hub-accordion-summary::marker {
+		content: '';
+	}
+	.hub-accordion-title {
+		/* margin: 0 keeps the heading rendering exactly as the span it replaced. */
+		margin: 0;
+		font-size: var(--text-xl);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		line-height: 1.3;
+	}
+	.hub-accordion-icon {
+		flex: none;
+		color: var(--color-ink-light);
+	}
+	/* Plus when collapsed, minus when open: drop the vertical stroke on [open]. */
+	.hub-accordion-icon-v {
+		transition: opacity 0.15s ease;
+	}
+	.hub-accordion[open] > .hub-accordion-summary .hub-accordion-icon-v {
+		opacity: 0;
+	}
+	.hub-accordion-summary:hover .hub-accordion-title,
+	.hub-accordion-summary:focus-visible .hub-accordion-title {
+		color: var(--color-blue-elastic);
+	}
+	.hub-accordion-body {
+		padding: 4px 0 28px;
+		container-type: inline-size;
+	}
+	.hub-accordion-intro {
+		color: var(--color-ink-light);
+		margin: 0 0 20px;
+	}
+
+	/* Columns inside an accordion -------------------------------------- */
+	/* Column count follows the accordion body's own width (container query), not the
+	   viewport — the hub's left nav narrows the body, so a viewport query would
+	   under-count. Targets a 4-up layout like the design when there's room. */
+	.hub-explore-cols {
+		@apply m-0 list-none p-0;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 28px 24px;
+		align-items: start;
+	}
+	@container (min-width: 420px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 620px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	@container (min-width: 820px) {
+		.hub-explore-cols {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+	.hub-col {
+		margin: 0;
+		list-style: none;
+		min-width: 0;
+	}
+	.hub-col-title {
+		font-size: var(--text-base);
+		font-weight: 700;
+		color: var(--color-ink-dark);
+		margin: 0 0 4px;
+		line-height: 1.3;
+	}
+	.hub-col-title a {
+		color: var(--color-ink-dark);
+		text-decoration: none;
+	}
+	.hub-col-title a:hover {
+		color: var(--color-blue-elastic);
+		text-decoration: underline;
+	}
+	.hub-col-desc {
+		font-size: var(--text-base);
+		color: var(--color-ink-light);
+		margin: 0 0 10px;
+		line-height: 1.4;
+	}
+	/* A column is a pure link index, so its entries carry the site's standard link
+	   affordance rather than a quieter bespoke one. A list marker is used, not a flex
+	   column, because markers do not render on flex children. */
+	.hub-col-links {
+		margin: 0;
+		padding-left: 1.1em;
+		list-style: disc;
+	}
+	.hub-col-links li {
+		margin: 0 0 4px;
+		list-style: disc;
+	}
+	.hub-col-links a {
+		font-size: var(--text-base);
+		color: var(--color-blue-elastic-100);
+		text-decoration: underline;
+		/* Inline-block so the padding counts toward the target height. */
+		display: inline-block;
+		padding-block: 2px;
+		line-height: 1.35;
+	}
+	.hub-col-links a:hover,
+	.hub-col-links a:focus-visible {
+		color: var(--color-blue-elastic-110);
+	}
+
+	@media (max-width: 768px) {
+		.hub-hero h1 {
+			font-size: var(--text-3xl);
+		}
+		.hub-card-grid {
+			grid-template-columns: 1fr;
+		}
+		.hub-on-this-page {
+			position: static;
+			flex-direction: column;
+		}
+		.hub-card {
+			padding: 20px;
+		}
+	}
+
+	/* Solutions grid steps down gracefully; declared after the base mobile rule
+	   so it wins over .hub-card-grid on shared elements. */
+	@media (max-width: 980px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 640px) {
+		.hub-card-grid-solutions {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	/* Hover and arrow transitions are decorative. Honour a reduced-motion preference.
+	   Nothing about the resting appearance changes. */
+	@media (prefers-reduced-motion: reduce) {
+		.hub-card,
+		.hub-accordion-icon-v {
+			transition: none;
+		}
+		.hub-hero .hub-hero-action,
+		.hub-arrow {
+			transition: none;
+		}
+		a:hover .hub-arrow,
+		a:focus-visible .hub-arrow {
+			transform: none;
+		}
+	}
+}

@@ -9,24 +9,22 @@ using FakeItEasy;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
-public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTestBase(output)
+public class TitleProcessingTests() : CreateChangelogTestBase()
 {
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsAndColon()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[ES|QL]: Update Vector Similarity To Support BFLOAT16", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -48,14 +46,14 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -67,28 +65,26 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Update Vector Similarity To Support BFLOAT16");
 		yamlContent.Should().NotContain("[ES|QL]");
 		yamlContent.Should().NotContain("[ES|QL]:");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesSquareBracketsWithoutColon()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Security] Improve authentication handling",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Security] Improve authentication handling", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -110,14 +106,14 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -129,27 +125,25 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Improve authentication handling");
 		yamlContent.Should().NotContain("[Security]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_RemovesMultipleSquareBracketPrefixes()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Discover][ESQL] Fix filtering by multiline string fields",
-			Labels = ["type:bug-fix"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Discover][ESQL] Fix filtering by multiline string fields", Labels = ["type:bug-fix"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync(
 				"https://github.com/elastic/elasticsearch/pull/12345",
 				null,
 				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+				A<CancellationToken>._
+			)
+		).Returns(prInfo);
 
 		// language=yaml
 		var configContent =
@@ -171,14 +165,14 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "elasticsearch", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		result.Should().BeTrue();
@@ -190,27 +184,20 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Fix filtering by multiline string fields");
 		yamlContent.Should().NotContain("[Discover]");
 		yamlContent.Should().NotContain("[ESQL]");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithStripTitlePrefix_StripsKibanaStyleTeamHyphenSeparator()
 	{
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "[Cases] - Enable cases numerical id service",
-			Labels = ["type:feature"]
-		};
+		var prInfo = new GitHubPrInfo { Title = "[Cases] - Enable cases numerical id service", Labels = ["type:feature"] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				"https://github.com/elastic/kibana/pull/238555",
-				null,
-				null,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(
+			() => MockGitHubService.FetchPrInfoAsync("https://github.com/elastic/kibana/pull/238555", null, null, A<CancellationToken>._)
+		).Returns(prInfo);
 
 		var configContent =
 			"""
@@ -231,13 +218,13 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var input = new CreateChangelogArguments
 		{
 			Prs = ["https://github.com/elastic/kibana/pull/238555"],
-			Products = [new ProductArgument { Product = "kibana", Target = "9.2.0", Lifecycle = "ga" }],
+			Products = [new ProductArgument { Product = "kibana", Lifecycle = "ga" }],
 			Config = configPath,
 			Output = CreateOutputDirectory(),
 			StripTitlePrefix = true
 		};
 
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
@@ -248,27 +235,18 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		files.Should().HaveCount(1);
 
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Enable cases numerical id service");
 		yamlContent.Should().NotContain("title: '- Enable");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithExplicitTitle_OverridesPrTitle()
 	{
 		// Arrange
-		var prInfo = new GitHubPrInfo
-		{
-			Title = "PR Title from GitHub",
-			Labels = []
-		};
+		var prInfo = new GitHubPrInfo { Title = "PR Title from GitHub", Labels = [] };
 
-		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(
-				A<string>._,
-				A<string?>._,
-				A<string?>._,
-				A<CancellationToken>._))
-			.Returns(prInfo);
+		A.CallTo(() => MockGitHubService.FetchPrInfoAsync(A<string>._, A<string?>._, A<string?>._, A<CancellationToken>._)).Returns(prInfo);
 
 		var service = CreateService();
 
@@ -277,18 +255,18 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Title = "Custom Title Override",
 			Type = "feature",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -299,12 +277,12 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("title: Custom Title Override");
 		yamlContent.Should().NotContain("PR Title from GitHub");
 	}
 
-	[Fact]
+	[Test]
 	public async Task CreateChangelog_WithIssues_CreatesValidYaml()
 	{
 		// Arrange
@@ -314,23 +292,20 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		{
 			Title = "Fix multiple issues",
 			Type = "bug-fix",
-			Products = [new ProductArgument { Product = "elasticsearch", Target = "9.2.0" }],
-			Issues =
-			[
-				"https://github.com/elastic/elasticsearch/issues/123",
-				"https://github.com/elastic/elasticsearch/issues/456"
-			],
+			Products = [new ProductArgument { Product = "elasticsearch" }],
+			Issues = ["https://github.com/elastic/elasticsearch/issues/123", "https://github.com/elastic/elasticsearch/issues/456"],
+			Prs = ["https://github.com/elastic/elasticsearch/pull/12345"],
 			Output = CreateOutputDirectory()
 		};
 
 		// Act
-		var result = await service.CreateChangelog(Collector, input, TestContext.Current.CancellationToken);
+		var result = await service.CreateChangelog(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		// Assert
 		if (!result)
 		{
 			foreach (var diagnostic in Collector.Diagnostics)
-				Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
+				TestContext.Current?.Output.WriteLine($"{diagnostic.Severity}: {diagnostic.Message}");
 		}
 
 		result.Should().BeTrue();
@@ -341,9 +316,9 @@ public class TitleProcessingTests(ITestOutputHelper output) : CreateChangelogTes
 		if (!FileSystem.Directory.Exists(outputDir))
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
-		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current.CancellationToken);
+		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
 		yamlContent.Should().Contain("issues:");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/123");
-		yamlContent.Should().Contain("- https://github.com/elastic/elasticsearch/issues/456");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/123\"");
+		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/456\"");
 	}
 }

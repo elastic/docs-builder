@@ -28,6 +28,9 @@ public record AssemblerBuildOptions
 	[ArgumentParser(typeof(ExporterParser))]
 	public IReadOnlySet<Exporter>? Exporters { get; init; }
 
-	/// <summary>Skip the build step when <c>.artifacts/docs/index.html</c> already exists. Intended for test scenarios only.</summary>
+	/// <summary>
+	/// Skip the build when the build stamp is up to date. When omitted, the assembler defaults to
+	/// <c>true</c> locally and <c>false</c> on CI. Use <c>--no-assume-build</c> to force a full rebuild.
+	/// </summary>
 	public bool? AssumeBuild { get; init; }
 }

@@ -1,91 +1,57 @@
 import { mergeHTMLPlugin } from './hljs-merge-html-plugin'
-import esql from '@elastic/highlightjs-esql'
-import { LanguageFn } from 'highlight.js'
+import type { LanguageFn } from 'highlight.js'
 import hljs from 'highlight.js/lib/core'
-import asciidoc from 'highlight.js/lib/languages/asciidoc'
-import bash from 'highlight.js/lib/languages/bash'
-import c from 'highlight.js/lib/languages/c'
-import csharp from 'highlight.js/lib/languages/csharp'
-import css from 'highlight.js/lib/languages/css'
-import dockerfile from 'highlight.js/lib/languages/dockerfile'
-import dos from 'highlight.js/lib/languages/dos'
-import ebnf from 'highlight.js/lib/languages/ebnf'
-import go from 'highlight.js/lib/languages/go'
-import gradle from 'highlight.js/lib/languages/gradle'
-import groovy from 'highlight.js/lib/languages/groovy'
-import handlebars from 'highlight.js/lib/languages/handlebars'
-import http from 'highlight.js/lib/languages/http'
-import ini from 'highlight.js/lib/languages/ini'
-import java from 'highlight.js/lib/languages/java'
-import javascript from 'highlight.js/lib/languages/javascript'
-import json from 'highlight.js/lib/languages/json'
-import kotlin from 'highlight.js/lib/languages/kotlin'
-import markdown from 'highlight.js/lib/languages/markdown'
-import nginx from 'highlight.js/lib/languages/nginx'
-import php from 'highlight.js/lib/languages/php'
-import plaintext from 'highlight.js/lib/languages/plaintext'
-import powershell from 'highlight.js/lib/languages/powershell'
-import properties from 'highlight.js/lib/languages/properties'
-import python from 'highlight.js/lib/languages/python'
-import ruby from 'highlight.js/lib/languages/ruby'
-import rust from 'highlight.js/lib/languages/rust'
-import scala from 'highlight.js/lib/languages/scala'
-import shell from 'highlight.js/lib/languages/shell'
-import sql from 'highlight.js/lib/languages/sql'
-import swift from 'highlight.js/lib/languages/swift'
-import typescript from 'highlight.js/lib/languages/typescript'
-import xml from 'highlight.js/lib/languages/xml'
-import yaml from 'highlight.js/lib/languages/yaml'
-import { $$optional } from 'select-dom'
 
-const languages: Array<{
-    name: string
-    module: LanguageFn
-    aliases?: string[]
-}> = [
-    { name: 'asciidoc', module: asciidoc },
-    { name: 'bash', module: bash },
-    { name: 'c', module: c },
-    { name: 'csharp', module: csharp },
-    { name: 'css', module: css },
-    { name: 'dockerfile', module: dockerfile },
-    { name: 'dos', module: dos },
-    { name: 'ebnf', module: ebnf },
-    { name: 'esql', module: esql },
-    { name: 'go', module: go },
-    { name: 'gradle', module: gradle },
-    { name: 'groovy', module: groovy },
-    { name: 'handlebars', module: handlebars },
-    { name: 'http', module: http },
-    { name: 'ini', module: ini },
-    { name: 'java', module: java },
-    { name: 'javascript', module: javascript },
-    { name: 'json', module: json },
-    { name: 'kotlin', module: kotlin },
-    { name: 'markdown', module: markdown },
-    { name: 'nginx', module: nginx },
-    { name: 'php', module: php },
-    { name: 'plaintext', module: plaintext },
-    { name: 'powershell', module: powershell },
-    { name: 'properties', module: properties },
-    { name: 'python', module: python },
-    { name: 'ruby', module: ruby },
-    { name: 'rust', module: rust },
-    { name: 'scala', module: scala },
-    { name: 'shell', module: shell, aliases: ['sh'] },
-    { name: 'sql', module: sql },
-    { name: 'swift', module: swift },
-    { name: 'typescript', module: typescript },
-    { name: 'xml', module: xml },
-    { name: 'yaml', module: yaml },
-]
+// highlight.js language modules and the esql plugin default-export the LanguageFn.
+// A bundler's dynamic import() can resolve to the module's exports directly (the function),
+// whereas test runners (test runners) wrap it as a namespace with a
+// `default`. Normalize both so registerLanguage always receives the function.
+export function toLanguageFn(mod: unknown): LanguageFn {
+    const m = mod as { default?: LanguageFn }
+    return (typeof mod === 'function' ? mod : m.default) as LanguageFn
+}
 
-languages.forEach((lang) => {
-    hljs.registerLanguage(lang.name, lang.module)
-    if (lang.aliases) {
-        hljs.registerAliases(lang.aliases, { languageName: lang.name })
+const CODE_BLOCK_SELECTOR = 'pre code:not([data-highlighted])'
+
+let allLanguagesReady: Promise<void> | null = null
+
+function ensureHighlightReady(): Promise<void> {
+    if (allLanguagesReady) return allLanguagesReady
+
+    allLanguagesReady = import('./hljs-languages').then(({ languages }) => {
+        for (const [name, languageFn] of Object.entries(languages)) {
+            hljs.registerLanguage(name, languageFn)
+        }
+        hljs.registerAliases(['sh'], { languageName: 'shell' })
+        hljs.registerAliases(['fish'], { languageName: 'bash' })
+        hljs.registerAliases(['batch'], { languageName: 'dos' })
+    })
+
+    return allLanguagesReady
+}
+
+/** Starts loading the languages early; pages with code call this before the first init step runs. */
+export function preloadHighlight(): void {
+    void ensureHighlightReady()
+}
+
+export async function highlightCodeBlocks(root: ParentNode): Promise<void> {
+    const blocks = root.querySelectorAll<HTMLElement>(CODE_BLOCK_SELECTOR)
+    if (blocks.length === 0) return
+
+    await ensureHighlightReady()
+
+    for (const block of blocks) {
+        if (!block.dataset.highlighted) hljs.highlightElement(block)
     }
-})
+}
+
+export async function initHighlight(): Promise<void> {
+    const roots = document.querySelectorAll(
+        '#markdown-content, #api-examples-panel'
+    )
+    for (const root of roots) await highlightCodeBlocks(root)
+}
 
 hljs.registerLanguage('apiheader', function () {
     return {
@@ -211,17 +177,92 @@ hljs.registerLanguage('kuery', function () {
 })
 hljs.registerAliases(['kql'], { languageName: 'kuery' })
 
+// Elasticsearch Console samples: METHOD path + optional JSON body
+hljs.registerLanguage('console', function () {
+    return {
+        name: 'console',
+        aliases: ['es-console'],
+        contains: [
+            {
+                // `starts` so the path is highlighted after the method, rather than inside a
+                // rule whose `begin` has already consumed it.
+                className: 'keyword',
+                begin: /^(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+                starts: {
+                    end: /$/,
+                    contains: [{ className: 'string', begin: /\S+/ }],
+                },
+            },
+            {
+                begin: /\{/,
+                // No `$`: highlight.js compiles regexes as multiline, so it would end the
+                // body after its first line. It runs to the next request or the end of the sample.
+                end: /(?=\n(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b)/,
+                subLanguage: 'json',
+                relevance: 0,
+            },
+        ],
+    }
+})
+
+// cURL samples: command, flags, HTTP methods, strings, line continuations
+hljs.registerLanguage('curl', function () {
+    const variable = {
+        className: 'variable',
+        begin: /\$(?:\{[^}\s"']*\}|[A-Za-z_]\w*)/,
+    }
+    return {
+        name: 'curl',
+        contains: [
+            {
+                className: 'built_in',
+                begin: /\bcurl\b/,
+            },
+            {
+                className: 'params',
+                begin: /--?[A-Za-z][\w-]*/,
+            },
+            {
+                className: 'keyword',
+                begin: /\b(?:GET|POST|PUT|DELETE|HEAD|OPTIONS|PATCH)\b/,
+            },
+            {
+                className: 'symbol',
+                begin: /\\$/,
+            },
+            {
+                className: 'string',
+                begin: /"/,
+                end: /"/,
+                contains: [{ begin: /\\./ }, variable],
+                relevance: 0,
+            },
+            {
+                // JSON request body, highlighted as JSON between the quotes
+                begin: /'(?=\s*[{[])/,
+                end: /'/,
+                subLanguage: 'json',
+                excludeBegin: true,
+                excludeEnd: true,
+                relevance: 0,
+            },
+            {
+                className: 'string',
+                begin: /'/,
+                end: /'/,
+                contains: [{ begin: /\\./ }],
+                relevance: 0,
+            },
+            variable,
+        ],
+    }
+})
+
 hljs.addPlugin(mergeHTMLPlugin)
 
 // The unescaped HTML warning is caused by the mergeHTMLPlugin which we are using
 // for code callouts
 hljs.configure({ ignoreUnescapedHTML: true })
-
-export function initHighlight() {
-    $$optional('#markdown-content pre code:not([data-highlighted])').forEach(
-        hljs.highlightElement
-    )
-}
 
 // Export the configured hljs instance for reuse
 export { hljs }

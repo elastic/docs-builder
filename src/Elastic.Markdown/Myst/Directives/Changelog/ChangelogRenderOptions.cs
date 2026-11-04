@@ -16,6 +16,7 @@ internal sealed record ChangelogRenderOptions
 	public required bool Subsections { get; init; }
 	public required bool DropdownsEnabled { get; init; }
 	public required bool ReleaseDatesEnabled { get; init; }
+	public required bool HighlightsEnabled { get; init; }
 	public required ChangelogTypeFilter TypeFilter { get; init; }
 	public required ChangelogLinkVisibility LinkVisibility { get; init; }
 	public required ChangelogDescriptionVisibility DescriptionVisibility { get; init; }

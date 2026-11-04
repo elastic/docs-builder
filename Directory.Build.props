@@ -23,6 +23,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <PagefindFrontendDisableExtract>true</PagefindFrontendDisableExtract>
+
+    <!-- Static graph evaluation speeds up restore by evaluating the dependency graph once up front -->
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
   </PropertyGroup>
 
   <ItemGroup>

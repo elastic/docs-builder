@@ -5,6 +5,7 @@
 using System.IO.Abstractions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
 using Elastic.Documentation.Services;
 using Elastic.Markdown.IO;
@@ -13,10 +14,7 @@ using Nullean.ScopedFileSystem;
 
 namespace Elastic.Documentation.Refactor;
 
-public class MoveFileService(
-	ILoggerFactory logFactory,
-	IConfigurationContext configurationContext
-) : IService
+public class MoveFileService(ILoggerFactory logFactory, IConfigurationContext configurationContext) : IService
 {
 	public async Task<bool> Move(
 		IDiagnosticsCollector collector,
@@ -28,7 +26,8 @@ public class MoveFileService(
 		Cancel ctx
 	)
 	{
-		var context = new BuildContext(collector, fs, fs, configurationContext, ExportOptions.MetadataOnly, path, null);
+		var docFs = DocumentationFileSystem.Resolve(path);
+		var context = new BuildContext(collector, docFs, configurationContext) { AvailableExporters = ExportOptions.MetadataOnly };
 
 		var set = new DocumentationSet(context, logFactory, NoopCrossLinkResolver.Instance);
 

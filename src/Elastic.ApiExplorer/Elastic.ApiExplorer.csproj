@@ -14,8 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="HtmlSanitizer"/>
     <PackageReference Include="Microsoft.OpenApi"/>
     <PackageReference Include="RazorSlices"/>
+    <PackageReference Include="SharpYaml"/>
     <PackageReference Include="Utf8StreamReader"/>
   </ItemGroup>
 

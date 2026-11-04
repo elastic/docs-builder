@@ -24,12 +24,11 @@ public static class DeploymentEnvironment
 	/// Returns <c>null</c> when the value is absent or unrecognized — callers should skip
 	/// setting <see cref="IHostEnvironment.EnvironmentName"/> in that case.
 	/// </summary>
-	public static string? ToDotnetEnvironment(string? environment) =>
-		environment?.Trim().ToLowerInvariant() switch
-		{
-			"prod" => Environments.Production,
-			"staging" or "edge" => Environments.Staging,
-			"dev" => Environments.Development,
-			_ => null
-		};
+	public static string? ToDotnetEnvironment(string? environment) => environment?.Trim().ToLowerInvariant() switch
+	{
+		"prod" => Environments.Production,
+		"staging" or "edge" => Environments.Staging,
+		"dev" => Environments.Development,
+		_ => null
+	};
 }

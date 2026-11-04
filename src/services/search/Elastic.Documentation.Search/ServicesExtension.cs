@@ -51,8 +51,7 @@ public static class ServicesExtension
 				SemanticEnabled = true
 			};
 
-			return new DefaultSearchService<DocumentationDocument>(
-				acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
+			return new DefaultSearchService<DocumentationDocument>(acc.Client, acc.SearchIndex, queryConfig, innerLogger, lookup);
 		});
 
 		// Docs-specific adapters preserve the existing API/MCP wire format.

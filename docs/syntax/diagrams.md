@@ -1,10 +1,10 @@
 # Mermaid diagrams
 
-You can create diagrams using [Mermaid](https://mermaid.js.org/) with standard fenced code blocks. Diagrams are rendered client-side in the browser.
+Mermaid diagrams are rendered server-side to inline SVG at build time. No JavaScript runtime is required to display them.
 
 ```mermaid
 flowchart LR
-    A[Write Mermaid] --> B[Render diagram]
+    A[Write Mermaid] --> B[Server renders SVG] --> C[Browser displays]
 ```
 
 ## Basic usage
@@ -18,24 +18,65 @@ A --> B
 ```
 ````
 
-## Supported diagram types
+## Styling
 
-All [Mermaid diagram types](https://mermaid.js.org/intro/) are supported, including:
+Diagrams support a fixed set of semantic style classes that match the site's design system. Inline `classDef`, `style`, and `linkStyle` directives are not supported.
 
-- Flowcharts
-- Sequence diagrams
-- State diagrams
-- Class diagrams
-- Entity relationship (ER) diagrams
-- And more
+Apply a class to a node using the `:::classname` shorthand or the `class` statement:
 
-## Examples
+````markdown
+```mermaid
+flowchart LR
+    A[Start]:::note --> B{Decided?}:::warning
+    B -->|Yes| C[Deploy]:::success
+    B -->|No| D[Rollback]:::error
+```
+````
+
+```mermaid
+flowchart LR
+    A[Start]:::note --> B{Decided?}:::warning
+    B -->|Yes| C[Deploy]:::success
+    B -->|No| D[Rollback]:::error
+```
+
+The available classes are:
+
+| Class | Use for |
+|---|---|
+| `note` | Informational nodes, neutral context |
+| `tip` | Recommended paths, positive guidance |
+| `warning` | Caution required, review needed |
+| `important` | Key nodes that must not be missed |
+| `caution` | Destructive or risky actions |
+| `error` | Failure states, invalid paths |
+| `success` | Completion, healthy states |
+| `plain` | De-emphasised or secondary nodes |
+| `highlight` | Active, selected, or focal nodes |
+
+All eight classes in one diagram:
+
+```mermaid
+flowchart LR
+    N[note]:::note
+    T[tip]:::tip
+    W[warning]:::warning
+    I[important]:::important
+    C[caution]:::caution
+    E[error]:::error
+    S[success]:::success
+    P[plain]:::plain
+```
+
+## Diagram types
 
 ### Flowchart
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 flowchart LR
@@ -49,6 +90,7 @@ flowchart LR
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 flowchart LR
     A[Start] --> B{Decision}
@@ -56,6 +98,16 @@ flowchart LR
     B -->|No| D[Action 2]
     C --> E[End]
     D --> E
+```
+::::
+
+::::{tab-item} Styled
+:sync: styled
+```mermaid
+flowchart LR
+    A[Start]:::note --> B{Decision}:::warning
+    B -->|Yes| C[Action 1]:::tip --> E[End]:::success
+    B -->|No| D[Action 2]:::error --> E
 ```
 ::::
 
@@ -64,26 +116,35 @@ flowchart LR
 ### Sequence diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 sequenceDiagram
-    participant A as Alice
-    participant B as Bob
-    A->>B: Hello Bob, how are you?
-    B-->>A: Great!
+    participant C as Client
+    participant S as Server
+    participant D as Database
+    C->>S: POST /search
+    S->>D: SELECT query
+    D-->>S: rows
+    S-->>C: 200 OK
 ```
 ````
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 sequenceDiagram
-    participant A as Alice
-    participant B as Bob
-    A->>B: Hello Bob, how are you?
-    B-->>A: Great!
+    participant C as Client
+    participant S as Server
+    participant D as Database
+    C->>S: POST /search
+    S->>D: SELECT query
+    D-->>S: rows
+    S-->>C: 200 OK
 ```
 ::::
 
@@ -92,26 +153,50 @@ sequenceDiagram
 ### State diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> Processing: start
-    Processing --> Complete: done
-    Complete --> [*]
+    Idle --> Running: start
+    Running --> Paused: pause
+    Paused --> Running: resume
+    Running --> Stopped: stop
+    Stopped --> [*]
 ```
 ````
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> Processing: start
-    Processing --> Complete: done
-    Complete --> [*]
+    Idle --> Running: start
+    Running --> Paused: pause
+    Paused --> Running: resume
+    Running --> Stopped: stop
+    Stopped --> [*]
+```
+::::
+
+::::{tab-item} Styled
+:sync: styled
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Running: start
+    Running --> Paused: pause
+    Paused --> Running: resume
+    Running --> Stopped: stop
+    Stopped --> [*]
+    class Idle plain
+    class Running success
+    class Paused warning
+    class Stopped error
 ```
 ::::
 
@@ -120,8 +205,10 @@ stateDiagram-v2
 ### Class diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 classDiagram
@@ -138,6 +225,7 @@ classDiagram
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 classDiagram
     Animal <|-- Duck
@@ -156,143 +244,770 @@ classDiagram
 ### ER diagram
 
 :::::{tab-set}
+:group: diagram-view
 
 ::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE_ITEM : contains
     PRODUCT ||--o{ LINE_ITEM : "is in"
+    CUSTOMER {
+        string name
+        string email
+    }
+    ORDER {
+        int id
+        date created
+    }
 ```
 ````
 ::::
 
 ::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE_ITEM : contains
     PRODUCT ||--o{ LINE_ITEM : "is in"
+    CUSTOMER {
+        string name
+        string email
+    }
+    ORDER {
+        int id
+        date created
+    }
 ```
 ::::
 
 :::::
 
-### Complex flowchart
+### Pie chart
 
-::::::{tab-set}
+:::::{tab-set}
+:group: diagram-view
 
-:::::{tab-item} Source
+::::{tab-item} Source
+:sync: source
 ````markdown
 ```mermaid
-graph TB
-    A["Painless Operators"]
-
-    B["General"]
-    C["Numeric"]
-    D["Boolean"]
-    E["Reference"]
-    F["Array"]
-
-    B1["Control expression flow and<br/>value assignment"]
-    C1["Mathematical operations and<br/>bit manipulation"]
-    D1["Boolean logic and<br/>conditional evaluation"]
-    E1["Object interaction and<br/>safe data access"]
-    F1["Array manipulation and<br/>element access"]
-
-    B2["Precedence ( )<br/>Function Call ( )<br/>Cast ( )<br/>Conditional ? :<br/>Elvis ?:<br/>Assignment =<br/>Compound Assignment $="]
-    C2["Post/Pre Increment ++<br/>Post/Pre Decrement --<br/>Unary +/-<br/>Bitwise Not ~<br/>Multiplication *<br/>Division /<br/>Remainder %<br/>Addition +<br/>Subtraction -<br/>Shift <<, >>, >>><br/>Bitwise And &<br/>Bitwise Xor ^<br/>Bitwise Or |"]
-    D2["Boolean Not !<br/>Comparison >, >=, <, <=<br/>Instanceof instanceof<br/>Equality ==, !=<br/>Identity ===, !==<br/>Boolean Xor ^<br/>Boolean And &&<br/>Boolean Or ||"]
-    E2["Method Call . ( )<br/>Field Access .<br/>Null Safe ?.<br/>New Instance new ( )<br/>String Concatenation +<br/>List/Map Init [ ], [ : ]<br/>List/Map Access [ ]"]
-    F2["Array Init [ ] { }<br/>Array Access [ ]<br/>Array Length .length<br/>New Array new [ ]"]
-
-    A --> B & C & D & E & F
-    B --> B1
-    C --> C1
-    D --> D1
-    E --> E1
-    F --> F1
-    B1 --> B2
-    C1 --> C2
-    D1 --> D2
-    E1 --> E2
-    F1 --> F2
-
-    classDef rootNode fill:#0B64DD,stroke:#101C3F,stroke-width:2px,color:#fff
-    classDef categoryBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#343741
-    classDef descBox fill:#48EFCF,stroke:#343741,stroke-width:2px,color:#343741
-    classDef exampleBox fill:#f5f7fa,stroke:#343741,stroke-width:2px,color:#343741
-
-    class A rootNode
-    class B,C,D,E,F categoryBox
-    class B1,C1,D1,E1,F1 descBox
-    class B2,C2,D2,E2,F2 exampleBox
+pie title Index distribution
+    "Primary" : 60
+    "Replica" : 30
+    "Frozen" : 10
 ```
 ````
-:::::
+::::
 
-:::::{tab-item} Rendered
+::::{tab-item} Rendered
+:sync: rendered
 ```mermaid
-graph TB
-    A["Painless Operators"]
-
-    B["General"]
-    C["Numeric"]
-    D["Boolean"]
-    E["Reference"]
-    F["Array"]
-
-    B1["Control expression flow and<br/>value assignment"]
-    C1["Mathematical operations and<br/>bit manipulation"]
-    D1["Boolean logic and<br/>conditional evaluation"]
-    E1["Object interaction and<br/>safe data access"]
-    F1["Array manipulation and<br/>element access"]
-
-    B2["Precedence ( )<br/>Function Call ( )<br/>Cast ( )<br/>Conditional ? :<br/>Elvis ?:<br/>Assignment =<br/>Compound Assignment $="]
-    C2["Post/Pre Increment ++<br/>Post/Pre Decrement --<br/>Unary +/-<br/>Bitwise Not ~<br/>Multiplication *<br/>Division /<br/>Remainder %<br/>Addition +<br/>Subtraction -<br/>Shift <<, >>, >>><br/>Bitwise And &<br/>Bitwise Xor ^<br/>Bitwise Or |"]
-    D2["Boolean Not !<br/>Comparison >, >=, <, <=<br/>Instanceof instanceof<br/>Equality ==, !=<br/>Identity ===, !==<br/>Boolean Xor ^<br/>Boolean And &&<br/>Boolean Or ||"]
-    E2["Method Call . ( )<br/>Field Access .<br/>Null Safe ?.<br/>New Instance new ( )<br/>String Concatenation +<br/>List/Map Init [ ], [ : ]<br/>List/Map Access [ ]"]
-    F2["Array Init [ ] { }<br/>Array Access [ ]<br/>Array Length .length<br/>New Array new [ ]"]
-
-    A --> B & C & D & E & F
-    B --> B1
-    C --> C1
-    D --> D1
-    E --> E1
-    F --> F1
-    B1 --> B2
-    C1 --> C2
-    D1 --> D2
-    E1 --> E2
-    F1 --> F2
-
-    classDef rootNode fill:#0B64DD,stroke:#101C3F,stroke-width:2px,color:#fff
-    classDef categoryBox fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#343741
-    classDef descBox fill:#48EFCF,stroke:#343741,stroke-width:2px,color:#343741
-    classDef exampleBox fill:#f5f7fa,stroke:#343741,stroke-width:2px,color:#343741
-
-    class A rootNode
-    class B,C,D,E,F categoryBox
-    class B1,C1,D1,E1,F1 descBox
-    class B2,C2,D2,E2,F2 exampleBox
+pie title Index distribution
+    "Primary" : 60
+    "Replica" : 30
+    "Frozen" : 10
 ```
+::::
+
 :::::
 
-::::::
+### Quadrant chart
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+quadrantChart
+    title Feature prioritisation
+    x-axis Low effort --> High effort
+    y-axis Low impact --> High impact
+    quadrant-1 Do now
+    quadrant-2 Plan
+    quadrant-3 Deprioritise
+    quadrant-4 Delegate
+    Search API: [0.3, 0.8]
+    Alerting: [0.7, 0.7]
+    Dark mode: [0.5, 0.3]
+    Export CSV: [0.8, 0.2]
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+quadrantChart
+    title Feature prioritisation
+    x-axis Low effort --> High effort
+    y-axis Low impact --> High impact
+    quadrant-1 Do now
+    quadrant-2 Plan
+    quadrant-3 Deprioritise
+    quadrant-4 Delegate
+    Search API: [0.3, 0.8]
+    Alerting: [0.7, 0.7]
+    Dark mode: [0.5, 0.3]
+    Export CSV: [0.8, 0.2]
+```
+::::
+
+:::::
+
+### Timeline
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+timeline
+    title Elasticsearch major releases
+    2010 : 0.x — initial release
+    2014 : 1.0 — stable API
+    2015 : 2.0 — performance
+    2016 : 5.0 — unified stack
+    2019 : 7.0 — cluster coordination
+    2021 : 8.0 — security by default
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+timeline
+    title Elasticsearch major releases
+    2010 : 0.x — initial release
+    2014 : 1.0 — stable API
+    2015 : 2.0 — performance
+    2016 : 5.0 — unified stack
+    2019 : 7.0 — cluster coordination
+    2021 : 8.0 — security by default
+```
+::::
+
+:::::
+
+### Git graph
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+gitGraph
+    commit id: "init"
+    branch feature
+    checkout feature
+    commit id: "add search"
+    commit id: "add filters"
+    checkout main
+    merge feature id: "merge PR"
+    commit id: "tag v2.0"
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+gitGraph
+    commit id: "init"
+    branch feature
+    checkout feature
+    commit id: "add search"
+    commit id: "add filters"
+    checkout main
+    merge feature id: "merge PR"
+    commit id: "tag v2.0"
+```
+::::
+
+:::::
+
+### Mindmap
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+mindmap
+    root((Elastic Stack))
+        Elasticsearch
+            Indexing
+            Search
+            Aggregations
+        Kibana
+            Dashboards
+            Alerting
+        Logstash
+        Beats
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+mindmap
+    root((Elastic Stack))
+        Elasticsearch
+            Indexing
+            Search
+            Aggregations
+        Kibana
+            Dashboards
+            Alerting
+        Logstash
+        Beats
+```
+::::
+
+:::::
+
+### Gantt chart
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+gantt
+    title Release schedule
+    dateFormat  YYYY-MM-DD
+    section Planning
+    Requirements   :done,    req,  2024-01-01, 2024-01-15
+    Design         :done,    des,  2024-01-10, 2024-01-25
+    section Build
+    Implementation :active,  imp,  2024-01-20, 2024-02-15
+    Testing        :         test, 2024-02-10, 2024-02-28
+    section Release
+    Deploy         :         dep,  2024-03-01, 2024-03-05
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+gantt
+    title Release schedule
+    dateFormat  YYYY-MM-DD
+    section Planning
+    Requirements   :done,    req,  2024-01-01, 2024-01-15
+    Design         :done,    des,  2024-01-10, 2024-01-25
+    section Build
+    Implementation :active,  imp,  2024-01-20, 2024-02-15
+    Testing        :         test, 2024-02-10, 2024-02-28
+    section Release
+    Deploy         :         dep,  2024-03-01, 2024-03-05
+```
+::::
+
+:::::
+
+### User journey
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+journey
+    title Onboarding a new cluster
+    section Install
+        Download package: 5: Ops
+        Configure nodes: 3: Ops
+    section Connect
+        Run health check: 4: Ops, Dev
+        Ingest first data: 4: Dev
+    section Verify
+        Check dashboards: 5: Dev
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+journey
+    title Onboarding a new cluster
+    section Install
+        Download package: 5: Ops
+        Configure nodes: 3: Ops
+    section Connect
+        Run health check: 4: Ops, Dev
+        Ingest first data: 4: Dev
+    section Verify
+        Check dashboards: 5: Dev
+```
+::::
+
+:::::
+
+### C4 diagram
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+C4Context
+    Person(user, "User", "Searches docs")
+    System(docs, "Docs site", "Elastic documentation")
+    System_Ext(es, "Elasticsearch", "Powers search")
+    Rel(user, docs, "Reads")
+    Rel(docs, es, "Queries")
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+C4Context
+    Person(user, "User", "Searches docs")
+    System(docs, "Docs site", "Elastic documentation")
+    System_Ext(es, "Elasticsearch", "Powers search")
+    Rel(user, docs, "Reads")
+    Rel(docs, es, "Queries")
+```
+::::
+
+:::::
+
+### Requirement diagram
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+requirementDiagram
+    requirement search_req {
+        id: 1
+        text: Full-text search under 100ms
+        risk: high
+        verifyMethod: test
+    }
+    element api {
+        type: component
+    }
+    api - satisfies -> search_req
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+requirementDiagram
+    requirement search_req {
+        id: 1
+        text: Full-text search under 100ms
+        risk: high
+        verifyMethod: test
+    }
+    element api {
+        type: component
+    }
+    api - satisfies -> search_req
+```
+::::
+
+:::::
+
+### Kanban
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+kanban
+    column1[Backlog]
+        task1[Update docs]
+        task2[Fix search bug]
+    column2[In Progress]
+        task3[Add dark mode]
+    column3[Done]
+        task4[Upgrade cluster]
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+kanban
+    column1[Backlog]
+        task1[Update docs]
+        task2[Fix search bug]
+    column2[In Progress]
+        task3[Add dark mode]
+    column3[Done]
+        task4[Upgrade cluster]
+```
+::::
+
+:::::
+
+### Radar chart (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+radar-beta
+    title Cluster health dimensions
+    axis Throughput, Latency, Durability, Scalability, Observability
+    curve c1["Primary"]{80, 70, 90, 85, 75}
+    curve c2["Replica"]{60, 85, 95, 70, 80}
+    max 100
+    graticule polygon
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+radar-beta
+    title Cluster health dimensions
+    axis Throughput, Latency, Durability, Scalability, Observability
+    curve c1["Primary"]{80, 70, 90, 85, 75}
+    curve c2["Replica"]{60, 85, 95, 70, 80}
+    max 100
+    graticule polygon
+```
+::::
+
+:::::
+
+### Treemap (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+treemap-beta
+    title Index storage allocation
+    "hot" : 512
+    "warm" : 256
+    "cold" : 128
+    "frozen" : 64
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+treemap-beta
+    title Index storage allocation
+    "hot" : 512
+    "warm" : 256
+    "cold" : 128
+    "frozen" : 64
+```
+::::
+
+:::::
+
+### Venn diagram (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+venn-beta
+    set A["Search"]
+    set B["Analytics"]
+    set C["Observability"]
+    union A, B["Full Elastic"]
+    union B, C["Monitoring"]
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+venn-beta
+    set A["Search"]
+    set B["Analytics"]
+    set C["Observability"]
+    union A, B["Full Elastic"]
+    union B, C["Monitoring"]
+```
+::::
+
+:::::
+
+### Sankey diagram (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+sankey-beta
+    Logs,Logstash,40
+    Metrics,Logstash,30
+    Logstash,Elasticsearch,70
+    Elasticsearch,Kibana,70
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+sankey-beta
+    Logs,Logstash,40
+    Metrics,Logstash,30
+    Logstash,Elasticsearch,70
+    Elasticsearch,Kibana,70
+```
+::::
+
+:::::
+
+### XY chart (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+xychart-beta
+    title Indexing throughput (docs/sec)
+    x-axis [Jan, Feb, Mar, Apr, May, Jun]
+    y-axis 0 --> 50000
+    bar [12000, 18000, 15000, 22000, 30000, 28000]
+    line [12000, 18000, 15000, 22000, 30000, 28000]
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+xychart-beta
+    title Indexing throughput (docs/sec)
+    x-axis [Jan, Feb, Mar, Apr, May, Jun]
+    y-axis 0 --> 50000
+    bar [12000, 18000, 15000, 22000, 30000, 28000]
+    line [12000, 18000, 15000, 22000, 30000, 28000]
+```
+::::
+
+:::::
+
+### Packet diagram (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+packet-beta
+    0-7: "Version"
+    8-15: "IHL"
+    16-31: "Total Length"
+    32-63: "Identification + Flags + Fragment"
+    64-71: "TTL"
+    72-79: "Protocol"
+    80-95: "Header Checksum"
+    96-127: "Source IP"
+    128-159: "Destination IP"
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+packet-beta
+    0-7: "Version"
+    8-15: "IHL"
+    16-31: "Total Length"
+    32-63: "Identification + Flags + Fragment"
+    64-71: "TTL"
+    72-79: "Protocol"
+    80-95: "Header Checksum"
+    96-127: "Source IP"
+    128-159: "Destination IP"
+```
+::::
+
+:::::
+
+### Architecture diagram (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+architecture-beta
+    group ech(cloud)[Elastic Cloud]
+
+    service es(elastic:elasticsearch)[Elasticsearch] in ech
+    service kbn(elastic:kibana)[Kibana] in ech
+    service apm(elastic:apm)[APM] in ech
+    service edot(server)[EDOT Collector]
+
+    edot:R --> L:apm
+    apm:R --> L:es
+    kbn:T -- B:es
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+architecture-beta
+    group ech(cloud)[Elastic Cloud]
+
+    service es(elastic:elasticsearch)[Elasticsearch] in ech
+    service kbn(elastic:kibana)[Kibana] in ech
+    service apm(elastic:apm)[APM] in ech
+    service edot(server)[EDOT Collector]
+
+    edot:R --> L:apm
+    apm:R --> L:es
+    kbn:T -- B:es
+```
+::::
+
+:::::
+
+### Block diagram (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+block-beta
+    columns 3
+    A["Ingest"]:1 B["Transform"]:1 C["Store"]:1
+    D["Beats"]:1 E["Logstash"]:1 F["Elasticsearch"]:1
+    A --> B --> C
+    D --> E --> F
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+block-beta
+    columns 3
+    A["Ingest"]:1 B["Transform"]:1 C["Store"]:1
+    D["Beats"]:1 E["Logstash"]:1 F["Elasticsearch"]:1
+    A --> B --> C
+    D --> E --> F
+```
+::::
+
+:::::
+
+### Tree view (beta)
+
+:::::{tab-set}
+:group: diagram-view
+
+::::{tab-item} Source
+:sync: source
+````markdown
+```mermaid
+treeView-beta
+    elastic-stack/
+        elasticsearch/
+            index.ts :::highlight ## entry point
+            search.ts
+            aggregations.ts
+        kibana/
+            discover.ts
+            dashboards.ts
+        integrations/
+            beats.ts
+            logstash.ts
+```
+````
+::::
+
+::::{tab-item} Rendered
+:sync: rendered
+```mermaid
+treeView-beta
+    elastic-stack/
+        elasticsearch/
+            index.ts :::highlight ## entry point
+            search.ts
+            aggregations.ts
+        kibana/
+            discover.ts
+            dashboards.ts
+        integrations/
+            beats.ts
+            logstash.ts
+```
+::::
+
+:::::
 
 ## Interactive controls
 
-Mermaid diagrams include interactive controls that appear when you hover over the diagram:
+Diagrams include interactive controls that appear on hover:
 
-- **Zoom in/out**: Click the `+` and `-` buttons to zoom in or out. You can also hold `Ctrl` (or `Cmd` on macOS) and use the mouse wheel to zoom.
+- **Zoom in/out**: Click `+` / `-` or hold `Ctrl` (`Cmd` on macOS) and scroll.
 - **Reset**: Click the reset button to return to the default view.
-- **Fullscreen**: Click the expand button to view the diagram in a fullscreen modal.
-- **Pan**: Click and drag the diagram to pan around when zoomed in.
-
-These controls are particularly useful for large or complex diagrams.
-
-## Notes
-
-- Diagrams require JavaScript to render. Users with JavaScript disabled will see the raw Mermaid code.
-- For the full list of diagram types and syntax, see the [Mermaid documentation](https://mermaid.js.org/intro/).
+- **Fullscreen**: Click the expand button to open the diagram in a fullscreen modal.
+- **Pan**: Click and drag to pan when zoomed in.

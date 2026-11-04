@@ -2,12 +2,9 @@ import { chatStore } from './chat.store'
 import { act } from 'react'
 
 // Mock idb-keyval (IndexedDB not available in Node.js test environment)
-jest.mock('idb-keyval', () => ({
-    get: jest.fn().mockResolvedValue(null),
-    set: jest.fn().mockResolvedValue(undefined),
-    del: jest.fn().mockResolvedValue(undefined),
-    createStore: jest.fn().mockReturnValue({}),
-}))
+vi.mock('idb-keyval', async () =>
+    (await import('../../test-utils/mocks')).idbKeyval()
+)
 
 describe('chat.store', () => {
     beforeEach(() => {
@@ -16,7 +13,7 @@ describe('chat.store', () => {
         Object.defineProperty(globalThis, 'crypto', {
             configurable: true,
             value: {
-                randomUUID: jest
+                randomUUID: vi
                     .fn()
                     .mockImplementation((): string => `mock-uuid-${++counter}`),
             },
