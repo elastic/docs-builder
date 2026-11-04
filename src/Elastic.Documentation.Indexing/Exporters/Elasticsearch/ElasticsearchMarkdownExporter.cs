@@ -47,6 +47,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 	private readonly IReadOnlyList<string[]> _synonyms;
 	private readonly IReadOnlyCollection<QueryRule> _rules;
 	private readonly string _fixedSynonymsHash;
+	private readonly string _forceReindexSalt;
 
 	// AI Enrichment - post-indexing via AiEnrichmentOrchestrator
 	private readonly AiEnrichmentOrchestrator? _aiEnrichment;
@@ -79,6 +80,7 @@ public partial class ElasticsearchMarkdownExporter : IMarkdownExporter, IDisposa
 		_logFactory = logFactory;
 		_logger = logFactory.CreateLogger<ElasticsearchMarkdownExporter>();
 		_endpoint = endpoints.Elasticsearch;
+		_forceReindexSalt = ForceReindexSalt.Create(_endpoint.ForceReindex);
 		_buildType = endpoints.BuildType;
 		_environment = endpoints.Environment;
 		_versionsConfiguration = context.VersionsConfiguration;

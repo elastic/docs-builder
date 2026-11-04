@@ -36,8 +36,14 @@ public partial class ElasticsearchMarkdownExporter
 	// Keyed by reference: BuildContext is a record whose value hash recurses until the stack overflows.
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
-	private void AssignDocumentMetadata(DocumentationDocument doc) =>
-		doc.Hash = DocumentHash(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
+	private DocumentHashInputs HashInputs =>
+		new(_semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash, _forceReindexSalt);
+
+	internal static void AssignDocumentMetadata(DocumentationDocument doc, DocumentHashInputs inputs) =>
+		doc.Hash = ForceReindexSalt.Apply(
+			DocumentHash(doc, inputs.SemanticHash, inputs.LexicalHash, inputs.FixedSynonymsHash),
+			inputs.ForceReindexSalt
+		);
 
 	/// <summary>The change-detection hash. Everything the index stores for a page takes part, so a metadata-only edit still syncs.</summary>
 	internal static string DocumentHash(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
@@ -56,6 +62,7 @@ public partial class ElasticsearchMarkdownExporter
 			synonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
 			string.Join(",", doc.Links ?? []),
+			DocumentMetadataFingerprint.Create(doc),
 			doc.Api is null
 				? string.Empty
 				: JsonSerializer.Serialize(doc.Api, Documentation.Search.Contract.SourceGenerationContext.Default.ApiOperationMetadata)
@@ -244,7 +251,7 @@ public partial class ElasticsearchMarkdownExporter
 
 		CommonEnrichments(doc, currentNavigation);
 		AssignContentHash(doc);
-		AssignDocumentMetadata(doc);
+		AssignDocumentMetadata(doc, HashInputs);
 
 		return await WriteDocumentAsync(doc, ctx);
 	}
@@ -273,7 +280,7 @@ public partial class ElasticsearchMarkdownExporter
 			ApplyApiPlainText(doc, PlainTextExporter.ConvertToPlainText(document, _context));
 			CommonEnrichments(doc, null);
 			AssignContentHash(doc);
-			AssignDocumentMetadata(doc);
+			AssignDocumentMetadata(doc, HashInputs);
 
 			if (!await WriteDocumentAsync(doc, ctx))
 			{
