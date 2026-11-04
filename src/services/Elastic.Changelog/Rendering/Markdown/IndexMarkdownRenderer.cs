@@ -61,25 +61,33 @@ public class IndexMarkdownRenderer(IChangelogFileSystem fileSystem) : MarkdownRe
 			entries.Count > 0 && entries.All(entry => ChangelogRenderUtilities.ShouldHideEntry(entry, context.FeatureIdsToHide, context));
 
 		// Check if each category has visible entries
-		var hasVisibleFeatures = (features.Count > 0 || enhancements.Count > 0)
-			&& !(AllEntriesHidden(features) && AllEntriesHidden(enhancements));
+		var hasVisibleFeatures = features.Count > 0 && !AllEntriesHidden(features);
+		var hasVisibleEnhancements = enhancements.Count > 0 && !AllEntriesHidden(enhancements);
 		var hasVisibleFixes = (security.Count > 0 || bugFixes.Count > 0) && !(AllEntriesHidden(security) && AllEntriesHidden(bugFixes));
 		var hasVisibleDocs = docs.Count > 0 && !AllEntriesHidden(docs);
 		var hasVisibleRegressions = regressions.Count > 0 && !AllEntriesHidden(regressions);
 		var hasVisibleOther = other.Count > 0 && !AllEntriesHidden(other);
 
-		var hasAnyVisibleEntries = hasVisibleFeatures || hasVisibleFixes || hasVisibleDocs || hasVisibleRegressions || hasVisibleOther;
+		var hasAnyVisibleEntries = hasVisibleFeatures
+			|| hasVisibleEnhancements
+			|| hasVisibleFixes
+			|| hasVisibleDocs
+			|| hasVisibleRegressions
+			|| hasVisibleOther;
 
 		if (hasAnyEntries)
 		{
-			if (features.Count > 0 || enhancements.Count > 0)
+			if (features.Count > 0)
 			{
-				var combined = features.Concat(enhancements).ToList();
-				_ = sb.AppendLine(
-					InvariantCulture,
-					$"### Features and enhancements [{context.Repo}-{context.TitleSlug}-features-enhancements]"
-				);
-				RenderEntriesByArea(sb, combined, context);
+				_ = sb.AppendLine(InvariantCulture, $"### Features [{context.Repo}-{context.TitleSlug}-features]");
+				RenderEntriesByArea(sb, features, context);
+			}
+
+			if (enhancements.Count > 0)
+			{
+				_ = sb.AppendLine();
+				_ = sb.AppendLine(InvariantCulture, $"### Enhancements [{context.Repo}-{context.TitleSlug}-enhancements]");
+				RenderEntriesByArea(sb, enhancements, context);
 			}
 
 			if (security.Count > 0 || bugFixes.Count > 0)

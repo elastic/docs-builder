@@ -17,7 +17,7 @@ public enum ChangelogEntryType
 	[Display(Name = "invalid")]
 	Invalid = 0,
 
-	/// <summary>A new feature or enhancement.</summary>
+	/// <summary>A new capability that did not exist before.</summary>
 	[Display(Name = "feature")]
 	Feature,
 

@@ -83,12 +83,17 @@ public class ChangelogAsciidocRenderer(IFileSystem fileSystem)
 			_ = sb.AppendLine();
 		}
 
-		// Render features and enhancements
-		if (features.Count > 0 || enhancements.Count > 0)
+		if (features.Count > 0)
 		{
-			RenderSectionHeader(sb, "features-enhancements", context.TitleSlug, "New features and enhancements");
-			var combined = features.Concat(enhancements).ToList();
-			entriesByAreaRenderer.Render(combined, context);
+			RenderSectionHeader(sb, "features", context.TitleSlug, "Features");
+			entriesByAreaRenderer.Render(features, context);
+			_ = sb.AppendLine();
+		}
+
+		if (enhancements.Count > 0)
+		{
+			RenderSectionHeader(sb, "enhancements", context.TitleSlug, "Enhancements");
+			entriesByAreaRenderer.Render(enhancements, context);
 			_ = sb.AppendLine();
 		}
 

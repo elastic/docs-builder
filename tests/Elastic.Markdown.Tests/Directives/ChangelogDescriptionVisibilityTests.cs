@@ -38,14 +38,33 @@ public class ChangelogShouldHideEntryDescriptionsTests
 	}
 
 	[Test]
-	public void KeepHighlightDescriptions_AlwaysReturnsTrue()
+	public void KeepFeatureDescriptions_AlwaysReturnsTrue()
 	{
-		// Default path hides descriptions; Highlights section overrides separately in the renderer.
 		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo(
 			"kibana",
 			[],
-			ChangelogDescriptionVisibility.KeepHighlightDescriptions
+			ChangelogDescriptionVisibility.KeepFeatureDescriptions
 		);
+
+		result.Should().BeTrue();
+	}
+
+	[Test]
+	public void CombinedFeatureAndHighlightOverlays_AlwaysReturnsTrue()
+	{
+		var visibility = ChangelogDescriptionVisibility.KeepFeatureDescriptions | ChangelogDescriptionVisibility.KeepHighlightDescriptions;
+
+		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo("kibana", [], visibility);
+
+		result.Should().BeTrue();
+	}
+
+	[Test]
+	public void AutoPlusFeatureOverlay_WithPublicRepo_HidesDefaultBodies()
+	{
+		var visibility = ChangelogDescriptionVisibility.Auto | ChangelogDescriptionVisibility.KeepFeatureDescriptions;
+
+		var result = ChangelogInlineRenderer.ShouldHideEntryDescriptionsForRepo("kibana", [], visibility);
 
 		result.Should().BeTrue();
 	}
@@ -308,4 +327,235 @@ public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<Change
 
 	[Test]
 	public void AutoTreatsFullyPublic_AsHideBody() => Html.Should().NotContain("BODY_INVALID_VISIBILITY");
+}
+
+[InheritsTests]
+public class ChangelogKeepFeatureDescriptionsTests() : DirectiveTest<ChangelogBlock>(
+	"""
+	:::{changelog}
+	:description-visibility: keep-feature-descriptions
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature with body
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: FEATURE_ONLY_BODY
+			- title: Enhancement with body
+			  type: enhancement
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: ENHANCEMENT_HIDDEN_BODY
+			"""
+			)
+		);
+
+	[Test]
+	public void ParsesKeepFeatureDescriptions() =>
+		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepFeatureDescriptions);
+
+	[Test]
+	public void ShowsFeatureBodies() => Html.Should().Contain("FEATURE_ONLY_BODY");
+
+	[Test]
+	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_HIDDEN_BODY");
+}
+
+[InheritsTests]
+public class ChangelogCombinedFeatureAndHighlightDescriptionsTests() : DirectiveTest<ChangelogBlock>(
+	"""
+	:::{changelog}
+	:highlights:
+	:description-visibility: keep-feature-descriptions, keep-highlight-descriptions
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Highlighted feature
+			  type: feature
+			  highlight: true
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: HIGHLIGHT_SECTION_BODY
+			- title: Regular feature
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: FEATURE_SECTION_BODY
+			- title: Enhancement with body
+			  type: enhancement
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: ENHANCEMENT_HIDDEN_BODY
+			"""
+			)
+		);
+
+	[Test]
+	public void ParsesBothOverlays()
+	{
+		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions).Should().BeTrue();
+		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepHighlightDescriptions).Should().BeTrue();
+	}
+
+	[Test]
+	public void ShowsHighlightBodies() => Html.Should().Contain("HIGHLIGHT_SECTION_BODY");
+
+	[Test]
+	public void ShowsFeatureBodies() => Html.Should().Contain("FEATURE_SECTION_BODY");
+
+	[Test]
+	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_HIDDEN_BODY");
+}
+
+[InheritsTests]
+public class ChangelogAutoPlusFeatureDescriptionsTests() : DirectiveTest<ChangelogBlock>(
+	"""
+	:::{changelog}
+	:description-visibility: auto, keep-feature-descriptions
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature with body
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: FEATURE_AUTO_OVERLAY_BODY
+			- title: Enhancement with body
+			  type: enhancement
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: ENHANCEMENT_AUTO_BODY
+			"""
+			)
+		);
+
+	[Test]
+	public void ParsesAutoPlusFeatureOverlay()
+	{
+		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.Auto).Should().BeTrue();
+		Block!.DescriptionVisibility.HasFlag(ChangelogDescriptionVisibility.KeepFeatureDescriptions).Should().BeTrue();
+	}
+
+	[Test]
+	public void ShowsFeatureBodiesOnPublicRepos() => Html.Should().Contain("FEATURE_AUTO_OVERLAY_BODY");
+
+	[Test]
+	public void HidesEnhancementBodiesOnPublicRepos() => Html.Should().NotContain("ENHANCEMENT_AUTO_BODY");
+}
+
+[InheritsTests]
+public class ChangelogDuplicateBaseDescriptionVisibilityTests() : DirectiveTest<ChangelogBlock>(
+	"""
+	:::{changelog}
+	:description-visibility: keep-descriptions, hide-descriptions
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature keep first
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: BODY_FIRST_BASE_WINS
+			"""
+			)
+		);
+
+	[Test]
+	public void KeepsFirstBaseToken() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepDescriptions);
+
+	[Test]
+	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
+
+	[Test]
+	public void RendersBodiesUsingFirstBase() => Html.Should().Contain("BODY_FIRST_BASE_WINS");
+}
+
+[InheritsTests]
+public class ChangelogHideDescriptionsPlusFeatureOverlayTests() : DirectiveTest<ChangelogBlock>(
+	"""
+	:::{changelog}
+	:description-visibility: hide-descriptions, keep-feature-descriptions
+	:::
+	"""
+)
+{
+	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
+		fileSystem.AddFile(
+			"docs/changelog/bundles/9.3.0.yaml",
+			new MockFileData(
+				"""
+			products:
+			- product: elasticsearch
+			  target: 9.3.0
+			entries:
+			- title: Feature with body
+			  type: feature
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: FEATURE_OVERLAY_WINS
+			- title: Enhancement with body
+			  type: enhancement
+			  products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			  description: ENHANCEMENT_STILL_HIDDEN
+			"""
+			)
+		);
+
+	[Test]
+	public void ShowsFeatureBodiesDespiteHideBase() => Html.Should().Contain("FEATURE_OVERLAY_WINS");
+
+	[Test]
+	public void HidesEnhancementBodies() => Html.Should().NotContain("ENHANCEMENT_STILL_HIDDEN");
 }
