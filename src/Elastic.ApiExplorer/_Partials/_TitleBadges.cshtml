@@ -2,13 +2,17 @@
 @if (Model.Any)
 {
 	<span class="api-title-badges">
+		@if (Model.AuthText is { } authText)
+		{
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel(authText, Model.DesignSystem, Model.AuthHref)))
+		}
 		@if (Model.Availability is { } availability)
 		{
 			<span class="applies applies-inline">@await RenderPartialAsync(ApplicableToComponent.Create(availability))</span>
 		}
 		@if (Model.Deprecated)
 		{
-			<span class="deprecated-badge type-status">deprecated</span>
+			@await RenderPartialAsync(_TitleBadge.Create(new TitleBadgeModel("Deprecated", Model.DesignSystem, Danger: true)))
 		}
 	</span>
 }

@@ -38,8 +38,6 @@ function release() {
 }
 
 describe('mermaid pan', () => {
-    afterEach(() => vi.restoreAllMocks())
-
     it('pans the dragged diagram', () => {
         document.body.innerHTML = diagram('a')
         initMermaid()

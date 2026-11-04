@@ -2,15 +2,19 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Components.PropertyTree;
+using Elastic.Documentation;
 using Microsoft.AspNetCore.Html;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
-/// <summary>Loads a small inline OpenAPI spec and a property tree builder for it.</summary>
+/// <summary>Loads a small inline OpenAPI spec, a generator for it and a property tree builder.</summary>
 internal static class TestSpecs
 {
 	public static async Task<OpenApiDocument> LoadSpecAsync(string json)
@@ -32,6 +36,39 @@ internal static class TestSpecs
 				File.Delete(path);
 		}
 	}
+
+	/// <summary>Like <see cref="LoadSpecAsync"/>, but reads from memory and throws when the spec has parse errors.</summary>
+	public static async Task<OpenApiDocument> LoadValidSpecAsync(string json)
+	{
+		using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+		var result = await OpenApiDocument.LoadAsync(stream, settings: new OpenApiReaderSettings { LeaveStreamOpen = false });
+		if (result.Diagnostic?.Errors is { Count: > 0 } errors)
+			throw new InvalidOperationException($"OpenAPI parsing failed: {string.Join(", ", errors.Select(e => e.Message))}");
+		return result.Document!;
+	}
+
+	public static async Task<(OpenApiGenerator generator, OpenApiDocument document)> CreateGeneratorWithSpecAsync(
+		string json,
+		IMarkdownStringRenderer? markdownRenderer = null
+	)
+	{
+		var context = TestHelpers.CreateBuildContext();
+		var generator = new OpenApiGenerator(NullLoggerFactory.Instance, context, markdownRenderer ?? NoopMarkdownStringRenderer.Instance);
+		return (generator, await LoadValidSpecAsync(json));
+	}
+
+	/// <summary>
+	/// A spec with no operations whose components hold the given schemas. The schemas stay raw JSON
+	/// because they are what the test is about; only the scaffold around them is supplied.
+	/// </summary>
+	public static string WithSchemas([StringSyntax(StringSyntaxAttribute.Json)] string schemasJson, string openApiVersion = "3.0.3") =>
+		new JsonObject
+		{
+			["openapi"] = openApiVersion,
+			["info"] = new JsonObject { ["title"] = "t", ["version"] = "1" },
+			["paths"] = new JsonObject(),
+			["components"] = new JsonObject { ["schemas"] = JsonNode.Parse(schemasJson) }
+		}.ToJsonString();
 
 	public static ApiPropertyTreeBuilder BuilderFor(OpenApiDocument document) =>
 		new(document, new PropertyDisplayOptions { RenderMarkdown = s => new HtmlString($"<p>{s}</p>"), ApiRootUrl = "/api/doc/fixture" });

@@ -468,7 +468,6 @@ public static class ApplicabilityRenderer
 						maxReleased
 							? min.Major == max!.Major && min.Minor == max.Minor && !showMinPatch && !showMaxPatch
 								? $"{min.Major}.{min.Minor}" // Same major.minor and no explicit patch, so just show the version once
-
 								: $"{FormatMinVersion()}-{FormatMaxVersion()}"
 							: minReleased ? $"{FormatMinVersion()}+" : string.Empty,
 					VersionSpecKind.Exact => minReleased ? FormatMinVersion() : string.Empty,
