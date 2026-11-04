@@ -63,6 +63,10 @@ export const navigationSearchBreadcrumbs = (
     return ['Docs', ...parents.slice(1).map((parent) => parent.title)]
 }
 
+/** A modified or non-primary click opens the link in a new tab or window, so the search stays where it was. */
+const opensElsewhere = (event: React.MouseEvent) =>
+    event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0
+
 export const emptyStateCopy = (typeFilter: TypeFilter) =>
     typeFilter === 'api'
         ? "We couldn't find an API that matches your search"
@@ -73,7 +77,7 @@ export interface SearchResultsListProps {
     isLoading: boolean
     isKeyboardNavigating: MutableRefObject<boolean>
     onMouseMove: () => void
-    onResultClick: () => void
+    onResultClick: (opensElsewhere: boolean) => void
     typeFilter?: TypeFilter
 }
 
@@ -160,6 +164,7 @@ export const SearchResultsList = ({
     }
 
     const handleResultClick = (
+        event: React.MouseEvent,
         result: SearchResultItem,
         rank: number,
         property?: ApiPropertyResult
@@ -171,7 +176,7 @@ export const SearchResultsList = ({
             score: result.score,
             anchor: property?.anchor,
         })
-        onResultClick()
+        onResultClick(opensElsewhere(event))
     }
 
     return (
@@ -193,7 +198,9 @@ export const SearchResultsList = ({
                         isKeyboardNavigating={isKeyboardNavigating.current}
                         onMouseEnter={() => handleMouseEnter(index)}
                         onMouseMove={() => handleItemMouseMove(index)}
-                        onClick={() => handleResultClick(result, rank)}
+                        onClick={(event) =>
+                            handleResultClick(event, result, rank)
+                        }
                         typeFilter={typeFilter}
                         searchTerm={searchTerm}
                     />
@@ -209,8 +216,8 @@ export const SearchResultsList = ({
                             onMouseMove={() =>
                                 handleItemMouseMove(propertyIndex)
                             }
-                            onClick={() =>
-                                handleResultClick(result, rank, property)
+                            onClick={(event) =>
+                                handleResultClick(event, result, rank, property)
                             }
                         />
                     ))}
@@ -227,7 +234,7 @@ interface SearchResultRowProps {
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
-    onClick: () => void
+    onClick: (event: React.MouseEvent) => void
     typeFilter: TypeFilter
     searchTerm: string
 }

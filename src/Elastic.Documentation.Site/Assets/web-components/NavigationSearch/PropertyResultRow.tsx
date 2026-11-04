@@ -45,7 +45,7 @@ export const PropertyResultRow = ({
     isKeyboardNavigating: boolean
     onMouseEnter: () => void
     onMouseMove: () => void
-    onClick: () => void
+    onClick: (event: React.MouseEvent) => void
 }) => {
     const { euiTheme } = useEuiTheme()
     const isMobile = useIsWithinMaxBreakpoint('s')

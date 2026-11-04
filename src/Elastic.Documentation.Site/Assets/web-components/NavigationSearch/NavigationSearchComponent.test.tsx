@@ -3,7 +3,7 @@ import { ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR } from '../../telemetry/semconv'
 import { sharedQueryClient } from '../shared/queryClient'
 import { NavigationSearchWrapper } from './NavigationSearchComponent'
 import { navigationSearchStore } from './navigationSearch.store'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 vi.mock('../../telemetry/logging', async () =>
@@ -219,6 +219,26 @@ describe('NavigationSearchWrapper result navigation', () => {
         expect(input).not.toHaveFocus()
         await waitFor(() => expect(row).not.toBeVisible())
     })
+
+    it.each([['metaKey'], ['ctrlKey'], ['shiftKey']])(
+        'stays open and focused when a %s click opens the result elsewhere',
+        async (modifier) => {
+            const { input, row } = await openResults()
+            vi.mocked(logInfo).mockClear()
+
+            fireEvent.click(row, { [modifier]: true })
+            await new Promise((resolve) => setTimeout(resolve, 0))
+
+            expect(input).toHaveFocus()
+            expect(row).toBeVisible()
+            expect(logInfo).toHaveBeenCalledWith(
+                'navigation_search_result_clicked',
+                expect.objectContaining({
+                    [ATTR_NAVIGATION_SEARCH_RESULT_ANCHOR]: 'req-retriever',
+                })
+            )
+        }
+    )
 
     it('closes and blurs when Enter opens the selected result', async () => {
         const { input, row } = await openResults()

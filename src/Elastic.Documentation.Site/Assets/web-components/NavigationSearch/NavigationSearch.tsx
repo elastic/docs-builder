@@ -78,7 +78,8 @@ export const NavigationSearch = ({
         setOpen(false)
     }
 
-    const handleResultClick = () => {
+    const handleResultClick = (opensElsewhere = false) => {
+        if (opensElsewhere) return
         close('navigate')
         inputRef.current?.blur()
     }
@@ -92,7 +93,7 @@ export const NavigationSearch = ({
         resultsCount: navigableRowCount(groups),
         isLoading: isSearching,
         onClose: () => setOpen(false),
-        onNavigate: handleResultClick,
+        onNavigate: () => handleResultClick(),
         typeFilter,
     })
 
