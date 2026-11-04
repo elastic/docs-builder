@@ -24,6 +24,7 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 [mise](https://mise.jdx.dev) is the entry point. `mise install` provisions the .NET SDK (from `global.json`) and Node (from `.nvmrc`), restores the local dotnet tools and installs the git hooks. `mise tasks` lists every task. `build.sh` and `dev.sh` still work; the tasks call them and the F# build project.
 
 ```bash
+mise trust                                      # once per clone, in the root git folder; its worktrees are trusted too
 mise install                                    # SDK, Node, dotnet tools, git hooks
 mise run build                                  # verify compilation
 mise run serve                                  # run the CLI locally: serve docs/ with live reload

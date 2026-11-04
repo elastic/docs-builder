@@ -7,10 +7,13 @@
 Install [mise](https://mise.jdx.dev/getting-started.html) and, from the repository root:
 
 ```bash
+mise trust        # once per clone: mise.toml runs shell (tasks, the postinstall hook), so mise asks you to trust it
 mise install      # .NET SDK and Node at the versions in global.json and .nvmrc, the dotnet tools, the git hooks
 mise run setup    # also installs the frontend dependencies (npm ci)
 mise tasks        # list everything you can run
 ```
+
+Trust the root git folder (the main checkout) **once**: every git worktree of that clone is trusted too, so a new worktree needs no `mise trust`. A separate clone is a separate trust decision.
 
 mise reads the SDK version from `global.json` and the Node version from `.nvmrc`, so those files stay the single source of each version. `mise install` also restores the local dotnet tools in `dotnet-tools.json` (husky, curb, minver, Aspire — no workload install required) and installs the git hooks.
 
@@ -160,9 +163,10 @@ This repository uses [Husky.Net](https://alirezanet.github.io/Husky.Net/) to aut
 
 ### Installation
 
-Husky.Net is included as a dotnet tool. `mise install` restores the tools and installs the git hooks, so after cloning the repository (or creating a worktree) run:
+Husky.Net is included as a dotnet tool. `mise install` restores the tools and installs the git hooks, so after cloning the repository (or creating a worktree) run the following. `mise trust` is only needed once per clone, in the root git folder, and covers its worktrees:
 
 ```bash
+mise trust    # first run in a clone only
 mise install
 ```
 
