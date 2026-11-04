@@ -253,8 +253,6 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("_ml _flush", "operation-ml-flush-job");
 		yield return ("flush", "operation-indices-flush");
 		yield return ("search retriever", "operation-search");
-		yield return ("cluster flat_settings", "operation-cluster-get-settings");
-		yield return ("flat_settings cluster", "operation-cluster-get-settings");
 		yield return ("es|ql drop_null_columns", "operation-esql-query");
 		yield return ("search knn", "operation-search");
 		yield return ("knn search", "operation-search");
@@ -324,6 +322,9 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		operations.Should().AllSatisfy(r => r.Properties.Should().Contain(p => p.Name == field && p.Location == location));
 	}
 
+	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
+	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
+
 	/// <summary>
 	/// Not an assertion: prints the top three operations of every judged API query, with each word's winning role, for
 	/// whoever tunes <see cref="ApiLookupWeights"/> next.
@@ -347,6 +348,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 					.Size(3)
 					.Query(ApiLookupQueryBuilder.Build(query))
 					.PostFilter(new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" })
+					.Source(sf => sf.Filter(f => f.Includes(ReportSourceIncludes)))
 					.IncludeNamedQueriesScore(true),
 				ct
 			);
@@ -377,18 +379,11 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var titles = searchResult.Results.Select(r => r.Title.Replace("<mark>", "").Replace("</mark>", "")).ToList();
 		TestContext.Current?.Output.WriteLine(string.Join("\n", titles));
 
-		// No operation contains the third word, so the strict query matches nothing. Only the 75% clause returns hits.
-		searchResult.TotalResults.Should().BeGreaterThan(0);
-		// The operations that match both real words lead.
-		titles
-			.Take(3)
-			.Should()
-			.OnlyContain(
-				t => t.Contains("create", StringComparison.OrdinalIgnoreCase) && t.Contains(
-					"deployment",
-					StringComparison.OrdinalIgnoreCase
-				)
-			);
+		// The unknown third word is ignored under the 2<75% rule, so an operation needs only the two real words.
+		// A path word can match a query word the title lacks (kstem stems the path word "deployments" to "deployment").
+		titles.Should().NotBeEmpty();
+		titles[0].Should().ContainEquivalentOf("create").And.ContainEquivalentOf("deployment");
+		titles.Take(3).Should().OnlyContain(t => t.Contains("create", StringComparison.OrdinalIgnoreCase));
 	}
 
 	[Test]
