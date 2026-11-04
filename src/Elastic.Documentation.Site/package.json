@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@elastic/synthetics": "1.26.3",
+    "@elastic/synthetics": "1.27.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@tailwindcss/vite": "4.3.3",
