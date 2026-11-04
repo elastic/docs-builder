@@ -73,7 +73,7 @@ function sameLanguage(a: string | undefined, b: string | undefined) {
  * Measured from the code (scrollHeight is the full content even when clipped), so it does not depend on how
  * much room the rail currently gives the card.
  */
-function syncStripHeight(carousel: HTMLElement) {
+export function syncStripHeight(carousel: HTMLElement) {
     const strip = carousel.querySelector<HTMLElement>('[data-carousel-strip]')
     const card = carousel.querySelector<HTMLElement>(
         '.api-code-carousel-card.is-active'
@@ -86,15 +86,20 @@ function syncStripHeight(carousel: HTMLElement) {
     const code = Number.isFinite(cap)
         ? Math.min(body.scrollHeight, cap)
         : body.scrollHeight
+    const height = stripChrome(strip, card) + code
+    if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
+}
+
+/** The part of the strip that is not code: the card's header and border, and the strip's own padding. */
+export function stripChrome(strip: HTMLElement, card: HTMLElement): number {
     const header = card.querySelector<HTMLElement>('header')?.offsetHeight ?? 0
-    // The card's border and the strip's own padding, or the card comes up short and its code scrolls.
     const stripStyle = getComputedStyle(strip)
-    const chrome =
+    return (
+        header +
         2 +
         (parseFloat(stripStyle.paddingTop) || 0) +
         (parseFloat(stripStyle.paddingBottom) || 0)
-    const height = header + code + chrome
-    if (code > 0) strip.style.setProperty('--api-strip-height', `${height}px`)
+    )
 }
 
 /** Offers "Show more" only on captions cut off by their three-line clamp. A hidden one measures zero, so it waits until shown. */
@@ -268,11 +273,11 @@ function scenarioPanels(root: ParentNode): HTMLElement[] {
     )
 }
 
-function visiblePanel(examples: HTMLElement): HTMLElement | undefined {
+export function visiblePanel(examples: HTMLElement): HTMLElement | undefined {
     return scenarioPanels(examples).find((p) => !p.hasAttribute('hidden'))
 }
 
-function visibleCarousel(examples: HTMLElement): HTMLElement | null {
+export function visibleCarousel(examples: HTMLElement): HTMLElement | null {
     return (visiblePanel(examples) ?? examples).querySelector<HTMLElement>(
         '[data-api-carousel]'
     )

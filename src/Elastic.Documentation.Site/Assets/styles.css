@@ -80,8 +80,8 @@ body {
 	);
 
 	--max-api-sidebar-width: calc(var(--spacing) * 70);
-	--max-examples-width: calc(var(--spacing) * 110);
-	--max-api-content-width: var(--max-text-width);
+	--max-examples-width: calc(var(--spacing) * 120);
+	--max-api-content-width: calc(var(--max-text-width) - var(--spacing) * 10);
 }
 
 #pages-nav li.current {

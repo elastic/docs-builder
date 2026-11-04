@@ -1003,6 +1003,13 @@
 	overflow-wrap: anywhere;
 	word-break: break-word;
 }
+/* Registered as a length so api-examples-balance.ts reads the 16-line cap in pixels. */
+@property --api-code-cap {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
 .api-page-intro,
 #elastic-api-v3,
 #schema-definition,
@@ -2923,7 +2930,7 @@ button.example-response-tab:focus-visible {
 	}
 
 	.api-page-grid {
-		grid-template-columns: minmax(0, 1fr) minmax(0, 40%);
+		grid-template-columns: minmax(0, 1fr) minmax(0, 44%);
 		grid-template-rows: auto auto;
 	}
 
@@ -2944,14 +2951,13 @@ button.example-response-tab:focus-visible {
 		min-width: 0;
 		padding-top: 16px;
 		padding-bottom: 48px;
-		/* Like the navigation and TOC columns: stays in view while the sections scroll and, when its content is
-		   taller than the window, scrolls as one column. Nothing inside it shrinks or scrolls on its own. */
+		/* Stays in view while the sections scroll and never scrolls itself. It is exactly as tall as the window, so
+		   api-examples-balance.ts can share the room left under the chips and captions between the request and the
+		   response code. It does not clip, so the Copy page menu can open past its edge. */
 		position: sticky;
 		top: var(--offset-top, 0px);
 		align-self: start;
-		max-height: calc(100vh - var(--offset-top, 0px));
-		overflow-y: auto;
-		scrollbar-gutter: stable;
+		height: calc(100vh - var(--offset-top, 0px));
 		box-sizing: border-box;
 	}
 
@@ -2959,16 +2965,17 @@ button.example-response-tab:focus-visible {
 		flex: 0 0 auto;
 	}
 
+	/* Scrolls only in a window too short for the chips, headers and captions alone. */
+	.api-page-rail > #api-examples-panel {
+		flex: 1 1 0;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
 	.api-page-rail > .api-page-actions {
 		order: 0;
 		align-self: flex-start;
 		margin: 0;
-	}
-
-	/* The rail scrolls like the navigation column and clips what leaves it, so the menu opens inward from the button. */
-	.api-page-rail .api-page-actions-menu {
-		right: auto;
-		left: 0;
 	}
 
 	.api-page-rail > :not(.api-page-actions) {
@@ -3959,15 +3966,14 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
-   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
-   above the response. The 12-line cap stays as the minimum. */
+/* Beside the article api-examples-balance.ts sets both heights from the room left in the rail. */
 @media (min-width: 1024px) {
+	#api-examples-panel .api-code-carousel-card-body {
+		max-height: var(--api-request-code-max, var(--api-code-cap));
+	}
+
 	#api-examples-panel .example-block-body {
-		max-height: max(
-			var(--api-response-cap),
-			calc(100dvh - var(--offset-top, 0px) - 26rem)
-		);
+		max-height: var(--api-response-code-max, var(--api-response-cap));
 	}
 }
 
