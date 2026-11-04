@@ -382,19 +382,18 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 			"=" => new ExampleNode { Children = children },
 			"*" => new SidebarNode { Children = children },
 			"+" => new PassthroughNode(string.Join('\n', contentLines)),
-			"-" when openingDelim == "--" =>
-				style switch
-				{
-					"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
-					_ when IsAdmonitionStyle(style) =>
-						new AdmonitionNode
-						{
-							Type = ParseAdmonitionType(style!),
-							Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
-						},
-					"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
-					_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
-				},
+			"-" when openingDelim == "--" => style switch
+			{
+				"source" => new CodeBlockNode { Language = blockAttr?.Language, Source = string.Join('\n', contentLines) },
+				_ when IsAdmonitionStyle(style) =>
+					new AdmonitionNode
+					{
+						Type = ParseAdmonitionType(style!),
+						Children = children.Count > 0 ? children : WrapAsBlocks(contentLines)
+					},
+				"sidebar" => new SidebarNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) },
+				_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
+			},
 			"/" => null,
 			_ => new OpenBlockNode { Children = children.Count > 0 ? children : WrapAsBlocks(contentLines) }
 		};
@@ -1501,41 +1500,41 @@ public partial class AsciidocParser(AsciidocParserOptions options)
 
 	[GeneratedRegex(@"link:([^\[]+)\[([^\]]*)\]|"
 		+ // groups 1,2: link
-		 @"<<([^,>]+)(?:,([\s\S]+?))?>>>|"
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>>|"
 		+ // groups 3,4: triple-xref (allow newlines in text)
-		 @"<<([^,>]+)(?:,([\s\S]+?))?>>"
+		@"<<([^,>]+)(?:,([\s\S]+?))?>>"
 		+ "|"
 		+ // groups 5,6: xref (allow newlines in text)
-		 @"image:([^\[]+)\[([^\]]*)\]|"
+		@"image:([^\[]+)\[([^\]]*)\]|"
 		+ // groups 7,8: image
-		 @"footnote:\[([^\]]*)\]|"
+		@"footnote:\[([^\]]*)\]|"
 		+ // group 9: footnote
-		 @"pass:\[([^\]]*)\]|"
+		@"pass:\[([^\]]*)\]|"
 		+ // group 10: pass:[] passthrough
-		 @"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|"
+		@"\[([a-zA-Z][a-zA-Z0-9_-]*)\]#([^#]+)#|"
 		+ // groups 11,12: [role]#text#
-		 @"\*\*([^\*<]+)\*\*|"
+		@"\*\*([^\*<]+)\*\*|"
 		+ // group 13: unconstrained bold (no < prevents spanning xref markers)
-		 @"\*([^\*<]+)\*|"
+		@"\*([^\*<]+)\*|"
 		+ // group 14: constrained bold (no < prevents spanning xref markers)
-		 @"_([^_<]+)_|"
+		@"_([^_<]+)_|"
 		+ // group 15: italic (no < prevents spanning xref markers)
-		 @"(?<!`)`([^`]+)`|"
+		@"(?<!`)`([^`]+)`|"
 		+ // group 16: mono (lookbehind prevents ``curly-quote'' from opening a code span)
-		 @"\^([^\^]+)\^|"
+		@"\^([^\^]+)\^|"
 		+ // group 17: superscript
-		 @"~([^~]+)~|"
+		@"~([^~]+)~|"
 		+ // group 18: subscript
-		 @"\{([a-zA-Z0-9_-]+)\}|"
+		@"\{([a-zA-Z0-9_-]+)\}|"
 		+ // group 19: attr-ref
-		 @"(https?://[^\[\s]+)\[([^\]]*)\]|"
+		@"(https?://[^\[\s]+)\[([^\]]*)\]|"
 		+ // groups 20,21: url
-		 @"(?<![a-zA-Z0-9.])\+([^\+]+)\+"
+		@"(?<![a-zA-Z0-9.])\+([^\+]+)\+"
 		+ "|"
 		+ // group 22: +inline+ passthrough (constrained: not after alphanum)
-		 @"``([^`']+)''|"
+		@"``([^`']+)''|"
 		+ // group 23: AsciiDoc typographic quotes -> "text"
-		 @"\s*\+\s*$" // line-break (no capture)
+		@"\s*\+\s*$" // line-break (no capture)
 		)]
 	private static partial Regex InlineCombinedRegex();
 

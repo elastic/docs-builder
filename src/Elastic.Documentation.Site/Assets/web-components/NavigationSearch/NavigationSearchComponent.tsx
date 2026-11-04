@@ -12,6 +12,8 @@ import { StrictMode } from 'react'
 interface NavigationSearchProps {
     placeholder?: string
     type?: string
+    /** `sidebar` and `hero`: the host owns spacing and the divider, so render the bare input. `hero` is the large landing-page box. */
+    variant?: string
 }
 
 const parseTypeFilter = (value: string | undefined): TypeFilter =>
@@ -20,6 +22,7 @@ const parseTypeFilter = (value: string | undefined): TypeFilter =>
 export const NavigationSearchWrapper = ({
     placeholder,
     type,
+    variant,
 }: NavigationSearchProps) => {
     return (
         <StrictMode>
@@ -32,6 +35,7 @@ export const NavigationSearchWrapper = ({
                     <NavigationSearchInner
                         placeholder={placeholder}
                         type={type}
+                        variant={variant}
                     />
                 </QueryClientProvider>
             </EuiProvider>
@@ -42,12 +46,33 @@ export const NavigationSearchWrapper = ({
 const NavigationSearchInner = ({
     placeholder,
     type,
+    variant,
 }: NavigationSearchProps) => {
     const { euiTheme } = useEuiTheme()
     const typeFilter = parseTypeFilter(type)
+    const resolvedPlaceholder =
+        placeholder ?? (typeFilter === 'api' ? 'Explore APIs' : undefined)
 
     if (config.airGapped) {
         return null
+    }
+
+    const search = (
+        <NavigationSearch
+            size={
+                variant === 'sidebar'
+                    ? 's'
+                    : variant === 'hero'
+                      ? 'l'
+                      : undefined
+            }
+            placeholder={resolvedPlaceholder}
+            typeFilter={typeFilter}
+        />
+    )
+
+    if (variant === 'sidebar' || variant === 'hero') {
+        return search
     }
 
     return (
@@ -58,13 +83,7 @@ const NavigationSearchInner = ({
                 padding-right: ${euiTheme.size.base};
             `}
         >
-            <NavigationSearch
-                placeholder={
-                    placeholder ??
-                    (typeFilter === 'api' ? 'Jump to API' : undefined)
-                }
-                typeFilter={typeFilter}
-            />
+            {search}
             <EuiHorizontalRule
                 margin="none"
                 css={css`
@@ -81,6 +100,7 @@ customElements.define(
         props: {
             placeholder: 'string',
             type: 'string',
+            variant: 'string',
         },
     })
 )

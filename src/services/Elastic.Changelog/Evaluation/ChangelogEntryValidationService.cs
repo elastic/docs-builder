@@ -12,7 +12,7 @@ using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.ReleaseNotes;
 using Elastic.Documentation.Services;
 using Microsoft.Extensions.Logging;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Evaluation;
 
@@ -156,7 +156,10 @@ public class ChangelogEntryValidationService(
 			try
 			{
 				var normalized = ReleaseNotesSerialization.NormalizeYaml(rawYaml);
-				dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(normalized);
+				dto = SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+					normalized,
+					ReleaseNotesSerialization.GetEntryDeserializerOptions(relPath)
+				);
 				if (dto is not null)
 				{
 					var fnNum = filenamePrNumbers.TryGetValue(relPath, out var n) ? n : (int?)null;
@@ -355,7 +358,8 @@ public class ChangelogEntryValidationService(
 			ConfigFile = input.ConfigFile,
 			DefaultBranch = defaultBranch,
 			EntryFindings = entryFindings,
-			ResolvedProducts = resolvedProducts
+			ResolvedProducts = resolvedProducts,
+			CommentOnSuccess = input.CommentOnSuccess
 		};
 
 		await _metadataWriter.WriteAsync(metadata, ctx);

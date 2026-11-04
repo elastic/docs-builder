@@ -15,7 +15,7 @@ using Elastic.Documentation.Services;
 using Elastic.Documentation.Versions;
 using Microsoft.Extensions.Logging;
 using NetEscapades.EnumGenerators;
-using YamlDotNet.Core;
+using SharpYaml;
 
 namespace Elastic.Changelog.Rendering;
 

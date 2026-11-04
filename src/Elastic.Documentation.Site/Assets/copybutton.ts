@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // This is copied from legacy. It works, but we should rework this if we ever need to change it
+import { flashTooltip } from './tooltip'
 import { $$optional } from 'select-dom'
 
 const messages = {
@@ -59,7 +60,7 @@ if (
 /**
  * SVG files for our copy buttons
  */
-const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
+export const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-check" width="44" height="44" viewBox="0 0 24 24" stroke-width="2" stroke="#22863a" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <title>${messages[locale]['copy_success']}</title>
   <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
   <path d="M5 12l5 5l10 -10" />
@@ -80,9 +81,14 @@ if (!iconCopy) {
 }
 
 // EUI copy (Figma APIs 10202:4933). Keep 16×16 root; the header button is the 40×40 hit target.
-const iconCopyEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+export const iconCopyEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
   <path fill-rule="evenodd" clip-rule="evenodd" d="M6 1C5.44771 1 5 1.44772 5 2V10C5 10.5523 5.44772 11 6 11H14C14.5523 11 15 10.5523 15 10V2C15 1.44771 14.5523 1 14 1H6ZM6 2L14 2V10H6V2Z" fill="currentColor"/>
   <path d="M2 5H4V6H2V14H10V12H11V14C11 14.5523 10.5523 15 10 15H2C1.44772 15 1 14.5523 1 14V6C1 5.44772 1.44771 5 2 5Z" fill="currentColor"/>
+</svg>`
+
+// EUI check, fill based like the copy icon: card headers paint SVGs with fill, not stroke.
+export const iconCheckEui = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+  <path fill="currentColor" d="M6.5 12.207 2.146 7.854l.708-.708L6.5 10.793l6.646-6.647.708.708L6.5 12.207Z"/>
 </svg>`
 
 const codeCellId = (index: number, prefix: string) => `${prefix}${index}`
@@ -94,17 +100,26 @@ const timeoutIcon = 1500
 const timeoutSuccessClass = 1500
 
 const temporarilyChangeTooltip = (el, oldText, newText) => {
-    el.setAttribute('data-tooltip', newText)
     el.classList.add('success')
     // Remove success a little bit sooner than we change the tooltip
     // So that we can use CSS to hide the copybutton first
     setTimeout(() => el.classList.remove('success'), timeoutSuccessClass)
+    // Card header buttons carry a tippy tooltip, the others the CSS one
+    if (el.hasAttribute('data-tippy-content')) {
+        flashTooltip(el, newText, timeoutIcon)
+        return
+    }
+    el.setAttribute('data-tooltip', newText)
     setTimeout(() => el.setAttribute('data-tooltip', oldText), timeoutIcon)
 }
 
 // Changes the copy button icon for two seconds, then changes it back
-const temporarilyChangeIcon = (el, icon = iconCopy) => {
-    el.innerHTML = iconCheck
+export const temporarilyChangeIcon = (
+    el: HTMLElement,
+    icon = iconCopy,
+    check = iconCheck
+) => {
+    el.innerHTML = check
     setTimeout(() => {
         el.innerHTML = icon
     }, timeoutIcon)
@@ -125,16 +140,25 @@ const addCopyButtonToCodeCells = (
         codeCell.setAttribute('id', id)
         const clipboardButton = document.createElement('button')
         clipboardButton.setAttribute('aria-label', 'Copy code to clipboard')
-        clipboardButton.className = 'copybtn o-tooltip--left'
-        clipboardButton.setAttribute('data-tooltip', messages[locale]['copy'])
+        // Cards (see code-block.css) own a header with a [data-code-actions]
+        // slot; the button mounts there instead of overlaying the code.
+        const headerActions = codeCell
+            .closest('[data-code-card]')
+            ?.querySelector('[data-code-actions]')
+        if (headerActions) {
+            clipboardButton.className = 'copybtn'
+            clipboardButton.setAttribute(
+                'data-tippy-content',
+                messages[locale]['copy']
+            )
+        } else {
+            clipboardButton.className = 'copybtn o-tooltip--left'
+            clipboardButton.setAttribute(
+                'data-tooltip',
+                messages[locale]['copy']
+            )
+        }
         clipboardButton.setAttribute('data-clipboard-target', `#${id}`)
-        const responseActions = codeCell
-            .closest('.example-block--response')
-            ?.querySelector('.example-block-actions')
-        const codeSampleActions = codeCell
-            .closest('[data-api-code-sample]')
-            ?.querySelector('.api-code-sample-actions')
-        const headerActions = responseActions || codeSampleActions
         const headerIcon = headerActions ? iconCopyEui : iconCopy
         clipboardButton.innerHTML = headerIcon
         clipboardButton.onclick = async () => {
@@ -146,29 +170,24 @@ const addCopyButtonToCodeCells = (
                     messages[locale]['copy'],
                     messages[locale]['copy_success']
                 )
-                temporarilyChangeIcon(clipboardButton, headerIcon)
+                temporarilyChangeIcon(
+                    clipboardButton,
+                    headerIcon,
+                    headerActions ? iconCheckEui : iconCheck
+                )
             } catch (error) {
                 console.error(error)
             }
         }
 
-        // API example cards: mount copy in the card header (right), not over the code.
-        if (responseActions) {
-            clipboardButton.classList.add('copybtn--in-header')
-            const panel = codeCell.closest('.example-response-panel')
-            if (panel instanceof HTMLElement && panel.dataset.status) {
-                clipboardButton.dataset.status = panel.dataset.status
+        if (headerActions) {
+            // Switchable panels (language / status): the button follows its panel.
+            const panel = codeCell.closest('[data-code-panel]')
+            if (panel instanceof HTMLElement && panel.dataset.codePanel) {
+                clipboardButton.dataset.codePanel = panel.dataset.codePanel
                 clipboardButton.hidden = panel.hasAttribute('hidden')
             }
-            responseActions.appendChild(clipboardButton)
-        } else if (codeSampleActions) {
-            clipboardButton.classList.add('copybtn--in-header')
-            const panel = codeCell.closest('.api-code-sample-panel')
-            if (panel instanceof HTMLElement && panel.dataset.lang) {
-                clipboardButton.dataset.lang = panel.dataset.lang
-                clipboardButton.hidden = panel.hasAttribute('hidden')
-            }
-            codeSampleActions.appendChild(clipboardButton)
+            headerActions.appendChild(clipboardButton)
         } else {
             codeCell.insertAdjacentElement('afterend', clipboardButton)
         }

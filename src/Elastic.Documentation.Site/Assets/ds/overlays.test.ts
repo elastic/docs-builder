@@ -1,0 +1,131 @@
+import { initFlyoutResize, initFlyouts, initToasts } from './overlays'
+
+describe('toast', () => {
+    beforeEach(() => {
+        document.body.innerHTML =
+            '<div data-toast><p>Saved</p><button data-toast-dismiss hidden></button></div>'
+        initToasts()
+    })
+
+    it('reveals the dismiss button and removes the toast when it is used', () => {
+        const button = document.querySelector<HTMLButtonElement>(
+            '[data-toast-dismiss]'
+        )!
+        expect(button.hidden).toBe(false)
+
+        button.click()
+
+        expect(document.querySelector('[data-toast]')).toBeNull()
+    })
+})
+
+describe('flyout', () => {
+    beforeEach(() => {
+        document.body.innerHTML =
+            '<button data-flyout-open="f" hidden>Open</button><dialog id="f"><p>x</p></dialog>'
+        const dialog = document.getElementById('f') as HTMLDialogElement
+        dialog.showModal = vi.fn()
+        dialog.close = vi.fn()
+        initFlyouts()
+    })
+
+    it('reveals the trigger and opens the dialog', () => {
+        const trigger =
+            document.querySelector<HTMLButtonElement>('[data-flyout-open]')!
+        expect(trigger.hidden).toBe(false)
+
+        trigger.click()
+
+        expect(
+            (document.getElementById('f') as HTMLDialogElement).showModal
+        ).toHaveBeenCalled()
+    })
+
+    it('closes on a click on the backdrop only', () => {
+        const dialog = document.getElementById('f') as HTMLDialogElement
+        dialog
+            .querySelector('p')!
+            .dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(dialog.close).not.toHaveBeenCalled()
+
+        dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        expect(dialog.close).toHaveBeenCalled()
+    })
+
+    it('leaves a trigger hidden when its dialog is missing', () => {
+        document.body.innerHTML =
+            '<button data-flyout-open="nope" hidden></button>'
+        initFlyouts()
+
+        expect(
+            document.querySelector<HTMLButtonElement>('button')!.hidden
+        ).toBe(true)
+    })
+})
+
+describe('flyout resize', () => {
+    beforeEach(() => {
+        localStorage.clear()
+        document.body.innerHTML = `<dialog data-flyout-resizable><div data-flyout-handle hidden tabindex="0"></div></dialog>`
+    })
+
+    it('reveals the handle and resizes with the arrow keys', () => {
+        initFlyoutResize()
+        const dialog = document.querySelector<HTMLElement>('dialog')!
+        const handle = document.querySelector<HTMLElement>(
+            '[data-flyout-handle]'
+        )!
+        dialog.getBoundingClientRect = () => ({ width: 400 }) as DOMRect
+
+        handle.dispatchEvent(
+            new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })
+        )
+
+        expect(handle.hidden).toBe(false)
+        expect(dialog.style.getPropertyValue('--flyout-width')).toBe('424px')
+        expect(localStorage.getItem('docs-flyout-width')).toBe('424')
+    })
+
+    it('restores the saved width and never goes below the minimum', () => {
+        localStorage.setItem('docs-flyout-width', '100')
+        initFlyoutResize()
+
+        expect(
+            document
+                .querySelector<HTMLElement>('dialog')!
+                .style.getPropertyValue('--flyout-width')
+        ).toBe('320px')
+    })
+
+    it('still resizes when browser storage is blocked', () => {
+        const blocked = () => {
+            throw new DOMException('blocked', 'SecurityError')
+        }
+        const get = vi
+            .spyOn(Storage.prototype, 'getItem')
+            .mockImplementation(blocked)
+        const set = vi
+            .spyOn(Storage.prototype, 'setItem')
+            .mockImplementation(blocked)
+        try {
+            expect(() => initFlyoutResize()).not.toThrow()
+            const dialog = document.querySelector<HTMLElement>('dialog')!
+            dialog.getBoundingClientRect = () => ({ width: 400 }) as DOMRect
+            document
+                .querySelector<HTMLElement>('[data-flyout-handle]')!
+                .dispatchEvent(
+                    new KeyboardEvent('keydown', {
+                        key: 'ArrowLeft',
+                        bubbles: true,
+                    })
+                )
+
+            expect(dialog.style.getPropertyValue('--flyout-width')).toBe(
+                '424px'
+            )
+        } finally {
+            get.mockRestore()
+            set.mockRestore()
+        }
+    })
+})

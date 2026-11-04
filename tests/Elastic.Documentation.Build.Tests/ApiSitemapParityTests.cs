@@ -10,7 +10,41 @@ namespace Elastic.Documentation.Build.Tests;
 // TODO: Delete this class once the API Explorer migration (elastic/docs-eng-team#436) is finalised.
 public class ApiSitemapParityTests
 {
-	private const string DiscontinuedObservabilityServerlessPath = "/docs/api/doc/observability-serverless";
+	// Mirrors modules/elastic-docs-v3/api-root-redirects.json in elastic/docs-infra (#459), which the native viewer resolves exact match first.
+	private const string ApiDocPrefix = "/docs/api/doc/";
+	private static readonly IReadOnlyDictionary<string, string> RedirectedRoots = new Dictionary<string, string>
+	{
+		["serverless"] = "kibana-serverless",
+		["elastic-cloud-serverless"] = "cloud-serverless"
+	};
+	private static readonly IReadOnlySet<string> GoneRoots = new HashSet<string> { "observability-serverless" };
+
+	// Exact page redirects from the same file. Bump.sh served a Servers page for specs that declare no servers,
+	// Cloud Billing renamed its Budgets tag, Kibana removed Streams operations from its 9.6 spec, and some bump.sh topic
+	// pages are a children: page or the /authentication page in the native viewer.
+	private static readonly IReadOnlyDictionary<string, string> RedirectedPages = new Dictionary<string, string>
+	{
+		["/docs/api/doc/elasticsearch/servers"] = "/docs/api/doc/elasticsearch",
+		["/docs/api/doc/elasticsearch/v8/servers"] = "/docs/api/doc/elasticsearch/v8",
+		["/docs/api/doc/elasticsearch/v9/servers"] = "/docs/api/doc/elasticsearch/v9",
+		["/docs/api/doc/elasticsearch-serverless/servers"] = "/docs/api/doc/elasticsearch-serverless",
+		["/docs/api/doc/cloud-enterprise/servers"] = "/docs/api/doc/cloud-enterprise",
+		["/docs/api/doc/cloud-enterprise/v3/servers"] = "/docs/api/doc/cloud-enterprise/v3",
+		["/docs/api/doc/cloud-billing/group/endpoint-budgets"] = "/docs/api/doc/cloud-billing/group/endpoint-billing-budgets",
+		["/docs/api/doc/kibana/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/kibana-api-overview",
+		["/docs/api/doc/kibana/v8/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/v8/kibana-api-overview",
+		["/docs/api/doc/kibana/v9/topic/topic-kibana-spaces"] = "/docs/api/doc/kibana/v9/kibana-api-overview",
+		["/docs/api/doc/cloud/topic/topic-authentication"] = "/docs/api/doc/cloud/authentication",
+		["/docs/api/doc/cloud-billing/topic/topic-authentication"] = "/docs/api/doc/cloud-billing/authentication",
+		["/docs/api/doc/kibana/v9/group/endpoint-significant_events"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-delete-streams-name-queries-queryid"] =
+			"/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-get-streams-name-queries"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-get-streams-name-significant-events"] =
+			"/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-post-streams-name-queries-bulk"] = "/docs/api/doc/kibana/v9/group/endpoint-streams",
+		["/docs/api/doc/kibana/v9/operation/operation-put-streams-name-queries-queryid"] = "/docs/api/doc/kibana/v9/group/endpoint-streams"
+	};
 	private static readonly Uri SitemapIndex = new("https://www.elastic.co/docs/api/sitemap_index.xml");
 	private static readonly XNamespace SitemapNamespace = "http://www.sitemaps.org/schemas/sitemap/0.9";
 
@@ -27,26 +61,51 @@ public class ApiSitemapParityTests
 
 		var productionUrls = await DownloadPageUrls(client, SitemapIndex, cancellationToken);
 		await Assert.That(productionUrls).IsNotEmpty();
-		var auditedUrls = productionUrls.Where(
-			url => !url.AbsolutePath.StartsWith(DiscontinuedObservabilityServerlessPath, StringComparison.Ordinal)
+		var gone = productionUrls.Where(url => GoneRoots.Contains(RootOf(url))).ToArray();
+		var redirected = productionUrls.Where(
+			url => RedirectedPages.ContainsKey(url.AbsolutePath) || RedirectedRoots.ContainsKey(RootOf(url))
 		).ToArray();
+		// Redirected pages are served by an exact or prefix redirect, so verify the page exists at its redirect target.
+		var auditedPaths = productionUrls.Except(gone).Select(RedirectTarget).Distinct().ToArray();
 		var outputRoot = Environment.GetEnvironmentVariable("API_SITEMAP_PARITY_OUTPUT")
 			?? Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "assembly");
-		var missing = auditedUrls
-			.Where(url => !File.Exists(Path.Join(outputRoot, url.AbsolutePath.TrimStart('/'), "index.html")))
-			.OrderBy(url => url.AbsoluteUri, StringComparer.Ordinal)
+		var missing = auditedPaths
+			.Where(path => !File.Exists(Path.Join(outputRoot, path.TrimStart('/'), "index.html")))
+			.Order(StringComparer.Ordinal)
 			.ToArray();
 		var reportPath = Path.Join(Paths.WorkingDirectoryRoot.FullName, ".artifacts", "api-sitemap-missing-pages.txt");
 
 		if (missing.Length > 0)
 		{
-			await File.WriteAllLinesAsync(reportPath, missing.Select(url => url.AbsoluteUri), cancellationToken);
+			await File.WriteAllLinesAsync(reportPath, missing.Select(path => new Uri(SitemapIndex, path).AbsoluteUri), cancellationToken);
 			Skip.Test(
-				$"WARNING: {missing.Length} of {auditedUrls.Length} production API pages are not generated locally: " + $"see {reportPath}"
+				$"WARNING: {missing.Length} of {auditedPaths.Length} production API pages are not generated locally: see {reportPath} " +
+					$"({redirected.Length} redirected pages checked at their target, {gone.Length} gone pages excluded)"
 			);
 		}
 
 		File.Delete(reportPath);
+	}
+
+	private static string RootOf(Uri url)
+	{
+		var path = url.AbsolutePath;
+		if (!path.StartsWith(ApiDocPrefix, StringComparison.Ordinal))
+			return string.Empty;
+		var rest = path[ApiDocPrefix.Length..];
+		var slash = rest.IndexOf('/');
+		return slash < 0 ? rest : rest[..slash];
+	}
+
+	private static string RedirectTarget(Uri url)
+	{
+		if (RedirectedPages.TryGetValue(url.AbsolutePath, out var page))
+			return page;
+
+		var root = RootOf(url);
+		return RedirectedRoots.TryGetValue(root, out var newRoot)
+			? string.Concat(ApiDocPrefix, newRoot, url.AbsolutePath.AsSpan(ApiDocPrefix.Length + root.Length))
+			: url.AbsolutePath;
 	}
 
 	private static async Task<IReadOnlySet<Uri>> DownloadPageUrls(HttpClient client, Uri sitemap, CancellationToken ctx)

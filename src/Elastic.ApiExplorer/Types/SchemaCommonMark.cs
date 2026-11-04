@@ -5,6 +5,7 @@
 using System.Text;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Infrastructure;
+using Elastic.ApiExplorer.Model;
 
 namespace Elastic.ApiExplorer.Types;
 
@@ -16,12 +17,14 @@ internal static class SchemaCommonMark
 		var apiBaseUrl = context.CurrentNavigation.NavigationRoot.Url;
 		var openApiSchema = schema.Schema;
 		ApiCommonMark.Heading(markdown, 1, schema.DisplayName);
-		ApiCommonMark.Paragraph(markdown, $"`{schema.SchemaId}`");
 
 		if (!string.IsNullOrEmpty(page.DictionaryTypeName))
 		{
-			ApiCommonMark.Paragraph(markdown, $"`{page.DictionaryTypeName}`");
-			ApiCommonMark.Paragraph(markdown, $"This type represents a dictionary mapping string keys to `{schema.DisplayName}` values.");
+			ApiCommonMark.Paragraph(markdown, ApiCommonMark.CodeSpan(page.DictionaryTypeName));
+			ApiCommonMark.Paragraph(
+				markdown,
+				$"This type represents a dictionary mapping string keys to {ApiCommonMark.CodeSpan(schema.DisplayName)} values."
+			);
 		}
 
 		if (!string.IsNullOrEmpty(openApiSchema.Description))
@@ -33,16 +36,18 @@ internal static class SchemaCommonMark
 		if (page.ExternalDocs is { } docs)
 			ApiCommonMark.Paragraph(markdown, ApiCommonMark.Link(docs.LinkText, docs.Url));
 
-		if (openApiSchema.Enum is { Count: > 0 })
+		if (page.EnumValues.Count > 0)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Enum Values");
-			foreach (var enumValue in openApiSchema.Enum)
-				_ = markdown.AppendLine($"- `{enumValue}`");
+			ApiCommonMark.Heading(markdown, 2, "Enum values");
+			foreach (var enumValue in page.EnumValues)
+				_ = markdown.AppendLine($"- {ApiCommonMark.CodeSpan(enumValue)}");
 			_ = markdown.AppendLine();
 		}
 
-		WriteUnion(markdown, page.OneOfVariants, "Union Types (oneOf)", "This type can be one of the following:", apiBaseUrl);
-		WriteUnion(markdown, page.AnyOfVariants, "Union Types (anyOf)", "This type can be any of the following:", apiBaseUrl);
+		if (page.Requires is { } requires)
+			ApiCommonMark.Paragraph(markdown, ApiPropertyMarkdown.Format(requires));
+
+		WriteUnion(markdown, page.UnionVariants, UnionHeading(page.UnionKeyword), page.UnionIntro, apiBaseUrl);
 
 		if (page.Properties is not null)
 		{
@@ -53,7 +58,7 @@ internal static class SchemaCommonMark
 
 		if (page.AdditionalPropertiesType is not null)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Additional Properties");
+			ApiCommonMark.Heading(markdown, 2, "Additional properties");
 			ApiPropertyMarkdown.WriteType(markdown, page.AdditionalPropertiesType);
 		}
 
@@ -65,6 +70,12 @@ internal static class SchemaCommonMark
 
 		return markdown.ToString();
 	}
+
+	/// <summary>The heading of a schema page's union section, naming the keyword the union came from.</summary>
+	public static string UnionHeading(UnionKeyword keyword) => $"Union types ({keyword.ToSchemaKeyword()})";
+
+	public static string UnionIntro(UnionKeyword keyword) =>
+		keyword == UnionKeyword.AnyOf ? "This type can be any of the following:" : "This type can be one of the following:";
 
 	private static void WriteUnion(StringBuilder markdown, ApiUnionVariants? variants, string heading, string intro, string apiBaseUrl)
 	{

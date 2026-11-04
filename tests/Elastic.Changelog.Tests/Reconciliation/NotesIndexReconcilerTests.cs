@@ -34,6 +34,12 @@ public class NotesIndexReconcilerTests
 		+ "  - product: elasticsearch\n"
 		+ "    versions: [9.0.0, 9.1.0]\n";
 
+	private const string NoteYamlKibanaSameVersion = "title: Kibana known issue\n"
+		+ "type: known-issue\n"
+		+ "products:\n"
+		+ "  - product: kibana\n"
+		+ "    versions: [9.0.0]\n";
+
 	private readonly FakeS3 _s3 = new(PublicBucket);
 	private readonly NotesIndexReconciler _reconciler;
 
@@ -55,13 +61,20 @@ public class NotesIndexReconcilerTests
 			NotesIndexJsonContext.Default.NotesIndex
 		)!;
 
+	private NotesIndex ReadProductIndex(string product, string version) =>
+		JsonSerializer.Deserialize(
+			_s3.ContentOf(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", product, version)),
+			NotesIndexJsonContext.Default.NotesIndex
+		)!;
+
 	// Helper that projects entries to their paths for compact assertions.
 	private static IEnumerable<string> Paths(NotesIndex index) => index.Notes.Select(e => e.Path);
 
 	[Test]
 	public void DirectYamlParse_NoteYaml_HasVersions()
 	{
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(NoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(NoteYaml, ReleaseNotesSerialization.GetEntryDeserializerOptions())!;
 		dto.Products.Should().NotBeNullOrEmpty("YAML has products");
 		dto.Products?[0].Versions.Should().BeEquivalentTo(["9.0.0"]);
 	}
@@ -70,7 +83,11 @@ public class NotesIndexReconcilerTests
 	public void DirectYamlParse_LegacyTargetField_FallsBackToVersions()
 	{
 		// Existing notes in pools still carry `target:` — the reconciler must still read them.
-		var dto = ReleaseNotesSerialization.GetEntryDeserializer().Deserialize<ChangelogEntryDto>(LegacyNoteYaml);
+		var dto =
+			SharpYaml.YamlSerializer.Deserialize<ChangelogEntryDto>(
+				LegacyNoteYaml,
+				ReleaseNotesSerialization.GetEntryDeserializerOptions()
+			)!;
 		dto.Products.Should().NotBeNullOrEmpty();
 #pragma warning disable CS0618 // testing backward-compat read of obsolete Target
 		dto.Products?[0].Target.Should().Be("9.0.0");
@@ -100,6 +117,13 @@ public class NotesIndexReconcilerTests
 			.BeGreaterThan(0, $"reconciler should have written the index; ListCalls={_s3.ListCalls} Gets={_s3.Gets.Count}");
 		var index = ReadIndex("9.0.0");
 		Paths(index).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		index.Product.Should().BeNull();
+		index.Version.Should().BeNull();
+
+		var productIndex = ReadProductIndex("elasticsearch", "9.0.0");
+		Paths(productIndex).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		productIndex.Product.Should().Be("elasticsearch");
+		productIndex.Version.Should().Be("9.0.0");
 	}
 
 	[Test]
@@ -249,5 +273,73 @@ public class NotesIndexReconcilerTests
 
 		// The stale index should be deleted.
 		_s3.Deletes.Should().ContainSingle().Which.Key.Should().Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"));
+	}
+
+	[Test]
+	public async Task ReconcileRepo_TwoProductsSameVersion_ProductIndexesAreIsolated()
+	{
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+		SeedNote("main", "note-kibana.yml", NoteYamlKibanaSameVersion);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		Paths(ReadProductIndex("elasticsearch", "9.0.0")).Should().BeEquivalentTo(["main/note-slow-rollover.yml"]);
+		Paths(ReadProductIndex("kibana", "9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml"]);
+		Paths(ReadIndex("9.0.0")).Should().BeEquivalentTo(["main/note-kibana.yml", "main/note-slow-rollover.yml"]);
+	}
+
+	[Test]
+	public async Task ReconcileRepo_ProductScopedStale_DeletedWithoutDroppingLegacyVersion()
+	{
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"kibana","version":"9.0.0","notes":[]}"""
+		);
+		SeedNote("main", "note-slow-rollover.yml", NoteYaml);
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0")).Should().BeTrue();
+		_s3.Exists(PublicBucket, ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")).Should().BeTrue();
+		_s3
+			.Deletes
+			.Should()
+			.ContainSingle()
+			.Which
+			.Key
+			.Should()
+			.Be(ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "kibana", "9.0.0"));
+	}
+
+	[Test]
+	public async Task ReconcileRepo_NoNotes_DeletesProductScopedAndLegacyIndexes()
+	{
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"notes":[]}"""
+		);
+		_s3.Seed(
+			PublicBucket,
+			ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0"),
+			/*lang=json,strict*/
+			"""{"schema_version":1,"product":"elasticsearch","version":"9.0.0","notes":[]}"""
+		);
+		_s3.Seed(PublicBucket, "changelog/elastic/elasticsearch/main/12345.yaml", "title: PR entry");
+
+		await _reconciler.ReconcileRepoAsync(NotesScope(), TestContext.Current!.Execution.CancellationToken);
+
+		_s3.Puts.Should().BeEmpty();
+		_s3
+			.Deletes
+			.Select(d => d.Key)
+			.Should()
+			.BeEquivalentTo([
+				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "9.0.0"),
+				ChangelogKeys.NotesIndexKey("elastic", "elasticsearch", "elasticsearch", "9.0.0")
+			]);
 	}
 }

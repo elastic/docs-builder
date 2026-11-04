@@ -1,0 +1,20 @@
+@inherits RazorSlice<LayoutSampleModel>
+@using Elastic.Documentation.Site.StyleGuide
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="robots" content="noindex, nofollow">
+	<title>Layout sample</title>
+	<link rel="stylesheet" href="@Model.Static("ds-layers.css")">
+	<link rel="stylesheet" href="@Model.Static("ds.css")">
+	<link rel="stylesheet" href="@Model.Static("ds-guide.css")">
+</head>
+<body class="sg-sample@(Model.Full ? " layout-full" : "")">
+<div class="sg-device__header"><div class="band__content"><div class="sg-slot">Header content · --layout-max</div></div></div>
+<div id="main-container">
+@await RenderPartialAsync(_LayoutSlots.Create(new LayoutSlotsModel(Model.Kind, Drawer: true)))
+</div>
+</body>
+</html>

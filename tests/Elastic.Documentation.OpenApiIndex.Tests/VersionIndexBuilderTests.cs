@@ -110,25 +110,15 @@ public class VersionIndexBuilderTests
 
 	[Test]
 	[Arguments("elastic/elasticsearch/openapi.json")] // missing version segment
-
 	[Arguments("elastic/elasticsearch/8.16/nested/openapi.json")] // too many segments
-
 	[Arguments("elastic//8.16/openapi.json")] // empty repo segment
-
 	[Arguments("elastic/elasticsearch/8.16/")] // empty file segment
-
 	[Arguments("elastic/elasticsearch/not-a-branch/openapi.json")] // not main, master, or <major>.<minor>
-
 	[Arguments("elastic/elasticsearch/8/openapi.json")] // missing minor
-
 	[Arguments("elastic/elasticsearch/8./openapi.json")] // missing minor after the dot
-
 	[Arguments("elastic/elasticsearch/8.x/openapi.json")] // non-numeric minor
-
 	[Arguments("elastic/elasticsearch/.16/openapi.json")] // missing major
-
 	[Arguments("elastic/elasticsearch/+8.16/openapi.json")] // signed major
-
 	public void Build_KeyOfUnexpectedShape_IsReportedAndSkipped(string key)
 	{
 		var (index, invalidKeys) = VersionIndexBuilder.Build([key]);

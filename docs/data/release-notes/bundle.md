@@ -84,7 +84,7 @@ bundle:
 ```
 
 1. The directory that contains changelog files.
-2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write here.
+2. The default directory that contains changelog bundles. Profiles that omit `output_directory` write to a `{product}/` folder here, for example `docs/releases/elasticsearch/`.
 3. The bundle's product metadata, which affects the rules that are applied and the product and version titles that ultimately appear in the documentation. If omitted, it's derived from all the changelogs in the bundle. The authoring repo (`bundle.repo` here) and the first product also determine the bundle's file name, which is derived by convention as `{repo}-{product}-{version}.yaml`.
 4. Optional. Replaces `bundle.output_directory` for this profile (the same as option-mode `--output` when it is a directory). This profile writes `docs/releases/cloud-serverless/elasticsearch-cloud-serverless-{version}.yaml` so a `{changelog}` directive can point at that folder without mixing other products.
 
@@ -137,6 +137,24 @@ docs-builder changelog bundle serverless-release 2026-08-13 \
 ```
 
 For each PR in the range, a checked-in changelog entry (already uploaded to the entry pool) wins; otherwise an entry is synthesized from the PR's title, labels, and release-note text using the same extraction path as `changelog add`. The bundle records the end ref in a `git_ref` metadata field. Refer to [Commit-range mode](/cli/changelog/bundle.md#git-ref-mode) for the full behavior, including the `--dry-run` run report.
+
+#### Trace backports to their original pull request [profile-git-range-backports]
+
+A release branch usually contains backports: pull requests that copy a change from the default branch. The change was authored, labeled, and often documented in the original pull request, not in the backport.
+List the label that marks backports and the command bundles the original instead:
+
+```yaml
+bundle:
+  backports:
+    labels:
+      - backport
+```
+
+For each pull request in the range that has one of these labels, the command finds the pull request it was backported from and uses that in its place.
+It reads a `cherry picked from commit` trailer, the commit subjects, the title, and the body, and accepts a number only when it is a merged pull request on the default branch of the same repository. Issue numbers and pull requests of other repositories are ignored.
+A backport whose original cannot be found stays in the bundle as it is, and the run report lists it.
+
+Use the exact label names. A pattern such as `backport*` would also match opt-out labels like `backport-skip`.
 
 ### Bundle by folder or changelog product
 

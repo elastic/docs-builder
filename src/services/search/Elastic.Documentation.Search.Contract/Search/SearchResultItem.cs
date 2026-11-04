@@ -20,4 +20,5 @@ public record SearchResultItem<TDocument> where TDocument : SearchDocumentBase
 	public required string Description { get; init; }
 
 	public float Score { get; init; }
+	public IReadOnlyList<ApiPropertyEntry> Properties { get; init; } = [];
 }

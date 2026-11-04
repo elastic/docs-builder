@@ -7,8 +7,10 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Operations;
 using Elastic.ApiExplorer.Types;
+using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site;
 using Elastic.Documentation.Site.FileProviders;
+using FakeItEasy;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -26,23 +28,22 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 
 		layout.Title.Should().Be("Run a search | Fixture API");
 		layout.Description.Should().Be("Returns hits that match the query defined in the request.");
+		layout.Breadcrumbs.Take(2).Select(b => b.NavigationTitle).Should().Equal("Docs", "APIs");
+		layout.Breadcrumbs[1].Url.Should().Be("/api");
+		layout.Breadcrumbs.Should().Contain(b => b.NavigationTitle == "Fixture API");
+		layout.Breadcrumbs.Should().NotContain(b => b.NavigationTitle == "Api Overview");
 	}
 
 	[Test]
 	public void SchemaLayout_UsesDisplayNameInTitleAndExcerptedDescription()
 	{
-		var item = fixture
-			.Walk()
-			.OfType<SchemaNavigationItem>()
-			.Should()
-			.ContainSingle(n => n.Model.DisplayName == "QueryContainer")
-			.Subject;
+		var item = fixture.Walk().OfType<SchemaNavigationItem>().Should().ContainSingle(n => n.Model.DisplayName == "Query").Subject;
 		var context = RenderContext(item);
 		var viewModel = new SchemaViewModel(context) { Schema = item.Model, Page = SchemaPageModel.Create(item.Model, context) };
 
 		var layout = viewModel.CreateGlobalLayoutModel();
 
-		layout.Title.Should().Be("QueryContainer | Fixture API");
+		layout.Title.Should().Be("Query | Fixture API");
 		layout.Description.Should().StartWith("A container for a single query variant");
 	}
 
@@ -72,14 +73,13 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 	[Test]
 	public void ToJsonLd_AbsolutizesParentsAndOmitsCurrentItem()
 	{
-		ApiBreadcrumb[] crumbs =
+		INavigationItem[] parents =
 		[
-			new("Elasticsearch API", "/docs/api/elasticsearch"),
-			new("Search", "/docs/api/elasticsearch/group/search"),
-			new("Run a search", null)
+			Crumb("/docs/api/elasticsearch", "Elasticsearch API"),
+			Crumb("/docs/api/elasticsearch/group/search", "Search")
 		];
 
-		var json = ApiBreadcrumbBuilder.ToJsonLd(crumbs, new Uri("https://www.elastic.co"));
+		var json = BreadcrumbJson.Serialize(parents, "Run a search", new Uri("https://www.elastic.co"));
 		var list = JsonSerializer.Deserialize(json, BreadcrumbsContext.Default.BreadcrumbsList);
 
 		list.Should().NotBeNull();
@@ -94,7 +94,15 @@ public class ApiPageSeoTests(ApiExplorerFixture fixture)
 		list.ItemListElement[2].Item.Should().BeNull();
 	}
 
-	private ApiRenderContext RenderContext(Elastic.Documentation.Navigation.INavigationItem current) =>
+	private static INavigationItem Crumb(string url, string title)
+	{
+		var item = A.Fake<INavigationItem>();
+		A.CallTo(() => item.Url).Returns(url);
+		A.CallTo(() => item.NavigationTitle).Returns(title);
+		return item;
+	}
+
+	private ApiRenderContext RenderContext(INavigationItem current) =>
 		new(fixture.Context, fixture.Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(fixture.Context)))
 		{
 			NavigationHtml = string.Empty,

@@ -81,25 +81,15 @@ public static partial class ReleaseNoteParser
 	private static readonly string[] ReleaseDrafterEmojis =
 	[
 		"\uD83D\uDCA5", // Breaking Changes
-
 		"\u2728", // Features
-
 		"\uD83D\uDC1B", // Bug Fixes
-
 		"\uD83D\uDCDD", // Documentation
-
 		"\uD83E\uDDF0", // Maintenance
-
 		"\u2699\uFE0F", // Configuration
-
 		"\uD83C\uDFA8", // Redesign
-
 		"\uD83D\uDD12", // Security
-
 		"\u26A0\uFE0F", // Deprecation
-
 		"\uD83D\uDE80" // Release
-
 	];
 
 	// Mapping from section header keywords to changelog types
@@ -243,8 +233,7 @@ public static partial class ReleaseNoteParser
 				Title = title,
 				Author = author,
 				SectionTitle = null,
-				InferredType =
-					null // No type inference in GitHub default format
+				InferredType = null // No type inference in GitHub default format
 			});
 		}
 
