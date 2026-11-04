@@ -190,11 +190,7 @@ public static class ApplicabilityRenderer
 
 		var allNegative = applicabilities.All(
 			a =>
-				a.Lifecycle
-				is ProductLifecycle.Unavailable
-					or ProductLifecycle.Removed
-					or ProductLifecycle.Deprecated
-					or ProductLifecycle.Discontinued
+				a.Lifecycle is ProductLifecycle.Unavailable or ProductLifecycle.Removed or ProductLifecycle.Deprecated or ProductLifecycle.Discontinued
 		);
 
 		return new PopoverData(

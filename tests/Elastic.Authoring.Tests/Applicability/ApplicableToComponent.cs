@@ -928,3 +928,39 @@ public class ExactVersionWithExplicitPatch : MarkdownTest
 "
 		);
 }
+
+public class StackGaThenDeprecatedKeepsAdditionalInfo : MarkdownTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		stack: ga 8.0.0, deprecated 9.0.0
+		```
+		""";
+
+	[Test, DisplayName("keeps the additional info when only some lifecycles are negative")]
+	public async Task KeepsAdditionalInfoWhenOnlySomeLifecyclesAreNegative()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		html.Should().Contain("Unless stated otherwise on the page, this functionality is available when your Elastic Stack");
+		html.Should().NotContain("\"additionalInfo\":null");
+	}
+}
+
+public class StackRemovedThenDeprecatedDropsAdditionalInfo : MarkdownTest
+{
+	protected override string Markdown => """
+		```{applies_to}
+		stack: deprecated 8.0.0, removed 9.0.0
+		```
+		""";
+
+	[Test, DisplayName("drops the additional info when every lifecycle is negative")]
+	public async Task DropsAdditionalInfoWhenEveryLifecycleIsNegative()
+	{
+		var html = await Docs.IndexHtmlAsync();
+
+		html.Should().Contain("\"additionalInfo\":null");
+		html.Should().NotContain("Unless stated otherwise on the page, this functionality is available when your Elastic Stack");
+	}
+}
