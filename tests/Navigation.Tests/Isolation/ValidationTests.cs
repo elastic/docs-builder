@@ -213,7 +213,7 @@ public class ValidationTests() : DocumentationSetNavigationTestBase()
 		var diagnostics = await LoadNestedDeepLinkingToc(suppress: false);
 
 		diagnostics.Should().Contain(
-			d => d.Severity == Severity.Hint && d.File.EndsWith("solutions/toc.yml") && d.Message.Contains(
+			d => d.Severity == Severity.Hint && d.File.Replace('\\', '/').EndsWith("solutions/toc.yml") && d.Message.Contains(
 				"a/b/overview.md"
 			) && d.Message.Contains("deep-linking")
 		);
