@@ -186,6 +186,29 @@ public class ApiSupplementalRenderTests(ApiExplorerFixture fixture)
 	}
 
 	[Test]
+	public async Task Operation_SectionLinks_ListEachSectionInPageOrder()
+	{
+		var nav = SearchOperation();
+		var html = await RenderAsync(nav.Model, nav);
+
+		html.Should().Contain("class=\"api-section-links\" aria-label=\"Sections of this endpoint\" data-toc data-toc-sticky>");
+		html.Should().Contain("href=\"#query-params\" data-toc-link>Query</a>", "a link is its label alone, with no count");
+		html.Should().Contain("href=\"#request-body\" data-toc-link>Body</a>", "a link is its label alone, with no count");
+		html.Should().Contain("href=\"#responses\" data-toc-link>Responses</a>", "a link is its label alone, with no count");
+		var bar = html[html.IndexOf("<nav class=\"api-section-links\"", StringComparison.Ordinal)..];
+		bar = bar[..bar.IndexOf("</nav>", StringComparison.Ordinal)];
+		bar.Should().NotContain("required-privileges", "Required privileges is not one of the links");
+		html
+			.IndexOf("id=\"required-privileges\"", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("api-section-links", StringComparison.Ordinal), "Required privileges comes before the bar");
+		html
+			.IndexOf("api-section-links", StringComparison.Ordinal)
+			.Should()
+			.BeLessThan(html.IndexOf("id=\"query-params\"", StringComparison.Ordinal), "the bar sits above the sections it links to");
+	}
+
+	[Test]
 	public async Task Operation_SectionHeadings_TitleIsHeaderLinkOutsideToggle()
 	{
 		var nav = SearchOperation();

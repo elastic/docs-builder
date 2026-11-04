@@ -119,7 +119,7 @@ internal static class OperationCommonMark
 	{
 		if (page.RequiredPrivileges.Count > 0)
 		{
-			ApiCommonMark.Heading(markdown, 2, "Required authorization");
+			ApiCommonMark.Heading(markdown, 2, "Required privileges");
 			foreach (var row in page.RequiredPrivileges)
 			{
 				var values = string.Join(row.Join is null ? ", " : $" {row.Join} ", row.Values.Select(ApiCommonMark.CodeSpan));
