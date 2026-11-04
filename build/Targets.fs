@@ -106,16 +106,18 @@ let private runLocalContainer _ =
 let private runDotnetWithRegistryPushRetry (args: string list) =
     let maxAttempts = 3
     let rec attempt number =
-        match exec {
-            validExitCode (fun _ -> true)
-            exit_code_of "dotnet" args
-        } with
+        let exitCode =
+            exec {
+                validExitCode (fun _ -> true)
+                exit_code_of "dotnet" args
+            }
+        match exitCode with
         | 0 -> ()
         | _ when number < maxAttempts ->
             printfn "Container registry push failed (attempt %d/%d); retrying..." number maxAttempts
             attempt (number + 1)
-        | _ ->
-            exec { run "dotnet" args }
+        | code ->
+            failwithf "Container registry push failed after %d attempts (last exit code %d)" maxAttempts code
     attempt 1
 
 let private publishContainers _ =
