@@ -37,7 +37,10 @@ public partial class ElasticsearchMarkdownExporter
 	private readonly ConcurrentDictionary<BuildContext, DocumentationSet> _apiDocsets = new(ReferenceEqualityComparer.Instance);
 
 	private void AssignDocumentMetadata(DocumentationDocument doc) =>
-		doc.Hash = DocumentHash(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
+		AssignDocumentMetadata(doc, _semanticTypeContext?.Hash ?? string.Empty, _lexicalTypeContext.Hash, _fixedSynonymsHash);
+
+	internal static void AssignDocumentMetadata(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
+		doc.Hash = DocumentHash(doc, semanticHash, lexicalHash, synonymsHash);
 
 	/// <summary>The change-detection hash. Everything the index stores for a page takes part, so a metadata-only edit still syncs.</summary>
 	internal static string DocumentHash(DocumentationDocument doc, string semanticHash, string lexicalHash, string synonymsHash) =>
@@ -56,6 +59,7 @@ public partial class ElasticsearchMarkdownExporter
 			synonymsHash,
 			string.Join(",", doc.Parents?.Select(p => $"{p.Path}:{p.Title}") ?? []),
 			string.Join(",", doc.Links ?? []),
+			DocumentMetadataFingerprint.Create(doc),
 			doc.Api is null
 				? string.Empty
 				: JsonSerializer.Serialize(doc.Api, Documentation.Search.Contract.SourceGenerationContext.Default.ApiOperationMetadata)

@@ -52,8 +52,8 @@
     <PackageVersion Include="Generator.Equals" Version="4.0.0" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
     <PackageVersion Include="Elastic.Clients.Elasticsearch" Version="9.4.2" />
     <PackageVersion Include="FakeItEasy" Version="9.0.1" />
-    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.51.0" />
-    <PackageVersion Include="Elastic.Mapping" Version="0.51.0" />
+    <PackageVersion Include="Elastic.Ingest.Elasticsearch" Version="0.55.0" />
+    <PackageVersion Include="Elastic.Mapping" Version="0.55.0" />
     <PackageVersion Include="Elastic.Transport.VirtualizedCluster" Version="0.17.3" />
     <PackageVersion Include="InMemoryLogger" Version="1.0.66" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
@@ -128,6 +128,8 @@
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.3" />
     <PackageVersion Include="AngleSharp.Diffing" Version="1.1.1" />
+    <PackageVersion Include="Nullean.Snapshots.Html" Version="0.2.0" />
+    <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.2.0" />
     <PackageVersion Include="AutoBogus" Version="2.13.1" />
     <PackageVersion Include="DiffPlex" Version="1.9.0" />
     <PackageVersion Include="AwesomeAssertions" Version="9.6.0" />

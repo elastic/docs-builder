@@ -21,21 +21,26 @@ Elastic's documentation build toolchain. Processes Markdown from multiple repos 
 
 ## Essential Commands
 
+[mise](https://mise.jdx.dev) is the entry point. `mise install` provisions the .NET SDK (from `global.json`) and Node (from `.nvmrc`), restores the local dotnet tools and installs the git hooks. `mise tasks` lists every task. `build.sh` and `dev.sh` still work; the tasks call them and the F# build project.
+
 ```bash
-dotnet build                                    # verify compilation
-dotnet run --project src/tooling/docs-builder   # run CLI locally
-./build.sh unit-test                            # all unit tests (fast, ~1 min)
-./build.sh integrate                            # integration tests (slow — needs cloned repos)
-./build.sh lint                                 # C# format check (read-only)
-./build.sh clean                                # remove .artifacts/
-dotnet curb format .                            # auto-fix C# formatting
+mise trust                                      # once per clone, in the root git folder; its worktrees are trusted too
+mise install                                    # SDK, Node, dotnet tools, git hooks
+mise run build                                  # verify compilation
+mise run serve                                  # run the CLI locally: serve docs/ with live reload
+mise run test                                   # all unit tests (fast, ~1 min)
+mise run integrate                              # integration tests (slow — needs cloned repos)
+mise run lint                                   # C# format check (read-only)
+mise run fmt                                    # auto-fix C# formatting
+mise run clean                                  # remove .artifacts/
 dotnet test tests/Elastic.Markdown.Tests/       # single test project
+./dev.sh <command>                                  # Docker route, no local installs (see CONTRIBUTING.md)
 ```
 
 **CLI changes:** after editing `src/tooling/docs-builder/Commands/`, regenerate `docs/cli-schema.json`:
 
 ```bash
-dotnet run --project src/tooling/docs-builder -- __schema > docs/cli-schema.json
+mise run schema
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplemental CLI docs under `docs/schema-support/cli-schema/`.
@@ -43,15 +48,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md#cli-reference-maintenance) for supplementa
 ### TypeScript frontend
 
 ```bash
-cd src/Elastic.Documentation.Site
-npm ci
-npm run build           # production build
-npm run watch           # dev with live reload
-npm run test            # Vitest
-npm run lint            # ESLint
-npm run fmt:write       # Prettier auto-fix
-npm run compile:check   # TypeScript type check only
+mise run site:install   # npm ci (skipped when package-lock.json is unchanged; the other site: tasks run it first)
+mise run site:build     # production build
+mise run site:watch     # dev with live reload
+mise run site:test      # Vitest
+mise run site:lint      # ESLint
+mise run site:fmt       # Prettier auto-fix
+mise run site:check     # TypeScript type check only
 ```
+
+The same scripts run with `npm run <script>` from `src/Elastic.Documentation.Site`.
 
 ## Testing
 
@@ -65,17 +71,17 @@ Use the `/test` skill to pick the right test project automatically. A change to 
 
 | Changed path | Test project / command |
 |---|---|
-| `src/Elastic.Markdown/` | `./build.sh unit-test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
-| `src/Elastic.Documentation.Configuration/` | `./build.sh unit-test` (targets `Elastic.Documentation.Configuration.Tests`) |
-| `src/Elastic.Documentation.Navigation/` | `./build.sh unit-test` (targets `Navigation.Tests`) |
-| `src/Elastic.Documentation.Indexing/` | `./build.sh unit-test` (targets `Elastic.Documentation.Indexing.Tests`) |
-| `src/authoring/Elastic.LegacyDocs.Migration/` | `./build.sh unit-test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
-| `src/tooling/essc/` | `./build.sh unit-test` (targets `Elastic.SiteSearch.Tests`) |
-| `src/Elastic.ApiExplorer/` | `./build.sh unit-test` (targets `Elastic.ApiExplorer.Tests`) |
-| `src/services/Elastic.Documentation.Deploying/` | `./build.sh unit-test` (targets `Elastic.Documentation.Deploying.Tests`) |
-| `src/Elastic.Documentation.Site/` | `cd src/Elastic.Documentation.Site && npm run test`; design-system, style-guide and `_Head` changes also run `./build.sh unit-test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
-| `tests-integration/` | `./build.sh integrate` |
-| Multiple / uncertain | `./build.sh unit-test` |
+| `src/Elastic.Markdown/` | `mise run test` (targets `Elastic.Markdown.Tests` and `Elastic.Authoring.Tests`) |
+| `src/Elastic.Documentation.Configuration/` | `mise run test` (targets `Elastic.Documentation.Configuration.Tests`) |
+| `src/Elastic.Documentation.Navigation/` | `mise run test` (targets `Navigation.Tests`) |
+| `src/Elastic.Documentation.Indexing/` | `mise run test` (targets `Elastic.Documentation.Indexing.Tests`) |
+| `src/authoring/Elastic.LegacyDocs.Migration/` | `mise run test` (targets `Elastic.LegacyDocs.Migration.Tests`) |
+| `src/tooling/essc/` | `mise run test` (targets `Elastic.SiteSearch.Tests`) |
+| `src/Elastic.ApiExplorer/` | `mise run test` (targets `Elastic.ApiExplorer.Tests`) |
+| `src/services/Elastic.Documentation.Deploying/` | `mise run test` (targets `Elastic.Documentation.Deploying.Tests`) |
+| `src/Elastic.Documentation.Site/` | `mise run site:test`; design-system, style-guide and `_Head` changes also run `mise run test` (`Navigation.Tests`, `DesignSystem` folder); changes to shared views or layout CSS also run `npm run visual:seed` once and `npm run visual:check` to prove flag-off output is unchanged. See [`src/Elastic.Documentation.Site/AGENTS.md`](src/Elastic.Documentation.Site/AGENTS.md) |
+| `tests-integration/` | `mise run integrate` |
+| Multiple / uncertain | `mise run test` |
 
 ## Key Locations
 
