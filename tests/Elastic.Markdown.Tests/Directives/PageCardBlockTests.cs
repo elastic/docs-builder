@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Navigation;
+using Elastic.Markdown.IO;
 using Elastic.Markdown.Myst.Directives.PageCard;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -48,11 +49,8 @@ public class PageCardRehomedDocsetLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\nSome content."));
 
-	public override async Task InitializeAsync()
-	{
-		((INavigationHomeAccessor)Set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", Set.Navigation);
-		await base.InitializeAsync();
-	}
+	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
+		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefix() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page");
@@ -76,11 +74,8 @@ public class PageCardRehomedAnchoredLinkTests() : DirectiveTest<PageCardBlock>(
 	protected override void AddToFileSystem(MockFileSystem fileSystem) =>
 		fileSystem.AddFile("docs/other-page.md", new MockFileData("# Other Page\n\n## Install\n\nContent."));
 
-	public override async Task InitializeAsync()
-	{
-		((INavigationHomeAccessor)Set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", Set.Navigation);
-		await base.InitializeAsync();
-	}
+	protected override void ConfigureDocumentationSet(DocumentationSet set) =>
+		((INavigationHomeAccessor)set.Navigation).HomeProvider = new NavigationHomeProvider("/reference/rehomed", set.Navigation);
 
 	[Test]
 	public void ResolvesUrlWithRehomedPrefixAndAnchor() => Block!.ResolvedUrl.Should().Be("/reference/rehomed/other-page#install");

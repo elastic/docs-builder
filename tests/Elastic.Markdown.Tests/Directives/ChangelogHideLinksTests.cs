@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Markdig.Syntax;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -193,11 +194,11 @@ public class ChangelogLinksHiddenForPrivateRepoTests : DirectiveTest<ChangelogBl
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Simulate that 'elasticsearch' is a private repository
-		Block!.PrivateRepositories.Add("elasticsearch");
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -280,11 +281,11 @@ public class ChangelogLinksHiddenInDetailedEntriesTests : DirectiveTest<Changelo
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Simulate that 'elasticsearch' is a private repository
-		Block!.PrivateRepositories.Add("elasticsearch");
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -355,11 +356,11 @@ public class ChangelogLinksShownForPublicRepoTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Configure a different repo as private - not elasticsearch
-		Block!.PrivateRepositories.Add("private-internal-repo");
+		block.PrivateRepositories.Add("private-internal-repo");
 	}
 
 	[Test]
@@ -431,11 +432,11 @@ public class ChangelogLinksWithMergedBundlesTests : DirectiveTest<ChangelogBlock
 		);
 	}
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Kibana is a private repo
-		Block!.PrivateRepositories.Add("kibana");
+		block.PrivateRepositories.Add("kibana");
 	}
 
 	[Test]
@@ -526,11 +527,11 @@ public class ChangelogLinksWithMergedPublicReposTests : DirectiveTest<ChangelogB
 		);
 	}
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
+		var block = document.Descendants<ChangelogBlock>().First();
 		// Only unrelated repos are private - elasticsearch and kibana are public
-		Block!.PrivateRepositories.Add("some-other-private-repo");
+		block.PrivateRepositories.Add("some-other-private-repo");
 	}
 
 	[Test]
@@ -582,10 +583,10 @@ public class ChangelogLinkVisibilityKeepLinksTests : DirectiveTest<ChangelogBloc
 			)
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
-		Block!.PrivateRepositories.Add("elasticsearch");
+		var block = document.Descendants<ChangelogBlock>().First();
+		block.PrivateRepositories.Add("elasticsearch");
 	}
 
 	[Test]
@@ -830,11 +831,11 @@ public class ChangelogCdnLinkVisibilityAutoTests() : DirectiveTest<ChangelogBloc
 				""")
 		);
 
-	public override async Task InitializeAsync()
+	protected override void OnFixtureBuilt(MarkdownDocument document)
 	{
-		await base.InitializeAsync();
-		Block!.PrivateRepositories.Add("cloud");
-		Block!.PrivateRepositories.Add("kibana");
+		var block = document.Descendants<ChangelogBlock>().First();
+		block.PrivateRepositories.Add("cloud");
+		block.PrivateRepositories.Add("kibana");
 	}
 
 	[Test]
