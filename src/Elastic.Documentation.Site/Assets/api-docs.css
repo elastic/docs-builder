@@ -2945,7 +2945,7 @@ button.example-response-tab:focus-visible {
 		padding-top: 16px;
 		padding-bottom: 48px;
 		/* Stays in view while the sections scroll, however long the page is. The rail itself does not clip, so the
-		   Copy page menu can open past its edge; the examples below it shrink to the window and scroll. */
+		   Copy page menu can open past its edge; only the examples panel shrinks to the window and scrolls. */
 		position: sticky;
 		top: var(--offset-top, 0px);
 		align-self: start;
@@ -2953,10 +2953,17 @@ button.example-response-tab:focus-visible {
 		box-sizing: border-box;
 	}
 
+	/* Rail children keep their natural height. Shrinking and scrolling is opt-in, so a new fact never gets a scrollbar. */
 	.api-page-rail > :not(.api-page-actions) {
+		flex: 0 0 auto;
+	}
+
+	.api-page-rail > #api-examples-panel {
+		display: flex;
 		flex: 0 1 auto;
+		flex-direction: column;
 		min-height: 0;
-		overflow: hidden auto;
+		overflow: hidden;
 	}
 
 	.api-page-rail > .api-page-actions {
@@ -2972,7 +2979,16 @@ button.example-response-tab:focus-visible {
 	/* The code blocks are normal page flow and cap at a fixed number of lines; the rail around them is sticky (above). */
 	#api-examples-panel .api-examples-panel-nav {
 		display: flex;
+		flex: 0 1 auto;
 		flex-direction: column;
+		min-height: 0;
+	}
+
+	#api-examples-panel .api-examples {
+		display: flex;
+		flex: 0 1 auto;
+		flex-direction: column;
+		min-height: 0;
 	}
 
 	#api-examples-panel .api-examples-body {
@@ -2985,7 +3001,8 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-scenario-panel:not([hidden]) {
 		display: flex;
-		flex: 0 0 auto;
+		flex: 0 1 auto;
+		min-height: 0;
 		flex-direction: column;
 		/* Between the request rail and the response card. */
 		row-gap: calc(var(--spacing) * 4);
@@ -2993,7 +3010,8 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-examples-body {
 		display: flex;
-		flex: 0 0 auto;
+		flex: 0 1 auto;
+		min-height: 0;
 		flex-direction: column;
 		overflow: visible;
 		border: 0;
@@ -3002,13 +3020,28 @@ button.example-response-tab:focus-visible {
 
 	#api-examples-panel .api-code-card {
 		display: flex;
-		flex: 0 0 auto;
+		flex: 0 1 auto;
 		flex-direction: column;
+		min-height: 0;
 	}
 
-	#api-examples-panel .api-code-sample-body,
-	#api-examples-panel .example-block-body {
+	#api-examples-panel .api-code-sample-body {
 		flex: 0 0 auto;
+	}
+
+	/* The request gives way first (its code scrolls in the card), down to a floor of the strip's 12rem plus the
+	   tabs and dots around it. The large shrink factor makes it take nearly all of the deficit until then. Only
+	   after that does the response shrink, and its code scrolls inside its own card. */
+	#api-examples-panel .api-rail-request {
+		display: flex;
+		flex: 0 100 auto;
+		flex-direction: column;
+		min-height: 17rem;
+	}
+
+	#api-examples-panel .example-block-body {
+		flex: 0 1 auto;
+		min-height: 0;
 	}
 }
 
@@ -3953,15 +3986,11 @@ html:has(.api-page-shell) {
 	overflow: auto;
 }
 
-/* Beside the article the rail is sticky and as tall as the window, so the response fills what is left under
-   the request instead of stopping at 12 lines. 26rem is the rail's padding, Copy page and the request
-   above the response. The 12-line cap stays as the minimum. */
+/* Beside the article the rail is sticky and as tall as the window (flex column, see .api-page-rail), so the
+   response fills what is left under the request instead of stopping at 12 lines. */
 @media (min-width: 1024px) {
 	#api-examples-panel .example-block-body {
-		max-height: max(
-			var(--api-response-cap),
-			calc(100dvh - var(--offset-top, 0px) - 26rem)
-		);
+		max-height: none;
 	}
 }
 
@@ -3987,6 +4016,12 @@ html:has(.api-page-shell) {
 	height: auto;
 	min-height: 0;
 	overflow-y: hidden;
+}
+
+@media (min-width: 1024px) {
+	#api-examples-panel .api-code-carousel-strip {
+		min-height: 12rem;
+	}
 }
 
 /* Expanded or dragged, the card may use the whole strip and its code scrolls, but it is not stretched
