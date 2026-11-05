@@ -31,7 +31,7 @@ public static class QueryFieldNames
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
 	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
-	public static string ApiPropertiesPathMatch { get; } = $"{ApiProperties}.path.match";
+	public static string ApiPropertiesPathWords { get; } = $"{ApiProperties}.path_words";
 	public static string PathKeyword { get; } = $"{Doc.Fields.Path}.keyword";
 	public static string PathMatch { get; } = $"{Doc.Fields.Path}.match";
 	public static string TitleKeyword { get; } = $"{Doc.Fields.Title}.keyword";

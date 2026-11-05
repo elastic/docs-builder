@@ -225,21 +225,20 @@ public static class SearchQueryBuilder
 	/// </summary>
 	private static Query BuildPropertyMatchQuery(string input, PropertyLookup lookup)
 	{
-		var separator = input.LastIndexOf('.');
-		var path = separator < 0
+		var words = ApiPropertyPath.Words(input);
+		var path = words.Length < 2
 			? null
 			: (Query)new BoolQuery
 			{
-				Must = [BuildPropertyNameOptions(input[(separator + 1)..], lookup)],
-				Filter =
-				[
-					new MatchBoolPrefixQuery { Field = QueryFieldNames.ApiPropertiesPathMatch, Query = input, Operator = Operator.And }
-				]
+				Must = [BuildPropertyNameOptions(words[^1], lookup)],
+				Filter = [new MatchPhrasePrefixQuery { Field = QueryFieldNames.ApiPropertiesPathWords, Query = string.Join(' ', words) }]
 			};
 		var children = lookup.ExpandChildren
 			? (Query)new ConstantScoreQuery { Filter = BuildParentTermQuery(input), Boost = ChildOptionBoost, QueryName = ApiChildrenHits }
 			: null;
-		Query?[] options = [BuildPropertyNameOptions(input, lookup), path, children];
+		// A qualified path keeps its raw text here so a field whose own name holds dots still matches it exactly.
+		var name = words.Length == 1 ? words[0] : input;
+		Query?[] options = [BuildPropertyNameOptions(name, lookup), path, children];
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList() };
 	}
 

@@ -529,9 +529,11 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	public void Build_QualifiedPath_FieldOptionRequiresMatchingLeafAndPath()
+	[Arguments("_search knn.field", "field", "knn field")]
+	[Arguments("search rrf.min_score", "min_score", "rrf min_score")]
+	public void Build_QualifiedPath_FieldOptionRequiresMatchingLeafAndPathWords(string query, string name, string phrase)
 	{
-		using var json = Json(ApiLookupQueryBuilder.Build("_search knn.field"));
+		using var json = Json(ApiLookupQueryBuilder.Build(query));
 		var qualified = OptionsByName(TokenClause(json, 1))["field_1"]
 			.GetProperty("query")
 			.GetProperty("dis_max")
@@ -543,10 +545,15 @@ public class ApiLookupQueryBuilderTests
 			.GetProperty("queries")[0]
 			.GetProperty("constant_score")
 			.GetProperty("filter");
-		leaf.GetProperty("term").GetProperty("api.properties.name").GetProperty("value").GetString().Should().Be("field");
-		var path = qualified.GetProperty("filter").GetProperty("match_bool_prefix").GetProperty("api.properties.path.match");
-		path.GetProperty("query").GetString().Should().Be("knn.field");
-		path.GetProperty("operator").GetString().Should().Be("and");
+		leaf.GetProperty("term").GetProperty("api.properties.name").GetProperty("value").GetString().Should().Be(name);
+		qualified
+			.GetProperty("filter")
+			.GetProperty("match_phrase_prefix")
+			.GetProperty("api.properties.path_words")
+			.GetProperty("query")
+			.GetString()
+			.Should()
+			.Be(phrase);
 	}
 
 	[Test]

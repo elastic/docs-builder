@@ -35,6 +35,58 @@ public class ApiPropertySearchTests
 	}
 
 	[Test]
+	[Arguments("retriever.rrf.min_score", "min_score", "retriever rrf min_score")]
+	[Arguments("rrf.min_score", "min_score", "rrf min_score")]
+	[Arguments("[].retriever.standard", "standard", "retriever standard")]
+	[Arguments("labels.<string>.value", "value", "labels value")]
+	public void BuildApiPropertyQuery_QualifiedPath_RequiresMatchingLeafAndPathWords(string input, string leaf, string phrase)
+	{
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, null));
+		var qualified = json
+			.RootElement
+			.GetProperty("nested")
+			.GetProperty("query")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[1]
+			.GetProperty("bool");
+		qualified
+			.GetProperty("must")
+			.GetProperty("constant_score")
+			.GetProperty("filter")
+			.GetProperty("term")
+			.GetProperty("api.properties.name")
+			.GetProperty("value")
+			.GetString()
+			.Should()
+			.Be(leaf);
+		qualified
+			.GetProperty("filter")
+			.GetProperty("match_phrase_prefix")
+			.GetProperty("api.properties.path_words")
+			.GetProperty("query")
+			.GetString()
+			.Should()
+			.Be(phrase);
+	}
+
+	[Test]
+	public void BuildApiPropertyQuery_MarkedSingleWord_MatchesTheBareName()
+	{
+		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery("[].retriever", null));
+		var options = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
+		options.GetArrayLength().Should().Be(1);
+		options[0]
+			.GetProperty("constant_score")
+			.GetProperty("filter")
+			.GetProperty("term")
+			.GetProperty("api.properties.name")
+			.GetProperty("value")
+			.GetString()
+			.Should()
+			.Be("retriever");
+	}
+
+	[Test]
 	[Arguments(null, false)]
 	[Arguments("all", false)]
 	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, bool prefix)
@@ -249,6 +301,7 @@ public class ApiPropertySearchTests
 		var fields = field.GetProperty("properties");
 		fields.GetProperty("name").GetProperty("type").GetString().Should().Be("keyword");
 		fields.GetProperty("anchor").GetProperty("type").GetString().Should().Be("keyword");
+		fields.GetProperty("path_words").GetProperty("type").GetString().Should().Be("search_as_you_type");
 
 		var routes = json
 			.RootElement
