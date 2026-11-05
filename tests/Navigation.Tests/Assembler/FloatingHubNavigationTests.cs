@@ -27,12 +27,23 @@ public class FloatingHubNavigationTests
 		    floating: api
 		""";
 
+	private const string SiteNavYamlWithoutExternal =
+		// language=yaml
+		"""
+		toc:
+		  - toc: observability://
+		    path_prefix: observability
+		  - section: APIs
+		    floating: api
+		""";
+
 	private static (SiteNavigation Navigation, TestDocumentationSetContext Context) CreateNavigation(
 		FloatingSectionRegistry registry,
-		bool navigationPreview = false
+		bool navigationPreview = false,
+		string navYaml = SiteNavYaml
 	)
 	{
-		var siteNavFile = SiteNavigationFile.Deserialize(SiteNavYaml);
+		var siteNavFile = SiteNavigationFile.Deserialize(navYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
@@ -93,6 +104,19 @@ public class FloatingHubNavigationTests
 
 		var link = navigation.TopNav!.Items.OfType<TopNavLinkItem>().Should().ContainSingle(i => i.Title == "APIs").Subject;
 		link.Url.Should().Be("/docs/api/");
+	}
+
+	[Test]
+	public void FloatingSection_WithoutExternal_LinksTheApisTabToTheHub()
+	{
+		var (navigation, _) = CreateNavigation(
+			new FloatingSectionRegistry([new DemoProvider()]),
+			navigationPreview: true,
+			navYaml: SiteNavYamlWithoutExternal
+		);
+
+		var link = navigation.TopNav!.Items.OfType<TopNavLinkItem>().Should().ContainSingle(i => i.Title == "APIs").Subject;
+		link.Url.Should().Be("/docs/api");
 	}
 
 	[Test]

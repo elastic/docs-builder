@@ -32,7 +32,7 @@ public static class SitemapBuilder
 	{
 		// API pages are generated on staging and preview (assembler-api-explorer flag). /docs/api/* is still
 		// proxied to bump.sh at the edge (#725). Keep them out of the sitemap until cutover.
-		var filtered = entries.Where(e => !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal)).ToList();
+		var filtered = entries.Where(e => e.Key != "/docs/api" && !e.Key.StartsWith("/docs/api/", StringComparison.Ordinal)).ToList();
 
 		if (filtered.Count > MaxEntries)
 			throw new InvalidOperationException(

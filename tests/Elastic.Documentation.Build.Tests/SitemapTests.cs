@@ -146,6 +146,7 @@ public class SitemapTests
 		var entries = new Dictionary<string, DateTimeOffset>
 		{
 			["/docs/elasticsearch/getting-started"] = now,
+			["/docs/api"] = now,
 			["/docs/api/elasticsearch/rest"] = now,
 			["/docs/api/kibana/actions"] = now,
 			["/docs/kibana/dashboard"] = now,
@@ -161,7 +162,7 @@ public class SitemapTests
 
 		var locs = doc.Descendants(ns + "loc").Select(e => e.Value).ToList();
 		locs.Should().HaveCount(2);
-		locs.Should().NotContain(l => l.Contains("/docs/api/"));
+		locs.Should().NotContain(l => l.Contains("/docs/api"));
 		locs.Should().Contain("https://www.elastic.co/docs/elasticsearch/getting-started");
 		locs.Should().Contain("https://www.elastic.co/docs/kibana/dashboard");
 	}
