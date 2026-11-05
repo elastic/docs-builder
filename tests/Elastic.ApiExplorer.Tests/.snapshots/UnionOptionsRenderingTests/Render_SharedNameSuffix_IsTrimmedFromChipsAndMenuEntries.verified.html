@@ -1,0 +1,42 @@
+<div class="union-variants-container union-variant-chips" id="opts">
+	<div class="api-example-chips-row union-chips-row" data-chip-row="">
+		<div class="api-example-chips" role="tablist" aria-label="Variants">
+			<button type="button" role="tab" class="api-example-chip is-active" data-chip="v-0" aria-controls="v-0" aria-selected="true" title="bedrock_config">
+				<span class="api-example-chip-title" data-chip-title="">bedrock</span>
+			</button>
+			<button type="button" role="tab" class="api-example-chip" data-chip="v-1" aria-controls="v-1" aria-selected="false" tabindex="-1" title="email_config">
+				<span class="api-example-chip-title" data-chip-title="">email</span>
+			</button>
+			<button type="button" role="tab" class="api-example-chip" data-chip="v-2" aria-controls="v-2" aria-selected="false" tabindex="-1" title="jira_config">
+				<span class="api-example-chip-title" data-chip-title="">jira</span>
+			</button>
+		</div>
+		<button type="button" class="api-example-more" data-chip-more="" aria-haspopup="menu" aria-expanded="false" aria-controls="opts-menu" popovertarget="opts-menu" hidden="">
+			<span data-chip-more-label=""></span>
+			<svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true">
+				<use href="#icon-chevron-down"></use>
+			</svg>
+		</button>
+		<div id="opts-menu" class="api-example-menu simple-scrollbar" popover="auto" data-chip-menu="">
+			<div role="menu" aria-label="More variants">
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-0" title="bedrock_config" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">bedrock</span>
+				</button>
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-1" title="email_config" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">email</span>
+				</button>
+				<button type="button" role="menuitem" class="api-example-menu-item" data-chip="v-2" title="jira_config" hidden="">
+					<span class="api-example-menu-item-title" data-chip-item-title="">jira</span>
+				</button>
+			</div>
+		</div>
+	</div>
+	<div class="union-variants">
+		<div class="union-variant-item " id="v-0">
+		</div>
+		<div class="union-variant-item " id="v-1" hidden="until-found">
+		</div>
+		<div class="union-variant-item " id="v-2" hidden="until-found">
+		</div>
+	</div>
+</div>

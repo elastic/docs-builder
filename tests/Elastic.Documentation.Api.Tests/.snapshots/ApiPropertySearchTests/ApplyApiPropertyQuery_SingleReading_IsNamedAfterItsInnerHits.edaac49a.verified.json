@@ -1,0 +1,48 @@
+{
+  "bool": {
+    "minimum_should_match": 1,
+    "should": [
+      {
+        "match_none": {}
+      },
+      {
+        "bool": {
+          "must": {
+            "nested": {
+              "ignore_unmapped": true,
+              "inner_hits": {
+                "name": "api_properties",
+                "size": 5,
+                "_source": {
+                  "includes": "api.properties.*"
+                }
+              },
+              "path": "api.properties",
+              "query": {
+                "dis_max": {
+                  "queries": [
+                    {
+                      "constant_score": {
+                        "boost": 1,
+                        "filter": {
+                          "term": {
+                            "api.properties.name": {
+                              "case_insensitive": true,
+                              "value": "track_total"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "score_mode": "max"
+            }
+          },
+          "_name": "api_properties"
+        }
+      }
+    ]
+  }
+}

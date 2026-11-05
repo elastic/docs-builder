@@ -68,6 +68,26 @@ public class FeatureFlagsTests
 		config.Environments["edge"].AllowIndexing.Should().BeFalse();
 	}
 
+	[Test]
+	public void EdgeEnvironment_EnablesNavigationPreview()
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("prod")]
+	[Arguments("staging")]
+	[Arguments("dev")]
+	[Arguments("local")]
+	public void OtherEnvironments_DoNotEnableNavigationPreview(string environmentName)
+	{
+		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
+
+		config.Environments[environmentName].FeatureFlags.GetValueOrDefault("NAVIGATION_PREVIEW").Should().BeFalse();
+	}
+
 	private static void AssertEnvironmentEnablesAssemblerApiExplorer(string environmentName)
 	{
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));

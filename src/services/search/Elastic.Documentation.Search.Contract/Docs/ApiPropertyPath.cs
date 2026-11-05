@@ -2,9 +2,11 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.RegularExpressions;
+
 namespace Elastic.Documentation.Search.Contract;
 
-public static class ApiPropertyPath
+public static partial class ApiPropertyPath
 {
 	public const string ItemsMarker = "[]";
 	public const string MapKeyMarker = "<string>";
@@ -19,4 +21,11 @@ public static class ApiPropertyPath
 			.Replace(ItemsMarker, "", StringComparison.Ordinal)
 			.Replace(MapKeyMarker, "", StringComparison.Ordinal)
 			.Split('.', StringSplitOptions.RemoveEmptyEntries);
+
+	/// <summary>The lowercase words of an identifier, split at <c>_ - .</c> and camelCase: <c>unrated_docs</c> is <c>unrated docs</c>, <c>indexPattern</c> is <c>index pattern</c>. The search analyzers keep <c>_</c> inside a token, so a reader who types the words would not meet the identifier otherwise.</summary>
+	public static string[] IdentifierWords(string identifier) =>
+		[.. WordBoundary().Split(identifier).Where(word => word.Length > 0).Select(word => word.ToLowerInvariant())];
+
+	[GeneratedRegex(@"[._\-]+|(?<=\p{Ll})(?=\p{Lu})")]
+	private static partial Regex WordBoundary();
 }

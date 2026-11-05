@@ -7,8 +7,11 @@ using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
 using Elastic.Markdown.Tests.Inline;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Assembler;
 
@@ -31,14 +34,14 @@ public class AssemblerHtmxMarkdownLinkTests() : LinkTestBase("Go to [test](kiban
 		};
 
 	[Test]
-	public void CrossLink_HasNoSelectOobButKeepsPreload()
-	{
-		Html.Should().NotContain("hx-select-oob");
-		Html.Should().Contain("preload=\"mousedown\"");
-	}
-
-	[Test]
-	public void CrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" preload="mousedown">test</a>
+		</p>
+		"""
+		);
 
 	[Test]
 	public void EmitsCrossLink()
@@ -48,7 +51,7 @@ public class AssemblerHtmxMarkdownLinkTests() : LinkTestBase("Go to [test](kiban
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -67,13 +70,20 @@ public class AssemblerHtmxInternalLinkTests() : LinkTestBase("[Requirements](tes
 		};
 
 	[Test]
-	public void InternalLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
+	public void InternalLink_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="/docs/platform/elasticsearch/testing/req" preload="mousedown">Requirements</a>
+		</p>
+		"""
+		);
 
 	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -94,14 +104,17 @@ public class AssemblerHtmxAbsolutePathLinkTests() : LinkTestBase("""
 		};
 
 	[Test]
-	public void AbsolutePathLink_HasNoSelectOobButKeepsPreload()
-	{
-		Html.Should().NotContain("hx-select-oob");
-		Html.Should().Contain("preload=\"mousedown\"");
-	}
+	public void AbsolutePathLink_HasNoSelectOobButKeepsPreload() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="/docs/_static/img/observability.png" preload="mousedown">Elasticsearch</a>
+		</p>
+		"""
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -124,13 +137,20 @@ public class AssemblerHtmxReferenceLinkTests() : LinkTestBase("""
 		};
 
 	[Test]
-	public void ReferenceLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
+	public void ReferenceLink_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="/docs/platform/elasticsearch/testing/req" preload="mousedown">test</a>
+		</p>
+		"""
+		);
 
 	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -152,14 +172,24 @@ Go to [](kibana://index.md)
 		};
 
 	[Test]
-	public void EmptyTextCrossLink_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
-
-	[Test]
-	public void EmptyTextCrossLink_NoTargetBlank() => Html.Should().NotContain("target=\"_blank\"");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Go to
+			<a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" preload="mousedown"></a>
+		</p>
+		"""
+		);
 
 	[Test]
 	public void HasError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("empty link text"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:4 Crosslink 'kibana://index.md' has empty link text. Please provide explicit link text."
+			);
 
 	[Test]
 	public void EmitsCrossLink()
@@ -187,13 +217,20 @@ public class AssemblerHtmxInsertPageTitleTests() : LinkTestBase("""
 		};
 
 	[Test]
-	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() => Html.Should().NotContain("hx-select-oob");
+	public void InsertPageTitle_HasNoPerLinkHtmxAttributes() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="/docs/platform/elasticsearch/testing/req" preload="mousedown">Special Requirements</a>
+		</p>
+		"""
+		);
 
 	[Test]
 	public void EmitsNoCrossLink() => Collector.CrossLinks.Should().HaveCount(0);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -214,13 +251,16 @@ public class AssemblerHtmxExternalLinkTests() : LinkTestBase("""
 		};
 
 	[Test]
-	public void ExternalLink_DoesNotGetHtmxAttributes_ForAssembler()
-	{
-		// HTTP links get target="_blank", not hx-select-oob
-		Html.Should().Contain("target=\"_blank\"");
-		Html.Should().NotContain("hx-select-oob");
-	}
+	// HTTP links get target="_blank", not hx-select-oob
+	public void ExternalLink_DoesNotGetHtmxAttributes_ForAssembler() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>
+			<a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a>
+		</p>
+		"""
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }

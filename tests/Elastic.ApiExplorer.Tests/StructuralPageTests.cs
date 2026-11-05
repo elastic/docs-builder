@@ -9,6 +9,7 @@ using Elastic.ApiExplorer.Structural;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Site.FileProviders;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -129,8 +130,16 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Authentication);
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("# Authentication");
-		markdown.Should().Contain("- Api key: `Authorization: <value>`");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Authentication
+
+			- Api key: `Authorization: <value>`
+			  Send the encoded key with the ApiKey prefix.
+			- Basic: `Authorization: Basic <credentials>`
+			- Bearer: `Authorization: Bearer <token>`
+			"""
+		);
 	}
 
 	[Test]
@@ -139,8 +148,13 @@ public class StructuralPageTests(ApiExplorerFixture fixture)
 		var item = fixture.Walk().OfType<StructuralNavigationItem>().Single(n => n.Model.Kind == ApiStructuralKind.Servers);
 		var markdown = await item.Model.RenderCommonMarkAsync(RenderContext(item), null, TestContext.Current!.Execution.CancellationToken);
 
-		markdown.Should().Contain("# Servers");
-		markdown.Should().Contain("`https://fixture.example.com` (Fixture server)");
+		markdown.Should().MatchInlineSnapshot(
+			"""
+			# Servers
+
+			- `https://fixture.example.com` (Fixture server)
+			"""
+		);
 	}
 
 	[Test]

@@ -101,6 +101,11 @@ public static class ApplicabilityMappings
 		"Elastic&nbsp;Distribution of OpenTelemetry&nbsp;Browser (RUM)",
 		VersioningSystemId.EdotBrowser
 	);
+	public static readonly ApplicabilityDefinition EdotReactNative = new(
+		"EDOT React Native",
+		"Elastic&nbsp;Distribution of OpenTelemetry&nbsp;React Native",
+		VersioningSystemId.EdotReactNative
+	);
 	public static readonly ApplicabilityDefinition EdotPhp = new(
 		"EDOT PHP",
 		"Elastic&nbsp;Distribution of OpenTelemetry&nbsp;PHP",

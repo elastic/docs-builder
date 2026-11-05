@@ -118,17 +118,13 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(2);
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-		result
-			.TableOfContents
-			.ElementAt(1)
+		TocDump
+			.ToText(result.TableOfContents)
 			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("getting-started.md");
+			.MatchInlineSnapshot("""
+			IndexFileRef  index.md
+			FileRef  getting-started.md
+			""");
 	}
 
 	[Test]
@@ -146,11 +142,16 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(3);
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.Hidden.Should().BeFalse();
-		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
-		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("404.md");
-		result.TableOfContents.ElementAt(2).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			IndexFileRef  index.md
+			FileRef  404.md [hidden]
+			FileRef  developer-notes.md [hidden]
+			"""
+			);
 	}
 
 	[Test]
@@ -169,12 +170,16 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(1);
-		var folder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
-		folder.PathRelativeToDocumentationSet.Should().Be("contribute");
-		folder.Children.Should().HaveCount(2);
-		folder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-		folder.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("locally.md");
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FolderRef  contribute
+			  IndexFileRef  index.md
+			  FileRef  locally.md
+			"""
+			);
 	}
 
 	[Test]
@@ -191,17 +196,13 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(2);
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>();
-		result
-			.TableOfContents
-			.ElementAt(1)
+		TocDump
+			.ToText(result.TableOfContents)
 			.Should()
-			.BeOfType<IsolatedTableOfContentsRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("development");
+			.MatchInlineSnapshot("""
+			IndexFileRef  index.md
+			IsolatedTableOfContentsRef  development
+			""");
 	}
 
 	[Test]
@@ -221,12 +222,36 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			IndexFileRef  index.md
+			FileRef  cross-links.md
+			  CrossLinkRef  docs-content://get-started/introduction.md title="Getting Started Guide"
+			"""
+			);
+	}
+
+	[Test]
+	public void DeserializesFloatingSectionReference()
+	{
+		// language=yaml
+		var yaml =
+			"""
+		           project: 'test-project'
+		           toc:
+		             - file: index.md
+		             - api: elasticsearch
+		           """;
+
+		var result = Deserialize(yaml);
+
 		result.TableOfContents.Should().HaveCount(2);
-		var fileWithChildren = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		fileWithChildren.Children.Should().HaveCount(1);
-		var crosslink = fileWithChildren.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
-		crosslink.Title.Should().Be("Getting Started Guide");
-		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started/introduction.md");
+		var section = result.TableOfContents.ElementAt(1).Should().BeOfType<FloatingSectionRef>().Subject;
+		section.Kind.Should().Be("api");
+		section.Key.Should().Be("elasticsearch");
 	}
 
 	[Test]
@@ -269,19 +294,19 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(1);
-		var topFolder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
-		topFolder.PathRelativeToDocumentationSet.Should().Be("configure");
-		topFolder.Children.Should().HaveCount(2);
-
-		topFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-
-		var nestedFolder = topFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		nestedFolder.PathRelativeToDocumentationSet.Should().Be("site");
-		nestedFolder.Children.Should().HaveCount(3);
-		nestedFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-		nestedFolder.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("content.md");
-		nestedFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("navigation.md");
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FolderRef  configure
+			  IndexFileRef  index.md
+			  FolderRef  site
+			    IndexFileRef  index.md
+			    FileRef  content.md
+			    FileRef  navigation.md
+			"""
+			);
 	}
 
 	[Test]
@@ -340,62 +365,24 @@ public class DocumentationSetFileTests
 		result.Features.PrimaryNav.Should().BeFalse();
 		result.Api.Should().HaveCount(2);
 
-		// Assert TOC structure - 4 root items
-		result.TableOfContents.Should().HaveCount(4);
-
-		// First item: simple file reference
-		var firstItem = result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		firstItem.PathRelativeToDocumentationSet.Should().Be("index.md");
-		firstItem.Hidden.Should().BeFalse();
-		firstItem.Children.Should().BeEmpty();
-
-		// Second item: hidden file reference
-		var secondItem = result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		secondItem.PathRelativeToDocumentationSet.Should().Be("404.md");
-		secondItem.Hidden.Should().BeTrue();
-		secondItem.Children.Should().BeEmpty();
-
-		// Third item: folder with a deeply nested structure
-		var configureFolder = result.TableOfContents.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
-		configureFolder.PathRelativeToDocumentationSet.Should().Be("configure");
-		configureFolder.Children.Should().HaveCount(3);
-
-		// First child: file reference
-		var configureIndexFile = configureFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		configureIndexFile.PathRelativeToDocumentationSet.Should().Be("index.md");
-		configureIndexFile.Hidden.Should().BeFalse();
-
-		// Second child: nested folder with 3 files
-		var siteFolder = configureFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		siteFolder.PathRelativeToDocumentationSet.Should().Be("site");
-		siteFolder.Children.Should().HaveCount(3);
-
-		// Assert nested folder's children
-		var siteIndexFile = siteFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		siteIndexFile.PathRelativeToDocumentationSet.Should().Be("index.md");
-
-		var contentFile = siteFolder.Children.ElementAt(1).Should().BeOfType<FileRef>().Subject;
-		contentFile.PathRelativeToDocumentationSet.Should().Be("content.md");
-
-		var navigationFile = siteFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Subject;
-		navigationFile.PathRelativeToDocumentationSet.Should().Be("navigation.md");
-
-		// Third child: file with crosslink child
-		var pageFile = configureFolder.Children.ElementAt(2).Should().BeOfType<FileRef>().Subject;
-		pageFile.PathRelativeToDocumentationSet.Should().Be("page.md");
-		pageFile.Children.Should().HaveCount(1);
-
-		// Assert crosslink reference as a child of page.md
-		var crosslink = pageFile.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
-		crosslink.Title.Should().Be("Getting Started Guide");
-		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started/introduction.md");
-		crosslink.Hidden.Should().BeFalse();
-		crosslink.Children.Should().BeEmpty();
-
-		// Fourth item: toc reference
-		var tocRef = result.TableOfContents.ElementAt(3).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		tocRef.PathRelativeToDocumentationSet.Should().Be("development");
-		tocRef.Children.Should().BeEmpty();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			IndexFileRef  index.md
+			FileRef  404.md [hidden]
+			FolderRef  configure
+			  IndexFileRef  index.md
+			  FolderRef  site
+			    IndexFileRef  index.md
+			    FileRef  content.md
+			    FileRef  navigation.md
+			  FileRef  page.md
+			    CrossLinkRef  docs-content://get-started/introduction.md title="Getting Started Guide"
+			IsolatedTableOfContentsRef  development
+			"""
+			);
 	}
 
 	[Test]
@@ -415,13 +402,17 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(1);
-		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		guide.PathRelativeToDocumentationSet.Should().Be("guide.md");
-		guide.Children.Should().HaveCount(3);
-		guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("chapter1.md");
-		guide.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("chapter2.md");
-		guide.Children.ElementAt(2).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("chapter3.md");
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FileRef  guide.md
+			  FileRef  chapter1.md
+			  FileRef  chapter2.md
+			  FileRef  chapter3.md
+			"""
+			);
 	}
 
 	[Test]
@@ -440,12 +431,16 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(1);
-		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		guide.PathRelativeToDocumentationSet.Should().Be("api/guide.md");
-		guide.Children.Should().HaveCount(2);
-		guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("api/section1.md");
-		guide.Children.ElementAt(1).Should().BeOfType<FileRef>().Which.PathRelativeToDocumentationSet.Should().Be("api/section2.md");
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FileRef  api/guide.md
+			  FileRef  api/section1.md
+			  FileRef  api/section2.md
+			"""
+			);
 	}
 
 	[Test]
@@ -499,10 +494,13 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var file = result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Subject;
-		var crosslink = file.Children.ElementAt(0).Should().BeOfType<CrossLinkRef>().Subject;
-		crosslink.CrossLinkUri.ToString().Should().Be("docs-content://get-started.md/"); // URI normalization adds trailing slash
-		crosslink.Title.Should().BeNull();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot("""
+			IndexFileRef  index.md
+			  CrossLinkRef  docs-content://get-started.md/
+			""");
 	}
 
 	[Test]
@@ -521,11 +519,17 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		result.TableOfContents.Should().HaveCount(4);
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.Hidden.Should().BeFalse();
-		result.TableOfContents.ElementAt(1).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
-		result.TableOfContents.ElementAt(2).Should().BeOfType<FileRef>().Which.Hidden.Should().BeFalse();
-		result.TableOfContents.ElementAt(3).Should().BeOfType<FileRef>().Which.Hidden.Should().BeTrue();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			IndexFileRef  index.md
+			FileRef  _internal.md [hidden]
+			FileRef  public.md
+			FileRef  _draft.md [hidden]
+			"""
+			);
 	}
 
 	[Test]
@@ -547,13 +551,17 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		var subsection1 = section1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-
-		subsection1.PathRelativeToDocumentationSet.Should().Be("subsection1.md");
-		subsection1.Children.Should().BeEmpty();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FileRef  guide.md
+			  FileRef  chapter1.md
+			    FileRef  section1.md
+			      FileRef  subsection1.md
+			"""
+			);
 	}
 
 	[Test]
@@ -618,11 +626,18 @@ public class DocumentationSetFileTests
 
 		var result = Deserialize(yaml);
 
-		var apiFolder = result.TableOfContents.ElementAt(0).Should().BeOfType<FolderRef>().Subject;
-		apiFolder.Children.Should().HaveCount(3);
-		apiFolder.Children.ElementAt(0).Should().BeOfType<IndexFileRef>();
-		apiFolder.Children.ElementAt(1).Should().BeOfType<FolderRef>();
-		apiFolder.Children.ElementAt(2).Should().BeOfType<FileRef>();
+		TocDump
+			.ToText(result.TableOfContents)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			FolderRef  api
+			  IndexFileRef  index.md
+			  FolderRef  rest
+			    IndexFileRef  index.md
+			  FileRef  overview.md
+			"""
+			);
 	}
 
 	[Test]
@@ -646,14 +661,14 @@ public class DocumentationSetFileTests
 		var collector = new CapturingDiagnosticsCollector();
 		_ = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
-		collector.Warnings.Should().Be(0);
-		collector.Errors.Should().Be(1);
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
-		diagnostic.File.Should().EndWith("docset.yml");
-		diagnostic.Line.Should().Be(2);
-		diagnostic.Column.Should().Be(1);
-		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /docs/docset.yml:2 Unknown key 'totally_unknown_key'. Valid keys: api, branding, codex, cross_links, cta, default_cta, description, dev_docs, display_name, exclude, extensions, features, …."
+			);
+		collector.Captured.Should().ContainSingle().Which.Column.Should().Be(1);
 	}
 
 	[Test]
@@ -684,14 +699,14 @@ public class DocumentationSetFileTests
 		var collector = new CapturingDiagnosticsCollector();
 		_ = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
-		collector.Warnings.Should().Be(0);
-		collector.Errors.Should().Be(1);
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
-		diagnostic.File.Should().EndWith("toc.yml");
-		diagnostic.Line.Should().Be(1);
-		diagnostic.Column.Should().Be(1);
-		diagnostic.Message.Should().Contain("Unknown key 'totally_unknown_key'");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error /docs/nested/toc.yml:1 Unknown key 'totally_unknown_key'. Valid keys: default_cta, island, project, suppress, toc."
+			);
+		collector.Captured.Should().ContainSingle().Which.Column.Should().Be(1);
 	}
 
 	[Test]
@@ -775,88 +790,24 @@ public class DocumentationSetFileTests
 
 		// Verify TOC references have been preserved (not flattened)
 		// We have 3 top-level items: index.md, development TOC, and guides folder
-		result.TableOfContents.Should().HaveCount(3);
-
-		// First item: file from main docset
-		result.TableOfContents.ElementAt(0).Should().BeOfType<IndexFileRef>().Which.PathRelativeToDocumentationSet.Should().Be("index.md");
-
-		// Second item: development TOC (preserved as IsolatedTableOfContentsRef with resolved children)
-		var developmentToc = result.TableOfContents.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		developmentToc.PathRelativeToDocumentationSet.Should().Be("development");
-		developmentToc.Children.Should().HaveCount(3, "should have index, contributing file, and internals folder");
-
-		developmentToc
-			.Children
-			.ElementAt(0)
+		TocDump
+			.ToText(result.TableOfContents)
 			.Should()
-			.BeOfType<IndexFileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("development/index.md", "TOC path should be prepended");
-
-		developmentToc
-			.Children
-			.ElementAt(1)
-			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("development/contributing.md");
-
-		var internalsFolder = developmentToc.Children.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
-		internalsFolder.PathRelativeToDocumentationSet.Should().Be("development/internals");
-		internalsFolder.Children.Should().HaveCount(1);
-		internalsFolder
-			.Children
-			.ElementAt(0)
-			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("development/internals/architecture.md");
-
-		// Third item: guides folder (preserved with its children including nested advanced TOC)
-		var guidesFolder = result.TableOfContents.ElementAt(2).Should().BeOfType<FolderRef>().Subject;
-		guidesFolder.PathRelativeToDocumentationSet.Should().Be("guides");
-		guidesFolder.Children.Should().HaveCount(2, "should have getting-started file and advanced TOC");
-
-		guidesFolder
-			.Children
-			.ElementAt(0)
-			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("guides/getting-started.md");
-
-		// Advanced TOC preserved as IsolatedTableOfContentsRef within guides folder
-		var advancedToc = guidesFolder.Children.ElementAt(1).Should().BeOfType<IsolatedTableOfContentsRef>().Subject;
-		advancedToc.PathRelativeToDocumentationSet.Should().Be("guides/advanced");
-		advancedToc.Children.Should().HaveCount(2);
-
-		advancedToc
-			.Children
-			.ElementAt(0)
-			.Should()
-			.BeOfType<IndexFileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("guides/advanced/index.md");
-
-		advancedToc
-			.Children
-			.ElementAt(1)
-			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("guides/advanced/patterns.md");
+			.MatchInlineSnapshot(
+				"""
+			IndexFileRef  index.md
+			IsolatedTableOfContentsRef  development
+			  IndexFileRef  development/index.md (container-relative: index.md)
+			  FileRef  development/contributing.md (container-relative: contributing.md)
+			  FolderRef  development/internals (container-relative: internals)
+			    FileRef  development/internals/architecture.md (container-relative: internals/architecture.md)
+			FolderRef  guides
+			  FileRef  guides/getting-started.md
+			  IsolatedTableOfContentsRef  guides/advanced
+			    IndexFileRef  guides/advanced/index.md (container-relative: index.md)
+			    FileRef  guides/advanced/patterns.md (container-relative: patterns.md)
+			"""
+			);
 	}
 
 	[Test]
@@ -886,44 +837,19 @@ public class DocumentationSetFileTests
 		var collector = new DiagnosticsCollector([]);
 		var result = DocumentationSetFile.LoadAndResolve(collector, docsetPath, new ScopedFileSystem(fileSystem, "/docs"));
 
-		result.TableOfContents.Should().HaveCount(2);
-
-		// First item: file with nested children
-		var guide = result.TableOfContents.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		guide.PathRelativeToDocumentationSet.Should().Be("guide.md");
-		guide.Children.Should().HaveCount(1);
-
-		var chapter1 = guide.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		chapter1.PathRelativeToDocumentationSet.Should().Be("chapter1.md", "children of files stay in the same directory");
-		chapter1.Children.Should().HaveCount(1);
-
-		var section1 = chapter1.Children.ElementAt(0).Should().BeOfType<FileRef>().Subject;
-		section1.PathRelativeToDocumentationSet.Should().Be("section1.md", "children of files stay in the same directory");
-
-		// Second item: folder with children
-		var apiFolder = result.TableOfContents.ElementAt(1).Should().BeOfType<FolderRef>().Subject;
-		apiFolder.PathRelativeToDocumentationSet.Should().Be("api");
-		apiFolder.Children.Should().HaveCount(2);
-
-		apiFolder
-			.Children
-			.ElementAt(0)
+		TocDump
+			.ToText(result.TableOfContents)
 			.Should()
-			.BeOfType<IndexFileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("api/index.md", "folder path 'api' should be prepended");
-
-		apiFolder
-			.Children
-			.ElementAt(1)
-			.Should()
-			.BeOfType<FileRef>()
-			.Which
-			.PathRelativeToDocumentationSet
-			.Should()
-			.Be("api/reference.md", "folder path 'api' should be prepended");
+			.MatchInlineSnapshot(
+				"""
+			FileRef  guide.md
+			  FileRef  chapter1.md
+			    FileRef  section1.md
+			FolderRef  api
+			  IndexFileRef  api/index.md
+			  FileRef  api/reference.md
+			"""
+			);
 	}
 
 	[Test]

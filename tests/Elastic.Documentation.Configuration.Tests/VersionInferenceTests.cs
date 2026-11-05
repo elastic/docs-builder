@@ -41,6 +41,7 @@ public class VersionInferenceTests
 			{ nameof(ProductApplicability.EdotJava), "edot-java" },
 			{ nameof(ProductApplicability.EdotNode), "edot-node" },
 			{ nameof(ProductApplicability.EdotBrowser), "edot-browser" },
+			{ nameof(ProductApplicability.EdotReactNative), "edot-react-native" },
 			{ nameof(ProductApplicability.EdotPhp), "edot-php" },
 			{ nameof(ProductApplicability.EdotPython), "edot-python" },
 			{ nameof(ProductApplicability.EdotCfAws), "edot-cf-aws" },
@@ -89,6 +90,7 @@ public class VersionInferenceTests
 			{ "edot-java", VersioningSystemId.EdotJava },
 			{ "edot-node", VersioningSystemId.EdotNode },
 			{ "edot-browser", VersioningSystemId.EdotBrowser },
+			{ "edot-react-native", VersioningSystemId.EdotReactNative },
 			{ "edot-php", VersioningSystemId.EdotPhp },
 			{ "edot-python", VersioningSystemId.EdotPython },
 			{ "edot-cf-aws", VersioningSystemId.EdotCfAws },
@@ -175,6 +177,9 @@ public class VersionInferenceTests
 				break;
 			case nameof(ProductApplicability.EdotBrowser):
 				applicability.EdotBrowser = value;
+				break;
+			case nameof(ProductApplicability.EdotReactNative):
+				applicability.EdotReactNative = value;
 				break;
 			case nameof(ProductApplicability.EdotPhp):
 				applicability.EdotPhp = value;

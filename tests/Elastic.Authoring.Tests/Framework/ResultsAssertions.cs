@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics;
-using System.Text.Json;
 using JetBrains.Annotations;
 
 namespace Elastic.Authoring.Tests.Framework;
@@ -14,8 +13,6 @@ namespace Elastic.Authoring.Tests.Framework;
 /// </summary>
 internal static class ResultsAssertions
 {
-	private static readonly JsonSerializerOptions IndentedJson = new() { WriteIndented = true };
-
 	/// <summary>
 	/// Finds the <see cref="MarkdownResult"/> for <paramref name="path"/> in the generator output.
 	/// Mirrors F# <c>converts</c>. Called from <see cref="Scenario.Converts(string)"/>.
@@ -36,22 +33,18 @@ internal static class ResultsAssertions
 	/// Port of F# <c>convertsToJson</c>.
 	/// </summary>
 	[DebuggerStepThrough]
-	internal static void ConvertsToJson(string artifactPath, [LanguageInjection("json")] string expected, GeneratorResults results)
+	internal static void ConvertsToJson(
+		string artifactPath,
+		[LanguageInjection("json")] string? expected,
+		GeneratorResults results,
+		CallSite site
+	)
 	{
 		var fs = results.Context.ReadFileSystem;
 		var fi = fs.FileInfo.New(artifactPath);
 		if (!fi.Exists)
 			throw new AwesomeAssertions.Execution.AssertionFailedException($"{artifactPath} is not part of the output");
 
-		var actualRaw = fs.File.ReadAllText(fi.FullName);
-		using var actualDoc = JsonDocument.Parse(actualRaw);
-		var actualPretty = JsonSerializer.Serialize(actualDoc, IndentedJson);
-
-		using var expectedDoc = JsonDocument.Parse(expected);
-		var expectedPretty = JsonSerializer.Serialize(expectedDoc, IndentedJson);
-
-		var diff = HtmlAssertions.Diff(expectedPretty, actualPretty);
-		if (!string.IsNullOrEmpty(diff))
-			throw new AwesomeAssertions.Execution.AssertionFailedException($"JSON was not equal\n-- DIFF --\n{diff}");
+		InlineSnapshots.Json(fs.File.ReadAllText(fi.FullName), expected, nameof(Scenario.ConvertsToJson), site);
 	}
 }

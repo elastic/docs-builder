@@ -14,6 +14,7 @@ using Elastic.Documentation.Search.Contract;
 using Elastic.Documentation.Search.Highlighting;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -21,171 +22,55 @@ public class ApiPropertySearchTests
 {
 	private static readonly ElasticsearchClient Client = new(new ElasticsearchClientSettings(new InMemoryRequestInvoker()));
 
-	private static JsonDocument Json(Query? query) => JsonDocument.Parse(Client.RequestResponseSerializer.SerializeToString(query));
+	private static string Json(Query? query) => Client.RequestResponseSerializer.SerializeToString(query);
 
 	[Test]
-	[Arguments("track_total", null, 5)]
-	[Arguments("knn_field search", null, 5)]
-	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter, int size)
-	{
-		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter));
-		var nested = json.RootElement.GetProperty("nested");
-		nested.GetProperty("path").GetString().Should().Be("api.properties");
-		nested.GetProperty("inner_hits").GetProperty("size").GetInt32().Should().Be(size);
-	}
+	[Arguments("track_total", null)]
+	[Arguments("knn_field search", null)]
+	public void BuildApiPropertyQuery_Identifier_ReturnsNestedInnerHits(string input, string? filter) =>
+		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, filter)).Should().MatchJsonSnapshot();
 
 	[Test]
-	[Arguments("retriever.rrf.min_score", "min_score", "retriever rrf min_score")]
-	[Arguments("rrf.min_score", "min_score", "rrf min_score")]
-	[Arguments("[].retriever.standard", "standard", "retriever standard")]
-	[Arguments("labels.<string>.value", "value", "labels value")]
-	public void BuildApiPropertyQuery_QualifiedPath_RequiresMatchingLeafAndPathWords(string input, string leaf, string phrase)
-	{
-		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery(input, null));
-		var qualified = json
-			.RootElement
-			.GetProperty("nested")
-			.GetProperty("query")
-			.GetProperty("dis_max")
-			.GetProperty("queries")[1]
-			.GetProperty("bool");
-		qualified
-			.GetProperty("must")
-			.GetProperty("constant_score")
-			.GetProperty("filter")
-			.GetProperty("term")
-			.GetProperty("api.properties.name")
-			.GetProperty("value")
-			.GetString()
-			.Should()
-			.Be(leaf);
-		qualified
-			.GetProperty("filter")
-			.GetProperty("match_phrase_prefix")
-			.GetProperty("api.properties.path_words")
-			.GetProperty("query")
-			.GetString()
-			.Should()
-			.Be(phrase);
-	}
+	[Arguments("retriever.rrf.min_score")]
+	[Arguments("rrf.min_score")]
+	[Arguments("[].retriever.standard")]
+	[Arguments("labels.<string>.value")]
+	public void BuildApiPropertyQuery_QualifiedPath_RequiresMatchingLeafAndPathWords(string input) =>
+		Json(SearchQueryBuilder.BuildApiPropertyQuery(input, null)).Should().MatchJsonSnapshot();
 
 	[Test]
-	public void BuildApiPropertyQuery_MarkedSingleWord_MatchesTheBareName()
-	{
-		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery("[].retriever", null));
-		var options = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
-		options.GetArrayLength().Should().Be(1);
-		options[0]
-			.GetProperty("constant_score")
-			.GetProperty("filter")
-			.GetProperty("term")
-			.GetProperty("api.properties.name")
-			.GetProperty("value")
-			.GetString()
-			.Should()
-			.Be("retriever");
-	}
+	public void BuildApiPropertyQuery_MarkedSingleWord_MatchesTheBareName() =>
+		Json(SearchQueryBuilder.BuildApiPropertyQuery("[].retriever", null)).Should().MatchJsonSnapshot();
 
 	[Test]
-	[Arguments(null, false)]
-	[Arguments("all", false)]
-	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter, bool prefix)
-	{
-		using var json = Json(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter));
-		var options = json.RootElement.GetProperty("nested").GetProperty("query").GetProperty("dis_max").GetProperty("queries");
-		options.GetArrayLength().Should().Be(1);
-		var name = options[0].TryGetProperty("dis_max", out var names)
-			? names.GetProperty("queries").EnumerateArray().ToArray()
-			: [options[0]];
-		name.Should().HaveCount(prefix ? 2 : 1);
-		name[0].GetRawText().Should().Contain("\"term\"");
-	}
+	[Arguments(null)]
+	[Arguments("all")]
+	public void BuildApiPropertyQuery_PrefixMatch_OnlyInTheApiFilteredLookup(string? filter) =>
+		Json(SearchQueryBuilder.BuildApiPropertyQuery("track_total", filter)).Should().MatchJsonSnapshot();
 
 	[Test]
 	[Arguments("track_total")]
 	[Arguments("/_search track_total")]
-	public void ApplyApiPropertyQuery_SingleReading_IsNamedAfterItsInnerHits(string input)
-	{
-		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null));
-		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
-		reading.GetProperty("_name").GetString().Should().Be("api_properties");
-		reading
-			.GetProperty("must")
-			.GetProperty("nested")
-			.GetProperty("inner_hits")
-			.GetProperty("name")
-			.GetString()
-			.Should()
-			.Be("api_properties");
-	}
+	public void ApplyApiPropertyQuery_SingleReading_IsNamedAfterItsInnerHits(string input) =>
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null)).Should().MatchJsonSnapshot();
 
 	[Test]
-	public void ApplyApiPropertyQuery_TwoPlainWordsDocsWide_KeepsTheEndpointRequiredForTheSurvivingReading()
-	{
-		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "bulk track_total_hits", null));
-		var reading = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
-		var must = reading.GetProperty("must");
-		must.GetArrayLength().Should().Be(2);
-		must[0].GetProperty("nested").GetProperty("query").GetRawText().Should().Contain("\"value\":\"track_total_hits\"");
-		must[1].GetRawText().Should().Contain("_bulk");
-		reading
-			.TryGetProperty("should", out _)
-			.Should()
-			.BeFalse("the plain word names no field docs-wide, and the reading left must still hold its endpoint");
-	}
+	public void ApplyApiPropertyQuery_TwoPlainWordsDocsWide_KeepsTheEndpointRequiredForTheSurvivingReading() =>
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "bulk track_total_hits", null)).Should().MatchJsonSnapshot();
 
 	[Test]
 	[Arguments("GET /_search track_total")]
 	[Arguments("/_search track_total")]
-	public void ApplyApiPropertyQuery_DocsWideMarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input)
-	{
-		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null));
-		var fieldBranch = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool");
-		fieldBranch
-			.GetProperty("must")
-			.GetProperty("nested")
-			.GetProperty("query")
-			.GetRawText()
-			.Should()
-			.Contain("\"value\":\"track_total\"");
-		var endpoint = fieldBranch.GetProperty("should").GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
-		endpoint.GetProperty("filter").GetProperty("terms").GetProperty("api.endpoints")[0].GetString().Should().Be("_search");
-	}
+	public void ApplyApiPropertyQuery_DocsWideMarkedEndpointAndField_RequiresFieldMatchBeforeEndpointBoost(string input) =>
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), input, null)).Should().MatchJsonSnapshot();
 
 	[Test]
-	public void ApplyApiPropertyQuery_DocsWideTwoIdentifierWords_TriesBothReadingsWithUniqueInnerHitNames()
-	{
-		using var json = Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "knn_field track_total", null));
-		var readings = json.RootElement.GetProperty("bool").GetProperty("should")[1].GetProperty("bool").GetProperty("should");
-		readings.GetArrayLength().Should().Be(2);
-		var trackTotal = readings.EnumerateArray().Single(r => r.GetRawText().Contains("\"value\":\"track_total\"")).GetProperty("bool");
-		trackTotal.GetProperty("must")[1].GetRawText().Should().Contain("\"api.endpoints\":[\"_knn_field\"");
-		var readingNames = readings.EnumerateArray().Select(r => r.GetProperty("bool").GetProperty("_name").GetString()).ToArray();
-		var innerHitNames = readings
-			.EnumerateArray()
-			.Select(
-				r => r
-					.GetProperty("bool")
-					.GetProperty("must")[0]
-					.GetProperty("nested")
-					.GetProperty("inner_hits")
-					.GetProperty("name")
-					.GetString()
-			)
-			.ToArray();
-		readingNames.Should().OnlyHaveUniqueItems();
-		innerHitNames.Should().OnlyHaveUniqueItems();
-		readingNames.Concat(innerHitNames).Should().AllSatisfy(n => SearchQueryBuilder.IsApiPropertyHits(n).Should().BeTrue());
-	}
+	public void ApplyApiPropertyQuery_DocsWideTwoIdentifierWords_TriesBothReadingsWithUniqueInnerHitNames() =>
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "knn_field track_total", null)).Should().MatchJsonSnapshot();
 
 	[Test]
-	public void ApplyApiPropertyQuery_DocsWide_HasNoChildrenLift()
-	{
-		var json = Client.RequestResponseSerializer.SerializeToString(
-			SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "retriever.standard", null)
-		);
-		json.Should().Contain("\"api.properties.name\"").And.NotContain("api.properties.parent");
-	}
+	public void ApplyApiPropertyQuery_DocsWide_HasNoChildrenLift() =>
+		Json(SearchQueryBuilder.ApplyApiPropertyQuery(new MatchNoneQuery(), "retriever.standard", null)).Should().MatchJsonSnapshot();
 
 	[Test]
 	public void ProcessHit_InnerHitsFromBothReadings_AreMerged()
@@ -234,105 +119,15 @@ public class ApiPropertySearchTests
 	public void BuildApiPropertyQuery_ExcludedQuery_ReturnsNull(string input, string? filter) =>
 		SearchQueryBuilder.BuildApiPropertyQuery(input, filter).Should().BeNull();
 
+	/// <summary>
+	/// The api.* mapping, for the lexical and the semantic variant: boolean deprecated, synonym text words and group,
+	/// negative-impact rank_feature id_words, plain keyword endpoints, nested properties with keyword names and parent
+	/// (and no children field), and unindexed keyword routes.
+	/// </summary>
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void Mapping_ApiDeprecated_IsBoolean(bool semantic)
-	{
-		var api = ApiMapping(semantic);
-		api.GetProperty("deprecated").GetProperty("type").GetString().Should().Be("boolean");
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiWordsAndGroup_AreSynonymText(bool semantic)
-	{
-		var api = ApiMapping(semantic);
-		var words = api.GetProperty("words");
-		words.GetProperty("type").GetString().Should().Be("text");
-		words.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
-		words.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
-		var completion = words.GetProperty("fields").GetProperty("completion");
-		completion.GetProperty("type").GetString().Should().Be("search_as_you_type");
-		completion.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
-		completion.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
-		completion.TryGetProperty("index_options", out _).Should().BeFalse();
-
-		var group = api.GetProperty("group");
-		group.GetProperty("type").GetString().Should().Be("text");
-		group.GetProperty("analyzer").GetString().Should().Be("synonyms_fixed_analyzer");
-		group.GetProperty("search_analyzer").GetString().Should().Be("synonyms_analyzer");
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiIdWords_IsRankFeatureWithNegativeImpact(bool semantic)
-	{
-		var idWords = ApiMapping(semantic).GetProperty("id_words");
-		idWords.GetProperty("type").GetString().Should().Be("rank_feature");
-		idWords.GetProperty("positive_score_impact").GetBoolean().Should().BeFalse();
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiEndpointsBare_IsKeyword(bool semantic)
-	{
-		var api = ApiMapping(semantic);
-		var endpoints = api.GetProperty("endpoints");
-		endpoints.GetProperty("type").GetString().Should().Be("keyword");
-		endpoints.TryGetProperty("fields", out _).Should().BeFalse();
-		api.GetProperty("endpoints_bare").GetProperty("type").GetString().Should().Be("keyword");
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiProperties_IsNestedWithKeywordNames(bool semantic)
-	{
-		var context = semantic
-			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
-			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
-		using var json = JsonDocument.Parse(context.GetMappingsJson());
-		var field = json.RootElement.GetProperty("properties").GetProperty("api").GetProperty("properties").GetProperty("properties");
-		field.GetProperty("type").GetString().Should().Be("nested");
-		var fields = field.GetProperty("properties");
-		fields.GetProperty("name").GetProperty("type").GetString().Should().Be("keyword");
-		fields.GetProperty("anchor").GetProperty("type").GetString().Should().Be("keyword");
-		fields.GetProperty("path_words").GetProperty("type").GetString().Should().Be("search_as_you_type");
-
-		var routes = json
-			.RootElement
-			.GetProperty("properties")
-			.GetProperty("api")
-			.GetProperty("properties")
-			.GetProperty("routes")
-			.GetProperty("properties");
-		routes.GetProperty("path").GetProperty("type").GetString().Should().Be("keyword");
-		routes.GetProperty("path").GetProperty("index").GetBoolean().Should().BeFalse();
-		routes.GetProperty("methods").GetProperty("type").GetString().Should().Be("keyword");
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiProperties_HasNoChildrenField(bool semantic)
-	{
-		var context = semantic
-			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
-			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
-		using var json = JsonDocument.Parse(context.GetMappingsJson());
-		var fields = json
-			.RootElement
-			.GetProperty("properties")
-			.GetProperty("api")
-			.GetProperty("properties")
-			.GetProperty("properties")
-			.GetProperty("properties");
-		fields.TryGetProperty("children", out _).Should().BeFalse();
-	}
+	public void Mapping_Api(bool semantic) => ApiMapping(semantic).GetRawText().Should().MatchJsonSnapshot();
 
 	[Test]
 	public void BuildApiPropertyQuery_OnlyADot_ReturnsNull() => SearchQueryBuilder.BuildApiPropertyQuery(".", null).Should().BeNull();
@@ -360,13 +155,7 @@ public class ApiPropertySearchTests
 
 	[Test]
 	public void BuildApiPropertyQuery_DocsWide_HasNoChildrenOption() =>
-		Client
-			.RequestResponseSerializer
-			.SerializeToString(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard", null))
-			.Should()
-			.NotContain("api.properties.parent")
-			.And
-			.NotContain("_name");
+		Json(SearchQueryBuilder.BuildApiPropertyQuery("retriever.standard", null)).Should().MatchJsonSnapshot();
 
 	[Test]
 	public void ProcessHit_InnerHitsWithoutMatchedQueries_AreAllNameMatches()
@@ -380,27 +169,6 @@ public class ApiPropertySearchTests
 		);
 
 		result.Properties.Select(p => p.Path).Should().Equal("a", "b", "c");
-	}
-
-	[Test]
-	[Arguments(false)]
-	[Arguments(true)]
-	public void Mapping_ApiPropertiesParent_IsKeyword(bool semantic)
-	{
-		var context = semantic
-			? DocumentationMappingContext.DocumentationDocumentSemantic.CreateContext(type: "assembler", env: "test")
-			: DocumentationMappingContext.DocumentationDocument.CreateContext(type: "assembler", env: "test");
-		using var json = JsonDocument.Parse(context.GetMappingsJson());
-		var parent = json
-			.RootElement
-			.GetProperty("properties")
-			.GetProperty("api")
-			.GetProperty("properties")
-			.GetProperty("properties")
-			.GetProperty("properties")
-			.GetProperty("parent");
-		parent.GetProperty("type").GetString().Should().Be("keyword");
-		parent.TryGetProperty("index", out _).Should().BeFalse();
 	}
 
 	private static string SearchResponseJson(

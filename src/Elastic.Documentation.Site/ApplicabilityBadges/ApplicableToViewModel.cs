@@ -63,6 +63,7 @@ public class ApplicableToViewModel
 		[p => p.EdotJava] = ApplicabilityMappings.EdotJava,
 		[p => p.EdotNode] = ApplicabilityMappings.EdotNode,
 		[p => p.EdotBrowser] = ApplicabilityMappings.EdotBrowser,
+		[p => p.EdotReactNative] = ApplicabilityMappings.EdotReactNative,
 		[p => p.EdotPhp] = ApplicabilityMappings.EdotPhp,
 		[p => p.EdotPython] = ApplicabilityMappings.EdotPython,
 		[p => p.ApmAgentAndroid] = ApplicabilityMappings.ApmAgentAndroid,
