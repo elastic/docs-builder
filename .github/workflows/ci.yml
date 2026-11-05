@@ -181,8 +181,13 @@ jobs:
       - name: Compile
         if: ${{ needs.changes.outputs.code == 'true' }}
         # The `lint` job already runs `curb check` on the whole repo; skip the per-project copy.
+        # The trim and AOT analyzers (IsAotCompatible) report the same warnings on every OS and take most of the
+        # compile time of the larger projects, so only ubuntu runs them. Empty leaves the project defaults alone.
         env:
           Curb_Bypass: true
+          EnableTrimAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableAotAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
+          EnableSingleFileAnalyzer: ${{ matrix.os != 'ubuntu-latest' && 'false' || '' }}
         run: dotnet run --project build -c release -- compile
 
       - name: Check CLI schema is up to date
