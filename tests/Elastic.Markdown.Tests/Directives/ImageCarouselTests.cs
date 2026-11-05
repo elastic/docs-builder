@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Image;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -52,7 +54,7 @@ public class ImageCarouselBlockTests() : DirectiveTest<ImageCarouselBlock>(
 	public void AllImagesFoundSoNoErrorIsEmitted()
 	{
 		Block!.Images.Should().AllSatisfy(img => img.Found.Should().BeTrue());
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -75,7 +77,7 @@ public class ImageCarouselWithSmallHeightTests() : DirectiveTest<ImageCarouselBl
 	public void ParsesSmallMaxHeight()
 	{
 		Block!.MaxHeight.Should().Be("small");
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -98,7 +100,7 @@ public class ImageCarouselWithAutoHeightTests() : DirectiveTest<ImageCarouselBlo
 	public void ParsesNoneMaxHeight()
 	{
 		Block!.MaxHeight.Should().Be("none");
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -168,7 +170,7 @@ public class ImageCarouselMinimalTests() : DirectiveTest<ImageCarouselBlock>(
 		Block!.MaxHeight.Should().BeNull();
 		Block!.Images.Should().HaveCount(1);
 		Block!.Images[0].Alt.Should().Be("Minimal carousel");
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -198,6 +200,12 @@ public class ImageCarouselWithMissingImageTests() : DirectiveTest<ImageCarouselB
 		Block!.Images[1].Found.Should().BeTrue(); // exists.png
 
 		// Should have diagnostics for the missing image
-		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Error);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:5 `img/missing.png` does not exist. resolved to `Nullean.ScopedFileSystem.ScopedFileInfo"
+			);
 	}
 }

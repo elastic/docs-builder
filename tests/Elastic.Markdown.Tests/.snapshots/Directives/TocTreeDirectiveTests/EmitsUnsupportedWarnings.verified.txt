@@ -1,0 +1,1 @@
+warning {repo}/docs/index.md:1 Directive block 'solution' is unsupported. See https://github.com/elastic/docs-builder/issues/31 for more information.

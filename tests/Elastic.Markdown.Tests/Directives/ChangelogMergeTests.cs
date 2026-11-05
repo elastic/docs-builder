@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -159,13 +161,7 @@ public class ChangelogMergeSameTargetTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllEntriesFromMergedBundles()
-	{
-		Html.Should().Contain("Kibana feature for August 5th");
-		Html.Should().Contain("Elasticsearch feature for August 5th");
-		Html.Should().Contain("Elasticsearch bugfix for August 5th");
-		Html.Should().Contain("Serverless feature for August 5th");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void MaintainsCorrectDateOrder()
@@ -274,12 +270,7 @@ public class ChangelogMergeDifferentTargetsTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllVersionsSeparately()
-	{
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("9.2.0");
-		Html.Should().Contain("9.1.0");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void MaintainsSemverOrder()
@@ -343,11 +334,7 @@ public class ChangelogMergeSingleBundleTests : DirectiveTest<ChangelogBlock>
 	public void SingleBundleHasAllEntries() => Block!.LoadedBundles[0].Entries.Should().HaveCount(2);
 
 	[Test]
-	public void SingleBundleRendersCorrectly()
-	{
-		Html.Should().Contain("Feature in 9.3.0");
-		Html.Should().Contain("Bug fix in 9.3.0");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -415,9 +402,5 @@ public class ChangelogMergeMixedVersionTypesTests : DirectiveTest<ChangelogBlock
 	}
 
 	[Test]
-	public void RendersAllVersions()
-	{
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("August 5, 2025");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
