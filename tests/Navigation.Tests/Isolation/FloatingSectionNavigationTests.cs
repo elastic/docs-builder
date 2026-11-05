@@ -64,6 +64,30 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 	}
 
 	[Test]
+	public async Task FloatingSection_FilledAfterConstruction_StaysOutOfTheGlobalNavigationOrder()
+	{
+		var (_, context, docSet) = Arrange(CreateContext);
+		var provider = new DemoProvider();
+		var navigation = new DocumentationSetNavigation<TestDocumentationFile>(
+			docSet,
+			context,
+			TestDocumentationFileFactory.Instance,
+			crossLinkResolver: TestCrossLinkResolver.Instance,
+			floatingSections: new FloatingSectionRegistry([provider])
+		);
+		var root = navigation.NavigationItems.OfType<DemoRoot>().Should().ContainSingle().Subject;
+		root.NavigationItems.Should().BeEmpty("the root exists before the section is resolved");
+
+		await navigation.FloatingSections.Should().ContainSingle().Subject.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+		var lookup = navigation.BuildNavigationLookups([]);
+
+		root.NavigationItems.Should().ContainSingle("the section filled its children");
+		lookup.Values.OfType<DemoRoot>().Should().ContainSingle();
+		lookup.Values.OfType<DemoPage>().Should().BeEmpty("the children of a floating section keep their own numbering");
+		provider.Section!.ResolveCount.Should().Be(1);
+	}
+
+	[Test]
 	public async Task FloatingSectionRef_WithoutProvider_EmitsAnErrorAndDropsTheEntry()
 	{
 		var (_, context, docSet) = Arrange(CreateContext);
@@ -103,62 +127,5 @@ public class FloatingSectionNavigationTests() : DocumentationSetNavigationTestBa
 		await context.Collector.StopAsync(TestContext.Current!.Execution.CancellationToken);
 
 		context.Diagnostics.Should().Contain(d => d.Message.Contains("'api: demo'") && d.Message.Contains("'children'"));
-	}
-
-	private sealed class DemoProvider : IFloatingSectionProvider
-	{
-		public string Kind => "api";
-
-		public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
-		{
-			section = key == "demo" ? new DemoSection() : null;
-			return section is not null;
-		}
-	}
-
-	private sealed class DemoSection : IFloatingSection
-	{
-		public string Kind => "api";
-		public string Key => "demo";
-		public string UrlRoot => "api/doc/demo";
-
-		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
-	}
-
-	private sealed record DemoModel : INavigationModel;
-
-	private sealed class DemoLandingLeaf(DemoRoot root) : ILeafNavigationItem<DemoModel>
-	{
-		public DemoModel Model { get; } = new();
-		public string Url => "/api/doc/demo";
-		public string NavigationTitle => "Demo API";
-		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
-		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;
-		public bool Hidden => false;
-		public int NavigationIndex { get; set; }
-	}
-
-	private sealed class DemoRoot : IFloatingSectionRoot, IAssignableIslandNavigation
-	{
-		public DemoRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent)
-		{
-			Parent = parent;
-			Index = new DemoLandingLeaf(this);
-		}
-
-		public string Url => Index.Url;
-		public string NavigationTitle => Index.NavigationTitle;
-		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
-		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-		public bool Hidden => false;
-		public int NavigationIndex { get; set; }
-		public bool IsIsland { get; set; }
-		public string Id => "demo";
-		public ILeafNavigationItem<INavigationModel> Index { get; }
-		public IReadOnlyCollection<INavigationItem> NavigationItems => [];
-		public bool IsUsingNavigationDropdown => false;
-		public Uri Identifier => new("api://demo");
-
-		public void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) { }
 	}
 }

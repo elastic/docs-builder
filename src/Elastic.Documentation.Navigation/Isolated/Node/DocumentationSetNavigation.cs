@@ -108,6 +108,10 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 	private readonly Dictionary<Uri, IRootNavigationItem<TModel, INavigationItem>> _tableOfContentNodes = [];
 	private readonly IDocumentationSetContext _context;
 	private readonly FloatingSectionRegistry _floatingSections;
+	private readonly List<IFloatingSection> _mountedFloatingSections = [];
+
+	/// <summary>The floating sections mounted by the table of contents, in toc order.</summary>
+	public IReadOnlyList<IFloatingSection> FloatingSections => _mountedFloatingSections;
 	public IReadOnlyDictionary<Uri, IRootNavigationItem<IDocumentationFile, INavigationItem>> TableOfContentNodes =>
 		_tableOfContentNodes.ToDictionary(kvp => kvp.Key, IRootNavigationItem<IDocumentationFile, INavigationItem> (kvp) => kvp.Value);
 
@@ -393,6 +397,7 @@ public class DocumentationSetNavigation<TModel> : IDocumentationSetNavigation, I
 		}
 
 		var root = section.CreateRoot(parent);
+		_mountedFloatingSections.Add(section);
 		root.NavigationIndex = index;
 		root.Parent = parent;
 		if (root is IAssignableIslandNavigation island)

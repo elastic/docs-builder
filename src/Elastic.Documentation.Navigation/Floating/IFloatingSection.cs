@@ -22,13 +22,25 @@ public interface IFloatingSection
 	string UrlRoot { get; }
 
 	/// <summary>
-	/// Creates the root of this section under <paramref name="parent"/>. The root is an island: the parent
-	/// navigation renders a stub and the pages render in the section's own sidebar.
+	/// Creates the root of this section under <paramref name="parent"/>. This is synchronous and cheap, with no
+	/// network access: the root knows its landing URL and title but has no children yet. The root is an island,
+	/// so the parent navigation renders a stub and the pages render in the section's own sidebar.
 	/// </summary>
 	IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent);
+
+	/// <summary>
+	/// Fetches the content of the section and fills the children of the root. The build calls this once,
+	/// before anything walks the children (<c>links.json</c>, the sitemap, <c>llms.txt</c>, page rendering).
+	/// </summary>
+	Task ResolveAsync(Cancel ctx);
 }
 
-/// <summary>The root of a floating section. The site assembler keeps these where a docset or TOC mounts them.</summary>
+/// <summary>
+/// The root of a floating section. The site assembler keeps these where a docset or TOC mounts them.
+/// Its subtree is opaque to the numbering of the surrounding navigation:
+/// the root takes one place in the global navigation order and its children keep their own numbering.
+/// This lets a section fill its children after the surrounding tree is built, without renumbering it.
+/// </summary>
 public interface IFloatingSectionRoot : IRootNavigationItem<INavigationModel, INavigationItem>;
 
 /// <summary>Resolves the floating sections of one <see cref="IFloatingSection.Kind"/>.</summary>

@@ -15,7 +15,7 @@ namespace Elastic.Markdown.Tests.DocSet;
 public class FloatingSectionLinksTests
 {
 	[Test]
-	public void CreateLinkReference_WithMountedFloatingSection_ListsOnlyMarkdownPages()
+	public async Task CreateLinkReference_WithMountedFloatingSection_ListsOnlyMarkdownPages()
 	{
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
@@ -42,36 +42,47 @@ public class FloatingSectionLinksTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 
+		var provider = new DemoProvider();
 		var set = new DocumentationSet(
 			context,
 			new TestLoggerFactory(),
 			new TestCrossLinkResolver(),
-			floatingSections: new FloatingSectionRegistry([new DemoProvider()])
+			floatingSections: new FloatingSectionRegistry([provider])
 		);
+		await set.ResolveFloatingSectionsAsync(TestContext.Current!.Execution.CancellationToken);
 		var reference = set.CreateLinkReference();
 
 		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
 		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/doc/demo");
+		provider.ResolveCalls.Should().Be(1);
 	}
 
 	private sealed class DemoProvider : IFloatingSectionProvider
 	{
+		public int ResolveCalls { get; set; }
+
 		public string Kind => "api";
 
 		public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
 		{
-			section = key == "demo" ? new DemoSection() : null;
+			section = key == "demo" ? new DemoSection(this) : null;
 			return section is not null;
 		}
 	}
 
-	private sealed class DemoSection : IFloatingSection
+	private sealed class DemoSection(DemoProvider provider) : IFloatingSection
 	{
 		public string Kind => "api";
 		public string Key => "demo";
 		public string UrlRoot => "api/doc/demo";
 
 		public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => new DemoRoot(parent);
+
+		public Task ResolveAsync(Cancel ctx)
+		{
+			provider.ResolveCalls++;
+			return Task.CompletedTask;
+		}
 	}
 
 	private sealed record DemoModel : INavigationModel;
