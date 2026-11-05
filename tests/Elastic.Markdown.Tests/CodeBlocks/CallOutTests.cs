@@ -8,6 +8,7 @@ using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
 using JetBrains.Annotations;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
@@ -49,7 +50,7 @@ var z = y - 2; // another callout
 		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.NotContain(c => c.Text.Contains("not a callout"));
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -88,7 +89,7 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -106,10 +107,11 @@ var z = y - 2; <2>
 	public void RequiresContentToFollow() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by any content"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Code block with annotations is not followed by any content, needs numbered list"
+			);
 }
 
 [InheritsTests]
@@ -133,10 +135,9 @@ var z = y - 2; <2>
 	public void RequiresContentToFollow() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Code block with annotations is not followed by a list");
 }
 
 [InheritsTests]
@@ -187,7 +188,7 @@ var z = y - 2; <2>
 		);
 
 	[Test]
-	public void AllowsAParagraphInBetween() => Collector.Diagnostics.Should().BeEmpty();
+	public void AllowsAParagraphInBetween() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -217,10 +218,11 @@ BLOCK TWO
 	public void RequiresContentToFollow() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 More than one content block between code block with annotations and its list"
+			);
 }
 
 [InheritsTests]
@@ -244,10 +246,9 @@ var z = y - 2; <2>
 	public void RequiresContentToFollow() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("Code block has 2 callouts but the following list only has 1"));
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Code block has 2 callouts but the following list only has 1");
 }
 
 [InheritsTests]
@@ -273,7 +274,7 @@ var z = y - 2; <2>
 		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(3).And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Test]
-	public void RequiresContentToFollow() => Collector.Diagnostics.Should().BeEmpty();
+	public void RequiresContentToFollow() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -341,7 +342,7 @@ service:
 	}
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -363,7 +364,7 @@ public class MultipleCalloutsInOneLine() : CodeBlockCallOutTests(
 		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(3).And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -388,7 +389,7 @@ public class CodeBlockWithChevronInsideCode() : CodeBlockCallOutTests(
 		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(5).And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -413,7 +414,7 @@ var z = y - 2; <2>
 		Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2).And.OnlyContain(c => c.Text.StartsWith('<'));
 
 	[Test]
-	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void RenderedHtmlContainsCallouts() =>
@@ -460,7 +461,7 @@ var z = y - 2; <2>
 	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
 	[Test]
-	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+	public void HandlesCommentBlocksCorrectly() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -486,7 +487,7 @@ var z = y - 2; <2>
 	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
 	[Test]
-	public void HandlesCommentBlocksAndParagraphCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+	public void HandlesCommentBlocksAndParagraphCorrectly() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void RendersIntermediateParagraph() =>
@@ -542,10 +543,11 @@ var z = y - 2; <2>
 	public void EmitsErrorForTooManyParagraphs() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("More than one content block between code block with annotations and its list"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 More than one content block between code block with annotations and its list"
+			);
 }
 
 [InheritsTests]
@@ -570,10 +572,9 @@ var z = y - 2; <2>
 	public void EmitsErrorForNoList() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.HaveCount(1)
-			.And
-			.OnlyContain(c => c.Message.StartsWith("Code block with annotations is not followed by a list"));
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Code block with annotations is not followed by a list");
 }
 
 [InheritsTests]
@@ -596,8 +597,28 @@ var z = y - 2; <2>
 	public void ParsesCallouts() => Block!.CallOuts.Should().NotBeNullOrEmpty().And.HaveCount(2);
 
 	[Test]
-	public void HandlesCommentsCorrectly() => Collector.Diagnostics.Should().BeEmpty();
+	public void HandlesCommentsCorrectly() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
-	public void RenderedHtmlDoesNotContainComments() => Html.Should().NotContain("basque_keywords");
+	public void RenderedHtmlDoesNotContainComments() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="highlight-csharp notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
+						<span class="code-callout" data-index="1"></span>
+						var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
+						<span class="code-callout" data-index="2"></span>
+					</code>
+				</pre>
+			</div>
+		</div>
+		<ol class="code-callouts">
+			<li>First callout</li>
+			<li>Second callout</li>
+		</ol>
+		""",
+			DocsHtml.Body()
+		);
 }
