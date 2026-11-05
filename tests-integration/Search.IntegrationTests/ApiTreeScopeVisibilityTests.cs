@@ -77,31 +77,118 @@ public class ApiTreeScopeVisibilityTests
 	}
 
 	/// <summary>Each scope with the hit URLs a reader gets, which name the document that matched.</summary>
-	public static IEnumerable<Func<(ApiTreeScope?, string[])>> Scopes()
+	public static IEnumerable<Func<(ApiPageContext?, string[])>> Scopes()
 	{
 		yield return () => (null, [Markdown, LegacyApi, EsDefault, CloudDefault]);
-		yield return () => (new ApiTreeScope("elasticsearch", "8"), [Markdown, LegacyApi, EsV8Variant, CloudDefault]);
-		yield return () => (new ApiTreeScope("elasticsearch", "9"), [Markdown, LegacyApi, EsDefaultInV9, CloudDefault]);
-		yield return () => (new ApiTreeScope("cloud", "4"), [Markdown, LegacyApi, EsDefault]);
+		yield return () => (new ApiPageContext("elasticsearch", "8"), [Markdown, LegacyApi, EsV8Variant, CloudDefault]);
+		yield return () => (new ApiPageContext("elasticsearch", "9"), [Markdown, LegacyApi, EsDefaultInV9, CloudDefault]);
+		yield return () => (new ApiPageContext("cloud", "4"), [Markdown, LegacyApi, EsDefault]);
 	}
 
 	[Test]
 	[MethodDataSource(nameof(Scopes))]
-	public async Task NavigationSearch_Scope_ShowsTheExpectedDocuments(ApiTreeScope? scope, string[] hitUrls)
+	public async Task NavigationSearch_Scope_ShowsTheExpectedDocuments(ApiPageContext? page, string[] hitUrls)
 	{
 		Skip.Unless(EndpointUrl is not null, "API_TREE_SCOPE_ES_URL is not set");
 		var ct = TestContext.Current!.Execution.CancellationToken;
 		using var cluster = await DisposableIndex.CreateAsync(new Uri(EndpointUrl), Documents(), ct);
 		using var navigation = new NavigationSearchService(cluster.Search, cluster.Accessor, NullLogger<NavigationSearchService>.Instance);
 
-		var docsWide = await navigation.NavigationSearchAsync(new NavigationSearchRequest { Query = "search", ApiTree = scope }, ct);
+		var docsWide = await navigation.NavigationSearchAsync(new NavigationSearchRequest { Query = "search", ApiPage = page }, ct);
 		var apiOnly = await navigation.NavigationSearchAsync(
-			new NavigationSearchRequest { Query = "search", TypeFilter = "api", ApiTree = scope },
+			new NavigationSearchRequest { Query = "search", TypeFilter = "api", ApiPage = page },
 			ct
 		);
 
 		docsWide.Results.Select(r => r.Url).Order().Should().Equal(hitUrls.Order());
 		apiOnly.Results.Select(r => r.Url).Order().Should().Equal(hitUrls.Where(u => u != Markdown).Order());
+	}
+
+	private const string EsSearch = "/docs/api/doc/elasticsearch/operation/operation-search";
+	private const string ServerlessSearch = "/docs/api/doc/elasticsearch-serverless/operation/operation-search";
+	private const string EsCatCount = "/docs/api/doc/elasticsearch/operation/operation-cat-count";
+	private const string ServerlessCount = "/docs/api/doc/elasticsearch-serverless/operation/operation-count";
+
+	private static DocumentationDocument Operation(string url, string title, string endpoint) =>
+		new()
+		{
+			Path = url,
+			Title = title,
+			SearchTitle = title,
+			ContentType = "api",
+			Api = new ApiOperationMetadata
+			{
+				Endpoints = [endpoint],
+				Method = "GET",
+				Path = $"/{endpoint}",
+				OperationId = endpoint.TrimStart('_').Replace("/", "-", StringComparison.Ordinal),
+				IdWords = 1,
+				Key = url.Split('/')[4],
+				Trees = [new ApiTreeEntry { Tree = "main", Root = string.Join('/', url.Split('/')[..5]) }]
+			}
+		};
+
+	/// <summary>Two sibling APIs whose search operations differ only in their key, and a count operation each that matches <c>count</c> unequally.</summary>
+	private static IEnumerable<DocumentationDocument> SiblingApis()
+	{
+		yield return Operation(EsSearch, "Run a search", "_search");
+		yield return Operation(ServerlessSearch, "Run a search", "_search");
+		yield return Operation(EsCatCount, "Get a document count", "_cat/count");
+		yield return Operation(ServerlessCount, "Count", "_count");
+	}
+
+	public static IEnumerable<Func<(ApiPageContext, string[])>> SearchOrders()
+	{
+		yield return () => (new ApiPageContext("elasticsearch", null), [EsSearch, ServerlessSearch]);
+		yield return () => (new ApiPageContext("elasticsearch-serverless", null), [ServerlessSearch, EsSearch]);
+	}
+
+	[Test]
+	[MethodDataSource(nameof(SearchOrders))]
+	public async Task NavigationSearch_ApiPage_ListsItsOwnOperationAboveTheIdenticalSibling(ApiPageContext page, string[] order)
+	{
+		Skip.Unless(EndpointUrl is not null, "API_TREE_SCOPE_ES_URL is not set");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		using var cluster = await DisposableIndex.CreateAsync(new Uri(EndpointUrl), SiblingApis(), ct);
+		using var navigation = new NavigationSearchService(cluster.Search, cluster.Accessor, NullLogger<NavigationSearchService>.Instance);
+
+		var apiOnly = await navigation.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "search", TypeFilter = "api", ApiPage = page },
+			ct
+		);
+		var docsWide = await navigation.NavigationSearchAsync(new NavigationSearchRequest { Query = "search", ApiPage = page }, ct);
+
+		apiOnly.Results.Select(r => r.Url).Where(order.Contains).Should().Equal(order);
+		docsWide.Results.Select(r => r.Url).Where(order.Contains).Should().Equal(order);
+	}
+
+	[Test]
+	public async Task NavigationSearch_NoApiPage_ListsBothSiblings()
+	{
+		Skip.Unless(EndpointUrl is not null, "API_TREE_SCOPE_ES_URL is not set");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		using var cluster = await DisposableIndex.CreateAsync(new Uri(EndpointUrl), SiblingApis(), ct);
+		using var navigation = new NavigationSearchService(cluster.Search, cluster.Accessor, NullLogger<NavigationSearchService>.Instance);
+
+		var response = await navigation.NavigationSearchAsync(new NavigationSearchRequest { Query = "search", TypeFilter = "api" }, ct);
+
+		response.Results.Select(r => r.Url).Should().Contain([EsSearch, ServerlessSearch]);
+	}
+
+	[Test]
+	public async Task NavigationSearch_ApiPage_KeepsABetterMatchFromAnotherApiFirst()
+	{
+		Skip.Unless(EndpointUrl is not null, "API_TREE_SCOPE_ES_URL is not set");
+		var ct = TestContext.Current!.Execution.CancellationToken;
+		using var cluster = await DisposableIndex.CreateAsync(new Uri(EndpointUrl), SiblingApis(), ct);
+		using var navigation = new NavigationSearchService(cluster.Search, cluster.Accessor, NullLogger<NavigationSearchService>.Instance);
+
+		var response = await navigation.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "count", TypeFilter = "api", ApiPage = new ApiPageContext("elasticsearch", null) },
+			ct
+		);
+
+		response.Results.Select(r => r.Url).Should().Equal(ServerlessCount, EsCatCount);
 	}
 
 	[Test]

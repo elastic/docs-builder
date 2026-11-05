@@ -18,8 +18,8 @@ public record NavigationSearchRequest
 	public int PageSize { get; init; } = 20;
 	public string? TypeFilter { get; init; }
 
-	/// <summary>The version tree of an API the reader is in; <c>null</c> shows every API's default rendering.</summary>
-	public ApiTreeScope? ApiTree { get; init; }
+	/// <summary>The API page the reader is on; <c>null</c> lifts no API and shows every API's default rendering.</summary>
+	public ApiPageContext? ApiPage { get; init; }
 }
 
 public record NavigationSearchResponse

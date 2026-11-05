@@ -55,7 +55,17 @@ public class NavigationSearchEndpointTests
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().NotBeNull();
-		received.ApiTree.Should().BeNull();
+		received.ApiPage.Should().BeNull();
+	}
+
+	[Test]
+	public async Task Get_KeyAlone_SearchesFromThatApiWithoutScope()
+	{
+		var (status, received) = await Get("&api_key=elasticsearch");
+
+		status.Should().Be(HttpStatusCode.OK);
+		received.Should().NotBeNull();
+		received.ApiPage.Should().Be(new ApiPageContext("elasticsearch", null));
 	}
 
 	[Test]
@@ -67,12 +77,13 @@ public class NavigationSearchEndpointTests
 
 		status.Should().Be(HttpStatusCode.OK);
 		received.Should().NotBeNull();
-		received.ApiTree.Should().Be(new ApiTreeScope("elasticsearch", tree));
+		received.ApiPage.Should().Be(new ApiPageContext("elasticsearch", tree));
 	}
 
 	[Test]
 	[Arguments("&api_tree=8")]
-	[Arguments("&api_key=elasticsearch")]
+	[Arguments("&api_key=Elastic_Search")]
+	[Arguments("&api_key=")]
 	[Arguments("&api_key=elasticsearch&api_tree=abc")]
 	[Arguments("&api_key=elasticsearch&api_tree=1234")]
 	[Arguments("&api_key=Elastic_Search&api_tree=8")]
