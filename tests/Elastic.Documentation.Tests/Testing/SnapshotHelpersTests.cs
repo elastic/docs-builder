@@ -82,4 +82,13 @@ public class SnapshotHelpersTests
 			.Under("/work/repo/", "{repo}")("see /work/repo/docs/a.md and /elsewhere/b.md")
 			.Should()
 			.MatchInlineSnapshot("see {repo}/docs/a.md and /elsewhere/b.md");
+
+	[Test]
+	public void TempScrubber_GuidFolderName_IsReplacedSoTheSnapshotIsStable() =>
+		SnapshotScrubbing
+			.Under("/tmp", "{temp}", new System.Text.RegularExpressions.Regex("[0-9a-fA-F]{32}"))(
+				"error /tmp/diff-validate-test-1d248de3468f4d58849398ff8b320802/docs/redirects.yml Missing"
+			)
+			.Should()
+			.MatchInlineSnapshot("error {temp}/diff-validate-test-{id}/docs/redirects.yml Missing");
 }

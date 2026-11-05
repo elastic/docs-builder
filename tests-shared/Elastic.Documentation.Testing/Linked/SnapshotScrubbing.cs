@@ -23,20 +23,28 @@ internal static class SnapshotScrubbing
 		// the more specific root first: the repository may sit under the temp folder
 		if (FindSolutionRoot() is { } root)
 			SnapshotDefaults.AddScrubber(Under(root, "{repo}"));
-		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}"));
+		// a test folder in the temp directory is usually named after a fresh Guid; that name is not part of what is verified
+		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}", RandomName));
 	}
 
 	/// <summary>
 	/// Replaces <paramref name="root"/> with <paramref name="token"/> and writes the path that follows it with
 	/// forward slashes. The path ends at whitespace, a quote, an angle bracket or a colon, so <c>file.md:3</c> keeps its line.
 	/// </summary>
-	internal static Func<string, string> Under(string root, string token)
+	internal static Func<string, string> Under(string root, string token, Regex? randomName = null)
 	{
 		root = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 		var roots = new[] { root, root.Replace('\\', '/') }.Distinct().Select(Regex.Escape);
 		var pattern = new Regex($"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)", RegexOptions.Compiled);
-		return text => pattern.Replace(text, m => token + m.Groups["rest"].Value.Replace('\\', '/'));
+		return text => pattern.Replace(text, m =>
+		{
+			var rest = m.Groups["rest"].Value.Replace('\\', '/');
+			return token + (randomName is null ? rest : randomName.Replace(rest, "{id}"));
+		});
 	}
+
+	/// <summary>A run of 32 hex digits: a <c>Guid.ToString("N")</c> used as a folder name.</summary>
+	private static readonly Regex RandomName = new("[0-9a-fA-F]{32}", RegexOptions.Compiled);
 
 	private static string? FindSolutionRoot()
 	{
