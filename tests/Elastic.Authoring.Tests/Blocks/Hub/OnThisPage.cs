@@ -69,21 +69,8 @@ public class OnThisPageWithAllSectionKinds : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("lists the H2 sections in page order")]
-	public async Task ListsH2Sections() =>
-		await Docs.ConvertsToContainingHtml(
-			"""
-		<nav class="hub-on-this-page" aria-label="On this page">
-			<div class="hub-on-this-page-label">On this page</div>
-			<ul class="hub-on-this-page-list">
-				<li><a href="#get-started">Get started with Kibana</a></li>
-				<li><a href="#whats-new">What's new</a></li>
-				<li><a href="#solutions">Solutions</a></li>
-				<li><a href="#explore">Explore Kibana docs</a></li>
-			</ul>
-		</nav>
-		"""
-		);
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() => await Docs.ConvertsToHtmlSnapshot();
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -96,8 +83,8 @@ public class OnThisPageWithoutSections : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("renders nothing")]
-	public async Task RendersNothing() => await Docs.DoesNotConvertToContainingHtml("hub-on-this-page");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() => await Docs.ConvertsToHtml("");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();

@@ -1,0 +1,206 @@
+<div id="elastic-nav-wrapper" hx-preserve="">
+	<div id="elastic-nav" hx-disable="true"></div>
+</div>
+<nav class="docs-bar" id="docs-bar" aria-label="Documentation sections">
+	<div class="docs-bar__inner">
+		<a class="docs-bar__home" href="/docs/">Docs</a>
+		<ul class="docs-bar__list">
+			<li class="docs-bar__item">
+				<a class="docs-bar__link" href="/docs/guides" aria-current="page">
+					<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path d="M6 16H5v-3h1v3Zm3-8h1v1H7V8h1V7h-.5V6H9v2Zm-.5-4a.5.5 0 1 1 0 1 .5.5 0 0 1 0-1Z"></path>
+						<path fill-rule="evenodd" d="M7 14h5v-2H4a1 1 0 1 0 0 2v1a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h10v11h-1v2h1v1H7v-1ZM4 2a1 1 0 0 0-1 1v8.27A1.99 1.99 0 0 1 4 11V2Zm1 9h8V2H5v9Z" clip-rule="evenodd"></path>
+					</svg>
+					<span>Guides</span>
+				</a>
+			</li>
+			<li class="docs-bar__item">
+				<a class="docs-bar__link" href="/docs/reference">
+					<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path d="M4 13H1v-1h3v1Zm11 0H6v-1h9v1ZM4 8.5H1v-1h3v1Zm11 0H6v-1h9v1ZM4 4H1V3h3v1Zm11 0H6V3h9v1Z"></path>
+					</svg>
+					<span>Reference</span>
+				</a>
+			</li>
+			<li class="docs-bar__item">
+				<details class="docs-bar__dropdown" data-menu="" data-popover="">
+					<summary class="docs-bar__link">
+						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="M6 9a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4Zm-4 5h4v-4h-4v4ZM6 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4ZM2 6h4V2H2v4Zm12-5a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h4Zm-4 5h4V2h-4v4Z" clip-rule="evenodd"></path>
+						</svg>
+						<span>Products</span>
+						<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="m8 10.293 5.646-5.647.708.708L8 11.707 1.646 5.354l.708-.708L8 10.293Z" clip-rule="evenodd"></path>
+						</svg>
+					</summary>
+					<div class="docs-bar__menu" aria-label="Products" data-popover-panel="">
+						<p class="docs-bar__group">Search</p>
+						<a class="docs-bar__menu-link" href="/docs/es">Elasticsearch</a>
+					</div>
+				</details>
+			</li>
+			<li class="docs-bar__item">
+				<a class="docs-bar__link" href="https://www.elastic.co" target="_blank" rel="noopener noreferrer">
+					<span>elastic.co</span>
+					<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+						<path d="M11 2h2.293L6.646 8.646l.708.708L14 2.707V5h1V1h-4v1Z"></path>
+						<path d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7h-1v6H3V3h6V2H3Z"></path>
+					</svg>
+					<span class="docs-bar__sr">(opens in a new tab)</span>
+				</a>
+			</li>
+		</ul>
+		<div class="docs-bar__actions">
+			<div class="theme-switch">
+				<input class="theme-switch__open" type="checkbox" id="bar-theme-open" aria-label="Display options">
+				<div class="theme-group">
+					<label class="theme-group__opt" data-v="light" for="bar-theme-theme-light" title="Light">
+						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="4"></circle>
+							<path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+						</svg>
+					</label>
+					<label class="theme-group__opt" data-v="dark" for="bar-theme-theme-dark" title="Dark">
+						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"></path>
+						</svg>
+					</label>
+					<span class="theme-group__sep"></span>
+					<label class="theme-group__opt theme-group__opt--cog" for="bar-theme-open" title="Display options">
+						<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="3"></circle>
+							<path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"></path>
+						</svg>
+					</label>
+				</div>
+				<div class="theme-menu">
+					<div class="theme-menu__group" role="radiogroup" aria-label="Theme">
+						<div class="theme-menu__label">Theme</div>
+						<label class="theme-menu__option" data-v="light">
+							<input type="radio" name="bar-theme-theme" id="bar-theme-theme-light" value="light" data-pref="theme" data-v="light">
+							<span class="theme-menu__swatch"></span>
+							Light
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="dark">
+							<input type="radio" name="bar-theme-theme" id="bar-theme-theme-dark" value="dark" data-pref="theme" data-v="dark">
+							<span class="theme-menu__swatch"></span>
+							Dark
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="black">
+							<input type="radio" name="bar-theme-theme" id="bar-theme-theme-black" value="black" data-pref="theme" data-v="black">
+							<span class="theme-menu__swatch"></span>
+							True black
+							<small>OLED</small>
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="system">
+							<input type="radio" name="bar-theme-theme" id="bar-theme-theme-system" value="system" data-pref="theme" data-v="system" checked="">
+							<span class="theme-menu__swatch"></span>
+							Match system
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+					</div>
+					<div class="theme-menu__group" role="radiogroup" aria-label="Contrast">
+						<div class="theme-menu__label">Contrast</div>
+						<label class="theme-menu__option" data-v="normal">
+							<input type="radio" name="bar-theme-contrast" id="bar-theme-contrast-normal" value="normal" data-pref="contrast" data-v="normal">
+							Standard
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="more">
+							<input type="radio" name="bar-theme-contrast" id="bar-theme-contrast-more" value="more" data-pref="contrast" data-v="more">
+							More
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="system">
+							<input type="radio" name="bar-theme-contrast" id="bar-theme-contrast-system" value="system" data-pref="contrast" data-v="system" checked="">
+							Match system
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+					</div>
+					<div class="theme-menu__group" role="radiogroup" aria-label="Motion">
+						<div class="theme-menu__label">Motion</div>
+						<label class="theme-menu__option" data-v="full">
+							<input type="radio" name="bar-theme-motion" id="bar-theme-motion-full" value="full" data-pref="motion" data-v="full">
+							Full
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="reduce">
+							<input type="radio" name="bar-theme-motion" id="bar-theme-motion-reduce" value="reduce" data-pref="motion" data-v="reduce">
+							Reduced
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+						<label class="theme-menu__option" data-v="system">
+							<input type="radio" name="bar-theme-motion" id="bar-theme-motion-system" value="system" data-pref="motion" data-v="system" checked="">
+							Match system
+							<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M5 12l5 5 9-10"></path>
+							</svg>
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</nav>
+<dialog class="search-dialog" data-search-dialog="" aria-label="Search the documentation">
+	<form class="search-dialog__bar" method="dialog">
+		<svg class="icon icon--sm" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+			<path d="M6.5 1a5.5 5.5 0 0 1 4.729 8.308l3.421 2.933a1 1 0 0 1 .057 1.466l-1 1a1 1 0 0 1-1.466-.057l-2.933-3.42A5.5 5.5 0 1 1 6.5 1Zm4.139 9.12a5.516 5.516 0 0 1-.52.519L13 14l1-1-3.361-2.88ZM6.5 2a4.5 4.5 0 1 0 .314 8.987c.024-.001.047-.004.07-.006.207-.017.41-.048.607-.092l.066-.016a4.41 4.41 0 0 0 .588-.185c.012-.006.026-.01.039-.015.194-.079.382-.171.562-.275l.03-.017a4.52 4.52 0 0 0 1.605-1.605c.006-.01.01-.02.017-.03.104-.18.196-.368.275-.562l.018-.048c.074-.188.134-.38.182-.58l.016-.065a4.49 4.49 0 0 0 .093-.61l.005-.067a4.544 4.544 0 0 0 .007-.545A4.5 4.5 0 0 0 6.5 2Z"></path>
+		</svg>
+		<input class="search-dialog__input" type="search" data-search-input="" role="combobox" aria-expanded="false" aria-controls="search-dialog-results" aria-autocomplete="list" autocomplete="off" spellcheck="false" placeholder="Search the documentation" aria-label="Search the documentation">
+		<button class="search-dialog__close btn btn--tertiary btn--sm" type="submit" aria-label="Close search">Esc</button>
+	</form>
+	<div class="search-dialog__loading" data-search-loading="" hidden="">
+		<div class="loading-bar" role="progressbar" aria-label="Searching"></div>
+	</div>
+	<p class="search-dialog__status" role="status" data-search-status="">Type to search.</p>
+	<ol class="search-dialog__results" id="search-dialog-results" role="listbox" aria-label="Results" data-search-results="">
+	</ol>
+	<template data-search-result=""><li class="search-result" role="option">
+			<a class="search-result__link" href="#">
+				<span class="search-result__path" data-search-path=""></span>
+				<span class="search-result__title" data-search-title=""></span>
+				<span class="search-result__excerpt" data-search-excerpt=""></span>
+			</a>
+		</li></template>
+	<footer class="search-dialog__footer">
+		<span>
+			<span class="kbd-group">
+				<kbd class="kbd">↑</kbd>
+				<span class="kbd-group__plus" aria-hidden="true">+</span>
+				<kbd class="kbd">↓</kbd>
+			</span>
+			to move</span>
+		<span>
+			<span class="kbd-group">
+				<kbd class="kbd">Enter</kbd>
+			</span>
+			to open</span>
+		<span>
+			<span class="kbd-group">
+				<kbd class="kbd">Esc</kbd>
+			</span>
+			to close</span>
+	</footer>
+</dialog>

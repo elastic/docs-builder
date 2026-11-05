@@ -121,7 +121,7 @@ public class ImageBlock(DirectiveBlockParser parser, ParserContext context) : Di
 		if (file.Exists)
 			Found = true;
 		else
-			this.EmitError($"`{imageUrl}` does not exist. resolved to `{file}");
+			this.EmitError($"`{imageUrl}` does not exist. resolved to `{file.FullName}`");
 
 		if (context.TryFindDocument(context.MarkdownSourcePath) is MarkdownFile currentMarkdown)
 		{

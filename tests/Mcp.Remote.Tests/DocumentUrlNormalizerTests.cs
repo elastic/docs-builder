@@ -5,7 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Mcp.Remote.Gateways;
 
-namespace Mcp.Remote.IntegrationTests;
+namespace Mcp.Remote.Tests;
 
 /// <summary>
 /// Unit tests for <see cref="DocumentGateway.NormalizeUrl"/>.

@@ -1,0 +1,1 @@
+error {repo}/docs/_docset.yml 'repository: trailing-slash/' for API 'elasticsearch' must be in 'org/repo' form, e.g. 'elastic/elasticsearch-specification'.

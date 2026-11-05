@@ -4,8 +4,11 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Markdig.Syntax;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -149,10 +152,25 @@ public class ChangelogDescriptionVisibilityDefaultTests() : DirectiveTest<Change
 
 	/// <summary>Public bundle with no assembler private repos ⇒ auto hides record bodies.</summary>
 	[Test]
-	public void HtmlOmitsBodyTextForPublicBundle() => Html.Should().NotContain("BODY_DEFAULT_AUTO_VISIBILITY");
-
-	[Test]
-	public void HtmlStillRendersTitles() => Html.Should().Contain("Feature delta");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature delta.</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -230,7 +248,28 @@ public class ChangelogDescriptionVisibilityKeepExplicitTests() : DirectiveTest<C
 		);
 
 	[Test]
-	public void KeepsBodyOnFullyPublicRepos() => Html.Should().Contain("BODY_KEEP_VISIBILITY");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>
+				<p>Feature keep.</p>
+				<p>BODY_KEEP_VISIBILITY</p>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -262,7 +301,25 @@ public class ChangelogDescriptionVisibilityHideExplicitTests() : DirectiveTest<C
 		);
 
 	[Test]
-	public void OmitBody() => Html.Should().NotContain("BODY_HIDE_VISIBILITY");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature hide.</li>
+		</ul>
+		"""
+		);
 
 	[Test]
 	public void MarkdownRendersTitlesWithoutBodies()
@@ -305,8 +362,33 @@ public class ChangelogDescriptionVisibilityInvalidTests() : DirectiveTest<Change
 	public void FallsBackToAuto() => Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.Auto);
 
 	[Test]
-	public void EmitsWarning() => Collector.Warnings.Should().BeGreaterThan(0);
+	public void EmitsWarning() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 Invalid :description-visibility: value 'nonsense-value'. Valid values are: auto, keep-descriptions, keep-highlight-descriptions, hide-descriptions. Using auto."
+			);
 
 	[Test]
-	public void AutoTreatsFullyPublic_AsHideBody() => Html.Should().NotContain("BODY_INVALID_VISIBILITY");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature warn.</li>
+		</ul>
+		"""
+		);
 }

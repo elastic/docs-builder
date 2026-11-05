@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.ApiExplorer._Partials;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.Documentation.Site;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 using DesignSystemPageActions = Elastic.Documentation.Site.Components.Navigation.PageActions;
 
@@ -20,22 +21,7 @@ public class PageActionsRenderingTests
 			new ApiPageActionsModel("/api/doc/elasticsearch/operation/operation-search.md", null)
 		).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("class=\"api-page-actions\"");
-		html.Should().Contain("class=\"api-page-actions-split\"");
-		html.Should().Contain("class=\"api-page-actions-button\"");
-		html.Should().Contain("class=\"api-page-actions-chevron\"");
-		html.Should().Contain("class=\"api-page-actions-icon\"");
-		html.Should().Contain("class=\"api-page-actions-label\"");
-		html.Should().Contain("Copy page");
-		html.Should().Contain("View as Markdown");
-		html.Should().Contain("data-copy-page=\"/api/doc/elasticsearch/operation/operation-search.md\"");
-		html.Should().Contain("href=\"/api/doc/elasticsearch/operation/operation-search.md\"");
-		html.Should().Contain("target=\"_blank\"");
-		html.Should().Contain("hx-boost=\"false\"");
-		html.Should().Contain("nav-select-dropdown");
-		html.Should().NotContain("<select");
-		html.Should().NotContain("<option");
-		html.Should().NotContain("view-as-markdown");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -46,9 +32,7 @@ public class PageActionsRenderingTests
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html.Should().Contain("Download OpenAPI spec (JSON)").And.Contain("href=\"/api/doc/elasticsearch.json\"");
-		html.Should().Contain("Download OpenAPI spec (YAML)").And.Contain("href=\"/api/doc/elasticsearch.yaml\"");
-		html.Should().Contain("download");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -58,7 +42,7 @@ public class PageActionsRenderingTests
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html.Should().NotContain("Download OpenAPI spec");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -69,15 +53,7 @@ public class PageActionsRenderingTests
 			cancellationToken: TestContext.Current!.Execution.CancellationToken
 		);
 
-		html
-			.Should()
-			.Contain("Download spec")
-			.And
-			.Contain("href=\"/api/doc/elasticsearch.json\"")
-			.And
-			.Contain("href=\"/api/doc/elasticsearch.yaml\"");
-		html.Should().NotContain("Copy page").And.NotContain("data-copy-page").And.NotContain("View as Markdown");
-		html.Should().NotContain("role=\"separator\"");
+		html.Should().MatchHtmlSnapshot();
 	}
 
 	[Test]
@@ -99,7 +75,6 @@ public class PageActionsRenderingTests
 			.Create(model)
 			.RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain("View as Markdown").And.Contain("Download OpenAPI spec (JSON)");
-		html.Should().Contain("href=\"/api/doc/elasticsearch.json\"").And.Contain("download");
+		html.Should().MatchHtmlSnapshot();
 	}
 }

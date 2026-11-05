@@ -4,6 +4,8 @@
 
 using AwesomeAssertions;
 using Elastic.Changelog.Creation;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -44,7 +46,20 @@ public class FlagsAndFeaturesTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("highlight: true");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: Important feature
+			highlight: true
+			"""
+			);
 	}
 
 	[Test]
@@ -82,7 +97,20 @@ public class FlagsAndFeaturesTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("feature-id: \"feature:new-search-api\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			title: New feature with flag
+			feature-id: "feature:new-search-api"
+			"""
+			);
 	}
 
 	[Test]
@@ -120,8 +148,21 @@ public class FlagsAndFeaturesTests() : CreateChangelogTestBase()
 			FileSystem.Directory.CreateDirectory(outputDir);
 		var files = FileSystem.Directory.GetFiles(outputDir, "*.yaml");
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("issues:");
-		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/123\"");
-		yamlContent.Should().Contain("- \"https://github.com/elastic/elasticsearch/issues/456\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			issues:
+			  - "https://github.com/elastic/elasticsearch/issues/123"
+			  - "https://github.com/elastic/elasticsearch/issues/456"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			title: Fix multiple issues
+			"""
+			);
 	}
 }

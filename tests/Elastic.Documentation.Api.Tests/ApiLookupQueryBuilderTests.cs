@@ -60,10 +60,16 @@ public class ApiLookupQueryBuilderTests
 	private static Dictionary<string, string?[]> ExactOptions(JsonElement key) =>
 		TermsOptions(key).Take(2).ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(v => v.GetString()).ToArray());
 
-	/// <summary>
-	/// Each routes-under alternation as <c>field pattern boost</c>, in option order, checked to carry no name of its own.
-	/// </summary>
+	/// <summary>Each routes-under alternation, <c>(templates)/.+</c>, as <c>field pattern boost</c> in option order.</summary>
 	private static string[] RoutesUnder(JsonElement key) =>
+		Regexps(key).Where(r => r.Split(' ')[1].EndsWith(")/.+", StringComparison.Ordinal)).ToArray();
+
+	/// <summary>Each completion of the last typed segment, <c>(templates)[^/]+</c> and the routes under it, in option order.</summary>
+	private static string[] Completions(JsonElement key) =>
+		Regexps(key).Where(r => r.Contains(")[^/]+", StringComparison.Ordinal)).ToArray();
+
+	/// <summary>Each regexp alternation as <c>field pattern boost</c>, in option order, checked to carry no name of its own.</summary>
+	private static string[] Regexps(JsonElement key) =>
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
@@ -369,14 +375,92 @@ public class ApiLookupQueryBuilderTests
 	}
 
 	[Test]
-	[Arguments("/")]
-	[Arguments("GET /")]
 	[Arguments("/{index}")]
 	public void Build_RouteWithoutALiteralSegment_MatchesNothing(string typed)
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(typed));
 
 		json.RootElement.TryGetProperty("match_none", out _).Should().BeTrue();
+	}
+
+	[Test]
+	[Arguments("/", null)]
+	[Arguments("GET /", "GET")]
+	[Arguments("HEAD /", "HEAD")]
+	public void Build_RootRoute_LooksUpOnlyTheRootKey(string typed, string? method)
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build(typed));
+		var key = KeyOption(json);
+
+		key.GetProperty("queries").GetArrayLength().Should().Be(1);
+		var exact = key.GetProperty("queries")[0].GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
+		exact.GetProperty("boost").GetSingle().Should().Be(6.0f);
+		exact.GetProperty("filter").GetProperty("terms").GetRawText().Should().Be("""{"api.endpoints":["/"]}""");
+		key.GetRawText().Should().NotContain("api.endpoints_bare").And.NotContain("regexp");
+		Clauses(json.RootElement.GetProperty("bool").GetProperty("should"))
+			.Where(q => q.TryGetProperty("term", out var term) && term.TryGetProperty("api.method", out _))
+			.Select(q => q.GetProperty("term").GetProperty("api.method").GetProperty("value").GetString())
+			.Should()
+			.Equal(new[] { method }.OfType<string>());
+	}
+
+	[Test]
+	public void Build_TypedRouteStoppingInsideASegment_CompletesItBelowTheFullKeys()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_sear"));
+		var key = KeyOption(json);
+
+		Completions(key)
+			.Should()
+			.Equal(
+				"api.endpoints (_sear)[^/]+ 5",
+				"api.endpoints (_sear)[^/]+/.+ 4.5",
+				"api.endpoints_bare (sear)[^/]+ 5",
+				"api.endpoints_bare (sear)[^/]+/.+ 4.5"
+			);
+		RoutesUnder(key).Should().Equal("api.endpoints (_sear)/.+ 5.5", "api.endpoints_bare (sear)/.+ 5.5");
+	}
+
+	[Test]
+	public void Build_TypedRouteWithAParameterValue_CompletesOnlyTheTemplatesEndingInALiteral()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/ind"));
+		var completions = Completions(KeyOption(json));
+
+		completions
+			.Where(r => r.StartsWith("api.endpoints ", StringComparison.Ordinal))
+			.Should()
+			.Equal(
+				"api.endpoints (_cat/ind)[^/]+ 5",
+				@"api.endpoints (\*/ind)[^/]+ 3.333",
+				"api.endpoints (_cat/ind)[^/]+/.+ 4.5",
+				@"api.endpoints (\*/ind)[^/]+/.+ 3"
+			);
+		completions.Should().NotContain(r => r.Contains(@"_cat/\*", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public void Build_TypedRouteEndingInASlash_DoesNotCompleteTheSegment()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
+	}
+
+	[Test]
+	public void Build_TypedRouteEndingInAParameter_DoesNotCompleteTheParameter()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("/_cat/{index}"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
+	}
+
+	[Test]
+	public void Build_PlainWord_DoesNotCompleteAnEndpoint()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("_sear"));
+
+		Completions(KeyOption(json)).Should().BeEmpty();
 	}
 
 	[Test]
@@ -692,7 +776,12 @@ public class ApiLookupQueryBuilderTests
 
 		lifts.Should().Contain("\"rank_feature\":{\"boost\":0.5,\"field\":\"api.id_words\"}");
 		lifts.Should().Contain("\"api.deprecated\":{\"boost\":0.2,\"value\":false}");
-		Clauses(json.RootElement.GetProperty("bool").GetProperty("filter")).Should().ContainSingle();
+		json
+			.RootElement
+			.GetProperty("bool")
+			.TryGetProperty("filter", out _)
+			.Should()
+			.BeFalse("the service filters documents around the lookup");
 	}
 
 	[Test]
@@ -704,6 +793,14 @@ public class ApiLookupQueryBuilderTests
 	[Test]
 	public void ApiLookupWeights_EndpointKeyBeatsNamespaceKey() =>
 		ApiLookupWeights.EndpointKey.Should().BeGreaterThan(ApiLookupWeights.NamespaceKey);
+
+	[Test]
+	public void ApiLookupWeights_NamespaceKeyBeatsEndpointCompletion() =>
+		ApiLookupWeights.NamespaceKey.Should().BeGreaterThan(ApiLookupWeights.EndpointCompletion);
+
+	[Test]
+	public void ApiLookupWeights_EndpointCompletionBeatsNamespaceCompletion() =>
+		ApiLookupWeights.EndpointCompletion.Should().BeGreaterThan(ApiLookupWeights.NamespaceCompletion);
 
 	[Test]
 	public void ApiLookupWeights_NamespaceAndOperationWordBeatEndpointAndGroupWord() =>

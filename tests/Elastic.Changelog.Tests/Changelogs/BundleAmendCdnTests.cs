@@ -8,6 +8,8 @@ using Elastic.Changelog.Bundling;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -60,8 +62,19 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/existing.yaml");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("exclude-entries:");
-		amend.Should().Contain("name: existing.yaml");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			exclude-entries:
+			  - file:
+			      name: existing.yaml
+			      checksum: {sha1}
+			"""
+		);
 	}
 
 	[Test]
@@ -83,8 +96,25 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 			.Should()
 			.NotContain(p => p.EndsWith("/existing.yaml", StringComparison.Ordinal), "only requested names are fetched");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("title: Late addition");
-		amend.Should().Contain("name: late.yaml");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -102,9 +132,10 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		result.Should().BeFalse();
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("never-uploaded.yaml") && d.Message.Contains("could not be fetched")
+			.MatchInlineSnapshot(
+				"error  Changelog entry 'never-uploaded.yaml' for 'elastic/elasticsearch/main' could not be fetched from https://d10xozp44eyz7q.cloudfront.net/changelog/elastic/elasticsearch/main/never-uploaded.yaml: 404 Not Found — entry does not exist in the pool. Ensure the entry was uploaded (changelog upload), or pass --force-local / --directory to bundle local files instead."
 			);
 	}
 
@@ -129,7 +160,25 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("title: Late addition");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -145,7 +194,13 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("different checksum"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error existing.yaml Bundle contains 'existing.yaml' but with a different checksum than the sourced changelog. Re-create the bundle or use --force to remove by file name only."
+			);
 	}
 
 	[Test]
@@ -185,8 +240,19 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/300.yaml");
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("name: 300.yaml");
-		amend.Should().Contain("exclude-entries:");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			exclude-entries:
+			  - file:
+			      name: 300.yaml
+			      checksum: inferred-placeholder
+			"""
+		);
 	}
 
 	private ChangelogBundleAmendService ServiceWithCdn(StubHandler handler)

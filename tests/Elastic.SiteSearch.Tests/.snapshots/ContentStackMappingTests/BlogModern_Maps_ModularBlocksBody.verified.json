@@ -1,0 +1,31 @@
+{
+  "$type": "site",
+  "locale": "en",
+  "published_date": "2024-03-12T10:00:00+00:00",
+  "modified_date": "2024-04-15T16:30:00+00:00",
+  "og": {
+    "title": "Building Search Applications | Elastic Blog",
+    "description": "A practical guide to building search applications with Elasticsearch."
+  },
+  "twitter": {},
+  "http": {},
+  "title": "Building Search Applications with Elasticsearch",
+  "search_title": "Blog: Building Search Applications with Elasticsearch",
+  "content_type": "site",
+  "path": "/blog/building-search-applications-with-elasticsearch",
+  "url": "/blog/building-search-applications-with-elasticsearch",
+  "hash": "a1702fc1327b9904",
+  "last_updated": "2024-04-15T16:30:00+00:00",
+  "description": "Explore how to build production-ready search applications using Elasticsearch and its ecosystem of tools.",
+  "headings": [],
+  "body": "Search is at the heart of modern applications. In this guide, we walk through building a search application from scratch. First, define your index mappings to match your data model. Consider using dynamic templates for flexible schemas. The Query DSL provides a rich set of operators for full-text search, filtering, and aggregations.",
+  "summary": "Explore how to build production-ready search applications using Elasticsearch and its ecosystem of tools.",
+  "parents": [],
+  "translated": true,
+  "section": "blog",
+  "content_tier": "reference",
+  "navigation": {
+    "depth": 3,
+    "table_of_contents": 100
+  }
+}
