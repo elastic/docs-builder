@@ -610,7 +610,7 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public async Task BuildPropertyList_ObjectsAtSameDepth_StartCollapsed(bool isRequest)
+	public async Task BuildPropertyList_ObjectsAtSameDepth_StartExpanded(bool isRequest)
 	{
 		var builder = CreateBuilder();
 		var list = builder.BuildPropertyList(ObjectsAtTwoDepths(), new PropertyTreeScope { Prefix = "body", IsRequest = isRequest });
@@ -618,12 +618,12 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		list.Should().NotBeNull();
 		var html = await _PropertyList.Create(list!).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		AssertCollapsedPair(list.Items, "small", "large", html);
-		AssertStartsCollapsed(html, list.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpandedPair(list.Items, "small", "large", html);
+		AssertStartsExpanded(html, list.Items.Single(p => p.Name == "only").AnchorId);
 		var group = list.Items.Single(p => p.Name == "group");
 		group.Children.Properties.Should().NotBeNull();
-		AssertCollapsedPair(group.Children.Properties!.Items, "small", "large", html);
-		AssertStartsCollapsed(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
+		AssertExpandedPair(group.Children.Properties!.Items, "small", "large", html);
+		AssertStartsExpanded(html, group.Children.Properties.Items.Single(p => p.Name == "only").AnchorId);
 	}
 
 	[Test]
@@ -640,18 +640,18 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 		html.Should().MatchRegex("</a>\\s*<code[^>]*>only</code>");
 	}
 
-	private static void AssertCollapsedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
+	private static void AssertExpandedPair(IReadOnlyList<ApiProperty> items, string smallName, string largeName, string html)
 	{
 		var small = items.Single(p => p.Name == smallName);
 		var large = items.Single(p => p.Name == largeName);
 		small.Depth.Should().Be(large.Depth);
 		small.IsCollapsible.Should().BeTrue();
 		large.IsCollapsible.Should().BeTrue();
-		AssertStartsCollapsed(html, small.AnchorId);
-		AssertStartsCollapsed(html, large.AnchorId);
+		AssertStartsExpanded(html, small.AnchorId);
+		AssertStartsExpanded(html, large.AnchorId);
 	}
 
-	private static void AssertStartsCollapsed(string html, string anchorId)
+	private static void AssertStartsExpanded(string html, string anchorId)
 	{
 		var match = System
 			.Text
@@ -659,8 +659,8 @@ public class ApiPropertyTreeBuilderTests(ApiExplorerFixture fixture)
 			.Regex
 			.Match(html, $"id=\"{anchorId}\"([\\s\\S]*?)aria-expanded=\"(true|false)\"([\\s\\S]*?)(show|hide) properties");
 		match.Success.Should().BeTrue($"property {anchorId} renders an expand control");
-		match.Groups[2].Value.Should().Be("false", $"{anchorId} starts collapsed");
-		match.Groups[4].Value.Should().Be("show", $"{anchorId} offers show properties");
+		match.Groups[2].Value.Should().Be("true", $"{anchorId} starts expanded");
+		match.Groups[4].Value.Should().Be("hide", $"{anchorId} offers hide properties");
 		html.Should().Contain($"id=\"{anchorId}--children\"");
 	}
 

@@ -2,7 +2,10 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.IO;
 using System.IO.Abstractions;
+using System.IO.Abstractions.TestingHelpers;
+using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
 using Elastic.Documentation;
@@ -11,6 +14,7 @@ using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Extensions;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Navigation;
+using Elastic.Documentation.Site.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using TUnit.Core.Interfaces;
@@ -69,7 +73,30 @@ public class ApiExplorerFixture : IAsyncInitializer, IAsyncDisposable
 		Navigation = generator.CreateNavigation("fixture", Document);
 	}
 
-	public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+	public ValueTask DisposeAsync()
+	{
+		GC.SuppressFinalize(this);
+		return ValueTask.CompletedTask;
+	}
+
+	/// <summary>Builds the render context the generator would, with the page under test as the current navigation item.</summary>
+	public ApiRenderContext RenderContextFor(INavigationItem current) =>
+		new(Context, Document, new StaticFileContentHashProvider(new EmbeddedOrPhysicalFileProvider(Context)))
+		{
+			NavigationHtml = string.Empty,
+			CurrentNavigation = current,
+			MarkdownRenderer = PassthroughMarkdownRenderer.Instance
+		};
+
+	/// <summary>Renders the page to a mock file system and reads it back, the way the generator writes pages.</summary>
+	public async Task<string> RenderAsync(ILeafNavigationItem<IApiModel> nav)
+	{
+		var fs = new MockFileSystem();
+		await using (var stream = fs.FileStream.New("/out.html", FileMode.Create, FileAccess.Write))
+			await nav.Model.RenderAsync(stream, RenderContextFor(nav), null, TestContext.Current!.Execution.CancellationToken);
+
+		return fs.File.ReadAllText("/out.html");
+	}
 
 	public IEnumerable<INavigationItem> Walk() => Walk(Navigation);
 

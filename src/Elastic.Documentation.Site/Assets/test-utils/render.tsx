@@ -19,16 +19,20 @@ export const renderWithQueryClient = (ui: ReactElement) =>
         </QueryClientProvider>
     )
 
-/** Like `renderWithQueryClient`, and wrapped in the EUI provider the components expect. */
-export const renderWithProviders = (ui: ReactElement) =>
-    render(
-        <EuiProvider
-            colorMode="light"
-            globalStyles={false}
-            utilityClasses={false}
-        >
-            <QueryClientProvider client={createTestQueryClient()}>
-                {ui}
-            </QueryClientProvider>
-        </EuiProvider>
-    )
+/** Like `renderWithQueryClient`, and wrapped in the EUI provider the components expect; `rerender` keeps both. */
+export const renderWithProviders = (ui: ReactElement) => {
+    const client = createTestQueryClient()
+    return render(ui, {
+        wrapper: ({ children }) => (
+            <EuiProvider
+                colorMode="light"
+                globalStyles={false}
+                utilityClasses={false}
+            >
+                <QueryClientProvider client={client}>
+                    {children}
+                </QueryClientProvider>
+            </EuiProvider>
+        ),
+    })
+}

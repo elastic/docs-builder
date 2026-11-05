@@ -3,6 +3,7 @@ import { renderWithProviders } from '../../test-utils/render'
 import { resetCooldownStore } from '../../test-utils/stores'
 import { NavigationSearch } from './NavigationSearch'
 import { SearchResultsList } from './SearchResultsList'
+import { groupSearchResults } from './apiPropertyResults'
 import { navigationSearchStore } from './navigationSearch.store'
 import * as queryHook from './useNavigationSearchQuery'
 import { screen, waitFor } from '@testing-library/react'
@@ -23,7 +24,10 @@ const mockSearchResults = {
             description: 'Learn about Elasticsearch',
             score: 0.95,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Elasticsearch' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Elasticsearch', url: '/docs/elasticsearch' },
+            ],
         },
         {
             url: '/docs/kibana/dashboard',
@@ -31,7 +35,10 @@ const mockSearchResults = {
             description: 'Create dashboards',
             score: 0.85,
             type: 'docs' as const,
-            parents: [{ title: 'Docs' }, { title: 'Kibana' }],
+            parents: [
+                { title: 'Docs', url: '/docs' },
+                { title: 'Kibana', url: '/docs/kibana' },
+            ],
         },
     ],
     totalResults: 2,
@@ -181,6 +188,8 @@ describe('Navigation Search Telemetry Integration', () => {
 describe('Navigation Search Result Click Tracking', () => {
     // Shared props for SearchResultsList - reduces duplication
     const createResultsListProps = () => ({
+        results: groupSearchResults(mockSearchResults.results),
+        isLoading: false,
         isKeyboardNavigating: { current: false },
         onMouseMove: vi.fn(),
         onResultClick: vi.fn(),
@@ -292,6 +301,29 @@ describe('Navigation Search Result Click Tracking', () => {
                 'navigation_search.surface': 'api',
             })
         )
+    })
+
+    it('logs exactly one close for a result click', async () => {
+        renderWithProviders(<NavigationSearch />)
+        const input = screen.getByPlaceholderText(/jump to page/i)
+        await userEvent.click(input)
+        await userEvent.type(input, 'elasticsearch')
+        const row = screen.getByRole('link', { name: /Elasticsearch Guide/ })
+        row.addEventListener('click', (event) => event.preventDefault())
+        vi.clearAllMocks()
+
+        await userEvent.click(row)
+
+        const closes = vi
+            .mocked(logging.logInfo)
+            .mock.calls.filter(([name]) => name === 'navigation_search_closed')
+        expect(closes).toHaveLength(1)
+        expect(closes[0][1]).toEqual(
+            expect.objectContaining({
+                'navigation_search.close_reason': 'navigate',
+            })
+        )
+        expect(input).not.toHaveFocus()
     })
 
     it('does not show Alpha or Give feedback in the dropdown', () => {

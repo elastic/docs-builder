@@ -29,5 +29,6 @@ public static class DocumentationMappingExtensions
 			.AddProperty("applies_to.type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.sub_type", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
 			.AddProperty("applies_to.lifecycle", f => f.Keyword().Normalizer(SharedMappingConfig.KeywordNormalizer))
-			.AddProperty("applies_to.version", f => f.Version());
+			.AddProperty("applies_to.version", f => f.Version())
+			.AddProperty("api.properties.path", f => f.Keyword().MultiField("match", mf => mf.Text()));
 }

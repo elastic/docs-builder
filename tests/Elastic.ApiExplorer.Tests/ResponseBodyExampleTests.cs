@@ -6,7 +6,6 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Model;
 using Microsoft.OpenApi;
-using Microsoft.OpenApi.Reader;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -156,25 +155,11 @@ public class ResponseBodyExampleTests
 		root["paths"]!["/subscription"]!["get"]!["responses"]!["200"]!["content"]!["application/json"]!["schema"] = JsonNode.Parse(schema);
 		root["components"] = JsonNode.Parse("{\"schemas\":{" + extraSchemas + "}}");
 		var json = root.ToJsonString();
-		var path = Path.Join(Path.GetTempPath(), $"response-body-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(path, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				path,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var document = loaded.Document!;
-			return ResponseBodyExample.Build(
-				new SchemaAnalyzer(document),
-				"application/json",
-				document.Paths!["/subscription"].Operations![HttpMethod.Get].Responses!["200"].Content!["application/json"].Schema
-			);
-		}
-		finally
-		{
-			File.Delete(path);
-		}
+		var document = await TestSpecs.LoadSpecAsync(json);
+		return ResponseBodyExample.Build(
+			new SchemaAnalyzer(document),
+			"application/json",
+			document.Paths!["/subscription"].Operations![HttpMethod.Get].Responses!["200"].Content!["application/json"].Schema
+		);
 	}
 }

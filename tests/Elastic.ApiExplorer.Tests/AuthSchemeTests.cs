@@ -306,22 +306,7 @@ public class AuthSchemeTests
 
 	private static async Task<(OpenApiOperation Op, OpenApiDocument Doc)> Load(string json)
 	{
-		var jsonPath = Path.Join(Path.GetTempPath(), $"auth-scheme-{Guid.NewGuid():N}.json");
-		try
-		{
-			await File.WriteAllTextAsync(jsonPath, json, TestContext.Current!.Execution.CancellationToken);
-			var loaded = await OpenApiDocument.LoadAsync(
-				jsonPath,
-				new OpenApiReaderSettings { LeaveStreamOpen = false },
-				TestContext.Current!.Execution.CancellationToken
-			);
-			var doc = loaded.Document!;
-			return (doc.Paths!["/a"].Operations![HttpMethod.Get]!, doc);
-		}
-		finally
-		{
-			if (File.Exists(jsonPath))
-				File.Delete(jsonPath);
-		}
+		var doc = await TestSpecs.LoadSpecAsync(json);
+		return (doc.Paths!["/a"].Operations![HttpMethod.Get]!, doc);
 	}
 }

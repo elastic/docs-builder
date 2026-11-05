@@ -44,7 +44,8 @@ jobs:
   containers:
     needs: 
       - release-drafter
-    runs-on: ubuntu-latest
+    # Native AOT links against the host glibc; keep in sync with the noble-chiseled base image (build/Targets.fs).
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -288,7 +289,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest, macos-latest-large ]
+        # Native AOT links against the host glibc; keep ubuntu in sync with the noble-chiseled base image (build/Targets.fs).
+        os: [ ubuntu-24.04, windows-latest, macos-latest, macos-latest-large ]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
