@@ -34,7 +34,10 @@ internal static class SnapshotScrubbing
 	internal static Func<string, string> Under(string root, string token, Regex? randomName = null)
 	{
 		root = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-		var roots = new[] { root, root.Replace('\\', '/') }.Distinct().Select(Regex.Escape);
+		// DiagnosticsSnapshot writes a path with forward slashes and without its drive letter, so the root has to match that way too
+		var forward = root.Replace('\\', '/');
+		var withoutDrive = DriveLetter.Replace(forward, string.Empty);
+		var roots = new[] { root, forward, withoutDrive }.Where(r => r.Length > 1).Distinct().Select(Regex.Escape);
 		var pattern = new Regex($"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)", RegexOptions.Compiled);
 		return text => pattern.Replace(text, m =>
 		{
@@ -42,6 +45,8 @@ internal static class SnapshotScrubbing
 			return token + (randomName is null ? rest : randomName.Replace(rest, "{id}"));
 		});
 	}
+
+	private static readonly Regex DriveLetter = new("^[A-Za-z]:", RegexOptions.Compiled);
 
 	/// <summary>A run of 32 hex digits: a <c>Guid.ToString("N")</c> used as a folder name.</summary>
 	private static readonly Regex RandomName = new("[0-9a-fA-F]{32}", RegexOptions.Compiled);
