@@ -49,6 +49,7 @@ public partial class ElasticsearchMarkdownExporter
 			lexicalHash,
 			doc.Path,
 			doc.Type,
+			doc.Hidden ? "hidden" : "listed",
 			doc.Body ?? string.Empty,
 			string.Join(",", doc.Headings.OrderBy(h => h)),
 			doc.SearchTitle ?? string.Empty,

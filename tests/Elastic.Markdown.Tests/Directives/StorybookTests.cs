@@ -6,7 +6,10 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Storybook;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -104,15 +107,7 @@ public class StorybookInlineIdTests() : StorybookRegistryTest(
 	}
 
 	[Test]
-	public void RendersInlineStory()
-	{
-		Html.Should().Contain("<storybook-story");
-		Html.Should().Contain("story-id=\"ai-components-aibutton--default\"");
-		Html.Should().Contain("entry=\"http://127.0.0.1:6007/storybook-docs/shared_ux/registry.js\"");
-		Html.Should().Contain("http://127.0.0.1:6007/storybook/shared_ux/kbn-ui-shared-deps-src.css");
-		Html.Should().Contain("https://fonts.googleapis.com");
-		Html.Should().NotContain("kibana:shared_ux:ai-components-aibutton--default");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>Deterministic <see cref="IEnvironmentVariables"/> so storybook interpolation tests don't depend on the host shell.</summary>
@@ -169,8 +164,14 @@ storybook:
 	public void WarnsAndLeavesExpressionLiteral() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText(firstLineOnly: true)
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/docset.yml 'storybook.registry' references environment variable 'AWS_SECRET_ACCESS_KEY' which is not allow-listed for interpolation and is left literal. Allowed: KIBANA_STORYBOOK_REGISTRY.
+		error {repo}/docs/index.md:3 storybook registry could not be read: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
+		"""
+			);
 }
 
 [InheritsTests]
@@ -204,8 +205,11 @@ public class StorybookStructuredReferenceWrongStorybookTests() : StorybookRegist
 	public void DoesNotFallbackToAnotherStorybook() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 storybook registry does not contain id 'kibana:content_management:ai-components-aibutton--default'."
+			);
 }
 
 [InheritsTests]
@@ -230,9 +234,13 @@ public class StorybookIframeTests() : StorybookRegistryTest("""
 	public void RendersIframeFallback()
 	{
 		Block!.HasInlineStory.Should().BeFalse();
-		Html.Should().Contain("<iframe");
-		Html.Should().Contain(
-			"src=\"http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story\""
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="storybook-embed">
+				<iframe src="http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story" title="Storybook story" style="width:100%;height:400px;border:none;" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
+			</div>
+			"""
 		);
 	}
 }
@@ -248,7 +256,7 @@ Supporting details for this story.
 )
 {
 	[Test]
-	public void RendersBodyContent() => Html.Should().Contain("Supporting details for this story.");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -267,9 +275,19 @@ public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 		Block!.Height.Should().Be(400);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains(":height: must be a positive integer"));
-		Html.Should().Contain("height:400px");
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 storybook directive :height: must be a positive integer. Got 'tall', using default 400px."
+			);
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+			<div class="storybook-embed">
+				<iframe src="http://127.0.0.1:6007/storybook/shared_ux/iframe.html?id=components-callout--info-storybook&amp;viewMode=story" title="Storybook story" style="width:100%;height:400px;border:none;" sandbox="allow-scripts allow-same-origin" loading="lazy"></iframe>
+			</div>
+			"""
+		);
 	}
 }
 
@@ -283,7 +301,12 @@ public class StorybookMissingRegistryTests() : DirectiveTest<StorybookBlock>(
 )
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 storybook directive requires docset.yml storybook.registry.");
 }
 
 [InheritsTests]
@@ -293,7 +316,12 @@ public class StorybookMissingIdTests() : StorybookRegistryTest("""
 """)
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 storybook directive requires :id: or :project:.");
 }
 
 [InheritsTests]
@@ -309,6 +337,7 @@ public class StorybookPositionalArgumentWarningTests() : StorybookRegistryTest(
 	public void EmitsWarning() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("ignores positional arguments"));
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 storybook directive ignores positional arguments. Use properties instead.");
 }

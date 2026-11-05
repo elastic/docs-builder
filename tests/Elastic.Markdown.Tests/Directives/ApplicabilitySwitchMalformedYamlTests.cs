@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -28,8 +30,14 @@ This item has an applies_to definition that is not valid YAML.
 	public void ReportsTheDefinitionAsAnError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText(firstLineOnly: true)
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unable to parse applies_to definition: stack: [ga"));
+			.MatchInlineSnapshot(
+				"""
+				error {repo}/docs/index.md:5 Unable to parse applies_to definition: stack: [ga
+				error {repo}/docs/index.md:5 Unable to parse applies_to definition: stack: [ga
+				"""
+			);
 
 	[Test]
 	public void KeepsTheExplicitSyncKey() => Block!.OfType<AppliesItemBlock>().Single().SyncKey.Should().Be("explicit-key");
@@ -54,8 +62,14 @@ This item has an applies_to definition that is not valid YAML.
 	public void ReportsTheDefinitionAsAnError() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText(firstLineOnly: true)
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("Unable to parse applies_to definition: stack: [ga"));
+			.MatchInlineSnapshot(
+				"""
+				error {repo}/docs/index.md:5 Unable to parse applies_to definition: stack: [ga
+				error {repo}/docs/index.md:5 Unable to parse applies_to definition: stack: [ga
+				"""
+			);
 
 	[Test]
 	public void FallsBackToAKeyDerivedFromTheDefinition() =>

@@ -43,10 +43,12 @@ public class UnknownYamlKeyTests
 			new ScopedFileSystem(fileSystem, "/docs")
 		);
 
-		var diagnostic = collector.Captured.Should().ContainSingle(d => d.Severity == Severity.Error).Subject;
-		diagnostic.Message.Should().Contain("Unknown key 'fiel'").And.Contain("Did you mean 'file'?");
-		diagnostic.Line.Should().Be(4);
-		diagnostic.Column.Should().Be(5);
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error /docs/docset.yml:4 Unknown key 'fiel' in $.toc[1]. Did you mean 'file'?");
+		collector.Captured.Should().ContainSingle().Which.Column.Should().Be(5);
 	}
 
 	[Test]
@@ -62,11 +64,11 @@ public class UnknownYamlKeyTests
 
 		_ = SiteNavigationFile.Deserialize(yaml, collector, "/config/navigation.yml");
 
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
-		diagnostic.File.Should().Be("/config/navigation.yml");
-		diagnostic.Line.Should().Be(3);
-		diagnostic.Message.Should().Contain("Unknown key 'path_prefx'").And.Contain("Did you mean 'path_prefix'?");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error /config/navigation.yml:3 Unknown key 'path_prefx' in $.toc[0]. Did you mean 'path_prefix'?");
 	}
 
 	[Test]
@@ -84,16 +86,11 @@ public class UnknownYamlKeyTests
 
 		collector
 			.Captured
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle()
-			.Which
-			.Message
-			.Should()
-			.Contain("Unknown key 'colour_scheme'")
-			.And
-			.Contain("Valid keys:")
-			.And
-			.Contain("path_prefix");
+			.MatchInlineSnapshot(
+				"error /config/navigation.yml:3 Unknown key 'colour_scheme' in $.toc[0]. Valid keys: children, dropdown, external, floating, island, navigation_title, path_prefix, section, toc."
+			);
 	}
 
 	[Test]
@@ -138,10 +135,13 @@ public class UnknownYamlKeyTests
 		var sequence = YamlSerializer.Deserialize<ApiProductSequence>(yaml, options)!;
 
 		sequence.SingleEntry!.Product.Should().Be("elasticsearch");
-		var diagnostic = collector.Captured.Should().ContainSingle().Subject;
-		diagnostic.Severity.Should().Be(Severity.Error);
-		diagnostic.Line.Should().Be(3);
-		diagnostic.Message.Should().Contain("Unknown key 'prodcut_id'");
+		collector
+			.Captured
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error docset.yml:3 Unknown key 'prodcut_id' in $[0]. Valid keys: catalog, children, product, repository, spec."
+			);
 	}
 
 	[Test]
@@ -177,17 +177,14 @@ public class UnknownYamlKeyTests
 
 		collector
 			.Captured
-			.Select(d => (d.Severity, d.Message))
+			.ToSnapshotText()
 			.Should()
-			.SatisfyRespectively(hint =>
-			{
-				hint.Severity.Should().Be(Severity.Hint);
-				hint.Message.Should().Be("'old_key' is deprecated.");
-			}, error =>
-			{
-				error.Severity.Should().Be(Severity.Error);
-				error.Message.Should().Contain("Unknown key 'other'");
-			});
+			.MatchInlineSnapshot(
+				"""
+			hint toc.yml:3 'old_key' is deprecated.
+			error toc.yml:5 Unknown key 'other' in $[0]. Valid keys: catalog, children, product, repository, spec.
+			"""
+			);
 	}
 
 	[Test]

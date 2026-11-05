@@ -29,7 +29,8 @@ public static class AssemblerOpenApiBuildStep
 		AssembleContext assembleContext,
 		AssemblerApiSections apiSections,
 		TopNavRenderModel? siteTopNav,
-		Cancel ctx
+		Cancel ctx,
+		VersionIndexClient? versionIndexClient = null
 	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
@@ -46,7 +47,7 @@ public static class AssemblerOpenApiBuildStep
 		var catalogEntries = new List<ApiCatalogEntry>();
 
 		// The build service creates the generators before the docsets resolve their trees. A standalone call creates them here.
-		var planned = apiSections.EnsureGenerators(logFactory, assembleContext, siteTopNav);
+		var planned = apiSections.EnsureGenerators(logFactory, assembleContext, siteTopNav, versionIndexClient);
 
 		// The roots of the site navigation exist already. This fills their children from the trees the pages render from below.
 		await apiSections.ResolveAsync(ctx).ConfigureAwait(false);

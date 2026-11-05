@@ -13,6 +13,19 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
+	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/doc/elasticsearch</c>.</summary>
+	[Keyword]
+	[JsonPropertyName("key")]
+	public string Key { get; init; } = "";
+
+	/// <summary>
+	/// Every version tree whose page shows this content, the one <see cref="SearchDocumentBase.Path"/> points into first.
+	/// A document whose trees leave out the API's default tree is <see cref="SearchDocumentBase.Hidden"/>.
+	/// </summary>
+	[Object]
+	[JsonPropertyName("trees")]
+	public ApiTreeEntry[] Trees { get; init; } = [];
+
 	[Nested]
 	[JsonPropertyName("properties")]
 	public ApiPropertyEntry[] Properties { get; init; } = [];
@@ -25,7 +38,7 @@ public record ApiOperationMetadata
 	/// <summary>
 	/// Lowercased endpoint paths without the leading <c>/</c>, with and without leading and trailing
 	/// parameters, each parameter stored as <c>*</c>, e.g. <c>*/_search</c> and <c>_search</c>.
-	/// Plain keyword so the typed term matches exactly.
+	/// Plain keyword so the typed term matches exactly. The root route is stored as <c>/</c>.
 	/// </summary>
 	[Keyword]
 	[JsonPropertyName("endpoints")]

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 using AwesomeAssertions;
 using JetBrains.Annotations;
 
@@ -101,15 +102,29 @@ public sealed class Scenario
 	/// Asserts that <c>index.md</c> renders to HTML that is structurally identical to
 	/// <paramref name="expected"/> (after pretty-printing both sides).
 	/// </summary>
-	public async Task ConvertsToHtml([LanguageInjection("html")] string expected) =>
-		HtmlAssertions.ConvertsToHtml(expected, await BuildAsync());
+	public async Task ConvertsToHtml(
+		[LanguageInjection("html")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		HtmlAssertions.ConvertsToHtml(
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 
 	/// <summary>
-	/// Asserts that <c>index.md</c>'s rendered HTML contains the <paramref name="expected"/>
-	/// fragment (pretty-printed substring match).
+	/// Asserts that <c>index.md</c>'s page content matches its verified HTML snapshot file. For output too long to read inline.
+	/// <paramref name="name"/> tells apart several snapshots in one test.
 	/// </summary>
-	public async Task ConvertsToContainingHtml([LanguageInjection("html")] string expected) =>
-		HtmlAssertions.ConvertsToContainingHtml(expected, await BuildAsync());
+	public async Task ConvertsToHtmlSnapshot(
+		string? name = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) => HtmlAssertions.ConvertsToHtmlSnapshot(await BuildAsync(), name, callerFilePath, callerMemberName, callerLineNumber);
 
 	/// <summary>
 	/// Asserts that <c>index.md</c>'s raw HTML string contains <paramref name="expected"/> verbatim.
@@ -133,6 +148,23 @@ public sealed class Scenario
 	// ────────────────────────────────────────────────────────────────────────────────
 	// Diagnostics assertions
 	// ────────────────────────────────────────────────────────────────────────────────
+
+	/// <summary>
+	/// Asserts every diagnostic the generator reported, one line each (<c>error|warning|hint file:line message</c>), equals the
+	/// inline snapshot. An empty literal means none at all.
+	/// </summary>
+	public async Task HasDiagnostics(
+		string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		ErrorCollectorAssertions.HasDiagnostics(
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 
 	/// <summary>Asserts the generator produced no errors.</summary>
 	public async Task HasNoErrors() => ErrorCollectorAssertions.HasNoErrors(await BuildAsync());
@@ -193,8 +225,18 @@ public sealed class Scenario
 	/// Asserts that <c>index.md</c>'s plain-text export equals <paramref name="expected"/>
 	/// (both sides trimmed; diff shown on mismatch).
 	/// </summary>
-	public async Task ConvertsToPlainText([LanguageInjection("text")] string expected) =>
-		PlainTextAssertions.ConvertsToPlainText(expected, await BuildAsync());
+	public async Task ConvertsToPlainText(
+		[LanguageInjection("text")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		PlainTextAssertions.ConvertsToPlainText(
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 
 	// ────────────────────────────────────────────────────────────────────────────────
 	// LLM Markdown
@@ -204,15 +246,35 @@ public sealed class Scenario
 	/// Asserts that <c>index.md</c>'s LLM Markdown export equals <paramref name="expected"/>
 	/// (both sides trimmed; diff shown on mismatch).
 	/// </summary>
-	public async Task ConvertsToNewLlm([LanguageInjection("markdown")] string expected) =>
-		LlmMarkdownAssertions.ConvertsToNewLlm(expected, await BuildAsync());
+	public async Task ConvertsToNewLlm(
+		[LanguageInjection("markdown")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		LlmMarkdownAssertions.ConvertsToNewLlm(
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 
 	/// <summary>
 	/// Asserts that <c>index.md</c>'s LLM Markdown output including front-matter metadata
 	/// equals <paramref name="expected"/> (see <see cref="LlmMarkdownAssertions"/> warning).
 	/// </summary>
-	public async Task ConvertsToLlmWithMetadata([LanguageInjection("markdown")] string expected) =>
-		LlmMarkdownAssertions.ConvertsToLlmWithMetadata(expected, await BuildAsync());
+	public async Task ConvertsToLlmWithMetadata(
+		[LanguageInjection("markdown")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		LlmMarkdownAssertions.ConvertsToLlmWithMetadata(
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 
 	// ────────────────────────────────────────────────────────────────────────────────
 	// JSON output
@@ -222,8 +284,20 @@ public sealed class Scenario
 	/// Asserts that the file at <paramref name="artifactPath"/> in the write file system
 	/// contains JSON that normalizes to <paramref name="expected"/>.
 	/// </summary>
-	public async Task ConvertsToJson(string artifactPath, [LanguageInjection("json")] string expected) =>
-		ResultsAssertions.ConvertsToJson(artifactPath, expected, await BuildAsync());
+	public async Task ConvertsToJson(
+		string artifactPath,
+		[LanguageInjection("json")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) =>
+		ResultsAssertions.ConvertsToJson(
+			artifactPath,
+			expected,
+			await BuildAsync(),
+			new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression)
+		);
 }
 
 /// <summary>
@@ -355,20 +429,20 @@ public sealed class MarkdownResultTask(Task<MarkdownResult> inner)
 {
 	public Task<MarkdownResult> Inner => inner;
 
-	/// <summary>Asserts the file's HTML contains the expected fragment (pretty-printed).</summary>
-	public async Task ContainsHtml([LanguageInjection("html")] string expected) => HtmlAssertions.ContainsHtml(expected, await inner);
-
-	/// <summary>Asserts the file's raw HTML contains the expected string verbatim.</summary>
-	public async Task ContainsRawHtml(string expected) => HtmlAssertions.ContainsRawHtml(expected, await inner);
-
-	/// <summary>Asserts the file's raw HTML does NOT contain the expected string.</summary>
-	public async Task DoesNotContainHtml(string expected) => HtmlAssertions.DoesNotContainHtml(expected, await inner);
-
 	/// <summary>
 	/// Asserts the file's HTML matches the expected fragment exactly (pretty-printed diff).
 	/// Mirrors F# <c>toHtml</c>.
 	/// </summary>
-	public async Task ToHtml([LanguageInjection("html")] string expected) => HtmlAssertions.ToHtml(expected, await inner);
+	public async Task ToHtml(
+		[LanguageInjection("html")] string? expected = null,
+		[CallerArgumentExpression(nameof(expected))] string? expectedExpression = null,
+		[CallerFilePath] string callerFilePath = "",
+		[CallerMemberName] string callerMemberName = "",
+		[CallerLineNumber] int callerLineNumber = 0
+	) => HtmlAssertions.ToHtml(expected, await inner, new CallSite(callerFilePath, callerMemberName, callerLineNumber, expectedExpression));
+
+	/// <summary>Asserts the file's raw HTML contains the expected string verbatim. For what lies outside the content section, such as <c>&lt;head&gt;</c>.</summary>
+	public async Task ContainsRawHtml(string expected) => HtmlAssertions.ContainsRawHtml(expected, await inner);
 
 	/// <summary>Finds all <typeparamref name="T"/> instances in the fully-parsed document.</summary>
 	public async Task<T[]> Parses<T>() where T : Markdig.Syntax.MarkdownObject => await MarkdownDocumentAssertions.Parses<T>(await inner);

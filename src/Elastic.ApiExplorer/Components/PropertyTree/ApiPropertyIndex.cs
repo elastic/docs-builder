@@ -26,6 +26,7 @@ internal static class ApiPropertyIndex
 				Name = property.Name,
 				Path = path,
 				PathWords = string.Join(' ', ApiPropertyPath.Words(path)),
+				NameWords = string.Join(' ', ApiPropertyPath.IdentifierWords(property.Name)),
 				Type = property.Type.Text,
 				Location = location,
 				Anchor = property.AnchorId,
@@ -35,15 +36,6 @@ internal static class ApiPropertyIndex
 		});
 
 	private static string PathOf(ApiProperty property) => string.IsNullOrEmpty(property.JsonPath) ? property.Name : property.JsonPath;
-
-	/// <summary>The rows nested directly under a property: its fields, its map values' fields, then each listed variant's fields.</summary>
-	internal static IEnumerable<ApiProperty> DirectChildren(ApiProperty property) =>
-		(property.Children.Properties?.Items ?? []).Concat(property.Children.Dictionary?.Properties.Items ?? []).Concat(
-			VariantChildren(property.Children.Variants)
-		);
-
-	private static IEnumerable<ApiProperty> VariantChildren(ApiUnionVariants? variants) =>
-		variants?.Variants.Where(v => v.ShowProperties && v.Properties is not null).SelectMany(v => v.Properties!.Items) ?? [];
 
 	private static string PlainText(string markdown, Dictionary<string, string> plainDescriptions)
 	{
@@ -55,11 +47,11 @@ internal static class ApiPropertyIndex
 	/// <summary>Every property in page order with the path of the row it is listed under: each property, then its nested, dictionary and variant children.</summary>
 	internal static IEnumerable<IndexedRow> Flatten(ApiPropertyList? properties) => Flatten(properties?.Items ?? [], "");
 
-	internal static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants) => Flatten(VariantChildren(variants), "");
+	internal static IEnumerable<IndexedRow> Flatten(ApiUnionVariants? variants) => Flatten(variants?.Rows ?? [], "");
 
 	private static IEnumerable<IndexedRow> Flatten(IEnumerable<ApiProperty> properties, string parent) =>
 		properties.SelectMany(
-			property => Flatten(DirectChildren(property), ApiPropertyPath.ParentKey(PathOf(property))).Prepend(
+			property => Flatten(property.Children.NestedRows, ApiPropertyPath.ParentKey(PathOf(property))).Prepend(
 				new IndexedRow(property, parent)
 			)
 		);

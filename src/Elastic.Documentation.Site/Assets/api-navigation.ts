@@ -1,3 +1,5 @@
+import { parseApiTree } from './api-tree'
+
 /**
  * Boosted navigation swaps only `#main-container`, and the header sits outside it. Docs pages
  * and API pages bring different headers, so a move between them has to reload the page. The API
@@ -22,10 +24,13 @@ export function changesPageChrome(
     return (target === undefined) !== (current === undefined)
 }
 
-/** The product and version of an API path, such as `es` or `es/v9`. `null` outside an API product. */
+/** The product and version of an API path, such as `es`, `es/v9` or `es/main`. `null` outside an API product. */
 function apiTree(path: string): string | null {
-    const product = /\/api\/doc\/([^/]+)(?:\/(v\d+))?(?:\/|$)/.exec(path)
-    return product ? `${product[1]}/${product[2] ?? ''}` : null
+    const parsed = parseApiTree(path)
+    if (!parsed) return null
+    const { product, tree } = parsed
+    const segment = tree === null || tree === 'main' ? (tree ?? '') : `v${tree}`
+    return `${product}/${segment}`
 }
 
 /**

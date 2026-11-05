@@ -7,7 +7,9 @@ using System.Linq;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.IO;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests;
 
@@ -41,8 +43,11 @@ public class RootIndexValidationTests()
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 		_ = new DocumentationSet(context, logger, new TestCrossLinkResolver());
 
-		collector.Errors.Should().BeGreaterThan(0);
-		collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("index.md"));
+		collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/docset.yml Non-public documentation sets require a root index.md file");
 	}
 
 	[Test]

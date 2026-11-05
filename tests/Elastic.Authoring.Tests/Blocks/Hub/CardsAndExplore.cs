@@ -28,20 +28,31 @@ public class CardGroupStandalone : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("renders a heading and a grid, not an accordion")]
-	public async Task RendersHeadingAndGrid() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<div class="hub-zone" id="hands-on">
 			<h2 class="hub-zone-title">Get hands-on</h2>
 			<p class="hub-zone-intro">Follow a guided quickstart.</p>
 		</div>
+		<ul class="hub-card-grid">
+			<li class="hub-card hub-card-linked">
+				<div class="hub-card-head">
+					<h3 class="hub-card-title">
+						<a href="/">Writing content</a>
+					</h3>
+				</div>
+				<p class="hub-card-desc">Author a page and preview it.</p>
+				<ul class="hub-card-links">
+					<li>
+						<a href="/">Pages and links</a>
+					</li>
+				</ul>
+			</li>
+		</ul>
 		"""
 		);
-
-	[Test, DisplayName("renders the card with its description")]
-	public async Task RendersCardDescription() =>
-		await Docs.ConvertsToContainingHtml("""<p class="hub-card-desc">Author a page and preview it.</p>""");
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -62,8 +73,28 @@ public class CardGroupWithLinksInTheIntro : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("renders inline links in the intro")]
-	public async Task RendersInlineLinksInTheIntro() => await Docs.ConvertsToContainingRawHtml("""<a href="#solutions">solutions</a>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<div class="hub-zone" id="components">
+			<h2 class="hub-zone-title">Components</h2>
+			<p class="hub-zone-intro">They power
+				<a href="#solutions">solutions</a>
+				and have several ways to
+				<a href="#deploy">deploy</a>.</p>
+		</div>
+		<ul class="hub-card-grid">
+			<li class="hub-card">
+				<div class="hub-card-head">
+					<h3 class="hub-card-title">
+						Elasticsearch
+					</h3>
+				</div>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -84,8 +115,26 @@ public class CardGroupWithAMarkdownLinkInTheIntro : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("turns the markdown path into a page link")]
-	public async Task TurnsMarkdownPathIntoPageLink() => await Docs.ConvertsToContainingRawHtml("""<a href="/">Compare options</a>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<div class="hub-zone" id="deploy">
+			<h2 class="hub-zone-title">Deploy</h2>
+			<p class="hub-zone-intro">Choose where to run it.
+				<a href="/">Compare options</a>.</p>
+		</div>
+		<ul class="hub-card-grid">
+			<li class="hub-card">
+				<div class="hub-card-head">
+					<h3 class="hub-card-title">
+						Serverless
+					</h3>
+				</div>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -105,9 +154,26 @@ public class CardGroupWithATitledLinkInTheIntro : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("resolves the link and keeps its title")]
-	public async Task ResolvesLinkAndKeepsTitle() =>
-		await Docs.ConvertsToContainingRawHtml("""<a href="/" title="Deployment comparison">Compare options</a>""");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<div class="hub-zone">
+			<h2 class="hub-zone-title">Deploy</h2>
+			<p class="hub-zone-intro">Choose where to run it.
+				<a href="/" title="Deployment comparison">Compare options</a>.</p>
+		</div>
+		<ul class="hub-card-grid">
+			<li class="hub-card">
+				<div class="hub-card-head">
+					<h3 class="hub-card-title">
+						Serverless
+					</h3>
+				</div>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -127,8 +193,27 @@ public class CardGroupWithLinkSyntaxInCodeInTheIntro : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("keeps the code span as written")]
-	public async Task KeepsCodeSpan() => await Docs.ConvertsToContainingRawHtml("<code>[guide](/does-not-exist.md)</code>");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<div class="hub-zone">
+			<h2 class="hub-zone-title">Deploy</h2>
+			<p class="hub-zone-intro">Write links as
+				<code>[guide](/does-not-exist.md)</code>
+				in your text.</p>
+		</div>
+		<ul class="hub-card-grid">
+			<li class="hub-card">
+				<div class="hub-card-head">
+					<h3 class="hub-card-title">
+						Serverless
+					</h3>
+				</div>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test, DisplayName("does not report a link inside code")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -148,8 +233,11 @@ public class CardGroupWithABrokenLinkInTheIntro : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("reports a link to a page that does not exist")]
-	public async Task ReportsMissingPage() => await Docs.HasError("does-not-exist");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 Directive link `/does-not-exist.md` does not exist. If it was recently removed add a redirect."
+		);
 }
 
 public class CardGroupWithSolutionsVariant : MarkdownTest
@@ -166,10 +254,13 @@ public class CardGroupWithSolutionsVariant : MarkdownTest
 		::::
 		""";
 
-	[Test, DisplayName("locks the three column grid")]
-	public async Task LocksThreeColumnGrid() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
+		<div class="hub-zone">
+			<h2 class="hub-zone-title">Browse by area</h2>
+		</div>
 		<ul class="hub-card-grid hub-card-grid-solutions">
 			<li class="hub-card">
 				<div class="hub-card-head">
@@ -220,74 +311,12 @@ public class CardGroupNestedInExplore : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("renders the explore heading")]
-	public async Task RendersExploreHeading() =>
-		await Docs.ConvertsToContainingHtml(
-			"""
-		<div class="hub-zone" id="explore">
-			<h2 class="hub-zone-title">Explore the docs</h2>
-			<p class="hub-zone-intro">Organized by task.</p>
-		</div>
-		"""
-		);
-
-	// One snapshot covers what nesting changes: accordion mode, the first accordion open and
+	// The snapshot covers what nesting changes: accordion mode, the first accordion open and
 	// the rest closed, and link cards as columns. It also pins the heading levels, so an
-	// Explore stack keeps a complete outline: section h2, accordion h3, column h4.
-	[Test, DisplayName("renders the accordion stack")]
-	public async Task RendersAccordionStack() =>
-		await Docs.ConvertsToContainingHtml(
-			"""
-		<div class="hub-explore">
-			<details class="hub-accordion" id="quick-links" open="">
-				<summary class="hub-accordion-summary">
-					<h3 class="hub-accordion-title">Quick links</h3>
-					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-					</svg>
-				</summary>
-				<div class="hub-accordion-body">
-					<ul class="hub-explore-cols">
-						<li class="hub-col">
-							<h4 class="hub-col-title">
-								Releases
-							</h4>
-							<ul class="hub-col-links">
-								<li>
-									<a href="/">Exporters</a>
-								</li>
-							</ul>
-						</li>
-					</ul>
-				</div>
-			</details>
-			<details class="hub-accordion" id="authoring">
-				<summary class="hub-accordion-summary">
-					<h3 class="hub-accordion-title">Authoring</h3>
-					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
-					</svg>
-				</summary>
-				<div class="hub-accordion-body">
-					<ul class="hub-explore-cols">
-						<li class="hub-col">
-							<h4 class="hub-col-title">
-								Syntax
-							</h4>
-						</li>
-					</ul>
-				</div>
-			</details>
-		</div>
-		"""
-		);
-
-	// A column is a pure link index, so the description is deliberately dropped.
-	[Test, DisplayName("drops the description in column mode")]
-	public async Task DropsDescriptionInColumnMode() =>
-		await Docs.DoesNotConvertToContainingHtml("This description is dropped in column mode.");
+	// Explore stack keeps a complete outline: section h2, accordion h3, column h4. A column is a
+	// pure link index, so the description is deliberately dropped.
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() => await Docs.ConvertsToHtmlSnapshot();
 
 	[Test, DisplayName("has no errors")]
 	public async Task HasNoErrors() => await Docs.HasNoErrors();
@@ -322,10 +351,13 @@ public class ExploreCollapsedByDefault : MarkdownTest
 		""";
 
 	// Without `:mode:`, every accordion starts closed, so neither `<details>` carries `open`.
-	[Test, DisplayName("renders every accordion collapsed")]
-	public async Task RendersEveryAccordionCollapsed() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
 		<div class="hub-explore">
 			<details class="hub-accordion" id="quick-links">
 				<summary class="hub-accordion-summary">
@@ -400,10 +432,13 @@ public class ExploreWithExpandedMode : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("opens every accordion")]
-	public async Task OpensEveryAccordion() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
 		<div class="hub-explore">
 			<details class="hub-accordion" id="quick-links" open="">
 				<summary class="hub-accordion-summary">
@@ -478,10 +513,13 @@ public class ExploreWithFirstMode : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("opens only the first accordion")]
-	public async Task OpensOnlyFirstAccordion() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
 		<div class="hub-explore">
 			<details class="hub-accordion" id="quick-links" open="">
 				<summary class="hub-accordion-summary">
@@ -556,11 +594,59 @@ public class ExploreWithInvalidMode : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("warns about the unknown mode")]
-	public async Task WarnsAboutUnknownMode() => await Docs.HasWarning("Invalid {explore} mode 'sideways'");
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
+			"""
+		<div class="hub-zone" id="explore">
+			<h2 class="hub-zone-title">Explore the docs</h2>
+		</div>
+		<div class="hub-explore">
+			<details class="hub-accordion" id="quick-links">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Quick links</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Releases
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+			<details class="hub-accordion" id="authoring">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Authoring</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Syntax
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
+		"""
+		);
 
-	[Test, DisplayName("falls back to collapsed")]
-	public async Task FallsBackToCollapsed() => await Docs.DoesNotConvertToContainingHtml(" open=\"\"");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"warning {repo}/docs/index.md:2 Invalid {explore} mode 'sideways'. Valid modes are: collapsed, first, expanded. Defaulting to 'collapsed'."
+		);
 }
 
 public class LinkCardWithoutATitle : MarkdownTest
@@ -571,8 +657,9 @@ public class LinkCardWithoutATitle : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors")]
-	public async Task Errors() => await Docs.HasError("requires a `title`");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 {link-card} requires a `title` field in its YAML body.");
 }
 
 public class LinkCardWithARelativeLink : MarkdownTest
@@ -587,8 +674,11 @@ public class LinkCardWithARelativeLink : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("rejects a relative path")]
-	public async Task RejectsRelativePath() => await Docs.HasError("must be an absolute path starting with `/`");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 Directive link `nope.md` must be an absolute path starting with `/`, a cross-link scheme (for example `kibana://`), or an external URL."
+		);
 }
 
 public class LinkCardWithAMissingTarget : MarkdownTest
@@ -603,8 +693,11 @@ public class LinkCardWithAMissingTarget : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors on a link that does not resolve")]
-	public async Task ErrorsOnMissingTarget() => await Docs.HasError("does not exist");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics(
+			"error {repo}/docs/index.md:2 Directive link `/does-not-exist.md` does not exist. If it was recently removed add a redirect."
+		);
 }
 
 public class LinkCardWithACrossLink : MarkdownTest
@@ -628,10 +721,13 @@ public class LinkCardWithACrossLink : MarkdownTest
 
 	// Covers three things at once: the icon and variant accent, and that a cross-link resolves
 	// to a full URL without being treated as external. Inline links make the same distinction.
-	[Test, DisplayName("renders the icon and variant, and does not open the cross-link in a new tab")]
-	public async Task RendersIconAndVariantWithoutNewTab() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
+		<div class="hub-zone">
+			<h2 class="hub-zone-title">Documentation this toolchain builds</h2>
+		</div>
 		<ul class="hub-card-grid">
 			<li class="hub-card hub-card-sol hub-card-sol-es">
 				<div class="hub-card-head">
@@ -684,20 +780,13 @@ public class ExploreAtLevelThree : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("renders the section as a nested h3")]
-	public async Task RendersNestedHeading() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<div class="hub-zone hub-zone-nested" id="use-kibana">
 			<h3 class="hub-zone-title">Use Kibana</h3>
 		</div>
-		"""
-		);
-
-	[Test, DisplayName("renders the accordion as h4 and the column as h5")]
-	public async Task RendersNestedOutline() =>
-		await Docs.ConvertsToContainingHtml(
-			"""
 		<div class="hub-explore">
 			<details class="hub-accordion" id="analyze" open="">
 				<summary class="hub-accordion-summary">
@@ -745,18 +834,39 @@ public class ExploreWithInvalidLevel : MarkdownTest
 		:::::
 		""";
 
-	[Test, DisplayName("warns")]
-	public async Task Warns() => await Docs.HasWarning("Invalid {explore} level '4'");
-
-	[Test, DisplayName("falls back to h2")]
-	public async Task FallsBackToH2() =>
-		await Docs.ConvertsToContainingHtml(
+	[Test, DisplayName("renders HTML")]
+	public async Task RendersHtml() =>
+		await Docs.ConvertsToHtml(
 			"""
 		<div class="hub-zone" id="explore">
 			<h2 class="hub-zone-title">Explore the docs</h2>
 		</div>
+		<div class="hub-explore">
+			<details class="hub-accordion" id="quick-links">
+				<summary class="hub-accordion-summary">
+					<h3 class="hub-accordion-title">Quick links</h3>
+					<svg class="hub-accordion-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+						<path d="M3 8h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+						<path class="hub-accordion-icon-v" d="M8 3v10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+				</summary>
+				<div class="hub-accordion-body">
+					<ul class="hub-explore-cols">
+						<li class="hub-col">
+							<h4 class="hub-col-title">
+								Releases
+							</h4>
+						</li>
+					</ul>
+				</div>
+			</details>
+		</div>
 		"""
 		);
+
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("warning {repo}/docs/index.md:2 Invalid {explore} level '4'. Valid levels are: 2, 3. Defaulting to 2.");
 }
 
 // A body that is only a YAML comment is not null, so it reaches the deserializer rather than the
@@ -770,6 +880,7 @@ public class LinkCardWithACommentOnlyBody : MarkdownTest
 		:::
 		""";
 
-	[Test, DisplayName("errors on the missing title instead of throwing")]
-	public async Task ErrorsOnMissingTitle() => await Docs.HasError("requires a `title` field");
+	[Test, DisplayName("reports diagnostics")]
+	public async Task ReportsDiagnostics() =>
+		await Docs.HasDiagnostics("error {repo}/docs/index.md:2 {link-card} requires a `title` field in its YAML body.");
 }
