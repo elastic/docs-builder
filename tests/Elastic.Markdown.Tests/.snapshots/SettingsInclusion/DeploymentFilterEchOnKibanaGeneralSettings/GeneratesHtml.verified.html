@@ -1,0 +1,1020 @@
+<p>Use these settings to configure general features available in Kibana.</p>
+<h2 id="general-kibana-settings">General settings</h2>
+<dl>
+	<dt id="execution_context-enabled">execution_context.enabled
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Propagate request-specific metadata to Elasticsearch server by way of the
+			<code>x-opaque-id</code>
+			header. It is available in {{ecloud}} 8.1.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="elasticsearch-connection-settings">Elasticsearch connection settings</h2>
+<dl>
+	<dt id="elasticsearch-compression">elasticsearch.compression
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Specifies whether {{kib}} should use compression for communications with {{es}}. It is available in {{ecloud}} 8.3.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+	<dt id="elasticsearch-maxSockets">elasticsearch.maxSockets
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The maximum number of sockets that can be used for communications with {{es}}. It is available in {{ecloud}} 8.2.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>Infinity</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="logging-settings">Logging settings</h2>
+<dl>
+	<dt id="logging-root-level">logging.root.level
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Level at which a log record should be logged. Supported levels are:
+			<em>all</em>,
+			<em>fatal</em>,
+			<em>error</em>,
+			<em>warn</em>,
+			<em>info</em>,
+			<em>debug</em>,
+			<em>trace</em>,
+			<em>off</em>. Levels are ordered from
+			<em>all</em>
+			(highest) to
+			<em>off</em>
+			and a log record will be logged it its level is higher than or equal to the level of its logger, otherwise the log record is ignored. Use this value to
+			<a href="https://www.elastic.co/docs/deploy-manage/monitor/logging-configuration/kibana-log-settings-examples#change-overall-log-level" target="_blank" rel="noopener noreferrer">change the overall log level</a>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>enum</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>info</code>
+		</p>
+		<p>
+			<strong>Options:</strong>
+		</p>
+		<ul>
+			<li>
+				<code>all</code>
+			</li>
+			<li>
+				<code>fatal</code>
+			</li>
+			<li>
+				<code>error</code>
+			</li>
+			<li>
+				<code>warn</code>
+			</li>
+			<li>
+				<code>info</code>
+			</li>
+			<li>
+				<code>debug</code>
+			</li>
+			<li>
+				<code>trace</code>
+			</li>
+			<li>
+				<code>off</code>
+			</li>
+		</ul>
+		<div class="admonition tip">
+			<div class="admonition-header">
+				<span class="admonition-title">Tip</span>
+			</div>
+			<div class="admonition-content">
+				<p>Set to
+					<code>all</code>
+					to log all events, including system usage information and all requests. Set to
+					<code>off</code>
+					to silence all logs. You can also use the logging
+					<a href="https://www.elastic.co/docs/deploy-manage/monitor/logging-configuration/kib-advanced-logging#logging-cli-migration" target="_blank" rel="noopener noreferrer">cli commands</a>
+					to set log level to
+					<code>verbose</code>
+					or silence all logs.</p>
+			</div>
+		</div>
+		<p>The following example shows a valid verbose
+			<code>logging.root</code>
+			configuration:</p>
+		<div class="highlight-text notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-text">logging:   appenders:     console_appender:       type: console       layout:         type: pattern         highlight: true   root:     appenders: [console_appender]     level: all
+					</code>
+				</pre>
+			</div>
+		</div>
+	</dd>
+</dl>
+<h2 id="map-settings">Map settings</h2>
+<dl>
+	<dt id="map-includeelasticmapsservice">map.includeElasticMapsService
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Set to
+			<code>false</code>
+			to disable connections to Elastic Maps Service. When
+			<code>includeElasticMapsService</code>
+			is turned off, only tile layer configured by
+			<a href="#tilemap-url">
+				<code>map.tilemap.url</code>
+			</a>
+			is available in
+			<a href="https://www.elastic.co/docs/explore-analyze/visualize/maps" target="_blank" rel="noopener noreferrer">Maps</a>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>true</code>
+		</p>
+	</dd>
+	<dt id="tilemap-settings">map.tilemap.options.attribution
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The map attribution string. Provide attributions in markdown and use
+			<code>\|</code>
+			to delimit attributions, for example:
+			<code>"[attribution 1](https://www.attribution1)\|[attribution 2](https://www.attribution2)"</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>"© [Elastic Maps Service](https://www.elastic.co/elastic-maps-service)"</code>
+		</p>
+	</dd>
+	<dt id="tilemap-max-zoom">map.tilemap.options.maxZoom
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The maximum zoom level.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>10</code>
+		</p>
+	</dd>
+	<dt id="tilemap-min-zoom">map.tilemap.options.minZoom
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The minimum zoom level.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>1</code>
+		</p>
+	</dd>
+	<dt id="tilemap-subdomains">map.tilemap.options.subdomains
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>An array of subdomains used by the tile service. Specify the position of the subdomain the URL with the token
+			<code>{{s}}</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+	<dt id="tilemap-url">map.tilemap.url
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The URL to the service that {{kib}} uses as the default basemap in
+			<a href="https://www.elastic.co/docs/explore-analyze/visualize/maps" target="_blank" rel="noopener noreferrer">maps</a>
+			and
+			<a href="https://www.elastic.co/docs/explore-analyze/visualize/custom-visualizations-with-vega#vega-with-a-map" target="_blank" rel="noopener noreferrer">vega maps</a>. By default, {{kib}} sets a basemap from the
+			<a href="https://www.elastic.co/docs/explore-analyze/visualize/maps/maps-connect-to-ems" target="_blank" rel="noopener noreferrer">Elastic Maps Service</a>, but users can point to their own Tile Map Service. For example:
+			<code>"https://tiles.elastic.co/v2/default/{{z}}/{{x}}/{{y}}.png?elastic_tile_service_tos=agree&amp;my_app_name=kibana"</code>
+		</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="migrations-settings">Migrations settings</h2>
+<dl>
+	<dt id="migrations-batchsize">migrations.batchSize
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Defines the number of documents migrated at a time. The higher the value, the faster the Saved Objects migration process performs at the cost of higher memory consumption. If upgrade migrations results in {{kib}} crashing with an out of memory exception or fails due to an Elasticsearch
+			<code>circuit_breaking_exception</code>, use a smaller
+			<code>batchSize</code>
+			value to reduce the memory pressure.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>1000</code>
+		</p>
+	</dd>
+	<dt id="migrations-discardunknownobjects">migrations.discardUnknownObjects
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Discard saved objects with unknown types during a migration. Must be set to the target version, for example:
+			<code>8.4.0</code>. Default: undefined. It is available in {{ecloud}} 8.4.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+	<dt id="migrations-discardcorruptobjects">migrations.discardCorruptObjects
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Discard corrupt saved objects, as well as those that cause transform errors during a migration. Must be set to the target version, for example:
+			<code>8.4.0</code>. Default: undefined. It is available in {{ecloud}} 8.4.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="search-autocomplete-settings">Search and autocomplete settings</h2>
+<dl>
+	<dt id="data-autocomplete-valuesuggestions-terminateafter">data.autocomplete.valueSuggestions.terminateAfter
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Specifies the max number of documents loaded by each shard to generate autocomplete suggestions. Allowed values are between 1 and 10000000.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>100000</code>
+		</p>
+	</dd>
+	<dt id="data-autocomplete-valuesuggestions-timeout">data.autocomplete.valueSuggestions.timeout
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Specifies the time in milliseconds to wait for autocomplete suggestions from Elasticsearch. Allowed values are between 1 and 1200000.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>1000</code>
+		</p>
+	</dd>
+	<dt id="unifiedsearch-autocomplete-valuesuggestions-timeout">unifiedSearch.autocomplete.valueSuggestions.timeout
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Time in milliseconds to wait for autocomplete suggestions from {{es}}. This value must be a whole number greater than zero.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>1000</code>
+		</p>
+	</dd>
+	<dt id="unifiedsearch-autocomplete-valuesuggestions-terminateafter">unifiedSearch.autocomplete.valueSuggestions.terminateAfter
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Maximum number of documents loaded by each shard to generate autocomplete suggestions. This value must be a whole number greater than zero.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>100000</code>
+		</p>
+		<div class="admonition note">
+			<div class="admonition-header">
+				<span class="admonition-title">Note</span>
+			</div>
+			<div class="admonition-content">
+				<p>To reload the logging settings, send a SIGHUP signal to {{kib}}. For more logging configuration options, see the
+					<a href="https://www.elastic.co/docs/deploy-manage/monitor/logging-configuration/kibana-logging" target="_blank" rel="noopener noreferrer">Configure Logging in {{kib}}</a>
+					guide.</p>
+			</div>
+		</div>
+	</dd>
+</dl>
+<h2 id="server-settings">Server settings</h2>
+<dl>
+	<dt id="server-maxPayload">server.maxPayload
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>The maximum payload size in bytes for incoming server requests.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>int</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>1048576</code>
+		</p>
+	</dd>
+	<dt id="server-customresponseheaders">server.customResponseHeaders
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Header names and values to send on all responses to the client from the {{kib}} server.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>{}</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="server-compression-settings">Server compression settings</h2>
+<dl>
+	<dt id="server-compression-brotli-enabled">server.compression.brotli.enabled
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Set to
+			<code>true</code>
+			to enable brotli (br) compression format. Browsers not supporting brotli compression will fallback to using gzip instead. This setting may not be used when
+			<a href="#server-compression">
+				<code>server.compression.enabled</code>
+			</a>
+			is set to
+			<code>false</code>. It is available in {{ecloud}} 8.6.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="server-security-response-headers">Server security response headers</h2>
+<dl>
+	<dt id="server-securityResponseHeaders-strictTransportSecurity">server.securityResponseHeaders.strictTransportSecurity
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Strict-Transport-Security" target="_blank" rel="noopener noreferrer">
+				<code>Strict-Transport-Security</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are any text value or
+			<code>null</code>. To disable, set to
+			<code>null</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>null</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-xContentTypeOptions">server.securityResponseHeaders.xContentTypeOptions
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options" target="_blank" rel="noopener noreferrer">
+				<code>X-Content-Type-Options</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are
+			<code>nosniff</code>
+			or
+			<code>null</code>. To disable, set to
+			<code>null</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>"nosniff"</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-referrerPolicy">server.securityResponseHeaders.referrerPolicy
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Referrer-Policy</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are
+			<code>no-referrer</code>,
+			<code>no-referrer-when-downgrade</code>,
+			<code>origin</code>,
+			<code>origin-when-cross-origin</code>,
+			<code>same-origin</code>,
+			<code>strict-origin</code>,
+			<code>strict-origin-when-cross-origin</code>,
+			<code>unsafe-url</code>, or
+			<code>null</code>. To disable, set to
+			<code>null</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>"strict-origin-when-cross-origin"</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-permissionsPolicy">server.securityResponseHeaders.permissionsPolicy
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" lifecycle-class="preview" lifecycle-name="Preview" show-lifecycle-name="true" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Preview&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is ready for evaluation. Use with caution in production; it is not recommended for mission-critical workloads. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Permissions-Policy</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are any text value or
+			<code>null</code>. Refer to the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Permissions-Policy</code>
+				documentation</a>
+			for defined directives, values, and text format. To disable, set to
+			<code>null</code>.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>camera=(), display-capture=(), fullscreen=(self), geolocation=(), microphone=(), web-share=()</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-permissionsPolicyReportOnly">server.securityResponseHeaders.permissionsPolicyReportOnly
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" lifecycle-class="preview" lifecycle-name="Preview" show-lifecycle-name="true" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Preview&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is in technical preview and is ready for evaluation. Use with caution in production; it is not recommended for mission-critical workloads. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features. Specific Support terms apply.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Permissions-Policy-Report-Only</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are any text value or
+			<code>null</code>. Refer to the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Permissions-Policy</code>
+				documentation</a>
+			for defined directives, values, and text format.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-disableEmbedding">server.securityResponseHeaders.disableEmbedding
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Content-Security-Policy</code>
+			</a>
+			and
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options" target="_blank" rel="noopener noreferrer">
+				<code>X-Frame-Options</code>
+			</a>
+			headers are configured to disable embedding {{kib}} in other webpages using iframes. When set to
+			<code>true</code>, secure headers are used to disable embedding, which adds the
+			<code>frame-ancestors: 'self'</code>
+			directive to the
+			<code>Content-Security-Policy</code>
+			response header and adds the
+			<code>X-Frame-Options: SAMEORIGIN</code>
+			response header.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+	<dt id="server-securityResponseHeaders-crossOriginOpenerPolicy">server.securityResponseHeaders.crossOriginOpenerPolicy
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Controls whether the
+			<a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy" target="_blank" rel="noopener noreferrer">
+				<code>Cross-Origin-Opener-Policy</code>
+			</a>
+			header is used in all responses to the client from the {{kib}} server, and specifies what value is used. Allowed values are
+			<code>unsafe-none</code>,
+			<code>same-origin-allow-popups</code>,
+			<code>same-origin</code>, or
+			<code>null</code>. To disable, set to
+			<code>null</code>. It is available in {{ecloud}} 8.7.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>enum</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>"same-origin"</code>
+		</p>
+		<p>
+			<strong>Options:</strong>
+		</p>
+		<ul>
+			<li>
+				<code>unsafe-none</code>
+			</li>
+			<li>
+				<code>same-origin-allow-popups</code>
+			</li>
+			<li>
+				<code>same-origin</code>
+			</li>
+			<li>
+				<code>null</code>
+			</li>
+		</ul>
+	</dd>
+</dl>
+<h2 id="server-xsrf-settings">Server XSRF settings</h2>
+<dl>
+	<dt id="settings-xsrf-allowlist">server.xsrf.allowlist
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>It is not recommended to disable protections for arbitrary API endpoints. Instead, supply the
+			<code>kbn-xsrf</code>
+			header. The
+			<a href="#settings-xsrf-allowlist">
+				<code>server.xsrf.allowlist</code>
+			</a>
+			setting requires the following format:</p>
+		<div class="highlight-text notranslate">
+			<div class="highlight">
+				<pre>
+					<code class="language-text">*Default: [ ]* An array of API endpoints which should be exempt from Cross-Site Request Forgery ("XSRF") protections.
+					</code>
+				</pre>
+			</div>
+		</div>
+		<p>It is available in {{ecloud}} 8.0.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>[]</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="ui-visualization-settings">UI and visualization settings</h2>
+<dl>
+	<dt id="uisettings-globaloverrides-hideannouncements">uiSettings.globalOverrides.hideAnnouncements
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p>Set to
+			<code>true</code>
+			to stop showing messages and tours that highlight new features.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+	<dt id="uisettings-globaloverrides-hidefeedback">uiSettings.globalOverrides.hideFeedback
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p>Set to
+			<code>true</code>
+			to stop showing elements requesting user feedback.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+	<dt id="vis_type_table-legacyvisenabled">vis_type_table.legacyVisEnabled
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Starting from version 7.11, a new datatable visualization is used. Set to
+			<code>true</code>
+			to enable the legacy version. In version 8.0 and later, the old implementation is removed and this setting is no longer supported.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+	</dd>
+	<dt id="vis_type_vega-enable">vis_type_vega.enable
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>For 7.7 version and later, set to
+			<code>false</code>
+			to disable Vega vizualizations.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>true</code>
+		</p>
+	</dd>
+	<dt id="vega-enableexternalurls">vega.enableExternalUrls
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" badge-version="8.0+" lifecycle-class="deprecated" lifecycle-name="Deprecated" show-lifecycle-name="true" show-version="true" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Deprecated since 8.0&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is deprecated. You can still use it, but it\u0027ll be removed in a future Elastic Stack update.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Set to
+			<code>true</code>
+			to allow Vega vizualizations to use data from sources other than the linked Elasticsearch cluster. In version 8.0 and later, the
+			<code>vega.enableExternalUrls</code>
+			is not supported. Use
+			<code>vis_type_vega.enableExternalUrls</code>
+			instead.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<div class="admonition admonition plain">
+			<div class="admonition-header">
+				<span class="admonition-title">Deprecation details</span>
+			</div>
+			<div class="admonition-content">
+				<p>In version 8.0 and later, this setting is not supported. Use
+					<code>vis_type_vega.enableExternalUrls</code>
+					instead.</p>
+			</div>
+		</div>
+	</dd>
+	<dt id="vis_type_vega-enableexternalurls">vis_type_vega.enableExternalUrls
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Set this value to true to allow Vega to use any URL to access external data sources and images. When false, Vega can only get data from {{es}}.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+</dl>
+<h2 id="feature-plugin-settings">Feature and plugin settings</h2>
+<dl>
+	<dt id="xpack-securitysolution-maxuploadresponseactionfilebytes">xpack.securitySolution.maxUploadResponseActionFileBytes
+		<span class="applies applies-inline">
+		</span>
+	</dt>
+	<dd>
+		<p class="settings-supported-on">
+			<strong>Supported on:</strong>
+			<span class="applies applies-inline">
+				<applies-to-popover badge-key="ECH" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003EElastic Cloud Hosted\u003C/strong\u003E lets you manage and configure one or more deployments of the versioned Elastic Stack, hosted on Elastic Cloud.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:false,&quot;versionNote&quot;:null}" show-popover="true" is-inline="true"></applies-to-popover>
+				<applies-to-popover badge-key="Self-managed" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;\u003Cstrong\u003ESelf-managed\u003C/strong\u003E deployments are Elastic Stack deployments managed without the assistance of an orchestrator.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Generally available&quot;,&quot;lifecycleDescription&quot;:&quot;This functionality is generally available and ready for production usage.&quot;}],&quot;additionalInfo&quot;:null,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+			</span>
+		</p>
+		<p>Allow to configure the max file upload size for use with the Upload File Response action available with the Defend Integration. To learn more, check
+			<a href="https://www.elastic.co/docs/solutions/security/endpoint-response-actions" target="_blank" rel="noopener noreferrer">Endpoint Response actions</a>. It is available in {{ecloud}} 8.9.0 and later versions.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>string</code>
+		</p>
+	</dd>
+	<dt id="xpack-securitysolution-disableendpointruleautoinstall">xpack.securitySolution.disableEndpointRuleAutoInstall
+		<span class="applies applies-inline">
+			<applies-to-popover badge-key="Stack" badge-lifecycle-text="Planned" lifecycle-class="ga" lifecycle-name="GA" show-lifecycle-name="false" show-version="false" has-multiple-lifecycles="false" popover-data="{&quot;productDescription&quot;:&quot;The \u003Cstrong\u003EElastic Stack\u003C/strong\u003E includes Elastic\u0027s core products such as Elasticsearch, Kibana, Logstash, and Beats.&quot;,&quot;availabilityItems&quot;:[{&quot;text&quot;:&quot;Planned&quot;,&quot;lifecycleDescription&quot;:&quot;We plan to add this functionality in a future Elastic Stack update. Subject to changes.&quot;}],&quot;additionalInfo&quot;:&quot;Unless stated otherwise on the page, this functionality is available when your Elastic Stack is deployed on Elastic Cloud Hosted, Elastic Cloud Enterprise, Elastic Cloud on Kubernetes, and self-managed environments.&quot;,&quot;showVersionNote&quot;:true,&quot;versionNote&quot;:&quot;This documentation corresponds to the latest patch available for each minor version. If you\u0027re not using the latest patch, check the \u003Ca href=\u0022https://www.elastic.co/docs/release-notes\u0022\u003Erelease notes\u003C/a\u003E for changes.&quot;}" show-popover="true" is-inline="true"></applies-to-popover>
+		</span>
+	</dt>
+	<dd>
+		<p>Set to
+			<code>true</code>
+			to disable the automatic installation of Elastic Defend SIEM rules when a new Endpoint integration policy is created. Introduced with v9.2.4.</p>
+		<p>
+			<strong>Datatype:</strong>
+			<code>bool</code>
+		</p>
+		<p>
+			<strong>Default:</strong>
+			<code>false</code>
+		</p>
+	</dd>
+</dl>

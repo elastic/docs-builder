@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.ReleaseNotes;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs;
 
@@ -115,11 +116,26 @@ public class BundleAmendTests : ChangelogTestBase
 		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
 
 		// Amend file entries are always resolved (Title/Type inlined) with file provenance kept
-		amendContent.Should().Contain("title: New amended feature");
-		amendContent.Should().Contain("type: enhancement");
-		amendContent.Should().Contain("description: A new enhancement added via amend");
-		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
-		amendContent.Should().Contain("checksum:");
+		amendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268200-new-feature.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: New amended feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    description: A new enhancement added via amend
+			    prs:
+			      - "200"
+			"""
+		);
 	}
 
 	[Test]
@@ -142,10 +158,17 @@ public class BundleAmendTests : ChangelogTestBase
 		amendFiles.Should().HaveCount(1);
 
 		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
-		amendContent.Should().Contain("exclude-entries:");
-		amendContent.Should().Contain("name: 1755268130-existing.yaml");
-		// The parent's products are copied first; the exclusions follow.
-		amendContent.TrimStart().Should().StartWith("products:");
+		amendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			exclude-entries:
+			  - file:
+			      name: 1755268130-existing.yaml
+			      checksum: {sha1}
+			"""
+		);
 	}
 
 	[Test]
@@ -171,8 +194,17 @@ public class BundleAmendTests : ChangelogTestBase
 		amendFiles.Should().HaveCount(2);
 
 		var removeAmendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[1], ct);
-		removeAmendContent.Should().Contain("exclude-entries:");
-		removeAmendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+		removeAmendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			exclude-entries:
+			  - file:
+			      name: 1755268200-new-feature.yaml
+			      checksum: {sha1}
+			"""
+		);
 	}
 
 	[Test]
@@ -231,10 +263,30 @@ public class BundleAmendTests : ChangelogTestBase
 		amendFiles.Should().HaveCount(1);
 
 		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
-		amendContent.Should().Contain("exclude-entries:");
-		amendContent.Should().Contain("name: 1755268130-existing.yaml");
-		amendContent.Should().Contain("entries:");
-		amendContent.Should().Contain("name: 1755268200-new-feature.yaml");
+		amendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268200-new-feature.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: New amended feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    description: A new enhancement added via amend
+			    prs:
+			      - "200"
+			exclude-entries:
+			  - file:
+			      name: 1755268130-existing.yaml
+			      checksum: {sha1}
+			"""
+		);
 	}
 
 	/// <summary>
@@ -306,21 +358,29 @@ public class BundleAmendTests : ChangelogTestBase
 		amendFiles.Should().HaveCount(1);
 
 		var amendContent = await FileSystem.File.ReadAllTextAsync(amendFiles[0], ct);
-		var amend = ReleaseNotesSerialization.DeserializeBundle(amendContent);
-
-		// The amend must be self-contained: complete parent products, including target, repo, and owner.
-		amend.Products.Should().ContainSingle();
-		amend
-			.Products[0]
-			.Should()
-			.BeEquivalentTo(new BundledProduct
-			{
-				ProductId = "elasticsearch",
-				Target = "9.3.0",
-				Lifecycle = Lifecycle.Ga,
-				Repo = "elasticsearch",
-				Owner = "elastic"
-			});
+		amendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: 1755268200-new-feature.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: New amended feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    description: A new enhancement added via amend
+			    prs:
+			      - "200"
+			"""
+		);
 	}
 
 	[Test]
@@ -388,8 +448,14 @@ public class BundleAmendTests : ChangelogTestBase
 		amendCollector.Errors.Should().Be(0);
 
 		var yaml = await FileSystem.File.ReadAllTextAsync(ChangelogBundleAmendService.DiscoverAmendFiles(FileSystem, bundlePath)[0], ct);
-		yaml.Should().Contain("description:");
-		ReleaseNotesSerialization.DeserializeBundle(yaml).Description.Should().BeEmpty();
+		yaml.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			description: ''
+			"""
+		);
 	}
 
 	[Test]

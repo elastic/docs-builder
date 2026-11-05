@@ -53,6 +53,10 @@ public class DocumentHashTests
 		Hash(Operation(Property("knn"))).Should().NotBe(Hash(Operation(Property("knn"), Property("size"))));
 
 	[Test]
+	public void DocumentHash_HiddenFlips_ChangesTheHash() =>
+		Hash(Operation(Property("knn")) with { Hidden = true }).Should().NotBe(Hash(Operation(Property("knn"))));
+
+	[Test]
 	public void DocumentHash_ParentChanges_ChangesTheHash() =>
 		Hash(Operation(Property("knn.field") with { Parent = "knn" })).Should().NotBe(Hash(Operation(Property("knn.field"))));
 }

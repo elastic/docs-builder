@@ -6,6 +6,8 @@ using System.IO;
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -61,17 +63,7 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var breakingChangesFile = FileSystem.Path.Join(outputDir, "9.2.0", "breaking-changes.md");
-		FileSystem.File.Exists(breakingChangesFile).Should().BeTrue();
-
-		var content = await FileSystem.File.ReadAllTextAsync(breakingChangesFile, TestContext.Current!.Execution.CancellationToken);
-
-		// Verify dropdown format
-		content.Should().Contain("::::{dropdown} Breaking API change");
-		content.Should().Contain("API has been changed to improve performance");
-		content.Should().Contain("**Impact**<br>Existing API calls will fail");
-		content.Should().Contain("**Action**<br>Update your code to use the new API endpoints");
-		content.Should().Contain("::::");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -126,23 +118,7 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.2.0", "deprecations.md");
-		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
-
-		var content = await FileSystem.File.ReadAllTextAsync(deprecationsFile, TestContext.Current!.Execution.CancellationToken);
-
-		// Verify flattened format
-		content.Should().Contain("* Deprecated old API");
-		content.Should().Contain("The old API is deprecated");
-		content.Should().Contain("  For more information, check"); // Indented for list continuation
-		content.Should().Contain("#456");
-		content.Should().Contain("#789");
-		content.Should().Contain("  **Impact:** API will be removed in future version"); // Indented for list continuation
-		content.Should().Contain("  **Action:** Migrate to the new API"); // Indented for list continuation
-
-		// Should NOT contain dropdown syntax
-		content.Should().NotContain("::::{dropdown}");
-		content.Should().NotContain("::::");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -195,22 +171,33 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var knownIssuesFile = FileSystem.Path.Join(outputDir, "9.2.0", "known-issues.md");
-		FileSystem.File.Exists(knownIssuesFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			_There are no new features, enhancements, or fixes associated with this release._
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
 
-		var content = await FileSystem.File.ReadAllTextAsync(knownIssuesFile, TestContext.Current!.Execution.CancellationToken);
+			* Known issue with search.
+			  Search results are incomplete under certain conditions
 
-		// Verify flattened format (default behavior)
-		content.Should().Contain("* Known issue with search");
-		content.Should().Contain("Search results are incomplete under certain conditions");
-		content.Should().Contain("  For more information, check"); // Indented for list continuation
-		content.Should().Contain("#999");
-		content.Should().Contain("  **Impact:** Some search results may be missing"); // Indented for list continuation
-		content.Should().Contain("  **Action:** Use the workaround provided in the documentation"); // Indented for list continuation
+			  For more information, check [#999](https://github.com/elastic/elastic/pull/999).
 
-		// Should NOT contain dropdown syntax
-		content.Should().NotContain("::::{dropdown}");
-		content.Should().NotContain("::::");
+			  **Impact:** Some search results may be missing
+
+			  **Action:** Use the workaround provided in the documentation
+			"""
+			);
 	}
 
 	[Test]
@@ -269,30 +256,10 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 			result.Should().BeTrue();
 			Collector.Errors.Should().Be(0);
 
-			var highlightsFile = FileSystem.Path.Join(subOutputDir, "9.2.0", "highlights.md");
-			FileSystem.File.Exists(highlightsFile).Should().BeTrue();
-
-			var content = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
-
-			if (testCase.ExpectDropdown)
-			{
-				// Verify dropdown format
-				content.Should().Contain("::::{dropdown} Amazing new feature");
-				content.Should().Contain("This feature revolutionizes how you work with data");
-				content.Should().Contain("::::");
-			}
-			else
-			{
-				// Verify flattened format
-				content.Should().Contain("* Amazing new feature");
-				content.Should().Contain("This feature revolutionizes how you work with data");
-				content.Should().Contain("  For more information, check"); // Indented for list continuation
-				content.Should().Contain("#555");
-
-				// Should NOT contain dropdown syntax
-				content.Should().NotContain("::::{dropdown}");
-				content.Should().NotContain("::::");
-			}
+			MockFileSystemDump
+				.ToText(FileSystem, subOutputDir)
+				.Should()
+				.MatchSnapshot(name: testCase.ExpectDropdown ? "dropdown" : "flattened");
 		}
 	}
 
@@ -354,21 +321,8 @@ public class DropdownRenderTests() : RenderChangelogTestBase()
 			result.Should().BeTrue();
 			Collector.Errors.Should().Be(0);
 
-			// Find the AsciiDoc file (path structure differs from Markdown)
-			var asciidocFiles = FileSystem.Directory.GetFiles(subOutputDir, "*.asciidoc", SearchOption.AllDirectories);
-			asciidocFiles.Should().HaveCount(1, "should create exactly one AsciiDoc file");
-
-			var asciidocFile = asciidocFiles[0];
-			var content = await FileSystem.File.ReadAllTextAsync(asciidocFile, TestContext.Current!.Execution.CancellationToken);
-
-			// AsciiDoc should always use bullet format regardless of dropdowns flag
-			content.Should().Contain("* Breaking API change");
-			content.Should().Contain("*Impact:* Existing API calls will fail");
-			content.Should().Contain("*Action:* Update your code");
-
-			// Should never contain MyST dropdown syntax
-			content.Should().NotContain("::::{dropdown}");
-			content.Should().NotContain("::::");
+			// AsciiDoc always uses the bullet format regardless of the dropdowns flag, and never MyST dropdown syntax
+			MockFileSystemDump.ToText(FileSystem, subOutputDir).Should().MatchSnapshot(name: dropdowns ? "dropdowns" : "flattened");
 		}
 	}
 }

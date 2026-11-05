@@ -13,6 +13,19 @@ namespace Elastic.Documentation.Search.Contract;
 /// </summary>
 public record ApiOperationMetadata
 {
+	/// <summary>Key the explorer publishes the API under, e.g. <c>elasticsearch</c> in <c>/docs/api/doc/elasticsearch</c>.</summary>
+	[Keyword]
+	[JsonPropertyName("key")]
+	public string Key { get; init; } = "";
+
+	/// <summary>
+	/// Every version tree whose page shows this content, the one <see cref="SearchDocumentBase.Path"/> points into first.
+	/// A document whose trees leave out the API's default tree is <see cref="SearchDocumentBase.Hidden"/>.
+	/// </summary>
+	[Object]
+	[JsonPropertyName("trees")]
+	public ApiTreeEntry[] Trees { get; init; } = [];
+
 	[Nested]
 	[JsonPropertyName("properties")]
 	public ApiPropertyEntry[] Properties { get; init; } = [];

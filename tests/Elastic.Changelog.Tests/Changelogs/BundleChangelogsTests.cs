@@ -5,6 +5,8 @@
 using System.Collections.Frozen;
 using System.Text;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 using Elastic.Changelog.Bundling;
 using Elastic.Changelog.Utilities;
 using Elastic.Documentation.Configuration;
@@ -83,14 +85,41 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("products:");
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("product: kibana");
-		bundleContent.Should().Contain("entries:");
-		bundleContent.Should().Contain("file:");
-		bundleContent.Should().Contain("name: 1755268130-first-changelog.yaml");
-		bundleContent.Should().Contain("name: 1755268140-second-changelog.yaml");
-		bundleContent.Should().Contain("checksum:");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-first-changelog.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First changelog
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-second-changelog.yaml
+			      checksum: {sha1}
+			    type: enhancement
+			    title: Second changelog
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -143,10 +172,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -210,9 +257,37 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-first-pr.yaml");
-		bundleContent.Should().Contain("name: 1755268140-second-pr.yaml");
-		bundleContent.Should().NotContain("name: 1755268150-third-pr.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-first-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-second-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Second PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -242,7 +317,24 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 12345.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 12345.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Filename identity
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			"""
+		);
 	}
 
 	[Test]
@@ -274,7 +366,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1735-foo.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1735-foo.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Timestamp identity
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/12345"
+			"""
+		);
 	}
 
 	[Test]
@@ -337,9 +448,37 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-first-issue.yaml");
-		bundleContent.Should().Contain("name: 1755268140-second-issue.yaml");
-		bundleContent.Should().NotContain("name: 1755268150-third-issue.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-first-issue.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First issue
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    issues:
+			      - "https://github.com/elastic/elasticsearch/issues/100"
+			  - file:
+			      name: 1755268140-second-issue.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Second issue
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    issues:
+			      - "https://github.com/elastic/elasticsearch/issues/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -373,7 +512,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-legacy-pr.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-legacy-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Legacy PR changelog
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/999"
+			"""
+		);
 	}
 
 	[Test]
@@ -425,11 +583,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 			);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Warning && d.Message.Contains(
-					"No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300"
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning  No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/200
+			warning  No changelog file found for PR: https://github.com/elastic/elasticsearch/pull/300
+			"""
 			);
 	}
 
@@ -492,8 +652,37 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-first-pr.yaml");
-		bundleContent.Should().Contain("name: 1755268140-second-pr.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-first-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-second-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Second PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -533,7 +722,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-pr-number.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    repo: elasticsearch
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-pr-number.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: PR with number
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -571,7 +781,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-short-format.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-short-format.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: PR with short format
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/133609"
+			"""
+		);
 	}
 
 	[Test]
@@ -591,11 +820,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector
-			.Diagnostics
-			.Should()
-			.Contain(d => d.Message.Contains("No YAML files found") || d.Message.Contains("No changelog entries matched"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/Guid_1 No YAML files found in directory");
 	}
 
 	[Test]
@@ -616,8 +841,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Directory does not exist"));
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/Guid_1/nonexistent Directory does not exist");
 	}
 
 	[Test]
@@ -666,8 +890,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("At least one filter option must be specified"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  At least one filter option must be specified: --all, --input-products, --prs, --issues, or --files"
+			);
 	}
 
 	[Test]
@@ -688,8 +917,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("Multiple filter options cannot be specified together"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error  Multiple filter options cannot be specified together. You specified: --all, --input-products. Please use only one filter option: --all, --input-products, --prs, --issues, or --files"
+			);
 	}
 
 	[Test]
@@ -744,11 +978,39 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("target: 2025-12-02");
-		bundleContent.Should().Contain("target: 2025-12-06");
-		bundleContent.Should().Contain("name: 1755268130-cloud-feature1.yaml");
-		bundleContent.Should().Contain("name: 1755268140-cloud-feature2.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			  - product: cloud-serverless
+			    target: 2025-12-06
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-cloud-feature1.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Cloud serverless feature 1
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-12-02
+			    prs:
+			      - "https://github.com/elastic/cloud-serverless/pull/100"
+			  - file:
+			      name: 1755268140-cloud-feature2.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Cloud serverless feature 2
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-12-06
+			    prs:
+			      - "https://github.com/elastic/cloud-serverless/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -801,8 +1063,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-kibana-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana feature
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -855,8 +1152,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.3.0
+			    lifecycle: beta
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-kibana-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana feature
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.3.0
+			        lifecycle: beta
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -923,9 +1255,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-es-9.3.0.yaml");
-		bundleContent.Should().Contain("name: 1755268140-es-9.3.1.yaml");
-		bundleContent.Should().NotContain("name: 1755268150-es-9.2.0.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			  - product: elasticsearch
+			    target: 9.3.1
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-es-9.3.0.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch 9.3.0 feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-es-9.3.1.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch 9.3.1 feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.1
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -948,8 +1314,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		// File doesn't exist and there are no other PRs, so should return error
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("File does not exist"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/nonexistent.txt File does not exist: {repo}/Guid_1/nonexistent.txt");
 	}
 
 	[Test]
@@ -989,7 +1358,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Warnings.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-test-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/123"
+			"""
+		);
 	}
 
 	[Test]
@@ -1033,7 +1421,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		fileWarning.Should().NotBeNull("Expected a warning about the non-existent file being skipped");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-test-pr.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-test-pr.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/123"
+			"""
+		);
 	}
 
 	[Test]
@@ -1090,21 +1497,41 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Output products should override changelog products at the bundle level
-		var topLevel = bundleContent[..bundleContent.IndexOf("entries:", StringComparison.Ordinal)];
-		topLevel.Should().Contain("product: cloud-serverless");
-		topLevel.Should().Contain("target: 2025-12-02");
-		topLevel.Should().Contain("target: 2025-12-06");
-		// Lifecycle values should be included in products array
-		topLevel.Should().Contain("lifecycle: ga");
-		topLevel.Should().Contain("lifecycle: beta");
-		// Bundle-level products come only from --output-products
-		topLevel.Should().NotContain("product: elasticsearch");
-		topLevel.Should().NotContain("product: kibana");
-		// Entries are always inlined (with file provenance) and keep their own products
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().Contain("name: 1755268140-kibana-feature.yaml");
-		bundleContent.Should().Contain("title: Elasticsearch feature");
-		bundleContent.Should().Contain("title: Kibana feature");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			    lifecycle: ga
+			  - product: cloud-serverless
+			    target: 2025-12-06
+			    lifecycle: beta
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-kibana-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana feature
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -1170,12 +1597,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("product: kibana");
-		bundleContent.Should().Contain("target: 9.2.0");
-		// Should have 3 entries
-		var entryCount = bundleContent.Split("file:", StringSplitOptions.RemoveEmptyEntries).Length - 1;
-		entryCount.Should().Be(3);
+		bundleContent.Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -1233,11 +1655,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array (extracted from changelog entries, not filter)
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("target: 9.3.0");
-		bundleContent.Should().Contain("lifecycle: ga");
-		bundleContent.Should().Contain("lifecycle: beta");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: beta
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-ga.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch GA feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-elasticsearch-beta.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch Beta feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: beta
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -1281,11 +1735,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array from --output-products
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("target: 2025-12-02");
-		bundleContent.Should().Contain("target: 2025-12-06");
-		bundleContent.Should().Contain("lifecycle: ga");
-		bundleContent.Should().Contain("lifecycle: beta");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			    lifecycle: ga
+			  - product: cloud-serverless
+			    target: 2025-12-06
+			    lifecycle: beta
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1339,11 +1812,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify lifecycle is included in products array extracted from changelog entries
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("target: 9.3.0");
-		bundleContent.Should().Contain("lifecycle: ga");
-		bundleContent.Should().Contain("lifecycle: beta");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: beta
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-ga.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch GA feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			  - file:
+			      name: 1755268140-elasticsearch-beta.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch Beta feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: beta
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -1385,12 +1890,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that the actual lifecycle value "ga" from the changelog is included in products array,
 		// not the wildcard "*" from the filter
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("lifecycle: ga");
-		// Verify wildcard "*" is not included in the products array
-		bundleContent.Should().NotContain("lifecycle: *");
-		bundleContent.Should().NotContain("lifecycle: '*\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: A new feature was added
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1455,16 +1976,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Assert
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
-		Collector.Warnings.Should().BeGreaterThan(0);
 		// Verify warning message includes lifecycle values
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("Product 'elasticsearch' has multiple targets in bundle") && d.Message.Contains(
-					"9.2.0"
-				) && d.Message.Contains("9.2.0 beta") && d.Message.Contains("9.2.0 ga")
-			);
+			.MatchInlineSnapshot("warning  Product 'elasticsearch' has multiple targets in bundle: 9.2.0, 9.2.0 beta, 9.2.0 ga");
 	}
 
 	[Test]
@@ -1505,18 +2022,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("file:");
-		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
-		bundleContent.Should().Contain("checksum:");
-		bundleContent.Should().Contain("type: feature");
-		bundleContent.Should().Contain("title: Test feature");
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.2.0");
-		bundleContent.Should().Contain("prs:");
-		bundleContent.Should().Contain("https://github.com/elastic/elasticsearch/pull/100");
-		bundleContent.Should().Contain("areas:");
-		bundleContent.Should().Contain("- Search");
-		bundleContent.Should().Contain("description: This is a test feature");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-test-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    description: This is a test feature
+			    areas:
+			      - Search
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1566,43 +2094,34 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Verify special characters are preserved correctly (not corrupted)
 		// The original issue reported "&o0" and "*o0" corruption, so we verify the characters are correct
-		bundleContent.Should().Contain("&"); // Ampersand should be preserved
-		bundleContent.Should().Contain("Feature with special characters & symbols"); // Ampersand in title
-		bundleContent.Should().Contain("Ampersand: & symbol"); // Ampersand in description
-
-		// Check that asterisk appears correctly (not corrupted to "*o0")
-		bundleContent.Should().Contain("*"); // Asterisk should be preserved
-		bundleContent.Should().Contain("Asterisk: * symbol"); // Asterisk in description
-
-		// Verify the ampersand and asterisk are not corrupted
-		// The corruption pattern would be "&o0" or "*o0" appearing where we expect "&" or "*"
-		// We check that the title contains the correct pattern, not the corrupted one
-		var titleLine = bundleContent.Split('\n').FirstOrDefault(l => l.Contains("title:"));
-		titleLine.Should().NotBeNull();
-		titleLine.Should().Contain("&");
-		titleLine.Should().NotContain("&o0"); // Should not be corrupted in title
-
-		// Verify no corruption patterns exist (these would indicate encoding issues)
-		bundleContent.Should().NotContain("&o0"); // Should not contain corrupted ampersand
-		bundleContent.Should().NotContain("*o0"); // Should not contain corrupted asterisk
-
-		// Verify other special characters are preserved
-		bundleContent.Should().Contain("<");
-		bundleContent.Should().Contain(">");
-		bundleContent.Should().Contain("\"");
-
-		// Verify Unicode characters are preserved
-		bundleContent.Should().Contain("©");
-		bundleContent.Should().Contain("®");
-		bundleContent.Should().Contain("™");
-		bundleContent.Should().Contain("€");
-
-		// Verify the content structure is correct
-		bundleContent.Should().Contain("title: \"Feature with special characters & symbols\"");
-		bundleContent.Should().Contain("type: feature");
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("target: 9.3.0");
-		bundleContent.Should().Contain("lifecycle: ga");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-special-chars.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: "Feature with special characters & symbols"
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			        lifecycle: ga
+			    description: |-
+			      This feature includes special characters:
+			      - Ampersand: & symbol
+			      - Asterisk: * symbol
+			      - Other special chars: < > " ' / \
+			      - Unicode: © ® ™ € £ ¥
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1640,10 +2159,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.File.Exists(outputPath).Should().BeTrue("Output file should be created");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("products:");
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("entries:");
-		bundleContent.Should().Contain("name: 1755268130-test-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-test-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1675,8 +2210,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/1755268130-test-feature.yaml Changelog file is missing required field: title");
 	}
 
 	[Test]
@@ -1708,8 +2246,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: type"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/1755268130-test-feature.yaml Changelog file is missing required field: type");
 	}
 
 	[Test]
@@ -1738,8 +2279,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/Guid_1/1755268130-test-feature.yaml Changelog file is missing required field: products");
 	}
 
 	[Test]
@@ -1778,8 +2322,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert: both problems are reported in a single run instead of aborting on the first.
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: title"));
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			error {repo}/Guid_1/1755268130-missing-title.yaml Changelog file is missing required field: title
+			error {repo}/Guid_1/1755268140-missing-products.yaml Changelog file is missing required field: products
+			"""
+			);
 	}
 
 	[Test]
@@ -1811,8 +2363,13 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("product entry missing required field: product"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/1755268130-test-feature.yaml Changelog file has product entry missing required field: product"
+			);
 	}
 
 	[Test]
@@ -1853,9 +2410,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is included in the bundle output
-		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- \"feature:hidden-api\"");
-		bundleContent.Should().Contain("- \"feature:another-hidden\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			hide-features:
+			  - "feature:hidden-api"
+			  - "feature:another-hidden"
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature with hidden flag
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    feature-id: "feature:hidden-api"
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1895,7 +2473,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field is NOT written when not specified
-		bundleContent.Should().NotContain("hide-features:");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Regular feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1945,9 +2542,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that hide-features field contains feature IDs from the file
-		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- \"feature:from-file\"");
-		bundleContent.Should().Contain("- \"feature:another\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			hide-features:
+			  - "feature:from-file"
+			  - "feature:another"
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature with hidden flag
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    feature-id: "feature:from-file"
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -1987,8 +2605,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that repo field is included in the bundle output
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("repo: cloud");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			    repo: cloud
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-serverless-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-12-02
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2030,8 +2667,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that the resolved authoring repo is written when not explicitly specified
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("repo: docs-builder");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: docs-builder
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-es-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2088,7 +2744,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("repo: cloud", "bundle.repo config should be applied when --repo is not specified");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			    repo: cloud
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-serverless-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-06-01
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2144,8 +2823,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("repo: cloud", "explicit --repo should override bundle.repo config");
-		bundleContent.Should().NotContain("repo: wrong-repo");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			    repo: cloud
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-serverless-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-06-01
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2190,10 +2890,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
 		// Verify that repo field is included for all products
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("product: elasticsearch-serverless");
-		// The repo field should appear for each product (or at least once)
-		bundleContent.Should().Contain("repo: cloud");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-12-02
+			    lifecycle: ga
+			    repo: cloud
+			  - product: elasticsearch-serverless
+			    target: 2025-12-02
+			    lifecycle: ga
+			    repo: cloud
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature for serverless
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2246,8 +2968,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should be created in config output_directory");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2301,8 +3041,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		FileSystem.File.Exists(expectedOutputPath).Should().BeTrue("Bundle should use config directory and output_directory");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2361,8 +3119,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(input.Output, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("product: elasticsearch");
-		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2430,9 +3206,32 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that hide-features from the profile are written to the bundle
-		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- \"feature:profile-hidden\"");
-		bundleContent.Should().Contain("- \"feature:another-profile-hidden\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			hide-features:
+			  - "feature:profile-hidden"
+			  - "feature:another-profile-hidden"
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    feature-id: "feature:profile-hidden"
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2500,8 +3299,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
 		// Verify that only the profile hide-features are present
-		bundleContent.Should().Contain("hide-features:");
-		bundleContent.Should().Contain("- \"feature:from-profile\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			hide-features:
+			  - "feature:from-profile"
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2566,8 +3387,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("- \"feature:profile-one\"");
-		bundleContent.Should().Contain("- \"feature:profile-two\"");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			hide-features:
+			  - "feature:profile-one"
+			  - "feature:profile-two"
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2623,7 +3467,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// The checksum in the bundle should be the normalized hash (comments stripped)
 		var expectedChecksum = ComputeSha1(changelogWithComments);
-		bundleContent.Should().Contain($"checksum: {expectedChecksum}");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-with-comments.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature with comments
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 
 		// Both versions of the content should produce the same checksum (comments are normalized away)
 		var checksumFromCommented = ComputeSha1(changelogWithComments);
@@ -2833,11 +3696,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// The checksum should be the normalized hash
 		var expectedChecksum = ComputeSha1(changelogWithComments);
-		amendContent.Should().Contain($"checksum: {expectedChecksum}");
-
-		// Resolved entries should include inline data
-		amendContent.Should().Contain("title: Resolved amend feature");
-		amendContent.Should().Contain("type: feature");
+		amendContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			entries:
+			  - file:
+			      name: 1755268140-resolved-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Resolved amend feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -2904,7 +3781,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// output_products overrides: the products array in the bundle output should have lifecycle: ga
 		// even though the matched changelog has lifecycle: preview
-		bundleContent.Should().Contain("lifecycle: ga", "output_products should write lifecycle: ga to the bundle products array");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: preview
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -2953,15 +3851,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("at most three space-separated fields", StringComparison.Ordinal) && d.Message.Contains(
-					"elasticsearch 9.2.0 ga extra-token",
-					StringComparison.Ordinal
-				)
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml bundle.profiles.es-release.output_products is deprecated. Use 'product: <id>' instead.
+			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
+			error  Profile 'es-release': bundle.output_products could not be parsed: Each product entry must have at most three space-separated fields (product, target, lifecycle). Too many values in segment: 'elasticsearch 9.2.0 ga extra-token'.
+			"""
 			);
 	}
 
@@ -3010,15 +3909,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains("Profile 'es-release':", StringComparison.Ordinal) && d.Message.Contains(
-					"at most three space-separated fields",
-					StringComparison.Ordinal
-				) && d.Message.Contains("elasticsearch 9.2.0 ga extra bad", StringComparison.Ordinal)
+			.MatchInlineSnapshot(
+				"error  Profile 'es-release': Each product entry must have at most three space-separated fields (product, target, lifecycle). Too many values in segment: 'elasticsearch 9.2.0 ga extra bad'."
 			);
 	}
 
@@ -3086,9 +3982,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("target: 2026-07-21");
-		bundleContent.Should().Contain("lifecycle: ga", "ISO date version args should derive ga lifecycle, not preview");
-		bundleContent.Should().NotContain("lifecycle: preview");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-07-21
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-serverless-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2026-07-21
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3155,8 +4070,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("repo: cloud", "Profile repo should be written to bundle product entries");
-		bundleContent.Should().Contain("owner: elastic", "Profile owner should be written to bundle product entries");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2025-06-01
+			    lifecycle: ga
+			    repo: cloud
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-serverless-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2025-06-01
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/200"
+			"""
+		);
 	}
 
 	[Test]
@@ -3220,7 +4157,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("repo: elasticsearch", "bundle-level repo should be applied when profile omits repo");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3308,9 +4268,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("product: cloud-serverless");
-		bundleContent.Should().Contain("repo: elasticsearch");
-		bundleContent.Should().NotContain("repo: cloud");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    repo: elasticsearch
+			    owner: elastic
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 158340.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2026-09-08
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/158340"
+			"""
+		);
 	}
 
 	[Test]
@@ -3374,8 +4354,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("repo: elasticsearch", "profile-level repo should override bundle-level repo");
-		bundleContent.Should().NotContain("repo: wrong-repo", "bundle-level repo should be overridden by profile-level repo");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3440,8 +4441,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty("Expected an output file to be created");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("repo: docs-builder", "resolved authoring repo should be present when profile omits repo");
-		bundleContent.Should().NotContain("owner:", "No owner field should be present when profile omits owner");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: docs-builder
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3503,9 +4525,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 
-		bundleContent.Should().Contain("Release from elastic/elasticsearch");
-		bundleContent.Should().Contain("repo: elasticsearch");
-		bundleContent.Should().NotContain("owner:", "description default must not stamp owner onto YAML");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			description: Release from elastic/elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268131-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3748,8 +4791,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268130-matched.yaml");
-		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-matched.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Matched PR
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3820,8 +4883,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(expectedOutputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268130-matched.yaml");
-		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-matched.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Matched Issue
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    issues:
+			      - "https://github.com/elastic/elasticsearch/issues/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -3870,13 +4953,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when file contains bare numbers");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
-				"Error should mention fully-qualified URLs requirement"
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/prs.txt File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123) or changelog YAML paths (.yaml/.yml). Numbers and short forms are not allowed. Found: 100"
 			);
 	}
 
@@ -3930,14 +5012,11 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when file mixes PR and issue URLs");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("only pull request URLs or only issue URLs"),
-				"Error should mention homogeneous URL requirement"
-			);
+			.MatchInlineSnapshot("error {repo}/Guid_1/mixed.txt File must contain only pull request URLs or only issue URLs, not a mix.");
 	}
 
 	[Test]
@@ -4021,11 +5100,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
 		// Only the matched PR should be bundled
-		bundleContent.Should().Contain("1755268130-feb.yaml");
-		bundleContent.Should().NotContain("1755268140-other.yaml");
-		// Output products should contain the version
-		bundleContent.Should().Contain("cloud-serverless");
-		bundleContent.Should().Contain("2026-02");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-02
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feb.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless Feb feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2026-02-01
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/cloud/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -4068,13 +5163,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when first arg looks like a report");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("version string"),
-				"Error should mention that the first arg should be the version"
+			.MatchInlineSnapshot(
+				"error  When two arguments are provided, the first must be a version string and the second must be a promotion report or URL list file. '{repo}/Guid_1/report.html' looks like a report path or URL. Did you mean: serverless-release <version> {repo}/Guid_1/report.html?"
 			);
 	}
 
@@ -4113,13 +5207,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse("Should fail when profile has products pattern and a report is also provided");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("products"),
-				"Error should mention the products pattern conflict"
+			.MatchInlineSnapshot(
+				"error  Profile 'release' has a 'products' pattern configured. A promotion report, URL list file, or path list file cannot be combined with a products pattern filter."
 			);
 	}
 
@@ -4183,8 +5276,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268130-matched.yaml");
-		bundleContent.Should().NotContain("1755268140-unmatched.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-matched.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Matched PR 100
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -4236,13 +5349,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when prs file contains bare numbers");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
-				"Error should mention fully-qualified URL requirement"
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/prs.txt File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/pull/123). Numbers and short forms are not allowed. Found: 100"
 			);
 	}
 
@@ -4286,13 +5398,12 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Assert
 		result.Should().BeFalse("Should fail when issues file contains short forms");
-		Collector.Errors.Should().BeGreaterThan(0);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Severity == Severity.Error && d.Message.Contains("fully-qualified GitHub URLs"),
-				"Error should mention fully-qualified URL requirement"
+			.MatchInlineSnapshot(
+				"error {repo}/Guid_1/issues.txt File must contain fully-qualified GitHub URLs (e.g. https://github.com/owner/repo/issues/123). Numbers and short forms are not allowed. Found: elastic/elasticsearch#100"
 			);
 	}
 
@@ -4393,8 +5504,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-cloud-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 		// Verify warning was emitted for the excluded entry
 		Logged.Should().Contain(l => l.Contains("global product filter, exclude"));
 	}
@@ -4458,8 +5589,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/300"
+			"""
+		);
 		Logged.Should().Contain(l => l.Contains("global product filter, include"));
 	}
 
@@ -4522,8 +5673,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-elasticsearch-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-kibana-feature.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-elasticsearch-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/500"
+			"""
+		);
 	}
 
 	[Test]
@@ -4591,8 +5762,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268001-kibana-only.yaml");
-		bundleContent.Should().NotContain("1755268002-es-kibana.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268001-kibana-only.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana only
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -4659,8 +5850,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268012-es-sec.yaml");
-		bundleContent.Should().NotContain("1755268011-es-only.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			  - product: security
+			    target: 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268012-es-sec.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: ES and security
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			      - product: security
+			        versions:
+			          - 9.2.0
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/500"
+			"""
+		);
 	}
 
 	[Test]
@@ -4775,8 +5989,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-enhancement.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature entry
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
 
@@ -4843,8 +6077,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("name: 1755268130-search-feature.yaml");
-		bundleContent.Should().NotContain("name: 1755268140-internal-fix.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268130-search-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Search feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    areas:
+			      - Search
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/300"
+			"""
+		);
 	}
 
 	[Test]
@@ -4928,9 +6184,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().NotContain("name: 1755268130-es-enhancement.yaml");
-		bundleContent.Should().Contain("name: 1755268140-serverless-search.yaml");
-		bundleContent.Should().NotContain("name: 1755268150-serverless-other.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268140-serverless-search.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless search feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    areas:
+			      - Search
+			    prs:
+			      - "https://github.com/elastic/cloud-serverless/pull/600"
+			"""
+		);
 	}
 
 	// ── Multi-product rule resolution: intersection + alphabetical first-match ────────────────────────
@@ -5124,13 +6401,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().NotContain(
-			"name: 1755268160-shared.yaml",
-			"kibana rule (alphabetically first) should exclude the shared entry"
-		);
-		bundleContent.Should().Contain(
-			"name: 1755268161-kibana-other.yaml",
-			"kibana entry with a different area should pass the exclude_areas rule"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			  - product: security
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268161-kibana-other.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana core feature
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.3.0
+			    areas:
+			      - Core
+			    prs:
+			      - "401"
+			"""
 		);
 		Logged.Should().Contain(l => l.Contains("type/area filter"));
 	}
@@ -5204,10 +6497,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().NotContain("name: 1755268170-kibana-doc.yaml", "kibana docs should be excluded by its per-product rule");
-		bundleContent.Should().Contain(
-			"name: 1755268180-es-doc.yaml",
-			"elasticsearch docs entry has no per-product rule and no global rule, so it is included"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268180-es-doc.yaml
+			      checksum: {sha1}
+			    type: docs
+			    title: Elasticsearch docs entry
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "600"
+			"""
 		);
 	}
 
@@ -5321,16 +6629,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
 
 		// Only security changelog should be included (it matches the bundle context "security")
-		bundleContent.Should().Contain(
-			"security-feature.yaml",
-			"security entry matches bundle context and should be included by security-specific rules"
-		);
-
-		// Disjoint changelogs are excluded entirely (not included via global fallback)
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context and should be excluded");
-		bundleContent.Should().NotContain(
-			"elasticsearch-feature.yaml",
-			"elasticsearch entry is disjoint from security context and should be excluded"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: security
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: security-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Security feature
+			    products:
+			      - product: security
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "123"
+			"""
 		);
 	}
 
@@ -5395,16 +6712,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Rule context = "security" (from output products)
 		// Disjoint entries (kibana, elasticsearch) are excluded entirely
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
-
-		// security entry (matches security context) uses context rule: exclude_products=[kibana] (security not excluded) → INCLUDED
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included (not in context exclude list)");
-
-		// Multi-product entry (security + kibana) matches security context and gets excluded by exclude_products=[kibana] → EXCLUDED
-		bundleContent.Should().NotContain(
-			"security-kibana-feature.yaml",
-			"security+kibana entry should be excluded by security context rule"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: security
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: security-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Security feature
+			    products:
+			      - product: security
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "123"
+			"""
 		);
 	}
 
@@ -5458,13 +6784,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 		// Security-only entry is included (disjoint satisfied; no per-product product filter)
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain(
-			"security-feature.yaml",
-			"security entry should be included (Mode 3 pass-through when no per-product block for context)"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: security
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: security-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Security feature
+			    products:
+			      - product: security
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "123"
+			"""
 		);
-		// Disjoint entries are excluded entirely in single-product rule resolution
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
 	}
 
 	[Test]
@@ -5514,11 +6853,26 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Rule context = "security" (from output products)
 		// Disjoint entries (kibana, elasticsearch) are excluded entirely
-		bundleContent.Should().NotContain("kibana-feature.yaml", "kibana entry is disjoint from security context");
-		bundleContent.Should().NotContain("elasticsearch-feature.yaml", "elasticsearch entry is disjoint from security context");
-
-		// security entry (matches security context) uses context rule: include_products=[security, kibana] → INCLUDED
-		bundleContent.Should().Contain("security-feature.yaml", "security entry should be included by context rule");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: security
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: security-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Security feature
+			    products:
+			      - product: security
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "123"
+			"""
+		);
 	}
 
 	private async Task CreateTestEntry(string changelogDir, string filename, string title, string product)
@@ -5595,7 +6949,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "no entries remained after rules.bundle filter");
 		var errorMessages = string.Join("; ", Collector.Diagnostics.Select(d => d.Message));
 		errorMessages.Should().Contain("No changelog entries remained after applying rules.bundle filter");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/1755268200-no-products.yaml [-bundle-global] Changelog has no products declared; product filters are skipped for this entry. See documentation for rules.bundle global mode.
+			error  No changelog entries remained after applying rules.bundle filter
+			"""
+			);
 	}
 
 	[Test]
@@ -5656,8 +7019,43 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268205-es.yaml");
-		bundleContent.Should().Contain("1755268206-kibana.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			  - product: kibana
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268205-es.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: ES only
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/1"
+			  - file:
+			      name: 1755268206-kibana.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Kibana only
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/kibana/pull/2"
+			"""
+		);
 	}
 
 	[Test]
@@ -5696,8 +7094,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("[-bundle-global]") && d.Message.Contains("no products"));
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("missing required field: products"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/1755268207-no-products-feature.yaml [-bundle-global] Changelog has no products declared; product filters are skipped for this entry. See documentation for rules.bundle global mode.
+			error {repo}/Guid_1/1755268207-no-products-feature.yaml Changelog file is missing required field: products
+			"""
+			);
 	}
 
 	[Test]
@@ -5761,8 +7167,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		Collector.Errors.Should().Be(0);
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("1755268208-es.yaml");
-		bundleContent.Should().NotContain("1755268209-kibana.yaml");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268208-es.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: ES
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/1"
+			"""
+		);
 	}
 
 	[Test]
@@ -5890,7 +7316,17 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// When all entries are filtered out, the system reports this as an error
 		Collector.Errors.Should().Be(1, "system reports error when no entries remain after filtering");
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("No changelog entries remained after applying rules.bundle filter"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning {repo}/Guid_1/changelog.yml Configuration pattern 'match_products: any' with 'include_products' in per-product rule 'security' provides no selective filtering. Consider 'match_products: all' for strict filtering or 'exclude_products' for exclusion-based filtering. Refer to https://github.com/elastic/docs-builder/blob/main/docs/contribute/configure-changelogs-ref.md
+			hint  Applied rules - kibana: 1 entries
+			error  No changelog entries remained after applying rules.bundle filter
+			"""
+			);
 
 		// Should be excluded by kibana product rule (alphabetical first-match)
 		Logged.Should().Contain(l => l.Contains("per-product filter, context-exclude") && l.Contains("multi-product"));
@@ -6196,9 +7632,25 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0, "no errors expected when entry is included");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain(
-			"1755268204-partial-rule.yaml",
-			"entry should be included - per-product rule ignores global type exclusions"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: kibana
+			    target: 9.3.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268204-partial-rule.yaml
+			      checksum: {sha1}
+			    type: docs
+			    title: Docs entry with partial per-product rule
+			    products:
+			      - product: kibana
+			        versions:
+			          - 9.3.0
+			    prs:
+			      - "504"
+			"""
 		);
 	}
 
@@ -6224,11 +7676,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
-				)
+			.MatchInlineSnapshot(
+				"error  When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
 			);
 	}
 
@@ -6259,9 +7710,30 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0, "no errors expected when validation passes");
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain(
-			"Release includes 9.2.0 with ga features from elastic/elasticsearch",
-			"placeholders should be substituted correctly"
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			description: Release includes 9.2.0 with ga features from elastic/elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: changelog1.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First changelog
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
 		);
 	}
 
@@ -6310,9 +7782,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("repo: elasticsearch");
-		bundleContent.Should().Contain("Release from elastic/elasticsearch");
-		bundleContent.Should().NotContain("elastic/cloud-serverless");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			description: Release from elastic/elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 158340.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Serverless feature
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2026-09-08
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/158340"
+			"""
+		);
 	}
 
 	[Test]
@@ -6359,9 +7853,29 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("repo: elasticsearch");
-		bundleContent.Should().Contain("158340");
-		bundleContent.Should().NotContain("# PRIVATE:");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: cloud-serverless
+			    target: 2026-09-08
+			    lifecycle: ga
+			    repo: elasticsearch
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 158340.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Feature with bare PR
+			    products:
+			      - product: cloud-serverless
+			        versions:
+			          - 2026-09-08
+			        lifecycle: ga
+			    prs:
+			      - "158340"
+			"""
+		);
 	}
 
 	[Test]
@@ -6386,11 +7900,10 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(1, "should have exactly one validation error");
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(
-				d => d.Message.Contains(
-					"When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
-				)
+			.MatchInlineSnapshot(
+				"error  When using placeholders in bundle description in option-based mode, --output-products must be explicitly specified to ensure predictable substitution values."
 			);
 	}
 
@@ -6454,7 +7967,31 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var outputFiles = FileSystem.Directory.GetFiles(outputDir, "*.yaml", System.IO.SearchOption.AllDirectories);
 		outputFiles.Should().NotBeEmpty();
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputFiles[0], TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("CLI intro for 9.2.0");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			    repo: elasticsearch
+			    owner: elastic
+			description: CLI intro for 9.2.0
+			release-date: {today}
+			entries:
+			  - file:
+			      name: 1755268999-feature.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Elasticsearch feature
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -6487,8 +8024,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
+			error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml.
+			"""
+			);
 	}
 
 	[Test]
@@ -6523,8 +8068,16 @@ public class BundleChangelogsTests : ChangelogTestBase
 		var result = await ServiceWithConfig.BundleChangelogs(Collector, input, TestContext.Current!.Execution.CancellationToken);
 
 		result.Should().BeFalse();
-		Collector.Errors.Should().BeGreaterThan(0);
-		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("--description"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			warning  Could not resolve a repository name for the bundle file (set bundle.repo, pass --repo, or run from a git checkout with a github.com origin). Using '{product}-{version}.yaml'; two repositories publishing the same product and version may overwrite each other.
+			error  When using a profile, --description and --description-file are not allowed if bundle.description or the profile description is set. Remove the CLI description, or remove the description from changelog.yml.
+			"""
+			);
 	}
 
 	[Test]
@@ -6559,7 +8112,27 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().NotContain("release-date:", "release date should be suppressed when bundle.release_dates is false");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			entries:
+			  - file:
+			      name: changelog1.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First changelog
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -6594,7 +8167,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 		Collector.Errors.Should().Be(0);
 
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("release-date:", "release date should be auto-populated when bundle.release_dates is true");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: changelog1.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: First changelog
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/100"
+			"""
+		);
 	}
 
 	[Test]
@@ -6646,8 +8240,28 @@ public class BundleChangelogsTests : ChangelogTestBase
 
 		// Verify content refs (bundle uses file refs + checksum unless resolve inlines entries)
 		var bundleContent = await FileSystem.File.ReadAllTextAsync(outputPath, TestContext.Current!.Execution.CancellationToken);
-		bundleContent.Should().Contain("changelog-with-bom.yaml");
-		bundleContent.Should().Contain("entries:");
+		bundleContent.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.2.0
+			    lifecycle: ga
+			release-date: {today}
+			entries:
+			  - file:
+			      name: changelog-with-bom.yaml
+			      checksum: {sha1}
+			    type: feature
+			    title: Test changelog with BOM
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.2.0
+			        lifecycle: ga
+			    prs:
+			      - "https://github.com/elastic/elasticsearch/pull/123"
+			"""
+		);
 	}
 
 	private void CreateSampleChangelogs()

@@ -129,6 +129,8 @@
     <PackageVersion Include="Nullean.Snapshots" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.AwesomeAssertions" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.Html" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http" Version="0.4.0" />
+    <PackageVersion Include="Nullean.Snapshots.Http.Assertions" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.Json" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.Yaml" Version="0.4.0" />
     <PackageVersion Include="Nullean.Snapshots.TUnit" Version="0.4.0" />

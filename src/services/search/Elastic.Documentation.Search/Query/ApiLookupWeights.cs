@@ -44,4 +44,10 @@ public static class ApiLookupWeights
 	public const float ListsChildren = 0.5f;
 	public const float Specificity = 0.5f;
 	public const float NotDeprecated = 0.2f;
+
+	/// <summary>
+	/// Lifts the hits of the API the reader is on, which breaks ties between identical operations of sibling APIs. It sits
+	/// below <see cref="WholeTitle"/> and <see cref="EndpointKey"/>, so a better match from another API still wins.
+	/// </summary>
+	public const float SameApi = 0.5f;
 }

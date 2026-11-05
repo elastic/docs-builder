@@ -8,6 +8,7 @@ using Elastic.Changelog.GitHub;
 using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using FakeItEasy;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Create;
 
@@ -73,8 +74,21 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain("description: Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: Adds support for new aggregation types
+			"""
+			);
 	}
 
 	[Test]
@@ -139,9 +153,22 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
 		// Commas trigger SharpYaml's more conservative plain-scalar quoting rules.
-		yamlContent.Should().Contain($"description: \"{longReleaseNote}\"");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: "Adds support for new aggregation types including date histogram, range aggregations, and nested aggregations with improved performance"
+			"""
+			);
 	}
 
 	[Test]
@@ -207,10 +234,24 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain("description:");
-		yamlContent.Should().Contain("Adds support for new aggregation types");
-		yamlContent.Should().Contain("date histogram");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: |-
+			  Adds support for new aggregation types
+			  This includes date histogram and range aggregations
+			  with improved performance
+			"""
+			);
 	}
 
 	[Test]
@@ -273,14 +314,20 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		// Description should not be set when no release note is found
-		if (yamlContent.Contains("description:"))
-		{
-			// If description field exists, it should be empty or commented out
-			var descriptionLine = yamlContent.Split('\n').FirstOrDefault(l => l.Contains("description:"));
-			descriptionLine.Should().MatchRegex(@"description:\s*(#|$)");
-		}
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			"""
+			);
 	}
 
 	[Test]
@@ -344,8 +391,21 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Custom title");
-		yamlContent.Should().Contain("description: Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Custom title
+			description: Adds support for new aggregation types
+			"""
+			);
 	}
 
 	[Test]
@@ -411,8 +471,21 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("description: Custom description");
-		yamlContent.Should().NotContain(longReleaseNote);
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: Custom description
+			"""
+			);
 	}
 
 	[Test]
@@ -478,8 +551,20 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().NotContain("Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			"""
+			);
 	}
 
 	[Test]
@@ -548,8 +633,23 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain("Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: Adds support for new aggregation types
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -619,8 +719,22 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().NotContain("Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -704,13 +818,29 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(output, "*.yaml");
 		files.Should().HaveCount(2);
 
-		foreach (var file in files)
-		{
-			var yamlContent = await FileSystem.File.ReadAllTextAsync(file, TestContext.Current!.Execution.CancellationToken);
-			yamlContent.Should().NotContain("Leaked description");
-			yamlContent.Should().NotContain("First extracted note");
-			yamlContent.Should().NotContain("Second extracted note");
-		}
+		ChangelogEntryYaml
+			.DumpEntries(FileSystem, output)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 100.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/100"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: First PR title
+			=== 200.yaml ===
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/200"
+			type: bug-fix
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Second PR title
+			"""
+			);
 	}
 
 	[Test]
@@ -782,8 +912,22 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().NotContain("Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -852,8 +996,23 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("title: Implement new aggregation API");
-		yamlContent.Should().Contain("Adds support for new aggregation types");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: Adds support for new aggregation types
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -921,8 +1080,23 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		files.Should().HaveCount(1);
 
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("description: My explicit description");
-		yamlContent.Should().NotContain("CI extracted note");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: feature
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Implement new aggregation API
+			description: My explicit description
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -987,9 +1161,22 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().NotContain("Leaked impact");
-		yamlContent.Should().NotContain("Leaked action");
-		yamlContent.Should().NotContain("PRBody");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: breaking-change
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Remove a parameter
+			impact: ''
+			action: ''
+			"""
+			);
 	}
 
 	[Test]
@@ -1051,9 +1238,22 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("Entry impact");
-		yamlContent.Should().Contain("Entry action");
-		yamlContent.Should().NotContain("Scraped impact");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: breaking-change
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Remove a parameter
+			impact: Entry impact
+			action: Entry action
+			"""
+			);
 	}
 
 	[Test]
@@ -1107,7 +1307,21 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 		var files = FileSystem.Directory.GetFiles(input.Output, "*.yaml");
 		files.Should().HaveCount(1);
 		var yamlContent = await FileSystem.File.ReadAllTextAsync(files[0], TestContext.Current!.Execution.CancellationToken);
-		yamlContent.Should().Contain("PRBody impact.");
-		yamlContent.Should().Contain("PRBody action.");
+		yamlContent
+			.WithoutSchemaComments()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			prs:
+			  - "https://github.com/elastic/elasticsearch/pull/12345"
+			type: breaking-change
+			products:
+			  - product: elasticsearch
+			    lifecycle: ga
+			title: Remove a parameter
+			impact: PRBody impact.
+			action: PRBody action.
+			"""
+			);
 	}
 }

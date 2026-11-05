@@ -4,7 +4,10 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Table;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -26,13 +29,28 @@ public class TableDirectiveBasicTests() : DirectiveTest<TableDirectiveBlock>(
 	public void SetsCorrectDirectiveType() => Block!.Directive.Should().Be("table");
 
 	[Test]
-	public void RendersTableInOutput()
-	{
-		Html.Should().Contain("table-wrapper");
-		Html.Should().Contain("<table");
-		Html.Should().Contain("head a");
-		Html.Should().Contain("head b");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -57,13 +75,7 @@ public class TableDirectiveWithWidthsTests() : DirectiveTest<TableDirectiveBlock
 	}
 
 	[Test]
-	public void RendersColgroupWithWidths()
-	{
-		Html.Should().Contain("colgroup");
-		Html.Should().Contain("table-layout:fixed");
-		Html.Should().Contain("width:33.33%");
-		Html.Should().Contain("width:66.67%");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -88,7 +100,7 @@ public class TableDirectiveDescriptionPresetTests() : DirectiveTest<TableDirecti
 	}
 
 	[Test]
-	public void RendersColgroup() => Html.Should().Contain("colgroup");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -108,7 +120,30 @@ public class TableDirectiveAutoPresetTests() : DirectiveTest<TableDirectiveBlock
 	public void HasNoColumnWidths() => Block!.ColumnWidths.Should().BeEmpty();
 
 	[Test]
-	public void DoesNotInjectColgroup() => Html.Should().NotContain("colgroup");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>a</th>
+						<th>b</th>
+						<th>c</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>1</td>
+						<td>2</td>
+						<td>3</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -128,7 +163,28 @@ public class TableDirectiveMatrixTests() : DirectiveTest<TableDirectiveBlock>(
 	public void ParsesMatrixOption() => Block!.Matrix.Should().BeTrue();
 
 	[Test]
-	public void RendersMatrixClass() => Html.Should().Contain("table-wrapper table-matrix");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper table-matrix">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -143,7 +199,28 @@ public class TableDirectiveWithoutMatrixTests() : DirectiveTest<TableDirectiveBl
 )
 {
 	[Test]
-	public void DoesNotRenderMatrixClass() => Html.Should().NotContain("table-matrix");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -163,14 +240,30 @@ public class TableDirectiveFilterableTests() : DirectiveTest<TableDirectiveBlock
 	public void ParsesFilterableOption() => Block!.Filterable.Should().BeTrue();
 
 	[Test]
-	public void WrapsTableInHostElement()
-	{
-		Html.Should().Contain("<filterable-table>");
-		Html.Should().Contain("</filterable-table>");
-	}
-
-	[Test]
-	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<filterable-table>
+			<div class="table-wrapper">
+				<table>
+					<thead>
+						<tr>
+							<th>head a</th>
+							<th>head b</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>a</td>
+							<td>b</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</filterable-table>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -188,7 +281,28 @@ public class TableDirectiveWithoutFilterableTests() : DirectiveTest<TableDirecti
 	public void DoesNotParseFilterableOption() => Block!.Filterable.Should().BeFalse();
 
 	[Test]
-	public void DoesNotWrapTable() => Html.Should().NotContain("filterable-table");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -207,12 +321,7 @@ public class TableDirectiveFilterableWithMatrixAndWidthsTests() : DirectiveTest<
 )
 {
 	[Test]
-	public void ComposesWithMatrixAndWidths()
-	{
-		Html.Should().Contain("<filterable-table><div class=\"table-wrapper table-matrix\"");
-		Html.Should().Contain("colgroup");
-		Html.Should().Contain("table-layout:fixed");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -230,7 +339,11 @@ public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirect
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not match"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Column width count (3) does not match table column count (2).");
 }
 
 [InheritsTests]
@@ -248,7 +361,11 @@ public class TableDirectiveWidthsSumErrorTests() : DirectiveTest<TableDirectiveB
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("sum to 12"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Column widths must sum to 12 (Bootstrap grid). Got sum of 8.");
 }
 
 [InheritsTests]
@@ -262,7 +379,13 @@ Some text, no table.
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pipe table"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Table directive must contain a pipe table. Add a table using Markdown pipe syntax."
+			);
 }
 
 [InheritsTests]
@@ -280,7 +403,13 @@ public class TableDirectiveInvalidWidthsTests() : DirectiveTest<TableDirectiveBl
 {
 	[Test]
 	public void EmitsErrorForInvalidPreset() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid widths value 'foo'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+			);
 }
 
 [InheritsTests]
@@ -298,7 +427,13 @@ public class TableDirectiveOutOfRangeWidthsTests() : DirectiveTest<TableDirectiv
 {
 	[Test]
 	public void EmitsErrorForOutOfRangeUnit() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid widths value '0-12'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+			);
 }
 
 [InheritsTests]
@@ -320,5 +455,9 @@ public class TableDirectiveMultipleTablesTests() : DirectiveTest<TableDirectiveB
 {
 	[Test]
 	public void EmitsErrorForMultipleTables() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("exactly one pipe table"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Table directive must contain exactly one pipe table.");
 }

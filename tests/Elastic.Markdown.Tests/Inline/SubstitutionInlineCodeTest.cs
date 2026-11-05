@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -27,17 +30,27 @@ With mutations: {subs}`version {{version | M.M}}`
 )
 {
 	[Test]
-	public void TestSubstitutionInlineCode()
-	{
-		// Check that regular code blocks are not processed
-		Html.Should().Contain("<code>wget elasticsearch-{{version}}.tar.gz</code>");
-
-		// Check that {subs} inline code blocks have substitutions applied
-		Html.Should().Contain("<code>wget elasticsearch-8.15.0.tar.gz</code>");
-		Html.Should().Contain("<code>export MY_VAR=8.15.0</code>");
-		Html.Should().Contain("<code>version 8.15</code>");
-	}
+	// Check that regular code blocks are not processed
+	// Check that {subs} inline code blocks have substitutions applied
+	public void TestSubstitutionInlineCode() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<p>Regular code:
+			<code>wget elasticsearch-{{version}}.tar.gz</code>
+		</p>
+		<p>Code with substitutions:
+			<code>wget elasticsearch-8.15.0.tar.gz</code>
+		</p>
+		<p>Multiple substitutions:
+			<code>export MY_VAR=8.15.0</code>
+		</p>
+		<p>With mutations:
+			<code>version 8.15</code>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
-	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
+	public void HasNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
