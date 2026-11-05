@@ -188,7 +188,7 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		if (sections.Count == 0)
 			return null;
 
-		var hub = new SectionNavigation(sectionRef.Title) { Parent = this };
+		var hub = new SectionNavigation(sectionRef.Title) { Parent = this, IsFloatingHub = true };
 		var roots = new List<INavigationItem>(sections.Count);
 		foreach (var section in sections)
 		{
