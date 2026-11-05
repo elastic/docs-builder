@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Globalization;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+using Elastic.Documentation.Search.Contract;
 
 #pragma warning disable IDE0130 // 'Query' subfolder would shadow the ES client's Query type
 namespace Elastic.Documentation.Search;
@@ -28,6 +29,9 @@ public static class ApiLookupQueryBuilder
 
 	// Each word adds a dis_max with nested inner hits to a per-keystroke request; same bound as ApiEndpointPath's path segments.
 	private const int MaxTokens = 8;
+
+	// index.max_regex_length defaults to 1,000 characters, and a long typed route has up to 70 templates in one group.
+	private const int MaxRegexpLength = 900;
 
 	private static readonly FrozenSet<string> HttpMethods = new[] { "GET", "POST", "PUT", "DELETE", "HEAD", "PATCH" }.ToFrozenSet(
 		StringComparer.OrdinalIgnoreCase
@@ -132,33 +136,81 @@ public static class ApiLookupQueryBuilder
 		return new DisMaxQuery { Queries = options.OfType<Query>().ToList(), TieBreaker = 0 };
 	}
 
+	/// <summary>
+	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. A typed route covers
+	/// the routes under it; a bare word covers only the routes under its system route, because words such as <c>api</c> are the
+	/// first segment of every Kibana route. The bare keys and the typed route both drop the underscore that starts an
+	/// Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
+	/// </summary>
 	private static Query? KeyOption(string text, int index)
 	{
-		Query?[] endpoints =
-		[
-			SearchQueryBuilder.BuildApiEndpointQuery(text, ApiLookupWeights.EndpointKey),
-			SearchQueryBuilder.BuildBareWordEndpointQuery(text, ApiLookupWeights.EndpointKey),
-			NamespaceKeyQuery(text)
-		];
-		var queries = endpoints.OfType<Query>().ToList();
-		if (queries.Count == 0)
+		var route = ApiEndpointPath.NormalizeQuery(text).TrimEnd('/');
+		if (SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpoints) is not { } exact)
 			return null;
-		return new DisMaxQuery { Queries = queries, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
+
+		var typedRoute = text.Contains('/');
+		var bare = ApiEndpointPath.StripRouteUnderscores(route);
+		var bareExact = SearchQueryBuilder.BuildApiEndpointQuery(bare, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpointsBare);
+		var options = new Query?[]
+		{
+			exact,
+			bareExact,
+			typedRoute ? RoutesUnder(route, QueryFieldNames.ApiEndpoints) : null,
+			typedRoute && bareExact is not null ? RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare) : null
+		}.OfType<Query>().ToList();
+
+		// An index written before the bare keys exist has no api.endpoints_bare and the service deploys on its own,
+		// so a bare word keeps its underscore alias on the exact field until every index carries the bare keys.
+		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
+			options.Add(alias);
+		if (SearchQueryBuilder.EndpointName(route) is { } name && !(typedRoute && name == route))
+		{
+			if (RoutesUnder(name, QueryFieldNames.ApiEndpoints) is { } nameRoutes)
+				options.Add(nameRoutes);
+		}
+
+		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
 	}
 
 	/// <summary>
-	/// A word also names the routes under its endpoint, so <c>snapshot</c> covers <c>_snapshot/*/*/_restore</c>, just below
-	/// the endpoint itself.
+	/// The routes under every template <see cref="ApiEndpointPath.QueryCandidates"/> reads the route as, so
+	/// <c>/_security/user/alice</c> covers <c>_security/user/*/_password</c>. Like the exact lookup, a template scores by the
+	/// literal segments it keeps.
 	/// </summary>
-	private static Query? NamespaceKeyQuery(string text)
+	private static Query? RoutesUnder(string route, Field field)
 	{
-		if (SearchQueryBuilder.EndpointName(text) is not { } name)
+		var groups = ApiEndpointPath.QueryCandidates(route);
+		var total = groups[0].LiteralSegments;
+		var queries = groups.SelectMany(
+			g => RegexpBatches(g.Terms).Select(
+				pattern =>
+					(Query)new ConstantScoreQuery
+					{
+						Filter = new RegexpQuery { Field = field, Value = pattern + "/.+" },
+						Boost = ApiLookupWeights.NamespaceKey * (1 + g.LiteralSegments) / (1 + total)
+					}
+			)
+		).ToList();
+		if (queries.Count == 0)
 			return null;
-		return new ConstantScoreQuery
+		return new DisMaxQuery { Queries = queries };
+	}
+
+	// A route segment that long names nothing, and one oversized pattern would fail the whole request.
+	private static IEnumerable<string> RegexpBatches(IReadOnlyList<string> terms)
+	{
+		var batch = new List<string>();
+		foreach (var term in terms.Where(t => ApiEndpointPath.RegexpAlternation([t]).Length <= MaxRegexpLength))
 		{
-			Filter = new PrefixQuery { Field = QueryFieldNames.ApiEndpoints, Value = name + "/" },
-			Boost = ApiLookupWeights.NamespaceKey
-		};
+			if (batch.Count > 0 && ApiEndpointPath.RegexpAlternation([.. batch, term]).Length > MaxRegexpLength)
+			{
+				yield return ApiEndpointPath.RegexpAlternation(batch);
+				batch = [];
+			}
+			batch.Add(term);
+		}
+		if (batch.Count > 0)
+			yield return ApiEndpointPath.RegexpAlternation(batch);
 	}
 
 	/// <summary>A method word, such as <c>get</c>, also stays an operation, title and description word.</summary>

@@ -20,6 +20,7 @@ public static class QueryFieldNames
 	public static string NavigationDepth { get; } = $"{Doc.Fields.Navigation}.depth";
 	public static string NavigationTableOfContents { get; } = $"{Doc.Fields.Navigation}.table_of_contents";
 	public static string ApiEndpoints { get; } = $"{Doc.Fields.Api}.endpoints";
+	public static string ApiEndpointsBare { get; } = $"{Doc.Fields.Api}.endpoints_bare";
 	public static string ApiProperties { get; } = $"{Doc.Fields.Api}.properties";
 	public static string ApiWordsCompletion { get; } = $"{Doc.Fields.Api}.words.completion";
 	public static string ApiWordsCompletion2Gram { get; } = $"{Doc.Fields.Api}.words.completion._2gram";
@@ -30,7 +31,7 @@ public static class QueryFieldNames
 	public static string ApiDeprecated { get; } = $"{Doc.Fields.Api}.deprecated";
 	public static string ApiPropertiesName { get; } = $"{ApiProperties}.name";
 	public static string ApiPropertiesParent { get; } = $"{ApiProperties}.parent";
-	public static string ApiPropertiesPathMatch { get; } = $"{ApiProperties}.path.match";
+	public static string ApiPropertiesPathWords { get; } = $"{ApiProperties}.path_words";
 	public static string PathKeyword { get; } = $"{Doc.Fields.Path}.keyword";
 	public static string PathMatch { get; } = $"{Doc.Fields.Path}.match";
 	public static string TitleKeyword { get; } = $"{Doc.Fields.Title}.keyword";

@@ -31,6 +31,14 @@ public record ApiOperationMetadata
 	[JsonPropertyName("endpoints")]
 	public required string[] Endpoints { get; init; }
 
+	/// <summary>
+	/// The keys of <see cref="Endpoints"/> without the underscore starting each segment, e.g. <c>search</c> for
+	/// <c>_search</c>, so a typed <c>/search</c> finds the system route.
+	/// </summary>
+	[Keyword]
+	[JsonPropertyName("endpoints_bare")]
+	public string[] EndpointsBare { get; init; } = [];
+
 	/// <summary>HTTP method of the operation, e.g. <c>POST</c>.</summary>
 	[Keyword]
 	[JsonPropertyName("method")]

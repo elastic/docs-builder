@@ -269,6 +269,13 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("POST /_count", "operation-count");
 		yield return ("snapshot restore", "operation-snapshot-restore");
 		yield return ("search template", "operation-search-template");
+		yield return ("/_cluster health", "operation-cluster-health");
+		yield return ("/cluster health", "operation-cluster-health");
+		yield return ("/search", "operation-search");
+		yield return ("/search knn", "operation-search");
+		yield return ("/count", "operation-count");
+		yield return ("/snapshot restore", "operation-snapshot-restore");
+		yield return ("/_security role", "operation-security-put-role");
 	}
 
 	public static IEnumerable<(string, string, string, string)> ApiSearchFieldTestCases()
@@ -278,6 +285,12 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		yield return ("es|ql drop_null_columns", "operation-esql-query", "drop_null_columns", "query");
 		yield return ("search retriever", "operation-search", "retriever", "request");
 		yield return ("GET /_search knn", "operation-search", "knn", "request");
+		yield return ("rrf.min_score", "operation-search", "min_score", "request");
+		yield return ("[].retriever.standard", "operation-msearch", "standard", "request");
+		yield return ("search rrf.min_score", "operation-search", "min_score", "request");
+		// 18,419 field names start with s on the live index, more than the 50 terms a phrase prefix expands to on a plain text field.
+		yield return ("retriever.s", "operation-search", "standard", "request");
+		yield return ("search retriever.sta", "operation-search", "standard", "request");
 	}
 
 	[Test]
@@ -323,6 +336,73 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		var operations = results.Where(r => r.Url.EndsWith($"/operation/{expectedOperation}", StringComparison.Ordinal)).ToList();
 		operations.Should().NotBeEmpty($"'{query}' should find {expectedOperation}");
 		operations.Should().AllSatisfy(r => r.Properties.Should().Contain(p => p.Name == field && p.Location == location));
+	}
+
+	[Test]
+	public async Task ApiSearchTypedRouteListsTheRoutesUnderIt()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/api/fleet", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		results.Should().NotBeEmpty("'/api/fleet' should list the Fleet operations");
+		results.Should().AllSatisfy(
+			r => r
+				.Routes
+				.Should()
+				.Contain(route => route.Path.StartsWith("/api/fleet", StringComparison.Ordinal), $"{r.Url} has a Fleet route")
+		);
+	}
+
+	[Test]
+	public async Task ApiSearchTypedRouteWithAParameterValueListsItsDescendantRoutes()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "/_security/user/alice", PageNumber = 1, PageSize = 20, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var results = searchResult.Results.ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", results.Select(r => r.Url)));
+		results.Should().NotBeEmpty();
+		// Get, put and delete user share the route the value fills, so they tie and only the route is asserted.
+		results[0].Routes.Should().Contain(route => route.Path == "/_security/user/{username}", "the template the value fills ranks first");
+		results.Should().Contain(r => r.Url.EndsWith("/operation/operation-security-change-password", StringComparison.Ordinal));
+	}
+
+	[Test]
+	public async Task ApiSearchPlainWordDoesNotCoverTheRoutesUnderItsOwnName()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "api key", PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var urls = searchResult.Results.Select(r => r.Url).ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", urls));
+		// Every Kibana route starts with api/, so the word must not lift Kibana operations above the API-key ones.
+		urls
+			.Should()
+			.NotBeEmpty()
+			.And
+			.OnlyContain(u => u.Contains("api-key", StringComparison.Ordinal) && !u.Contains("/kibana", StringComparison.Ordinal));
 	}
 
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
