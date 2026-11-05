@@ -8,6 +8,10 @@ using AwesomeAssertions;
 using Elastic.Documentation.Api.PageFeedback;
 using Elastic.Documentation.Api.Tests.Fixtures;
 using FakeItEasy;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Http;
+using Nullean.Snapshots.Json;
+using Nullean.Snapshots.TUnit;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -30,10 +34,32 @@ public class PageFeedbackEndpointTests
 			SharedFactory.Value.Dispose();
 	}
 
+	// The id is replaced by its own text, so a record stored under another id than the request's fails the snapshot.
+	private static SnapshotOptions ScrubFeedbackId(Guid feedbackId) =>
+		new SnapshotOptions().Scrub(text => text.Replace(feedbackId.ToString(), "{feedback-id}", StringComparison.OrdinalIgnoreCase));
+
 	private static HttpClient CreateClient(IPageFeedbackService feedbackService)
 	{
 		FeedbackService.Current = feedbackService;
 		return SharedFactory.Value.CreateClient();
+	}
+
+	// The requests and the responses they must get are in http/page-feedback.http. The service accepts everything, so
+	// what the file shows is the endpoint's own validation and status codes.
+	[Test]
+	[HttpFiles("http")]
+	public async Task Run(SnapshotFile file)
+	{
+		var feedbackService = A.Fake<IPageFeedbackService>();
+		A.CallTo(() => feedbackService.UpsertFeedbackAsync(A<PageFeedbackRecord>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
+		A.CallTo(() => feedbackService.DeleteFeedbackAsync(A<Guid>._, A<CancellationToken>._)).Returns(Task.FromResult(true));
+		using var client = CreateClient(feedbackService);
+
+		await HttpFileTest.RunAsync(
+			file,
+			new HttpFileSnapshotOptions { Client = client },
+			TestContext.Current!.Execution.CancellationToken
+		);
 	}
 
 	[Test]
@@ -54,13 +80,23 @@ public class PageFeedbackEndpointTests
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
-		recorded.FeedbackId.Should().Be(feedbackId);
-		recorded.PageUrl.Should().Be("/docs/test-page");
-		recorded.Reaction.Should().Be(PageFeedbackReaction.ThumbsUp);
-		recorded.Reasons.Should().ContainSingle(r => r == PageFeedbackReason.Accurate);
-		recorded.ReasonSetVersion.Should().Be(2);
-		recorded.Comment.Should().Be("Useful page");
-		recorded.Euid.Should().Be("test-euid");
+		recorded.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "FeedbackId": "{feedback-id}",
+			  "PageUrl": "/docs/test-page",
+			  "PageTitle": "Test page",
+			  "Reaction": "thumbsUp",
+			  "Reasons": [
+			    "accurate"
+			  ],
+			  "ReasonSetVersion": 2,
+			  "Comment": "Useful page",
+			  "Euid": "test-euid"
+			}
+			""",
+			options: ScrubFeedbackId(feedbackId)
+		);
 	}
 
 	[Test]
@@ -81,15 +117,28 @@ public class PageFeedbackEndpointTests
 				"reaction": "thumbsDown"
 			}
 			""";
-		using var request = CreateRequest(Guid.NewGuid(), payload);
+		var feedbackId = Guid.NewGuid();
+		using var request = CreateRequest(feedbackId, payload);
 
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
-		recorded.Reasons.Should().BeNull();
-		recorded.ReasonSetVersion.Should().BeNull();
-		recorded.Comment.Should().BeNull();
+		recorded.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "FeedbackId": "{feedback-id}",
+			  "PageUrl": "/docs/test-page",
+			  "PageTitle": "Test page",
+			  "Reaction": "thumbsDown",
+			  "Reasons": null,
+			  "ReasonSetVersion": null,
+			  "Comment": null,
+			  "Euid": null
+			}
+			""",
+			options: ScrubFeedbackId(feedbackId)
+		);
 	}
 
 	[Test]
@@ -112,13 +161,31 @@ public class PageFeedbackEndpointTests
 				"reasonSetVersion": 2
 			}
 			""";
-		using var request = CreateRequest(Guid.NewGuid(), payload);
+		var feedbackId = Guid.NewGuid();
+		using var request = CreateRequest(feedbackId, payload);
 
 		using var response = await client.SendAsync(request, TestContext.Current!.Execution.CancellationToken);
 
 		response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 		recorded.Should().NotBeNull();
-		recorded.Reasons.Should().BeEquivalentTo([PageFeedbackReason.Inaccurate, PageFeedbackReason.OutOfDate]);
+		recorded.Should().MatchInlineJsonSnapshot(
+			"""
+			{
+			  "FeedbackId": "{feedback-id}",
+			  "PageUrl": "/docs/test-page",
+			  "PageTitle": "Test page",
+			  "Reaction": "thumbsDown",
+			  "Reasons": [
+			    "inaccurate",
+			    "outOfDate"
+			  ],
+			  "ReasonSetVersion": 2,
+			  "Comment": null,
+			  "Euid": null
+			}
+			""",
+			options: ScrubFeedbackId(feedbackId)
+		);
 	}
 
 	[Test]
