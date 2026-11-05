@@ -217,37 +217,7 @@ public class FootnotesConsecutiveDefinitionsTests() : InlineTest(
 )
 {
 	[Test]
-	public void GeneratesHtml() =>
-		Html.Should().MatchInlineHtmlSnapshot(
-			"""
-		<p>First<a id="fnref:1" href="#fn:1" class="footnote-ref">
-				<sup>1</sup>
-			</a>, second<a id="fnref:2" href="#fn:2" class="footnote-ref">
-				<sup>2</sup>
-			</a>, third<a id="fnref:3" href="#fn:3" class="footnote-ref">
-				<sup>3</sup>
-			</a>.</p>
-		<div class="footnotes">
-			<hr>
-			<h4>Footnotes</h4>
-			<ol>
-				<li id="fn:1">
-					<p>First footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-				<li id="fn:2">
-					<p>Second footnote.<a href="#fnref:2" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-				<li id="fn:3">
-					<p>Third footnote.<a href="#fnref:3" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-			</ol>
-		</div>
-		""",
-			DocsHtml.Body()
-		);
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 public class FootnotesInListTests() : InlineTest(
@@ -446,50 +416,7 @@ public partial class FootnotesCodeBlockInDirectiveTests() : InlineTest(
 )
 {
 	[Test]
-	public void CodeBlockRendered() =>
-		Html.Should().MatchInlineHtmlSnapshot(
-			"""
-		<div class="tabs">
-			<input class="tabs-input" checked="checked" id="tabs-item-2-0" name="tabs-set-2" type="radio" tabindex="0">
-			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2-0">Output</label>
-			<div class="tabs-content" tabindex="0">
-				<p>Here's a simple footnote<a id="fnref:1" href="#fn:1" class="footnote-ref">
-						<sup>1</sup>
-					</a>
-					and another one<a id="fnref:2" href="#fn:2" class="footnote-ref">
-						<sup>2</sup>
-					</a>.</p>
-			</div>
-			<input class="tabs-input" id="tabs-item-2-1" name="tabs-set-2" type="radio" tabindex="0">
-			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2-1">Markdown</label>
-			<div class="tabs-content" tabindex="0">
-				<div class="highlight-markdown notranslate">
-					<div class="highlight">
-						<pre>
-							<code class="language-markdown">Here's a simple footnote[^1] and another one[^2].  [^1]: This is the first footnote. [^2]: This is the second footnote.
-							</code>
-						</pre>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="footnotes">
-			<hr>
-			<h4>Footnotes</h4>
-			<ol>
-				<li id="fn:1">
-					<p>This is the first footnote.<a href="#fnref:1" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-				<li id="fn:2">
-					<p>This is the second footnote.<a href="#fnref:2" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-			</ol>
-		</div>
-		""",
-			DocsHtml.Body()
-		);
+	public void CodeBlockRendered() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void CorrectBackReferenceCount()
@@ -535,45 +462,5 @@ public class FootnotesInsideDirectiveTests() : InlineTest(
 	// Do other inline elements work?
 	// Footnote REFERENCES work inside directives
 	// Footnote DEFINITIONS are rendered at the document level
-	public void GeneratesHtml() =>
-		Html.Should().MatchInlineHtmlSnapshot(
-			"""
-		<div class="tabs">
-			<input class="tabs-input" checked="checked" id="tabs-item-2-0" name="tabs-set-2" type="radio" tabindex="0">
-			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2-0">Output</label>
-			<div class="tabs-content" tabindex="0">
-				<p>Here's a
-					<strong>bold</strong>
-					and a
-					<a href="https://example.com" target="_blank" rel="noopener noreferrer">link</a>
-					and footnote<a id="fnref:1" href="#fn:1" class="footnote-ref">
-						<sup>1</sup>
-					</a>.</p>
-			</div>
-			<input class="tabs-input" id="tabs-item-2-1" name="tabs-set-2" type="radio" tabindex="0">
-			<label class="tabs-label" data-sync-id="" data-sync-group="" for="tabs-item-2-1">Markdown</label>
-			<div class="tabs-content" tabindex="0">
-				<div class="highlight-markdown notranslate">
-					<div class="highlight">
-						<pre>
-							<code class="language-markdown">Here's footnote[^1].  [^1]: Example definition in code block.
-							</code>
-						</pre>
-					</div>
-				</div>
-			</div>
-		</div>
-		<div class="footnotes">
-			<hr>
-			<h4>Footnotes</h4>
-			<ol>
-				<li id="fn:1">
-					<p>Footnote definitions must be at the document level, not inside directives.<a href="#fnref:1" class="footnote-back-ref">↩</a>
-					</p>
-				</li>
-			</ol>
-		</div>
-		""",
-			DocsHtml.Body()
-		);
+	public void GeneratesHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
