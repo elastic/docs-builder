@@ -5,6 +5,8 @@
 using AwesomeAssertions;
 using Elastic.Changelog.Rendering;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots;
 
 namespace Elastic.Changelog.Tests.Changelogs.Render;
 
@@ -56,12 +58,28 @@ public class BasicRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* Test feature. [#100](https://github.com/elastic/elastic/pull/100)
 
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("## 9.2.0");
-		indexContent.Should().Contain("Test feature");
+			  This is a test feature
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 
 	[Test]
@@ -141,32 +159,7 @@ public class BasicRenderTests() : RenderChangelogTestBase()
 		Collector.Errors.Should().Be(0);
 
 		// Verify index.md exists but does NOT contain cross-file links
-		var indexFile = FileSystem.Path.Join(outputDir, "9.3.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-
-		indexContent.Should().Contain("## 9.3.0");
-		indexContent.Should().Contain("Test feature");
-		indexContent.Should().Contain("Highlighted feature");
-
-		// Verify NO cross-file links are present
-		indexContent.Should().NotContain("[Highlights]");
-		indexContent.Should().NotContain("[Deprecations]");
-		indexContent.Should().NotContain("/release-notes/");
-
-		// Verify individual separated files are still generated
-		var deprecationsFile = FileSystem.Path.Join(outputDir, "9.3.0", "deprecations.md");
-		FileSystem.File.Exists(deprecationsFile).Should().BeTrue();
-		var deprecationsContent = await FileSystem.File.ReadAllTextAsync(
-			deprecationsFile,
-			TestContext.Current!.Execution.CancellationToken
-		);
-		deprecationsContent.Should().Contain("Deprecated API");
-
-		var highlightsFile = FileSystem.Path.Join(outputDir, "9.3.0", "highlights.md");
-		FileSystem.File.Exists(highlightsFile).Should().BeTrue();
-		var highlightsContent = await FileSystem.File.ReadAllTextAsync(highlightsFile, TestContext.Current!.Execution.CancellationToken);
-		highlightsContent.Should().Contain("Highlighted feature");
+		MockFileSystemDump.ToText(FileSystem, outputDir).Should().MatchSnapshot();
 	}
 
 	[Test]
@@ -231,11 +224,26 @@ public class BasicRenderTests() : RenderChangelogTestBase()
 		result.Should().BeTrue();
 		Collector.Errors.Should().Be(0);
 
-		var indexFile = FileSystem.Path.Join(outputDir, "9.2.0", "index.md");
-		FileSystem.File.Exists(indexFile).Should().BeTrue();
-
-		var indexContent = await FileSystem.File.ReadAllTextAsync(indexFile, TestContext.Current!.Execution.CancellationToken);
-		indexContent.Should().Contain("First feature");
-		indexContent.Should().Contain("Second feature");
+		MockFileSystemDump
+			.ToText(FileSystem, outputDir)
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+			=== 9.2.0/breaking-changes.md ===
+			## 9.2.0 [elastic-9.2.0-breaking-changes]
+			_There are no breaking changes associated with this release._
+			=== 9.2.0/deprecations.md ===
+			## 9.2.0 [elastic-9.2.0-deprecations]
+			_There are no deprecations associated with this release._
+			=== 9.2.0/index.md ===
+			## 9.2.0 [elastic-release-notes-9.2.0]
+			### Features and enhancements [elastic-9.2.0-features-enhancements]
+			* First feature. [#100](https://github.com/elastic/elastic/pull/100)
+			* Second feature. [#200](https://github.com/elastic/elastic/pull/200)
+			=== 9.2.0/known-issues.md ===
+			## 9.2.0 [elastic-9.2.0-known-issues]
+			_There are no known issues associated with this release._
+			"""
+			);
 	}
 }
