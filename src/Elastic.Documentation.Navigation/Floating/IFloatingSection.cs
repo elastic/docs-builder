@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information
 
 using System.Diagnostics.CodeAnalysis;
+using Elastic.Documentation.Links;
 
 namespace Elastic.Documentation.Navigation.Floating;
 
@@ -33,6 +34,12 @@ public interface IFloatingSection
 	/// before anything walks the children (<c>links.json</c>, the sitemap, <c>llms.txt</c>, page rendering).
 	/// </summary>
 	Task ResolveAsync(Cancel ctx);
+
+	/// <summary>
+	/// The pages of this section for <c>links.json</c>, or <c>null</c> when the section has none, for example when
+	/// its content could not be loaded. Call it after <see cref="ResolveAsync"/>.
+	/// </summary>
+	FloatingLinkSection? ToLinkSection();
 }
 
 /// <summary>

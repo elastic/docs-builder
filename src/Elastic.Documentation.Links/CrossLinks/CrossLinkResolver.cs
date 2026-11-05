@@ -112,6 +112,14 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		if (sourceLinkReference.Links.TryGetValue(originalLookupPath, out var directLinkMetadata))
 			return ResolveDirectLink(errorEmitter, uriResolver, crossLinkUri, originalLookupPath, directLinkMetadata, out resolvedUri);
 
+		if (
+			sourceLinkReference.Floating is { Count: > 0 } floating
+			&& TryMatchFloatingSection(floating, originalLookupPath, out var sectionKey, out var section, out var version, out var page)
+		)
+		{
+			return ResolveFloatingPage(errorEmitter, uriResolver, crossLinkUri, (sectionKey, section, version, page), out resolvedUri);
+		}
+
 		var registryUrl = fetchedCrossLinks.RegistryUrlsByRepository?.GetValueOrDefault(crossLinkUri.Scheme)
 			?? "https://elastic-docs-link-index.s3.us-east-2.amazonaws.com";
 		var baseUrl = GetLinksJsonBaseUrl(registryUrl);
@@ -122,6 +130,64 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		errorEmitter($"'{originalLookupPath}' is not a valid link in the '{crossLinkUri.Scheme}' cross link index: {linksJson}");
 		resolvedUri = null;
 		return false;
+	}
+
+	/// <summary>
+	/// Splits <c>api/{key}[/v{N}]/{page}</c> into the section, the version and the page. A lookup path that does not start
+	/// with a section key is not a floating page. These are a few hash lookups and no scan of the pages.
+	/// </summary>
+	private static bool TryMatchFloatingSection(
+		Dictionary<string, FloatingLinkSection> floating,
+		string lookupPath,
+		[NotNullWhen(true)] out string? sectionKey,
+		[NotNullWhen(true)] out FloatingLinkSection? section,
+		out string version,
+		out string page
+	)
+	{
+		version = "main";
+		page = string.Empty;
+		section = null;
+		sectionKey = null;
+
+		var segments = lookupPath.Trim('/').Split('/', 3);
+		if (segments.Length < 2)
+			return false;
+
+		sectionKey = $"{segments[0]}/{segments[1]}";
+		if (!floating.TryGetValue(sectionKey, out section))
+			return false;
+
+		var rest = segments.Length == 3 ? segments[2] : string.Empty;
+		var versionEnd = rest.IndexOf('/');
+		var first = versionEnd < 0 ? rest : rest[..versionEnd];
+		if (first.Length > 1 && first[0] == 'v' && first[1..].All(char.IsAsciiDigit))
+		{
+			version = first[1..];
+			rest = versionEnd < 0 ? string.Empty : rest[(versionEnd + 1)..];
+		}
+
+		page = rest.Trim('/');
+		return true;
+	}
+
+	private static bool ResolveFloatingPage(
+		Action<string> errorEmitter,
+		IUriEnvironmentResolver uriResolver,
+		Uri crossLinkUri,
+		(string SectionKey, FloatingLinkSection Section, string Version, string Page) match,
+		[NotNullWhen(true)] out Uri? resolvedUri
+	)
+	{
+		resolvedUri = null;
+		if (!match.Section.TryResolvePage(match.Version, match.Page, out var sitePath))
+		{
+			errorEmitter($"'{match.Page}' is not a page of '{match.SectionKey}' in version '{match.Version}'.");
+			return false;
+		}
+
+		resolvedUri = uriResolver.ResolveSitePath(crossLinkUri, sitePath);
+		return true;
 	}
 
 	private static bool ResolveDirectLink(

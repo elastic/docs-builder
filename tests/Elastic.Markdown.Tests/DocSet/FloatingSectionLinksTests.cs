@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;
 using Elastic.Markdown.IO;
@@ -16,6 +17,32 @@ public class FloatingSectionLinksTests
 {
 	[Test]
 	public async Task CreateLinkReference_WithMountedFloatingSection_ListsOnlyMarkdownPages()
+	{
+		var provider = new DemoProvider();
+		var set = CreateSet(provider);
+		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
+
+		var reference = set.CreateLinkReference();
+
+		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
+		reference.Floating.Should().ContainKey("api/demo").WhoseValue.UrlRoot.Should().Be("api/doc/demo");
+		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/doc/demo");
+		provider.ResolveCalls.Should().Be(1);
+	}
+
+	[Test]
+	public async Task CreateLinkReference_WhenTheSectionHasNoPages_OmitsTheFloatingProperty()
+	{
+		var set = CreateSet(new DemoProvider { LinkSection = false });
+		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
+
+		var reference = set.CreateLinkReference();
+
+		reference.Floating.Should().BeNull("a docset with nothing to publish keeps the same links.json as before");
+		RepositoryLinks.Serialize(reference).Should().NotContain("floating");
+	}
+
+	private static DocumentationSet CreateSet(DemoProvider provider)
 	{
 		var fileSystem = new MockFileSystem(
 			new Dictionary<string, MockFileData>
@@ -42,25 +69,19 @@ public class FloatingSectionLinksTests
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
 		var context = new BuildContext(collector, TestHelpers.CreateDocumentationFileSystem(fileSystem), configurationContext);
 
-		var provider = new DemoProvider();
-		var set = new DocumentationSet(
+		return new DocumentationSet(
 			context,
 			new TestLoggerFactory(),
 			new TestCrossLinkResolver(),
 			floatingSections: new FloatingSectionRegistry([provider])
 		);
-		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
-		await set.ResolveDirectoryTree(TestContext.Current!.Execution.CancellationToken);
-		var reference = set.CreateLinkReference();
-
-		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
-		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/doc/demo");
-		provider.ResolveCalls.Should().Be(1);
 	}
 
 	private sealed class DemoProvider : IFloatingSectionProvider
 	{
 		public int ResolveCalls { get; set; }
+
+		public bool LinkSection { get; init; } = true;
 
 		public string Kind => "api";
 
@@ -84,6 +105,16 @@ public class FloatingSectionLinksTests
 			provider.ResolveCalls++;
 			return Task.CompletedTask;
 		}
+
+		public FloatingLinkSection? ToLinkSection() =>
+			provider.LinkSection
+				? new FloatingLinkSection
+				{
+					UrlRoot = UrlRoot,
+					Versions = ["main"],
+					Pages = new Dictionary<string, ulong> { [""] = 1, ["operation/operation-search"] = 1 }
+				}
+				: null;
 	}
 
 	private sealed record DemoModel : INavigationModel;

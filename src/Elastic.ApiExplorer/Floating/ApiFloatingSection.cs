@@ -8,6 +8,7 @@ using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Navigation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Toc;
+using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation;
 using Elastic.Documentation.Navigation.Floating;
 
@@ -55,6 +56,7 @@ internal sealed class ApiFloatingSection(
 ) : IFloatingSection
 {
 	private ApiFloatingRoot? _root;
+	private ApiProductTrees? _trees;
 
 	public string Kind => "api";
 
@@ -98,7 +100,52 @@ internal sealed class ApiFloatingSection(
 		for (var i = 0; i < trees.Navigations.Count; i++)
 			trees.Navigations[i].Hidden = trees.Resolved.Documents[i].Version.Moniker != "main";
 
+		_trees = trees;
 		_root!.SetNavigationItems(trees.Navigations);
+	}
+
+	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(UrlRoot, _trees);
+}
+
+internal static class ApiLinkSections
+{
+	/// <summary>
+	/// One page path once, with the versions that contain it. A collapsed operation also answers to its former
+	/// per-operation paths, which become aliases of the canonical path. An alias that names different canonical pages
+	/// in different versions keeps the first.
+	/// </summary>
+	public static FloatingLinkSection Create(string urlRoot, ApiProductTrees trees)
+	{
+		var monikers = trees.Resolved.Documents.Select(d => d.Version.Moniker).Take(FloatingLinkSection.MaxVersions).ToArray();
+		var pages = new Dictionary<string, ulong>(StringComparer.Ordinal);
+		var aliases = new Dictionary<string, string>(StringComparer.Ordinal);
+		var hidden = 0UL;
+
+		for (var bit = 0; bit < monikers.Length; bit++)
+		{
+			var mask = 1UL << bit;
+			if (monikers[bit] != "main")
+				hidden |= mask;
+
+			foreach (var (name, all) in trees.PageNames[monikers[bit]])
+			{
+				var page = name.Trim('/');
+				var canonical = all[0].Trim('/');
+				if (page == canonical)
+					pages[page] = pages.GetValueOrDefault(page) | mask;
+				else
+					_ = aliases.TryAdd(page, canonical);
+			}
+		}
+
+		return new FloatingLinkSection
+		{
+			UrlRoot = urlRoot,
+			Versions = monikers,
+			Hidden = hidden,
+			Pages = pages,
+			Aliases = aliases.Count == 0 ? null : aliases
+		};
 	}
 }
 
