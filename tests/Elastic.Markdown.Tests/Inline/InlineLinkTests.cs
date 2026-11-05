@@ -5,8 +5,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -43,8 +45,13 @@ public class InlineLinkTests() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/_static/img/observability.png" hx-get="/docs/_static/img/observability.png" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Elasticsearch</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>
+				<a href="/docs/_static/img/observability.png">Elasticsearch</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -58,8 +65,13 @@ public class LinkToPageTests() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>
+				<a href="/docs/testing/req">Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -76,8 +88,13 @@ public class InsertPageTitleTests() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>
+				<a href="/docs/testing/req">Special Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -96,8 +113,13 @@ public class RepositoryLinksTest() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">test</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<p>
+				<a href="/docs/testing/req">test</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -116,8 +138,9 @@ public class CrossLinkReferenceTest() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><a href="https://docs-v3-preview.elastic.dev/elastic/kibana/tree/main/" target="_blank" rel="noopener noreferrer">test</a></p>""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -235,8 +258,9 @@ public class ExternalLinksWithInterpolationSuccess() : LinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""<p><a href="https://github.com/elastic/fake-repo/tree/v1.17.0" target="_blank" rel="noopener noreferrer">link to app</a></p>""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -303,7 +327,7 @@ public class CommentedNonExistingLinks2() : LinkTestBase(
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<p>Links:</p>
 			<ul>
@@ -312,7 +336,8 @@ public class CommentedNonExistingLinks2() : LinkTestBase(
 			<ul>
 			<li><a href="/docs/testing/req">Special Requirements</a></li>
 			</ul>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]

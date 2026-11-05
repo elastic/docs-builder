@@ -5,8 +5,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Include;
 using Elastic.Markdown.Tests.Directives;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.FileInclusion;
 
@@ -27,7 +29,7 @@ public class IncludeTests() : DirectiveTest<IncludeBlock>("""
 	public void ParsesBlock() => Block.Should().NotBeNull();
 
 	[Test]
-	public void IncludesInclusionHtml() => Html.ShouldBeHtml("<p><em>Hello world</em></p>");
+	public void IncludesInclusionHtml() => Html.Should().MatchInlineHtmlSnapshot("<p><em>Hello world</em></p>", DocsHtml.Body());
 }
 
 [InheritsTests]

@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -46,7 +48,22 @@ public class InPageDirectiveLinkTests() : DirectiveBlockLinkTests("""
 	[Test]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml("""<p><a href="#caution_ref">Hello</a></p>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="admonition warning" id="caution_ref">
+				<div class="admonition-header">
+					<span class="admonition-title">Warning</span>
+				</div>
+				<div class="admonition-content">
+					<p>This is a 'warning' admonition</p>
+				</div>
+			</div>
+			<p>
+				<a href="#caution_ref">Hello</a>
+			</p>
+			""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -58,7 +75,23 @@ public class ExternalDirectiveLinkTests() : DirectiveBlockLinkTests("""
 """)
 {
 	[Test]
-	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="/docs/testing/req#hint_ref">Sub Requirements</a></p>""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="admonition warning" id="caution_ref">
+				<div class="admonition-header">
+					<span class="admonition-title">Warning</span>
+				</div>
+				<div class="admonition-content">
+					<p>This is a 'warning' admonition</p>
+				</div>
+			</div>
+			<p>
+				<a href="/docs/testing/req#hint_ref">Sub Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);

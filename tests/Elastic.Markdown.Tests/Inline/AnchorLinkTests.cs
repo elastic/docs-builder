@@ -4,8 +4,10 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using JetBrains.Annotations;
 using Markdig.Syntax.Inlines;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -54,7 +56,21 @@ public class InPageAnchorTests() : AnchorLinkTestBase("""
 """)
 {
 	[Test]
-	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="#hello-world">Hello</a></p>""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="heading-wrapper" id="hello-world">
+			<h2>
+				<a class="headerlink" href="#hello-world">Hello world</a>
+			</h2>
+		</div>
+		<p>A paragraph</p>
+		<p>
+			<a href="#hello-world">Hello</a>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
@@ -68,8 +84,19 @@ public class ExternalPageAnchorTests() : AnchorLinkTestBase("""
 	[Test]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" preload="mousedown">Sub Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#sub-requirements">Sub Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -84,8 +111,19 @@ public class ExternalPageCustomAnchorTests() : AnchorLinkTestBase("""
 	[Test]
 	public void GeneratesHtml() =>
 		// language=html
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#new-reqs" hx-get="/docs/testing/req#new-reqs" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#new-reqs">Sub Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -99,8 +137,19 @@ public class ExternalPageAnchorAutoTitleTests() : AnchorLinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#sub-requirements" hx-get="/docs/testing/req#sub-requirements" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Special Requirements &gt; Sub Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#sub-requirements">Special Requirements &gt; Sub Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -113,7 +162,21 @@ public class InPageBadAnchorTests() : AnchorLinkTestBase("""
 """)
 {
 	[Test]
-	public void GeneratesHtml() => Html.ShouldContainHtml("""<p><a href="#hello-world2">Hello</a></p>""");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<div class="heading-wrapper" id="hello-world">
+			<h2>
+				<a class="headerlink" href="#hello-world">Hello world</a>
+			</h2>
+		</div>
+		<p>A paragraph</p>
+		<p>
+			<a href="#hello-world2">Hello</a>
+		</p>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasError() =>
@@ -127,8 +190,19 @@ public class ExternalPageBadAnchorTests() : AnchorLinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<p><a href="/docs/testing/req#sub-requirements2" hx-get="/docs/testing/req#sub-requirements2" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Sub Requirements</a></p>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#sub-requirements2">Sub Requirements</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -143,8 +217,19 @@ public class NestedHeadingTest() : AnchorLinkTestBase("""
 {
 	[Test]
 	public void GeneratesHtml() =>
-		Html.ShouldContainHtml(
-			"""<a href="/docs/testing/req#heading-inside-dropdown" hx-get="/docs/testing/req#heading-inside-dropdown" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">Heading inside dropdown</a>"""
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="hello-world">
+				<h2>
+					<a class="headerlink" href="#hello-world">Hello world</a>
+				</h2>
+			</div>
+			<p>A paragraph</p>
+			<p>
+				<a href="/docs/testing/req#heading-inside-dropdown">Heading inside dropdown</a>
+			</p>
+			""",
+			DocsHtml.Body()
 		);
 	[Test]
 	public void HasError() => Collector.Diagnostics.Should().HaveCount(0);

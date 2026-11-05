@@ -2,6 +2,8 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -15,9 +17,9 @@ not a comment
 	{
 		// language=html
 		Html.Should().NotContain("""<p>% comment""").And.Contain("""<p>not a comment</p>""");
-		Html.ShouldBeHtml("""
+		Html.Should().MatchInlineHtmlSnapshot("""
 			<p>not a comment</p>
-			""");
+			""", DocsHtml.Body());
 	}
 }
 
@@ -49,11 +51,12 @@ public class MultipleLineCommentTest() : InlineTest(
 			)
 			.And
 			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<p>not a comment, and multi line comment below</p>
 			<p>also not a comment</p>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 	}
 }
@@ -92,11 +95,12 @@ public class MultipleLineCommentWithLinkTest() : InlineTest(
 			)
 			.And
 			.ContainAll("<p>not a comment, and multi line comment below</p>", "<p>also not a comment</p>");
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<p>not a comment, and multi line comment below</p>
 			<p>also not a comment</p>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 	}
 }

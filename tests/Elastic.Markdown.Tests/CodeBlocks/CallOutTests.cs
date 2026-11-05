@@ -4,9 +4,11 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Tests.Inline;
 using JetBrains.Annotations;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.CodeBlocks;
 
@@ -63,12 +65,26 @@ var x = 1; // this uses `formatting` and a [link](testing/req.md)
 
 	[Test]
 	public void RendersFormattedInlineMarkdown() =>
-		Html.ShouldContainHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre>
+						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 0ch"></span>
+							<span class="code-callout" data-index="1"></span>
+						</code>
+					</pre>
+				</div>
+			</div>
 			<ol class="code-callouts">
-				<li>this uses <code>formatting</code> and a <a href="/docs/testing/req" hx-get="/docs/testing/req" hx-select-oob="#content-container,#toc-nav" hx-swap="none" hx-push-url="true" hx-indicator="#htmx-indicator" preload="mousedown">link</a></li>
+				<li>this uses
+					<code>formatting</code>
+					and a
+					<a href="/docs/testing/req">link</a>
+				</li>
 			</ol>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -146,22 +162,28 @@ var z = y - 2; <2>
 
 	[Test]
 	public void RendersExpectedHtml() =>
-		Html.ShouldBeHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
 			<div class="highlight-csharp notranslate">
 				<div class="highlight">
-					<pre><code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="1"></span>
-					  var y = x - 2;
-					  var z = y - 2;<span style="display: inline-block; width: 1ch"></span><span class="code-callout" data-index="2"></span>
-					</code></pre>
+					<pre>
+						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="1"></span>
+							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="2"></span>
+						</code>
+					</pre>
+				</div>
 			</div>
-			</div>
-			<p><strong>OUTPUT:</strong></p>
+			<p>
+				<strong>OUTPUT:</strong>
+			</p>
 			<ol class="code-callouts">
-			  <li>Marking the first callout</li>
-			  <li>Marking the second callout</li>
+				<li>Marking the first callout</li>
+				<li>Marking the second callout</li>
 			</ol>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 
 	[Test]
@@ -395,13 +417,25 @@ var z = y - 2; <2>
 
 	[Test]
 	public void RenderedHtmlContainsCallouts() =>
-		Html.ShouldContainHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre>
+						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="1"></span>
+							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="2"></span>
+						</code>
+					</pre>
+				</div>
+			</div>
 			<ol class="code-callouts">
-			<li>First callout</li>
-			<li>Second callout</li>
+				<li>First callout</li>
+				<li>Second callout</li>
 			</ol>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 }
 
@@ -456,14 +490,28 @@ var z = y - 2; <2>
 
 	[Test]
 	public void RendersIntermediateParagraph() =>
-		Html.ShouldContainHtml(
+		Html.Should().MatchInlineHtmlSnapshot(
 			"""
-			<p><strong>This is an intermediate paragraph</strong></p>
+			<div class="highlight-csharp notranslate">
+				<div class="highlight">
+					<pre>
+						<code class="language-csharp">var x = 1;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="1"></span>
+							var y = x - 2; var z = y - 2;<span style="display: inline-block; width: 1ch"></span>
+							<span class="code-callout" data-index="2"></span>
+						</code>
+					</pre>
+				</div>
+			</div>
+			<p>
+				<strong>This is an intermediate paragraph</strong>
+			</p>
 			<ol class="code-callouts">
 				<li>First callout</li>
-			    <li>Second callout</li>
+				<li>Second callout</li>
 			</ol>
-			"""
+			""",
+			DocsHtml.Body()
 		);
 }
 

@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.CodeBlocks;
 using Elastic.Markdown.Myst.InlineParsers.Substitution;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Inline;
 
@@ -151,7 +153,16 @@ sub:
 {
 	[Test]
 	public void OnlySeesGlobalVariable() =>
-		Html.ShouldContainHtml("""<h2><a class="headerlink" href="#custom-anchor">Hello World!</a></h2>""");
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+			<div class="heading-wrapper" id="custom-anchor">
+				<h2>
+					<a class="headerlink" href="#custom-anchor">Hello World!</a>
+				</h2>
+			</div>
+			""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void HasNoErrors() => Collector.Diagnostics.Should().HaveCount(0);
