@@ -54,7 +54,8 @@ public static class ApiLookupQueryBuilder
 	public static Query Build(string query)
 	{
 		var tokens = Tokenize(query);
-		var clauses = tokens.Select(TokenClause).OfType<Query>().ToList();
+		var tokenWords = tokens.Select(t => t.Kind == ApiLookupTokenKind.Plain ? ApiPropertyPath.IdentifierWords(t.Text) : []).ToArray();
+		var clauses = tokens.Select((token, index) => TokenClause(token, index, OtherWords(tokenWords, index))).OfType<Query>().ToList();
 		if (clauses.Count == 0)
 			return new MatchNoneQuery();
 
@@ -65,6 +66,9 @@ public static class ApiLookupQueryBuilder
 			Should = Lifts(typed, tokens)
 		};
 	}
+
+	/// <summary>The words of every plain word but the one at <paramref name="index"/>, which a field row may name besides it.</summary>
+	private static string[] OtherWords(string[][] tokenWords, int index) => [.. tokenWords.Where((_, i) => i != index).SelectMany(w => w)];
 
 	/// <summary>A word typed with a trailing dot, as in <c>retriever.</c>, asks for the children of the field it names.</summary>
 	public static bool ExpandsChildren(string query) => Tokenize(query).Any(t => t.ExpandChildren);
@@ -108,7 +112,7 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>The roles a word may play, best one wins. A path that names no endpoint explains nothing, so it drops out.</summary>
-	private static Query? TokenClause(ApiLookupToken token, int index)
+	private static Query? TokenClause(ApiLookupToken token, int index, IReadOnlyList<string> otherWords)
 	{
 		var key = KeyOption(token.Text, index);
 		if (token.Kind == ApiLookupTokenKind.Path)
@@ -125,7 +129,7 @@ public static class ApiLookupQueryBuilder
 			),
 			Constant(TitleQuery(token.Text), ApiLookupWeights.TitleWord, ApiLookupRoles.QueryName(ApiLookupRole.Title, index)),
 			MethodOption(token.Text, index),
-			FieldOption(token, index),
+			FieldOption(token, index, otherWords),
 			Constant(
 				SynonymsMatch(QueryFieldNames.Body, token.Text),
 				ApiLookupWeights.BodyWord,
@@ -258,11 +262,11 @@ public static class ApiLookupQueryBuilder
 			)
 			: null;
 
-	private static Query FieldOption(ApiLookupToken token, int index) =>
+	private static Query FieldOption(ApiLookupToken token, int index, IReadOnlyList<string> otherWords) =>
 		SearchQueryBuilder.BuildNestedPropertyQuery(
 			token.Text,
 			FieldHitsName(index),
-			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren),
+			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren, otherWords),
 			ApiLookupRoles.QueryName(ApiLookupRole.Field, index)
 		);
 
