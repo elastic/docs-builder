@@ -15,10 +15,20 @@ public class BasicTaskListTests() : InlineTest("""
 """)
 {
 	[Test]
-	public void RendersTaskListContainer() => Html.Should().Contain("class=\"contains-task-list\"");
-
-	[Test]
-	public void RendersTaskListItem() => Html.Should().Contain("class=\"task-list-item\"");
+	public void GeneratesHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			"""
+		<ul class="contains-task-list">
+			<li class="task-list-item">
+				<input disabled="disabled" type="checkbox">
+				A pending task</li>
+			<li class="task-list-item">
+				<input disabled="disabled" type="checkbox" checked="checked">
+				A completed task</li>
+		</ul>
+		""",
+			DocsHtml.Body()
+		);
 
 	[Test]
 	public void RendersUncheckedCheckbox() =>
