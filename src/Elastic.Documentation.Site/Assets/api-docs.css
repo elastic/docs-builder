@@ -2039,6 +2039,11 @@ a.docs-reference-btn::after {
 	@apply text-grey-60 ml-2 text-xs;
 }
 
+/* On its own (the chips already name the variant), it starts at the label's edge, like the description under it. */
+.union-variant-label > .discriminator-value:first-child {
+	margin-left: 0;
+}
+
 /* One-line summary under a union variant's label */
 .union-variant-description {
 	@apply text-grey-70 mt-1 text-sm;
