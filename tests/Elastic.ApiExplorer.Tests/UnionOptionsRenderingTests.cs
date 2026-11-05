@@ -111,6 +111,40 @@ public class UnionOptionsRenderingTests
 		html.Should().MatchHtmlSnapshot();
 	}
 
+	[Test]
+	public async Task Render_VariantThatIsAUnion_ListsItsVariantsInsideItsOwnPanel()
+	{
+		var inner = new ApiUnionVariants
+		{
+			Variants =
+			[
+				Variant(0, foldable: false) with { DisplayName = "Chart (DSL)", AnchorId = "v-0-dsl", IsArrayVariant = false },
+				Variant(1, foldable: false) with { DisplayName = "Chart (ES|QL)", AnchorId = "v-0-esql" }
+			],
+			ContainerId = "v-0-union-options",
+			Label = "Any of"
+		};
+		var outer = new ApiUnionVariants
+		{
+			Variants =
+			[
+				Variant(0, foldable: true) with { DefaultExpanded = true, UseHidden = false, Variants = inner },
+				Variant(1, foldable: false)
+			],
+			ContainerId = "opts"
+		};
+
+		var html = await _UnionOptions.Create(outer).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+		var panel = html.IndexOf("id=\"v-0--children\">", StringComparison.Ordinal);
+		var nested = html.IndexOf("id=\"v-0-union-options\"", StringComparison.Ordinal);
+		panel.Should().BeGreaterThan(-1);
+		nested.Should().BeGreaterThan(panel, "the inner chips sit in the variant's nested panel");
+		html.Should().Contain("data-chip=\"v-0-dsl\"").And.Contain("data-chip=\"v-0-esql\"").And.Contain(">Any of</span>");
+		html.Split("id=\"v-0-union-options\"").Length.Should().Be(2, "the inner list renders once");
+	}
+
 	/// <summary>Renders <paramref name="count"/> variants; the first <paramref name="objects"/> are objects, the rest primitives.</summary>
 	private static async Task<string> Render(int count, bool foldable = false, int? objects = null)
 	{

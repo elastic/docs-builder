@@ -41,6 +41,7 @@ internal static class ApiPropertyMarkdown
 			WriteNestedLine(markdown, depth, ApiMarkdown.Prepare(variant.DescriptionMarkdown, apiBaseUrl));
 			if (variant.Properties is not null)
 				WriteList(markdown, variant.Properties, apiBaseUrl, depth + 1);
+			WriteVariants(markdown, variant.Variants, apiBaseUrl, depth + 1);
 		}
 	}
 
@@ -122,6 +123,8 @@ internal static class ApiPropertyMarkdown
 		WriteValues(markdown, property.EnumValues, depth);
 		if (property.Example is { } example)
 			WriteNestedLine(markdown, depth, $"Example: {ApiCommonMark.CodeSpan(example)}");
+		if (property.DefaultValue is { } defaultValue)
+			WriteNestedLine(markdown, depth, $"Default: {ApiCommonMark.CodeSpan(defaultValue)}");
 
 		if (property.Union is null || property.Repeats is not null)
 			return;
@@ -154,6 +157,7 @@ internal static class ApiPropertyMarkdown
 				WriteNestedLine(markdown, depth, $"Map values ({dictionary.ValueType.Text})");
 				WriteValues(markdown, dictionary.EnumValues, depth + 1);
 				WriteList(markdown, dictionary.Properties, apiBaseUrl, depth + 1);
+				WriteVariants(markdown, dictionary.Variants, apiBaseUrl, depth + 1);
 				break;
 		}
 	}

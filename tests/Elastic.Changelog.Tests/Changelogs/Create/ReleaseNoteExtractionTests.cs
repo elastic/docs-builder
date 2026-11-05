@@ -646,8 +646,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			    lifecycle: ga
 			title: Implement new aggregation API
 			description: Adds support for new aggregation types
-			impact: ''
-			action: ''
 			"""
 			);
 	}
@@ -731,8 +729,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			  - product: elasticsearch
 			    lifecycle: ga
 			title: Implement new aggregation API
-			impact: ''
-			action: ''
 			"""
 			);
 	}
@@ -924,8 +920,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			  - product: elasticsearch
 			    lifecycle: ga
 			title: Implement new aggregation API
-			impact: ''
-			action: ''
 			"""
 			);
 	}
@@ -1009,8 +1003,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			    lifecycle: ga
 			title: Implement new aggregation API
 			description: Adds support for new aggregation types
-			impact: ''
-			action: ''
 			"""
 			);
 	}
@@ -1093,8 +1085,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			    lifecycle: ga
 			title: Implement new aggregation API
 			description: My explicit description
-			impact: ''
-			action: ''
 			"""
 			);
 	}
@@ -1173,8 +1163,6 @@ public class ReleaseNoteExtractionTests() : CreateChangelogTestBase()
 			  - product: elasticsearch
 			    lifecycle: ga
 			title: Remove a parameter
-			impact: ''
-			action: ''
 			"""
 			);
 	}

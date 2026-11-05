@@ -91,6 +91,13 @@
 			<code>@example</code>
 		</dd>
 	}
+	@if (Model.DefaultValue is { } defaultValue)
+	{
+		<dd class="example-value">
+			<span class="values-label">Default:</span>
+			<code>@defaultValue</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
@@ -190,12 +197,14 @@
 						{
 							<div class="nested-properties" id="@dict.ChildrenId" hidden="until-found">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 						else
 						{
 							<div class="nested-properties" id="@dict.ChildrenId">
 								@(await RenderPartialAsync<_PropertyList, ApiPropertyList>(dict.Properties))
+								@(await RenderPartialAsync<_UnionOptions, ApiUnionVariants>(dict.Variants ?? ApiUnionVariants.Empty))
 							</div>
 						}
 					</div>
