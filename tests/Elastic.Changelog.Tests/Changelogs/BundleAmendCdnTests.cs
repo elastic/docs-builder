@@ -62,8 +62,19 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/existing.yaml");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("exclude-entries:");
-		amend.Should().Contain("name: existing.yaml");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			exclude-entries:
+			  - file:
+			      name: existing.yaml
+			      checksum: 00aa5d9baec30f5521395470896238423863546e
+			"""
+		);
 	}
 
 	[Test]
@@ -85,8 +96,25 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 			.Should()
 			.NotContain(p => p.EndsWith("/existing.yaml", StringComparison.Ordinal), "only requested names are fetched");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("title: Late addition");
-		amend.Should().Contain("name: late.yaml");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -132,7 +160,25 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		result.Should().BeTrue($"Errors: {string.Join("; ", Collector.Diagnostics.Select(d => d.Message))}");
 		handler.RequestedPaths.Should().BeEmpty("--force-local must not reach the CDN");
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("title: Late addition");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			entries:
+			  - file:
+			      name: late.yaml
+			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			    type: enhancement
+			    title: Late addition
+			    products:
+			      - product: elasticsearch
+			        versions:
+			          - 9.3.0
+			"""
+		);
 	}
 
 	[Test]
@@ -194,8 +240,19 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 		handler.RequestedPaths.Should().Contain("/changelog/elastic/elasticsearch/main/300.yaml");
 		handler.RequestedPaths.Should().NotContain(p => p.EndsWith("/registry.json", StringComparison.Ordinal));
 		var amend = await ReadSingleAmendAsync(bundlePath);
-		amend.Should().Contain("name: 300.yaml");
-		amend.Should().Contain("exclude-entries:");
+		amend.Should().MatchInlineSnapshot(
+			"""
+			products:
+			  - product: elasticsearch
+			    target: 9.3.0
+			    repo: elasticsearch
+			    owner: elastic
+			exclude-entries:
+			  - file:
+			      name: 300.yaml
+			      checksum: inferred-placeholder
+			"""
+		);
 	}
 
 	private ChangelogBundleAmendService ServiceWithCdn(StubHandler handler)
