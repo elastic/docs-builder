@@ -32,6 +32,17 @@ public class ApiEndpointPathTests
 	public void IndexKeys_OnlyParameters_ReturnsEmpty() => ApiEndpointPath.IndexKeys(["/{index}/{type}"]).Should().BeEmpty();
 
 	[Test]
+	[Arguments("_cluster/health/*", "cluster/health/*")]
+	[Arguments("api/fleet/agents", "api/fleet/agents")]
+	[Arguments("_snapshot/*/*/_restore", "snapshot/*/*/restore")]
+	public void StripRouteUnderscores_Route_DropsTheUnderscoreStartingEachSegment(string route, string expected) =>
+		ApiEndpointPath.StripRouteUnderscores(route).Should().Be(expected);
+
+	[Test]
+	public void BareKeys_KeysThatCollideWithoutUnderscores_ReturnsEachBareKeyOnceInFirstSeenOrder() =>
+		ApiEndpointPath.BareKeys(["*/_search", "_search", "search", "*/search"]).Should().Equal("*/search", "search");
+
+	[Test]
 	public void QueryCandidates_SingleSegment_ReturnsOneLiteralGroup()
 	{
 		var groups = ApiEndpointPath.QueryCandidates("_search");

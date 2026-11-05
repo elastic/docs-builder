@@ -18,7 +18,6 @@ public static class SharedMappingConfig
 	// Public so consumer assemblies (e.g. the docs Elasticsearch exporter) can reuse the same names
 	// when composing document-type-specific mapping extensions.
 	public const string KeywordNormalizer = "keyword_normalizer";
-	public const string RouteNormalizer = "route_normalizer";
 	public const string StartsWithAnalyzer = "starts_with_analyzer";
 	public const string StartsWithAnalyzerSearch = "starts_with_analyzer_search";
 	public const string HierarchyAnalyzer = "hierarchy_analyzer";

@@ -32,10 +32,6 @@ public static class DocumentationMappingExtensions
 			.AddProperty("applies_to.version", f => f.Version())
 			.AddProperty("api.properties.path", f => f.Keyword().MultiField("match", mf => mf.Text()))
 			.AddProperty(
-				"api.endpoints",
-				f => f.Keyword().MultiField("bare", mf => mf.Keyword().Normalizer(SharedMappingConfig.RouteNormalizer))
-			)
-			.AddProperty(
 				"api.words",
 				f => f
 					.Text()

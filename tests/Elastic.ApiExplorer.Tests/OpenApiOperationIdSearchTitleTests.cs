@@ -191,6 +191,7 @@ public class OpenApiOperationIdSearchTitleTests
 		bulk.Api!.Words.Should().Equal("bulk");
 		bulk.Api.Group.Should().Be("");
 		bulk.Api.IdWords.Should().Be(1);
+		bulk.Api.EndpointsBare.Should().Equal("bulk");
 		bulk
 			.Parents
 			.Should()

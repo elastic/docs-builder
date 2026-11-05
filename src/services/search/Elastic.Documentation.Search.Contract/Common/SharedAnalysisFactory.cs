@@ -23,14 +23,11 @@ public static class SharedAnalysisFactory
 				SharedMappingConfig.KeywordNormalizer,
 				n => n.Custom().CharFilter("strip_non_word_chars").Filters("lowercase", "asciifolding", "trim")
 			)
-			.Normalizer(SharedMappingConfig.RouteNormalizer, n => n.Custom().CharFilter("strip_route_underscores").Filters("lowercase"))
 			.Analyzer("starts_with_analyzer", a => a.Custom().Tokenizer("starts_with_tokenizer").Filter("lowercase"))
 			.Analyzer("starts_with_analyzer_search", a => a.Custom().Tokenizer("keyword").Filter("lowercase"))
 			.Analyzer("highlight_analyzer", a => a.Custom().Tokenizer("group_tokenizer").Filters("lowercase", "english_stop"))
 			.Analyzer("hierarchy_analyzer", a => a.Custom().Tokenizer("path_tokenizer"))
 			.CharFilter("strip_non_word_chars", cf => cf.PatternReplace().Pattern(@"\W").Replacement(" "))
-			// Elasticsearch system routes start a segment with an underscore (`_cluster/health`) that users often leave out.
-			.CharFilter("strip_route_underscores", cf => cf.PatternReplace().Pattern("(^|/)_+").Replacement("$1"))
 			.TokenFilter("english_stop", tf => tf.Stop().Stopwords("_english_"))
 			.Tokenizer(
 				"starts_with_tokenizer",

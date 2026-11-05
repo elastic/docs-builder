@@ -30,6 +30,17 @@ public static partial class ApiEndpointPath
 		paths.SelectMany(Variants).Where(HasLiteralSegment).Distinct(StringComparer.Ordinal).ToArray();
 
 	/// <summary>
+	/// Removes the underscores that start each <c>/</c>-separated segment, so <c>_cluster/health/*</c> becomes
+	/// <c>cluster/health/*</c>. Users leave out the underscore that starts an Elasticsearch system route, and index and
+	/// query must strip it the same way.
+	/// </summary>
+	public static string StripRouteUnderscores(string route) => string.Join('/', route.Split('/').Select(s => s.TrimStart('_')));
+
+	/// <summary>The <paramref name="keys"/> through <see cref="StripRouteUnderscores"/>, deduped in first-seen order.</summary>
+	public static string[] BareKeys(IEnumerable<string> keys) =>
+		keys.Select(StripRouteUnderscores).Distinct(StringComparer.Ordinal).ToArray();
+
+	/// <summary>
 	/// Every template the normalized query could be an instance of: each subset of segments replaced by <c>*</c>,
 	/// grouped by how many literal segments remain, most literals first. Groups with no literal are dropped.
 	/// </summary>

@@ -11,9 +11,7 @@ using Elastic.Documentation.Configuration.Search;
 using Elastic.Documentation.Search;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
-using Elastic.Documentation.Search.Contract.Mapping;
 using Elastic.Documentation.Search.Highlighting;
-using Elastic.Mapping.Analysis;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
 
@@ -228,29 +226,13 @@ public class ApiPropertySearchTests
 	[Test]
 	[Arguments(false)]
 	[Arguments(true)]
-	public void Mapping_ApiEndpoints_HasABareViewWithoutRouteUnderscores(bool semantic)
+	public void Mapping_ApiEndpointsBare_IsKeyword(bool semantic)
 	{
-		var endpoints = ApiMapping(semantic).GetProperty("endpoints");
+		var api = ApiMapping(semantic);
+		var endpoints = api.GetProperty("endpoints");
 		endpoints.GetProperty("type").GetString().Should().Be("keyword");
-		var bare = endpoints.GetProperty("fields").GetProperty("bare");
-		bare.GetProperty("type").GetString().Should().Be("keyword");
-		bare.GetProperty("normalizer").GetString().Should().Be("route_normalizer");
-	}
-
-	[Test]
-	public void Analysis_RouteNormalizer_StripsTheUnderscoreStartingEachRouteSegment()
-	{
-		var settings = SharedAnalysisFactory.BuildAnalysis(new AnalysisBuilder(), "test_synonyms", []).Build();
-		using var json = JsonDocument.Parse(settings.ToJson().ToJsonString());
-
-		var normalizer = json.RootElement.GetProperty("normalizer").GetProperty("route_normalizer");
-		normalizer.GetProperty("char_filter").EnumerateArray().Select(e => e.GetString()).Should().Equal("strip_route_underscores");
-		normalizer.GetProperty("filter").EnumerateArray().Select(e => e.GetString()).Should().Equal("lowercase");
-
-		var charFilter = json.RootElement.GetProperty("char_filter").GetProperty("strip_route_underscores");
-		charFilter.GetProperty("type").GetString().Should().Be("pattern_replace");
-		charFilter.GetProperty("pattern").GetString().Should().Be("(^|/)_+");
-		charFilter.GetProperty("replacement").GetString().Should().Be("$1");
+		endpoints.TryGetProperty("fields", out _).Should().BeFalse();
+		api.GetProperty("endpoints_bare").GetProperty("type").GetString().Should().Be("keyword");
 	}
 
 	[Test]
