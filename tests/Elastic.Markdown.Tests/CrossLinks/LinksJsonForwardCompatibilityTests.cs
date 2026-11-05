@@ -48,19 +48,21 @@ public class LinksJsonForwardCompatibilityTests
 		}
 		""";
 
+	/// <summary>
+	/// The section as a later build writes it, and arbitrary shapes under names no reader knows. A shape under
+	/// <c>floating</c> is not arbitrary: a reader that knows that property reads it as what it is.
+	/// </summary>
 	public static IEnumerable<string> FutureProperties() =>
 		[
 			FloatingSection,
 			// language=json
-			"\"floating\": \"a string\"",
+			"\"future_string\": \"a string\"",
 			// language=json
-			"\"floating\": 42",
+			"\"future_number\": 42",
 			// language=json
-			"\"floating\": [ 1, 2, { \"nested\": [ true, null ] } ]",
+			"\"future_array\": [ 1, 2, { \"nested\": [ true, null ] } ]",
 			// language=json
-			"\"floating\": { \"api/elasticsearch\": { \"versions\": [ { \"name\": \"main\", \"unheard_of\": [ 1 ] } ], \"something_new\": {} } }",
-			// language=json
-			"\"some_other_future_property\": { \"a\": 1 }"
+			"\"future_object\": { \"api/elasticsearch\": { \"versions\": [ { \"name\": \"main\", \"unheard_of\": [ 1 ] } ], \"something_new\": {} } }"
 		];
 
 	private static void AssertReadsTheDocumentedProperties(RepositoryLinks links)
