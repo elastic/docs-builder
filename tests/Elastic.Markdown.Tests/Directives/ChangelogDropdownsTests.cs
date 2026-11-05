@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -63,34 +65,7 @@ public class ChangelogDropdownsDefaultTests : DirectiveTest<ChangelogBlock>
 	public void DefaultBehaviorDoesNotParseDropdownsOption() => Block!.DropdownsEnabled.Should().BeFalse();
 
 	[Test]
-	public void DefaultBehaviorRendersFlattened()
-	{
-		// Should NOT contain dropdown HTML structure
-		Html.Should().NotContain("<details class=\"dropdown\">");
-		Html.Should().NotContain("dropdown-title__summary-text");
-
-		// Should contain bulleted list format without bold titles (matching regular entries)
-		Html.Should().Contain("Breaking API change.");
-		Html.Should().Contain("Another breaking change.");
-	}
-
-	[Test]
-	public void DefaultBehaviorIncludesImpactAndActionSections()
-	{
-		Html.Should().Contain("<strong>Impact:</strong> Existing API calls will fail.");
-		Html.Should().Contain("<strong>Action:</strong> Update your code to use the new API endpoints.");
-		Html.Should().Contain("<strong>Impact:</strong> Scripts using the old parameter will fail.");
-		Html.Should().Contain("<strong>Action:</strong> Remove references to the deprecated parameter.");
-	}
-
-	[Test]
-	public void DefaultBehaviorIncludesDescriptions()
-	{
-		// Note: Descriptions may be hidden by default due to :description-visibility: auto behavior
-		// This test validates that when descriptions are shown, they appear in the correct format
-		Html.Should().Contain("API has been changed to improve performance.");
-		Html.Should().Contain("Removed deprecated parameter.");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -136,26 +111,10 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 	public void ExplicitDropdownsParsesCorrectly() => Block!.DropdownsEnabled.Should().BeTrue();
 
 	[Test]
-	public void ExplicitDropdownsRendersDropdownFormat()
-	{
-		// Should contain dropdown HTML structure
-		Html.Should().Contain("<details class=\"dropdown\">");
-		Html.Should().Contain("dropdown-title__summary-text");
-		Html.Should().Contain("Breaking API change.");
-
-		// Should NOT contain bulleted list format
-		Html.Should().NotContain("<li><p>Breaking API change.");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void ExplicitDropdownsIncludesDescriptionInDropdown() => Html.Should().Contain("API has been changed to improve performance.");
-
-	[Test]
-	public void ExplicitDropdownsIncludesImpactAndActionInDropdown()
-	{
-		Html.Should().Contain("<strong>Impact</strong><br>Existing API calls will fail.");
-		Html.Should().Contain("<strong>Action</strong><br>Update your code to use the new API endpoints.");
-	}
 }
 
 /// <summary>
@@ -197,19 +156,30 @@ public class ChangelogDropdownsWithHiddenDescriptionsTests : DirectiveTest<Chang
 		);
 
 	[Test]
-	public void FlattendRenderingHidesDescriptionsButKeepsImpactAction()
-	{
-		// Should render as flattened (no dropdowns by default)
-		Html.Should().Contain("Breaking API change.");
-		Html.Should().NotContain("<details class=\"dropdown\">");
-
-		// Description should be hidden due to :description-visibility: hide-descriptions
-		Html.Should().NotContain("This description should be hidden.");
-
-		// Impact and Action should still be shown in flattened format
-		Html.Should().Contain("<strong>Impact:</strong> Existing API calls will fail.");
-		Html.Should().Contain("<strong>Action:</strong> Update your code to use the new API endpoints.");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<ul>
+			<li>
+				<p>Breaking API change.
+					<a href="https://github.com/elastic/elasticsearch/pull/333333">#333333</a>
+				</p>
+				<p>
+					<strong>Impact:</strong>
+					Existing API calls will fail.</p>
+				<p>
+					<strong>Action:</strong>
+					Update your code to use the new API endpoints.</p>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -252,20 +222,7 @@ public class ChangelogDropdownsEnabledWithHiddenDescriptionsTests : DirectiveTes
 		);
 
 	[Test]
-	public void DropdownRenderingHidesDescriptionsButKeepsImpactAction()
-	{
-		// Should render as dropdown due to explicit :dropdowns:
-		Html.Should().Contain("<details class=\"dropdown\">");
-		Html.Should().Contain("Breaking API change.");
-		Html.Should().NotContain("<li><p>Breaking API change.");
-
-		// Description should be hidden due to :description-visibility: hide-descriptions
-		Html.Should().NotContain("This description should be hidden.");
-
-		// Impact and Action should still be shown in dropdown format
-		Html.Should().Contain("<strong>Impact</strong><br>Existing API calls will fail.");
-		Html.Should().Contain("<strong>Action</strong><br>Update your code to use the new API endpoints.");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -334,19 +291,7 @@ public class ChangelogDropdownsWithDifferentTypesTests : DirectiveTest<Changelog
 		);
 
 	[Test]
-	public void DefaultRendersMixedTypesCorrectly()
-	{
-		// Regular types should render as bulleted lists (unchanged behavior)
-		Html.Should().Contain("Feature addition."); // Regular feature type (in <li> tags)
-
-		// Separated types should render as flattened lists (new behavior) - no bold titles
-		Html.Should().Contain("Breaking API change.");
-		Html.Should().Contain("Known issue with search.");
-		Html.Should().Contain("Deprecated API.");
-
-		// Should NOT contain dropdown HTML structure for separated types
-		Html.Should().NotContain("<details class=\"dropdown\">");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -406,20 +351,7 @@ public class ChangelogDropdownsExplicitWithDifferentTypesTests : DirectiveTest<C
 		);
 
 	[Test]
-	public void ExplicitDropdownsRendersMixedTypesCorrectly()
-	{
-		// Regular types should still render as bulleted lists (unchanged behavior)
-		Html.Should().Contain("Feature addition."); // Regular feature type (in <li> tags)
-
-		// Separated types should render as dropdowns (explicit :dropdowns:)
-		Html.Should().Contain("<details class=\"dropdown\">");
-		Html.Should().Contain("Breaking API change.");
-		Html.Should().Contain("Known issue with search.");
-
-		// Should NOT contain flattened format for separated types (check they're in dropdown, not flat list)
-		Html.Should().NotContain("<li><p>Breaking API change.");
-		Html.Should().NotContain("<li><p>Known issue with search.");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -462,9 +394,5 @@ public class ChangelogDropdownsPlainTextTitleTests : DirectiveTest<ChangelogBloc
 		);
 
 	[Test]
-	public void ChangelogDropdownTitleStripsBackticksInHtml()
-	{
-		Html.Should().Contain("The ElasticAgentVersion parameter is malformed.");
-		Html.Should().NotContain("`ElasticAgentVersion`");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

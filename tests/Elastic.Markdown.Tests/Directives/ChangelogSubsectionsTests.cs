@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -53,20 +55,30 @@ public class ChangelogSubsectionsDisabledByDefaultTests : DirectiveTest<Changelo
 	public void SubsectionsPropertyDefaultsToFalse() => Block!.Subsections.Should().BeFalse();
 
 	[Test]
-	public void DoesNotRenderAreaHeaders()
-	{
-		// When subsections is false, area headers should not be rendered
-		Html.Should().NotContain("<strong>Search</strong>");
-		Html.Should().NotContain("<strong>Indexing</strong>");
-	}
-
-	[Test]
-	public void RendersEntriesWithoutGrouping()
-	{
-		// Both entries should be rendered without area grouping
-		Html.Should().Contain("Feature in Search");
-		Html.Should().Contain("Feature in Indexing");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature in Search.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+			<li>Feature in Indexing.
+				<a href="https://github.com/elastic/elasticsearch/pull/222222">#222222</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -115,20 +127,7 @@ public class ChangelogSubsectionsEnabledTests : DirectiveTest<ChangelogBlock>
 	public void SubsectionsPropertyIsTrue() => Block!.Subsections.Should().BeTrue();
 
 	[Test]
-	public void RendersAreaHeaders()
-	{
-		// When subsections is true, area headers should be rendered
-		Html.Should().Contain("<strong>Search</strong>");
-		Html.Should().Contain("<strong>Indexing</strong>");
-	}
-
-	[Test]
-	public void RendersEntriesUnderCorrectAreas()
-	{
-		// Both entries should be rendered
-		Html.Should().Contain("Feature in Search");
-		Html.Should().Contain("Feature in Indexing");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -214,10 +213,28 @@ public class ChangelogSubsectionsNoAreaRulesTests : DirectiveTest<ChangelogBlock
 		);
 
 	[Test]
-	public void GroupsUnderFirstArea()
-	{
-		// No publish rules with areas → use first area
-		Html.Should().Contain("<strong>Search</strong>");
-		Html.Should().Contain("Multi-area feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<p>
+			<strong>Search</strong>
+		</p>
+		<ul>
+			<li>Multi-area feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }

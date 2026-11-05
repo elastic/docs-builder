@@ -9,7 +9,10 @@ using Elastic.Documentation;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.ReleaseNotes;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -74,14 +77,7 @@ public class ChangelogBasicTests : DirectiveTest<ChangelogBlock>
 	public void LoadsBundles() => Block!.LoadedBundles.Should().HaveCount(1);
 
 	[Test]
-	public void RendersMarkdownContent()
-	{
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Add new feature");
-		Html.Should().Contain("Fixes");
-		Html.Should().Contain("Fix important bug");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -143,11 +139,27 @@ public class ChangelogExcludeAmendTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersWithoutExcludedEntry()
-	{
-		Html.Should().Contain("Keep this feature");
-		Html.Should().NotContain("Remove this feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Keep this feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/123456">#123456</a>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test]
 	public void LoadsMergedEntryCount()
@@ -247,12 +259,7 @@ public class ChangelogMultipleBundlesTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersAllVersions()
-	{
-		Html.Should().Contain("9.10.0");
-		Html.Should().Contain("9.3.0");
-		Html.Should().Contain("9.2.0");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -319,11 +326,27 @@ public class ChangelogVersionFilterTests : DirectiveTest<ChangelogBlock>
 	public void LoadsOnlyMatchingBundle() => Block!.LoadedBundles.Should().ContainSingle().Which.Version.Should().Be("9.3.0");
 
 	[Test]
-	public void RendersOnlyMatchingVersion()
-	{
-		Html.Should().Contain("Feature in 9.3.0");
-		Html.Should().NotContain("Feature in 9.2.0");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature in 9.3.0.
+				<a href="https://github.com/elastic/elasticsearch/pull/222222">#222222</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -407,11 +430,27 @@ public class ChangelogCustomPathTests : DirectiveTest<ChangelogBlock>
 		Block!.BundlesFolderPath.Should().EndWith("release-notes/bundles".Replace('/', Path.DirectorySeparatorChar));
 
 	[Test]
-	public void RendersContent()
-	{
-		Html.Should().Contain("1.0.0");
-		Html.Should().Contain("First release");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.0.0">
+			<h2>
+				<a class="headerlink" href="#1.0.0">1.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="my-product-1.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#my-product-1.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>First release.
+				<a href="https://github.com/elastic/my-product/pull/1">#1</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -487,12 +526,27 @@ public class ChangelogCdnRenderTests() : DirectiveTest<ChangelogBlock>(
 	public void FoundFromCdn() => Block!.Found.Should().BeTrue();
 
 	[Test]
-	public void RendersCdnBundleBody()
-	{
-		Html.Should().Contain("9.4.0");
-		Html.Should().Contain("Features and enhancements");
-		Html.Should().Contain("Faster vector search on the CDN");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.4.0">
+			<h2>
+				<a class="headerlink" href="#9.4.0">9.4.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.4.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.4.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Faster vector search on the CDN.
+				<a href="https://github.com/elastic/elasticsearch/pull/999">#999</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -765,20 +819,7 @@ public class ChangelogWithBreakingChangesTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void RendersBreakingChangesSection()
-	{
-		Html.Should().Contain("Breaking changes");
-		Html.Should().Contain("Breaking change in API");
-	}
-
-	[Test]
-	public void RendersImpactAndAction()
-	{
-		Html.Should().Contain("Impact");
-		Html.Should().Contain("Users must update their code");
-		Html.Should().Contain("Action");
-		Html.Should().Contain("Follow the migration guide");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -820,11 +861,7 @@ public class ChangelogWithDeprecationsTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void RendersDeprecationsSection()
-	{
-		Html.Should().Contain("Deprecations");
-		Html.Should().Contain("Deprecated old API");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -853,8 +890,8 @@ public class ChangelogEmptyBundleTests : DirectiveTest<ChangelogBlock>
 	[Test]
 	public void OmitsEmptyVersionBlock()
 	{
-		Html.Should().NotContain("No new features, enhancements, or fixes");
-		Html.Should().NotContain("9.3.0");
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -1078,12 +1115,7 @@ public class ChangelogHeaderLevelsTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void VersionHeaderIsH2()
-	{
-		// Version should be h2
-		Html.Should().Contain("<h2");
-		Html.Should().Contain("9.3.0");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void OnlyOneH2ForVersion()

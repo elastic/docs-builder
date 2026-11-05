@@ -4,7 +4,9 @@
 
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -159,12 +161,7 @@ public class ChangelogConfigRelativePathTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Feature entry");
-		Html.Should().Contain("Blocked entry");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -226,12 +223,30 @@ public class ChangelogConfigDocsetRootRelativePathTests : DirectiveTest<Changelo
 	public void PublishBlockerIsNull() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Regular feature");
-		Html.Should().Contain("Internal feature");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.0.0">
+			<h2>
+				<a class="headerlink" href="#1.0.0">1.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="test-product-1.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#test-product-1.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/test-product/pull/33333">#33333</a>
+			</li>
+			<li>Internal feature.
+				<a href="https://github.com/elastic/test-product/pull/44444">#44444</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -382,10 +397,5 @@ public class ChangelogConfigAndBundlesRelativePathsTests : DirectiveTest<Changel
 	}
 
 	[Test]
-	public void RendersAllEntries_NoFiltering()
-	{
-		// Directive does not apply rules.publish; all entries are shown
-		Html.Should().Contain("Combined feature");
-		Html.Should().Contain("Blocked by config");
-	}
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }

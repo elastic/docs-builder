@@ -5,8 +5,10 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
 using Markdig.Syntax;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -141,20 +143,29 @@ public class ChangelogLinksDefaultBehaviorTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void RendersPrLinksForPublicRepo()
-	{
-		// elasticsearch is a public repo, so PR link should be visible in the output
-		Html.Should().Contain("123456");
-		Html.Should().Contain("github.com");
-	}
-
-	[Test]
-	public void RendersIssueLinksForPublicRepo()
-	{
-		// elasticsearch is public, so issue links should be visible
-		Html.Should().Contain("78901");
-		Html.Should().Contain("78902");
-	}
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature with PR and issues.
+				<a href="https://github.com/elastic/elasticsearch/pull/123456">#123456</a>
+				<a href="https://github.com/elastic/elasticsearch/issues/78901">#78901</a>
+				<a href="https://github.com/elastic/elasticsearch/issues/78902">#78902</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
