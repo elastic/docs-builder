@@ -99,7 +99,7 @@ function balance(panel: HTMLElement) {
     syncStripHeight(carousel)
 }
 
-/** Balances every examples rail in `root` and keeps it balanced as the window, scenario, tab or caption changes. */
+/** Balances every examples rail in `root` and keeps it balanced as the window, language, scenario, tab or caption changes. */
 export function initExamplesBalance(root: ParentNode = document): void {
     root.querySelectorAll<HTMLElement>('#api-examples-panel').forEach(
         (panel) => {
@@ -116,7 +116,14 @@ export function initExamplesBalance(root: ParentNode = document): void {
             const resize = new ResizeObserver(schedule)
             resize.observe(panel)
             const examples = panel.querySelector('[data-api-examples]')
-            if (examples) resize.observe(examples)
+            if (!examples) return
+            resize.observe(examples)
+            // A capped sample keeps its size when the language, tab or scenario changes, so no resize reports it.
+            new MutationObserver(schedule).observe(examples, {
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['class', 'hidden'],
+            })
         }
     )
 }
