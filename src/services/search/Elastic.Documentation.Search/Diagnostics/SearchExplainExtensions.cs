@@ -30,7 +30,7 @@ public static class SearchExplainExtensions
 			service.Configuration.RulesetName
 		);
 
-		var combinedQuery = SearchQueryBuilder.FilterDocuments(lexicalQuery, scope: null);
+		var combinedQuery = SearchQueryBuilder.FilterDocuments(lexicalQuery, page: null);
 
 		var getDocResponse = await service
 			.Client

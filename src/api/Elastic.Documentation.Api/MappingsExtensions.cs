@@ -122,7 +122,7 @@ public static class MappingsExtension
 			Cancel ctx
 		) =>
 		{
-			if (!ApiTreeScopeParameters.TryParse(apiKey, apiTree, out var scope))
+			if (!ApiPageParameters.TryParse(apiKey, apiTree, out var apiPage))
 				return Results.BadRequest();
 
 			var request = new NavigationSearchRequest
@@ -130,7 +130,7 @@ public static class MappingsExtension
 				Query = query,
 				PageNumber = pageNumber ?? 1,
 				TypeFilter = typeFilter,
-				ApiTree = scope
+				ApiPage = apiPage
 			};
 			var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
 			return Results.Ok(response);

@@ -162,20 +162,20 @@ public class NavigationSearchServiceTests
 	}
 
 	[Test]
-	public async Task NavigationSearchAsync_Scope_ForwardsItToTheSearch()
+	public async Task NavigationSearchAsync_ApiPage_ForwardsItToTheSearch()
 	{
 		var inner = A.Fake<ISearchService<DocumentationDocument>>();
-		var scope = new ApiTreeScope("elasticsearch", "8");
+		var page = new ApiPageContext("elasticsearch", "8");
 
 		_ = await Search(
-			new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiTree = scope },
+			new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiPage = page },
 			inner,
 			(SearchOperation(), Property())
 		);
 
 		_ = A.CallTo(
 			() => inner.AutocompleteAsync(
-				A<AutocompleteRequest>.That.Matches(r => r.ApiTree == scope && r.Query == "knn" && r.TypeFilter == "api"),
+				A<AutocompleteRequest>.That.Matches(r => r.ApiPage == page && r.Query == "knn" && r.TypeFilter == "api"),
 				A<CancellationToken>._
 			)
 		).MustHaveHappenedOnceExactly();
@@ -184,7 +184,7 @@ public class NavigationSearchServiceTests
 	[Test]
 	public async Task NavigationSearchAsync_ScopeInAnotherTreeOfTheHitsApi_PointsTheHitIntoThatTree()
 	{
-		var request = new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiTree = new ApiTreeScope("elasticsearch", "8") };
+		var request = new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiPage = new ApiPageContext("elasticsearch", "8") };
 
 		var response = await Search(request, A.Fake<ISearchService<DocumentationDocument>>(), (SharedSearchOperation(), Property()));
 
@@ -205,7 +205,7 @@ public class NavigationSearchServiceTests
 		{
 			Query = "deployments",
 			TypeFilter = "api",
-			ApiTree = new ApiTreeScope("elasticsearch", "8")
+			ApiPage = new ApiPageContext("elasticsearch", "8")
 		};
 
 		var response = await Search(

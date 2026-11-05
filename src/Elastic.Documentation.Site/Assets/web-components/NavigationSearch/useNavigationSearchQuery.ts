@@ -1,4 +1,3 @@
-import { apiTreeSearchParams } from '../../api-tree'
 import { config } from '../../config'
 import { logError, logInfo, logWarn } from '../../telemetry/logging'
 import {
@@ -16,6 +15,7 @@ import {
     isRateLimitError,
 } from '../shared/errorHandling'
 import { ApiError } from '../shared/errorHandling'
+import { useApiPageSearchParams } from '../useApiPageSearchParams'
 import { ApiPropertyResult, ApiRoute } from './apiPropertyResults'
 import { usePageNumber, useSearchTerm } from './navigationSearch.store'
 import {
@@ -29,7 +29,7 @@ import {
     useQueryClient,
 } from '@tanstack/react-query'
 import { useDebounce } from '@uidotdev/usehooks'
-import { useRef, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import * as z from 'zod'
 
 const SearchResultItemParent = z.object({
@@ -93,9 +93,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
         !isCooldownActive &&
         !awaitingNewInput
 
-    // htmx swaps pages without remounting, so the scope is read on every render and shared by key and request.
-    const { pathname } = location
-    const scope = useMemo(() => apiTreeSearchParams(pathname), [pathname])
+    const apiPage = useApiPageSearchParams()
 
     const query = useQuery<SearchResponse, ApiError>({
         queryKey: [
@@ -104,7 +102,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 searchTerm: debouncedSearchTerm.toLowerCase(),
                 pageNumber,
                 typeFilter,
-                scope,
+                apiPage,
             },
         ],
         queryFn: async ({ signal }) => {
@@ -127,7 +125,7 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                 const params = new URLSearchParams({
                     q: debouncedSearchTerm,
                     page: pageNumber.toString(),
-                    ...scope,
+                    ...apiPage,
                 })
 
                 // Only add type filter if not 'all'
@@ -189,11 +187,11 @@ export const useNavigationSearchQuery = (typeFilter: TypeFilter) => {
                     searchTerm: debouncedSearchTerm.toLowerCase(),
                     pageNumber,
                     typeFilter,
-                    scope,
+                    apiPage,
                 },
             ],
         })
-    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter, scope])
+    }, [queryClient, debouncedSearchTerm, pageNumber, typeFilter, apiPage])
 
     // Track errors for observability
     useEffect(() => {
