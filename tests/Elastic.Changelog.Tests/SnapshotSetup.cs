@@ -19,8 +19,15 @@ internal static class SnapshotSetup
 		// read `repo: docs-builder` on one and carry a warning on the other. Tests that need it pass it in explicitly.
 		Environment.SetEnvironmentVariable("GITHUB_REPOSITORY", null);
 		SnapshotDefaults.AddScrubber(Scrubbers.Guids);
+		SnapshotDefaults.AddScrubber(Checksums);
 		SnapshotDefaults.AddScrubber(Today);
 	}
+
+	// A bundle records the SHA-1 of each entry file it was made from. The test inputs are raw string literals and the product writes files
+	// with the platform's line ending, so on Windows the same entry has other bytes and another checksum. The value is replaced; what a
+	// checksum must be is checked where a test computes the expected one itself.
+	private static string Checksums(string text) =>
+		System.Text.RegularExpressions.Regex.Replace(text, "(?<=checksum: )[0-9a-f]{40}", "{sha1}");
 
 	// A bundle is stamped with the day it was created. Only that day is replaced, so a release-date a test sets on purpose stays visible.
 	private static string Today(string text)

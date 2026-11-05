@@ -192,7 +192,7 @@ public class CloudProfileFixtureTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 1-feature.yaml
-			      checksum: 31e5ddcf2ce48521b213aee97c063e8402f6acca
+			      checksum: {sha1}
 			    type: feature
 			    title: Faster hosted search
 			    products:

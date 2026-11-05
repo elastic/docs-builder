@@ -87,7 +87,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -177,7 +177,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -235,7 +235,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -325,7 +325,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: feature.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -376,7 +376,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -419,7 +419,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -512,7 +512,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: keep.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:
@@ -604,7 +604,7 @@ public class BundleFilesFilterTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1-local.yaml
-			      checksum: 470ef2044c3b133b88ba37d83ea39a896d2b974c
+			      checksum: {sha1}
 			    type: feature
 			    title: Keep me
 			    products:

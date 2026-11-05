@@ -70,7 +70,7 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: late.yaml
-			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			      checksum: {sha1}
 			    type: enhancement
 			    title: Late addition
 			    products:
@@ -305,7 +305,7 @@ public class BundleAmendCdnParentTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: late.yaml
-			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			      checksum: {sha1}
 			    type: enhancement
 			    title: Late addition
 			    products:

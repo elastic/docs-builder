@@ -106,7 +106,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: pr-12345.yaml
-			      checksum: 6cb20a9554c7d77cf5571d4c8f4ba75e97a89ac3
+			      checksum: {sha1}
 			    type: bug-fix
 			    title: Fix query parsing
 			    products:
@@ -118,7 +118,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/12345"
 			  - file:
 			      name: pr-12346.yaml
-			      checksum: bb5e93521f76b6774193a3765d27744bd283cd27
+			      checksum: {sha1}
 			    type: feature
 			    title: New aggregation API
 			    products:
@@ -197,7 +197,7 @@ public class BundleReleaseVersionTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: pr-12345.yaml
-			      checksum: 6cb20a9554c7d77cf5571d4c8f4ba75e97a89ac3
+			      checksum: {sha1}
 			    type: bug-fix
 			    title: Fix query parsing
 			    products:

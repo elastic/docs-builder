@@ -280,7 +280,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: c2b6527c04530bf3cfffb127578481f3a1131e54
+			      checksum: {sha1}
 			    type: feature
 			    title: Faster hosted search
 			    products:
@@ -543,7 +543,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: c2b6527c04530bf3cfffb127578481f3a1131e54
+			      checksum: {sha1}
 			    type: feature
 			    title: Faster hosted search
 			    products:
@@ -553,7 +553,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			        lifecycle: ga
 			  - file:
 			      name: main/note-heads-up.yml
-			      checksum: c58b01d5eaf57a4b95f4686599684868e02f79ab
+			      checksum: {sha1}
 			    type: known-issue
 			    title: Heads up for the August release
 			    products:
@@ -729,7 +729,7 @@ public class BundleGitRefTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 999.yaml
-			      checksum: 4d4d007a3c2b6c3d737ef99d58bd66c2cfac8c14
+			      checksum: {sha1}
 			    type: other
 			    title: Unlabeled change
 			    products:

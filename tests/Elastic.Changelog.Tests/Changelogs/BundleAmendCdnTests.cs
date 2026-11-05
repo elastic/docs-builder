@@ -72,7 +72,7 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 			exclude-entries:
 			  - file:
 			      name: existing.yaml
-			      checksum: 00aa5d9baec30f5521395470896238423863546e
+			      checksum: {sha1}
 			"""
 		);
 	}
@@ -106,7 +106,7 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: late.yaml
-			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			      checksum: {sha1}
 			    type: enhancement
 			    title: Late addition
 			    products:
@@ -170,7 +170,7 @@ public class BundleAmendCdnTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: late.yaml
-			      checksum: 36d7fa3de8781cf9b05f3cb857d956a7d1d9f718
+			      checksum: {sha1}
 			    type: enhancement
 			    title: Late addition
 			    products:

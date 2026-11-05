@@ -124,7 +124,7 @@ public class BundleAmendTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268200-new-feature.yaml
-			      checksum: 7f27409f310674a3d39fa303fa450feee030cca6
+			      checksum: {sha1}
 			    type: enhancement
 			    title: New amended feature
 			    products:
@@ -166,7 +166,7 @@ public class BundleAmendTests : ChangelogTestBase
 			exclude-entries:
 			  - file:
 			      name: 1755268130-existing.yaml
-			      checksum: b9292cbbc010ccd0c8629091e0fa750814e62c3c
+			      checksum: {sha1}
 			"""
 		);
 	}
@@ -202,7 +202,7 @@ public class BundleAmendTests : ChangelogTestBase
 			exclude-entries:
 			  - file:
 			      name: 1755268200-new-feature.yaml
-			      checksum: 7f27409f310674a3d39fa303fa450feee030cca6
+			      checksum: {sha1}
 			"""
 		);
 	}
@@ -271,7 +271,7 @@ public class BundleAmendTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268200-new-feature.yaml
-			      checksum: 7f27409f310674a3d39fa303fa450feee030cca6
+			      checksum: {sha1}
 			    type: enhancement
 			    title: New amended feature
 			    products:
@@ -284,7 +284,7 @@ public class BundleAmendTests : ChangelogTestBase
 			exclude-entries:
 			  - file:
 			      name: 1755268130-existing.yaml
-			      checksum: b9292cbbc010ccd0c8629091e0fa750814e62c3c
+			      checksum: {sha1}
 			"""
 		);
 	}
@@ -369,7 +369,7 @@ public class BundleAmendTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268200-new-feature.yaml
-			      checksum: 7f27409f310674a3d39fa303fa450feee030cca6
+			      checksum: {sha1}
 			    type: enhancement
 			    title: New amended feature
 			    products:

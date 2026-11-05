@@ -114,7 +114,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -126,7 +126,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 999.yaml
-			      checksum: 6e589c7dca3e9a62fd9cd768eee589d7c7d4ee85
+			      checksum: {sha1}
 			    type: feature
 			    title: Bravo
 			    products:
@@ -240,7 +240,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 1-local.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -306,7 +306,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 1-local.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -434,7 +434,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -529,7 +529,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -587,7 +587,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 100.yaml
-			      checksum: b251ead159fddd9a1545d55bb4519db4ca519e0c
+			      checksum: {sha1}
 			    type: feature
 			    title: Alpha
 			    products:
@@ -808,7 +808,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: main/note-known-issue.yml
-			      checksum: bd81e86814509f9260869ca8af921b405ae6658f
+			      checksum: {sha1}
 			    type: known-issue
 			    title: Known issue on main
 			    products:
@@ -879,7 +879,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 9.4/note-known-issue.yml
-			      checksum: 11799cc69fef6c8db52121edbe36e656b3a5ccc2
+			      checksum: {sha1}
 			    type: known-issue
 			    title: Known issue on 9.4 branch (backport)
 			    products:
@@ -945,7 +945,7 @@ public class BundleCdnSourcingTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: main/note-known-issue.yml
-			      checksum: bd81e86814509f9260869ca8af921b405ae6658f
+			      checksum: {sha1}
 			    type: known-issue
 			    title: Known issue on main
 			    products:

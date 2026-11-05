@@ -481,7 +481,7 @@ public class GhReleaseExtractionParityTests() : ChangelogTestBase()
 			entries:
 			  - file:
 			      name: 12345.yaml
-			      checksum: 3e23f7fdf6d96be35d49fa93ad546d6165bf292f
+			      checksum: {sha1}
 			    type: feature
 			    title: Curated checked-in title
 			    products:

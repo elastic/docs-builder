@@ -97,7 +97,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-first-changelog.yaml
-			      checksum: a65016261a61152db249d295c2859270c5103765
+			      checksum: {sha1}
 			    type: feature
 			    title: First changelog
 			    products:
@@ -109,7 +109,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-second-changelog.yaml
-			      checksum: c1bd6cb897ac1f2920e24ff3df0432bf623f85fb
+			      checksum: {sha1}
 			    type: enhancement
 			    title: Second changelog
 			    products:
@@ -182,7 +182,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -266,7 +266,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-first-pr.yaml
-			      checksum: 013f5493de6c3e2792ecaa371eb23ab191f782f3
+			      checksum: {sha1}
 			    type: feature
 			    title: First PR
 			    products:
@@ -277,7 +277,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-second-pr.yaml
-			      checksum: a9663d09ccc6614bca7e68d6dbb0453afa09b8eb
+			      checksum: {sha1}
 			    type: feature
 			    title: Second PR
 			    products:
@@ -326,7 +326,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 12345.yaml
-			      checksum: 43b5184607b93e16dd003a4c429c234f67752d29
+			      checksum: {sha1}
 			    type: feature
 			    title: Filename identity
 			    products:
@@ -375,7 +375,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1735-foo.yaml
-			      checksum: 5784adf1f207c98d98ce3240054b72a4f091c71c
+			      checksum: {sha1}
 			    type: feature
 			    title: Timestamp identity
 			    products:
@@ -457,7 +457,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-first-issue.yaml
-			      checksum: d275812653428ee900546d0624ceabc690bbf15e
+			      checksum: {sha1}
 			    type: feature
 			    title: First issue
 			    products:
@@ -468,7 +468,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/issues/100"
 			  - file:
 			      name: 1755268140-second-issue.yaml
-			      checksum: 9fe1ccd05b9af020a6f9317045ab5bd59a2af2ac
+			      checksum: {sha1}
 			    type: feature
 			    title: Second issue
 			    products:
@@ -521,7 +521,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-legacy-pr.yaml
-			      checksum: ff9d58350837176bd8e4980b8444e87adc83f2d3
+			      checksum: {sha1}
 			    type: feature
 			    title: Legacy PR changelog
 			    products:
@@ -661,7 +661,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-first-pr.yaml
-			      checksum: 013f5493de6c3e2792ecaa371eb23ab191f782f3
+			      checksum: {sha1}
 			    type: feature
 			    title: First PR
 			    products:
@@ -672,7 +672,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-second-pr.yaml
-			      checksum: a9663d09ccc6614bca7e68d6dbb0453afa09b8eb
+			      checksum: {sha1}
 			    type: feature
 			    title: Second PR
 			    products:
@@ -733,7 +733,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-pr-number.yaml
-			      checksum: e8de710842df34ae2238ea319b4e6214306efa0b
+			      checksum: {sha1}
 			    type: feature
 			    title: PR with number
 			    products:
@@ -790,7 +790,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-short-format.yaml
-			      checksum: 87a7358a293fc63fe9d571bed3d41af8aad5bfb5
+			      checksum: {sha1}
 			    type: feature
 			    title: PR with short format
 			    products:
@@ -989,7 +989,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-cloud-feature1.yaml
-			      checksum: e6ab478a8cf5a520992531e7f5fda93dbf19959d
+			      checksum: {sha1}
 			    type: feature
 			    title: Cloud serverless feature 1
 			    products:
@@ -1000,7 +1000,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/cloud-serverless/pull/100"
 			  - file:
 			      name: 1755268140-cloud-feature2.yaml
-			      checksum: d41de380d5e3827a96e56f39ef3c2892d810c242
+			      checksum: {sha1}
 			    type: feature
 			    title: Cloud serverless feature 2
 			    products:
@@ -1076,7 +1076,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -1088,7 +1088,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-kibana-feature.yaml
-			      checksum: 26138a1fba412c9a5b0ff0d7220c62162220aca5
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana feature
 			    products:
@@ -1165,7 +1165,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -1177,7 +1177,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-kibana-feature.yaml
-			      checksum: 0b2ef7378dcf24ef60f00fd7c873d6e4c0dd7239
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana feature
 			    products:
@@ -1268,7 +1268,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-es-9.3.0.yaml
-			      checksum: e6d486a763ea3e602402854d69cf7687013d0ea9
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch 9.3.0 feature
 			    products:
@@ -1280,7 +1280,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-es-9.3.1.yaml
-			      checksum: 45f2cc90ed8a30e22478c392452168a2caa663a7
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch 9.3.1 feature
 			    products:
@@ -1367,7 +1367,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-test-pr.yaml
-			      checksum: 3ee6f675ab08fbe87f6dde7b63089f667ad95690
+			      checksum: {sha1}
 			    type: feature
 			    title: Test PR
 			    products:
@@ -1430,7 +1430,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-test-pr.yaml
-			      checksum: 3ee6f675ab08fbe87f6dde7b63089f667ad95690
+			      checksum: {sha1}
 			    type: feature
 			    title: Test PR
 			    products:
@@ -1510,7 +1510,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: 953e2ec8fd6621dd6344173002e8f3911139b7bd
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -1521,7 +1521,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-kibana-feature.yaml
-			      checksum: 5567d7bf362ba212f7ca11d9bb7df2eb47f365e7
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana feature
 			    products:
@@ -1668,7 +1668,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-ga.yaml
-			      checksum: 339473dfc13c9ece80602aa6f782411be88bb0eb
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch GA feature
 			    products:
@@ -1680,7 +1680,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-elasticsearch-beta.yaml
-			      checksum: 84adfd530b855f1858d771684ce576df36ee0464
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch Beta feature
 			    products:
@@ -1748,7 +1748,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch.yaml
-			      checksum: 953e2ec8fd6621dd6344173002e8f3911139b7bd
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -1825,7 +1825,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-ga.yaml
-			      checksum: 339473dfc13c9ece80602aa6f782411be88bb0eb
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch GA feature
 			    products:
@@ -1837,7 +1837,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/100"
 			  - file:
 			      name: 1755268140-elasticsearch-beta.yaml
-			      checksum: 84adfd530b855f1858d771684ce576df36ee0464
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch Beta feature
 			    products:
@@ -1900,7 +1900,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1-feature.yaml
-			      checksum: c25230be743423f1382f80ac428391ff7965cb4d
+			      checksum: {sha1}
 			    type: feature
 			    title: A new feature was added
 			    products:
@@ -2031,7 +2031,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-test-feature.yaml
-			      checksum: 0321f84ad57ef4a4ebc8747f19d0fe933257e70b
+			      checksum: {sha1}
 			    type: feature
 			    title: Test feature
 			    products:
@@ -2104,7 +2104,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-special-chars.yaml
-			      checksum: ae87a7cc3d83bf715b227137a0ec318131b1eff8
+			      checksum: {sha1}
 			    type: feature
 			    title: "Feature with special characters & symbols"
 			    products:
@@ -2168,7 +2168,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-test-feature.yaml
-			      checksum: d3eef56b8e2777c0a25dcc17dab815fb56da5def
+			      checksum: {sha1}
 			    type: feature
 			    title: Test feature
 			    products:
@@ -2422,7 +2422,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: fb3fd2d00f74ed0d395253baacc5333a3754485f
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature with hidden flag
 			    products:
@@ -2482,7 +2482,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cb50b3480ba2f400e80e1f922cfbf4afe3758f86
+			      checksum: {sha1}
 			    type: feature
 			    title: Regular feature
 			    products:
@@ -2554,7 +2554,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: 815f1f1f0f1f8913132eb2f945a452b70906c270
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature with hidden flag
 			    products:
@@ -2615,7 +2615,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-serverless-feature.yaml
-			      checksum: 593ad5bb20a97b49cacd77f3ccd0e2bacd0d52e1
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -2677,7 +2677,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-es-feature.yaml
-			      checksum: e990f1b768aa43ecedf7646bea84eb5b88f441a3
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -2756,7 +2756,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-serverless-feature.yaml
-			      checksum: 92a0d7dbfae5efdbb9fd63a45032c70ab519fc18
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -2834,7 +2834,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-serverless-feature.yaml
-			      checksum: 92a0d7dbfae5efdbb9fd63a45032c70ab519fc18
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -2905,7 +2905,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: 80717b768423c3b14edc607a805eb7dd78f905ef
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature for serverless
 			    products:
@@ -2977,7 +2977,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: d3eef56b8e2777c0a25dcc17dab815fb56da5def
+			      checksum: {sha1}
 			    type: feature
 			    title: Test feature
 			    products:
@@ -3050,7 +3050,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: d3eef56b8e2777c0a25dcc17dab815fb56da5def
+			      checksum: {sha1}
 			    type: feature
 			    title: Test feature
 			    products:
@@ -3128,7 +3128,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: d3eef56b8e2777c0a25dcc17dab815fb56da5def
+			      checksum: {sha1}
 			    type: feature
 			    title: Test feature
 			    products:
@@ -3219,7 +3219,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: b98627257eac4660c9f91c0c0d51cd2fe819b7a4
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -3311,7 +3311,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -3400,7 +3400,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -3476,7 +3476,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-with-comments.yaml
-			      checksum: 0d824e6d5d7484980513cf372a86e428b24a0f13
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature with comments
 			    products:
@@ -3704,7 +3704,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268140-resolved-feature.yaml
-			      checksum: a4d71514c5bd914d9d0d9bb5549c746efe4938ea
+			      checksum: {sha1}
 			    type: feature
 			    title: Resolved amend feature
 			    products:
@@ -3791,7 +3791,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: bd342ad5f224e33c2cbfe2d9f198ffbe70888231
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -3992,7 +3992,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-serverless-feature.yaml
-			      checksum: 808180779594f14a4b04ec2e1890370933efd46d
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -4082,7 +4082,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-serverless-feature.yaml
-			      checksum: b9b886ae3bd3a6f6af2ec1eb1f890669f1792e0f
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -4169,7 +4169,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -4279,7 +4279,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 158340.yaml
-			      checksum: 9ab64a7018d5be24115c832e8c58d7ebb68c12f0
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -4365,7 +4365,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -4452,7 +4452,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -4537,7 +4537,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268131-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -4801,7 +4801,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-matched.yaml
-			      checksum: d8a2c914c9c1a24407b66031748dcc45cdd7125f
+			      checksum: {sha1}
 			    type: feature
 			    title: Matched PR
 			    products:
@@ -4893,7 +4893,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-matched.yaml
-			      checksum: c2f71c044a3cd2e7a3fd45b3d43b9fafd9d7180a
+			      checksum: {sha1}
 			    type: feature
 			    title: Matched Issue
 			    products:
@@ -5109,7 +5109,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feb.yaml
-			      checksum: 60765bb02a3f8d994b4fe2c5dd0b68b91fc0afe2
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless Feb feature
 			    products:
@@ -5286,7 +5286,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-matched.yaml
-			      checksum: 166fb2233258f29de1dc954af5c75f9abd5d2e97
+			      checksum: {sha1}
 			    type: feature
 			    title: Matched PR 100
 			    products:
@@ -5514,7 +5514,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -5599,7 +5599,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: 9b6de513c2d6229297890fe701dec2f7f4eb3753
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -5683,7 +5683,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-elasticsearch-feature.yaml
-			      checksum: 4be63d0aa14cc86f2133f1c690ec55f08a27d25c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -5772,7 +5772,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268001-kibana-only.yaml
-			      checksum: da3bff1a2322cdf7adcd78be156f33b117bd5490
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana only
 			    products:
@@ -5861,7 +5861,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268012-es-sec.yaml
-			      checksum: 97b1ed2ae369cd0106fb6dcd91c4332c4e5b071e
+			      checksum: {sha1}
 			    type: feature
 			    title: ES and security
 			    products:
@@ -5999,7 +5999,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-feature.yaml
-			      checksum: a1c2dd0fdea66eea9537d32028965bf2b92720a6
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature entry
 			    products:
@@ -6087,7 +6087,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268130-search-feature.yaml
-			      checksum: 0305a87a0c5da5c9f4a126a9302d2fa748fdcebc
+			      checksum: {sha1}
 			    type: feature
 			    title: Search feature
 			    products:
@@ -6194,7 +6194,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268140-serverless-search.yaml
-			      checksum: f3846f2959e343a09c281d800d74078a9da85ac7
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless search feature
 			    products:
@@ -6412,7 +6412,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268161-kibana-other.yaml
-			      checksum: fbce2f7f936d0a7aa04ede803fa5d7186d9a4dfa
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana core feature
 			    products:
@@ -6506,7 +6506,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268180-es-doc.yaml
-			      checksum: 52884ed8257759a6d453cc56f0b311a16717fa35
+			      checksum: {sha1}
 			    type: docs
 			    title: Elasticsearch docs entry
 			    products:
@@ -6638,7 +6638,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: security-feature.yaml
-			      checksum: 7afea02ecd66a28429aa752ed9129317b629f981
+			      checksum: {sha1}
 			    type: feature
 			    title: Security feature
 			    products:
@@ -6721,7 +6721,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: security-feature.yaml
-			      checksum: 7afea02ecd66a28429aa752ed9129317b629f981
+			      checksum: {sha1}
 			    type: feature
 			    title: Security feature
 			    products:
@@ -6793,7 +6793,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: security-feature.yaml
-			      checksum: 7afea02ecd66a28429aa752ed9129317b629f981
+			      checksum: {sha1}
 			    type: feature
 			    title: Security feature
 			    products:
@@ -6862,7 +6862,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: security-feature.yaml
-			      checksum: 7afea02ecd66a28429aa752ed9129317b629f981
+			      checksum: {sha1}
 			    type: feature
 			    title: Security feature
 			    products:
@@ -7032,7 +7032,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268205-es.yaml
-			      checksum: abe72a860e5f3538f03ce5751ab9d49fe881dec1
+			      checksum: {sha1}
 			    type: feature
 			    title: ES only
 			    products:
@@ -7044,7 +7044,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			      - "https://github.com/elastic/elasticsearch/pull/1"
 			  - file:
 			      name: 1755268206-kibana.yaml
-			      checksum: e98b4ce7bdb6dff3c7afef4d02a8257723939392
+			      checksum: {sha1}
 			    type: feature
 			    title: Kibana only
 			    products:
@@ -7177,7 +7177,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268208-es.yaml
-			      checksum: a280eae9bd4e6ff186792d036cad598f934c01f7
+			      checksum: {sha1}
 			    type: feature
 			    title: ES
 			    products:
@@ -7641,7 +7641,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268204-partial-rule.yaml
-			      checksum: 1b2669d933cb74c99c2d81a652147b12eef6de6b
+			      checksum: {sha1}
 			    type: docs
 			    title: Docs entry with partial per-product rule
 			    products:
@@ -7723,7 +7723,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: changelog1.yaml
-			      checksum: a65016261a61152db249d295c2859270c5103765
+			      checksum: {sha1}
 			    type: feature
 			    title: First changelog
 			    products:
@@ -7795,7 +7795,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 158340.yaml
-			      checksum: 9ab64a7018d5be24115c832e8c58d7ebb68c12f0
+			      checksum: {sha1}
 			    type: feature
 			    title: Serverless feature
 			    products:
@@ -7864,7 +7864,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 158340.yaml
-			      checksum: 066e79ca0c16f67af5ca3e9631d10dc70f51fac1
+			      checksum: {sha1}
 			    type: feature
 			    title: Feature with bare PR
 			    products:
@@ -7980,7 +7980,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: 1755268999-feature.yaml
-			      checksum: cd6f322277d9dbabbcfaa8776b9447cc1e7bca1c
+			      checksum: {sha1}
 			    type: feature
 			    title: Elasticsearch feature
 			    products:
@@ -8121,7 +8121,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: changelog1.yaml
-			      checksum: a65016261a61152db249d295c2859270c5103765
+			      checksum: {sha1}
 			    type: feature
 			    title: First changelog
 			    products:
@@ -8177,7 +8177,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: changelog1.yaml
-			      checksum: a65016261a61152db249d295c2859270c5103765
+			      checksum: {sha1}
 			    type: feature
 			    title: First changelog
 			    products:
@@ -8250,7 +8250,7 @@ public class BundleChangelogsTests : ChangelogTestBase
 			entries:
 			  - file:
 			      name: changelog-with-bom.yaml
-			      checksum: 0ed153a98884cc7807342b1937a157a56ad0d692
+			      checksum: {sha1}
 			    type: feature
 			    title: Test changelog with BOM
 			    products:
