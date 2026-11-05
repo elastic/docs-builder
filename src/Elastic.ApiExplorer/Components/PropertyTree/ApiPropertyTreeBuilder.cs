@@ -2,6 +2,7 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
+using System.Text.Json.Nodes;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Model;
 using Elastic.ApiExplorer.Operations;
@@ -200,12 +201,24 @@ public partial class ApiPropertyTreeBuilder(
 	public static IReadOnlyList<ConstraintDisplay> BuildConstraints(IOpenApiSchema schema)
 	{
 		var constraints = BuildLimits(schema);
-		var defaultValue = schema.Default?.ToString();
-		if (!string.IsNullOrEmpty(defaultValue))
-			constraints.Add(new ConstraintDisplay($"default: {defaultValue}"));
+		var compact = CompactDefault(schema);
+		var defaultText = compact ?? schema.Default?.ToString();
+		// A long object default would only be cut in a chip; the row lists it in full instead (see LongDefault).
+		if (!string.IsNullOrEmpty(defaultText) && (compact is null || compact.Length <= MaxInlineConstraintLength))
+			constraints.Add(new ConstraintDisplay($"default: {defaultText}"));
 
 		return constraints;
 	}
+
+	/// <summary>An object or array default as one compact line; null for any other default.</summary>
+	private static string? CompactDefault(IOpenApiSchema schema) =>
+		schema.Default is JsonObject or JsonArray ? schema.Default.ToJsonString() : null;
+
+	/// <summary>
+	/// An object or array default longer than a chip holds. It reads as one line, so the row wraps it where a chip would cut it.
+	/// </summary>
+	public static string? LongDefault(IOpenApiSchema schema) =>
+		CompactDefault(schema) is { } compact && compact.Length > MaxInlineConstraintLength ? compact : null;
 
 	/// <summary>The format and validation limits of a schema: what a value must look like, unlike its default.</summary>
 	private static List<ConstraintDisplay> BuildLimits(IOpenApiSchema schema)
@@ -331,6 +344,7 @@ public partial class ApiPropertyTreeBuilder(
 			OptionalRoute = row.OptionalRoute,
 			IsOptionalPath = row.IsOptionalPath,
 			Example = row.Example,
+			DefaultValue = LongDefault(propSchema),
 			// The wrapper's own required sets win; otherwise those of the union it points to.
 			Requires = DescribeRequiredAlternatives(propSchema) ?? DescribeRequiredAlternatives(row.Shape),
 			SingleOrArray = DescribeSingleOrArray(typeInfo, expansion),

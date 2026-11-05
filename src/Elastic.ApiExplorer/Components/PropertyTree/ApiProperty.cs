@@ -218,6 +218,9 @@ public record ApiProperty
 
 	/// <summary>An example that tells the reader more than the type does, as it should read; null when the row has none worth showing.</summary>
 	public string? Example { get; init; }
+
+	/// <summary>An object or array default too long for a chip, as one compact line; shown in a "Default:" row that wraps.</summary>
+	public string? DefaultValue { get; init; }
 	public UnionDisplay? Union { get; init; }
 
 	/// <summary>Item type name for primitive arrays, rendered as an "Array of:" row.</summary>

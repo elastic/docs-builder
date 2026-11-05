@@ -123,6 +123,8 @@ internal static class ApiPropertyMarkdown
 		WriteValues(markdown, property.EnumValues, depth);
 		if (property.Example is { } example)
 			WriteNestedLine(markdown, depth, $"Example: {ApiCommonMark.CodeSpan(example)}");
+		if (property.DefaultValue is { } defaultValue)
+			WriteNestedLine(markdown, depth, $"Default: {ApiCommonMark.CodeSpan(defaultValue)}");
 
 		if (property.Union is null || property.Repeats is not null)
 			return;

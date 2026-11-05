@@ -91,6 +91,13 @@
 			<code>@example</code>
 		</dd>
 	}
+	@if (Model.DefaultValue is { } defaultValue)
+	{
+		<dd class="example-value">
+			<span class="values-label">Default:</span>
+			<code>@defaultValue</code>
+		</dd>
+	}
 	@if (Model.Union is not null && Model.Repeats is null)
 	{
 		if (Model.Union.Kind == UnionDisplayKind.Badges)
