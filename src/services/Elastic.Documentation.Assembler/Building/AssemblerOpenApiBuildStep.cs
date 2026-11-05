@@ -27,27 +27,19 @@ public static class AssemblerOpenApiBuildStep
 	public static async Task<IReadOnlyList<ApiCatalogEntry>> BuildAsync(
 		ILoggerFactory logFactory,
 		AssembleContext assembleContext,
-		AssembleSources assembleSources,
+		AssemblerApiSections apiSections,
 		TopNavRenderModel? siteTopNav,
 		Cancel ctx
 	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
 		var env = assembleContext.Environment;
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in env.FeatureFlags)
-			features.Set(key, value);
-
-		if (!features.AssemblerApiExplorerEnabled)
-		{
-			logger.LogInformation("Skipping OpenAPI generation: assembler-api-explorer feature flag is disabled");
-			return [];
-		}
-
-		var owners = DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
+		var owners = apiSections.Owners;
 		if (owners.Count == 0)
 		{
-			logger.LogInformation("Skipping OpenAPI generation: no API declarations found in assembled docsets");
+			logger.LogInformation(
+				"Skipping OpenAPI generation: the assembler-api-explorer feature flag is disabled or no API declarations were found in assembled docsets"
+			);
 			return [];
 		}
 
@@ -60,13 +52,16 @@ public static class AssemblerOpenApiBuildStep
 		{
 			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
 			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
-			planned.Add(
-				(owner, new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
-				{
-					SiteTopNav = siteTopNav
-				})
-			);
+			var generator = new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
+			{
+				SiteTopNav = siteTopNav
+			};
+			apiSections.Attach(owner, generator);
+			planned.Add((owner, generator));
 		}
+
+		// The navigation roots exist already. This fills their children from the trees the pages render from below.
+		await apiSections.ResolveAsync(ctx).ConfigureAwait(false);
 
 		var hubEntries = new List<ApiCatalogEntry>();
 		var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

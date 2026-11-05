@@ -316,7 +316,7 @@ The value is the key in the URL of the API, as in `/api/doc/elasticsearch/`. The
 The section is an island. The sidebar of your pages shows a link to the API, and the API pages keep their own sidebar and URLs. Every version of the API is part of the section, and only the current version is visible. The API Explorer does not move: the pages still render at the same URLs whether or not the table of contents mounts them.
 
 :::{note}
-Only the isolated `build` command accepts `api:` entries for now. The assembler, `serve` and Codex builds report an error for an `api:` entry, so don't add one to a docset those builds load.
+Only the isolated `build` command accepts `api:` entries for now. The assembler, `serve` and Codex builds report an error for an `api:` entry, so don't add one to a docset those builds load. The assembler mounts every declared API through a `floating: api` section in [`navigation.yml`](../../documentation/assembler/navigation.md#navigation-floating).
 :::
 
 ### Link to an API page from Markdown [api-cross-links]

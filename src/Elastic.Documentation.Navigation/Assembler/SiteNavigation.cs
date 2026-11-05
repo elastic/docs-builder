@@ -39,9 +39,11 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 		IDocumentationContext context,
 		IReadOnlyCollection<IDocumentationSetNavigation> documentationSetNavigations,
 		string? sitePrefix,
-		bool navigationPreviewEnabled = false
+		bool navigationPreviewEnabled = false,
+		FloatingSectionRegistry? floatingSections = null
 	)
 	{
+		_floatingSections = floatingSections ?? FloatingSectionRegistry.Empty;
 		// Normalize sitePrefix to ensure it has a leading slash and no trailing slash
 		_sitePrefix = NormalizeSitePrefix(sitePrefix);
 		// Initialize root properties
@@ -91,7 +93,14 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 		foreach (var entry in siteNavigationFile.TableOfContents)
 		{
-			if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
+			if (
+				entry is SiteSectionRef { FloatingKind: { } floatingKind } floatingRef
+				&& CreateFloatingHub(floatingRef, floatingKind, ref index) is { } hub
+			)
+			{
+				items.Add(hub);
+			}
+			else if (entry is SiteSectionRef sectionRef && !sectionRef.IsExternal && sectionRef.Children.Count > 0)
 			{
 				// Section with children becomes a real tree node (island) that groups its
 				// toc roots. FindIslandRoot() and CreateBackLinks then emit the correct
@@ -154,6 +163,48 @@ public class SiteNavigation : IRootNavigationItem<IDocumentationFile, INavigatio
 
 	/// <inheritdoc cref="ISiteNavigationRoot.TopNav"/>
 	public TopNavRenderModel? TopNav { get; }
+
+	private readonly FloatingSectionRegistry _floatingSections;
+	private readonly List<IFloatingSection> _mountedFloatingSections = [];
+
+	/// <summary>The floating sections that <c>navigation.yml</c> mounts, in navigation order.</summary>
+	public IReadOnlyList<IFloatingSection> FloatingSections => _mountedFloatingSections;
+
+	/// <summary>
+	/// Fills the children of every mounted floating section. The roots exist from construction, so this can run
+	/// when the content is ready, but it must run before anything walks the children, such as the sitemap.
+	/// </summary>
+	public Task ResolveFloatingSectionsAsync(Cancel ctx) =>
+		Task.WhenAll(_mountedFloatingSections.Select(section => section.ResolveAsync(ctx)));
+
+	/// <summary>
+	/// A <c>floating: &lt;kind&gt;</c> section becomes a node whose children are the roots of every floating section of
+	/// that kind the build offers. It returns <c>null</c> when there are none, so the section keeps its other
+	/// behaviour, such as an external link, and a build without those sections is unchanged.
+	/// </summary>
+	private SectionNavigation? CreateFloatingHub(SiteSectionRef sectionRef, string kind, ref int index)
+	{
+		var sections = _floatingSections.GetSections(kind);
+		if (sections.Count == 0)
+			return null;
+
+		var hub = new SectionNavigation(sectionRef.Title) { Parent = this };
+		var roots = new List<INavigationItem>(sections.Count);
+		foreach (var section in sections)
+		{
+			var root = section.CreateRoot(hub);
+			root.NavigationIndex = index++;
+			if (root is IAssignableIslandNavigation island)
+				island.IsIsland = true;
+			_mountedFloatingSections.Add(section);
+			roots.Add(root);
+		}
+
+		var hubPath = _floatingSections.HubPath(kind);
+		hub.Url = hubPath is null ? roots[0].Url : $"{Url.TrimEnd('/')}/{hubPath.Trim('/')}";
+		((IAssignableChildrenNavigation)hub).SetNavigationItems(roots);
+		return hub;
+	}
 
 	public HashSet<Uri> DeclaredPhantoms { get; }
 

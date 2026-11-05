@@ -6,6 +6,7 @@ using System.Collections.Frozen;
 using System.Diagnostics;
 using System.IO.Abstractions;
 using AwesomeAssertions;
+using Elastic.ApiExplorer.Landing;
 using Elastic.Documentation;
 using Elastic.Documentation.Assembler;
 using Elastic.Documentation.Assembler.Building;
@@ -14,9 +15,12 @@ using Elastic.Documentation.Assembler.Sourcing;
 using Elastic.Documentation.Configuration;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Links.CrossLinks;
+using Elastic.Documentation.Navigation.Assembler;
+using Elastic.Documentation.Navigation.Floating;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Elastic.Documentation.Build.Tests;
@@ -34,12 +38,22 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		fileSystem.File.WriteAllText(fileSystem.Path.Join(gitDir, "HEAD"), "ref: refs/heads/main\n");
 	}
 
-	[Test]
-	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
+	private sealed record Workspace(
+		ScopedTempDirectory Scoped,
+		IFileSystem FileSystem,
+		DiagnosticsCollector Collector,
+		AssembleContext Context,
+		AssemblerDocumentationSet Set,
+		AssembleSources Sources,
+		string OutputDirectory
+	) : IDisposable
 	{
-		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
-			return;
+		public void Dispose() => Scoped.Dispose();
+	}
 
+	/// <summary>A narrative checkout whose docset declares the Elasticsearch API, resolved and ready to assemble.</summary>
+	private static async Task<Workspace> CreateWorkspaceAsync(CancellationToken cancellationToken)
+	{
 		var fileSystem = new FileSystem();
 		var collector = new DiagnosticsCollector([]);
 		var configurationContext = TestHelpers.CreateConfigurationContext(fileSystem);
@@ -57,7 +71,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			references: {}
 			"""
 		);
-		using var scopedWorkspace = new ScopedTempDirectory(fileSystem, "assembler-openapi-integration");
+		var scopedWorkspace = new ScopedTempDirectory(fileSystem, "assembler-openapi-integration");
 		var workspaceRoot = scopedWorkspace.Directory;
 		var docsetPath = fileSystem.Path.Join(workspaceRoot.FullName, "docset.yml");
 		fileSystem.File.WriteAllText(
@@ -108,11 +122,24 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 
 		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
+		return new Workspace(scopedWorkspace, fileSystem, collector, context, documentationSet, assembleSources, outputDirectory);
+	}
+
+	[Test]
+	public async Task BuildAsync_GeneratesApiPagesWhenFlagEnabledAndDocsetPresent(CancellationToken cancellationToken)
+	{
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+
+		using var workspace = await CreateWorkspaceAsync(cancellationToken);
+		var (fileSystem, collector, context, assembleSources, outputDirectory) =
+			(workspace.FileSystem, workspace.Collector, workspace.Context, workspace.Sources, workspace.OutputDirectory);
+
 		var stopwatch = Stopwatch.StartNew();
 		await AssemblerOpenApiBuildStep.BuildAsync(
 			NullLoggerFactory.Instance,
 			context,
-			assembleSources,
+			AssemblerApiSections.Create(context, assembleSources),
 			siteTopNav: null,
 			cancellationToken
 		);
@@ -142,5 +169,60 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			.EnumerateDirectories(fileSystem.Path.Join(apiRoot, "doc", "elasticsearch"))
 			.FirstOrDefault(path => fileSystem.Path.GetFileName(path).StartsWith('v'));
 		versionedLanding.Should().NotBeNull("versioned products should emit at least one /vN/ tree under /docs/api/doc/elasticsearch/");
+	}
+
+	[Test]
+	public async Task ApiSections_AfterTheStep_AreInTheNavigationTheSitemapAndTheLlmsListing(CancellationToken cancellationToken)
+	{
+		if (!OperatingSystem.IsLinux() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsWindows())
+			return;
+
+		using var workspace = await CreateWorkspaceAsync(cancellationToken);
+		var apiSections = AssemblerApiSections.Create(workspace.Context, workspace.Sources);
+		var siteNavFile = SiteNavigationFile.Deserialize(
+			// language=yaml
+			"""
+			toc:
+			  - section: APIs
+			    floating: api
+			"""
+		);
+		var navigation = new SiteNavigation(
+			siteNavFile,
+			workspace.Context,
+			[workspace.Set.DocumentationSet.Navigation],
+			"/docs",
+			navigationPreviewEnabled: false,
+			new FloatingSectionRegistry([apiSections])
+		);
+
+		var hub = navigation.TopLevelItems.OfType<SectionNavigation>().Should().ContainSingle(s => s.Title == "APIs").Subject;
+		var root = hub.NavigationItems.Should().ContainSingle().Subject.Should().BeAssignableTo<IFloatingSectionRoot>().Subject;
+		hub.Url.Should().Be("/docs/api");
+		root.NavigationItems.Should().BeEmpty("the root exists before the specs are fetched");
+
+		await AssemblerOpenApiBuildStep.BuildAsync(
+			NullLoggerFactory.Instance,
+			workspace.Context,
+			apiSections,
+			navigation.TopNav,
+			cancellationToken
+		);
+
+		workspace.Collector.Errors.Should().Be(0);
+		var versions = root.NavigationItems.Should().AllBeOfType<LandingNavigationItem>().Subject.ToArray();
+		versions.Should().HaveCountGreaterThan(1, "a versioned product mounts every released major next to main");
+		versions.Where(v => !v.Hidden).Should().ContainSingle("only main is visible");
+
+		var urls = navigation.NavigationItems.SelectMany(SitemapNavigationHelper.Flatten).Select(i => i.Url).Distinct().ToArray();
+		urls.Should().Contain(
+			u => u.Contains("/api/doc/elasticsearch/operation/", StringComparison.Ordinal),
+			"the sitemap walk reaches the pages of the API"
+		);
+		urls.Should().NotContain(u => u.Contains('#'), "a heading inside a page is not a page");
+		urls.Should().NotContain(u => u.Contains("/api/doc/elasticsearch/v", StringComparison.Ordinal), "older versions are hidden");
+
+		var listing = new LlmsNavigationEnhancer().GenerateNavigationSections(navigation, new Uri(workspace.Context.Environment.Uri));
+		listing.Should().Contain("## APIs").And.Contain("api/doc/elasticsearch.md)", "the llms.txt listing comes from the navigation walk");
 	}
 }

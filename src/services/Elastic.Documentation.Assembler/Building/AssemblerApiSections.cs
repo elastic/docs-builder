@@ -1,0 +1,68 @@
+// Licensed to Elasticsearch B.V under one or more agreements.
+// Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
+// See the LICENSE file in the project root for more information
+
+using System.Diagnostics.CodeAnalysis;
+using Elastic.ApiExplorer;
+using Elastic.ApiExplorer.Floating;
+using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Navigation.Floating;
+
+namespace Elastic.Documentation.Assembler.Building;
+
+/// <summary>
+/// The API sections of an assembler build: one per API that a content repository declares. The site navigation
+/// mounts them under an <c>APIs</c> section, so their roots exist as soon as the navigation is built. The OpenAPI
+/// build step attaches the generators and fills the children from the same trees it renders the pages from.
+/// </summary>
+public sealed class AssemblerApiSections : IFloatingSectionProvider
+{
+	/// <summary>The sections of a build that does not render the API Explorer.</summary>
+	public static AssemblerApiSections Empty { get; } = new([]);
+
+	private readonly IReadOnlyList<(AssemblerApiOwner Owner, ApiFloatingSectionProvider Provider)> _owners;
+	private IReadOnlyList<IFloatingSection>? _sections;
+
+	private AssemblerApiSections(IReadOnlyList<(AssemblerApiOwner Owner, ApiFloatingSectionProvider Provider)> owners) => _owners = owners;
+
+	/// <summary>
+	/// Finds the content repositories that declare APIs. A build with the <c>assembler-api-explorer</c> flag off
+	/// or without any declaration gets <see cref="Empty"/>, so its navigation is unchanged.
+	/// </summary>
+	public static AssemblerApiSections Create(AssembleContext assembleContext, AssembleSources assembleSources)
+	{
+		var features = new FeatureFlags([]);
+		foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
+			features.Set(key, value);
+		if (!features.AssemblerApiExplorerEnabled)
+			return Empty;
+
+		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
+		return owners.Count == 0
+			? Empty
+			: new AssemblerApiSections([.. owners.Select(owner => (owner, new ApiFloatingSectionProvider(owner.Set.BuildContext)))]);
+	}
+
+	internal IReadOnlyList<AssemblerApiOwner> Owners => [.. _owners.Select(o => o.Owner)];
+
+	public string Kind => "api";
+
+	/// <inheritdoc />
+	public string? HubPath => "api";
+
+	/// <inheritdoc />
+	public IReadOnlyList<IFloatingSection> GetSections() =>
+		_sections ??= [.. _owners.SelectMany(o => o.Provider.GetSections()).OrderBy(s => s.Key, StringComparer.Ordinal)];
+
+	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
+	{
+		section = GetSections().FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.OrdinalIgnoreCase));
+		return section is not null;
+	}
+
+	internal void Attach(AssemblerApiOwner owner, OpenApiGenerator generator) =>
+		_owners.First(o => o.Owner == owner).Provider.Attach(generator);
+
+	/// <summary>Fills the children of every section, from the generators that <see cref="Attach"/> supplied.</summary>
+	internal Task ResolveAsync(Cancel ctx) => Task.WhenAll(GetSections().Select(section => section.ResolveAsync(ctx)));
+}

@@ -90,6 +90,8 @@ public static class SitemapNavigationHelper
 		ILeafNavigationItem<CrossLinkModel> => [],
 		ILeafNavigationItem<DetectionRuleFile> => [],
 		ILeafNavigationItem<INavigationModel> { Hidden: true } => [],
+		// a link to a heading inside a page is not a page of its own
+		ILeafNavigationItem<INavigationModel> { Url: var url } when url.Contains('#') => [],
 		ILeafNavigationItem<INavigationModel> file => [file],
 		INodeNavigationItem<INavigationModel, INavigationItem> { Hidden: true } => [],
 		INodeNavigationItem<INavigationModel, INavigationItem> group => group.NavigationItems.SelectMany(Flatten).Append(group),

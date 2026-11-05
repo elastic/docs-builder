@@ -14,6 +14,10 @@ internal sealed class DemoProvider : IFloatingSectionProvider
 
 	public string Kind => "api";
 
+	public string? HubPath => "api";
+
+	public IReadOnlyList<IFloatingSection> GetSections() => [Section ??= new DemoSection()];
+
 	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
 	{
 		if (key != "demo")
@@ -33,6 +37,9 @@ internal sealed class DemoSection : IFloatingSection
 	private DemoRoot? _root;
 
 	public int ResolveCount { get; private set; }
+
+	/// <summary>The root this section created, so a test can hide it as a failed API would be.</summary>
+	public DemoRoot? Root => _root;
 
 	public string Kind => "api";
 	public string Key => "demo";
@@ -88,7 +95,7 @@ internal sealed class DemoRoot : IFloatingSectionRoot, IAssignableIslandNavigati
 	public string NavigationTitle => Index.NavigationTitle;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
-	public bool Hidden => false;
+	public bool Hidden { get; set; }
 	public int NavigationIndex { get; set; }
 	public bool IsIsland { get; set; }
 	public string Id => "demo";

@@ -31,7 +31,17 @@ public sealed class ApiFloatingSectionProvider(BuildContext context) : IFloating
 
 	public string Kind => "api";
 
+	/// <summary>The page that lists every API, <c>/api/</c> under the site prefix.</summary>
+	public string? HubPath => "api";
+
 	public void Attach(OpenApiGenerator generator) => Generator = generator;
+
+	public IReadOnlyList<IFloatingSection> GetSections() =>
+		[
+			.. OpenApiGenerator.ApiConfigsToRender(context).Select(
+				c => (IFloatingSection)new ApiFloatingSection(c.Key, c.Value, this, context)
+			)
+		];
 
 	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
 	{
@@ -65,13 +75,22 @@ internal sealed class ApiFloatingSection(
 	public string UrlRoot => $"api/doc/{urlKey}";
 
 	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) =>
-		_root = new ApiFloatingRoot(ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, urlKey), config.Product.DisplayName ?? urlKey, parent);
+		_root = new ApiFloatingRoot(
+			urlKey,
+			ApiUrlBuilder.ProductRoot(context.UrlPathPrefix, urlKey),
+			config.Product.DisplayName ?? urlKey,
+			parent
+		);
 
 	public async Task ResolveAsync(Cancel ctx)
 	{
+		// Nothing mounted this section, so there is no root to fill.
+		if (_root is null)
+			return;
+
 		if (provider.Generator is not { } generator)
 		{
-			_root!.Hidden = true;
+			_root.Hidden = true;
 			return;
 		}
 
@@ -83,7 +102,7 @@ internal sealed class ApiFloatingSection(
 		catch (Exception ex) when (ex is not OperationCanceledException)
 		{
 			// The generator awaits the same cached task and reports the failure with its stack trace, so don't report it twice.
-			_root!.Hidden = true;
+			_root.Hidden = true;
 			return;
 		}
 
@@ -91,7 +110,7 @@ internal sealed class ApiFloatingSection(
 		// The generator has already reported why a spec could not be loaded.
 		if (!trees.Resolved.Documents.Any(d => d.Version.Moniker == "main"))
 		{
-			_root!.Hidden = true;
+			_root.Hidden = true;
 			return;
 		}
 
@@ -100,8 +119,12 @@ internal sealed class ApiFloatingSection(
 		for (var i = 0; i < trees.Navigations.Count; i++)
 			trees.Navigations[i].Hidden = trees.Resolved.Documents[i].Version.Moniker != "main";
 
+		// The catalog titles an API the same way, so the navigation and the API hub agree.
+		var main = trees.Resolved.Documents.First(d => d.Version.Moniker == "main");
+		_root.Title = main.Document.Info?.Title ?? _root.Title;
+
 		_trees = trees;
-		_root!.SetNavigationItems(trees.Navigations);
+		_root.SetNavigationItems(trees.Navigations);
 	}
 
 	public FloatingLinkSection? ToLinkSection() => _trees is null ? null : ApiLinkSections.Create(urlKey, _trees);
@@ -169,24 +192,41 @@ internal static class ApiLinkSections
 
 internal sealed class ApiFloatingRoot : IFloatingSectionRoot, IAssignableIslandNavigation
 {
-	public ApiFloatingRoot(string url, string title, INodeNavigationItem<INavigationModel, INavigationItem>? parent)
+	private readonly RootIndexLeaf _index;
+
+	public ApiFloatingRoot(string key, string url, string title, INodeNavigationItem<INavigationModel, INavigationItem>? parent)
 	{
+		Id = key;
 		Parent = parent;
-		Index = new ApiIndexLeafNavigation<ApiLanding>(new ApiLanding(), url, title, this, this);
+		_index = new RootIndexLeaf(url, title, this);
 	}
 
-	public string Url => Index.Url;
-	public string NavigationTitle => Index.NavigationTitle;
+	/// <summary>The title in the navigation. It starts as the product name and becomes the spec title once the spec is read.</summary>
+	public string Title { get => _index.NavigationTitle; set => _index.NavigationTitle = value; }
+
+	public string Url => _index.Url;
+	public string NavigationTitle => _index.NavigationTitle;
 	public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => this;
 	public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; }
 	public bool Hidden { get; set; }
 	public int NavigationIndex { get; set; }
 	public bool IsIsland { get; set; }
-	public string Id => Index.NavigationTitle;
-	public ILeafNavigationItem<INavigationModel> Index { get; }
+	public string Id { get; }
+	public ILeafNavigationItem<INavigationModel> Index => _index;
 	public IReadOnlyCollection<INavigationItem> NavigationItems { get; private set; } = [];
 	public bool IsUsingNavigationDropdown => false;
 	public Uri Identifier => new($"api://{Url}");
 
 	public void SetNavigationItems(IReadOnlyCollection<INavigationItem> navigationItems) => NavigationItems = navigationItems;
+
+	private sealed class RootIndexLeaf(string url, string title, ApiFloatingRoot root) : ILeafNavigationItem<ApiLanding>
+	{
+		public ApiLanding Model { get; } = new();
+		public string Url { get; } = url;
+		public string NavigationTitle { get; set; } = title;
+		public IRootNavigationItem<INavigationModel, INavigationItem> NavigationRoot => root;
+		public INodeNavigationItem<INavigationModel, INavigationItem>? Parent { get; set; } = root;
+		public bool Hidden => false;
+		public int NavigationIndex { get; set; }
+	}
 }
