@@ -129,7 +129,9 @@ public class ApiPropertyIndexTests(ApiExplorerFixture fixture)
 				}
 			}
 		};
-		var documents = new OpenApiDocumentExporter(versions).ConvertToDocuments(fixture.Document, "fixture").ToArray();
+		var documents = new OpenApiDocumentExporter(versions)
+			.ConvertToDocuments(new IndexedTree("fixture", "fixture", "main", fixture.Document))
+			.ToArray();
 		var propertyCount = 0;
 		foreach (var document in documents)
 		{

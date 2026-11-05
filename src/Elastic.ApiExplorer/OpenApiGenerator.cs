@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Abstractions;
+using Elastic.ApiExplorer.Export;
 using Elastic.ApiExplorer.Infrastructure;
 using Elastic.ApiExplorer.Landing;
 using Elastic.ApiExplorer.Model;
@@ -25,7 +26,11 @@ namespace Elastic.ApiExplorer;
 
 internal sealed record VersionedOpenApiDocument(ResolvedApiVersion Version, OpenApiDocument Document);
 
-internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDocument> Documents, string? UnmatchedBaseFilesMoniker);
+internal sealed record ResolvedProductDocuments(IReadOnlyList<VersionedOpenApiDocument> Documents, string? UnmatchedBaseFilesMoniker)
+{
+	/// <summary>Trees the version index declares whose spec could not be fetched or parsed.</summary>
+	public IReadOnlyList<string> UnresolvedMonikers { get; init; } = [];
+}
 
 internal sealed record ApiProductGeneration(
 	OpenApiDocument Document,
@@ -161,23 +166,30 @@ public class OpenApiGenerator(
 	}
 
 	/// <summary>
-	/// The <c>main</c> document of every configured API, keyed by the same API key the explorer publishes
-	/// under <c>/api/doc/{key}/</c>. An API with no <c>main</c> document has no page at that path, so it is left out.
+	/// Every version tree the explorer renders for every configured API, for the search index. A tree the version index
+	/// declares that did not load fails the export with an error per tree: indexing without it would delete that
+	/// tree's documents. Page rendering keeps skipping such a tree with a warning.
 	/// </summary>
-	public async Task<IReadOnlyList<(string ApiKey, string ProductId, OpenApiDocument Document)>> ResolveCanonicalDocuments(
-		Cancel ctx = default
-	)
+	public async Task<IReadOnlyList<IndexedTree>> ResolveIndexedTrees(Cancel ctx = default)
 	{
 		var configs = ApiConfigsToRender();
 		var resolved = await Task.WhenAll(configs.Select(c => DocumentsFor(c.Key, c.Value, ctx))).ConfigureAwait(false);
+		var apis = configs.Zip(resolved, static (c, r) => (c.Key, c.Value.Product.Id, Resolved: r)).ToList();
+
+		var unresolved = apis.SelectMany(static a => a.Resolved.UnresolvedMonikers.Select(m => (a.Key, Moniker: m))).ToList();
+		foreach (var (apiKey, moniker) in unresolved)
+		{
+			context.Collector.EmitGlobalError(
+				$"API '{apiKey}': version '{moniker}' is declared in the version index but could not be loaded, so its search documents cannot be exported."
+			);
+		}
+		if (unresolved.Count > 0)
+			throw new InvalidOperationException(
+				$"Declared API version trees could not be loaded, so the search export stops: {string.Join(", ", unresolved.Select(static u => $"{u.Key} {u.Moniker}"))}."
+			);
+
 		return [
-			.. configs
-				.Zip(
-					resolved,
-					(c, r) => (c.Key, c.Value.Product.Id, r.Documents.FirstOrDefault(v => v.Version.Moniker == "main")?.Document)
-				)
-				.Where(x => x.Document is not null)
-				.Select(x => (ApiKey: x.Key, ProductId: x.Id, x.Document!))
+			.. apis.SelectMany(static a => a.Resolved.Documents.Select(v => new IndexedTree(a.Key, a.Id, v.Version.Moniker, v.Document)))
 		];
 	}
 
@@ -366,8 +378,9 @@ public class OpenApiGenerator(
 			.Zip(documents, static (version, document) => document is null ? null : new VersionedOpenApiDocument(version, document))
 			.OfType<VersionedOpenApiDocument>()
 			.ToList();
+		var unresolved = versionsToRender.Zip(documents).Where(static x => x.Second is null).Select(static x => x.First.Moniker).ToArray();
 
-		return ToResolvedProductDocuments(results, latestDeclared);
+		return ToResolvedProductDocuments(results, latestDeclared) with { UnresolvedMonikers = unresolved };
 	}
 
 	private async Task<ResolvedProductDocuments> ResolveLocalMainOnly(IFileInfo localFile)

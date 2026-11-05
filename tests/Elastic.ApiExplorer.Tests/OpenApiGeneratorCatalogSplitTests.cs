@@ -56,7 +56,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ResolveCanonicalDocuments_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
+	public async Task ResolveIndexedTrees_ConfiguredApi_ReturnsSpecUnderItsExplorerKey()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -69,12 +69,81 @@ public class OpenApiGeneratorCatalogSplitTests
 			CreateSequentialReader(SpecDocument("Elasticsearch main"))
 		);
 
-		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		documents.Should().ContainSingle();
-		documents[0].ApiKey.Should().Be("elasticsearch");
-		documents[0].Document.Info!.Title.Should().Be("Elasticsearch main");
+		trees.Should().ContainSingle();
+		trees[0].ApiKey.Should().Be("elasticsearch");
+		trees[0].Moniker.Should().Be("main");
+		trees[0].Document.Info!.Title.Should().Be("Elasticsearch main");
 	}
+
+	[Test]
+	public async Task ResolveIndexedTrees_MainAndMajorDeclared_ReturnsEveryTree()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request => request.RequestUri!.AbsolutePath.EndsWith("index.json", StringComparison.Ordinal)
+				? IndexResponse(MainAnd8Index)
+				: SpecResponse()
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			CreateSequentialReader(SpecDocument("Elasticsearch main"), SpecDocument("Elasticsearch 8"))
+		);
+
+		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
+
+		trees.Select(t => t.Moniker).Should().Equal("main", "8");
+		ApiVersions.DefaultTree(trees.Select(t => t.Moniker)).Should().Be("main");
+	}
+
+	[Test]
+	public async Task ResolveIndexedTrees_DeclaredTreeFailsToLoad_FailsTheExport()
+	{
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(outputRoot);
+		var handler = new StubHandler(
+			request =>
+				request.RequestUri!.AbsolutePath switch
+				{
+					var path when path.EndsWith("index.json", StringComparison.Ordinal) => IndexResponse(MainAnd8Index),
+					var path when path.Contains("/8.19/", StringComparison.Ordinal) => new HttpResponseMessage(HttpStatusCode.NotFound),
+					_ => SpecResponse()
+				}
+		);
+		using var versionIndexClient = new VersionIndexClient(BaseUri, handler, sleep: (_, _) => Task.CompletedTask);
+		var reader = A.Fake<IOpenApiSpecificationReader>();
+		A.CallTo(() => reader.ReadAsync(A<Stream>._, A<string>._, A<IDiagnosticsCollector?>._)).ReturnsLazily(
+			_ => Task.FromResult<OpenApiDocument?>(SpecDocument("Elasticsearch main"))
+		);
+		var generator = new OpenApiGenerator(
+			NullLoggerFactory.Instance,
+			context,
+			NoopMarkdownStringRenderer.Instance,
+			versionIndexClient,
+			reader
+		);
+
+		var entries = await generator.GenerateProducts(ctx: TestContext.Current!.Execution.CancellationToken);
+		var errorsAfterRendering = context.Collector.Errors;
+		var export = () => generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
+
+		entries.Should().ContainSingle("pages still render the trees that loaded");
+		errorsAfterRendering.Should().Be(0, "rendering skips the missing tree with a warning");
+		(await export.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
+			"Declared API version trees could not be loaded, so the search export stops: elasticsearch 8."
+		);
+		context.Collector.Errors.Should().Be(1);
+	}
+
+	/*lang=json,strict*/
+	private const string MainAnd8Index =
+		"""{"elastic/elasticsearch":{"elasticsearch-openapi.json":{"main":{"version":"main"},"8":{"version":"8.19"}}}}""";
 
 	[Test]
 	public async Task ExportDocuments_ApisBeyondElasticsearchAndKibana_AreIndexedOncePerKey()
@@ -122,7 +191,7 @@ public class OpenApiGeneratorCatalogSplitTests
 	}
 
 	[Test]
-	public async Task ResolveCanonicalDocuments_KeyDiffersFromProduct_ReturnsBoth()
+	public async Task ResolveIndexedTrees_KeyDiffersFromProduct_ReturnsBoth()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(
@@ -143,15 +212,15 @@ public class OpenApiGeneratorCatalogSplitTests
 			CreateSequentialReader(SpecDocument("Cloud Billing API"))
 		);
 
-		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		documents.Should().ContainSingle();
-		documents[0].ApiKey.Should().Be("cloud-billing", "the key builds the URL");
-		documents[0].ProductId.Should().Be("elasticsearch", "the product id drives product metadata");
+		trees.Should().ContainSingle();
+		trees[0].ApiKey.Should().Be("cloud-billing", "the key builds the URL");
+		trees[0].ProductId.Should().Be("elasticsearch", "the product id drives product metadata");
 	}
 
 	[Test]
-	public async Task ResolveCanonicalDocuments_NoMainVersion_LeavesTheApiOut()
+	public async Task ResolveIndexedTrees_NoMainVersion_IndexesTheMajorAsDefault()
 	{
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-catalog-split-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(outputRoot);
@@ -172,9 +241,10 @@ public class OpenApiGeneratorCatalogSplitTests
 			CreateSequentialReader(SpecDocument("Elasticsearch 9"))
 		);
 
-		var documents = await generator.ResolveCanonicalDocuments(TestContext.Current!.Execution.CancellationToken);
+		var trees = await generator.ResolveIndexedTrees(TestContext.Current!.Execution.CancellationToken);
 
-		documents.Should().BeEmpty("the explorer renders only /api/doc/elasticsearch/v9/, so unversioned search URLs would be dead links");
+		trees.Select(t => t.Moniker).Should().Equal("9");
+		ApiVersions.DefaultTree(trees.Select(t => t.Moniker)).Should().Be("9");
 	}
 
 	[Test]

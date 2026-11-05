@@ -51,7 +51,7 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateBulkSpec(), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", CreateBulkSpec())).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -85,8 +85,7 @@ public class OpenApiOperationIdSearchTitleTests
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
 		var docs = exporter.ConvertToDocuments(
-			CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"),
-			"elasticsearch"
+			new IndexedTree("elasticsearch", "elasticsearch", "main", CreateSpecWithSummaryWhitespace("Bulk index or delete documents\n"))
 		).ToArray();
 
 		docs.Should().HaveCount(1);
@@ -103,7 +102,9 @@ public class OpenApiOperationIdSearchTitleTests
 	{
 		var exporter = new OpenApiDocumentExporter(VersionsConfiguration);
 
-		var docs = exporter.ConvertToDocuments(CreateSpecWithSummaryWhitespace("   "), "elasticsearch").ToArray();
+		var docs = exporter.ConvertToDocuments(
+			new IndexedTree("elasticsearch", "elasticsearch", "main", CreateSpecWithSummaryWhitespace("   "))
+		).ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -129,7 +130,9 @@ public class OpenApiOperationIdSearchTitleTests
 			}
 		};
 
-		var docs = new OpenApiDocumentExporter(VersionsConfiguration).ConvertToDocuments(spec, "elasticsearch").ToArray();
+		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec))
+			.ToArray();
 
 		docs.Should().HaveCount(1);
 		var doc = docs[0];
@@ -155,7 +158,7 @@ public class OpenApiOperationIdSearchTitleTests
 		);
 
 		var docs = new OpenApiDocumentExporter(VersionsConfiguration)
-			.ConvertToDocuments(spec, "elasticsearch")
+			.ConvertToDocuments(new IndexedTree("elasticsearch", "elasticsearch", "main", spec))
 			.ToDictionary(d => d.Api!.OperationId);
 
 		var flush = docs["ml-flush-job"];
