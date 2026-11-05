@@ -13,12 +13,12 @@ namespace Elastic.Documentation.Search;
 public sealed record ApiTreeRebase(string From, string To)
 {
 	/// <summary>The root swap that points a hit into the reader's tree, or <c>null</c> when its URLs already do or it belongs to another API.</summary>
-	public static ApiTreeRebase? For(ApiOperationMetadata? api, ApiTreeScope? scope)
+	public static ApiTreeRebase? For(ApiOperationMetadata? api, ApiPageContext? page)
 	{
-		if (scope is null || api is not { Trees: [var first, ..] } || api.Key != scope.Key)
+		if (page is not { Tree: { } tree } || api is not { Trees: [var first, ..] } || api.Key != page.Key)
 			return null;
 
-		var target = api.Trees.FirstOrDefault(t => t.Tree == scope.Tree);
+		var target = api.Trees.FirstOrDefault(t => t.Tree == tree);
 		return target is null || target.Root == first.Root ? null : new ApiTreeRebase(first.Root, target.Root);
 	}
 

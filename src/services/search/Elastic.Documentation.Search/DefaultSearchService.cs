@@ -117,9 +117,12 @@ public partial class DefaultSearchService<TDocument>(
 			postFilter = new TermQuery { Field = QueryFieldNames.ContentType, Value = request.TypeFilter };
 
 		var apiLookup = request.TypeFilter == ApiContentType;
-		var query = SearchQueryBuilder.FilterDocuments(
-			apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request),
-			request.ApiTree
+		var query = SearchQueryBuilder.LiftApi(
+			SearchQueryBuilder.FilterDocuments(
+				apiLookup ? ApiLookupQueryBuilder.Build(request.Query) : BuildDocsWideAutocompleteQuery(request),
+				request.ApiPage
+			),
+			request.ApiPage?.Key
 		);
 
 		var response = await client.SearchAsync<TDocument>(

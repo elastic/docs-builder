@@ -29,27 +29,27 @@ public class ApiTreeRebaseTests
 	[Test]
 	public void For_ScopeInASecondTree_SwapsTheFirstTreesRootForItsRoot() =>
 		ApiTreeRebase
-			.For(MainAndEight, new ApiTreeScope("elasticsearch", "8"))
+			.For(MainAndEight, new ApiPageContext("elasticsearch", "8"))
 			.Should()
 			.Be(new ApiTreeRebase("/docs/api/doc/elasticsearch", "/docs/api/doc/elasticsearch/v8"));
 
 	[Test]
 	public void For_ScopeInTheFirstTree_NeedsNoSwap() =>
-		ApiTreeRebase.For(MainAndEight, new ApiTreeScope("elasticsearch", "main")).Should().BeNull();
+		ApiTreeRebase.For(MainAndEight, new ApiPageContext("elasticsearch", "main")).Should().BeNull();
 
 	[Test]
 	public void For_TreeTheDocumentDoesNotServe_NeedsNoSwap() =>
-		ApiTreeRebase.For(MainAndEight, new ApiTreeScope("elasticsearch", "7")).Should().BeNull();
+		ApiTreeRebase.For(MainAndEight, new ApiPageContext("elasticsearch", "7")).Should().BeNull();
 
 	[Test]
-	public void For_AnotherApi_NeedsNoSwap() => ApiTreeRebase.For(MainAndEight, new ApiTreeScope("cloud", "8")).Should().BeNull();
+	public void For_AnotherApi_NeedsNoSwap() => ApiTreeRebase.For(MainAndEight, new ApiPageContext("cloud", "8")).Should().BeNull();
 
 	[Test]
 	public void For_NoScopeOrNoTrees_NeedsNoSwap()
 	{
 		ApiTreeRebase.For(MainAndEight, null).Should().BeNull();
-		ApiTreeRebase.For(Elasticsearch(), new ApiTreeScope("elasticsearch", "8")).Should().BeNull();
-		ApiTreeRebase.For(null, new ApiTreeScope("elasticsearch", "8")).Should().BeNull();
+		ApiTreeRebase.For(Elasticsearch(), new ApiPageContext("elasticsearch", "8")).Should().BeNull();
+		ApiTreeRebase.For(null, new ApiPageContext("elasticsearch", "8")).Should().BeNull();
 	}
 
 	[Test]
@@ -65,7 +65,7 @@ public class ApiTreeRebaseTests
 	public void Apply_VariantDocumentForTheDefaultTree_SwapsBackToTheShorterRoot() =>
 		ApiTreeRebase.For(
 			Elasticsearch(("9", "/docs/api/doc/elasticsearch/v9"), ("main", "/docs/api/doc/elasticsearch")),
-			new ApiTreeScope("elasticsearch", "main")
+			new ApiPageContext("elasticsearch", "main")
 		)!
 			.Apply("/docs/api/doc/elasticsearch/v9/operation/operation-search")
 			.Should()

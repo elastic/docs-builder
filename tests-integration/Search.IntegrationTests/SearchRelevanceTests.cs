@@ -488,7 +488,7 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 				s => s
 					.Indices(clientAccessor.SearchIndex)
 					.Size(3)
-					.Query(SearchQueryBuilder.FilterDocuments(ApiLookupQueryBuilder.Build(query), scope: null))
+					.Query(SearchQueryBuilder.FilterDocuments(ApiLookupQueryBuilder.Build(query), page: null))
 					.PostFilter(new TermQuery { Field = QueryFieldNames.ContentType, Value = "api" })
 					.Source(sf => sf.Filter(f => f.Includes(ReportSourceIncludes)))
 					.IncludeNamedQueriesScore(true),
