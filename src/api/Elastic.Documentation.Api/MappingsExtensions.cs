@@ -116,11 +116,22 @@ public static class MappingsExtension
 			[FromQuery(Name = "q")] string query,
 			[FromQuery(Name = "page")] int? pageNumber,
 			[FromQuery(Name = "type")] string? typeFilter,
+			[FromQuery(Name = "api_key")] string? apiKey,
+			[FromQuery(Name = "api_tree")] string? apiTree,
 			INavigationSearchService navigationSearchService,
 			Cancel ctx
 		) =>
 		{
-			var request = new NavigationSearchRequest { Query = query, PageNumber = pageNumber ?? 1, TypeFilter = typeFilter };
+			if (!ApiTreeScopeParameters.TryParse(apiKey, apiTree, out var scope))
+				return Results.BadRequest();
+
+			var request = new NavigationSearchRequest
+			{
+				Query = query,
+				PageNumber = pageNumber ?? 1,
+				TypeFilter = typeFilter,
+				ApiTree = scope
+			};
 			var response = await navigationSearchService.NavigationSearchAsync(request, ctx);
 			return Results.Ok(response);
 		});

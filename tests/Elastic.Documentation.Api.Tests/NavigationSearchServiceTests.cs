@@ -27,9 +27,19 @@ public class NavigationSearchServiceTests
 			Description = "Approximate kNN"
 		};
 
-	private static async Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property)
+	private static async Task<NavigationSearchResponse> SearchWith(ApiPropertyEntry property) =>
+		await SearchWith(
+			property,
+			new NavigationSearchRequest { Query = "knn", TypeFilter = "api" },
+			A.Fake<ISearchService<DocumentationDocument>>()
+		);
+
+	private static async Task<NavigationSearchResponse> SearchWith(
+		ApiPropertyEntry property,
+		NavigationSearchRequest request,
+		ISearchService<DocumentationDocument> inner
+	)
 	{
-		var inner = A.Fake<ISearchService<DocumentationDocument>>();
 		var document = new DocumentationDocument
 		{
 			Title = "Search",
@@ -77,7 +87,7 @@ public class NavigationSearchServiceTests
 		);
 		using var service = new NavigationSearchService(inner, accessor, NullLogger<NavigationSearchService>.Instance);
 
-		return await service.NavigationSearchAsync(new NavigationSearchRequest { Query = "knn", TypeFilter = "api" });
+		return await service.NavigationSearchAsync(request);
 	}
 
 	[Test]
@@ -106,5 +116,21 @@ public class NavigationSearchServiceTests
 		var json = JsonSerializer.Serialize(response, ApiJsonContext.Default.NavigationSearchResponse);
 
 		json.Should().Contain("\"path\":\"retriever.knn\"").And.NotContain("\"parent\"");
+	}
+
+	[Test]
+	public async Task NavigationSearchAsync_Scope_ForwardsItToTheSearch()
+	{
+		var inner = A.Fake<ISearchService<DocumentationDocument>>();
+		var scope = new ApiTreeScope("elasticsearch", "8");
+
+		_ = await SearchWith(Property(), new NavigationSearchRequest { Query = "knn", TypeFilter = "api", ApiTree = scope }, inner);
+
+		_ = A.CallTo(
+			() => inner.AutocompleteAsync(
+				A<AutocompleteRequest>.That.Matches(r => r.ApiTree == scope && r.Query == "knn" && r.TypeFilter == "api"),
+				A<CancellationToken>._
+			)
+		).MustHaveHappenedOnceExactly();
 	}
 }

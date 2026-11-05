@@ -17,6 +17,9 @@ public record NavigationSearchRequest
 	public int PageNumber { get; init; } = 1;
 	public int PageSize { get; init; } = 20;
 	public string? TypeFilter { get; init; }
+
+	/// <summary>The version tree of an API the reader is in; <c>null</c> shows every API's default rendering.</summary>
+	public ApiTreeScope? ApiTree { get; init; }
 }
 
 public record NavigationSearchResponse
