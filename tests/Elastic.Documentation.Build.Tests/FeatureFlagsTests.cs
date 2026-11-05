@@ -69,11 +69,11 @@ public class FeatureFlagsTests
 	}
 
 	[Test]
-	public void EdgeEnvironment_EnablesNavigationPreview()
+	public void EdgeEnvironment_DisablesNavigationPreview()
 	{
 		var config = AssemblyConfiguration.Create(new ConfigurationFileProvider(new TestLoggerFactory(), new ConfigurationFileSystem()));
 
-		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeTrue();
+		config.Environments["edge"].FeatureFlags.Should().ContainKey("NAVIGATION_PREVIEW").WhoseValue.Should().BeFalse();
 	}
 
 	[Test]
