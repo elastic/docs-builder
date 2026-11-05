@@ -121,7 +121,7 @@ Links to `https://www.elastic.co/docs/api/doc/...` pages, including `redirects.y
 [Search API](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-search)
 ```
 
-If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. Only the page is checked, not the `#anchor`. Old bump.sh URLs that resolve only through edge redirects are also reported, so link to the canonical URL.
+If an endpoint no longer exists in the current API docs, point the link at the versioned tree that still has it, for example `https://www.elastic.co/docs/api/doc/kibana/v8/...`. The links between API pages that come from the OpenAPI spec descriptions are checked the same way; fix those in the spec. Only the page is checked, not the `#anchor`. Old bump.sh URLs that resolve only through edge redirects are also reported, so link to the canonical URL.
 
 ### Linked images
 

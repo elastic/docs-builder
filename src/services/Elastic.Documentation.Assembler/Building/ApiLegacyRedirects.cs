@@ -72,6 +72,11 @@ public static class ApiLegacyRedirects
 			return string.Empty;
 		var rest = path[ApiLinkMatcher.ApiDocPrefix.Length..];
 		var slash = rest.IndexOf('/');
-		return slash < 0 ? rest : rest[..slash];
+		if (slash >= 0)
+			return rest[..slash];
+
+		// A product root also has spec downloads next to it: kibana.json and kibana.yaml.
+		var extension = Path.GetExtension(rest);
+		return extension is ".json" or ".yaml" ? rest[..^extension.Length] : rest;
 	}
 }

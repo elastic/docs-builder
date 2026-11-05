@@ -38,6 +38,30 @@ public static partial class ApiLinkMatcher
 		return true;
 	}
 
+	/// <summary>
+	/// Returns <paramref name="url"/> as an absolute elastic.co API URL when it targets an API page, either as such or as a
+	/// site path under <paramref name="urlPathPrefix"/>, which is how the API Explorer writes links between its own pages.
+	/// </summary>
+	public static bool TryCanonicalize(string? url, string? urlPathPrefix, out string canonical)
+	{
+		canonical = string.Empty;
+		if (string.IsNullOrWhiteSpace(url))
+			return false;
+
+		if (TryGetApiPath(url, out _))
+		{
+			canonical = url;
+			return true;
+		}
+
+		var prefix = urlPathPrefix?.TrimEnd('/') ?? string.Empty;
+		if (!url.StartsWith($"{prefix}/api/doc/", StringComparison.OrdinalIgnoreCase))
+			return false;
+
+		canonical = $"https://www.elastic.co/docs{url[prefix.Length..]}";
+		return true;
+	}
+
 	public static string Normalize(string path) =>
 		DuplicateSlashes().Replace(Uri.UnescapeDataString(path), "/").TrimEnd('/').ToLowerInvariant();
 

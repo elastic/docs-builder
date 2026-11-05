@@ -29,4 +29,22 @@ public class ApiLinkMatcherTests
 	[Arguments("")]
 	[Arguments(null)]
 	public void TryGetApiPath_NonApiUrl_ReturnsFalse(string? url) => ApiLinkMatcher.TryGetApiPath(url, out _).Should().BeFalse();
+
+	[Test]
+	[Arguments("/docs/api/doc/kibana/operation/operation-x", "/docs", "https://www.elastic.co/docs/api/doc/kibana/operation/operation-x")]
+	[Arguments("/elastic/docs-builder/docs/123/api/doc/kibana/group/endpoint-a", "/elastic/docs-builder/docs/123", "https://www.elastic.co/docs/api/doc/kibana/group/endpoint-a")]
+	[Arguments("https://www.elastic.co/docs/api/doc/kibana", "/docs", "https://www.elastic.co/docs/api/doc/kibana")]
+	public void TryCanonicalize_ApiPageLink_ReturnsAbsoluteProductionUrl(string url, string prefix, string expected)
+	{
+		ApiLinkMatcher.TryCanonicalize(url, prefix, out var canonical).Should().BeTrue();
+		canonical.Should().Be(expected);
+	}
+
+	[Test]
+	[Arguments("/docs/solutions/search", "/docs")]
+	[Arguments("../operation/x", "/docs")]
+	[Arguments("https://example.com/docs/api/doc/kibana", "/docs")]
+	[Arguments(null, "/docs")]
+	public void TryCanonicalize_OtherLink_ReturnsFalse(string? url, string prefix) =>
+		ApiLinkMatcher.TryCanonicalize(url, prefix, out _).Should().BeFalse();
 }

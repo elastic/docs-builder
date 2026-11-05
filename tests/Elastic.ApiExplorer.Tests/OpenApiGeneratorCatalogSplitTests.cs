@@ -74,6 +74,7 @@ public class OpenApiGeneratorCatalogSplitTests
 
 		generator.GeneratedUrls.Should().Contain("/docs/api/doc/elasticsearch");
 		generator.GeneratedUrls.Should().Contain("/docs/api/doc/elasticsearch/group/endpoint-core");
+		generator.GeneratedUrls.Should().Contain(["/docs/api/doc/elasticsearch.json", "/docs/api/doc/elasticsearch.yaml"]);
 		generator.GeneratedUrls.Should().OnlyContain(url => url == url.ToLowerInvariant() && !url.EndsWith('/'));
 		generator.GeneratedUrls.Should().Contain(url => url.Contains("/operation/operation-"));
 	}

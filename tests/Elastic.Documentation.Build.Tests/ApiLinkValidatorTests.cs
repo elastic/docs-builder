@@ -18,6 +18,7 @@ public class ApiLinkValidatorTests
 		"/docs/api/doc/kibana/v8/operation/operation-upgrade",
 		"/docs/api/doc/kibana/operation/operation-alias",
 		"/docs/api/doc/kibana-serverless/operation/operation-live",
+		"/docs/api/doc/cloud-serverless.yaml",
 		"/docs/api/doc/kibana/kibana-api-overview"
 	};
 
@@ -50,6 +51,13 @@ public class ApiLinkValidatorTests
 				],
 				Generated
 			)
+			.Should()
+			.BeEmpty();
+
+	[Test]
+	public void FindBroken_OldBumpShRootSpecDownload_ResolvesToTheNewRootDownload() =>
+		ApiLinkValidator
+			.FindBroken([Link("https://www.elastic.co/docs/api/doc/elastic-cloud-serverless.yaml")], Generated)
 			.Should()
 			.BeEmpty();
 

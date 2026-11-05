@@ -507,6 +507,8 @@ public class OpenApiGenerator(
 
 	private async Task WriteSpecDownloads(INavigationItem landing, OpenApiDocument document, Cancel ctx)
 	{
+		RecordUrl($"{landing.Url.TrimEnd('/')}.json");
+		RecordUrl($"{landing.Url.TrimEnd('/')}.yaml");
 		await WriteSpecSibling(
 			ApiOutputPaths.RelativeJsonFile(landing.Url, context.UrlPathPrefix),
 			(stream, token) => document.SerializeAsJsonAsync(stream, OpenApiSpecVersion.OpenApi3_1, token),

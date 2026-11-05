@@ -68,7 +68,8 @@ public static class ApiLinkValidator
 				Column = link.Column,
 				Length = link.Length,
 				Message = $"API link '{link.Url}' does not resolve to a generated API page. Point it at an existing page " +
-					"(for older endpoints use a versioned tree such as /docs/api/doc/<product>/v8/...) or confirm the endpoint was removed intentionally."
+					"(for older endpoints use a versioned tree such as /docs/api/doc/<product>/v8/...) or confirm the endpoint was removed intentionally. " +
+					"Links in API descriptions are fixed in the OpenAPI spec."
 			});
 		}
 
