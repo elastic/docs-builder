@@ -8,6 +8,7 @@ using Elastic.Documentation;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Storybook;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -163,8 +164,21 @@ storybook:
 	public void WarnsAndLeavesExpressionLiteral() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("not allow-listed for interpolation"));
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/docset.yml 'storybook.registry' references environment variable 'AWS_SECRET_ACCESS_KEY' which is not allow-listed for interpolation and is left literal. Allowed: KIBANA_STORYBOOK_REGISTRY.
+		error {repo}/docs/index.md:3 storybook registry could not be read: ${AWS_SECRET_ACCESS_KEY:-docs_registry.json}
+		System.IO.FileNotFoundException: Could not find file '{repo}/docs/${AWS_SECRET_ACCESS_KEY:-docs_registry.json}'.
+		File name: '{repo}/docs/${AWS_SECRET_ACCESS_KEY:-docs_registry.json}'
+		   at System.IO.Abstractions.TestingHelpers.MockFile.ReadAllText(String path, Encoding encoding)
+		   at System.IO.Abstractions.TestingHelpers.MockFile.ReadAllText(String path)
+		   at Nullean.ScopedFileSystem.ScopedFile.ReadAllText(String path)
+		   at Elastic.Markdown.Myst.Directives.Storybook.StorybookBlock.ReadRegistry(String rawRegistry) in {repo}/src/Elastic.Markdown/Myst/Directives/Storybook/StorybookBlock.cs:line 209
+		   at Elastic.Markdown.Myst.Directives.Storybook.StorybookBlock.TryReadRegistry(String rawRegistry, String& registryJson, Exception& error) in {repo}/src/Elastic.Markdown/Myst/Directives/Storybook/StorybookBlock.cs:line 184
+		"""
+			);
 }
 
 [InheritsTests]
@@ -198,8 +212,11 @@ public class StorybookStructuredReferenceWrongStorybookTests() : StorybookRegist
 	public void DoesNotFallbackToAnotherStorybook() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Message.Contains("does not contain id 'kibana:content_management:ai-components-aibutton--default'"));
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 storybook registry does not contain id 'kibana:content_management:ai-components-aibutton--default'."
+			);
 }
 
 [InheritsTests]
@@ -265,8 +282,11 @@ public class StorybookInvalidHeightTests() : StorybookRegistryTest(
 		Block!.Height.Should().Be(400);
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains(":height: must be a positive integer"));
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 storybook directive :height: must be a positive integer. Got 'tall', using default 400px."
+			);
 		Html.Should().MatchInlineHtmlSnapshot(
 			html: DocsHtml.Body(),
 			expected: """
@@ -288,7 +308,12 @@ public class StorybookMissingRegistryTests() : DirectiveTest<StorybookBlock>(
 )
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires docset.yml storybook.registry"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 storybook directive requires docset.yml storybook.registry.");
 }
 
 [InheritsTests]
@@ -298,7 +323,12 @@ public class StorybookMissingIdTests() : StorybookRegistryTest("""
 """)
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires :id: or :project:"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 storybook directive requires :id: or :project:.");
 }
 
 [InheritsTests]
@@ -314,6 +344,7 @@ public class StorybookPositionalArgumentWarningTests() : StorybookRegistryTest(
 	public void EmitsWarning() =>
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.ContainSingle(d => d.Severity == Severity.Warning && d.Message.Contains("ignores positional arguments"));
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 storybook directive ignores positional arguments. Use properties instead.");
 }

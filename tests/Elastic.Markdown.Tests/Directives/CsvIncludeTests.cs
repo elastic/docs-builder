@@ -8,6 +8,7 @@ using Elastic.Documentation.Configuration;
 using Elastic.Documentation.FileSystems;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.CsvInclude;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -219,11 +220,12 @@ public class CsvIncludeNotFoundTests() : DirectiveTest<CsvIncludeBlock>("""
 	public void ReportsFileNotFound() => Block!.Found.Should().BeFalse();
 
 	[Test]
-	public void EmitsErrorForMissingFile()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("does not exist"));
-	}
+	public void EmitsErrorForMissingFile() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 CSV file `{repo}/docs/missing-file.csv` does not exist.");
 }
 
 [InheritsTests]
@@ -233,9 +235,10 @@ public class CsvIncludeNoArgumentTests() : DirectiveTest<CsvIncludeBlock>("""
 """)
 {
 	[Test]
-	public void EmitsErrorForMissingArgument()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty();
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.Contains("requires an argument"));
-	}
+	public void EmitsErrorForMissingArgument() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 csv-include requires an argument specifying the path to the CSV file.");
 }

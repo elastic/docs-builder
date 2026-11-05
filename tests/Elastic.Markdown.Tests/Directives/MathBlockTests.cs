@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Math;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -91,15 +92,8 @@ public class MathBlockEmptyTests() : DirectiveTest<MathBlock>("""
 """)
 {
 	[Test]
-	public void EmptyContentGeneratesError() => Collector.Errors.Should().Be(1);
-
-	[Test]
-	public void EmitsErrorForEmptyContent()
-	{
-		Collector.Diagnostics.Should().NotBeNullOrEmpty().And.HaveCount(1);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Severity == Severity.Error);
-		Collector.Diagnostics.Should().OnlyContain(d => d.Message.StartsWith("Math directive requires content."));
-	}
+	public void EmptyContentGeneratesError() =>
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("error {repo}/docs/index.md:3 Math directive requires content.");
 }
 
 [InheritsTests]

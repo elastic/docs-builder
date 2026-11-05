@@ -6,6 +6,7 @@ using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Table;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -338,7 +339,11 @@ public class TableDirectiveWidthCountMismatchTests() : DirectiveTest<TableDirect
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("does not match"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Column width count (3) does not match table column count (2).");
 }
 
 [InheritsTests]
@@ -356,7 +361,11 @@ public class TableDirectiveWidthsSumErrorTests() : DirectiveTest<TableDirectiveB
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("sum to 12"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Column widths must sum to 12 (Bootstrap grid). Got sum of 8.");
 }
 
 [InheritsTests]
@@ -370,7 +379,13 @@ Some text, no table.
 {
 	[Test]
 	public void EmitsError() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("pipe table"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Table directive must contain a pipe table. Add a table using Markdown pipe syntax."
+			);
 }
 
 [InheritsTests]
@@ -388,7 +403,13 @@ public class TableDirectiveInvalidWidthsTests() : DirectiveTest<TableDirectiveBl
 {
 	[Test]
 	public void EmitsErrorForInvalidPreset() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid widths value 'foo'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+			);
 }
 
 [InheritsTests]
@@ -406,7 +427,13 @@ public class TableDirectiveOutOfRangeWidthsTests() : DirectiveTest<TableDirectiv
 {
 	[Test]
 	public void EmitsErrorForOutOfRangeUnit() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("Invalid widths value"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"error {repo}/docs/index.md:3 Invalid widths value '0-12'. Use preset (auto, description) or dash-separated integers 1-12 that sum to 12 (e.g., 4-8, 4-4-4)."
+			);
 }
 
 [InheritsTests]
@@ -428,5 +455,9 @@ public class TableDirectiveMultipleTablesTests() : DirectiveTest<TableDirectiveB
 {
 	[Test]
 	public void EmitsErrorForMultipleTables() =>
-		Collector.Diagnostics.Should().Contain(d => d.Severity == Severity.Error && d.Message.Contains("exactly one pipe table"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 Table directive must contain exactly one pipe table.");
 }

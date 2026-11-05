@@ -5,7 +5,9 @@
 using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Image;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -38,7 +40,7 @@ public class ImageBlockTests() : DirectiveTest<ImageBlock>(
 	public void ImageIsFoundSoNoErrorIsEmitted()
 	{
 		Block!.Found.Should().BeTrue();
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -88,7 +90,7 @@ public class AllowedExternalHostTests() : DirectiveTest<ImageBlock>(
 	public void AllowedHostDoesNotWarn()
 	{
 		Block!.Found.Should().BeTrue();
-		Collector.Diagnostics.Count.Should().Be(0);
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 	}
 }
 
@@ -113,6 +115,12 @@ Relaxing at the beach 🏝 🌊 😎
 	{
 		Block!.Found.Should().BeTrue();
 
-		Collector.Diagnostics.Should().HaveCount(1).And.OnlyContain(d => d.Severity == Severity.Warning);
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"warning {repo}/docs/index.md:3 image is using an external URI: https://github.com/rowanc1/pics/blob/main/sunset.png?raw=true "
+			);
 	}
 }

@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.RelatedLearning;
+using Nullean.Snapshots;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -58,7 +60,7 @@ public class RelatedLearningBasicTests() : DirectiveTest<RelatedLearningBlock>("
 	}
 
 	[Test]
-	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	private static int CountOccurrences(string haystack, string needle)
 	{
@@ -137,8 +139,9 @@ public class RelatedLearningUnknownIdTests() : DirectiveTest<RelatedLearningBloc
 	{
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("unknown catalog ID 'not-a-module'"));
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 {related-learning} unknown catalog ID 'not-a-module'.");
 		Block!.Items.Should().BeEmpty();
 		Html.Should().NotContain("related-learning");
 		File.PageTableOfContent.Should().NotContainKey(RelatedLearningBlock.DefaultSlug);
@@ -159,8 +162,9 @@ public class RelatedLearningDuplicateIdTests() : DirectiveTest<RelatedLearningBl
 		Block!.Items.Should().ContainSingle().Which.Id.Should().Be("apm-with-elastic");
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Warning && d.Message.Contains("duplicate catalog ID 'apm-with-elastic'"));
+			.MatchInlineSnapshot("warning {repo}/docs/index.md:3 {related-learning} duplicate catalog ID 'apm-with-elastic' was skipped.");
 	}
 }
 
@@ -175,8 +179,9 @@ public class RelatedLearningEmptyIdsTests() : DirectiveTest<RelatedLearningBlock
 	{
 		Collector
 			.Diagnostics
+			.ToSnapshotText()
 			.Should()
-			.Contain(d => d.Severity == Severity.Error && d.Message.Contains("requires at least one catalog ID as an argument"));
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 {related-learning} requires at least one catalog ID as an argument.");
 		Block!.Items.Should().BeEmpty();
 	}
 }

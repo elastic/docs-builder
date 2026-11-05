@@ -246,7 +246,14 @@ style B fill:#0A52B3,color:#fff
 )
 {
 	[Test]
-	public void EmitsHints() => Collector.Diagnostics.Should().NotBeEmpty();
+	public void EmitsHints() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"hint {repo}/docs/index.md:3 Mermaid strict mode stripped 3 item(s): ClassDefDirective (line 3), UnknownClassReference (line 4), StyleDirective (line 5)"
+			);
 
 	[Test]
 	public void EmitsSvgFile() => ReadMermaidSvgs().Should().NotBeEmpty();
@@ -293,7 +300,7 @@ A[Start]:::warning --> B[End]
 		);
 
 	[Test]
-	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void SvgContainsWarningFillColor() => ReadMermaidSvgs()[0].Should().Contain("#fdf3d8");
@@ -326,7 +333,7 @@ pie
 		);
 
 	[Test]
-	public void EmitsNoDiagnostics() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoDiagnostics() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 
 	[Test]
 	public void UsesThemePalette() => ReadMermaidSvgs()[0].Should().Contain("#3788ff"); // blue-elastic-70

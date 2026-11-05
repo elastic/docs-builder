@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Button;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -91,7 +92,7 @@ public class ButtonNeutralTests() : DirectiveTest<ButtonBlock>(
 		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -215,7 +216,7 @@ public class ButtonReferenceLinkTests() : DirectiveTest<ButtonBlock>(
 		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -228,7 +229,16 @@ public class ButtonInvalidTypeTests() : DirectiveTest<ButtonBlock>("""
 {
 	[Test]
 	public void EmitsWarningForInvalidType() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("Invalid button type"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		warning {repo}/docs/index.md:3 Invalid button type 'invalid'. Valid types are: primary, secondary, neutral. Defaulting to 'primary'.
+		error {repo}/docs/index.md:5 `/test` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/test`
+		"""
+			);
 
 	[Test]
 	public void FallsBackToPrimary() => Block!.Type.Should().Be("primary");
@@ -383,7 +393,7 @@ public class ButtonCursorProtocolTests() : DirectiveTest<ButtonBlock>(
 		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -412,7 +422,7 @@ public class ButtonVscodeProtocolTests() : DirectiveTest<ButtonBlock>(
 		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -441,7 +451,7 @@ public class ButtonVscodeInsidersProtocolTests() : DirectiveTest<ButtonBlock>(
 		);
 
 	[Test]
-	public void EmitsNoErrors() => Collector.Diagnostics.Should().BeEmpty();
+	public void EmitsNoErrors() => Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
 }
 
 [InheritsTests]
@@ -451,7 +461,21 @@ public class ButtonEmptyTests() : DirectiveTest<ButtonBlock>("""
 """)
 {
 	[Test]
-	public void EmitsErrorForEmptyContent() => Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("requires a link"));
+	public void EmitsErrorForEmptyContent() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive requires a link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }
 
 [InheritsTests]
@@ -463,7 +487,20 @@ Just some text without a link
 {
 	[Test]
 	public void EmitsErrorForPlainText() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive must contain only a single Markdown link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }
 
 [InheritsTests]
@@ -475,7 +512,22 @@ public class ButtonMultipleLinksTests() : DirectiveTest<ButtonBlock>("""
 {
 	[Test]
 	public void EmitsErrorForMultipleLinks() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("must contain only a single Markdown link"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive must contain only a single Markdown link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		error {repo}/docs/index.md:4 `/one` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/one`
+		error {repo}/docs/index.md:4 `/two` does not exist. If it was recently removed add a redirect. resolved to `{repo}/docs/two`
+		"""
+			);
 }
 
 [InheritsTests]
@@ -489,5 +541,19 @@ This is nested
 {
 	[Test]
 	public void EmitsErrorForNestedDirective() =>
-		Collector.Diagnostics.Should().ContainSingle(d => d.Message.Contains("cannot contain nested directives"));
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot(
+				"""
+		error {repo}/docs/index.md:3 Button directive cannot contain nested directives or blocks. Use only a single Markdown link.
+		error {repo}/docs/index.md:3 Button directive requires a link. Use: :::{button}
+		[text](url)
+		:::
+		Or: :::{button}
+		[text][ref]
+		:::
+		"""
+			);
 }

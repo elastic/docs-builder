@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AgentSkill;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -62,7 +63,12 @@ A regular paragraph.
 """)
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("requires a :url: property"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 agent-skill directive requires a :url: property");
 }
 
 [InheritsTests]
@@ -76,7 +82,12 @@ A regular paragraph.
 )
 {
 	[Test]
-	public void EmitsError() => Collector.Diagnostics.Should().Contain(d => d.Message.Contains("must be an absolute URL"));
+	public void EmitsError() =>
+		Collector
+			.Diagnostics
+			.ToSnapshotText()
+			.Should()
+			.MatchInlineSnapshot("error {repo}/docs/index.md:3 agent-skill :url: must be an absolute URL, got '/relative/path'");
 }
 
 [InheritsTests]
