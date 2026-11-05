@@ -36,8 +36,6 @@ public class ApiLookupQueryBuilderTests
 			.Select(o => o.EnumerateObject().Single().Value)
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
 
-	private const int CoreOptionCount = 4;
-
 	/// <summary>The <c>key_0</c> option, whether the word offers other roles or, as a path, only this one.</summary>
 	private static JsonElement KeyOption(JsonDocument json)
 	{
@@ -47,39 +45,35 @@ public class ApiLookupQueryBuilderTests
 			: OptionsByName(TokenClause(json, 0))["key_0"];
 	}
 
-	/// <summary>The most literal templates of each exact endpoint option, by the field it reads.</summary>
-	private static Dictionary<string, string?[]> ExactOptions(JsonElement key) =>
+	/// <summary>The exact endpoint lookups, each a <c>dis_max</c> of <c>terms</c> templates, in option order.</summary>
+	private static IEnumerable<JsonProperty> TermsOptions(JsonElement key) =>
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
-			.Take(CoreOptionCount)
 			.Where(q => q.TryGetProperty("dis_max", out _))
-			.Select(
-				q => q
-					.GetProperty("dis_max")
-					.GetProperty("queries")[0]
-					.GetProperty("constant_score")
-					.GetProperty("filter")
-					.GetProperty("terms")
-			)
-			.Select(t => t.EnumerateObject().Single())
-			.ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(v => v.GetString()).ToArray());
+			.Select(q => q.GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score").GetProperty("filter"))
+			.Where(f => f.TryGetProperty("terms", out _))
+			.Select(f => f.GetProperty("terms").EnumerateObject().Single());
 
-	/// <summary>The routes-under prefix of each field, checked to carry the namespace weight and no name of its own.</summary>
-	private static Dictionary<string, string?> PrefixOptions(JsonElement key) =>
+	/// <summary>The most literal templates of the two exact endpoint options, by the field each reads.</summary>
+	private static Dictionary<string, string?[]> ExactOptions(JsonElement key) =>
+		TermsOptions(key).Take(2).ToDictionary(p => p.Name, p => p.Value.EnumerateArray().Select(v => v.GetString()).ToArray());
+
+	/// <summary>Each routes-under prefix as <c>field value</c>, checked to carry the namespace weight and no name of its own.</summary>
+	private static string[] Prefixes(JsonElement key) =>
 		key
 			.GetProperty("queries")
 			.EnumerateArray()
-			.Take(CoreOptionCount)
 			.Where(q => q.TryGetProperty("constant_score", out _))
 			.Select(q => q.GetProperty("constant_score"))
 			.Select(cs =>
 			{
 				cs.GetProperty("boost").GetSingle().Should().Be(5.5f);
 				cs.TryGetProperty("_name", out _).Should().BeFalse();
-				return cs.GetProperty("filter").GetProperty("prefix").EnumerateObject().Single();
+				var prefix = cs.GetProperty("filter").GetProperty("prefix").EnumerateObject().Single();
+				return $"{prefix.Name} {prefix.Value.GetProperty("value").GetString()}";
 			})
-			.ToDictionary(p => p.Name, p => p.Value.GetProperty("value").GetString());
+			.ToArray();
 
 	[Test]
 	public void Tokenize_TwoPlainWords_ReturnsTwoPlainTokens()
@@ -191,7 +185,7 @@ public class ApiLookupQueryBuilderTests
 	[Arguments("snapshot", "snapshot", "snapshot")]
 	[Arguments("Snapshot", "snapshot", "snapshot")]
 	[Arguments("_snapshot", "_snapshot", "snapshot")]
-	public void Build_PlainWord_KeyOptionCoversTheRoutesUnderTheEndpointAtFiveAndAHalf(string word, string route, string bare)
+	public void Build_PlainWord_KeyOptionCoversOnlyTheRoutesUnderItsSystemRouteAtFiveAndAHalf(string word, string route, string bare)
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(word));
 		var key = KeyOption(json);
@@ -199,16 +193,22 @@ public class ApiLookupQueryBuilderTests
 		ExactOptions(key)
 			.Should()
 			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
-		PrefixOptions(key)
-			.Should()
-			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints_bare"] = bare + "/" });
+		Prefixes(key).Should().Equal("api.endpoints _snapshot/");
+	}
+
+	[Test]
+	public void Build_PlainWord_DoesNotCoverTheRoutesUnderItsOwnName()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("api"));
+
+		Prefixes(KeyOption(json)).Should().Equal("api.endpoints _api/");
 	}
 
 	[Test]
 	public void Build_PlainWord_KeyOptionKeepsTheUnderscoreAliasOnTheExactFieldForIndexesWithoutTheBareView()
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("snapshot"));
-		var options = KeyOption(json).GetProperty("queries").EnumerateArray().Skip(CoreOptionCount).ToList();
+		var options = KeyOption(json).GetProperty("queries").EnumerateArray().Skip(2).ToList();
 
 		options.Should().HaveCount(2);
 		var terms = options[0].GetProperty("dis_max").GetProperty("queries")[0].GetProperty("constant_score");
@@ -230,7 +230,7 @@ public class ApiLookupQueryBuilderTests
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build(typed));
 
-		KeyOption(json).GetProperty("queries").GetArrayLength().Should().Be(CoreOptionCount);
+		TermsOptions(KeyOption(json)).Where(p => p.Name == "api.endpoints").Should().ContainSingle();
 	}
 
 	[Test]
@@ -245,9 +245,7 @@ public class ApiLookupQueryBuilderTests
 		var exact = ExactOptions(key);
 		exact.Keys.Should().BeEquivalentTo("api.endpoints", "api.endpoints_bare");
 		exact.Values.Should().AllSatisfy(terms => terms.Should().Contain("api/fleet"));
-		PrefixOptions(key)
-			.Should()
-			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = "api/fleet/", ["api.endpoints_bare"] = "api/fleet/" });
+		Prefixes(key).Should().BeEquivalentTo("api.endpoints api/fleet/", "api.endpoints_bare api/fleet/");
 	}
 
 	[Test]
@@ -255,7 +253,7 @@ public class ApiLookupQueryBuilderTests
 	{
 		using var json = Json(ApiLookupQueryBuilder.Build("/api/fleet/{id}"));
 
-		PrefixOptions(KeyOption(json)).Values.Should().AllBeEquivalentTo("api/fleet/*/");
+		Prefixes(KeyOption(json)).Should().BeEquivalentTo("api.endpoints api/fleet/*/", "api.endpoints_bare api/fleet/*/");
 	}
 
 	[Test]
@@ -269,9 +267,7 @@ public class ApiLookupQueryBuilderTests
 		ExactOptions(key)
 			.Should()
 			.BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = [route], ["api.endpoints_bare"] = [bare] });
-		PrefixOptions(key)
-			.Should()
-			.BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = route + "/", ["api.endpoints_bare"] = bare + "/" });
+		Prefixes(key).Should().Contain([$"api.endpoints {route}/", $"api.endpoints_bare {bare}/"]);
 	}
 
 	[Test]
@@ -291,7 +287,7 @@ public class ApiLookupQueryBuilderTests
 		var key = KeyOption(json);
 
 		ExactOptions(key).Should().BeEquivalentTo(new Dictionary<string, string?[]> { ["api.endpoints"] = ["_"] });
-		PrefixOptions(key).Should().BeEquivalentTo(new Dictionary<string, string> { ["api.endpoints"] = "_/" });
+		Prefixes(key).Should().Equal("api.endpoints _/");
 	}
 
 	[Test]

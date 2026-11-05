@@ -355,6 +355,29 @@ See test output above for detailed scoring breakdowns from Elasticsearch's _expl
 		);
 	}
 
+	[Test]
+	public async Task ApiSearchPlainWordDoesNotCoverTheRoutesUnderItsOwnName()
+	{
+		var (gateway, _) = CreateFindPageGateway();
+		Skip.Unless(gateway is not null, "Elasticsearch is not connected");
+		var canConnect = await gateway.CanConnect(TestContext.Current!.Execution.CancellationToken);
+		Skip.Unless(canConnect, "Elasticsearch is not connected");
+
+		var searchResult = await gateway.NavigationSearchAsync(
+			new NavigationSearchRequest { Query = "api key", PageNumber = 1, PageSize = 5, TypeFilter = "api" },
+			TestContext.Current!.Execution.CancellationToken
+		);
+
+		var urls = searchResult.Results.Select(r => r.Url).ToList();
+		TestContext.Current?.Output.WriteLine(string.Join("\n", urls));
+		// Every Kibana route starts with api/, so the word must not lift Kibana operations above the API-key ones.
+		urls
+			.Should()
+			.NotBeEmpty()
+			.And
+			.OnlyContain(u => u.Contains("api-key", StringComparison.Ordinal) && !u.Contains("/kibana", StringComparison.Ordinal));
+	}
+
 	// DocumentationDocument requires title and search_title; the full source also carries nullable dates it cannot read.
 	private static readonly string[] ReportSourceIncludes = ["path", "title", "search_title"];
 

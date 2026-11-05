@@ -134,9 +134,10 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>
-	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. The bare keys and the
-	/// typed route both drop the underscore that starts an Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and
-	/// <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
+	/// A word or a typed route matches its endpoint exactly, or covers the routes under it just below. A typed route covers
+	/// the routes under it; a bare word covers only the routes under its system route, because words such as <c>api</c> are the
+	/// first segment of every Kibana route. The bare keys and the typed route both drop the underscore that starts an
+	/// Elasticsearch system route, so <c>snapshot</c>, <c>/snapshot</c> and <c>/_snapshot</c> all cover <c>_snapshot/*/*/_restore</c>.
 	/// </summary>
 	private static Query? KeyOption(string text, int index)
 	{
@@ -144,21 +145,22 @@ public static class ApiLookupQueryBuilder
 		if (SearchQueryBuilder.BuildApiEndpointQuery(route, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpoints) is not { } exact)
 			return null;
 
+		var typedRoute = text.Contains('/');
 		var bare = ApiEndpointPath.StripRouteUnderscores(route);
 		var bareExact = SearchQueryBuilder.BuildApiEndpointQuery(bare, ApiLookupWeights.EndpointKey, QueryFieldNames.ApiEndpointsBare);
 		var options = new Query?[]
 		{
 			exact,
 			bareExact,
-			RoutesUnder(route, QueryFieldNames.ApiEndpoints),
-			bareExact is null ? null : RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare)
+			typedRoute ? RoutesUnder(route, QueryFieldNames.ApiEndpoints) : null,
+			typedRoute && bareExact is not null ? RoutesUnder(bare, QueryFieldNames.ApiEndpointsBare) : null
 		}.OfType<Query>().ToList();
 
 		// An index written before the bare keys exist has no api.endpoints_bare and the service deploys on its own,
 		// so a bare word keeps its underscore alias on the exact field until every index carries the bare keys.
 		if (SearchQueryBuilder.BuildBareWordEndpointQuery(route, ApiLookupWeights.EndpointKey) is { } alias)
 			options.Add(alias);
-		if (SearchQueryBuilder.EndpointName(route) is { } name && name != route)
+		if (SearchQueryBuilder.EndpointName(route) is { } name && !(typedRoute && name == route))
 			options.Add(RoutesUnder(name, QueryFieldNames.ApiEndpoints));
 
 		return new DisMaxQuery { Queries = options, QueryName = ApiLookupRoles.QueryName(ApiLookupRole.Key, index) };
