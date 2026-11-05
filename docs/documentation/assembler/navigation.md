@@ -23,6 +23,26 @@ The location of the table of contents file.
 
 `repo_name://path-relative-to-toc.yml`
 
+## `section` with `floating` (optional) [navigation-floating]
+
+A `section:` entry with `floating: api` puts the API pages of the site in the navigation tree:
+
+```yml
+toc:
+  - section: APIs
+    floating: api
+```
+
+When the build renders the API Explorer (the `assembler-api-explorer` feature flag), every API that a content repository declares in the `api:` block of its `docset.yml` becomes a child of the section. The section links to `/api/`, and each API is an island with its own sidebar. Only the current version of each API is visible, so older versions stay out of the sitemap and the `llms.txt` listing. The sitemap and the `llms.txt` listing read the section like any other part of the tree. The section is empty and adds nothing to a build that does not render the API Explorer.
+
+A section can also have an `external:` link, as the `APIs` tab of the navigation preview does. The tab keeps its link, and the tree gets the APIs when the build has any:
+
+```yml
+  - section: APIs
+    external: /api/
+    floating: api
+```
+
 ## `path_prefix` (optional)
 
 The `path_prefix` configuration key specifies the URL path segment that should be prefixed to all documentation URLs.

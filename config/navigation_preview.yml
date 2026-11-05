@@ -51,8 +51,11 @@ toc:
   # APIs #
   ########
   # A path that starts with / is a link within the site, so the site prefix is added and the tab is active on pages under it.
+  # `floating: api` also puts the APIs in the navigation tree, for the sitemap and llms.txt, when the build renders them.
+  # Without that the section stays this external link.
   - section: APIs
     external: /api/
+    floating: api
 
   ###########
   # PRODUCTS #

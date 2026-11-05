@@ -56,6 +56,18 @@ public interface IFloatingSectionProvider
 	string Kind { get; }
 
 	bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section);
+
+	/// <summary>
+	/// Every section of this kind the build can offer, in a stable order. A site-level mount, such as an
+	/// <c>APIs</c> section in <c>navigation.yml</c>, uses this to place all of them without naming each one.
+	/// </summary>
+	IReadOnlyList<IFloatingSection> GetSections() => [];
+
+	/// <summary>
+	/// The page that lists the sections of this kind, relative to the site root and without slashes at either end,
+	/// or <c>null</c> when there is none.
+	/// </summary>
+	string? HubPath => null;
 }
 
 /// <summary>The providers available to a build, looked up by toc key.</summary>
@@ -73,4 +85,11 @@ public sealed class FloatingSectionRegistry(IEnumerable<IFloatingSectionProvider
 		section = null;
 		return _providers.TryGetValue(kind, out var provider) && provider.TryGetSection(key, out section);
 	}
+
+	/// <summary>Every section of <paramref name="kind"/> the build can offer, or none when no provider handles the kind.</summary>
+	public IReadOnlyList<IFloatingSection> GetSections(string kind) =>
+		_providers.TryGetValue(kind, out var provider) ? provider.GetSections() : [];
+
+	/// <summary>The hub page of <paramref name="kind"/>, relative to the site root, or <c>null</c> when it has none.</summary>
+	public string? HubPath(string kind) => _providers.TryGetValue(kind, out var provider) ? provider.HubPath : null;
 }
