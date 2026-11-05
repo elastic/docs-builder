@@ -184,6 +184,31 @@ public class SchemaAnalyzer(
 	}
 
 	/// <summary>
+	/// The union a schema is: its own <c>oneOf</c>/<c>anyOf</c>, or the union member of an <c>allOf</c> that wraps one with
+	/// other members. Those options are the union's own, not merged with the other members, which a caller lists as
+	/// fields. Every option stays, a primitive one included, so the list names every choice. Null when the schema is no union
+	/// or none of its options lists fields.
+	/// </summary>
+	public (UnionKeyword Keyword, List<UnionOption> Options)? GetListedUnion(IOpenApiSchema? schema)
+	{
+		var target = ResolveSchema(schema) ?? schema;
+		if (target is null)
+			return null;
+
+		if (UnionSchemas.TryGet(target, out var keyword, out var members))
+			return ListedUnion(keyword, members);
+		return target.AllOf is { Count: > 0 } allOf && AllOfUnion.TrySplit(allOf, this, out var split)
+			? ListedUnion(split.Keyword, split.Variants)
+			: null;
+	}
+
+	private (UnionKeyword Keyword, List<UnionOption> Options)? ListedUnion(UnionKeyword keyword, IEnumerable<IOpenApiSchema> members)
+	{
+		var options = GetUnionOptions(members);
+		return options.Any(UnionOptionHasProperties) ? (keyword, options) : null;
+	}
+
+	/// <summary>
 	/// The options of a union, as every option list (badges, variant tabs, body and schema-page variants) shows them.
 	/// Literal members surface through <see cref="TypeInfo.EnumValues"/>, not as options.
 	/// </summary>
@@ -604,6 +629,9 @@ public class SchemaAnalyzer(
 		var named = ClassifyNamedSchema(SchemaHelpers.FormatSchemaName(refId), resolvedTarget);
 		var isEnum = resolvedTarget.Enum is { Count: > 0 };
 		var (unionKeyword, unionOptions) = isEnum ? (null, null) : ReferencedUnion(refId, resolvedTarget);
+		// A named array of a union offers the union's variants for each item, as an inline array does (see ClassifyArray).
+		if (isArray && unionKeyword is null && ReferencedItemUnion(resolvedTarget.Items) is { } itemUnion)
+			(unionKeyword, unionOptions) = itemUnion;
 
 		return new TypeInfo
 		{
@@ -624,6 +652,15 @@ public class SchemaAnalyzer(
 			UnionKeyword = unionKeyword,
 			ArrayItemType = isArray ? PrimitiveItemType(resolvedTarget.Items) : null
 		};
+	}
+
+	/// <summary>The union the items of a referenced array are, if any. Items classify like an inline array's, so both read the same.</summary>
+	private (UnionKeyword Keyword, List<UnionOption> Options)? ReferencedItemUnion(IOpenApiSchema? items)
+	{
+		if (items is null)
+			return null;
+		var itemInfo = ClassifyType(items);
+		return itemInfo is { UnionKeyword: { } keyword, UnionOptions: { } options } ? (keyword, options) : null;
 	}
 
 	/// <summary>The item type of a referenced array, when the items are a plain primitive rather than a linked or named type.</summary>
