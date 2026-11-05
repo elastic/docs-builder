@@ -167,7 +167,27 @@ public class ChangelogSubsectionsExplicitFalseTests : DirectiveTest<ChangelogBlo
 	public void SubsectionsPropertyIsFalse() => Block!.Subsections.Should().BeFalse();
 
 	[Test]
-	public void DoesNotRenderAreaHeaders() => Html.Should().NotContain("<strong>Search</strong>");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Feature in Search.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>

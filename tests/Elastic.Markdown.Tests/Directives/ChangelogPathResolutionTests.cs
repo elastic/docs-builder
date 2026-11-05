@@ -53,7 +53,27 @@ public class ChangelogBundlesFolderRelativePathTests : DirectiveTest<ChangelogBl
 		Block!.BundlesFolderPath.Should().EndWith("custom/path/bundles".Replace('/', Path.DirectorySeparatorChar));
 
 	[Test]
-	public void RendersContent() => Html.Should().Contain("Test feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.0.0">
+			<h2>
+				<a class="headerlink" href="#1.0.0">1.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="test-product-1.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#test-product-1.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Test feature.
+				<a href="https://github.com/elastic/test-product/pull/12345">#12345</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -97,7 +117,27 @@ public class ChangelogBundlesFolderDocsetRootRelativeTests : DirectiveTest<Chang
 	public void PathDoesNotContainDoubleSlashes() => Block!.BundlesFolderPath.Should().NotContain("//");
 
 	[Test]
-	public void RendersContent() => Html.Should().Contain("Another feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="2.0.0">
+			<h2>
+				<a class="headerlink" href="#2.0.0">2.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="test-product-2.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#test-product-2.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Another feature.
+				<a href="https://github.com/elastic/test-product/pull/67890">#67890</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -283,7 +323,27 @@ public class ChangelogBundlesFolderNestedRelativePathTests : DirectiveTest<Chang
 	public void ResolvesDeepNestedPath() => Block!.Found.Should().BeTrue();
 
 	[Test]
-	public void RendersContent() => Html.Should().Contain("Nested feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="3.0.0">
+			<h2>
+				<a class="headerlink" href="#3.0.0">3.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="nested-product-3.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#nested-product-3.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Nested feature.
+				<a href="https://github.com/elastic/nested-product/pull/99999">#99999</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -333,7 +393,27 @@ public class ChangelogPathEdgeCaseTests : DirectiveTest<ChangelogBlock>
 	public void ResolvesSlashPrefixedPath() => Block!.Found.Should().BeTrue();
 
 	[Test]
-	public void RendersContent() => Html.Should().Contain("Edge case feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.0.0">
+			<h2>
+				<a class="headerlink" href="#1.0.0">1.0.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="edge-product-1.0.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#edge-product-1.0.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Edge case feature.
+				<a href="https://github.com/elastic/edge-product/pull/55555">#55555</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]

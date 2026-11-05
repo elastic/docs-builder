@@ -1184,13 +1184,28 @@ public class ChangelogTitleDescriptionSpacingTests : DirectiveTest<ChangelogBloc
 		);
 
 	[Test]
-	public void RendersTitleText() => Html.Should().Contain("Added missing banner-related Kibana settings to the settings allowlist");
-
-	[Test]
-	public void RendersDescriptionText() => Html.Should().Contain("This PR introduces the following settings");
-
-	[Test]
-	public void DoesNotConcatenateTitleAndDescriptionWithoutSeparator() => Html.Should().NotContain("allowlist.This PR introduces");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>
+				<p>Added missing banner-related Kibana settings to the settings allowlist.</p>
+				<p>This PR introduces the following settings.</p>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -1229,10 +1244,30 @@ public class ChangelogReleaseDateTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
-
-	[Test]
-	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.34.0">
+			<h2>
+				<a class="headerlink" href="#1.34.0">1.34.0</a>
+			</h2>
+		</div>
+		<p>
+			<em>Released: April 9, 2026</em>
+		</p>
+		<div class="heading-wrapper" id="apm-agent-dotnet-1.34.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#apm-agent-dotnet-1.34.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Add tracing improvements.
+				<a href="https://github.com/elastic/apm-agent-dotnet/pull/500">#500</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -1269,7 +1304,27 @@ public class ChangelogNoReleaseDateTests : DirectiveTest<ChangelogBlock>
 		);
 
 	[Test]
-	public void DoesNotRenderReleaseDate() => Html.Should().NotContain("Released:");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>New feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/100">#100</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -1310,13 +1365,31 @@ public class ChangelogReleaseDateWithDescriptionTests : DirectiveTest<ChangelogB
 		);
 
 	[Test]
-	public void RendersReleaseDate() => Html.Should().Contain("Released: April 9, 2026");
-
-	[Test]
-	public void RendersDescription() => Html.Should().Contain("This release includes tracing improvements and bug fixes.");
-
-	[Test]
-	public void RendersEntries() => Html.Should().Contain("Add tracing improvements");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="1.34.0">
+			<h2>
+				<a class="headerlink" href="#1.34.0">1.34.0</a>
+			</h2>
+		</div>
+		<p>
+			<em>Released: April 9, 2026</em>
+		</p>
+		<p>This release includes tracing improvements and bug fixes.</p>
+		<div class="heading-wrapper" id="apm-agent-dotnet-1.34.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#apm-agent-dotnet-1.34.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Add tracing improvements.
+				<a href="https://github.com/elastic/apm-agent-dotnet/pull/500">#500</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 /// <summary>
@@ -1361,5 +1434,25 @@ public class ChangelogDoubleBraceEscapeTests : DirectiveTest<ChangelogBlock>
 	public void RendersWithoutErrors() => Collector.Errors.Should().Be(0);
 
 	[Test]
-	public void RendersTitleWithLiteralBraces() => Html.Should().Contain("{{hostname}}");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-fixes">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-fixes">Fixes</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Fix ECE API ingestion blocked by {{hostname}} template placeholder.
+				<a href="https://github.com/elastic/elasticsearch/pull/123">#123</a>
+			</li>
+		</ul>
+		"""
+		);
 }

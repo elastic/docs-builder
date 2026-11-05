@@ -83,15 +83,6 @@ public class ChangelogConfigLoadAutoDiscoverTests : DirectiveTest<ChangelogBlock
 
 	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
-
-	[Test]
-	public void RendersFeaturesSection() => Html.Should().Contain("Features and enhancements");
-
-	[Test]
-	public void RendersDeprecationsSection() => Html.Should().Contain("Deprecations");
-
-	[Test]
-	public void RendersKnownIssuesSection() => Html.Should().Contain("Known issues");
 }
 
 [InheritsTests]
@@ -254,7 +245,27 @@ public class ChangelogConfigNotFoundTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNullWhenNoConfig() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntriesWhenNoConfig() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 
 	[Test]
 	public void NoErrorsEmittedForMissingConfig() => Collector.Diagnostics.Should().NotContain(d => d.Message.Contains("changelog.yml"));
@@ -299,7 +310,27 @@ public class ChangelogConfigExplicitPathNotFoundTests : DirectiveTest<ChangelogB
 		Collector.Diagnostics.Should().Contain(d => d.Message.Contains("nonexistent/config.yml") && d.Message.Contains("not found"));
 
 	[Test]
-	public void RendersAllEntriesWhenConfigNotFound() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -434,7 +465,27 @@ public class ChangelogConfigEmptyBlockTests : DirectiveTest<ChangelogBlock>
 	public void PublishBlockerIsNullWhenNoBlockSection() => Block!.PublishBlocker.Should().BeNull();
 
 	[Test]
-	public void RendersAllEntriesWhenNoBlockSection() => Html.Should().Contain("Regular feature");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.3.0">
+			<h2>
+				<a class="headerlink" href="#9.3.0">9.3.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="elasticsearch-9.3.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#elasticsearch-9.3.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Regular feature.
+				<a href="https://github.com/elastic/elasticsearch/pull/111111">#111111</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]

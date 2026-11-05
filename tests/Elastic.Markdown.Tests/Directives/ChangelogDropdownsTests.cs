@@ -112,9 +112,6 @@ public class ChangelogDropdownsEnabledTests : DirectiveTest<ChangelogBlock>
 
 	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
-
-	[Test]
-	public void ExplicitDropdownsIncludesDescriptionInDropdown() => Html.Should().Contain("API has been changed to improve performance.");
 }
 
 /// <summary>

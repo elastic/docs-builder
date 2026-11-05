@@ -6,6 +6,7 @@ using System.IO.Abstractions.TestingHelpers;
 using AwesomeAssertions;
 using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots;
 using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
@@ -568,7 +569,11 @@ public class ChangelogAllEntriesFilteredTocTests : DirectiveTest<ChangelogBlock>
 	}
 
 	[Test]
-	public void OmitsVersionFromRenderedOutput() => Html.Should().NotContain("9.3.0");
+	public void OmitsVersionFromRenderedOutput()
+	{
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "");
+		Collector.Diagnostics.ToSnapshotText().Should().MatchInlineSnapshot("");
+	}
 
 	[Test]
 	public void NoAnchorsGenerated()

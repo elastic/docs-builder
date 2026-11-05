@@ -6,7 +6,9 @@ using AwesomeAssertions;
 using Elastic.Documentation.Configuration.Assembler;
 using Elastic.Documentation.Configuration.ReleaseNotes;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Changelog;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -152,5 +154,25 @@ public class ChangelogVisibilityUnversionedProductTests() : DirectiveTest<Change
 		);
 
 	[Test]
-	public void DoesNotFilterProductsWithoutVersioningSystem() => Html.Should().Contain("Future-looking change");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="heading-wrapper" id="9.9.0">
+			<h2>
+				<a class="headerlink" href="#9.9.0">9.9.0</a>
+			</h2>
+		</div>
+		<div class="heading-wrapper" id="widget-9.9.0-features-enhancements">
+			<h3>
+				<a class="headerlink" href="#widget-9.9.0-features-enhancements">Features and enhancements</a>
+			</h3>
+		</div>
+		<ul>
+			<li>Future-looking change.
+				<a href="https://github.com/elastic/widget/pull/300">#300</a>
+			</li>
+		</ul>
+		"""
+		);
 }

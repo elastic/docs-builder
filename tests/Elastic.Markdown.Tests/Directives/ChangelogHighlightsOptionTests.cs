@@ -75,13 +75,7 @@ public class ChangelogHighlightsOptionDefaultOffTests : DirectiveTest<ChangelogB
 	public void HighlightsDisabledByDefault() => Block!.HighlightsEnabled.Should().BeFalse();
 
 	[Test]
-	public void OmitsHighlightsSection() => Html.Should().NotContain("Highlights");
-
-	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
-
-	[Test]
-	public void ExcludesSeparatedTypesByDefault() => Html.Should().NotContain("Breaking changes");
 
 	[Test]
 	public void TocOmitsHighlights()
@@ -108,13 +102,7 @@ public class ChangelogHighlightsOptionEnabledTests : DirectiveTest<ChangelogBloc
 	public void HighlightsEnabledWhenFlagPresent() => Block!.HighlightsEnabled.Should().BeTrue();
 
 	[Test]
-	public void RendersHighlightsSection() => Html.Should().Contain("Highlights");
-
-	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
-
-	[Test]
-	public void ExcludesSeparatedTypesWithoutTypeAll() => Html.Should().NotContain("Breaking changes");
 
 	[Test]
 	public void TocIncludesHighlights()
@@ -219,7 +207,7 @@ public class ChangelogHighlightsOptionWithDescriptionsTests : DirectiveTest<Chan
 		) => FileSystem.AddFile("docs/changelog/bundles/9.3.0.yaml", new MockFileData(ChangelogHighlightsFixtures.BundleYaml));
 
 	[Test]
-	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 /// <summary>
@@ -272,12 +260,6 @@ public class ChangelogKeepHighlightDescriptionsTests : DirectiveTest<ChangelogBl
 		Block!.DescriptionVisibility.Should().Be(ChangelogDescriptionVisibility.KeepHighlightDescriptions);
 
 	[Test]
-	public void ShowsDescriptionInHighlightsSection() => Html.Should().Contain("This is the highlight description.");
-
-	[Test]
-	public void HidesDescriptionsInTypeSections() => Html.Should().NotContain("This is the regular feature description.");
-
-	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
@@ -322,9 +304,6 @@ public class ChangelogKeepHighlightDescriptionsWithoutHighlightsTests : Directiv
 		"""
 			)
 		);
-
-	[Test]
-	public void OmitsHighlightsSection() => Html.Should().NotContain("id=\"elasticsearch-9.3.0-highlights\"");
 
 	[Test]
 	public void RendersHtml() =>
