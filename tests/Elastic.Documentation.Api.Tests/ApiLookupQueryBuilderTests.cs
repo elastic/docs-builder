@@ -10,6 +10,7 @@ using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -36,6 +37,15 @@ public class ApiLookupQueryBuilderTests
 			.EnumerateArray()
 			.Select(o => o.EnumerateObject().Single().Value)
 			.ToDictionary(o => o.GetProperty("_name").GetString()!);
+
+	/// <summary>The name options of the word at <paramref name="index"/>: exact, prefix, then words of the field name.</summary>
+	private static JsonElement NameOptions(JsonDocument json, int index) =>
+		OptionsByName(TokenClause(json, index))[$"field_{index}"]
+			.GetProperty("query")
+			.GetProperty("dis_max")
+			.GetProperty("queries")[0]
+			.GetProperty("dis_max")
+			.GetProperty("queries");
 
 	/// <summary>The <c>key_0</c> option, whether the word offers other roles or, as a path, only this one.</summary>
 	private static JsonElement KeyOption(JsonDocument json)
@@ -536,12 +546,7 @@ public class ApiLookupQueryBuilderTests
 		var innerHits = field.GetProperty("inner_hits");
 		innerHits.GetProperty("name").GetString().Should().Be("api_properties_1");
 		innerHits.GetProperty("size").GetInt32().Should().Be(20);
-		var names = field
-			.GetProperty("query")
-			.GetProperty("dis_max")
-			.GetProperty("queries")[0]
-			.GetProperty("dis_max")
-			.GetProperty("queries");
+		var names = NameOptions(json, 1);
 		names[0].GetProperty("constant_score").GetProperty("boost").GetSingle().Should().Be(1.0f);
 		names[1].GetProperty("constant_score").GetProperty("boost").GetSingle().Should().Be(0.6f);
 		names[1].GetProperty("constant_score").GetProperty("_name").GetString().Should().Be("api_name");
@@ -587,7 +592,7 @@ public class ApiLookupQueryBuilderTests
 		var options = fieldQuery.GetProperty("dis_max").GetProperty("queries");
 		options.GetArrayLength().Should().Be(1);
 		var matches = options[0].GetProperty("dis_max").GetProperty("queries");
-		matches.GetArrayLength().Should().Be(2);
+		matches.GetArrayLength().Should().Be(3);
 		matches[0]
 			.GetProperty("constant_score")
 			.GetProperty("filter")
@@ -607,9 +612,165 @@ public class ApiLookupQueryBuilderTests
 			.Should()
 			.Be(name);
 		fieldQuery.GetRawText().Should().NotContain("api.properties.description").And.NotContain("api.properties.path");
-		var scores = matches.EnumerateArray().Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle()).ToArray();
+		var scores = matches
+			.EnumerateArray()
+			.Take(2)
+			.Select(q => q.GetProperty("constant_score").GetProperty("boost").GetSingle())
+			.ToArray();
 		scores.Should().OnlyContain(score => score > 0 && score <= 1);
 		scores[0].Should().BeGreaterThan(scores[1], "an exact field name ranks ahead of a prefix");
+		matches[2].GetProperty("bool").GetProperty("_name").GetString().Should().Be(SearchQueryBuilder.ApiNameHits);
+	}
+
+	[Test]
+	public void Build_FieldWords_MatchEachWordFuzzilyAndLiftARowNamingSeveral()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("unreated docs"));
+		var wordOption = NameOptions(json, 0)[2];
+
+		wordOption
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "bool": {
+				            "must": {
+				              "bool": {
+				                "minimum_should_match": 1,
+				                "should": [
+				                  {
+				                    "match": {
+				                      "api.properties.name_words": {
+				                        "fuzziness": "AUTO:4,100",
+				                        "prefix_length": 1,
+				                        "query": "unreated"
+				                      }
+				                    }
+				                  },
+				                  {
+				                    "prefix": {
+				                      "api.properties.name_words": {
+				                        "value": "unreated"
+				                      }
+				                    }
+				                  }
+				                ]
+				              }
+				            }
+				          }
+				        }
+				      }
+				    },
+				    "_name": "api_name",
+				    "should": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "match": {
+				            "api.properties.name_words": {
+				              "fuzziness": "AUTO:4,100",
+				              "minimum_should_match": 2,
+				              "prefix_length": 1,
+				              "query": "unreated docs"
+				            }
+				          }
+				        }
+				      }
+				    }
+				  }
+				}
+				"""
+			);
+	}
+
+	[Test]
+	public void Build_IdentifierFragment_MatchesTheWordsOfAFieldName()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("_uri"));
+		var wordOption = NameOptions(json, 0)[2];
+
+		wordOption
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "constant_score": {
+				        "boost": 0.5,
+				        "filter": {
+				          "bool": {
+				            "must": {
+				              "bool": {
+				                "minimum_should_match": 1,
+				                "should": [
+				                  {
+				                    "match": {
+				                      "api.properties.name_words": {
+				                        "fuzziness": "AUTO:4,100",
+				                        "prefix_length": 1,
+				                        "query": "uri"
+				                      }
+				                    }
+				                  },
+				                  {
+				                    "prefix": {
+				                      "api.properties.name_words": {
+				                        "value": "uri"
+				                      }
+				                    }
+				                  }
+				                ]
+				              }
+				            }
+				          }
+				        }
+				      }
+				    },
+				    "_name": "api_name"
+				  }
+				}
+				"""
+			);
+	}
+
+	[Test]
+	public void Build_ShortFieldWord_MatchesWholeWordsOnly()
+	{
+		using var json = Json(ApiLookupQueryBuilder.Build("scroll id"));
+		var wordFilter = NameOptions(json, 1)[2]
+			.GetProperty("bool")
+			.GetProperty("must")
+			.GetProperty("constant_score")
+			.GetProperty("filter");
+
+		wordFilter
+			.GetRawText()
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "bool": {
+				    "must": {
+				      "match": {
+				        "api.properties.name_words": {
+				          "fuzziness": "AUTO:4,100",
+				          "prefix_length": 1,
+				          "query": "id"
+				        }
+				      }
+				    }
+				  }
+				}
+				"""
+			);
 	}
 
 	[Test]

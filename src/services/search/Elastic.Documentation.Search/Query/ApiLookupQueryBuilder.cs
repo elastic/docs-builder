@@ -54,7 +54,11 @@ public static class ApiLookupQueryBuilder
 	public static Query Build(string query)
 	{
 		var tokens = Tokenize(query);
-		var clauses = tokens.Select(TokenClause).OfType<Query>().ToList();
+		string[] words =
+		[
+			.. tokens.Where(t => t.Kind == ApiLookupTokenKind.Plain).SelectMany(t => ApiPropertyPath.IdentifierWords(t.Text))
+		];
+		var clauses = tokens.Select((token, index) => TokenClause(token, index, words)).OfType<Query>().ToList();
 		if (clauses.Count == 0)
 			return new MatchNoneQuery();
 
@@ -108,7 +112,7 @@ public static class ApiLookupQueryBuilder
 	}
 
 	/// <summary>The roles a word may play, best one wins. A path that names no endpoint explains nothing, so it drops out.</summary>
-	private static Query? TokenClause(ApiLookupToken token, int index)
+	private static Query? TokenClause(ApiLookupToken token, int index, IReadOnlyList<string> words)
 	{
 		var key = KeyOption(token.Text, index);
 		if (token.Kind == ApiLookupTokenKind.Path)
@@ -125,7 +129,7 @@ public static class ApiLookupQueryBuilder
 			),
 			Constant(TitleQuery(token.Text), ApiLookupWeights.TitleWord, ApiLookupRoles.QueryName(ApiLookupRole.Title, index)),
 			MethodOption(token.Text, index),
-			FieldOption(token, index),
+			FieldOption(token, index, words),
 			Constant(
 				SynonymsMatch(QueryFieldNames.Body, token.Text),
 				ApiLookupWeights.BodyWord,
@@ -258,11 +262,11 @@ public static class ApiLookupQueryBuilder
 			)
 			: null;
 
-	private static Query FieldOption(ApiLookupToken token, int index) =>
+	private static Query FieldOption(ApiLookupToken token, int index, IReadOnlyList<string> words) =>
 		SearchQueryBuilder.BuildNestedPropertyQuery(
 			token.Text,
 			FieldHitsName(index),
-			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren),
+			new SearchQueryBuilder.PropertyLookup(AllowPrefix: true, token.ExpandChildren, words),
 			ApiLookupRoles.QueryName(ApiLookupRole.Field, index)
 		);
 
