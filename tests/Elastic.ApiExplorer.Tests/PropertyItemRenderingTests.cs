@@ -5,6 +5,7 @@
 using AwesomeAssertions;
 using Elastic.ApiExplorer.Components.PropertyTree;
 using Elastic.ApiExplorer.Components.PropertyTree._Partials;
+using Nullean.Snapshots.Html;
 using RazorSlices;
 using static Elastic.ApiExplorer.Tests.TestSpecs;
 
@@ -49,14 +50,8 @@ public class PropertyItemRenderingTests
 
 		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
 
-		html.Should().Contain(
-			"""href="https://docs.oracle.com/javase/8/docs/api/java/util/regex/Matcher.html" target="_blank" rel="noopener">"""
-		);
-		html.Should().Contain(
-			"""href="https://www.elastic.co/docs/explore-analyze/elastic-inference/inference-api">""",
-			"an elastic.co link stays in the tab"
-		);
-		html.Should().NotContain("&quot;_blank&quot;");
+		// The elastic.co link stays in the tab, the external one opens a new one.
+		html.Should().MatchHtmlSnapshot();
 		var row = html[html.IndexOf("<dt id=\"chunking\">", StringComparison.Ordinal)..];
 
 		int At(string marker) => row.IndexOf(marker, StringComparison.Ordinal);
