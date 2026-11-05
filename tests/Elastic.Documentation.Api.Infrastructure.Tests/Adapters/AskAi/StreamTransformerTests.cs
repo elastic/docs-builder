@@ -325,6 +325,8 @@ public class LlmGatewayStreamTransformerTests
 /// </summary>
 public class StreamTransformerCommonBehaviorTests
 {
+	// The SSE text is an argument of the test, and the snapshot file name carries a hash of the arguments. A checkout on Windows turns the
+	// line endings of this file into "\r\n", so the text is normalised, or the hash and the file name would differ per platform.
 	public static IEnumerable<Func<(string, IStreamTransformer, string)>> StreamTransformerTestCases()
 	{
 		yield return () =>
@@ -337,7 +339,9 @@ public class StreamTransformerCommonBehaviorTests
 			event: message_chunk
 			data: {"data":{"text_chunk":"test"}}
 
-			""");
+			""".ReplaceLineEndings(
+				"\n"
+			));
 		yield return () =>
 			("LlmGatewayStreamTransformer", new LlmGatewayStreamTransformer(NullLogger<LlmGatewayStreamTransformer>.Instance),
 			// LLM Gateway SSE format - minimal events
@@ -345,7 +349,9 @@ public class StreamTransformerCommonBehaviorTests
 			event: agent_stream_output
 			data: [null, {"type":"ai_message_chunk","id":"1","timestamp":1234567890,"data":{"content":"test"}}]
 
-			""");
+			""".ReplaceLineEndings(
+				"\n"
+			));
 	}
 
 	/// <summary>
