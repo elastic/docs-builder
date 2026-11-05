@@ -9,8 +9,9 @@ using Nullean.Snapshots;
 namespace Elastic.Documentation.Testing.Linked;
 
 /// <summary>
-/// Scrubbers every snapshot in docs-builder's tests gets: machine-specific paths and git SHAs never belong in a
-/// verified file. Runs when any test project referencing this assembly loads it.
+/// Scrubbers every snapshot in docs-builder's tests gets: the repository root and the temp folder are replaced by
+/// <c>{repo}</c> and <c>{temp}</c>, and the rest of such a path is written with forward slashes, so a verified file
+/// reads the same on every machine and operating system. Compiled into each test project.
 /// </summary>
 internal static class SnapshotScrubbing
 {
@@ -19,14 +20,22 @@ internal static class SnapshotScrubbing
 #pragma warning restore CA2255
 	internal static void Register()
 	{
-		SnapshotDefaults.AddScrubber(
-			Scrubbers.Regex(
-				new Regex(Regex.Escape(Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar)) + @"[^\s""'<>]*", RegexOptions.Compiled),
-				"{temp}"
-			)
-		);
+		// the more specific root first: the repository may sit under the temp folder
 		if (FindSolutionRoot() is { } root)
-			SnapshotDefaults.AddScrubber(Scrubbers.Regex(new Regex(Regex.Escape(root), RegexOptions.Compiled), "{repo}"));
+			SnapshotDefaults.AddScrubber(Under(root, "{repo}"));
+		SnapshotDefaults.AddScrubber(Under(Path.GetTempPath(), "{temp}"));
+	}
+
+	/// <summary>
+	/// Replaces <paramref name="root"/> with <paramref name="token"/> and writes the path that follows it with
+	/// forward slashes. The path ends at whitespace, a quote, an angle bracket or a colon, so <c>file.md:3</c> keeps its line.
+	/// </summary>
+	internal static Func<string, string> Under(string root, string token)
+	{
+		root = root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+		var roots = new[] { root, root.Replace('\\', '/') }.Distinct().Select(Regex.Escape);
+		var pattern = new Regex($"(?:{string.Join('|', roots)})(?<rest>[^\\s\"'<>:*?|]*)", RegexOptions.Compiled);
+		return text => pattern.Replace(text, m => token + m.Groups["rest"].Value.Replace('\\', '/'));
 	}
 
 	private static string? FindSolutionRoot()
@@ -34,6 +43,6 @@ internal static class SnapshotScrubbing
 		var dir = new DirectoryInfo(AppContext.BaseDirectory);
 		while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "docs-builder.slnx")))
 			dir = dir.Parent;
-		return dir?.FullName.TrimEnd(Path.DirectorySeparatorChar);
+		return dir?.FullName;
 	}
 }
