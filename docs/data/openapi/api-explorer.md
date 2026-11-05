@@ -325,11 +325,11 @@ A docset that mounts an API with an `api:` toc entry publishes the pages of that
 
 ```markdown
 [Search API](elasticsearch://api/elasticsearch/operation/operation-search)
-[Search API in 8.x](elasticsearch://api/elasticsearch/v8/operation/operation-search)
+[Search API in 8.x](elasticsearch://api/elasticsearch/8/operation/operation-search)
 [Elasticsearch API](elasticsearch://api/elasticsearch)
 ```
 
-The scheme is the repository of the docset that mounts the API. The path is `api/<key>`, then an optional version segment such as `v8`, then the path of the page under the API. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
+The scheme is the repository of the docset that mounts the API. The path is `api/<key>`, then an optional version, then the path of the page under the API. The version is the exact name of an API version, such as `8` or `main`, and not a URL segment. Without a version, the link reaches the current version. The published page keeps whatever URL that version has. A page that is missing in that version is a build error. The former per-operation URLs of a collapsed operation resolve to the page that replaced them, in the versions that list them. A `#fragment` stays on the resolved URL, but the build does not check that the anchor exists.
 
 An assembler build links to the page on the site it builds. An isolated build links to the published page on `https://www.elastic.co/docs/`.
 

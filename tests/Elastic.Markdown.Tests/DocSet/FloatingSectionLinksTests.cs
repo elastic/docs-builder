@@ -25,7 +25,18 @@ public class FloatingSectionLinksTests
 		var reference = set.CreateLinkReference();
 
 		reference.Links.Keys.Should().BeEquivalentTo("index.md", "page.md");
-		reference.Floating.Should().ContainKey("api/demo").WhoseValue.UrlRoot.Should().Be("api/doc/demo");
+		reference
+			.Floating
+			.Should()
+			.ContainKey("api/demo")
+			.WhoseValue
+			.Versions
+			.Should()
+			.ContainSingle()
+			.Which
+			.Root
+			.Should()
+			.Be("api/doc/demo");
 		set.NavigationIndexedByOrder.Values.Should().Contain(i => i.Url == "/api/doc/demo");
 		provider.ResolveCalls.Should().Be(1);
 	}
@@ -110,8 +121,7 @@ public class FloatingSectionLinksTests
 			provider.LinkSection
 				? new FloatingLinkSection
 				{
-					UrlRoot = UrlRoot,
-					Versions = ["main"],
+					Versions = [new FloatingLinkVersion { Name = "main", Root = UrlRoot, Current = true }],
 					Pages = new Dictionary<string, ulong> { [""] = 1, ["operation/operation-search"] = 1 }
 				}
 				: null;

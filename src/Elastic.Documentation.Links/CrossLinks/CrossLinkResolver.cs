@@ -133,19 +133,20 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 	}
 
 	/// <summary>
-	/// Splits <c>api/{key}[/v{N}]/{page}</c> into the section, the version and the page. A lookup path that does not start
-	/// with a section key is not a floating page. These are a few hash lookups and no scan of the pages.
+	/// Splits <c>{kind}/{key}[/{version}]/{page}</c> into the section, the version and the page. The version is
+	/// optional and is the exact name of a version of that section. Without it the link reaches the current version.
+	/// These are a few hash lookups and no scan of the pages.
 	/// </summary>
 	private static bool TryMatchFloatingSection(
 		Dictionary<string, FloatingLinkSection> floating,
 		string lookupPath,
 		[NotNullWhen(true)] out string? sectionKey,
 		[NotNullWhen(true)] out FloatingLinkSection? section,
-		out string version,
+		out string? version,
 		out string page
 	)
 	{
-		version = "main";
+		version = null;
 		page = string.Empty;
 		section = null;
 		sectionKey = null;
@@ -161,9 +162,9 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		var rest = segments.Length == 3 ? segments[2] : string.Empty;
 		var versionEnd = rest.IndexOf('/');
 		var first = versionEnd < 0 ? rest : rest[..versionEnd];
-		if (first.Length > 1 && first[0] == 'v' && first[1..].All(char.IsAsciiDigit))
+		if (section.HasVersion(first))
 		{
-			version = first[1..];
+			version = first;
 			rest = versionEnd < 0 ? string.Empty : rest[(versionEnd + 1)..];
 		}
 
@@ -175,14 +176,15 @@ public class CrossLinkResolver(FetchedCrossLinks crossLinks, IUriEnvironmentReso
 		Action<string> errorEmitter,
 		IUriEnvironmentResolver uriResolver,
 		Uri crossLinkUri,
-		(string SectionKey, FloatingLinkSection Section, string Version, string Page) match,
+		(string SectionKey, FloatingLinkSection Section, string? Version, string Page) match,
 		[NotNullWhen(true)] out Uri? resolvedUri
 	)
 	{
 		resolvedUri = null;
 		if (!match.Section.TryResolvePage(match.Version, match.Page, out var sitePath))
 		{
-			errorEmitter($"'{match.Page}' is not a page of '{match.SectionKey}' in version '{match.Version}'.");
+			var inVersion = match.Version is null ? "the current version" : $"version '{match.Version}'";
+			errorEmitter($"'{match.Page}' is not a page of '{match.SectionKey}' in {inVersion}.");
 			return false;
 		}
 

@@ -369,14 +369,29 @@ public class OpenApiGeneratorMultiVersionTests
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 		var links = section.ToLinkSection()!;
 
-		links.UrlRoot.Should().Be("api/doc/elasticsearch");
-		links.Versions.Should().BeEquivalentTo(["main", "9", "8"]);
+		links.Versions.Select(v => v.Name).Should().BeEquivalentTo(["main", "9", "8"]);
+		links
+			.Versions
+			.ToDictionary(v => v.Name, v => v.Root)
+			.Should()
+			.BeEquivalentTo(
+				new Dictionary<string, string>
+				{
+					["main"] = "api/doc/elasticsearch",
+					["9"] = "api/doc/elasticsearch/v9",
+					["8"] = "api/doc/elasticsearch/v8"
+				},
+				"the API Explorer states where each version lives"
+			);
+		links.Versions.Where(v => !v.Hidden).Select(v => v.Name).Should().Equal("main");
+		links.Versions.Where(v => v.Current).Select(v => v.Name).Should().Equal("main");
 		var all = (1UL << links.Versions.Length) - 1;
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("", all), "every version has a landing page");
 		links.Pages.Should().Contain(new KeyValuePair<string, ulong>("operation/operation-ping", all), "one entry, not one per version");
-		links.Hidden.Should().Be(all & ~(1UL << Array.IndexOf(links.Versions, "main")), "only main is visible");
 		links.TryResolvePage("8", "operation/operation-ping", out var path).Should().BeTrue();
 		path.Should().Be("api/doc/elasticsearch/v8/operation/operation-ping");
+		links.TryResolvePage(null, "operation/operation-ping", out var currentPath).Should().BeTrue();
+		currentPath.Should().Be("api/doc/elasticsearch/operation/operation-ping");
 		links.TryResolvePage("main", "operation/operation-missing", out _).Should().BeFalse();
 	}
 

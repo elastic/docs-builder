@@ -14,9 +14,13 @@ public class FloatingLinkTests
 {
 	private static readonly FloatingLinkSection Api = new()
 	{
-		UrlRoot = "api/doc/elasticsearch",
-		Versions = ["main", "9", "8"],
-		Hidden = 0b110,
+		// The roots are stated, not derived: version 8 is not under a "v8" segment, so a reader that assumed one would fail.
+		Versions =
+		[
+			new() { Name = "main", Root = "api/doc/elasticsearch", Current = true },
+			new() { Name = "9", Root = "api/doc/elasticsearch/v9", Hidden = true },
+			new() { Name = "8", Root = "api/doc/elasticsearch/legacy-8", Hidden = true }
+		],
 		Pages = new Dictionary<string, ulong>
 		{
 			[""] = 0b111,
@@ -24,10 +28,11 @@ public class FloatingLinkTests
 			["operation/operation-new"] = 0b011,
 			["types/legacy"] = 0b100
 		},
-		Aliases = new Dictionary<string, Dictionary<string, string>>
+		Aliases = new Dictionary<string, Dictionary<string, string[]>>
 		{
-			["9"] = new() { ["operation/operation-search-1"] = "operation/operation-search" },
-			["8"] = new() { ["operation/operation-old"] = "types/legacy" }
+			// one canonical page, two former paths: the canonical path is written once
+			["9"] = new() { ["operation/operation-search"] = ["operation/operation-search-1", "operation/operation-search-2"] },
+			["8"] = new() { ["types/legacy"] = ["operation/operation-old"] }
 		}
 	};
 
@@ -64,23 +69,34 @@ public class FloatingLinkTests
 
 	[Test]
 	[Arguments("main", "operation/operation-search", true, "api/doc/elasticsearch/operation/operation-search")]
-	[Arguments("8", "operation/operation-search", true, "api/doc/elasticsearch/v8/operation/operation-search")]
+	[Arguments("8", "operation/operation-search", true, "api/doc/elasticsearch/legacy-8/operation/operation-search")]
 	[Arguments("", "", true, "api/doc/elasticsearch")]
-	[Arguments("8", "", true, "api/doc/elasticsearch/v8")]
+	[Arguments("", "operation/operation-search", true, "api/doc/elasticsearch/operation/operation-search")]
+	[Arguments("8", "", true, "api/doc/elasticsearch/legacy-8")]
 	[Arguments("8", "operation/operation-new", false, "")]
 	[Arguments("main", "types/legacy", false, "")]
 	[Arguments("9", "operation/operation-search-1", true, "api/doc/elasticsearch/v9/operation/operation-search")]
+	[Arguments("9", "operation/operation-search-2", true, "api/doc/elasticsearch/v9/operation/operation-search")]
 	[Arguments("7", "operation/operation-search", false, "")]
 	[Arguments("main", "operation/operation-search-1", false, "")]
 	[Arguments("8", "operation/operation-search-1", false, "")]
-	[Arguments("8", "operation/operation-old", true, "api/doc/elasticsearch/v8/types/legacy")]
+	[Arguments("8", "operation/operation-old", true, "api/doc/elasticsearch/legacy-8/types/legacy")]
 	[Arguments("9", "operation/operation-old", false, "")]
 	public void TryResolvePage_Bitmask_ChecksTheVersion(string version, string page, bool expected, string sitePath)
 	{
-		var resolved = Api.TryResolvePage(version.Length == 0 ? "main" : version, page, out var path);
+		var resolved = Api.TryResolvePage(version.Length == 0 ? null : version, page, out var path);
 
 		resolved.Should().Be(expected);
 		path.Should().Be(sitePath);
+	}
+
+	[Test]
+	public void TryResolvePage_WithoutACurrentVersion_DoesNotGuessOne()
+	{
+		var noCurrent = Api with { Versions = [.. Api.Versions.Select(v => v with { Current = false })] };
+
+		noCurrent.TryResolvePage(null, "operation/operation-search", out _).Should().BeFalse();
+		noCurrent.TryResolvePage("main", "operation/operation-search", out _).Should().BeTrue("naming the version still works");
 	}
 
 	[Test]
@@ -104,7 +120,7 @@ public class FloatingLinkTests
 	[Test]
 	public void CrossLink_ToAnAliasWithAnchor_KeepsTheAnchor()
 	{
-		var (_, url, _) = Resolve("elasticsearch://api/elasticsearch/v9/operation/operation-search-1#responses");
+		var (_, url, _) = Resolve("elasticsearch://api/elasticsearch/9/operation/operation-search-1#responses");
 
 		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/v9/operation/operation-search#responses");
 	}
@@ -129,12 +145,21 @@ public class FloatingLinkTests
 	}
 
 	[Test]
-	public void CrossLink_ToAnOlderVersion_KeepsTheVersionSegment()
+	public void CrossLink_NamingAVersion_UsesTheRootThatVersionStates()
 	{
-		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/v8/types/legacy");
+		var (resolved, url, _) = Resolve("elasticsearch://api/elasticsearch/8/types/legacy");
 
 		resolved.Should().BeTrue();
-		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/v8/types/legacy");
+		url.Should().Be("https://www.elastic.co/docs/api/doc/elasticsearch/legacy-8/types/legacy");
+	}
+
+	[Test]
+	public void CrossLink_WithAVPrefixedVersion_IsNotAVersionName()
+	{
+		var (resolved, _, error) = Resolve("elasticsearch://api/elasticsearch/v8/types/legacy");
+
+		resolved.Should().BeFalse("the version is named 8, and no reader guesses a v prefix");
+		error.Should().Contain("'v8/types/legacy'").And.Contain("the current version");
 	}
 
 	[Test]
@@ -149,7 +174,7 @@ public class FloatingLinkTests
 	[Test]
 	public void CrossLink_ToAPageMissingInThatVersion_Fails()
 	{
-		var (resolved, _, error) = Resolve("elasticsearch://api/elasticsearch/v8/operation/operation-new");
+		var (resolved, _, error) = Resolve("elasticsearch://api/elasticsearch/8/operation/operation-new");
 
 		resolved.Should().BeFalse();
 		error.Should().Contain("api/elasticsearch").And.Contain("version '8'");
@@ -172,12 +197,20 @@ public class FloatingLinkTests
 		var roundTripped = RepositoryLinks.Deserialize(RepositoryLinks.Serialize(links));
 
 		var section = roundTripped.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
-		section.Versions.Should().Equal("main", "9", "8");
-		section.Hidden.Should().Be(0b110UL);
+		section.Versions.Should().BeEquivalentTo(Api.Versions, options => options.WithStrictOrdering());
 		section.Pages.Should().BeEquivalentTo(Api.Pages);
 		section.Aliases.Should().BeEquivalentTo(Api.Aliases);
 		section.TryResolvePage("9", "operation/operation-search-1", out var path).Should().BeTrue();
 		path.Should().Be("api/doc/elasticsearch/v9/operation/operation-search");
+	}
+
+	[Test]
+	public void RepositoryLinks_WithAFloatingSection_StatesTheRootOfEachVersionInTheJson()
+	{
+		var json = RepositoryLinks.Serialize(CrossLinks().LinkReferences["elasticsearch"]);
+
+		json.Should().Contain("\"root\": \"api/doc/elasticsearch/legacy-8\"");
+		json.Should().NotContain("url_root", "the routing is data, not a section-level pattern");
 	}
 
 	[Test]
