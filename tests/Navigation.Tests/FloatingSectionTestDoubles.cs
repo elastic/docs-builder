@@ -2,7 +2,6 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using Elastic.Documentation.Links;
 using Elastic.Documentation.Navigation.Floating;
 
@@ -16,19 +15,9 @@ internal sealed class DemoProvider : IFloatingSectionProvider
 
 	public string? HubPath => "api";
 
+	public bool MountsImplicitly { get; init; } = true;
+
 	public IReadOnlyList<IFloatingSection> GetSections() => [Section ??= new DemoSection()];
-
-	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
-	{
-		if (key != "demo")
-		{
-			section = null;
-			return false;
-		}
-
-		section = Section ??= new DemoSection();
-		return true;
-	}
 }
 
 /// <summary>A section whose root exists at once and whose single page appears when <see cref="ResolveAsync"/> runs.</summary>
@@ -45,7 +34,8 @@ internal sealed class DemoSection : IFloatingSection
 	public string Key => "demo";
 	public string UrlRoot => "api/doc/demo";
 
-	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent) => _root = new DemoRoot(parent);
+	public IFloatingSectionRoot CreateRoot(INodeNavigationItem<INavigationModel, INavigationItem>? parent, bool hidden = false) =>
+		_root = new DemoRoot(parent) { Hidden = hidden };
 
 	public Task ResolveAsync(Cancel ctx)
 	{

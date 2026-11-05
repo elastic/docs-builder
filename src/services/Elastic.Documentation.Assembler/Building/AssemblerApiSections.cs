@@ -2,28 +2,42 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Diagnostics.CodeAnalysis;
 using Elastic.ApiExplorer;
 using Elastic.ApiExplorer.Floating;
+using Elastic.ApiExplorer.Model;
 using Elastic.Documentation.Configuration.Builder;
+using Elastic.Documentation.Configuration.Toc;
 using Elastic.Documentation.Navigation.Floating;
+using Elastic.Markdown;
+using Microsoft.Extensions.Logging;
 
 namespace Elastic.Documentation.Assembler.Building;
 
 /// <summary>
-/// The API sections of an assembler build: one per API that a content repository declares. The site navigation
-/// mounts them under an <c>APIs</c> section, so their roots exist as soon as the navigation is built. The OpenAPI
-/// build step attaches the generators and fills the children from the same trees it renders the pages from.
+/// The API sections of an assembler build: one per API that a content repository declares. Each docset has its APIs
+/// in its own navigation tree, hidden in its sidebar, and the site navigation lists all of them under an
+/// <c>APIs</c> section. The generators are created before the docsets resolve their trees, so each section fills
+/// from the same trees the OpenAPI build step renders the pages from, and nothing is fetched or built twice.
 /// </summary>
-public sealed class AssemblerApiSections : IFloatingSectionProvider
+public sealed class AssemblerApiSections : IFloatingSectionProvider, IDisposable
 {
 	/// <summary>The sections of a build that does not render the API Explorer.</summary>
 	public static AssemblerApiSections Empty { get; } = new([]);
 
 	private readonly IReadOnlyList<(AssemblerApiOwner Owner, ApiFloatingSectionProvider Provider)> _owners;
+	private IReadOnlyList<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>? _generators;
 	private IReadOnlyList<IFloatingSection>? _sections;
 
 	private AssemblerApiSections(IReadOnlyList<(AssemblerApiOwner Owner, ApiFloatingSectionProvider Provider)> owners) => _owners = owners;
+
+	/// <summary>Whether the environment renders the API Explorer, which is the <c>assembler-api-explorer</c> feature flag.</summary>
+	internal static bool IsEnabled(AssembleContext assembleContext)
+	{
+		var features = new FeatureFlags([]);
+		foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
+			features.Set(key, value);
+		return features.AssemblerApiExplorerEnabled;
+	}
 
 	/// <summary>
 	/// Finds the content repositories that declare APIs. A build with the <c>assembler-api-explorer</c> flag off
@@ -31,16 +45,15 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider
 	/// </summary>
 	public static AssemblerApiSections Create(AssembleContext assembleContext, AssembleSources assembleSources)
 	{
-		var features = new FeatureFlags([]);
-		foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
-			features.Set(key, value);
-		if (!features.AssemblerApiExplorerEnabled)
+		if (!IsEnabled(assembleContext))
 			return Empty;
 
 		var owners = AssemblerOpenApiBuildStep.DiscoverApiOwners(assembleSources.AssembleSets, assembleContext.Collector);
 		return owners.Count == 0
 			? Empty
-			: new AssemblerApiSections([.. owners.Select(owner => (owner, new ApiFloatingSectionProvider(owner.Set.BuildContext)))]);
+			: new AssemblerApiSections([
+				.. owners.Select(owner => (owner, owner.Set.ApiSections ?? new ApiFloatingSectionProvider(owner.Set.BuildContext)))
+			]);
 	}
 
 	/// <summary>
@@ -53,6 +66,9 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider
 		IReadOnlySet<Exporter> exporters
 	) => exporters.Contains(Exporter.Html) ? Create(assembleContext, assembleSources) : Empty;
 
+	/// <summary>The client that every generator reads the version index and the specs through. It exists once the generators do.</summary>
+	internal VersionIndexClient? VersionIndexClient { get; private set; }
+
 	internal IReadOnlyList<AssemblerApiOwner> Owners => [.. _owners.Select(o => o.Owner)];
 
 	public string Kind => "api";
@@ -64,15 +80,39 @@ public sealed class AssemblerApiSections : IFloatingSectionProvider
 	public IReadOnlyList<IFloatingSection> GetSections() =>
 		_sections ??= [.. _owners.SelectMany(o => o.Provider.GetSections()).OrderBy(s => s.Key, StringComparer.Ordinal)];
 
-	public bool TryGetSection(string key, [NotNullWhen(true)] out IFloatingSection? section)
+	/// <summary>
+	/// The generator of each owner. Call this before any docset resolves its navigation tree, because an API section
+	/// without a generator stays empty and hidden. Calling it again changes nothing.
+	/// </summary>
+	internal IReadOnlyList<(AssemblerApiOwner Owner, OpenApiGenerator Generator)> EnsureGenerators(
+		ILoggerFactory logFactory,
+		AssembleContext assembleContext,
+		TopNavRenderModel? siteTopNav
+	)
 	{
-		section = GetSections().FirstOrDefault(s => string.Equals(s.Key, key, StringComparison.OrdinalIgnoreCase));
-		return section is not null;
+		if (_generators is not null)
+			return _generators;
+
+		VersionIndexClient = new VersionIndexClient();
+		var generators = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(_owners.Count);
+		foreach (var (owner, provider) in _owners)
+		{
+			foreach (var (key, value) in assembleContext.Environment.FeatureFlags)
+				owner.Set.BuildContext.Configuration.Features.Set(key, value);
+			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
+			var generator = new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, VersionIndexClient)
+			{
+				SiteTopNav = siteTopNav
+			};
+			provider.Attach(generator);
+			generators.Add((owner, generator));
+		}
+
+		return _generators = generators;
 	}
 
-	internal void Attach(AssemblerApiOwner owner, OpenApiGenerator generator) =>
-		_owners.First(o => o.Owner == owner).Provider.Attach(generator);
-
-	/// <summary>Fills the children of every section, from the generators that <see cref="Attach"/> supplied.</summary>
+	/// <summary>Fills the children of every section the site navigation lists, from the generators.</summary>
 	internal Task ResolveAsync(Cancel ctx) => Task.WhenAll(GetSections().Select(section => section.ResolveAsync(ctx)));
+
+	public void Dispose() => VersionIndexClient?.Dispose();
 }

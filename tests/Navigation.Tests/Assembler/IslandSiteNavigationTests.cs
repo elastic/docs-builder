@@ -281,7 +281,7 @@ public class IslandSiteNavigationTests()
 	}
 
 	[Test]
-	public void FloatingSectionMountedByDocset_SurvivesSiteAssembly()
+	public void FloatingSectionOfADocset_SurvivesSiteAssembly()
 	{
 		// language=yaml
 		var siteNavYaml =
@@ -293,7 +293,6 @@ public class IslandSiteNavigationTests()
 		var siteNavFile = SiteNavigationFile.Deserialize(siteNavYaml);
 		var fileSystem = SiteNavigationTestFixture.CreateMultiRepositoryFileSystem();
 		const string docsetPath = "/checkouts/current/observability/docs/docset.yml";
-		fileSystem.File.WriteAllText(docsetPath, fileSystem.File.ReadAllText(docsetPath) + "\n  - api: demo\n");
 
 		var obsContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, "/checkouts/current/observability");
 		var obsDocset = DocumentationSetFile.LoadAndResolve(
@@ -317,7 +316,7 @@ public class IslandSiteNavigationTests()
 	}
 
 	[Test]
-	public void FloatingSectionMountedByNarrativeRoot_SurvivesSiteAssembly()
+	public void FloatingSectionOfTheNarrativeRoot_SurvivesSiteAssembly()
 	{
 		// language=yaml
 		var siteNavYaml =
@@ -331,7 +330,7 @@ public class IslandSiteNavigationTests()
 		const string narrativeDir = "/checkouts/current/docs-content";
 		const string docsetPath = $"{narrativeDir}/docs/docset.yml";
 		fileSystem.AddDirectory($"{narrativeDir}/.git");
-		fileSystem.AddFile(docsetPath, new MockFileData("project: docs-content\ntoc:\n  - file: index.md\n  - api: demo\n"));
+		fileSystem.AddFile(docsetPath, new MockFileData("project: docs-content\ntoc:\n  - file: index.md\n"));
 		fileSystem.AddFile($"{narrativeDir}/docs/index.md", new MockFileData("# Docs\n"));
 
 		var narrativeContext = SiteNavigationTestFixture.CreateAssemblerContext(fileSystem, narrativeDir);

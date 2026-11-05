@@ -51,7 +51,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		public void Dispose() => Scoped.Dispose();
 	}
 
-	/// <summary>A narrative checkout whose docset declares the Elasticsearch API, resolved and ready to assemble.</summary>
+	/// <summary>A narrative checkout whose docset declares the Elasticsearch API. The caller resolves the tree, as the build does.</summary>
 	private static async Task<Workspace> CreateWorkspaceAsync(CancellationToken cancellationToken)
 	{
 		var fileSystem = new FileSystem();
@@ -120,8 +120,6 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			new Dictionary<string, AssemblerDocumentationSet> { [checkout.Repository.Name] = documentationSet }.ToFrozenDictionary()
 		);
 
-		await documentationSet.DocumentationSet.ResolveDirectoryTree(cancellationToken);
-
 		return new Workspace(scopedWorkspace, fileSystem, collector, context, documentationSet, assembleSources, outputDirectory);
 	}
 
@@ -134,6 +132,7 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 		using var workspace = await CreateWorkspaceAsync(cancellationToken);
 		var (fileSystem, collector, context, assembleSources, outputDirectory) =
 			(workspace.FileSystem, workspace.Collector, workspace.Context, workspace.Sources, workspace.OutputDirectory);
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
 
 		var stopwatch = Stopwatch.StartNew();
 		await AssemblerOpenApiBuildStep.BuildAsync(
@@ -195,6 +194,26 @@ public class AssemblerOpenApiBuildStepIntegrationTests
 			navigationPreviewEnabled: false,
 			new FloatingSectionRegistry([apiSections])
 		);
+
+		// the build creates the generators before the docsets resolve their trees
+		_ = apiSections.EnsureGenerators(NullLoggerFactory.Instance, workspace.Context, navigation.TopNav);
+		await workspace.Set.DocumentationSet.ResolveDirectoryTree(cancellationToken);
+
+		var docsetRoot = workspace
+			.Set
+			.DocumentationSet
+			.Navigation
+			.NavigationItems
+			.OfType<IFloatingSectionRoot>()
+			.Should()
+			.ContainSingle()
+			.Subject;
+		docsetRoot.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+		docsetRoot.NavigationItems.Should().NotBeEmpty("the docset resolved its API section while it resolved its tree");
+		var links = workspace.Set.DocumentationSet.CreateLinkReference();
+		var published = links.Floating.Should().ContainKey("api/elasticsearch").WhoseValue;
+		published.Versions.Should().ContainSingle(v => v.Current).Which.Name.Should().Be("main");
+		published.Pages.Should().ContainKey("", "an assembled docset publishes its APIs in links.json without a toc entry");
 
 		var hub = navigation.TopLevelItems.OfType<SectionNavigation>().Should().ContainSingle(s => s.Title == "APIs").Subject;
 		var root = hub.NavigationItems.Should().ContainSingle().Subject.Should().BeAssignableTo<IFloatingSectionRoot>().Subject;

@@ -33,7 +33,6 @@ public static class AssemblerOpenApiBuildStep
 	)
 	{
 		var logger = logFactory.CreateLogger(typeof(AssemblerOpenApiBuildStep));
-		var env = assembleContext.Environment;
 		var owners = apiSections.Owners;
 		if (owners.Count == 0)
 		{
@@ -45,22 +44,11 @@ public static class AssemblerOpenApiBuildStep
 
 		var stopwatch = Stopwatch.StartNew();
 		var catalogEntries = new List<ApiCatalogEntry>();
-		using var versionIndexClient = new VersionIndexClient();
 
-		var planned = new List<(AssemblerApiOwner Owner, OpenApiGenerator Generator)>(owners.Count);
-		foreach (var owner in owners)
-		{
-			ApplyFeatureFlags(owner.Set, env.FeatureFlags);
-			var markdown = new DocumentationGenerator(owner.Set.DocumentationSet, logFactory);
-			var generator = new OpenApiGenerator(logFactory, owner.Set.BuildContext, markdown.MarkdownStringRenderer, versionIndexClient)
-			{
-				SiteTopNav = siteTopNav
-			};
-			apiSections.Attach(owner, generator);
-			planned.Add((owner, generator));
-		}
+		// The build service creates the generators before the docsets resolve their trees. A standalone call creates them here.
+		var planned = apiSections.EnsureGenerators(logFactory, assembleContext, siteTopNav);
 
-		// The navigation roots exist already. This fills their children from the trees the pages render from below.
+		// The roots of the site navigation exist already. This fills their children from the trees the pages render from below.
 		await apiSections.ResolveAsync(ctx).ConfigureAwait(false);
 
 		var hubEntries = new List<ApiCatalogEntry>();
@@ -87,7 +75,7 @@ public static class AssemblerOpenApiBuildStep
 				logFactory,
 				catalogContext,
 				new DocumentationGenerator(owners[0].Set.DocumentationSet, logFactory).MarkdownStringRenderer,
-				versionIndexClient
+				apiSections.VersionIndexClient
 			)
 			{ SiteTopNav = siteTopNav };
 			await catalogGenerator.GenerateCatalog(catalogEntries, ctx).ConfigureAwait(false);
@@ -150,12 +138,6 @@ public static class AssemblerOpenApiBuildStep
 		}
 
 		return owners;
-	}
-
-	private static void ApplyFeatureFlags(AssemblerDocumentationSet set, IReadOnlyDictionary<string, bool> featureFlags)
-	{
-		foreach (var (key, value) in featureFlags)
-			set.BuildContext.Configuration.Features.Set(key, value);
 	}
 }
 

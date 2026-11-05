@@ -320,9 +320,9 @@ public class OpenApiGeneratorMultiVersionTests
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var provider = new ApiFloatingSectionProvider(context);
 		provider.Attach(generator);
-		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
+		var section = provider.GetSections().Should().ContainSingle().Subject;
 
-		var root = section!.CreateRoot(null);
+		var root = section.CreateRoot(null);
 		root.Url.Should().Be("/api/doc/elasticsearch");
 		root.NavigationItems.Should().BeEmpty("the root exists before the specs are fetched");
 
@@ -362,8 +362,8 @@ public class OpenApiGeneratorMultiVersionTests
 		);
 		var provider = new ApiFloatingSectionProvider(context);
 		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
-		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
-		_ = section!.CreateRoot(null);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		_ = section.CreateRoot(null);
 		section.ToLinkSection().Should().BeNull("nothing is resolved yet");
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
@@ -404,8 +404,8 @@ public class OpenApiGeneratorMultiVersionTests
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
 		var provider = new ApiFloatingSectionProvider(context);
-		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
-		var root = section!.CreateRoot(null);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
@@ -430,8 +430,8 @@ public class OpenApiGeneratorMultiVersionTests
 		var generator = CreateGenerator(context, versionIndexClient, reader);
 		var provider = new ApiFloatingSectionProvider(context);
 		provider.Attach(generator);
-		provider.TryGetSection("elasticsearch", out var section).Should().BeTrue();
-		var root = section!.CreateRoot(null);
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
 
 		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
 
@@ -445,15 +445,45 @@ public class OpenApiGeneratorMultiVersionTests
 	}
 
 	[Test]
-	public void FloatingSection_UnknownKey_IsNotProvided()
+	public void FloatingSection_OffersOneSectionPerDeclaredApiAndMountsImplicitly()
 	{
 		var collector = new DiagnosticsCollector([]);
 		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
 		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
 		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
 		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		var provider = new ApiFloatingSectionProvider(context);
 
-		new ApiFloatingSectionProvider(context).TryGetSection("kibana", out _).Should().BeFalse();
+		provider.GetSections().Select(s => s.Key).Should().Equal("elasticsearch");
+		provider.MountsImplicitly.Should().BeTrue("a docset that declares an API has it in its tree without a toc entry");
+		provider.HubPath.Should().Be("api");
+	}
+
+	[Test]
+	public async Task FloatingSection_HiddenRoot_StaysHiddenAfterItIsFilled()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var hidden = section.CreateRoot(null, hidden: true);
+		var visible = provider.GetSections().Single().CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		hidden.NavigationItems.Should().NotBeEmpty("a hidden root is still filled, so its pages are in links.json");
+		hidden.Hidden.Should().BeTrue("a docset's sidebar does not change because it declares an API");
+		visible.Hidden.Should().BeFalse();
 	}
 
 	[Test]

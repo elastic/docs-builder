@@ -137,7 +137,7 @@ public class AssemblerBuildService(
 		);
 		var documentationSets = assembleSources.AssembleSets.Values.Select(s => s.DocumentationSet.Navigation).ToArray();
 		var navigationPreviewEnabled = assembleContext.Environment.ToFeatureFlags().NavigationPreviewEnabled;
-		var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
+		using var apiSections = AssemblerApiSections.For(assembleContext, assembleSources, exporters);
 		var navigation = new SiteNavigation(
 			siteNavigationFile,
 			assembleContext,
@@ -154,6 +154,9 @@ public class AssemblerBuildService(
 			|| assembleContext.Collector.Errors > 0
 		)
 			return false;
+
+		// The docsets fill their API sections when they resolve their trees, so the generators must exist by then.
+		_ = apiSections.EnsureGenerators(logFactory, assembleContext, navigation.TopNav);
 
 		var pathProvider = new GlobalNavigationPathProvider(navigation, assembleSources, assembleContext);
 		var htmlWriter = new GlobalNavigationHtmlWriter(logFactory, navigation, collector);
