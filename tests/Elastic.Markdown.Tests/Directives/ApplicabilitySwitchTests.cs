@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information
 
 using AwesomeAssertions;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.AppliesSwitch;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -47,7 +49,7 @@ This feature has been removed from Elastic Cloud Enterprise.
 	}
 
 	[Test]
-	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 
 	[Test]
 	public void ParsesAppliesToDefinitions()
@@ -99,7 +101,7 @@ Content B
 	}
 
 	[Test]
-	public void FirstItemRendersChecked() => Html.Should().Contain("applies-switch-input\" checked=\"checked\"");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]

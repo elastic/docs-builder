@@ -4,7 +4,9 @@
 
 using AwesomeAssertions;
 using Elastic.Documentation.Diagnostics;
+using Elastic.Documentation.Testing;
 using Elastic.Markdown.Myst.Directives.Math;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.Markdown.Tests.Directives;
 
@@ -28,7 +30,8 @@ E = mc^2
 	public void DeterminesInlineMath() => Block!.IsDisplayMath.Should().BeFalse();
 
 	[Test]
-	public void RendersMathSpan() => Html.Should().Contain("<span class=\"math\">E = mc^2</span>");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(html: DocsHtml.Body(), expected: "<span class=\"math\">E = mc^2</span>");
 }
 
 [InheritsTests]
@@ -52,7 +55,11 @@ public class MathBlockDisplayMathTests() : DirectiveTest<MathBlock>(
 	public void DeterminesDisplayMath() => Block!.IsDisplayMath.Should().BeTrue();
 
 	[Test]
-	public void RendersDisplayMathDiv() => Html.Should().Contain("<div class=\"math\">");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: "<div class=\"math\">\\[ \\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi} \\]</div>"
+		);
 }
 
 [InheritsTests]
@@ -70,7 +77,11 @@ E = mc^2
 	public void ExtractsLabel() => Block!.Label.Should().Be("einstein-mass-energy");
 
 	[Test]
-	public void RendersWithId() => Html.Should().Contain("id=\"einstein-mass-energy\"");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: "<span class=\"math\" id=\"einstein-mass-energy\">E = mc^2</span>"
+		);
 }
 
 [InheritsTests]
@@ -113,5 +124,9 @@ public class MathBlockComplexExpressionTests() : DirectiveTest<MathBlock>(
 	public void DeterminesDisplayMathFromBegin() => Block!.IsDisplayMath.Should().BeTrue();
 
 	[Test]
-	public void RendersComplexMathDiv() => Html.Should().Contain("<div class=\"math\">");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: "<div class=\"math\">\\begin{align} \\frac{\\partial f}{\\partial x} &amp;= \\lim_{h \\to 0} \\frac{f(x+h) - f(x)}{h} \\\\ \\nabla \\cdot \\vec{E} &amp;= \\frac{\\rho}{\\epsilon_0} \\end{align}</div>"
+		);
 }
