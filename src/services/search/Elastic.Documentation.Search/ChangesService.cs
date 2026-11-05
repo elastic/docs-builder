@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Documentation.Search.Common;
 using Elastic.Documentation.Search.Contract;
 using Microsoft.Extensions.Logging;
@@ -86,7 +87,7 @@ public partial class ChangesService(
 					.Size(fetchSize)
 					.TrackTotalHits(t => t.Enabled(false))
 					.Pit(p => p.Id(pitId).KeepAlive(SharedPointInTimeManager.PitKeepAlive))
-					.Query(q => q.Range(r => r.Date(dr => dr.Field(f => f.ContentLastUpdated).Gt(request.Since.ToString("O")))))
+					.Query(ChangedSince(request.Since))
 					.Sort(
 						so => so.Field(f => f.ContentLastUpdated, sf => sf.Order(SortOrder.Asc)),
 						so => so.Field(f => f.Path, sf => sf.Order(SortOrder.Asc))
@@ -104,6 +105,14 @@ public partial class ChangesService(
 			},
 			ctx
 		);
+
+	/// <summary>Documents changed after <paramref name="since"/>. The feed lists each API's default rendering only, as hidden variants have no page of their own in navigation.</summary>
+	internal static Query ChangedSince(DateTimeOffset since) =>
+		new BoolQuery
+		{
+			Filter = [new DateRangeQuery(QueryFieldNames.ContentLastUpdated) { Gt = since.ToString("O") }],
+			MustNot = [new TermQuery { Field = QueryFieldNames.Hidden, Value = true }]
+		};
 
 	private static bool IsExpiredPit(EsSearchResponse response) =>
 		response.ElasticsearchServerError?.Error?.Type is "search_phase_execution_exception"

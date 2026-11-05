@@ -46,6 +46,7 @@ public static class QueryFieldNames
 	public static string Body { get; } = Doc.Fields.Body;
 	public static string Hidden { get; } = Doc.Fields.Hidden;
 	public static string LastUpdated { get; } = Doc.Fields.LastUpdated;
+	public static string ContentLastUpdated { get; } = Doc.Fields.ContentLastUpdated;
 	public static string TitleSemanticText { get; } = $"{Doc.Fields.Title}.semantic_text";
 	public static string SummarySemanticText { get; } = $"{Doc.Fields.Summary}.semantic_text";
 	public static string AiRagSummarySemanticText { get; } = $"{Doc.Fields.AiRagOptimizedSummary}.semantic_text";
