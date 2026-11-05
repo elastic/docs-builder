@@ -18,6 +18,10 @@ namespace Elastic.Documentation.Search;
 /// (11.90) above <c>snapshot-create</c> (11.40), whose group is "Snapshot and restore". It also widens <c>cluster health</c> to 11.40 against 6.90.</item>
 /// <item>A typed route takes the same two keys and beats the routes under it, so <c>/_search</c> keeps <c>search</c> above
 /// <c>scroll</c> (9.58 against 9.08) and <c>/api/fleet</c> lists the 326 Fleet routes.</item>
+/// <item><see cref="NamespaceKey"/> beats <see cref="EndpointCompletion"/>, so a complete typed route keeps its list (<c>/_search</c>: <c>search</c>
+/// 9.97, <c>scroll</c> 9.47) and <c>_search_shards</c> joins after <c>_search/scroll</c>.</item>
+/// <item><see cref="EndpointCompletion"/> beats <see cref="NamespaceCompletion"/>, so <c>/_sear</c> keeps <c>search</c> (8.97) above <c>scroll</c> (8.47).
+/// Both sit below <see cref="EndpointKey"/>: a key typed in full beats one typed in part.</item>
 /// <item>The bare keys score <c>/search</c> the same as <c>/_search</c>, and <c>/cluster health</c> finds <c>cluster-health</c> (11.07).</item>
 /// <item><see cref="WholeTitle"/> lets a natural-language title beat a word that is also an endpoint, as in <c>get cluster settings</c>.</item>
 /// </list>
@@ -26,6 +30,8 @@ public static class ApiLookupWeights
 {
 	public const float EndpointKey = 6.0f;
 	public const float NamespaceKey = 5.5f;
+	public const float EndpointCompletion = 5.0f;
+	public const float NamespaceCompletion = 4.5f;
 	public const float OperationWord = 2.0f;
 	public const float GroupWord = 1.0f;
 	public const float TitleWord = 1.0f;
