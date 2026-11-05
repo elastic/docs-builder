@@ -27,6 +27,9 @@ public record ApiUnionVariant
 	public required bool UseHidden { get; init; }
 	public ApiPropertyList? Properties { get; init; }
 
+	/// <summary>The variants of a variant that is itself a union (a chart type with a DSL and an ES|QL form), after its own properties.</summary>
+	public ApiUnionVariants? Variants { get; init; }
+
 	/// <summary>The first paragraph of the variant schema's description; empty when it has none.</summary>
 	public HtmlString DescriptionHtml { get; init; } = HtmlString.Empty;
 	public string? DescriptionMarkdown { get; init; }
@@ -56,6 +59,9 @@ public record ApiUnionVariants
 	public bool HasFilter => Variants.Count >= 11;
 
 	public required string ContainerId { get; init; }
+
+	/// <summary>The fields of each variant, then those of the variants nested inside it.</summary>
+	public IEnumerable<ApiProperty> Rows => Variants.SelectMany(v => (v.Properties?.Items ?? []).Concat(v.Variants?.Rows ?? []));
 
 	/// <summary>"Any of:" or "One of:" above a body-level list that has no property row to carry it.</summary>
 	public string? Label { get; init; }

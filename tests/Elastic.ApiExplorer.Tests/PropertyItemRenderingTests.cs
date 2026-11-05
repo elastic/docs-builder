@@ -60,4 +60,24 @@ public class PropertyItemRenderingTests
 		At("reference-link-row").Should().BeLessThan(At("expand-toggle-row"), "and sits right above show properties");
 		row[..At("</dt>")].Should().NotContain(">Reference</a>", "the name line stays short");
 	}
+
+	[Test]
+	public async Task Render_LongObjectDefault_ShowsADefaultRowWithTheFullValue()
+	{
+		var json = WithSchemas(
+			"""
+			{ "Holder": { "type": "object", "properties": {
+			    "options": { "type": "object", "default": { "auto_apply_filters": true, "use_margins": true, "sync_cursor": true } } } } }
+			"""
+		);
+		var document = await LoadSpecAsync(json);
+		var list = BuilderFor(document).BuildPropertyList(document.Components!.Schemas!["Holder"], new PropertyTreeScope { Prefix = "" })!;
+
+		var html = await _PropertyList.Create(list).RenderAsync(cancellationToken: TestContext.Current!.Execution.CancellationToken);
+		html = string.Join(' ', html.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+		html.Should().Contain("""<dd class="example-value"> <span class="values-label">Default:</span> <code>""");
+		html.Should().Contain("&quot;sync_cursor&quot;:true}</code>", "the whole value is listed, not cut");
+		html.Should().NotContain("type-constraint", "no chip carries it");
+	}
 }
