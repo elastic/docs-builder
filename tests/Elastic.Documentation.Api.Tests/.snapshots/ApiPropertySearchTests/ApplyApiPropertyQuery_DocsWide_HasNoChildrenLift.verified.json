@@ -1,0 +1,95 @@
+{
+  "bool": {
+    "filter": {
+      "bool": {
+        "must_not": [
+          {
+            "terms": {
+              "path.keyword": [
+                "/docs",
+                "/docs/",
+                "/docs/404",
+                "/docs/404/"
+              ]
+            }
+          },
+          {
+            "term": {
+              "hidden": {
+                "value": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    "minimum_should_match": 1,
+    "should": [
+      {
+        "match_none": {}
+      },
+      {
+        "bool": {
+          "must": {
+            "nested": {
+              "ignore_unmapped": true,
+              "inner_hits": {
+                "name": "api_properties",
+                "size": 5,
+                "_source": {
+                  "includes": "api.properties.*"
+                }
+              },
+              "path": "api.properties",
+              "query": {
+                "dis_max": {
+                  "queries": [
+                    {
+                      "constant_score": {
+                        "boost": 1,
+                        "filter": {
+                          "term": {
+                            "api.properties.name": {
+                              "case_insensitive": true,
+                              "value": "retriever.standard"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "bool": {
+                        "filter": {
+                          "match_phrase_prefix": {
+                            "api.properties.path_words": {
+                              "query": "retriever standard"
+                            }
+                          }
+                        },
+                        "must": {
+                          "constant_score": {
+                            "boost": 1,
+                            "filter": {
+                              "term": {
+                                "api.properties.name": {
+                                  "case_insensitive": true,
+                                  "value": "standard"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              "score_mode": "max"
+            }
+          },
+          "_name": "api_properties"
+        }
+      }
+    ]
+  }
+}

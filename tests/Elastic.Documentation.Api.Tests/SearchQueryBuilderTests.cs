@@ -2,12 +2,13 @@
 // Elasticsearch B.V licenses this file to you under the Apache 2.0 License.
 // See the LICENSE file in the project root for more information
 
-using System.Text.Json;
 using AwesomeAssertions;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Documentation.Search;
 using Elastic.Transport;
 using Elastic.Transport.Extensions;
+using Nullean.Snapshots;
+using Nullean.Snapshots.Json;
 
 namespace Elastic.Documentation.Api.Tests;
 
@@ -24,7 +25,9 @@ public class SearchQueryBuilderTests
 			.RequestResponseSerializer
 			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery(input))
 			.Should()
-			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}""");
+			.MatchInlineJsonSnapshot(
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}"""
+			);
 
 	[Test]
 	public void BuildApiEndpointQuery_ValueThenEndpoint_ScoresFullTermAboveWildcardTemplates() =>
@@ -32,38 +35,85 @@ public class SearchQueryBuilderTests
 			.RequestResponseSerializer
 			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery("my-index/_search"))
 			.Should()
-			.Be(
+			.MatchInlineJsonSnapshot(
 				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["my-index/_search"]}}}},{"constant_score":{"boost":3.3333333,"filter":{"terms":{"api.endpoints":["*/_search","my-index/*"]}}}}]}}"""
 			);
 
 	[Test]
-	public void BuildApiEndpointQuery_InteriorValue_MatchesTemplateAndNeverTheParentPrefix()
-	{
-		var json = Client.RequestResponseSerializer.SerializeToString(
-			SearchQueryBuilder.BuildApiEndpointQuery("_security/user/alice/_password")
-		);
-		using var doc = JsonDocument.Parse(json);
-		var clauses = doc
-			.RootElement
-			.GetProperty("dis_max")
-			.GetProperty("queries")
-			.EnumerateArray()
-			.Select(q => q.GetProperty("constant_score"))
-			.ToArray();
-		var terms = clauses.Select(
-			c => c
-				.GetProperty("filter")
-				.GetProperty("terms")
-				.GetProperty("api.endpoints")
-				.EnumerateArray()
-				.Select(t => t.GetString())
-				.ToArray()
-		).ToArray();
-
-		clauses.Select(c => c.GetProperty("boost").GetSingle()).Should().Equal(5f, 4f, 3f, 2f);
-		terms[1].Should().Contain("_security/user/*/_password");
-		terms.SelectMany(t => t).Should().NotContain("_security/user");
-	}
+	public void BuildApiEndpointQuery_InteriorValue_MatchesTemplateAndNeverTheParentPrefix() =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery("_security/user/alice/_password"))
+			.Should()
+			.MatchInlineJsonSnapshot(
+				"""
+				{
+				  "dis_max": {
+				    "queries": [
+				      {
+				        "constant_score": {
+				          "boost": 5,
+				          "filter": {
+				            "terms": {
+				              "api.endpoints": [
+				                "_security/user/alice/_password"
+				              ]
+				            }
+				          }
+				        }
+				      },
+				      {
+				        "constant_score": {
+				          "boost": 4,
+				          "filter": {
+				            "terms": {
+				              "api.endpoints": [
+				                "*/user/alice/_password",
+				                "_security/*/alice/_password",
+				                "_security/user/*/_password",
+				                "_security/user/alice/*"
+				              ]
+				            }
+				          }
+				        }
+				      },
+				      {
+				        "constant_score": {
+				          "boost": 3,
+				          "filter": {
+				            "terms": {
+				              "api.endpoints": [
+				                "*/*/alice/_password",
+				                "*/user/*/_password",
+				                "*/user/alice/*",
+				                "_security/*/*/_password",
+				                "_security/*/alice/*",
+				                "_security/user/*/*"
+				              ]
+				            }
+				          }
+				        }
+				      },
+				      {
+				        "constant_score": {
+				          "boost": 2,
+				          "filter": {
+				            "terms": {
+				              "api.endpoints": [
+				                "*/*/*/_password",
+				                "*/*/alice/*",
+				                "*/user/*/*",
+				                "_security/*/*/*"
+				              ]
+				            }
+				          }
+				        }
+				      }
+				    ]
+				  }
+				}
+				"""
+			);
 
 	[Test]
 	[Arguments("   ")]
@@ -80,7 +130,9 @@ public class SearchQueryBuilderTests
 			.RequestResponseSerializer
 			.SerializeToString(SearchQueryBuilder.BuildApiEndpointQuery(input))
 			.Should()
-			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["/"]}}}}]}}""");
+			.MatchInlineJsonSnapshot(
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["/"]}}}}]}}"""
+			);
 
 	[Test]
 	[Arguments("search")]
@@ -90,7 +142,9 @@ public class SearchQueryBuilderTests
 			.RequestResponseSerializer
 			.SerializeToString(SearchQueryBuilder.BuildBareWordEndpointQuery(input))
 			.Should()
-			.Be("""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}""");
+			.MatchInlineJsonSnapshot(
+				"""{"dis_max":{"queries":[{"constant_score":{"boost":5,"filter":{"terms":{"api.endpoints":["_search"]}}}}]}}"""
+			);
 
 	[Test]
 	[Arguments("_search")]
@@ -102,12 +156,10 @@ public class SearchQueryBuilderTests
 		SearchQueryBuilder.BuildBareWordEndpointQuery(input).Should().BeNull();
 
 	[Test]
-	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerms()
-	{
-		var query = SearchQueryBuilder.BuildLexicalQuery("_search", new Dictionary<string, string[]>(), [], null);
-
-		var json = Client.RequestResponseSerializer.SerializeToString(query);
-
-		json.Should().Contain("""{"terms":{"api.endpoints":["_search"]}}""");
-	}
+	public void BuildLexicalQuery_EndpointQuery_IncludesApiEndpointsTerms() =>
+		Client
+			.RequestResponseSerializer
+			.SerializeToString(SearchQueryBuilder.BuildLexicalQuery("_search", new Dictionary<string, string[]>(), [], null))
+			.Should()
+			.MatchJsonSnapshot();
 }
