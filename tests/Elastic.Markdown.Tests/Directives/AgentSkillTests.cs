@@ -36,15 +36,6 @@ A regular paragraph.
 
 	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
-
-	[Test]
-	public void RendersTitle() => Html.Should().Contain("Agent skill available");
-
-	[Test]
-	public void RendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
-
-	[Test]
-	public void DoesNotRenderLinkButton() => Html.Should().NotContain("Get the skill");
 }
 
 [InheritsTests]
@@ -60,16 +51,7 @@ A regular paragraph.
 )
 {
 	[Test]
-	public void RendersCustomBody() => Html.Should().Contain("This skill helps agents write and optimize ES|QL queries.");
-
-	[Test]
-	public void StillRendersDefaultText() => Html.Should().Contain("A skill is available to help AI agents with this topic.");
-
-	[Test]
-	public void StillRendersLearnMoreLink() => Html.Should().Contain("Learn more about agent skills for Elastic");
-
-	[Test]
-	public void StillRendersCopyButton() => Html.Should().Contain("Copy install command");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
