@@ -23,6 +23,7 @@ using Elastic.Documentation.FileSystems;
 using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
+using Nullean.Snapshots;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -344,6 +345,30 @@ public class OpenApiGeneratorMultiVersionTests
 		trees.Navigations.Should().Equal(versions);
 		await generator.Generate(TestContext.Current!.Execution.CancellationToken);
 		context.WriteFileSystem.File.Exists(Path.Join(outputRoot, "api", "doc", "elasticsearch", "v8", "index.html")).Should().BeTrue();
+	}
+
+	[Test]
+	public async Task FloatingSection_AfterResolve_PrintsTheApiTreeWithItsVersions()
+	{
+		var collector = new DiagnosticsCollector([]);
+		var stack = TestHelpers.CreateStackVersionsConfiguration(currentMajor: 9);
+		var product = TestHelpers.CreateProduct("elasticsearch", stack.GetVersioningSystem(VersioningSystemId.Stack));
+		var outputRoot = Path.Join(Paths.WorkingDirectoryRoot.FullName, $"api-explorer-output-{Guid.NewGuid():N}");
+		var context = CreateGenerateContext(collector, stack, ProductsFor(product), outputRoot, GitForElasticsearch());
+		using var versionIndexClient = new VersionIndexClient(BaseUri, MultiVersionHandler(), sleep: (_, _) => Task.CompletedTask);
+		var reader = CreateVersionedReader(
+			("main", SpecDocument("Elasticsearch main")),
+			("9.4", SpecDocument("Elasticsearch 9")),
+			("8.19", SpecDocument("Elasticsearch 8"))
+		);
+		var provider = new ApiFloatingSectionProvider(context);
+		provider.Attach(CreateGenerator(context, versionIndexClient, reader));
+		var section = provider.GetSections().Should().ContainSingle().Subject;
+		var root = section.CreateRoot(null);
+
+		await section.ResolveAsync(TestContext.Current!.Execution.CancellationToken);
+
+		NavigationTreePrinter.Print(root, maxDepth: 3).Should().MatchSnapshot();
 	}
 
 	[Test]
