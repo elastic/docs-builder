@@ -22,6 +22,7 @@ using FakeItEasy;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.OpenApi;
 using Nullean.ScopedFileSystem;
+using Nullean.Snapshots.Html;
 
 namespace Elastic.ApiExplorer.Tests;
 
@@ -260,38 +261,13 @@ public class OpenApiGeneratorCatalogSplitTests
 		var catalogPath = Path.Join(outputRoot, "api", "index.html");
 		context.WriteFileSystem.File.Exists(catalogPath).Should().BeTrue();
 		var html = await context.WriteFileSystem.File.ReadAllTextAsync(catalogPath, TestContext.Current!.Execution.CancellationToken);
-		html.Should().Contain("<h1>Elastic APIs</h1>");
-		html.Should().Contain(
-			"<a href=\"/docs/api/doc/elasticsearch\" aria-labelledby=\"api-catalog-title-elasticsearch\" class=\"api-card api-catalog-card "
-		);
-		html.Should().Contain(
-			"<a href=\"/docs/api/doc/kibana\" aria-labelledby=\"api-catalog-title-kibana\" class=\"api-card api-catalog-card "
-		);
-		html.Should().Contain(
-			"<h2 id=\"api-catalog-title-elasticsearch\" class=\"api-card-title api-catalog-card-title ",
-			"the heading is inside the link and names it"
-		);
-		html.Should().NotContain("api-catalog-card-arrow");
-		html.Should().NotContain("View docs");
-		html.Should().NotContain("rounded-2xl", "the box comes from the shared api-card class");
-		html.Split("<a href=").Length.Should().BeGreaterThan(2);
-		html.Should().NotContain("after:absolute", "the card is the link itself, so there is no stretched overlay to trap");
-		html.Should().Contain("<ul class=\"api-catalog-featured ");
-		html.Should().NotContain("lg:grid-cols-3", "no other APIs, so no second grid");
-		html.Should().NotContain("hub-card");
-		html.Should().Contain("A distributed search engine.");
-		html.Should().NotContain("Choose a product");
+		// The card is the link itself and the heading sits inside it, so there is no stretched overlay to trap.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 		html.Should().Contain(
 			"<div id=\"main-container\" class=\"flex min-h-screen flex-col items-center\">",
 			"a short page must still fill the screen"
 		);
-		html.Should().NotContain("data-copy-page");
-		html.Should().NotContain("api-catalog-badge");
-		html.Should().NotContain("api-catalog-card-key");
-		html.Should().NotContain("listing-root");
-		html.Should().NotContain("listing-group-chips");
 		html.Should().NotContain("download");
-		html.Should().NotContain("hub-page");
 		html.Should().NotContain("markdown-content");
 		html.Should().NotContain("id=\"pages-nav\"");
 	}
@@ -459,18 +435,9 @@ public class OpenApiGeneratorCatalogSplitTests
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
-		html.Split("class=\"api-catalog-tag\"").Length.Should().Be(2, "only the API that no group covers shows its deployment");
-		html.Should().Contain(">ECE</span>");
-		html.Should().NotContain(">ECH</span>");
-		html.Should().NotContain(">Self-managed</span>");
-		html.Should().Contain("api-catalog-card-parent", "the Serverless card is attached under Elasticsearch");
-		html.Should().Contain("<h2 id=\"api-catalog-group-0\"", "the groups are labelled");
-		html.Should().Contain("<h3 id=\"api-catalog-title-elasticsearch\"", "so the cards sit one level below them");
-		html
-			.Split("api-catalog-card-compact")
-			.Length
-			.Should()
-			.Be(3, "the Serverless tag-on and the Cloud API are compact, the ungrouped API is not");
+		// Only the API that no group covers shows its deployment, the Serverless card is attached under Elasticsearch,
+		// the groups are labelled and the cards sit one level below them; the Serverless tag-on and the Cloud API are compact.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 	}
 
 	[Test]
@@ -496,25 +463,9 @@ public class OpenApiGeneratorCatalogSplitTests
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
-		html.Should().NotContain("<ul class=\"api-catalog-featured ", "Kibana is missing, so there is no featured pair");
-		html.Should().Contain("lg:grid-cols-3");
-		html.Should().NotContain("Other APIs");
-		html.Split("href=\"/docs/api/doc/elasticsearch\"").Length.Should().Be(2, "an API shows once, however many deployments it declares");
-		html
-			.IndexOf("Cloud Connect", StringComparison.Ordinal)
-			.Should()
-			.BeLessThan(html.IndexOf("Elasticsearch Serverless", StringComparison.Ordinal), "APIs without a priority key sort by title");
-		html.Should().Contain("<div class=\"mt-auto flex flex-wrap gap-1.5 pt-2\">");
-		html.Should().Contain("<span class=\"api-catalog-tag\" data-tippy-content=\"Elastic Cloud Hosted\">ECH</span>");
-		html.Should().Contain(
-			"<span class=\"api-catalog-tag\" data-tippy-content=\"\">Self-managed</span>",
-			"a label that is already the full name needs no tooltip"
-		);
-		html.Should().NotContain("applicable-", "the tags do not depend on applies_to");
-		html.Should().NotContain("data-group");
-		html.Should().NotContain("data-listing-groups");
-		html.Should().NotContain("listing-group-chips");
-		html.Should().NotContain("No APIs match your filter.");
+		// Kibana is missing, so there is no featured pair; an API shows once however many deployments it declares;
+		// APIs without a priority key sort by title; a label that is already the full name needs no tooltip.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("svg"));
 	}
 
 	[Test]
@@ -534,17 +485,8 @@ public class OpenApiGeneratorCatalogSplitTests
 			.WriteFileSystem
 			.File
 			.ReadAllTextAsync(Path.Join(outputRoot, "api", "index.html"), TestContext.Current!.Execution.CancellationToken);
-		html.Should().Contain("hub-hero api-catalog-hero");
-		html.Should().Contain("<p class=\"api-catalog-lede\">" + ApiCatalog.PageLede + "</p>", "one line of text sits under the title");
-		html
-			.IndexOf("api-catalog-band", StringComparison.Ordinal)
-			.Should()
-			.BeGreaterThan(-1)
-			.And
-			.BeLessThan(
-				html.IndexOf("id=\"content-container\"", StringComparison.Ordinal),
-				"the band is rendered outside the width-limited container"
-			);
+		// One line of text sits under the title, and the band is rendered outside the width-limited container.
+		html.Should().MatchHtmlSnapshot(new HtmlSnapshotOptions().Select("#main-container").Remove("#content-container, svg"));
 	}
 
 	[Test]
