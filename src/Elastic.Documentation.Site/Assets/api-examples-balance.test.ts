@@ -137,6 +137,45 @@ describe('initExamplesBalance', () => {
         vi.unstubAllGlobals()
     })
 
+    it('gives the code the room a taller window adds', () => {
+        const root = rail(602, [{ lang: 'Console', scroll: 400 }], longResponse)
+        initExamplesBalance()
+        const before = heights(root)
+
+        root.style.maxHeight = '1002px'
+        window.dispatchEvent(new Event('resize'))
+
+        expect([before, heights(root)]).toEqual([
+            { request: '150px', response: '150px' },
+            { request: '350px', response: '350px' },
+        ])
+    })
+
+    it('re-balances when a longer language becomes active', async () => {
+        const root = rail(
+            1302,
+            [
+                { lang: 'Console', scroll: 100 },
+                { lang: 'Java', scroll: 300 },
+            ],
+            { lang: 'JSON', scroll: 50 }
+        )
+        initExamplesBalance()
+        const before = heights(root)
+
+        const [consoleCard, javaCard] = root.querySelectorAll(
+            '.api-code-carousel-card'
+        )
+        consoleCard.classList.remove('is-active')
+        javaCard.classList.add('is-active')
+        await new Promise((resolve) => setTimeout(resolve, 0))
+
+        expect([before, heights(root)]).toEqual([
+            { request: '100px', response: '50px' },
+            { request: '300px', response: '50px' },
+        ])
+    })
+
     it('stops balancing a panel once HTMX has swapped it out', () => {
         const old = rail(602, [{ lang: 'Console', scroll: 400 }], longResponse)
         initExamplesBalance()
