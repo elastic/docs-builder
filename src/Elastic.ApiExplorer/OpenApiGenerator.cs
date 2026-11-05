@@ -633,7 +633,7 @@ public class OpenApiGenerator(
 	/// Every name of every page in one version's tree, relative to its product root. A collapsed operation is reachable by its
 	/// canonical path and its former per-operation paths, and a <c>children:</c> page also answers to the topic URLs it replaces. Each name maps to all names of that page, canonical first.
 	/// </summary>
-	private static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
+	internal static IReadOnlyDictionary<string, IReadOnlyList<string>> PageNames(LandingNavigationItem navigation)
 	{
 		var pages = new List<(INavigationItem Item, IApiModel Model)>();
 		CollectPages(navigation, pages);
