@@ -99,7 +99,7 @@ public class TableDirectiveDescriptionPresetTests() : DirectiveTest<TableDirecti
 	}
 
 	[Test]
-	public void RendersColgroup() => Html.Should().Contain("colgroup");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
@@ -119,7 +119,30 @@ public class TableDirectiveAutoPresetTests() : DirectiveTest<TableDirectiveBlock
 	public void HasNoColumnWidths() => Block!.ColumnWidths.Should().BeEmpty();
 
 	[Test]
-	public void DoesNotInjectColgroup() => Html.Should().NotContain("colgroup");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>a</th>
+						<th>b</th>
+						<th>c</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>1</td>
+						<td>2</td>
+						<td>3</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -139,7 +162,28 @@ public class TableDirectiveMatrixTests() : DirectiveTest<TableDirectiveBlock>(
 	public void ParsesMatrixOption() => Block!.Matrix.Should().BeTrue();
 
 	[Test]
-	public void RendersMatrixClass() => Html.Should().Contain("table-wrapper table-matrix");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper table-matrix">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -154,7 +198,28 @@ public class TableDirectiveWithoutMatrixTests() : DirectiveTest<TableDirectiveBl
 )
 {
 	[Test]
-	public void DoesNotRenderMatrixClass() => Html.Should().NotContain("table-matrix");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]
@@ -198,9 +263,6 @@ public class TableDirectiveFilterableTests() : DirectiveTest<TableDirectiveBlock
 		</filterable-table>
 		"""
 		);
-
-	[Test]
-	public void KeepsServerRenderedTableInsideHost() => Html.Should().Contain("<filterable-table><div class=\"table-wrapper\"");
 }
 
 [InheritsTests]
@@ -218,7 +280,28 @@ public class TableDirectiveWithoutFilterableTests() : DirectiveTest<TableDirecti
 	public void DoesNotParseFilterableOption() => Block!.Filterable.Should().BeFalse();
 
 	[Test]
-	public void DoesNotWrapTable() => Html.Should().NotContain("filterable-table");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>head a</th>
+						<th>head b</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>a</td>
+						<td>b</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 [InheritsTests]

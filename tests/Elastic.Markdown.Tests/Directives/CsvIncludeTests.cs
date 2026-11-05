@@ -163,7 +163,30 @@ public class CsvIncludeRenderLinksTests() : DirectiveTest("""
 Search,[Text](https://www.google.com)"));
 
 	[Test]
-	public void RendersMarkdownLinkAsLink() => Html.Should().Contain(">Text</a>");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<div class="table-wrapper">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Link</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td>Search</td>
+						<td>
+							<a href="https://www.google.com" target="_blank" rel="noopener noreferrer">Text</a>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		"""
+		);
 }
 
 public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
@@ -181,9 +204,6 @@ public class CsvIncludeWithHtmlBreaksTests() : DirectiveTest("""
 			"""
 			)
 		);
-
-	[Test]
-	public void RendersHtmlBreaksInCsvCells() => Html.Should().Contain("<br");
 
 	[Test]
 	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());

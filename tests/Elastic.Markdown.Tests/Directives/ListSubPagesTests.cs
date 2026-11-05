@@ -84,7 +84,21 @@ Content.
 	}
 
 	[Test]
-	public void RendersDescriptionInOutput() => Html.Should().Contain("First page description");
+	public void RendersHtml() =>
+		Html.Should().MatchInlineHtmlSnapshot(
+			html: DocsHtml.Body(),
+			expected: """
+		<ul class="list-sub-pages">
+			<li>
+				<a href="/page1">Page One</a>
+				— First page description
+			</li>
+			<li>
+				<a href="/page2">Page Two</a>
+			</li>
+		</ul>
+		"""
+		);
 }
 
 [InheritsTests]

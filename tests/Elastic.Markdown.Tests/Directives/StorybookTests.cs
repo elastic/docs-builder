@@ -242,7 +242,7 @@ Supporting details for this story.
 )
 {
 	[Test]
-	public void RendersBodyContent() => Html.Should().Contain("Supporting details for this story.");
+	public void RendersHtml() => Html.Should().MatchHtmlSnapshot(DocsHtml.Body());
 }
 
 [InheritsTests]
